@@ -1,0 +1,3463 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`mapping result panel run golden > an older run answering bare body after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering bare error after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering empty body after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering error with both after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering error with error after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering error with message after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering invalid result after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering no data after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering result object after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > an older run answering transport error after a newer one leaves the newer state 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "both started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "older settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 2,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "newer settled",
+    {
+      "isValid": true,
+      "result": {
+        "newest": true,
+      },
+      "runError": "",
+      "runSequence": 2,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers bare body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 3,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers bare error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers empty body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers error with both 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (409): first",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers error with error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (500): boom",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers error with message 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (422): bad mapping",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers invalid result 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": false,
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": [
+        "a is wrong",
+      ],
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers no data 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers result object 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > empty input, server answers transport error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed: Network Error",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers bare body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers bare error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers empty body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers error with both 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers error with error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers error with message 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers invalid result 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers no data 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers result object 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > invalid json, server answers transport error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers bare body 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers bare error 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers empty body 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers error with both 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers error with error 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers error with message 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers invalid result 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers no data 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers result object 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > no mapping, server answers transport error 1`] = `
+[
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 0,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers bare body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 3,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers bare error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers empty body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers error with both 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (409): first",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers error with error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (500): boom",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers error with message 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (422): bad mapping",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers invalid result 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": false,
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": [
+        "a is wrong",
+      ],
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers no data 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers result object 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > object input, server answers transport error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed: Network Error",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers bare body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 3,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers bare error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers empty body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers error with both 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (409): first",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers error with error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (500): boom",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers error with message 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (422): bad mapping",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers invalid result 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": false,
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": [
+        "a is wrong",
+      ],
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers no data 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers result object 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > schema without id, server answers transport error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed: Network Error",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers bare body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 3,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": "sch-1",
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers bare error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers empty body 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": "sch-1",
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers error with both 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (409): first",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers error with error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (500): boom",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers error with message 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed (422): bad mapping",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers invalid result 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": false,
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": "sch-1",
+      "validationErrors": [
+        "a is wrong",
+      ],
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers no data 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": "sch-1",
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers result object 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": "sch-1",
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`mapping result panel run golden > with schema, server answers transport error 1`] = `
+[
+  [
+    "emit",
+    "input-error",
+    "",
+  ],
+  [
+    "state",
+    "started",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "",
+      "runSequence": 1,
+      "running": true,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "state",
+    "settled",
+    {
+      "isValid": true,
+      "result": null,
+      "runError": "Mapping test failed: Network Error",
+      "runSequence": 1,
+      "running": false,
+      "validatedSchemaId": null,
+      "validationErrors": null,
+    },
+  ],
+  [
+    "calls",
+    [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 2,
+          },
+          "mapping": {
+            "a": "{{ b }}",
+          },
+          "schema": "sch-1",
+          "validation": true,
+        },
+      ],
+    ],
+  ],
+]
+`;
