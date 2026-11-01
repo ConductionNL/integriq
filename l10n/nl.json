@@ -2273,7 +2273,16 @@
         "Name the register, the schema and the record.": "Noem het register, het schema en het record.",
         "There is no such record.": "Dit record bestaat niet.",
         "The route (variant) of this case type a case from this activity takes. Empty means the case type's default route": "De route (variant) van dit zaaktype die een zaak uit deze activiteit volgt. Leeg betekent de standaardroute van het zaaktype",
-        "The route (variant) of this case type the case takes, as the matched mapping row gives it": "De route (variant) van dit zaaktype die de zaak volgt, zoals de gematchte koppelregel die aangeeft"
+        "The route (variant) of this case type the case takes, as the matched mapping row gives it": "De route (variant) van dit zaaktype die de zaak volgt, zoals de gematchte koppelregel die aangeeft",
+        "Exchange rate": "Wisselkoers",
+        "Base currency": "Basisvaluta",
+        "ISO 4217 code of the base currency; always EUR for the ECB source": "ISO 4217-code van de basisvaluta; bij de ECB-bron altijd EUR",
+        "ISO 4217 code of the quoted currency": "ISO 4217-code van de genoteerde valuta",
+        "Rate": "Koers",
+        "Rate date": "Koersdatum",
+        "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
+        "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
     },
     "plurals": {}
 }

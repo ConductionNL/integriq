@@ -3537,7 +3537,16 @@
         "There is no such record.": "There is no such record.",
         "The route (variant) of this case type a case from this activity takes. Empty means the case type's default route": "The route (variant) of this case type a case from this activity takes. Empty means the case type's default route",
         "The route (variant) of this case type the case takes, as the matched mapping row gives it": "The route (variant) of this case type the case takes, as the matched mapping row gives it",
-        "Variant": "Variant"
+        "Variant": "Variant",
+        "Exchange rate": "Exchange rate",
+        "Base currency": "Base currency",
+        "ISO 4217 code of the base currency; always EUR for the ECB source": "ISO 4217 code of the base currency; always EUR for the ECB source",
+        "ISO 4217 code of the quoted currency": "ISO 4217 code of the quoted currency",
+        "Rate": "Rate",
+        "Rate date": "Rate date",
+        "The publication date the rate applies to": "The publication date the rate applies to",
+        "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
     },
     "plurals": {}
 }
