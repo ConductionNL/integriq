@@ -760,6 +760,94 @@ class CallReplayServiceTest extends TestCase {
 	}//end testAnUnrecognisedAnswerIsNoAnswer()
 
 	/**
+	 * Drop clock readings and generated ids, which differ per run.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed
+	 */
+	private function stableValue(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$out = [];
+		foreach ($value as $key => $item) {
+			if (is_string($key) === true && preg_match('/At$|^at$|time|^uuid$|^call$|^originId$|durationMs|expires/i', $key) === 1) {
+				$out[$key] = ($item === null ? null : '(set)');
+				continue;
+			}
+
+			$out[$key] = $this->stableValue($item);
+		}
+
+		return $out;
+	}//end stableValue()
+
+	/**
+	 * Every replay outcome matches the golden file recorded on the code before
+	 * replay() was split: the result, the attempts written, what was sent and
+	 * whether the call was dead-lettered.
+	 *
+	 * Regenerate with CALL_REPLAY_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryReplayOutcomeMatchesTheGoldenFile(): void {
+		$cases = [
+			'ok-200' => [200, null, [], []],
+			'ok-299' => [299, null, [], []],
+			'redirect-300' => [300, null, ['maxAttempts' => 6], []],
+			'informational-199' => [199, null, ['maxAttempts' => 6], []],
+			'unavailable-exhausted' => [503, null, ['maxAttempts' => 2], []],
+			'unavailable-attempts-left' => [503, null, ['maxAttempts' => 6], []],
+			'dispatch-fails-exhausted' => [200, 'no route to host', ['maxAttempts' => 2], []],
+			'dispatch-fails-attempts-left' => [200, 'no route to host', ['maxAttempts' => 6], []],
+			'dry-run' => [200, null, [], ['dryRun' => true]],
+			'dry-run-truthy-not-true' => [200, null, [], ['dryRun' => 1]],
+			'wanted-version-int' => [200, null, [], ['mappingVersion' => 3]],
+			'stripped-bodies' => [200, null, [], [], true],
+			'stripped-bodies-dry-run' => [200, null, [], ['dryRun' => true], true],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => $case) {
+			$this->records = [];
+			$uuid = $this->failedCall($case[2]);
+			if (($case[4] ?? false) === true) {
+				unset($this->records[$uuid]['replayRequest'], $this->records[$uuid]['bodyExpiresAt']);
+				$this->records[$uuid]['bodyCaptured'] = false;
+			}
+
+			$dispatcher = new RecordingDispatcher($case[0], $case[1]);
+			$result = $this->service($dispatcher)->replay($uuid, 'beheerder', $case[3]);
+
+			$actual[$name] = $this->stableValue(
+				[
+					'result' => $result,
+					'callIsUuid' => ($result['call'] === $uuid),
+					'attempts' => ($this->records[$uuid]['attempts'] ?? []),
+					'deadLettered' => ($this->records[$uuid]['deadLettered'] ?? null),
+					'deadLetterRecords' => count(array_filter($this->records, static fn (array $record): bool => (($record['phase'] ?? '') === 'outbound-call'))),
+					'sent' => $dispatcher->sent,
+				]
+			);
+		}
+
+		$golden = __DIR__ . '/../../fixtures/outbound/call-replay-outcomes.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('CALL_REPLAY_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryReplayOutcomeMatchesTheGoldenFile()
+
+	/**
 	 * A replay service over the doubles.
 	 *
 	 * @param CallDispatcherInterface $dispatcher The dispatcher to use.

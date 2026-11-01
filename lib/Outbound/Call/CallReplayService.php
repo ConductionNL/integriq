@@ -109,10 +109,11 @@ class CallReplayService implements CallReplayServiceInterface {
 	 * @param array<string,mixed> $options `dryRun` and `mappingVersion`.
 	 *
 	 * @return array<string,mixed> What happened, per item.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 	 */
 	public function replay(string $uuid, string $actorUid, array $options = []): array {
 		$record = $this->recorder->read($uuid);
-		$dryRun = (($options['dryRun'] ?? false) === true);
 		$wantedVersion = ($options['mappingVersion'] ?? null);
 		if ($wantedVersion !== null) {
 			$wantedVersion = (string)$wantedVersion;
@@ -123,23 +124,22 @@ class CallReplayService implements CallReplayServiceInterface {
 			(string)($record['mappingVersion'] ?? ''),
 			$wantedVersion
 		);
+		$call = new ReplayTarget(
+			uuid: $uuid,
+			actorUid: $actorUid,
+			mappingVersion: $resolved['version'],
+			target: (string)($record['target'] ?? '')
+		);
 
 		$request = $this->requestOf(record: $record);
 
 		if ($this->requestIsKept(record: $record, request: $request) === false) {
 			// The bodies aged out or were never kept (REQ-OCD-009): sending what is left would be a bare
 			// request the partner takes for a new call, and it would be recorded as a replay.
-			return [
-				'call' => $uuid,
-				'kind' => CallRecorder::KIND_REPLAYED,
-				'succeeded' => false,
-				'sent' => false,
-				'mappingVersion' => $resolved['version'],
-				'detail' => 'The request is no longer kept, so this call cannot be replayed.',
-			];
+			return $this->notSent(call: $call, detail: 'The request is no longer kept, so this call cannot be replayed.');
 		}
 
-		if ($dryRun === true) {
+		if (($options['dryRun'] ?? false) === true) {
 			// A dry run writes nothing at all: no call, no attempt, no record.
 			// An administrator uses it to look at a payload, and looking must
 			// not change what they are looking at.
@@ -148,65 +148,113 @@ class CallReplayService implements CallReplayServiceInterface {
 				'kind' => CallRecorder::KIND_DRY_RUN,
 				'succeeded' => true,
 				'sent' => false,
-				'mappingVersion' => $resolved['version'],
+				'mappingVersion' => $call->mappingVersion,
 				'request' => $request,
 				'detail' => 'Dry run: this is the request that would be sent. Nothing was sent.',
 			];
 		}
 
-		try {
-			$response = $this->dispatcher->dispatch((string)($record['target'] ?? ''), $request);
-		} catch (CallDispatchException $exception) {
-			$this->recorder->appendAttempt(
-				$uuid,
-				[
-					'by' => $actorUid,
-					'kind' => CallRecorder::KIND_REPLAYED,
-					'statusCode' => 0,
-					'detail' => $exception->getMessage(),
-					'mappingVersion' => $resolved['version'],
-				]
-			);
-			$this->deadLetterIfExhausted(uuid: $uuid);
+		return $this->send(call: $call, request: $request);
 
-			return [
-				'call' => $uuid,
-				'kind' => CallRecorder::KIND_REPLAYED,
-				'succeeded' => false,
-				'sent' => false,
-				'mappingVersion' => $resolved['version'],
-				'detail' => $exception->getMessage(),
-			];
+	}//end replay()
+
+	/**
+	 * Send a replay and record it as an attempt, dead-lettering the call once
+	 * it fails and has no attempts left.
+	 *
+	 * @param ReplayTarget        $call    The call being replayed.
+	 * @param array<string,mixed> $request The request to send.
+	 *
+	 * @return array<string,mixed> What happened.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md
+	 */
+	private function send(ReplayTarget $call, array $request): array {
+		try {
+			$response = $this->dispatcher->dispatch($call->target, $request);
+		} catch (CallDispatchException $exception) {
+			return $this->dispatchFailed(call: $call, exception: $exception);
 		}
 
+		$statusCode = (int)$response['statusCode'];
 		$this->recorder->appendAttempt(
-			$uuid,
+			$call->uuid,
 			[
-				'by' => $actorUid,
+				'by' => $call->actorUid,
 				'kind' => CallRecorder::KIND_REPLAYED,
-				'statusCode' => (int)$response['statusCode'],
+				'statusCode' => $statusCode,
 				'detail' => (string)$response['detail'],
-				'mappingVersion' => $resolved['version'],
+				'mappingVersion' => $call->mappingVersion,
 				'response' => $response,
 			]
 		);
 
-		$succeeded = ((int)$response['statusCode'] >= 200 && (int)$response['statusCode'] < 300);
+		$succeeded = ($statusCode >= 200 && $statusCode < 300);
 		if ($succeeded === false) {
-			$this->deadLetterIfExhausted(uuid: $uuid);
+			$this->deadLetterIfExhausted(uuid: $call->uuid);
 		}
 
 		return [
-			'call' => $uuid,
+			'call' => $call->uuid,
 			'kind' => CallRecorder::KIND_REPLAYED,
 			'succeeded' => $succeeded,
 			'sent' => true,
-			'statusCode' => (int)$response['statusCode'],
-			'mappingVersion' => $resolved['version'],
+			'statusCode' => $statusCode,
+			'mappingVersion' => $call->mappingVersion,
 			'detail' => (string)$response['detail'],
 		];
 
-	}//end replay()
+	}//end send()
+
+	/**
+	 * Record a replay that never reached the partner as an attempt too, because
+	 * "we could not call them" is an answer somebody needs.
+	 *
+	 * @param ReplayTarget          $call      The call being replayed.
+	 * @param CallDispatchException $exception Why the dispatch failed.
+	 *
+	 * @return array<string,mixed> The outcome.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md
+	 */
+	private function dispatchFailed(ReplayTarget $call, CallDispatchException $exception): array {
+		$this->recorder->appendAttempt(
+			$call->uuid,
+			[
+				'by' => $call->actorUid,
+				'kind' => CallRecorder::KIND_REPLAYED,
+				'statusCode' => 0,
+				'detail' => $exception->getMessage(),
+				'mappingVersion' => $call->mappingVersion,
+			]
+		);
+		$this->deadLetterIfExhausted(uuid: $call->uuid);
+
+		return $this->notSent(call: $call, detail: $exception->getMessage());
+
+	}//end dispatchFailed()
+
+	/**
+	 * The outcome of a replay that never reached the partner.
+	 *
+	 * @param ReplayTarget $call   The call being replayed.
+	 * @param string       $detail Why it was not sent.
+	 *
+	 * @return array<string,mixed> The outcome.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md
+	 */
+	private function notSent(ReplayTarget $call, string $detail): array {
+		return [
+			'call' => $call->uuid,
+			'kind' => CallRecorder::KIND_REPLAYED,
+			'succeeded' => false,
+			'sent' => false,
+			'mappingVersion' => $call->mappingVersion,
+			'detail' => $detail,
+		];
+
+	}//end notSent()
 
 	/**
 	 * Replay several calls, reporting each.
