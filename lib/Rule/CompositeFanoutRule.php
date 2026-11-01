@@ -91,87 +91,104 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 			throw new Exception('Composite fan-out rule is missing a parent configuration (register/schema).');
 		}
 
-		$body = $data['body'] ?? [];
-		$parentBodyKey = $parentConfig['bodyKey'] ?? null;
-		$parentBody = $body;
-		if ($parentBodyKey !== null) {
-			$parentBody = $body[$parentBodyKey] ?? [];
-		}
-
-		/*
-		 * @var array<int, array{register: string, schema: string, uuid: string}> $created
-		 */
-
-		$created = [];
+		$run = new CompositeFanoutWrites(body: ($data['body'] ?? []), parentConfig: $parentConfig);
 
 		try {
-			$parentObject = $this->orObjectService->saveObject(
-				$parentBody,
-				$parentConfig['register'],
-				$parentConfig['schema']
-			);
-			$created[] = [
-				'register' => $parentConfig['register'],
-				'schema' => $parentConfig['schema'],
-				'uuid' => $parentObject->getUuid(),
-			];
-
-			/*
-			 * @var array<string, string> $childUuidsByBodyKey Uuids of already-written children, keyed by their bodyKey.
-			 */
-
-			$childUuidsByBodyKey = [];
-
+			$parentObject = $this->writeParent(run: $run);
 			foreach (($configuration['children'] ?? []) as $childConfig) {
-				$bodyKey = $childConfig['bodyKey'] ?? null;
-				if ($bodyKey === null || isset($body[$bodyKey]) === false) {
-					if (($childConfig['required'] ?? false) === true) {
-						throw new Exception(sprintf('Composite fan-out is missing required child "%s".', (string)$bodyKey));
-					}
-
-					continue;
-				}
-
-				$childBody = $body[$bodyKey];
-				if (isset($childConfig['parentField']) === true) {
-					// "parentRef" selects what uuid to stamp into parentField:
-					// the top-level parent (default), or an already-written
-					// sibling child referenced by its own bodyKey — e.g. a
-					// VNG digitaalAdres nested under its betrokkene.
-					$parentRef = $childConfig['parentRef'] ?? 'parent';
-					$refUuid = $childUuidsByBodyKey[$parentRef] ?? null;
-					if ($parentRef === 'parent') {
-						$refUuid = $parentObject->getUuid();
-					}
-
-					if ($refUuid === null) {
-						throw new Exception(sprintf('Composite fan-out child "%s" references unresolved parentRef "%s".', $bodyKey, $parentRef));
-					}
-
-					$childBody[$childConfig['parentField']] = $refUuid;
-				}
-
-				$childObject = $this->orObjectService->saveObject(
-					$childBody,
-					$childConfig['register'] ?? $parentConfig['register'],
-					$childConfig['schema']
-				);
-				$created[] = [
-					'register' => $childConfig['register'] ?? $parentConfig['register'],
-					'schema' => $childConfig['schema'],
-					'uuid' => $childObject->getUuid(),
-				];
-				$childUuidsByBodyKey[$bodyKey] = $childObject->getUuid();
-			}//end foreach
+				$this->writeChild(run: $run, childConfig: $childConfig);
+			}
 		} catch (Exception $exception) {
-			$this->rollback(created: $created);
+			$this->rollback(created: $run->created);
 			throw new Exception('Composite fan-out failed, all writes rolled back: ' . $exception->getMessage(), 0, $exception);
-		}//end try
+		}
 
 		$data['body'] = $parentObject->jsonSerialize();
 
 		return $data;
 	}//end apply()
+
+	/**
+	 * Write the parent object: the body under the parent's bodyKey, or the whole body.
+	 *
+	 * @param CompositeFanoutWrites $run The fan-out.
+	 *
+	 * @return ObjectEntity The written parent.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function writeParent(CompositeFanoutWrites $run): ObjectEntity {
+		$parentConfig = $run->parentConfig;
+		$parentBody = $run->body;
+		if (($parentConfig['bodyKey'] ?? null) !== null) {
+			$parentBody = $run->body[$parentConfig['bodyKey']] ?? [];
+		}
+
+		$parentObject = $this->orObjectService->saveObject(
+			$parentBody,
+			$parentConfig['register'],
+			$parentConfig['schema']
+		);
+		$run->created[] = [
+			'register' => $parentConfig['register'],
+			'schema' => $parentConfig['schema'],
+			'uuid' => $parentObject->getUuid(),
+		];
+		$run->parentUuid = $parentObject->getUuid();
+
+		return $parentObject;
+	}//end writeParent()
+
+	/**
+	 * Write one child object, stamping the uuid it refers to into its parentField.
+	 *
+	 * @param CompositeFanoutWrites $run         The fan-out.
+	 * @param array                 $childConfig The child's bodyKey, register, schema, parentField and parentRef.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a required child is missing or its parentRef is not written yet.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function writeChild(CompositeFanoutWrites $run, array $childConfig): void {
+		$bodyKey = $childConfig['bodyKey'] ?? null;
+		if ($bodyKey === null || isset($run->body[$bodyKey]) === false) {
+			if (($childConfig['required'] ?? false) === true) {
+				throw new Exception(sprintf('Composite fan-out is missing required child "%s".', (string)$bodyKey));
+			}
+
+			return;
+		}
+
+		$childBody = $run->body[$bodyKey];
+		if (isset($childConfig['parentField']) === true) {
+			// "parentRef" selects what uuid to stamp into parentField: the
+			// top-level parent (default), or an already-written sibling child
+			// referenced by its own bodyKey, e.g. an address nested under the
+			// party it belongs to.
+			$parentRef = $childConfig['parentRef'] ?? 'parent';
+			$refUuid = $run->childUuidsByBodyKey[$parentRef] ?? null;
+			if ($parentRef === 'parent') {
+				$refUuid = $run->parentUuid;
+			}
+
+			if ($refUuid === null) {
+				throw new Exception(sprintf('Composite fan-out child "%s" references unresolved parentRef "%s".', $bodyKey, $parentRef));
+			}
+
+			$childBody[$childConfig['parentField']] = $refUuid;
+		}
+
+		$register = $childConfig['register'] ?? $run->parentConfig['register'];
+		$childObject = $this->orObjectService->saveObject($childBody, $register, $childConfig['schema']);
+		$run->created[] = [
+			'register' => $register,
+			'schema' => $childConfig['schema'],
+			'uuid' => $childObject->getUuid(),
+		];
+		$run->childUuidsByBodyKey[$bodyKey] = $childObject->getUuid();
+	}//end writeChild()
 
 	/**
 	 * Delete every object created so far, most-recently-created first.
