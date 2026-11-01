@@ -434,6 +434,75 @@
         },
         "session": []
     },
+    "claimed-with-pin": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code already used",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "expired-with-pin": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "pre-authorized_code has expired",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
+    "pin-required-request-says-not": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+                    "txCodeFailedAttempts": 1
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
     "pin-right": {
         "trace": [
             {
