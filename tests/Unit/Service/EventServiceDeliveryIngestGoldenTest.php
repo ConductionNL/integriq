@@ -85,7 +85,7 @@ class EventServiceDeliveryIngestGoldenTest extends TestCase {
 
 			public function compose(string $body, array $decision, string $channel, string $caseRef = ''): array {
 				$this->test->record(['gate.compose', $body, $decision['code'], $channel, $caseRef]);
-				return ['body' => $body . ' [unsubscribe]', 'headers' => []];
+				return ['body' => $body . ' [unsubscribe]', 'unsubscribeLink' => null, 'headers' => []];
 			}
 
 			public function open(
@@ -109,7 +109,7 @@ class EventServiceDeliveryIngestGoldenTest extends TestCase {
 				$this->test->record(['gate.failed', $uuid, $address, $step, $reason]);
 			}
 
-			public function recordRefusal(string $channel, string $subjectRef, array $decision, array $options = []): ?string {
+			public function recordRefusal(string $channel, string $subjectRef, array $decision, array $options = []): string {
 				$this->test->record(['gate.recordRefusal', $channel, $subjectRef, $decision, $options]);
 				return 'row-r';
 			}
