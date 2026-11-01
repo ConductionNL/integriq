@@ -240,11 +240,6 @@
       "count": 1
     }
   },
-  "src/views/Rule/actionForms/JavascriptForm.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    }
-  },
   "src/views/Rule/actionForms/LockingForm.vue": {
     "eqeqeq": {
       "count": 1
@@ -277,9 +272,6 @@
   },
   "src/views/Synchronization/SyncMappingPreview.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "no-useless-assignment": {
       "count": 1
     }
   },
