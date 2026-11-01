@@ -515,55 +515,14 @@ class EndpointService implements EndpointServiceInterface {
 
 		try {
 			$flowToken = new FlowToken(requestOriginal: $request, path: $path);
+			$data = $this->ruleData(
+				flowToken: $flowToken,
+				pathParameters: $this->getPathParameters(
+					endpointArray: ($endpointData['endpointArray'] ?? []),
+					path: $path
+				)
+			);
 
-			// Process initial data.
-			// $responseBody = $this->parseContent(
-			// request: $request,
-			//
-			// );
-			//
-			// if ($responseBody == '') {
-			// $responseBody = [];
-			// }.
-			$currentDate = (new DateTime())->format('c');
-			// This is double becuase mapping needs it in body but other rules seek directly in data.
-			// $incomingMethod = $request->getMethod();
-			// $incomingHeaders = $this->getHeaders($request->server, true);
-			// $incomingParams = array_merge($request->getParams(), $responseBody);
-			//
-			// $incomingData = [
-			// 'method' => $incomingMethod,
-			// 'headers' => $incomingHeaders,
-			// 'params' => $incomingParams
-			// ];
-			// @todo: This should eventually be merged into the flow tokens.
-			$data = [
-				'utility' => [
-					'currentDate' => $currentDate,
-				],
-				'parameters' => array_merge(
-					$flowToken->getRequestOriginal()['parameters'],
-					$this->getPathParameters(
-						endpointArray: ($endpointData['endpointArray'] ?? []),
-						path: $path
-					)
-				),
-				'headers' => $flowToken->getRequestOriginal()['headers'],
-				'path' => $flowToken->getRequestOriginal()['path'],
-				'method' => $flowToken->getRequestOriginal()['method'],
-				'body' => array_merge(
-					[
-						'_utility' => [
-							'currentDate' => $currentDate,
-						],
-						'_parameters' => $flowToken->getRequestOriginal()['parameters'],
-						'_headers' => $flowToken->getRequestOriginal()['headers'],
-						'_path' => $flowToken->getRequestOriginal()['path'],
-						'_method' => $flowToken->getRequestOriginal()['method'],
-					],
-					$flowToken->getRequestOriginal()['parameters']
-				),
-			];
 			// Process rules before handling the request.
 			$ruleResult = $this->processRules(
 				endpoint: $endpoint,
@@ -589,30 +548,90 @@ class EndpointService implements EndpointServiceInterface {
 
 			return $response;
 		} catch (Exception $e) {
-			// C3 fix: never disclose the stack trace in the response body.
-			// This endpoint is @PublicPage — unauthenticated callers must not see internal file
-			// paths or class names.  Log the full trace server-side for support lookup.
-			$this->logger->error(
-				'Error handling endpoint request: ' . $e->getMessage(),
-				['exception' => $e]
-			);
-
-			$this->finalizeTrace(
-				trace: $trace,
-				response: null,
-				error: [
-					'message' => $e->getMessage(),
-					'ruleType' => null,
-					'ruleName' => null,
-				]
-			);
-
-			return new JSONResponse(
-				['error' => 'Internal server error'],
-				400
-			);
+			return $this->failedRequest(exception: $e, trace: $trace);
 		}//end try
 	}//end doHandleRequest()
+
+	/**
+	 * The data envelope the endpoint rules read: the original request's
+	 * parameters (with the endpoint's path parameters merged over them),
+	 * headers, path and method, the current date, and a body that carries the
+	 * same request parts under `_`-prefixed keys next to the parameters.
+	 *
+	 * @param FlowToken $flowToken      The flow token holding the original request.
+	 * @param array     $pathParameters The endpoint's named path segments resolved from the path.
+	 *
+	 * @return array The rule data envelope.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function ruleData(FlowToken $flowToken, array $pathParameters): array {
+		$requestOriginal = $flowToken->getRequestOriginal();
+		$currentDate = (new DateTime())->format('c');
+
+		// The request parts sit twice: mapping rules read them in the body,
+		// other rules read them at the top level.
+		return [
+			'utility' => [
+				'currentDate' => $currentDate,
+			],
+			'parameters' => array_merge($requestOriginal['parameters'], $pathParameters),
+			'headers' => $requestOriginal['headers'],
+			'path' => $requestOriginal['path'],
+			'method' => $requestOriginal['method'],
+			'body' => array_merge(
+				[
+					'_utility' => [
+						'currentDate' => $currentDate,
+					],
+					'_parameters' => $requestOriginal['parameters'],
+					'_headers' => $requestOriginal['headers'],
+					'_path' => $requestOriginal['path'],
+					'_method' => $requestOriginal['method'],
+				],
+				$requestOriginal['parameters']
+			),
+		];
+
+	}//end ruleData()
+
+	/**
+	 * Log a request that threw, close its trace as failed and answer without
+	 * internals.
+	 *
+	 * The endpoint route is @PublicPage, so unauthenticated callers must not
+	 * see the stack trace, file paths or class names; the full exception is
+	 * logged server-side for support lookup.
+	 *
+	 * @param Exception             $exception The exception the request threw.
+	 * @param ExecutionTraceContext $trace     The request's execution trace.
+	 *
+	 * @return JSONResponse A 400 with a generic error.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function failedRequest(Exception $exception, ExecutionTraceContext $trace): JSONResponse {
+		$this->logger->error(
+			'Error handling endpoint request: ' . $exception->getMessage(),
+			['exception' => $exception]
+		);
+
+		$this->finalizeTrace(
+			trace: $trace,
+			response: null,
+			error: [
+				'message' => $exception->getMessage(),
+				'ruleType' => null,
+				'ruleName' => null,
+			]
+		);
+
+		return new JSONResponse(
+			['error' => 'Internal server error'],
+			400
+		);
+
+	}//end failedRequest()
 
 	/**
 	 * Persist the assembled `ExecutionTraceContext` for one completed
