@@ -1,0 +1,1460 @@
+{
+    "no-recipient": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null
+                        },
+                        "payload": {
+                            "caseId": "case-1"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ]
+        ]
+    },
+    "no-recipient-no-gate": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null
+                        },
+                        "payload": {
+                            "caseId": "case-1"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ]
+        ]
+    },
+    "blank-recipient": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null
+                        },
+                        "payload": {
+                            "recipient": "   ",
+                            "recipientChannel": "email"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ]
+        ]
+    },
+    "recipient-not-string": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null
+                        },
+                        "payload": {
+                            "recipient": 42
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ]
+        ]
+    },
+    "recipient-array-no-address": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null
+                        },
+                        "payload": {
+                            "recipient": {
+                                "channel": "sms"
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ]
+        ]
+    },
+    "allowed-body-composed-routed": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1",
+                "msg-2"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "email",
+                "service",
+                "piet@example.org",
+                {
+                    "caseRef": "Z-1",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "gate.compose",
+                "Uw afspraak",
+                "allowed",
+                "email",
+                "Z-1"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "service",
+                                "recipient": "piet@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "piet@example.org",
+                            "recipientChannel": "email",
+                            "body": "Uw afspraak [unsubscribe]",
+                            "caseRef": "Z-1",
+                            "unsubscribe": {
+                                "url": "https://gem.nl/unsubscribe/t-1",
+                                "headers": {
+                                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                                }
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ],
+            [
+                "gate.open",
+                "email",
+                "case-1",
+                "Kapvergunning",
+                "Uw afspraak [unsubscribe]",
+                "piet@example.org",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "caseRef": "Z-1"
+                },
+                {
+                    "send": true,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": {
+                        "url": "https://gem.nl/unsubscribe/t-1",
+                        "headers": {
+                            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                        }
+                    },
+                    "address": "piet@example.org",
+                    "category": "service"
+                }
+            ],
+            [
+                "gate.handedOver",
+                "row-1",
+                "piet@example.org",
+                "evt-1"
+            ]
+        ]
+    },
+    "allowed-array-recipient-not-matched": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "sms",
+                "case-update",
+                "jan@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "case-update",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": {
+                                "address": "jan@example.org",
+                                "channel": "sms"
+                            },
+                            "recipientChannel": "email",
+                            "category": "case-update",
+                            "unsubscribe": {
+                                "url": "https://gem.nl/unsubscribe/t-1",
+                                "headers": {
+                                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                                }
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ],
+            [
+                "gate.open",
+                "sms",
+                "case-1",
+                "Kapvergunning",
+                "",
+                "jan@example.org",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "caseRef": ""
+                },
+                {
+                    "send": true,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": {
+                        "url": "https://gem.nl/unsubscribe/t-1",
+                        "headers": {
+                            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                        }
+                    },
+                    "address": "jan@example.org",
+                    "category": "case-update"
+                }
+            ],
+            [
+                "gate.failed",
+                "row-1",
+                "jan@example.org",
+                "route",
+                "No event subscription matched this delivery."
+            ]
+        ]
+    },
+    "allowed-array-recipient-default-channel": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "post",
+                "service",
+                "jan@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "service",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": {
+                                "address": "jan@example.org"
+                            },
+                            "recipientChannel": "post",
+                            "unsubscribe": {
+                                "url": "https://gem.nl/unsubscribe/t-1",
+                                "headers": {
+                                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                                }
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ],
+            [
+                "gate.open",
+                "post",
+                "case-1",
+                "Kapvergunning",
+                "",
+                "jan@example.org",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "caseRef": ""
+                },
+                {
+                    "send": true,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": {
+                        "url": "https://gem.nl/unsubscribe/t-1",
+                        "headers": {
+                            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                        }
+                    },
+                    "address": "jan@example.org",
+                    "category": "service"
+                }
+            ],
+            [
+                "gate.handedOver",
+                "row-1",
+                "jan@example.org",
+                "evt-1"
+            ]
+        ]
+    },
+    "allowed-no-unsubscribe": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "",
+                "besluit",
+                "piet@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "besluit",
+                                "recipient": "piet@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "piet@example.org",
+                            "body": "Tekst",
+                            "category": "besluit"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ],
+            [
+                "gate.open",
+                "",
+                "case-1",
+                "Kapvergunning",
+                "Tekst",
+                "piet@example.org",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "caseRef": ""
+                },
+                {
+                    "send": true,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": null,
+                    "address": "piet@example.org",
+                    "category": "besluit"
+                }
+            ],
+            [
+                "gate.handedOver",
+                "row-1",
+                "piet@example.org",
+                "evt-1"
+            ]
+        ]
+    },
+    "allowed-body-not-string": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "",
+                "service",
+                "piet@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "service",
+                                "recipient": "piet@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "piet@example.org",
+                            "body": 7,
+                            "unsubscribe": {
+                                "url": "https://gem.nl/unsubscribe/t-1",
+                                "headers": {
+                                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                                }
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ],
+            [
+                "gate.open",
+                "",
+                "case-1",
+                "Kapvergunning",
+                "7",
+                "piet@example.org",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "caseRef": ""
+                },
+                {
+                    "send": true,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": {
+                        "url": "https://gem.nl/unsubscribe/t-1",
+                        "headers": {
+                            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                        }
+                    },
+                    "address": "piet@example.org",
+                    "category": "service"
+                }
+            ],
+            [
+                "gate.handedOver",
+                "row-1",
+                "piet@example.org",
+                "evt-1"
+            ]
+        ]
+    },
+    "allowed-open-fails": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "",
+                "service",
+                "piet@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "service",
+                                "recipient": "piet@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "piet@example.org",
+                            "unsubscribe": {
+                                "url": "https://gem.nl/unsubscribe/t-1",
+                                "headers": {
+                                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                                }
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ],
+            [
+                "gate.open",
+                "",
+                "case-1",
+                "Kapvergunning",
+                "",
+                "piet@example.org",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "caseRef": ""
+                },
+                {
+                    "send": true,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": {
+                        "url": "https://gem.nl/unsubscribe/t-1",
+                        "headers": {
+                            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                        }
+                    },
+                    "address": "piet@example.org",
+                    "category": "service"
+                }
+            ],
+            [
+                "gate.handedOver",
+                null,
+                "piet@example.org",
+                "evt-1"
+            ]
+        ]
+    },
+    "opted-out": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": {
+                "code": "opted-out",
+                "reason": "This person asked not to receive these messages."
+            },
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "email",
+                "case-update",
+                "jan@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": false,
+                                "code": "opted-out",
+                                "reason": "This person asked not to receive these messages.",
+                                "category": "case-update",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": {
+                                "address": "jan@example.org",
+                                "channel": "email"
+                            },
+                            "category": "case-update",
+                            "body": "Uw zaak"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "gate.recordRefusal",
+                "email",
+                "case-1",
+                {
+                    "send": false,
+                    "overridden": false,
+                    "code": "opted-out",
+                    "reason": "This person asked not to receive these messages.",
+                    "unsubscribe": null,
+                    "address": "jan@example.org",
+                    "category": "case-update"
+                },
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "log.info",
+                "[EventService] delivery not routed: the opt-out list refused it",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "code": "opted-out"
+                }
+            ]
+        ]
+    },
+    "no-gate-service-refused": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": {
+                "code": "authority-unavailable",
+                "reason": "The opt-out list is not available, so this delivery was not routed."
+            },
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": false,
+                                "code": "authority-unavailable",
+                                "reason": "The opt-out list is not available, so this delivery was not routed.",
+                                "category": "service",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "jan@example.org",
+                            "category": "service",
+                            "recipientChannel": "email"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "log.info",
+                "[EventService] delivery not routed: the opt-out list refused it",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "code": "authority-unavailable"
+                }
+            ]
+        ]
+    },
+    "no-gate-default-category-refused": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": {
+                "code": "authority-unavailable",
+                "reason": "The opt-out list is not available, so this delivery was not routed."
+            },
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": false,
+                                "code": "authority-unavailable",
+                                "reason": "The opt-out list is not available, so this delivery was not routed.",
+                                "category": "service",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "jan@example.org"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "log.info",
+                "[EventService] delivery not routed: the opt-out list refused it",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "code": "authority-unavailable"
+                }
+            ]
+        ]
+    },
+    "no-gate-floor-sent": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": " BESLUIT ",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "jan@example.org",
+                            "category": " BESLUIT ",
+                            "body": "b"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ]
+        ]
+    },
+    "no-gate-alias-sent": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "Invordering",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "jan@example.org",
+                            "category": "Invordering"
+                        }
+                    },
+                    "userId": null,
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ]
+        ]
+    },
+    "forged-user-in-payload": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [
+                "msg-1"
+            ],
+            "refusal": null,
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "",
+                "service",
+                "piet@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": "ext-9",
+                            "optOut": {
+                                "send": true,
+                                "code": "allowed",
+                                "reason": "",
+                                "category": "service",
+                                "recipient": "piet@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "piet@example.org",
+                            "userId": "mallory",
+                            "requestedBy": "mallory",
+                            "owner": "mallory",
+                            "unsubscribe": {
+                                "url": "https://gem.nl/unsubscribe/t-1",
+                                "headers": {
+                                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                                }
+                            }
+                        }
+                    },
+                    "userId": "alice",
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "processEvent",
+                "evt-1"
+            ],
+            [
+                "gate.open",
+                "",
+                "case-1",
+                "Kapvergunning",
+                "",
+                "piet@example.org",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "caseRef": ""
+                },
+                {
+                    "send": true,
+                    "overridden": false,
+                    "code": "allowed",
+                    "reason": "",
+                    "unsubscribe": {
+                        "url": "https://gem.nl/unsubscribe/t-1",
+                        "headers": {
+                            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+                        }
+                    },
+                    "address": "piet@example.org",
+                    "category": "service"
+                }
+            ],
+            [
+                "gate.handedOver",
+                "row-1",
+                "piet@example.org",
+                "evt-1"
+            ]
+        ]
+    },
+    "forged-user-opted-out": {
+        "outcome": {
+            "event": "evt-1",
+            "messages": [],
+            "refusal": {
+                "code": "opted-out",
+                "reason": "This person asked not to receive these messages."
+            },
+            "keys": [
+                "event",
+                "messages",
+                "refusal"
+            ]
+        },
+        "log": [
+            [
+                "gate.check",
+                "",
+                "service",
+                "jan@example.org",
+                {
+                    "caseRef": "",
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "source": "/apps/dossiq/delivery",
+                    "type": "nl.conduction.delivery.requested",
+                    "time": "<date>",
+                    "subject": "case-1",
+                    "data": {
+                        "delivery": {
+                            "sourceApp": "dossiq",
+                            "subjectRegister": "dossiq",
+                            "subjectSchema": "case",
+                            "subjectId": "case-1",
+                            "subjectLabel": "Kapvergunning",
+                            "deliveryKind": "notice",
+                            "channel": "webhook",
+                            "correlationId": "corr-1",
+                            "externalReference": null,
+                            "optOut": {
+                                "send": false,
+                                "code": "opted-out",
+                                "reason": "This person asked not to receive these messages.",
+                                "category": "service",
+                                "recipient": "jan@example.org"
+                            }
+                        },
+                        "payload": {
+                            "recipient": "jan@example.org",
+                            "userId": "mallory"
+                        }
+                    },
+                    "userId": "alice",
+                    "x-generated-by": "integriq"
+                },
+                "integriq",
+                "event",
+                false,
+                false
+            ],
+            [
+                "gate.recordRefusal",
+                "",
+                "case-1",
+                {
+                    "send": false,
+                    "overridden": false,
+                    "code": "opted-out",
+                    "reason": "This person asked not to receive these messages.",
+                    "unsubscribe": null,
+                    "address": "jan@example.org",
+                    "category": "service"
+                },
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1"
+                }
+            ],
+            [
+                "log.info",
+                "[EventService] delivery not routed: the opt-out list refused it",
+                {
+                    "sourceApp": "dossiq",
+                    "correlationId": "corr-1",
+                    "code": "opted-out"
+                }
+            ]
+        ]
+    }
+}
