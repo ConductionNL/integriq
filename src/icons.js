@@ -45,6 +45,7 @@ import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue
 import Cog from 'vue-material-design-icons/Cog.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CreditCardOutline from 'vue-material-design-icons/CreditCardOutline.vue'
+import CurrencyEur from 'vue-material-design-icons/CurrencyEur.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
@@ -153,6 +154,7 @@ export default {
 	Cog,
 	CogOutline,
 	CreditCardOutline,
+	CurrencyEur,
 	DatabaseArrowLeftOutline,
 	DatabaseImportOutline,
 	DatabaseOutline,
