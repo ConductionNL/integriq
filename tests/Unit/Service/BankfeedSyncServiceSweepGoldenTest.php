@@ -85,7 +85,7 @@ class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 
 		return [
 			'nothing' => [],
-			'not-active' => [$base('c-pending', ['lifecycleState' => 'pending']), $base('c-none', ['lifecycleState' => null]), $base('c-revoked', ['lifecycleState' => 'revoked'])],
+			'not-active' => [$base('c-pending', ['lifecycleState' => 'pending']), $base('c-none', ['lifecycleState' => null]), $base('c-revoked', ['lifecycleState' => 'revoked']), $base('c-expired-state', ['lifecycleState' => 'expired', 'consentExpiresAt' => $later]), $base('c-expired-state-no-date', ['lifecycleState' => 'expired', 'consentExpiresAt' => ''])],
 			'watermark' => [$base('c-mark', ['lastSyncAt' => '2025-10-01T00:00:00+00:00', 'consentGrantedAt' => '2025-09-01T00:00:00+00:00'])],
 			'granted' => [$base('c-grant', ['lastSyncAt' => null, 'consentGrantedAt' => '2025-09-01T00:00:00+00:00'])],
 			'backfill' => [$base('c-fresh')],
