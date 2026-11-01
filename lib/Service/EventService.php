@@ -2853,6 +2853,38 @@ class EventService implements EventServiceInterface {
 			$payload = $optOut['payload'];
 		}
 
+		$event = $this->saveDeliveryEvent(
+			request: $request,
+			data: ['delivery' => $this->deliveryRecord(request: $request, optOut: $optOut), 'payload' => $payload]
+		);
+
+		if ($optOut !== null && $optOut['decision']['send'] !== true) {
+			return [
+				'event' => $event,
+				'messages' => [],
+				'refusal' => $this->refuseDelivery(request: $request, optOut: $optOut),
+			];
+		}
+
+		$messages = $this->processEvent(event: $event);
+		$this->recordDelivery(request: $request, optOut: $optOut, payload: $payload, event: $event, messages: $messages);
+
+		return [
+			'event' => $event,
+			'messages' => $messages,
+			'refusal' => null,
+		];
+	}//end ingestDeliveryRequest()
+
+	/**
+	 * The `data.delivery` block of a delivery request's CloudEvent.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 * @param array<string,mixed>|null $optOut The opt-out decision, or null when no person was named.
+	 *
+	 * @return array<string,mixed> The subject and routing fields, plus the opt-out decision when there was one.
+	 */
+	private function deliveryRecord(DeliveryRequestedEvent $request, ?array $optOut): array {
 		$delivery = [
 			'sourceApp' => $request->getSourceApp(),
 			'subjectRegister' => $request->getSubjectRegister(),
@@ -2874,16 +2906,28 @@ class EventService implements EventServiceInterface {
 			];
 		}
 
-		$event = $this->objectService->saveObject(
+		return $delivery;
+
+	}//end deliveryRecord()
+
+	/**
+	 * Store the CloudEvent of a delivery request, as integriq's own write.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 * @param array<string,mixed> $data The event's `data`: the delivery block and the payload.
+	 *
+	 * @return ObjectEntity The stored event.
+	 *
+	 * @throws Exception On persistence failure.
+	 */
+	private function saveDeliveryEvent(DeliveryRequestedEvent $request, array $data): ObjectEntity {
+		return $this->objectService->saveObject(
 			object: [
 				'source' => ('/apps/' . $request->getSourceApp() . '/delivery'),
 				'type' => self::DELIVERY_REQUESTED_TYPE,
 				'time' => (new DateTime())->format('c'),
 				'subject' => $request->getSubjectId(),
-				'data' => [
-					'delivery' => $delivery,
-					'payload' => $payload,
-				],
+				'data' => $data,
 				'userId' => $request->getUserId(),
 				// Marks this row as our own output so CloudEventListener drops it
 				// even when the schema ids cannot identify it (a renamed register, or
@@ -2899,35 +2943,31 @@ class EventService implements EventServiceInterface {
 			_multitenancy: false
 		);
 
-		if ($optOut !== null && $optOut['decision']['send'] !== true) {
-			// Not routed: the person opted out, or no answer could be had.
-			$this->sendGate?->recordRefusal(
-				channel: $optOut['channel'],
-				subjectRef: $request->getSubjectId(),
-				decision: $optOut['decision'],
-				options: ['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId()]
-			);
-			$this->logger->info(
-				'[EventService] delivery not routed: the opt-out list refused it',
-				['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId(), 'code' => $optOut['decision']['code']]
-			);
+	}//end saveDeliveryEvent()
 
-			return [
-				'event' => $event,
-				'messages' => [],
-				'refusal' => ['code' => (string)$optOut['decision']['code'], 'reason' => (string)$optOut['decision']['reason']],
-			];
-		}
+	/**
+	 * Keep the refusal of a delivery the opt-out list did not allow, or that no answer could be had for.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 * @param array<string,mixed> $optOut The refusing opt-out decision.
+	 *
+	 * @return array{code:string,reason:string} The refusal to hand back.
+	 */
+	private function refuseDelivery(DeliveryRequestedEvent $request, array $optOut): array {
+		$this->sendGate?->recordRefusal(
+			channel: $optOut['channel'],
+			subjectRef: $request->getSubjectId(),
+			decision: $optOut['decision'],
+			options: ['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId()]
+		);
+		$this->logger->info(
+			'[EventService] delivery not routed: the opt-out list refused it',
+			['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId(), 'code' => $optOut['decision']['code']]
+		);
 
-		$messages = $this->processEvent(event: $event);
-		$this->recordDelivery(request: $request, optOut: $optOut, payload: $payload, event: $event, messages: $messages);
+		return ['code' => (string)$optOut['decision']['code'], 'reason' => (string)$optOut['decision']['reason']];
 
-		return [
-			'event' => $event,
-			'messages' => $messages,
-			'refusal' => null,
-		];
-	}//end ingestDeliveryRequest()
+	}//end refuseDelivery()
 
 	/**
 	 * Keep the outbound log row of a personal delivery that was routed.
@@ -3000,26 +3040,7 @@ class EventService implements EventServiceInterface {
 		$caseRef = (string)($payload['caseRef'] ?? '');
 
 		if ($this->sendGate === null) {
-			$send = in_array(strtolower(trim($category)), OptOutCategoriesInterface::FLOOR, true)
-				|| isset(OptOutCategoriesInterface::DEFAULT_ALIASES[strtolower(trim($category))]) === true;
-			$code = 'allowed';
-			$reason = '';
-			if ($send === false) {
-				$code = 'authority-unavailable';
-				$reason = 'The opt-out list is not available, so this delivery was not routed.';
-			}
-
-			$decision = [
-				'send' => $send,
-				'overridden' => false,
-				'code' => $code,
-				'reason' => $reason,
-				'unsubscribe' => null,
-				'address' => $recipient,
-				'category' => $category,
-			];
-
-			return ['decision' => $decision, 'channel' => $channel, 'payload' => $payload];
+			return ['decision' => $this->ungatedDecision(recipient: $recipient, category: $category), 'channel' => $channel, 'payload' => $payload];
 		}
 
 		$decision = $this->sendGate->check(
@@ -3039,6 +3060,36 @@ class EventService implements EventServiceInterface {
 		return ['decision' => $decision, 'channel' => $channel, 'payload' => $payload];
 
 	}//end decideDelivery()
+
+	/**
+	 * The decision for a personal delivery when no opt-out list is wired: only exempt categories go out.
+	 *
+	 * @param string $recipient The recipient address.
+	 * @param string $category The category the payload named.
+	 *
+	 * @return array<string,mixed> A decision shaped like the send gate's.
+	 */
+	private function ungatedDecision(string $recipient, string $category): array {
+		$send = in_array(strtolower(trim($category)), OptOutCategoriesInterface::FLOOR, true)
+			|| isset(OptOutCategoriesInterface::DEFAULT_ALIASES[strtolower(trim($category))]) === true;
+		$code = 'allowed';
+		$reason = '';
+		if ($send === false) {
+			$code = 'authority-unavailable';
+			$reason = 'The opt-out list is not available, so this delivery was not routed.';
+		}
+
+		return [
+			'send' => $send,
+			'overridden' => false,
+			'code' => $code,
+			'reason' => $reason,
+			'unsubscribe' => null,
+			'address' => $recipient,
+			'category' => $category,
+		];
+
+	}//end ungatedDecision()
 
 	/**
 	 * Normalize a Nextcloud-native core event (files/calendar/Tables/Forms)
