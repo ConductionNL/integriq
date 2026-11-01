@@ -1,0 +1,91 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`draftProblems golden > lists the problems of every draft as recorded 1`] = `
+[
+  [
+    "valid",
+    [],
+  ],
+  [
+    "activity id only",
+    [],
+  ],
+  [
+    "no ids",
+    [
+      "Fill in the imow-id or the activity id.",
+    ],
+  ],
+  [
+    "bad imow-id",
+    [
+      "The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen.",
+    ],
+  ],
+  [
+    "padded imow-id",
+    [],
+  ],
+  [
+    "no name",
+    [
+      "Fill in the activity name.",
+    ],
+  ],
+  [
+    "no case types",
+    [
+      "Add at least one case type with a reference.",
+    ],
+  ],
+  [
+    "blank references",
+    [
+      "Add at least one case type with a reference.",
+    ],
+  ],
+  [
+    "one reference",
+    [],
+  ],
+  [
+    "bad samenloop",
+    [
+      "Every samenloop rule needs the imow-id of the other activity.",
+    ],
+  ],
+  [
+    "no samenloop",
+    [],
+  ],
+  [
+    "samenloop without id",
+    [
+      "Every samenloop rule needs the imow-id of the other activity.",
+    ],
+  ],
+  [
+    "everything",
+    [
+      "Fill in the imow-id or the activity id.",
+      "Fill in the activity name.",
+      "Add at least one case type with a reference.",
+      "Every samenloop rule needs the imow-id of the other activity.",
+    ],
+  ],
+  [
+    "bad imow and name",
+    [
+      "The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen.",
+      "Fill in the activity name.",
+    ],
+  ],
+  [
+    "null fields",
+    [
+      "Fill in the imow-id or the activity id.",
+      "Fill in the activity name.",
+    ],
+  ],
+]
+`;
