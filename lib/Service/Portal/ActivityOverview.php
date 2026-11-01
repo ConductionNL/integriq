@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Integriq DSO Activity Overview.
+ * Integriq activity overview.
  *
  * The activity table as a case app's admin page shows it (dossiq VTH): every
  * `dso_activity_mapping` row with when a verzoek last matched it, then the
@@ -10,7 +10,7 @@
  * never writes to the admin table.
  *
  * @category Service
- * @package  OCA\Integriq\Service\Dso
+ * @package  OCA\Integriq\Service\Portal
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,9 +26,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\Dso;
+namespace OCA\Integriq\Service\Portal;
 
-use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
@@ -37,7 +36,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/changes/dso-activity-overview/specs/dso-omgevingsloket/spec.md#requirement-administrators-read-the-activities-with-when-each-last-arrived-req-dso-014
  */
-class DsoActivityOverview implements ActivityOverviewInterface {
+class ActivityOverview implements ActivityOverviewInterface {
 
 	/**
 	 * How many of the latest verzoeken are read for the last arrivals.
@@ -49,14 +48,14 @@ class DsoActivityOverview implements ActivityOverviewInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ORObjectService       $objectService Reads the verzoeken.
-	 * @param DsoActivityTable      $table         Reads the rows.
-	 * @param DsoUnmappedActivities $unmapped      Groups the unmapped activities.
+	 * @param ORObjectService               $objectService Reads the verzoeken.
+	 * @param ActivityMappingTableInterface $table         Reads the rows.
+	 * @param UnmappedActivitiesInterface   $unmapped      Groups the unmapped activities.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
-		private readonly DsoActivityTable $table,
-		private readonly DsoUnmappedActivities $unmapped,
+		private readonly ActivityMappingTableInterface $table,
+		private readonly UnmappedActivitiesInterface $unmapped,
 	) {
 
 	}//end __construct()
@@ -110,7 +109,7 @@ class DsoActivityOverview implements ActivityOverviewInterface {
 	private function lastReceivedByRow(): array {
 		$result = $this->objectService->findAll(
 			config: [
-				'filters' => ['register' => DsoActivityTable::REGISTER, 'schema' => 'dso_verzoek'],
+				'filters' => ['register' => ActivityMappingTableInterface::REGISTER, 'schema' => 'dso_verzoek'],
 				'limit' => self::SCAN_LIMIT,
 				'sort' => ['receivedAt' => 'DESC'],
 			],

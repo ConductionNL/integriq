@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Unit tests for DsoActivityOverview.
+ * Unit tests for ActivityOverview.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Service\Dso
+ * @package  OCA\Integriq\Tests\Unit\Service\Portal
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
@@ -17,13 +17,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service\Dso;
+namespace OCA\Integriq\Tests\Unit\Service\Portal;
 
 use OCA\Integriq\Controller\DsoActivityMappingController;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
-use OCA\Integriq\Service\Dso\DsoActivityOverview;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
+use OCA\Integriq\Service\Portal\ActivityOverview;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -35,7 +35,7 @@ use ReflectionMethod;
 /**
  * Every row with when a verzoek last matched it, then the unmapped activities.
  */
-class DsoActivityOverviewTest extends TestCase {
+class ActivityOverviewTest extends TestCase {
 
 	/**
 	 * The mapping rows.
@@ -111,13 +111,13 @@ class DsoActivityOverviewTest extends TestCase {
 	/**
 	 * The service under test.
 	 *
-	 * @return DsoActivityOverview
+	 * @return ActivityOverview
 	 */
-	private function service(): DsoActivityOverview {
+	private function service(): ActivityOverview {
 		$objectService = $this->objectService();
 		$table = new DsoActivityTable($objectService);
 
-		return new DsoActivityOverview($objectService, $table, new DsoUnmappedActivities($objectService, $table, new DsoActivityMapper($table)));
+		return new ActivityOverview($objectService, $table, new DsoUnmappedActivities($objectService, $table, new DsoActivityMapper($table)));
 	}//end service()
 
 	/**
