@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  * with BANKFEED_SWEEP_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\BankfeedSyncService
+ * @uses   \OCA\Integriq\Service\BankfeedSyncRun
  */
 class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 
