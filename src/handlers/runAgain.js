@@ -32,28 +32,54 @@ export async function runAgain(run) {
 	}
 
 	try {
-		const { data } = await axios.post(
-			generateUrl(
-				`/apps/integriq/api/synchronizations/${encodeURIComponent(synchronizationId)}/run`,
-			),
-			{ triggeredBy: 'rerun' },
-		)
-		const runId = (data && data.runId) || null
-		showSuccess(
-			t(
-				'integriq',
-				'The pull ran again. Select this notice to open the new run.',
-			),
-			{
-				onClick: () => openRun(runId),
-			},
-		)
-		return runId
+		const { data } = await axios.post(rerunUrl(synchronizationId), {
+			triggeredBy: 'rerun',
+		})
+		return announceRerun(data)
 	} catch (error) {
-		const reason = error?.response?.data?.error || error?.message || ''
-		showError(t('integriq', 'The pull did not run again: {reason}', { reason }))
+		showError(rerunFailureText(error))
 		return null
 	}
+}
+
+/**
+ * The run endpoint of a synchronization.
+ *
+ * @param {string} synchronizationId The synchronization to run.
+ * @return {string} The URL.
+ */
+function rerunUrl(synchronizationId) {
+	return generateUrl(
+		`/apps/integriq/api/synchronizations/${encodeURIComponent(synchronizationId)}/run`,
+	)
+}
+
+/**
+ * Tell the user the pull ran again; selecting the notice opens the new run.
+ *
+ * @param {object|undefined} data The run response.
+ * @return {string|null} The new run's id, or null when the response names none.
+ */
+function announceRerun(data) {
+	const runId = (data && data.runId) || null
+	showSuccess(
+		t('integriq', 'The pull ran again. Select this notice to open the new run.'),
+		{
+			onClick: () => openRun(runId),
+		},
+	)
+	return runId
+}
+
+/**
+ * The notice after a failed rerun, with the server's or the transport's reason.
+ *
+ * @param {object} error The rejection of the run request.
+ * @return {string} The notice text.
+ */
+function rerunFailureText(error) {
+	const reason = error?.response?.data?.error || error?.message || ''
+	return t('integriq', 'The pull did not run again: {reason}', { reason })
 }
 
 /**
