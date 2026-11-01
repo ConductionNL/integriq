@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\DeliveryRequestedEvent;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -52,13 +52,13 @@ class DeliveryRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService The CloudEvents pipeline entry point.
+	 * @param EventServiceInterface $eventService The CloudEvents pipeline entry point.
 	 * @param LoggerInterface $logger Logger for ingest failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

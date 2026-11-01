@@ -23,10 +23,10 @@ use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
 use OCA\Integriq\BackgroundJob\ProcessEventJob;
-use OCA\Integriq\Broker\BrokerCredentialResolver;
+use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
-use OCA\Integriq\Broker\BrokerTransportRegistry;
-use OCA\Integriq\Broker\CloudEventHttpBinding;
+use OCA\Integriq\Broker\BrokerTransportRegistryInterface;
+use OCA\Integriq\Broker\CloudEventHttpBindingInterface;
 use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Event\DeliveryConcludedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
@@ -35,18 +35,22 @@ use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\Event\EventLoopGuard;
+use OCA\Integriq\Service\Event\PushDelivery;
+use OCA\Integriq\Service\Event\MappingActionDispatch;
 use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\Event\ActionDelivery;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use OCA\Integriq\Outbound\Identity\OptOutCategories;
-use OCA\Integriq\Outbound\OutboundSendGate;
+use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
+use OCA\Integriq\Outbound\OutboundSendGateInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
@@ -86,7 +90,7 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
  */
-class EventService {
+class EventService implements EventServiceInterface {
 	/**
 	 * Base backoff interval in seconds for the first retry.
 	 *
@@ -109,28 +113,17 @@ class EventService {
 	private const RETRY_CAP_SECONDS = 21600;
 
 	/**
-	 * Default maximum number of delivery attempts before a message reaches
-	 * terminal `abandoned`, used when a subscription declares no
-	 * `retryPolicy.maxRetries` override.
+	 * Log prefix of an action dispatch whose run threw, per action kind.
 	 *
-	 * @var integer
-	 *
-	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
+	 * @var array<string, string>
 	 */
-	private const DEFAULT_MAX_RETRIES = 5;
-
-	/**
-	 * Source prefix used by every `nextcloud-event-triggers` NC-native
-	 * producer (`/nextcloud/files`, `/nextcloud/calendar`, `/nextcloud/tables`,
-	 * `/nextcloud/forms`) — distinct from the pre-existing `/objects/<type>`
-	 * prefix OR-object events use, so provenance filtering never collides
-	 * with the shared `com.nextcloud.` TYPE prefix both namespaces use.
-	 *
-	 * @var string
-	 *
-	 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
-	 */
-	public const NEXTCLOUD_SOURCE_PREFIX = '/nextcloud/';
+	private const ACTION_RUN_FAILURES = [
+		'synchronization' => 'Failed to run synchronization action for event message: ',
+		'job' => 'Failed to run job action for event message: ',
+		'flow' => 'Failed to run flow action for event message: ',
+		'notificaties' => 'Failed to publish notificaties action for event message: ',
+		'broker' => 'Failed to dispatch broker action for event message: ',
+	];
 
 	/**
 	 * CloudEvents `type` for cross-app delivery requests ingested through the
@@ -181,7 +174,7 @@ class EventService {
 	 *                                               provenance-carrying delivery reaches a terminal
 	 *                                               state (ADR-041 seam). Nullable + defaulted for
 	 *                                               the same test-compatibility reason as above.
-	 * @param BrokerTransportRegistry|null $brokerRegistry The broker transports this instance has, for
+	 * @param BrokerTransportRegistryInterface|null $brokerRegistry The broker transports this instance has, for
 	 *                                                     `action.kind = 'broker'` (REQ-013). Nullable +
 	 *                                                     defaulted for the same test-compatibility reason
 	 *                                                     as above; null means no broker is wired, which
@@ -195,7 +188,7 @@ class EventService {
 	 * @param IJobList|null                 $jobList           Queues the fan-out of an object write's CloudEvent
 	 *                                                        ({@see ProcessEventJob}). Null (unit tests that
 	 *                                                        predate it) fans out inline as before.
-	 * @param OutboundSendGate|null         $sendGate          Asks the opt-out list before a delivery that names
+	 * @param OutboundSendGateInterface|null         $sendGate          Asks the opt-out list before a delivery that names
 	 *                                                        a personal recipient (opt-out-before-send). Null
 	 *                                                        (unit tests that predate it) answers such a
 	 *                                                        delivery closed unless its category is exempt.
@@ -220,11 +213,11 @@ class EventService {
 		private readonly ?FormsSyncAdapter $formsSyncAdapter = null,
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
-		private readonly ?BrokerTransportRegistry $brokerRegistry = null,
+		private readonly ?BrokerTransportRegistryInterface $brokerRegistry = null,
 		?EgressGuard $egressGuard = null,
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
 		private readonly ?IJobList $jobList = null,
-		private readonly ?OutboundSendGate $sendGate = null,
+		private readonly ?OutboundSendGateInterface $sendGate = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
@@ -654,184 +647,48 @@ class EventService {
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
 	 */
 	public function deliverMessage(ObjectEntity $message, ?ExecutionTraceContext $trace = null): bool {
-		$callStepStart = microtime(true);
-		$signed = null;
+		$delivery = new PushDelivery(message: $message, trace: $trace);
 
 		try {
-			$messageData = $message->getObject();
-			$subscriptionId = ($messageData['subscription'] ?? null);
-
-			if ($subscriptionId === null) {
+			if ($this->loadPushSubscription(delivery: $delivery) === false) {
 				return false;
 			}
 
-			// System context (ocon#147): `protocolSettings` is `writeOnly`, so a
-			// rendered read returns the subscription WITHOUT its signingSecret and
-			// headers. This is the delivery engine reading a subscription in order
-			// to sign an outbound push — not a user reading it — so it reads in
-			// system context exactly as CallService reads a source's credential.
-			//
-			// `_render: false` IS THE LOAD-BEARING ARGUMENT, not `_rbac: false`
-			// (ocon#215, openregister#389/#429). The writeOnly strip stopped being
-			// rbac-gated: RenderObject::renderEntity() computes
-			// `$doWriteOnly = $schema->hasWriteOnlyProperties()` and strips on that
-			// alone — admins, `_rbac: false` and SystemOperationContext included
-			// (only the property-`authorization` strip is still rbac-gated). So
-			// `_rbac: false` ALONE no longer preserves protocolSettings, and every
-			// push was silently going out UNSIGNED. Only `_render: false`, which
-			// returns the entity before renderEntity() is ever reached, keeps it.
-			// `$subscriptionId` holds the message's `subscription` uuid FK; the
-			// `(string)` cast is defensive (find() signs for a string $id).
-			$subscription = $this->objectService->find(
-				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			);
+			$this->buildPushRequest(delivery: $delivery);
 
-			if ($subscription === null) {
-				return false;
-			}
-
-			$subscriptionData = $subscription->getObject();
-
-			if (($subscriptionData['style'] ?? '') !== 'push') {
-				return false;
-			}
-
-			// Serialize the body exactly once; the signature (when configured)
-			// covers these exact bytes.
-			$rawBody = json_encode($messageData['payload'] ?? []);
-
-			$headers = [
-				'Content-Type' => 'application/cloudevents+json',
-				...($subscriptionData['protocolSettings']['headers'] ?? []),
-			];
-
-			// REQ-SOW-001: `unsigned` (a decision with a reason on it) wins over a
-			// secret left from before, the same rule SubscriptionSigningPolicy::isSigned()
-			// reads for the list, so the list and the wire never disagree.
-			$signingSecret = ($subscriptionData['protocolSettings']['signingSecret'] ?? null);
-			$signed = ($signingSecret !== null && $signingSecret !== ''
-				&& array_key_exists('unsigned', (array)($subscriptionData['protocolSettings'] ?? [])) === false);
-			if ($signed === true) {
-				// A signing failure must surface as a failed attempt, not an
-				// unsigned send: let any exception propagate to the failure path.
-				$previousSecret = null;
-				if ($this->signatureService->isRotationGraceActive(
-					secretRotatedAt: ($subscriptionData['protocolSettings']['secretRotatedAt'] ?? null)
-				) === true
-				) {
-					$previousSecret = ($subscriptionData['protocolSettings']['previousSigningSecret'] ?? null);
-				}
-
-				$headers['X-OpenConnector-Signature'] = $this->signatureService->sign(
-					rawBody: $rawBody,
-					secret: $signingSecret,
-					previousSecret: $previousSecret
-				);
-				$headers['X-OpenConnector-Event-Id'] = $message->getUuid();
-			}
-
-			// Egress guard (integriq#2212, hydra ADR-067 decision 3): the sink is
-			// judged here, at the one place a push leaves the instance, because a
-			// subscription can be written through the object API as well as the
-			// subscribe route. A refusal is abandoned at once: retrying it only
-			// repeats the refusal.
-			$refusal = $this->refuseUnsafeSink(message: $message, subscriptionData: $subscriptionData);
+		// Egress guard (integriq#2212, hydra ADR-067 decision 3): the sink is
+		// judged here, at the one place a push leaves the instance, because a
+		// subscription can be written through the object API as well as the
+		// subscribe route. A refusal is abandoned at once: retrying it only
+		// repeats the refusal.
+			$refusal = $this->refuseUnsafeSink(message: $message, subscriptionData: $delivery->subscriptionData);
 			if ($refusal !== null) {
 				return false;
 			}
 
-			$client = $this->clientService->newClient();
-			$response = $client->post(
-				$subscriptionData['sink'],
+			$response = $this->clientService->newClient()->post(
+				$delivery->subscriptionData['sink'],
 				[
-					'body' => $rawBody,
-					'headers' => $headers,
+					'body' => $delivery->rawBody,
+					'headers' => $delivery->headers,
 					'timeout' => 30,
 				]
 			);
-
-			// Execution-trace REQ-002/REQ-003: this dispatch bypasses
-			// CallService (it uses IClientService directly), so it must
-			// redact and record its own `call` step rather than relying on
-			// CallService's already-redacted output.
-			if ($trace !== null) {
-				$sensitiveFieldRegistry = new SensitiveFieldRegistry();
-
-				$callStepStatus = 'success';
-				if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-					$callStepStatus = 'error';
-				}
-
-				$callStepInput = $sensitiveFieldRegistry->redactArray(
-					data: [
-						'url' => ($subscriptionData['sink'] ?? null),
-						'method' => 'POST',
-						'headers' => $headers,
-					]
-				);
-				$callStepOutput = $sensitiveFieldRegistry->redactArray(
-					data: [
-						'statusCode' => $response->getStatusCode(),
-						'headers' => $response->getHeaders(),
-					]
-				);
-
-				$trace->addStep(
-					type: 'call',
-					name: ($subscriptionData['name'] ?? $subscriptionData['sink'] ?? 'webhook'),
-					timing: null,
-					status: $callStepStatus,
-					input: $callStepInput,
-					output: $callStepOutput,
-					startedAtMicrotime: $callStepStart,
-					finishedAtMicrotime: microtime(true),
-				);
-			}//end if
+			$this->tracePushCall(delivery: $delivery, response: $response);
 
 			if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-				$now = (new DateTime())->format('c');
-				$priorAttempts = (array)($messageData['attempts'] ?? []);
-				$messageData['status'] = 'delivered';
-				$messageData['deliveredAt'] = $now;
-				$messageData['lastAttempt'] = $now;
-				$messageData['nextAttempt'] = null;
-				$messageData['deliveryResponse'] = [
-					'statusCode' => $response->getStatusCode(),
-					'body' => $response->getBody(),
-				];
-				$messageData['attempts'] = $this->appendAttempt(
-					attempts: $priorAttempts,
-					at: $now,
-					statusCode: $response->getStatusCode(),
-					error: null,
-					signed: $signed
-				);
-				$this->objectService->saveObject(
-					object: $messageData,
-					register: 'integriq',
-					schema: 'event_message',
-					uuid: $message->getUuid(),
-					// System context: see processEvent().
-					_rbac: false,
-					_multitenancy: false
-				);
+				$this->markPushDelivered(delivery: $delivery, response: $response);
 				return true;
-			}//end if
+			}
 
 			$statusCode = $response->getStatusCode();
-			$retryAfter = $this->parseRetryAfter(header: $response->getHeader('Retry-After'));
 			$this->recordFailure(
 				message: $message,
 				error: 'Delivery failed with status code: ' . $statusCode,
 				statusCode: $statusCode,
-				retryAfter: $retryAfter,
-				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $subscriptionData),
-				signed: $signed
+				retryAfter: $this->parseRetryAfter(header: $response->getHeader('Retry-After')),
+				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData),
+				signed: $delivery->signed
 			);
 
 			return false;
@@ -862,23 +719,223 @@ class EventService {
 				]
 			);
 
-			// $subscriptionData may be undefined when the exception was thrown
-			// before it was resolved (e.g. signing failure occurs after the
-			// subscription lookup, so it is always available here in practice,
-			// but defend against a future early-throw regardless).
+			// The subscription data is empty when the exception was thrown before it was read.
 			$this->recordFailure(
 				message: $message,
 				error: $e->getMessage(),
 				statusCode: null,
 				retryAfter: null,
-				retryPolicy: $this->resolveRetryPolicy(subscriptionData: ($subscriptionData ?? [])),
-				signed: $signed
+				retryPolicy: $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData),
+				signed: $delivery->signed
 			);
 
 			return false;
 		}//end try
 
 	}//end deliverMessage()
+
+	/**
+	 * Reads the message's subscription onto the delivery.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt.
+	 *
+	 * @return bool True when the message names an existing push subscription.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
+	 */
+	private function loadPushSubscription(PushDelivery $delivery): bool {
+		$delivery->messageData = $delivery->message->getObject();
+		$subscriptionId = ($delivery->messageData['subscription'] ?? null);
+
+		if ($subscriptionId === null) {
+			return false;
+		}
+
+		// System context (ocon#147): `protocolSettings` is `writeOnly`, so a
+		// rendered read returns the subscription WITHOUT its signingSecret and
+		// headers. This is the delivery engine reading a subscription in order
+		// to sign an outbound push — not a user reading it — so it reads in
+		// system context exactly as CallService reads a source's credential.
+		//
+		// `_render: false` IS THE LOAD-BEARING ARGUMENT, not `_rbac: false`
+		// (ocon#215, openregister#389/#429). The writeOnly strip stopped being
+		// rbac-gated: RenderObject::renderEntity() computes
+		// `$doWriteOnly = $schema->hasWriteOnlyProperties()` and strips on that
+		// alone — admins, `_rbac: false` and SystemOperationContext included
+		// (only the property-`authorization` strip is still rbac-gated). So
+		// `_rbac: false` ALONE no longer preserves protocolSettings, and every
+		// push was silently going out UNSIGNED. Only `_render: false`, which
+		// returns the entity before renderEntity() is ever reached, keeps it.
+		// `$subscriptionId` holds the message's `subscription` uuid FK; the
+		// `(string)` cast is defensive (find() signs for a string $id).
+		$subscription = $this->objectService->find(
+			id: (string)$subscriptionId,
+			register: 'integriq',
+			schema: 'event_subscription',
+			_rbac: false,
+			_multitenancy: false,
+			_render: false
+		);
+
+		if ($subscription === null) {
+			return false;
+		}
+
+		$delivery->subscriptionData = $subscription->getObject();
+
+		return (($delivery->subscriptionData['style'] ?? '') === 'push');
+	}//end loadPushSubscription()
+
+	/**
+	 * Builds the push body and headers, and signs the body when the subscription asks for it.
+	 *
+	 * A signing failure throws, so it surfaces as a failed attempt rather than an unsigned send.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt, with its subscription read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
+	 */
+	private function buildPushRequest(PushDelivery $delivery): void {
+		$subscriptionData = $delivery->subscriptionData;
+
+		// Serialize the body exactly once; the signature (when configured)
+		// covers these exact bytes.
+		$delivery->rawBody = json_encode($delivery->messageData['payload'] ?? []);
+
+		$delivery->headers = [
+			'Content-Type' => 'application/cloudevents+json',
+			...($subscriptionData['protocolSettings']['headers'] ?? []),
+		];
+
+		// REQ-SOW-001: `unsigned` (a decision with a reason on it) wins over a
+		// secret left from before, the same rule SubscriptionSigningPolicy::isSigned()
+		// reads for the list, so the list and the wire never disagree.
+		$signingSecret = ($subscriptionData['protocolSettings']['signingSecret'] ?? null);
+		$delivery->signed = ($signingSecret !== null && $signingSecret !== ''
+			&& array_key_exists('unsigned', (array)($subscriptionData['protocolSettings'] ?? [])) === false);
+		if ($delivery->signed === false) {
+			return;
+		}
+
+		$delivery->headers['X-OpenConnector-Signature'] = $this->signatureService->sign(
+			rawBody: $delivery->rawBody,
+			secret: $signingSecret,
+			previousSecret: $this->previousSigningSecret(subscriptionData: $subscriptionData)
+		);
+		$delivery->headers['X-OpenConnector-Event-Id'] = $delivery->message->getUuid();
+	}//end buildPushRequest()
+
+	/**
+	 * The previous signing secret, while the rotation grace period of the current one runs.
+	 *
+	 * @param array $subscriptionData The subscription's object data.
+	 *
+	 * @return string|null The previous secret, or null outside the grace period.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
+	 */
+	private function previousSigningSecret(array $subscriptionData): ?string {
+		if ($this->signatureService->isRotationGraceActive(
+			secretRotatedAt: ($subscriptionData['protocolSettings']['secretRotatedAt'] ?? null)
+		) === false
+		) {
+			return null;
+		}
+
+		return ($subscriptionData['protocolSettings']['previousSigningSecret'] ?? null);
+	}//end previousSigningSecret()
+
+	/**
+	 * Records the push as a redacted `call` step on the delivery's trace, if it has one.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt.
+	 * @param IResponse    $response The sink's response.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
+	 */
+	private function tracePushCall(PushDelivery $delivery, IResponse $response): void {
+		// Execution-trace REQ-002/REQ-003: this dispatch bypasses
+		// CallService (it uses IClientService directly), so it must
+		// redact and record its own `call` step rather than relying on
+		// CallService's already-redacted output.
+		if ($delivery->trace === null) {
+			return;
+		}
+
+		$sensitiveFieldRegistry = new SensitiveFieldRegistry();
+		$subscriptionData = $delivery->subscriptionData;
+
+		$callStepStatus = 'success';
+		if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
+			$callStepStatus = 'error';
+		}
+
+		$delivery->trace->addStep(
+			type: 'call',
+			name: ($subscriptionData['name'] ?? $subscriptionData['sink'] ?? 'webhook'),
+			timing: null,
+			status: $callStepStatus,
+			input: $sensitiveFieldRegistry->redactArray(
+				data: [
+					'url' => ($subscriptionData['sink'] ?? null),
+					'method' => 'POST',
+					'headers' => $delivery->headers,
+				]
+			),
+			output: $sensitiveFieldRegistry->redactArray(
+				data: [
+					'statusCode' => $response->getStatusCode(),
+					'headers' => $response->getHeaders(),
+				]
+			),
+			startedAtMicrotime: $delivery->startedAt,
+			finishedAtMicrotime: microtime(true),
+		);
+	}//end tracePushCall()
+
+	/**
+	 * Saves the message as delivered, with the sink's response and one more attempt.
+	 *
+	 * @param PushDelivery $delivery The delivery attempt.
+	 * @param IResponse    $response The sink's 2xx response.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
+	 */
+	private function markPushDelivered(PushDelivery $delivery, IResponse $response): void {
+		$now = (new DateTime())->format('c');
+		$messageData = $delivery->messageData;
+		$priorAttempts = (array)($messageData['attempts'] ?? []);
+		$messageData['status'] = 'delivered';
+		$messageData['deliveredAt'] = $now;
+		$messageData['lastAttempt'] = $now;
+		$messageData['nextAttempt'] = null;
+		$messageData['deliveryResponse'] = [
+			'statusCode' => $response->getStatusCode(),
+			'body' => $response->getBody(),
+		];
+		$messageData['attempts'] = $this->appendAttempt(
+			attempts: $priorAttempts,
+			at: $now,
+			statusCode: $response->getStatusCode(),
+			error: null,
+			signed: $delivery->signed
+		);
+		$this->objectService->saveObject(
+			object: $messageData,
+			register: 'integriq',
+			schema: 'event_message',
+			uuid: $delivery->message->getUuid(),
+			// System context: see processEvent().
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end markPushDelivered()
 
 	/**
 	 * Resolve a subscription's effective retry policy, falling back to the
@@ -1232,54 +1289,30 @@ class EventService {
 			$actionArray = $action;
 		}
 
+		$delivery = new ActionDelivery(message: $message, subscriptionData: $subscriptionData, action: $actionArray, trace: $trace);
+
 		switch ($kind) {
 			case 'webhook':
 				// Unchanged REQ-002 behaviour: deliverMessage resolves the
 				// subscription itself (accepted minor redundant find()).
 				return $this->deliverMessage(message: $message, trace: $trace);
 			case 'synchronization':
-				return $this->dispatchSynchronizationAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray,
-					trace: $trace
-				);
+				return $this->dispatchSynchronizationAction(delivery: $delivery);
 
 			case 'job':
-				return $this->dispatchJobAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray,
-					trace: $trace
-				);
+				return $this->dispatchJobAction(delivery: $delivery);
 
 			case 'notificaties':
-				return $this->dispatchNotificationsAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchNotificationsAction(delivery: $delivery);
 
 			case 'flow':
-				return $this->dispatchFlowAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchFlowAction(delivery: $delivery);
 
 			case 'mapping':
-				return $this->dispatchMappingAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchMappingAction(delivery: $delivery);
 
 			case 'broker':
-				return $this->dispatchBrokerAction(
-					message: $message,
-					subscriptionData: $subscriptionData,
-					action: $actionArray
-				);
+				return $this->dispatchBrokerAction(delivery: $delivery);
 
 			default:
 				// Unrecognised action.kind: a configuration error, not a
@@ -1334,84 +1367,29 @@ class EventService {
 	 * so the message is subject to the same retry/backoff/dead-letter/replay
 	 * machinery as a webhook delivery.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, synchronizationId}`).
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, forwarded into
-	 *                                          `SynchronizationService::synchronize()`
-	 *                                          (execution-trace REQ-001/REQ-002).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, synchronizationId}`) and the active trace.
 	 *
 	 * @return boolean True when the synchronization ran successfully.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 */
-	private function dispatchSynchronizationAction(
-		ObjectEntity $message,
-		array $subscriptionData,
-		array $action,
-		?ExecutionTraceContext $trace = null,
-	): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$synchronizationId = (string)($action['synchronizationId'] ?? '');
-
-		if ($synchronizationId === '') {
-			$this->recordFailure(
-				message: $message,
-				error: 'synchronization not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}
-
-		try {
-			$synchronization = $this->objectService->find(
-				id: $synchronizationId,
-				register: 'integriq',
-				schema: 'synchronization'
-			);
-		} catch (\Throwable $e) {
-			$synchronization = null;
-		}
-
+	private function dispatchSynchronizationAction(ActionDelivery $delivery): bool {
+		$synchronization = $this->findActionTarget(
+			id: (string)($delivery->action['synchronizationId'] ?? ''),
+			schema: 'synchronization'
+		);
 		if ($synchronization === null) {
-			$this->recordFailure(
-				message: $message,
-				error: 'synchronization not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
+			return $this->failAction(delivery: $delivery, error: 'synchronization not found');
 		}
 
 		try {
-			$this->synchronizationService->synchronize(synchronization: $synchronization, trace: $trace);
+			$this->synchronizationService->synchronize(synchronization: $synchronization, trace: $delivery->trace);
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				'Failed to run synchronization action for event message: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-					// NOT 'message': Nextcloud's logger treats a `message`
-					// key in the CONTEXT as the log message itself, so an
-					// array here makes OC\Log::getLogLevel() receive an
-					// array and throw — the error handler fatals, turning a
-					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
-				]
-			);
-			$this->recordFailure(
-				message: $message,
-				error: $e->getMessage(),
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}//end try
+			return $this->failActionRun(delivery: $delivery, exception: $e);
+		}
 
-		$this->recordDeliverySuccess(message: $message);
+		$this->recordDeliverySuccess(message: $delivery->message);
 		return true;
 	}//end dispatchSynchronizationAction()
 
@@ -1422,73 +1400,24 @@ class EventService {
 	 * and returns it, so success/failure here is read from that log entry's
 	 * `level` field (`SUCCESS` vs anything else).
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, jobId}`).
-	 * @param ExecutionTraceContext|null $trace The active execution trace context, forwarded into
-	 *                                          `JobService::executeJob()` (execution-trace
-	 *                                          REQ-001/REQ-002).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, jobId}`) and the active trace.
 	 *
 	 * @return boolean True when the job ran successfully.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 */
-	private function dispatchJobAction(ObjectEntity $message, array $subscriptionData, array $action, ?ExecutionTraceContext $trace = null): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$jobId = (string)($action['jobId'] ?? '');
-
-		if ($jobId === '') {
-			$this->recordFailure(
-				message: $message,
-				error: 'job not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}
-
-		try {
-			$job = $this->objectService->find(id: $jobId, register: 'integriq', schema: 'job');
-		} catch (\Throwable $e) {
-			$job = null;
-		}
-
+	private function dispatchJobAction(ActionDelivery $delivery): bool {
+		$job = $this->findActionTarget(id: (string)($delivery->action['jobId'] ?? ''), schema: 'job');
 		if ($job === null) {
-			$this->recordFailure(
-				message: $message,
-				error: 'job not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
+			return $this->failAction(delivery: $delivery, error: 'job not found');
 		}
 
 		try {
-			$log = $this->jobService->executeJob(job: $job, forceRun: true, trace: $trace);
+			$log = $this->jobService->executeJob(job: $job, forceRun: true, trace: $delivery->trace);
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				'Failed to run job action for event message: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-					// NOT 'message': Nextcloud's logger treats a `message`
-					// key in the CONTEXT as the log message itself, so an
-					// array here makes OC\Log::getLogLevel() receive an
-					// array and throw — the error handler fatals, turning a
-					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
-				]
-			);
-			$this->recordFailure(
-				message: $message,
-				error: $e->getMessage(),
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}//end try
+			return $this->failActionRun(delivery: $delivery, exception: $e);
+		}
 
 		$level = 'SUCCESS';
 		if ($log !== null) {
@@ -1496,17 +1425,10 @@ class EventService {
 		}
 
 		if ($level !== 'SUCCESS') {
-			$this->recordFailure(
-				message: $message,
-				error: 'job execution reported level ' . $level,
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
+			return $this->failAction(delivery: $delivery, error: 'job execution reported level ' . $level);
 		}
 
-		$this->recordDeliverySuccess(message: $message);
+		$this->recordDeliverySuccess(message: $delivery->message);
 		return true;
 	}//end dispatchJobAction()
 
@@ -1527,90 +1449,131 @@ class EventService {
 	 * matching in {@see doesEventMatchSubscription}; `action.flowId`
 	 * selects which flow runs once matched.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, flowId}`).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, flowId}`) and the active trace.
 	 *
 	 * @return boolean True when the flow run ended in a non-error terminal status.
 	 *
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
 	 */
-	private function dispatchFlowAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$flowId = (string)($action['flowId'] ?? '');
-
-		if ($flowId === '') {
-			$this->recordFailure(
-				message: $message,
-				error: 'flow not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}
-
-		try {
-			$flow = $this->flowRunnerService->findFlow(id: $flowId);
-		} catch (\Throwable $e) {
-			$flow = null;
-		}
-
+	private function dispatchFlowAction(ActionDelivery $delivery): bool {
+		$flow = $this->findActionFlow(flowId: (string)($delivery->action['flowId'] ?? ''));
 		if ($flow === null) {
-			$this->recordFailure(
-				message: $message,
-				error: 'flow not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
+			return $this->failAction(delivery: $delivery, error: 'flow not found');
 		}
 
 		try {
 			$flowRun = $this->flowRunnerService->run(
 				flow: $flow,
-				input: ($message->getObject()['payload'] ?? []),
+				input: ($delivery->message->getObject()['payload'] ?? []),
 				triggerSource: 'event'
 			);
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				'Failed to run flow action for event message: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-					// NOT 'message': Nextcloud's logger treats a `message`
-					// key in the CONTEXT as the log message itself, so an
-					// array here makes OC\Log::getLogLevel() receive an
-					// array and throw — the error handler fatals, turning a
-					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
-				]
-			);
-			$this->recordFailure(
-				message: $message,
-				error: $e->getMessage(),
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}//end try
+			return $this->failActionRun(delivery: $delivery, exception: $e);
+		}
 
 		$status = (string)($flowRun->getObject()['status'] ?? '');
 		if ($status === 'failed' || $status === 'stopped') {
-			$this->recordFailure(
-				message: $message,
-				error: 'flow run ended with status ' . $status,
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
+			return $this->failAction(delivery: $delivery, error: 'flow run ended with status ' . $status);
 		}
 
-		$this->recordDeliverySuccess(message: $message);
+		$this->recordDeliverySuccess(message: $delivery->message);
 		return true;
 	}//end dispatchFlowAction()
+
+	/**
+	 * Record a retryable failure of an action delivery under the
+	 * subscription's retry policy.
+	 *
+	 * @param ActionDelivery $delivery The action delivery that failed.
+	 * @param string $error The human-readable failure reason.
+	 *
+	 * @return false Always, so a dispatcher can return it.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+	 */
+	private function failAction(ActionDelivery $delivery, string $error): bool {
+		$this->recordFailure(
+			message: $delivery->message,
+			error: $error,
+			statusCode: null,
+			retryAfter: null,
+			retryPolicy: $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData)
+		);
+		return false;
+	}//end failAction()
+
+	/**
+	 * Log an action run that threw and record it as a retryable failure.
+	 *
+	 * @param ActionDelivery $delivery The action delivery whose run threw.
+	 * @param \Throwable $exception What the run threw.
+	 *
+	 * @return false Always, so a dispatcher can return it.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+	 */
+	private function failActionRun(ActionDelivery $delivery, \Throwable $exception): bool {
+		$prefix = (self::ACTION_RUN_FAILURES[(string)($delivery->action['kind'] ?? '')] ?? 'Failed to run action for event message: ');
+		$this->logger->error(
+			$prefix . $exception->getMessage(),
+			[
+				'exception' => $exception,
+				// NOT 'message': Nextcloud's logger treats a `message` key in
+				// the CONTEXT as the log message itself, so an array here makes
+				// OC\Log::getLogLevel() receive an array and throw.
+				'eventMessage' => $delivery->message->jsonSerialize(),
+			]
+		);
+		return $this->failAction(delivery: $delivery, error: $exception->getMessage());
+	}//end failActionRun()
+
+	/**
+	 * Resolve the synchronization or job an action names, tolerating a
+	 * missing or unresolvable id.
+	 *
+	 * @param string $id The OR object id named by the action.
+	 * @param string $schema The OpenRegister schema slug (`'synchronization'` or `'job'`).
+	 *
+	 * @return ObjectEntity|null The resolved object, or null when not found.
+	 *
+	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+	 */
+	private function findActionTarget(string $id, string $schema): ?ObjectEntity {
+		if ($id === '') {
+			return null;
+		}
+
+		try {
+			return $this->objectService->find(id: $id, register: 'integriq', schema: $schema);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+	}//end findActionTarget()
+
+	/**
+	 * Resolve the flow a `flow` action names, tolerating a missing or
+	 * unresolvable id.
+	 *
+	 * @param string $flowId The `action.flowId`.
+	 *
+	 * @return ObjectEntity|null The resolved flow, or null when not found.
+	 *
+	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
+	 */
+	private function findActionFlow(string $flowId): ?ObjectEntity {
+		if ($flowId === '') {
+			return null;
+		}
+
+		try {
+			return $this->flowRunnerService->findFlow(id: $flowId);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+	}//end findActionFlow()
 
 	/**
 	 * Dispatch an `action.kind = 'notificaties'` message: resolve the target
@@ -1623,47 +1586,39 @@ class EventService {
 	 * invoked for this kind (no direct webhook POST — the notification body
 	 * IS the request).
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block (`{kind, sourceId, kanaal,
-	 *                      hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block
+	 *                                 (`{kind, sourceId, kanaal, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`)
+	 *                                 and the active trace.
 	 *
 	 * @return boolean True when the notification was published successfully.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-a-publish-action-missing-kanaal-is-a-configuration-error-not-a-transient-failure-req-006
 	 */
-	private function dispatchNotificationsAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-		$channel = (string)($action['channel'] ?? '');
+	private function dispatchNotificationsAction(ActionDelivery $delivery): bool {
+		$channel = (string)($delivery->action['channel'] ?? '');
 
 		if ($channel === '') {
 			// Configuration error (REQ-006), NOT a transient failure — fails
 			// once without entering the retry loop, mirroring the
 			// "unrecognised action.kind" treatment above.
 			$this->recordConfigurationError(
-				message: $message,
+				message: $delivery->message,
 				error: "action.kanaal is required for action.kind='notificaties'"
 			);
 			return false;
 		}
 
-		$source = $this->findNotificationsSource(sourceId: (string)($action['sourceId'] ?? ''));
+		$source = $this->findNotificationsSource(sourceId: (string)($delivery->action['sourceId'] ?? ''));
 		if ($source === null) {
 			// Unresolvable sourceId is retryable (the Source may be created
 			// or corrected later) — same treatment as an unresolvable
 			// synchronizationId/jobId above.
-			$this->recordFailure(
-				message: $message,
-				error: 'source not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
+			return $this->failAction(delivery: $delivery, error: 'source not found');
 		}
 
-		$messageData = $message->getObject();
+		$messageData = $delivery->message->getObject();
 		// Read the UUID FK `event`; `eventId` is the legacy integer column and is
 		// no longer written (see createEventMessage()). Falls back to it so any
 		// pre-existing row still resolves.
@@ -1671,17 +1626,10 @@ class EventService {
 			eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
 		);
 		if ($event === null) {
-			$this->recordFailure(
-				message: $message,
-				error: 'event not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
+			return $this->failAction(delivery: $delivery, error: 'event not found');
 		}
 
-		$body = NotificatiesSubscriberService::buildNotificationBody(event: $event, action: $action);
+		$body = NotificatiesSubscriberService::buildNotificationBody(event: $event, action: $delivery->action);
 
 		try {
 			$callLog = $this->callService->call(
@@ -1691,42 +1639,23 @@ class EventService {
 				config: ['json' => $body]
 			);
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				'Failed to publish notificaties action for event message: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-					// NOT 'message': Nextcloud's logger treats a `message`
-					// key in the CONTEXT as the log message itself, so an
-					// array here makes OC\Log::getLogLevel() receive an
-					// array and throw — the error handler fatals, turning a
-					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
-				]
-			);
-			$this->recordFailure(
-				message: $message,
-				error: $e->getMessage(),
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}//end try
+			return $this->failActionRun(delivery: $delivery, exception: $e);
+		}
 
 		$callLogData = $callLog->getObject();
 		$statusCode = (int)($callLogData['statusCode'] ?? 0);
 
 		if ($statusCode >= 200 && $statusCode < 300) {
-			$this->recordDeliverySuccess(message: $message);
+			$this->recordDeliverySuccess(message: $delivery->message);
 			return true;
 		}
 
 		$this->recordFailure(
-			message: $message,
+			message: $delivery->message,
 			error: 'Notificaties publish failed with status code: ' . $statusCode,
 			statusCode: $statusCode,
 			retryAfter: null,
-			retryPolicy: $retryPolicy
+			retryPolicy: $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData)
 		);
 		return false;
 	}//end dispatchNotificatiesAction()
@@ -1801,51 +1730,100 @@ class EventService {
 	 * `notificaties` branches, so retry/backoff/dead-letter/replay all apply
 	 * unchanged. Never invokes `deliverMessage`/webhook-signing.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block
-	 *                      (`{kind, mappingId, sourceId, endpoint, method?}`).
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block (`{kind, mappingId, sourceId, endpoint, method?}`) and the active trace.
 	 *
 	 * @return boolean True when the mapped call succeeded.
 	 *
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
 	 */
-	private function dispatchMappingAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+	private function dispatchMappingAction(ActionDelivery $delivery): bool {
+		$run = new MappingActionDispatch(message: $delivery->message, action: $delivery->action);
+		$run->retryPolicy = $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData);
 
-		$mappingId = (string)($action['mappingId'] ?? '');
-		$sourceId = (string)($action['sourceId'] ?? '');
-
-		$mapping = null;
-		if ($mappingId !== '') {
-			$mapping = $this->findMappingActionObject(id: $mappingId, schema: 'mapping');
-		}
-
-		$source = null;
-		if ($sourceId !== '') {
-			$source = $this->findMappingActionObject(id: $sourceId, schema: 'source');
-		}
-
-		if ($mapping === null || $source === null) {
-			// Unresolvable mappingId/sourceId is retryable — the Mapping or
-			// Source may be created/corrected later — same treatment as an
-			// unresolvable synchronizationId/jobId/notificaties sourceId
-			// above (design.md Decision 4).
-			$this->recordFailure(
-				message: $message,
-				error: 'mapping or source not found',
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
+		if ($this->resolveMappingTargets(run: $run) === false
+			|| $this->mappingDispatchAvailable(message: $delivery->message) === false
+			|| $this->resolveMappingSubmission(run: $run) === false
+		) {
 			return false;
 		}
 
+		$callLog = $this->callMappedSubmission(run: $run);
+		if ($callLog === null) {
+			return false;
+		}
+
+		$statusCode = (int)($callLog->getObject()['statusCode'] ?? 0);
+		if ($statusCode >= 200 && $statusCode < 300) {
+			$this->recordDeliverySuccess(message: $delivery->message);
+			return true;
+		}
+
+		$this->recordFailure(
+			message: $delivery->message,
+			error: 'Mapping action call failed with status code: ' . $statusCode,
+			statusCode: $statusCode,
+			retryAfter: null,
+			retryPolicy: $run->retryPolicy
+		);
+		return false;
+	}//end dispatchMappingAction()
+
+	/**
+	 * Resolve the mapping and the source a mapping action names.
+	 *
+	 * An unresolvable mappingId or sourceId is retryable: the Mapping or Source
+	 * may be created or corrected later, the same treatment as an unresolvable
+	 * synchronizationId, jobId or notificaties sourceId (design.md Decision 4).
+	 *
+	 * @param MappingActionDispatch $run The dispatch; its mapping and source are set.
+	 *
+	 * @return bool True when both resolved, false after recording a failure.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function resolveMappingTargets(MappingActionDispatch $run): bool {
+		$mappingId = (string)($run->action['mappingId'] ?? '');
+		$sourceId = (string)($run->action['sourceId'] ?? '');
+
+		if ($mappingId !== '') {
+			$run->mapping = $this->findMappingActionObject(id: $mappingId, schema: 'mapping');
+		}
+
+		if ($sourceId !== '') {
+			$run->source = $this->findMappingActionObject(id: $sourceId, schema: 'source');
+		}
+
+		if ($run->mapping !== null && $run->source !== null) {
+			return true;
+		}
+
+		$this->recordFailure(
+			message: $run->message,
+			error: 'mapping or source not found',
+			statusCode: null,
+			retryAfter: null,
+			retryPolicy: $run->retryPolicy
+		);
+		return false;
+	}//end resolveMappingTargets()
+
+	/**
+	 * Whether a mapping action can run in this deployment.
+	 *
+	 * Without the Forms adapter, the answer resolver or the mapping service, or
+	 * with Forms disabled (REQ-001 scenario 3), this is a configuration error
+	 * (retryCount stays 0), never a Forms HTTP call.
+	 *
+	 * @param ObjectEntity $message The message being dispatched.
+	 *
+	 * @return bool True when it can run, false after recording a configuration error.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function mappingDispatchAvailable(ObjectEntity $message): bool {
 		if ($this->formsSyncAdapter === null || $this->formsAnswerResolver === null || $this->mappingService === null) {
-			// No Forms adapter/answer-resolver/mapping-service wired at all —
-			// this dispatch kind cannot run in this deployment. A
-			// configuration problem, not a transient one.
 			$this->recordConfigurationError(
 				message: $message,
 				error: "The Nextcloud Forms adapter is not available for action.kind='mapping' dispatch."
@@ -1856,69 +1834,90 @@ class EventService {
 		try {
 			$this->formsSyncAdapter->assertEnabled();
 		} catch (FormsFeatureDisabledException $exception) {
-			// REQ-001 scenario 3: Forms disabled is a config error (retryCount
-			// stays 0), never attempting a Forms HTTP call.
 			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
 			return false;
 		}
 
-		$messageData = $message->getObject();
-		// Read the UUID FK `event`; `eventId` is the legacy integer column and is
-		// no longer written (see createEventMessage()). Falls back to it so any
-		// pre-existing row still resolves.
+		return true;
+	}//end mappingDispatchAvailable()
+
+	/**
+	 * Read the Forms form and submission ids from the message's event.
+	 *
+	 * The UUID FK `event` is read, falling back to the legacy integer `eventId`
+	 * column so a pre-existing row still resolves. A missing event is retryable;
+	 * an event without a formId or submission id (a non-Forms event type, design.md
+	 * Decision 4) is a configuration error, since it will never succeed.
+	 *
+	 * @param MappingActionDispatch $run The dispatch; its form and submission ids are set.
+	 *
+	 * @return bool True when both ids are known, false after recording the failure.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function resolveMappingSubmission(MappingActionDispatch $run): bool {
+		$messageData = $run->message->getObject();
 		$event = $this->findNotificationsEvent(
 			eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
 		);
 		if ($event === null) {
 			$this->recordFailure(
-				message: $message,
+				message: $run->message,
 				error: 'event not found',
 				statusCode: null,
 				retryAfter: null,
-				retryPolicy: $retryPolicy
+				retryPolicy: $run->retryPolicy
 			);
 			return false;
 		}
 
 		$eventData = (array)(($event->getObject()['data'] ?? []));
-		$formId = (int)($eventData['formId'] ?? 0);
-		$submissionId = (int)($eventData['submission']['id'] ?? 0);
+		$run->formId = (int)($eventData['formId'] ?? 0);
+		$run->submissionId = (int)($eventData['submission']['id'] ?? 0);
 
-		if ($formId <= 0 || $submissionId <= 0) {
-			// Design.md Decision 4's constraint: a subscription with
-			// action.kind='mapping' matching a non-Forms event type has no
-			// formId/submission.id — a configuration error naming the gap,
-			// not a crash and not retryable (this subscription will never
-			// succeed against this event type without being reconfigured).
+		if ($run->formId <= 0 || $run->submissionId <= 0) {
 			$this->recordConfigurationError(
-				message: $message,
+				message: $run->message,
 				error: "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)"
 			);
 			return false;
 		}
 
+		return true;
+	}//end resolveMappingSubmission()
+
+	/**
+	 * Fetch the submission and its form, resolve the answers, map them and send the result.
+	 *
+	 * Any resolution, mapping or call failure (including an ambiguous question-text
+	 * FormsConfigException, REQ-004 scenario 2) is a standard retryable failure: a
+	 * data-shape problem in one submission does not misconfigure the subscription.
+	 *
+	 * @param MappingActionDispatch $run The resolved dispatch.
+	 *
+	 * @return ObjectEntity|null The call log, or null after recording a failure.
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+	 */
+	private function callMappedSubmission(MappingActionDispatch $run): ?ObjectEntity {
 		try {
-			$submission = $this->formsSyncAdapter->fetchSubmission(source: $source, formId: $formId, submissionId: $submissionId);
-			$form = $this->formsSyncAdapter->fetchForm(source: $source, formId: $formId);
+			$submission = $this->formsSyncAdapter->fetchSubmission(source: $run->source, formId: $run->formId, submissionId: $run->submissionId);
+			$form = $this->formsSyncAdapter->fetchForm(source: $run->source, formId: $run->formId);
 
 			$resolvedAnswers = $this->resolveMappingAnswers(
 				questions: $form['questions'],
 				answers: $submission['answers']
 			);
 
-			$mappedResult = $this->mappingService->executeMapping(mapping: $mapping, input: $resolvedAnswers);
+			$mappedResult = $this->mappingService->executeMapping(mapping: $run->mapping, input: $resolvedAnswers);
 
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: (string)($action['endpoint'] ?? ''),
-				method: (string)($action['method'] ?? 'POST'),
+			return $this->callService->call(
+				source: $run->source,
+				endpoint: (string)($run->action['endpoint'] ?? ''),
+				method: (string)($run->action['method'] ?? 'POST'),
 				config: ['json' => $mappedResult]
 			);
 		} catch (\Throwable $exception) {
-			// Any resolution/mapping/call failure (including an ambiguous
-			// question-text FormsConfigException — REQ-004 scenario 2) is a
-			// standard retryable failure: a data-shape problem in a specific
-			// submission does not permanently misconfigure the subscription.
 			$this->logger->error(
 				'Failed to dispatch mapping action for event message: ' . $exception->getMessage(),
 				[
@@ -1928,36 +1927,19 @@ class EventService {
 					// array here makes OC\Log::getLogLevel() receive an
 					// array and throw — the error handler fatals, turning a
 					// handled delivery failure into an uncaught TypeError.
-					'eventMessage' => $message->jsonSerialize(),
+					'eventMessage' => $run->message->jsonSerialize(),
 				]
 			);
 			$this->recordFailure(
-				message: $message,
+				message: $run->message,
 				error: $exception->getMessage(),
 				statusCode: null,
 				retryAfter: null,
-				retryPolicy: $retryPolicy
+				retryPolicy: $run->retryPolicy
 			);
-			return false;
+			return null;
 		}//end try
-
-		$callLogData = $callLog->getObject();
-		$statusCode = (int)($callLogData['statusCode'] ?? 0);
-
-		if ($statusCode >= 200 && $statusCode < 300) {
-			$this->recordDeliverySuccess(message: $message);
-			return true;
-		}
-
-		$this->recordFailure(
-			message: $message,
-			error: 'Mapping action call failed with status code: ' . $statusCode,
-			statusCode: $statusCode,
-			retryAfter: null,
-			retryPolicy: $retryPolicy
-		);
-		return false;
-	}//end dispatchMappingAction()
+	}//end callMappedSubmission()
 
 	/**
 	 * Dispatch an `action.kind = 'broker'` message: hand the CloudEvent to
@@ -1972,22 +1954,19 @@ class EventService {
 	 * from every rendered read. A broker password on the action would be
 	 * returned by the subscriptions API to anyone who can list them.
 	 *
-	 * @param ObjectEntity $message The message being dispatched.
-	 * @param array $subscriptionData The owning subscription's OR object array.
-	 * @param array $action The resolved `action` block.
+	 * @param ActionDelivery $delivery The message being dispatched, the owning subscription's OR object array,
+	 *                                 the resolved `action` block and the active trace.
 	 *
 	 * @return boolean True when the broker took the message and routed it.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
 	 */
-	private function dispatchBrokerAction(ObjectEntity $message, array $subscriptionData, array $action): bool {
-		$retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
-
-		$brokerId = trim((string)($action['brokerId'] ?? ''));
+	private function dispatchBrokerAction(ActionDelivery $delivery): bool {
+		$brokerId = trim((string)($delivery->action['brokerId'] ?? ''));
 		if ($brokerId === '') {
 			$this->recordConfigurationError(
-				message: $message,
+				message: $delivery->message,
 				error: "action.brokerId is required for action.kind='broker'"
 			);
 			return false;
@@ -1997,7 +1976,7 @@ class EventService {
 			// No registry wired at all: this dispatch kind cannot run in this
 			// deployment. A configuration problem, not a transient one.
 			$this->recordConfigurationError(
-				message: $message,
+				message: $delivery->message,
 				error: "No broker transport registry is available for action.kind='broker' dispatch."
 			);
 			return false;
@@ -2009,20 +1988,20 @@ class EventService {
 			// A brokerId nothing answers to will not start answering on a
 			// retry, so it fails once outside the retry loop, the same
 			// treatment an unrecognised action.kind gets.
-			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
+			$this->recordConfigurationError(message: $delivery->message, error: $exception->getMessage());
 			return false;
 		}
 
 		try {
-			$configuration = $this->brokerSettings(brokerId: $brokerId, subscriptionData: $subscriptionData);
+			$configuration = $this->brokerSettings(brokerId: $brokerId, subscriptionData: $delivery->subscriptionData);
 		} catch (BrokeredCallConfigurationException $exception) {
 			// A credential reference that does not resolve will not resolve on a
 			// retry either (REQ-EBSC-003): it fails once, like an unknown broker id.
-			$this->recordConfigurationError(message: $message, error: $exception->getMessage());
+			$this->recordConfigurationError(message: $delivery->message, error: $exception->getMessage());
 			return false;
 		}
 
-		$messageData = $message->getObject();
+		$messageData = $delivery->message->getObject();
 		$cloudEvent = ($messageData['payload'] ?? []);
 		if (is_array($cloudEvent) === false) {
 			$cloudEvent = [];
@@ -2032,33 +2011,17 @@ class EventService {
 			$result = $transport->publish(
 				publication: $this->brokerPublication(
 					cloudEvent: $cloudEvent,
-					subscriptionData: $subscriptionData,
-					action: $action
+					subscriptionData: $delivery->subscriptionData,
+					action: $delivery->action
 				),
 				configuration: $configuration
 			);
 		} catch (\Throwable $exception) {
-			$this->logger->error(
-				'Failed to dispatch broker action for event message: ' . $exception->getMessage(),
-				[
-					'exception' => $exception,
-					// NOT 'message': Nextcloud's logger treats a `message` key
-					// in the CONTEXT as the log message itself.
-					'eventMessage' => $message->jsonSerialize(),
-				]
-			);
-			$this->recordFailure(
-				message: $message,
-				error: $exception->getMessage(),
-				statusCode: null,
-				retryAfter: null,
-				retryPolicy: $retryPolicy
-			);
-			return false;
-		}//end try
+			return $this->failActionRun(delivery: $delivery, exception: $exception);
+		}
 
 		if ($result->isPublished() === true) {
-			$this->recordDeliverySuccess(message: $message);
+			$this->recordDeliverySuccess(message: $delivery->message);
 			return true;
 		}
 
@@ -2066,11 +2029,11 @@ class EventService {
 		// success: RabbitMQ routing to no queue under a 200, and a Kafka
 		// per-record error_code under a 200. Both retry.
 		$this->recordFailure(
-			message: $message,
+			message: $delivery->message,
 			error: 'Broker publish refused: ' . (string)$result->getDetail(),
 			statusCode: $result->getStatusCode(),
 			retryAfter: null,
-			retryPolicy: $retryPolicy
+			retryPolicy: $this->resolveRetryPolicy(subscriptionData: $delivery->subscriptionData)
 		);
 		return false;
 
@@ -2090,7 +2053,7 @@ class EventService {
 	private function brokerPublication(array $cloudEvent, array $subscriptionData, array $action): BrokerPublication {
 		$contentMode = trim((string)($action['contentMode'] ?? ''));
 		if ($contentMode === '') {
-			$contentMode = CloudEventHttpBinding::MODE_STRUCTURED;
+			$contentMode = CloudEventHttpBindingInterface::MODE_STRUCTURED;
 		}
 
 		$orderingKey = trim((string)($action['orderingKey'] ?? ''));
@@ -2523,7 +2486,7 @@ class EventService {
 		return [
 			'url' => $sink,
 			'method' => 'POST',
-			'headers' => $sensitiveFieldRegistry->redactArray(data: $headers),
+			'headers' => $sensitiveFieldRegistry->redactHeaders(headers: $headers),
 		];
 
 	}//end previewWebhookDelivery()
@@ -2890,6 +2853,38 @@ class EventService {
 			$payload = $optOut['payload'];
 		}
 
+		$event = $this->saveDeliveryEvent(
+			request: $request,
+			data: ['delivery' => $this->deliveryRecord(request: $request, optOut: $optOut), 'payload' => $payload]
+		);
+
+		if ($optOut !== null && $optOut['decision']['send'] !== true) {
+			return [
+				'event' => $event,
+				'messages' => [],
+				'refusal' => $this->refuseDelivery(request: $request, optOut: $optOut),
+			];
+		}
+
+		$messages = $this->processEvent(event: $event);
+		$this->recordDelivery(request: $request, optOut: $optOut, payload: $payload, event: $event, messages: $messages);
+
+		return [
+			'event' => $event,
+			'messages' => $messages,
+			'refusal' => null,
+		];
+	}//end ingestDeliveryRequest()
+
+	/**
+	 * The `data.delivery` block of a delivery request's CloudEvent.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 * @param array<string,mixed>|null $optOut The opt-out decision, or null when no person was named.
+	 *
+	 * @return array<string,mixed> The subject and routing fields, plus the opt-out decision when there was one.
+	 */
+	private function deliveryRecord(DeliveryRequestedEvent $request, ?array $optOut): array {
 		$delivery = [
 			'sourceApp' => $request->getSourceApp(),
 			'subjectRegister' => $request->getSubjectRegister(),
@@ -2911,16 +2906,28 @@ class EventService {
 			];
 		}
 
-		$event = $this->objectService->saveObject(
+		return $delivery;
+
+	}//end deliveryRecord()
+
+	/**
+	 * Store the CloudEvent of a delivery request, as integriq's own write.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 * @param array<string,mixed> $data The event's `data`: the delivery block and the payload.
+	 *
+	 * @return ObjectEntity The stored event.
+	 *
+	 * @throws Exception On persistence failure.
+	 */
+	private function saveDeliveryEvent(DeliveryRequestedEvent $request, array $data): ObjectEntity {
+		return $this->objectService->saveObject(
 			object: [
 				'source' => ('/apps/' . $request->getSourceApp() . '/delivery'),
 				'type' => self::DELIVERY_REQUESTED_TYPE,
 				'time' => (new DateTime())->format('c'),
 				'subject' => $request->getSubjectId(),
-				'data' => [
-					'delivery' => $delivery,
-					'payload' => $payload,
-				],
+				'data' => $data,
 				'userId' => $request->getUserId(),
 				// Marks this row as our own output so CloudEventListener drops it
 				// even when the schema ids cannot identify it (a renamed register, or
@@ -2936,35 +2943,31 @@ class EventService {
 			_multitenancy: false
 		);
 
-		if ($optOut !== null && $optOut['decision']['send'] !== true) {
-			// Not routed: the person opted out, or no answer could be had.
-			$this->sendGate?->recordRefusal(
-				channel: $optOut['channel'],
-				subjectRef: $request->getSubjectId(),
-				decision: $optOut['decision'],
-				options: ['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId()]
-			);
-			$this->logger->info(
-				'[EventService] delivery not routed: the opt-out list refused it',
-				['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId(), 'code' => $optOut['decision']['code']]
-			);
+	}//end saveDeliveryEvent()
 
-			return [
-				'event' => $event,
-				'messages' => [],
-				'refusal' => ['code' => (string)$optOut['decision']['code'], 'reason' => (string)$optOut['decision']['reason']],
-			];
-		}
+	/**
+	 * Keep the refusal of a delivery the opt-out list did not allow, or that no answer could be had for.
+	 *
+	 * @param DeliveryRequestedEvent $request The request.
+	 * @param array<string,mixed> $optOut The refusing opt-out decision.
+	 *
+	 * @return array{code:string,reason:string} The refusal to hand back.
+	 */
+	private function refuseDelivery(DeliveryRequestedEvent $request, array $optOut): array {
+		$this->sendGate?->recordRefusal(
+			channel: $optOut['channel'],
+			subjectRef: $request->getSubjectId(),
+			decision: $optOut['decision'],
+			options: ['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId()]
+		);
+		$this->logger->info(
+			'[EventService] delivery not routed: the opt-out list refused it',
+			['sourceApp' => $request->getSourceApp(), 'correlationId' => $request->getCorrelationId(), 'code' => $optOut['decision']['code']]
+		);
 
-		$messages = $this->processEvent(event: $event);
-		$this->recordDelivery(request: $request, optOut: $optOut, payload: $payload, event: $event, messages: $messages);
+		return ['code' => (string)$optOut['decision']['code'], 'reason' => (string)$optOut['decision']['reason']];
 
-		return [
-			'event' => $event,
-			'messages' => $messages,
-			'refusal' => null,
-		];
-	}//end ingestDeliveryRequest()
+	}//end refuseDelivery()
 
 	/**
 	 * Keep the outbound log row of a personal delivery that was routed.
@@ -3033,30 +3036,11 @@ class EventService {
 			return null;
 		}
 
-		$category = (string)($payload['category'] ?? OptOutCategories::SERVICE);
+		$category = (string)($payload['category'] ?? OptOutCategoriesInterface::SERVICE);
 		$caseRef = (string)($payload['caseRef'] ?? '');
 
 		if ($this->sendGate === null) {
-			$send = in_array(strtolower(trim($category)), OptOutCategories::FLOOR, true)
-				|| isset(OptOutCategories::DEFAULT_ALIASES[strtolower(trim($category))]) === true;
-			$code = 'allowed';
-			$reason = '';
-			if ($send === false) {
-				$code = 'authority-unavailable';
-				$reason = 'The opt-out list is not available, so this delivery was not routed.';
-			}
-
-			$decision = [
-				'send' => $send,
-				'overridden' => false,
-				'code' => $code,
-				'reason' => $reason,
-				'unsubscribe' => null,
-				'address' => $recipient,
-				'category' => $category,
-			];
-
-			return ['decision' => $decision, 'channel' => $channel, 'payload' => $payload];
+			return ['decision' => $this->ungatedDecision(recipient: $recipient, category: $category), 'channel' => $channel, 'payload' => $payload];
 		}
 
 		$decision = $this->sendGate->check(
@@ -3076,6 +3060,36 @@ class EventService {
 		return ['decision' => $decision, 'channel' => $channel, 'payload' => $payload];
 
 	}//end decideDelivery()
+
+	/**
+	 * The decision for a personal delivery when no opt-out list is wired: only exempt categories go out.
+	 *
+	 * @param string $recipient The recipient address.
+	 * @param string $category The category the payload named.
+	 *
+	 * @return array<string,mixed> A decision shaped like the send gate's.
+	 */
+	private function ungatedDecision(string $recipient, string $category): array {
+		$send = in_array(strtolower(trim($category)), OptOutCategoriesInterface::FLOOR, true)
+			|| isset(OptOutCategoriesInterface::DEFAULT_ALIASES[strtolower(trim($category))]) === true;
+		$code = 'allowed';
+		$reason = '';
+		if ($send === false) {
+			$code = 'authority-unavailable';
+			$reason = 'The opt-out list is not available, so this delivery was not routed.';
+		}
+
+		return [
+			'send' => $send,
+			'overridden' => false,
+			'code' => $code,
+			'reason' => $reason,
+			'unsubscribe' => null,
+			'address' => $recipient,
+			'category' => $category,
+		];
+
+	}//end ungatedDecision()
 
 	/**
 	 * Normalize a Nextcloud-native core event (files/calendar/Tables/Forms)

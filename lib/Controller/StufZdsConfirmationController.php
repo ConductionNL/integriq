@@ -6,7 +6,7 @@
  * The public endpoint a case system posts its asynchronous Bv01/Fo01 to,
  * after it processed a ZDS kennisgeving integriq sent. Authentication is the
  * WS-Security UsernameToken of the source the kennisgeving went to, checked by
- * {@see \OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver}; there is
+ * {@see StufZdsConfirmationReceiverInterface}; there is
  * no Nextcloud session, so the route is public and the receiver is its auth.
  *
  * @category Controller
@@ -21,14 +21,14 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiver;
+use OCA\Integriq\Service\StufZkn\StufZdsConfirmationReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -40,7 +40,7 @@ use OCP\IRequest;
 /**
  * Receives asynchronous StUF-ZDS confirmations.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
 class StufZdsConfirmationController extends Controller {
 
@@ -49,13 +49,13 @@ class StufZdsConfirmationController extends Controller {
 	 *
 	 * @param string                      $appName     App identifier ("integriq").
 	 * @param IRequest                    $request     Current request.
-	 * @param StufZdsConfirmationReceiver $receiver    Authenticates and records the confirmation.
+	 * @param StufZdsConfirmationReceiverInterface $receiver    Authenticates and records the confirmation.
 	 * @param StufZknRequestBody          $requestBody Reads the request body up to the ceiling.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly StufZdsConfirmationReceiver $receiver,
+		private readonly StufZdsConfirmationReceiverInterface $receiver,
 		private readonly StufZknRequestBody $requestBody,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -69,7 +69,7 @@ class StufZdsConfirmationController extends Controller {
 	 *
 	 * @return DataDisplayResponse A Bv03 (200) or a Fo03 (400, 422 or 503).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -85,7 +85,7 @@ class StufZdsConfirmationController extends Controller {
 	 *
 	 * @return string The raw body, at most one byte past the ceiling (the receiver answers 413); '' when there is none.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	protected function readRawBody(): string {
 		return $this->requestBody->read();

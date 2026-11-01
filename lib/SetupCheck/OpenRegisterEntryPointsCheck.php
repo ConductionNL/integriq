@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\SetupCheck;
 
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterEntryPoints;
 use OCP\IL10N;
 use OCP\SetupCheck\ISetupCheck;
 use OCP\SetupCheck\SetupResult;
@@ -116,7 +116,7 @@ class OpenRegisterEntryPointsCheck implements ISetupCheck {
 			);
 		}
 
-		if (is_object($authorization) === false || OpenRegisterCredentialBridge::entryPointsAvailable(authorization: $authorization) === false) {
+		if (is_object($authorization) === false || OpenRegisterEntryPoints::available(authorization: $authorization) === false) {
 			return SetupResult::error(
 				$this->l10n->t(
 					'Integriq needs OpenRegister %s or newer. The installed OpenRegister does not offer the '

@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * and we additionally guard the matching legacy → OR row migration
  * via the `storage_migrated` app-config flag.
  */
-class InitializeRegister implements IRepairStep {
+class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 	/**
 	 * Constructor.
 	 *
@@ -170,7 +170,7 @@ class InitializeRegister implements IRepairStep {
 
 		try {
 			$configurationService->importFromApp(
-				appId: Application::APP_ID,
+				appId: AppIdentity::APP_ID,
 				data: $descriptor,
 				version: $appVersion
 			);

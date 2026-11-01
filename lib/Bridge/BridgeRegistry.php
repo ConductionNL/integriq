@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-an-on-premise-bridge-reaches-a-system-behind-the-firewall-req-sg-007
  */
-class BridgeRegistry {
+class BridgeRegistry implements BridgeRegistryInterface {
 	/**
 	 * App id for app-config reads and writes.
 	 */

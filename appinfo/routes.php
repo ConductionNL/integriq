@@ -138,6 +138,11 @@ return [
 		['name' => 'verdict#inbound', 'url' => '/api/verdicts/inbound', 'verb' => 'POST'],
 		['name' => 'verdict#index', 'url' => '/api/verdicts', 'verb' => 'GET'],
 
+		// A source's 24-hour performance and certificate expiry. Administrators only.
+		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
+		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
+
 		// SCIM 2.0 provisioning. `Users` and `Groups` only: a deactivation
 		// disables the Nextcloud account and never deletes it, so DELETE on a
 		// user is a deprovision, not a removal.
@@ -725,6 +730,8 @@ return [
 		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
+		// Every DSO activity row with its last arrival, then the unmapped ones (admin only)
+		['name' => 'dsoActivityMapping#overview', 'url' => '/api/admin/dso-activities', 'verb' => 'GET'],
 		// Packaged ZGW consumer sets (zgw-connectors-for-dossiq): list, and install against a register/schema.
 		['name' => 'zgwSets#index',   'url' => '/api/zgw-sets', 'verb' => 'GET'],
 		['name' => 'zgwSets#install', 'url' => '/api/zgw-sets/{slug}/install', 'verb' => 'POST', 'requirements' => ['slug' => 'zgw-[a-z]+']],

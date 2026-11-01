@@ -53,7 +53,7 @@ use Throwable;
  *
  * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-a-decision-taken-on-the-shared-task-resumes-the-run
  */
-class ApprovalDecisionService {
+class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 
 	/**
 	 * Answer codes for a resumed run's message, where it is not a plain 200:

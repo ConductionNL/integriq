@@ -21,9 +21,9 @@
 namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\JobService;
-use OCA\Integriq\Service\SearchService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\JobServiceInterface;
+use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -49,16 +49,18 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class JobsController extends Controller {
+	use LogPageListing;
+
 	/**
 	 * Constructor for the JobController.
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param OrObjectService $orObjectService The OR object service.
-	 * @param JobService $jobService The job service (used by run/test action methods).
+	 * @param JobServiceInterface $jobService The job service (used by run/test action methods).
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 *
 	 * @return void
 	 */
@@ -66,10 +68,10 @@ class JobsController extends Controller {
 		$appName,
 		IRequest $request,
 		private OrObjectService $orObjectService,
-		private JobService $jobService,
+		private JobServiceInterface $jobService,
 		private IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -79,110 +81,15 @@ class JobsController extends Controller {
 	 *
 	 * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
 	 *
-	 * @param SearchService $searchService Service used to strip special query parameters.
+	 * @param SearchServiceInterface $searchService Service used to strip special query parameters.
 	 *
 	 * @return JSONResponse A JSON response containing the filtered job logs and pagination.
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function logs(SearchService $searchService): JSONResponse {
-		try {
-			// Get filters from request.
-			$filters = $this->request->getParams();
-			$specialFilters = [];
-
-			// Pagination using _page and _limit.
-			if (isset($filters['_limit']) === true) {
-				$limit = (int)$filters['_limit'];
-			} else {
-				$limit = 20;
-			}
-
-			if (isset($filters['_page']) === true) {
-				$page = (int)$filters['_page'];
-			} else {
-				$page = 1;
-			}
-
-			$offset = (($page - 1) * $limit);
-			unset($filters['_limit'], $filters['_page']);
-
-			// Handle special filters.
-			if (empty($filters['date_from']) === false) {
-				$specialFilters['date_from'] = $filters['date_from'];
-			}
-
-			if (empty($filters['date_to']) === false) {
-				$specialFilters['date_to'] = $filters['date_to'];
-			}
-
-			if (empty($filters['status']) === false) {
-				$specialFilters['status'] = $filters['status'];
-			}
-
-			if (empty($filters['slow_executions']) === false) {
-				$specialFilters['slow_executions'] = 5000;
-				// 5 seconds in milliseconds.
-			}
-
-			// Build search conditions and parameters.
-			$searchConditions = [];
-			$searchParams = [];
-
-			if (empty($specialFilters['date_from']) === false) {
-				$searchConditions[] = 'created >= ?';
-				$searchParams[] = $specialFilters['date_from'];
-			}
-
-			if (empty($specialFilters['date_to']) === false) {
-				$searchConditions[] = 'created <= ?';
-				$searchParams[] = $specialFilters['date_to'];
-			}
-
-			if (empty($specialFilters['status']) === false) {
-				$searchConditions[] = 'status = ?';
-				$searchParams[] = $specialFilters['status'];
-			}
-
-			if (empty($specialFilters['slow_executions']) === false) {
-				$searchConditions[] = 'execution_time > ?';
-				$searchParams[] = $specialFilters['slow_executions'];
-			}
-
-			// Remove special query params from filters.
-			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-			// Get job logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'job_log'], $filters);
-			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
-			$jobLogs = ($matches['results'] ?? $matches);
-			$total = ($matches['total'] ?? count($jobLogs));
-			if ($limit > 0) {
-				$pages = ceil($total / $limit);
-			} else {
-				$pages = 1;
-			}
-
-			if ($limit > 0) {
-				$currentPage = (floor($offset / $limit) + 1);
-			} else {
-				$currentPage = 1;
-			}
-
-			// Return flattened paginated response.
-			return new JSONResponse(
-				[
-					'results' => $jobLogs,
-					'page' => $currentPage,
-					'pages' => $pages,
-					'results_count' => count($jobLogs),
-					'total' => $total,
-				]
-			);
-		} catch (\Exception $e) {
-			return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
-		}//end try
+	public function logs(SearchServiceInterface $searchService): JSONResponse {
+		return $this->logPage(searchService: $searchService, schema: 'job_log');
 	}//end logs()
 
 	/**

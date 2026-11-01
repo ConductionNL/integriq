@@ -27,7 +27,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCA\Integriq\Exception\StufZknTranslationException;
 /**
  * Renders StUF-ZDS case envelopes.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
  */
 class StufZdsMessageBuilder {
 
@@ -98,7 +98,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @throws StufZknTranslationException When no zaaktype is given or the documents exceed the ceiling.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function caseCreation(
 		array $case,
@@ -170,7 +170,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @return array{referentienummer:string,xml:string}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function caseUpdate(string $caseIdentification, array $changes, array $routing): array {
 		$referenceNumber = $this->generateReferentienummer();
@@ -202,7 +202,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @return array{referentienummer:string,xml:string}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function caseDetailsQuery(string $caseIdentification, array $routing, array $wantedElements=[]): array {
 		$referenceNumber = $this->generateReferentienummer();
@@ -228,7 +228,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @return array{referentienummer:string,xml:string}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function caseIdentificationRequest(array $routing): array {
 		$referenceNumber = $this->generateReferentienummer();
@@ -257,7 +257,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @throws StufZknTranslationException When the payload misses a required field.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function freeMessage(array $template, array $payload, array $routing): array {
 		$name = (string)($template['name'] ?? '');
@@ -291,7 +291,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @return array{zender:array{organisatie:string,applicatie:string},ontvanger:array{organisatie:string,applicatie:string,gebruiker:string},wsse:array{username:string,password:string}|null}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function routing(array $source, ?array $wsse): array {
 		$configuration = (array)($source['configuration'] ?? []);
@@ -315,7 +315,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @return string The referentienummer.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function generateReferentienummer(): string {
 		$alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -339,7 +339,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @return string The timestamp.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-message-construction
 	 */
 	public function currentTimestamp(): string {
 		$now = new DateTimeImmutable('now', new DateTimeZone(self::ZONE));
@@ -469,7 +469,7 @@ class StufZdsMessageBuilder {
 	 *
 	 * @return string The envelope with the header, or unchanged when there is no token.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
 	 */
 	public function withUsernameToken(string $envelopeXml, ?array $wsse): string {
 		$header = $this->securityHeader(wsse: $wsse);

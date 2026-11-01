@@ -63,8 +63,9 @@ namespace OCA\Integriq\Flow;
 use GuzzleHttp\Promise\PromiseInterface;
 use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Exception\ResponseDecodeException;
-use OCA\Integriq\Service\CallService;
-use OCA\Integriq\Service\ResponseDecoder;
+use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -96,7 +97,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.source-call';
+	public const NODE_ID = FlowNodeIds::SOURCE_CALL;
 
 	/**
 	 * The OpenRegister register Sources live in.
@@ -127,24 +128,24 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Constructor.
 	 *
-	 * @param CallService $callService The governed outbound call engine.
+	 * @param CallServiceInterface $callService The governed outbound call engine.
 	 * @param FlowConcurrency $concurrency Bounded, ordered per-item dispatch.
 	 * @param OpenRegisterObjectService $objectService Resolves the Source object.
 	 * @param FlowOwner $flowOwner Fail-closed run-owner resolution.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
-	 * @param ResponseDecoder $decoder Reads the response body in the step's `decode` mode.
+	 * @param ResponseDecoderInterface $decoder Reads the response body in the step's `decode` mode.
 	 */
 	public function __construct(
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly FlowConcurrency $concurrency,
 		private readonly OpenRegisterObjectService $objectService,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
-		private readonly ResponseDecoder $decoder,
+		private readonly ResponseDecoderInterface $decoder,
 	) {
 
 	}//end __construct()
@@ -481,7 +482,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 		$accepted = $this->acceptedStatuses(config: $config);
-		$decode = strtolower(trim((string)($config['decode'] ?? ResponseDecoder::MODE_AUTO)));
+		$decode = strtolower(trim((string)($config['decode'] ?? ResponseDecoderInterface::MODE_AUTO)));
 		$outputList = [];
 		$indexed = array_values($items);
 
@@ -516,12 +517,14 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			try {
 				$result = $this->outcomeOf(
 					settled: $settled[$index],
-					endpoint: $endpoint,
-					method: $method,
-					accepted: $accepted,
-					reference: $reference,
-					source: $source,
-					decode: $decode
+					target: new SourceCallTarget(
+						reference: $reference,
+						source: $source,
+						endpoint: $endpoint,
+						method: $method,
+						accepted: $accepted,
+						decode: $decode
+					)
 				);
 			} catch (FlowNodeException $exception) {
 				$this->logger->error(
@@ -646,13 +649,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * decision-making, run once per item in INPUT order — so which response
 	 * arrived first cannot change which item a run fails on.
 	 *
-	 * @param array $settled One `FlowConcurrency::map()` result.
-	 * @param string $endpoint The rendered endpoint.
-	 * @param string $method The HTTP method.
-	 * @param array $accepted Statuses the author opted into.
-	 * @param string $reference The authored source reference.
-	 * @param ObjectEntity $source The resolved Source object.
-	 * @param string $decode The step's decode mode.
+	 * @param array            $settled One `FlowConcurrency::map()` result.
+	 * @param SourceCallTarget $target  What the call was made to.
 	 *
 	 * @return array The response result written onto the item.
 	 *
@@ -660,61 +658,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-node-that-calls-a-source-once-per-item-dispatches-those-calls-concurrently-req-015
 	 */
-	private function outcomeOf(
-		array $settled,
-		string $endpoint,
-		string $method,
-		array $accepted,
-		string $reference,
-		ObjectEntity $source,
-		string $decode=ResponseDecoder::MODE_AUTO,
-	): array {
-		if ($settled['ok'] === false) {
-			// A transport-level failure (DNS, TLS, timeout, connection
-			// refused) is a failed call, never an empty response body.
-			//
-			// `callAsync()` converts every reason it CAN into a CallLog — a
-			// 4xx, a 5xx, a refused connection all fulfil with a log row, and
-			// arrive at the status check below. Reaching here means the reason
-			// was not convertible at all, which is the same set of failures the
-			// synchronous `call()` let escape as a \Throwable.
-			$reason = $settled['error'];
-
-			throw new FlowNodeException(
-				message: $this->l10n->t(
-					'The call to source "%1$s" endpoint "%2$s" failed at transport level: %3$s',
-					[$reference, $endpoint, $reason->getMessage()]
-				),
-				details: [
-					'kind' => 'transport',
-					'status' => null,
-					'source' => $reference,
-					'endpoint' => $endpoint,
-					'method' => $method,
-				],
-				previous: $reason
-			);
-		}//end if
-
-		$callLog = $settled['value'];
-		if (($callLog instanceof ObjectEntity) === false) {
-			// Defensive, and load-bearing: the two dispatch modes are kept in
-			// step by `finalizeCall()`, so anything else here means that
-			// contract moved. Say so rather than read `getObject()` off it.
-			throw new FlowNodeException(
-				message: $this->l10n->t(
-					'The call to source "%1$s" endpoint "%2$s" did not produce a call log.',
-					[$reference, $endpoint]
-				),
-				details: [
-					'kind' => 'transport',
-					'status' => null,
-					'source' => $reference,
-					'endpoint' => $endpoint,
-					'method' => $method,
-				]
-			);
-		}
+	private function outcomeOf(array $settled, SourceCallTarget $target): array {
+		$callLog = $this->callLogOf(settled: $settled, target: $target);
 
 		$body = (array)$callLog->getObject();
 		$response = (array)($body['response'] ?? []);
@@ -727,22 +672,16 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		$statusMessage = (string)($body['statusMessage'] ?? ($response['statusMessage'] ?? ''));
 
-		if ($this->isSuccess(statusCode: $statusCode, accepted: $accepted) === false) {
+		if ($this->isSuccess(statusCode: $statusCode, accepted: $target->accepted) === false) {
 			throw new FlowNodeException(
 				message: $this->l10n->t(
 					'The call to source "%1$s" endpoint "%2$s" returned status %3$s (%4$s), '
 					. 'which the step does not accept.',
-					[$reference, $endpoint, (string)($statusCode ?? 'unknown'), $statusMessage]
+					[$target->reference, $target->endpoint, (string)($statusCode ?? 'unknown'), $statusMessage]
 				),
-				details: [
-					'kind' => 'status',
-					'status' => $statusCode,
-					'statusMessage' => $statusMessage,
-					'source' => $reference,
-					'endpoint' => $endpoint,
-					'method' => $method,
-					'callLog' => $callLog->getUuid(),
-				]
+				details: ['kind' => 'status', 'status' => $statusCode, 'statusMessage' => $statusMessage]
+					+ $target->where()
+					+ ['callLog' => $callLog->getUuid()]
 			);
 		}
 
@@ -750,15 +689,68 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			'status' => $statusCode,
 			'statusMessage' => $statusMessage,
 			'headers' => (array)($response['headers'] ?? []),
-			'body' => $this->decodeBody(response: $response, decode: $decode, context: [$reference, $endpoint, $method, $statusCode]),
-			'source' => $reference,
-			'sourceId' => $source->getUuid(),
-			'endpoint' => $endpoint,
-			'method' => $method,
+			'body' => $this->decodeBody(
+				response: $response,
+				decode: $target->decode,
+				context: [$target->reference, $target->endpoint, $target->method, $statusCode]
+			),
+			'source' => $target->reference,
+			'sourceId' => $target->source->getUuid(),
+			'endpoint' => $target->endpoint,
+			'method' => $target->method,
 			'callLog' => $callLog->getUuid(),
 		];
 
 	}//end outcomeOf()
+
+	/**
+	 * The call log a settled call produced, or the failure it is.
+	 *
+	 * A transport-level failure (DNS, TLS, timeout, connection refused) is a
+	 * failed call, never an empty response body. `callAsync()` converts every
+	 * reason it CAN into a CallLog (a 4xx, a 5xx, a refused connection), so a
+	 * rejection here is one that was not convertible at all.
+	 *
+	 * @param array            $settled One `FlowConcurrency::map()` result.
+	 * @param SourceCallTarget $target  What the call was made to.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @throws FlowNodeException On a transport failure or a missing call log.
+	 *
+	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-node-that-calls-a-source-once-per-item-dispatches-those-calls-concurrently-req-015
+	 */
+	private function callLogOf(array $settled, SourceCallTarget $target): ObjectEntity {
+		if ($settled['ok'] === false) {
+			$reason = $settled['error'];
+
+			throw new FlowNodeException(
+				message: $this->l10n->t(
+					'The call to source "%1$s" endpoint "%2$s" failed at transport level: %3$s',
+					[$target->reference, $target->endpoint, $reason->getMessage()]
+				),
+				details: ['kind' => 'transport', 'status' => null] + $target->where(),
+				previous: $reason
+			);
+		}
+
+		$callLog = $settled['value'];
+		if (($callLog instanceof ObjectEntity) === false) {
+			// Defensive, and load-bearing: the two dispatch modes are kept in
+			// step by `finalizeCall()`, so anything else here means that
+			// contract moved. Say so rather than read `getObject()` off it.
+			throw new FlowNodeException(
+				message: $this->l10n->t(
+					'The call to source "%1$s" endpoint "%2$s" did not produce a call log.',
+					[$target->reference, $target->endpoint]
+				),
+				details: ['kind' => 'transport', 'status' => null] + $target->where()
+			);
+		}
+
+		return $callLog;
+
+	}//end callLogOf()
 
 	/**
 	 * Resolve the Source named by the step, or refuse.
@@ -842,7 +834,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$body = ($response['body'] ?? null);
 		$transportBase64 = ((string)($response['encoding'] ?? 'UTF-8') !== 'UTF-8');
 
-		if ($decode === ResponseDecoder::MODE_AUTO || $decode === ResponseDecoder::MODE_TEXT) {
+		if ($decode === ResponseDecoderInterface::MODE_AUTO || $decode === ResponseDecoderInterface::MODE_TEXT) {
 			// `CallService` base64-encodes a body that is not valid UTF-8;
 			// handing that to a parser would only produce noise.
 			if (is_string($body) === false || $transportBase64 === true) {
@@ -861,10 +853,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			}
 		}
 
-		$contentType = ResponseDecoder::headerValue(
-			headers: (array)($response['headers'] ?? []),
-			name: 'Content-Type'
-		);
+		$contentType = $this->decoder->contentType(headers: (array)($response['headers'] ?? []));
 
 		[$reference, $endpoint, $method, $statusCode] = array_pad($context, 4, null);
 

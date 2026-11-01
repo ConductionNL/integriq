@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "sincronizzazioni",
         "A signing secret is configured (hidden).": "È configurato un segreto di firma (nascosto).",
         "Copied to clipboard": "Copiato negli appunti",
         "Copy": "Copia",

@@ -57,23 +57,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/synchronization-engine/spec.md#requirement-mid-run-progress-is-observable-without-slowing-the-run-req-022
  */
-class SynchronizationRunProgressService {
-
-	/**
-	 * The register progress records live in.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
-	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The schema progress records live in.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA = 'synchronization_run';
+class SynchronizationRunProgressService implements SynchronizationRunProgressServiceInterface {
 
 	/**
 	 * Minimum seconds between two progress writes.
@@ -91,20 +75,6 @@ class SynchronizationRunProgressService {
 	 * @var string
 	 */
 	public const TRIGGER_CRON = 'cron';
-
-	/**
-	 * An administrator started the run.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_MANUAL = 'manual';
-
-	/**
-	 * Run again on a failed run started it.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_RERUN = 'rerun';
 
 	/**
 	 * Every value `triggeredBy` may hold, as the register's enum lists them.

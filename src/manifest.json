@@ -1015,6 +1015,16 @@
       "config": {
         "register": "integriq",
         "schema": "source",
+        "headerActions": [
+          {
+            "id": "connection-monitor",
+            "label": "Monitor",
+            "icon": "HeartPulse",
+            "type": "navigate",
+            "target": "/connection-monitor/@objectId",
+            "adminOnly": true
+          }
+        ],
         "_note": "PURPOSE: A source is an external system Integriq calls (REST/SOAP/DB/file). This is the CONFIG/TECHNICAL archetype — an integrator lands here to check whether the connection is healthy and to triage failed calls, not to read documents. DESIGN RATIONALE: the body leads with operational data. Four KPI stats across the top (total calls, errors, avg size, objects fetched) give an at-a-glance health read; the primary body region is a recent-call-log table (child call_log filtered by source UUID = @objectId, sorted newest-first) because triaging HTTP failures is the #1 job on this page. Connection config (data, 3 columns to fit the many auth/rate-limit fields) and Related sit below/beside. NO comms leaves — a source does not email or hold meetings; the schema declares no email/calendar linkedType. Rarely-opened raw JSON blobs (paths/headers/loggingConfig) stay in the sidebar metadata, and audit-trail is a sidebar tab. ADR-062 rev3: the four health KPIs (calls, errors, objects fetched, avg payload) live in ONE in-grid stats-block top-right of the Connection core-data widget — entries[] carries per-entry metric/field so the sum (objectCount) and avg (size, raw bytes via countLabel) are expressible alongside the two counts. Registry icons; call log is read-only (allowCreate:false) with a View-all to SourceLogs.",
         "widgets": [
           {

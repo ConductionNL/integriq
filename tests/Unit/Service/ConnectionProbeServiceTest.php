@@ -264,6 +264,26 @@ class ConnectionProbeServiceTest extends TestCase {
 	}//end testProbeCapAndOrder()
 
 	/**
+	 * A switched-off source, such as an example set's made-up one, is not
+	 * called by the hourly job; the switched-on one beside it is.
+	 *
+	 * @return void
+	 */
+	public function testSwitchedOffSourceIsNotProbed(): void {
+		$this->addSource(uuid: 's-off', data: ['isEnabled' => false]);
+		$this->addSource(uuid: 's-on', data: ['isEnabled' => true]);
+		$this->store->method('findRows')->willReturn([
+			['uuid' => 'c-off', 'data' => ['app' => 'dossiq', 'key' => 'brp', 'source' => 's-off']],
+			['uuid' => 'c-on', 'data' => ['app' => 'dossiq', 'key' => 'pdok', 'source' => 's-on']],
+		]);
+		$this->sourceTest->expects($this->once())->method('run')
+			->willReturn($this->testOutcome(outcome: SourceTestService::OUTCOME_RESPONSE, code: 200));
+
+		$this->assertSame(expected: 1, actual: $this->makeService()->probeDue());
+		$this->assertSame(expected: ['c-on'], actual: array_map(static fn (array $save): ?string => $save[0], $this->saves));
+	}//end testSwitchedOffSourceIsNotProbed()
+
+	/**
 	 * Linking an existing source stores its uuid and probes at once.
 	 *
 	 * @return void

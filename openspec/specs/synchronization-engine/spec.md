@@ -1604,3 +1604,21 @@ OpenRegister's `trim($object['id'])` upsert probe.
 - **GIVEN** a contract payload whose `id` is numeric and which has no `uuid`
 - **WHEN** it is persisted
 - **THEN** no upsert key is derived from it and `id` is dropped from the payload
+
+### Requirement: Base data is distributed from one register to every consuming application (REQ-026)
+
+Integriq SHALL support distributing base data from one central store: a synchronization pulls the data from its source into a register on a schedule, an endpoint serves that register to consuming applications, and every change to an object in it is published as a CloudEvent to the subscriptions that match. A consuming application SHALL be able to take a full read through the endpoint and then keep up through its subscription, without a separate copy per application in integriq.
+
+#### Scenario: A new consuming application joins
+
+- **GIVEN** a register filled by a scheduled synchronization and an endpoint that serves it
+- **WHEN** a consuming application reads the endpoint and then registers a subscription on the register's events
+- **THEN** it holds the current data, and every later change the synchronization writes reaches it as a CloudEvent
+- @e2e exclude a chain of a scheduled synchronization, an endpoint and a push subscription across systems; covered by the Newman collection's synchronization, endpoint and events folders, not by one page
+
+#### Scenario: A source record changes
+
+- **GIVEN** an object in the register that two applications subscribe to
+- **WHEN** the next synchronization run writes a changed value from the source
+- **THEN** both subscriptions receive one CloudEvent for that object's update
+- @e2e exclude event delivery to outside subscribers has no page; covered by the events-cloudevents fan-out tests

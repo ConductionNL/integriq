@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "synchronizácie",
         "A signing secret is configured (hidden).": "Podpisovací tajný kľúč je nakonfigurovaný (skrytý).",
         "Copied to clipboard": "Skopírované do schránky",
         "Copy": "Kopírovať",

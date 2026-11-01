@@ -227,7 +227,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function testAReplayedNonceIsRefused(): void {
 		$receiver = $this->receiver();
@@ -312,7 +312,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function testAQueryWithoutACriterionIsRefusedWithoutAsking(): void {
 		$receiver = $this->receiver();
@@ -368,6 +368,38 @@ class StufProviderReceiverTest extends TestCase {
 		$this->assertStringContainsString('StUF055', $answer['body']);
 		$this->assertStringNotContainsString('zakLa01', $answer['body']);
 	}//end testAnUnansweredCaseQueryIsAFo02()
+
+	/**
+	 * A source that names its owning app takes no answer from another app: the query stays unanswered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 */
+	public function testAnotherAppsAnswerDoesNotCountWhenTheSourceNamesItsOwner(): void {
+		$this->sources['zsh']['configuration']['owningApp'] = 'pipelinq';
+		$answer = $this->receiver()->receive(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(500, $answer['statusCode']);
+		$this->assertStringContainsString('StUF055', $answer['body']);
+		$this->assertNull($this->events[0]->getAnsweredBy());
+	}//end testAnotherAppsAnswerDoesNotCountWhenTheSourceNamesItsOwner()
+
+	/**
+	 * The owning app answers as before, and a listener cannot move the owner once the receiver set it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 */
+	public function testTheOwningAppsAnswerCountsAndTheOwnerCannotBeMoved(): void {
+		$this->sources['zsh']['configuration']['owningApp'] = 'dossiq';
+		$this->owner = 'intruder';
+		$answer      = $this->receiver()->receive(rawXml: self::zakLv01(), sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$this->assertSame('dossiq', $this->events[0]->getAnsweredBy());
+	}//end testTheOwningAppsAnswerCountsAndTheOwnerCannotBeMoved()
 
 	/**
 	 * A listener that throws counts as unanswered.
@@ -975,6 +1007,11 @@ class StufProviderReceiverTest extends TestCase {
 
 		if ($this->owner === 'silent') {
 			return;
+		}
+
+		if ($this->owner === 'intruder' && $event instanceof StufCaseQueryEvent) {
+			$event->restrictToApp(appId: 'intruder');
+			$event->answerCases(appId: 'intruder', cases: []);
 		}
 
 		if ($this->owner === 'throw') {

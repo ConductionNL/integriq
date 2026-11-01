@@ -66,26 +66,45 @@ export function groupFieldRuns(fields) {
 		// A descriptor without a string key cannot be rendered or :key'd, so
 		// skip it rather than emitting a run that would break the v-for.
 		if (!field || typeof field.key !== 'string') continue
-		// Only a non-empty STRING groups. `group: ''` or `group: 5` is treated
-		// as ungrouped so a stray value can't silently merge unrelated fields.
-		const group =
-			typeof field.group === 'string' && field.group !== ''
-				? field.group
-				: null
-		const last = runs[runs.length - 1]
-		if (group !== null && last !== undefined && last.group === group) {
-			last.fields.push(field)
-			continue
-		}
-		runs.push({
-			// Prefixed so a group run and a field run can never collide on the
-			// same Vue :key, even if a group is named after a field.
-			key: (group !== null ? `group:${group}:` : 'field:') + field.key,
-			group,
-			fields: [field],
-		})
+		addFieldToRuns(runs, field)
 	}
 	return runs
+}
+
+/**
+ * The group a field descriptor belongs to. Only a non-empty STRING groups:
+ * `group: ''` or `group: 5` is treated as ungrouped so a stray value can't
+ * silently merge unrelated fields.
+ *
+ * @param {object} field The field descriptor.
+ * @return {string|null} The group name, or null when ungrouped.
+ */
+function fieldGroup(field) {
+	return typeof field.group === 'string' && field.group !== '' ? field.group : null
+}
+
+/**
+ * Append a field to the last run when it continues that run's group, or
+ * start a new run for it.
+ *
+ * @param {Array<object>} runs The runs so far; changed in place.
+ * @param {object} field The field descriptor.
+ * @return {void}
+ */
+function addFieldToRuns(runs, field) {
+	const group = fieldGroup(field)
+	const last = runs[runs.length - 1]
+	if (group !== null && last !== undefined && last.group === group) {
+		last.fields.push(field)
+		return
+	}
+	runs.push({
+		// Prefixed so a group run and a field run can never collide on the
+		// same Vue :key, even if a group is named after a field.
+		key: (group !== null ? `group:${group}:` : 'field:') + field.key,
+		group,
+		fields: [field],
+	})
 }
 
 /**

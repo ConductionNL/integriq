@@ -49,6 +49,7 @@ use OCA\Integriq\Service\Dso\DsoConnectorProviderInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -64,7 +65,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  */
-class DsoIngestService {
+class DsoIngestService implements PortalRequestIntakeInterface {
 
 	/**
 	 * OpenRegister register slug holding sources, verzoeken, and outbound messages.

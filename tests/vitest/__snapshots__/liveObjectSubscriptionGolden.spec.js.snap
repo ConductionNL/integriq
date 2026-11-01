@@ -1,0 +1,948 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`liveObjectSubscription golden > missing type (bridge false) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 0,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > missing type (bridge true) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 0,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > missing uuid (bridge false) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 0,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > missing uuid (bridge true) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 0,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > no subscribe on the store (bridge false) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 0,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > no subscribe on the store (bridge true) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 0,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > rejects after the object switched (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "subscribe",
+    "rule",
+    "u2",
+  ],
+  [
+    "warn",
+    "[liveObjectSubscription] subscribe failed:",
+    "down",
+  ],
+  [
+    "state",
+    "first rejected",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "rule::u2",
+      "watching": false,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > rejects after the object switched (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "subscribe",
+    "rule",
+    "u2",
+  ],
+  [
+    "warn",
+    "[liveObjectSubscription] subscribe failed:",
+    "down",
+  ],
+  [
+    "state",
+    "first rejected",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "rule::u2",
+      "watching": false,
+    },
+  ],
+  [
+    "watch",
+    {
+      "type": "rule",
+      "uuid": "u2",
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > release without store unsubscribe (bridge false) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > release without store unsubscribe (bridge true) 1`] = `
+[
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > released while pending (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "released",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+  [
+    "unsubscribe",
+    {
+      "handle": 1,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > released while pending (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "released",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+  [
+    "unsubscribe",
+    {
+      "handle": 1,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > resolve with bridge, then events (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "subscribed",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "other::x",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > resolve with bridge, then events (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "watch",
+    {
+      "type": "rule",
+      "uuid": "u1",
+    },
+  ],
+  [
+    "state",
+    "subscribed",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+  [
+    "apply",
+    {
+      "id": "fresh",
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "other::x",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > resolve without bridge (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "pending",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "rule::u1",
+      "livePendingKey": "rule::u1",
+      "watching": false,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > resolve without bridge (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "pending",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "rule::u1",
+      "livePendingKey": "rule::u1",
+      "watching": false,
+    },
+  ],
+  [
+    "watch",
+    {
+      "type": "rule",
+      "uuid": "u1",
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > same key while active (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "subscribed",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > same key while active (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "watch",
+    {
+      "type": "rule",
+      "uuid": "u1",
+    },
+  ],
+  [
+    "state",
+    "subscribed",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > same key while pending (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "both called",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "rule::u1",
+      "livePendingKey": "rule::u1",
+      "watching": false,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > same key while pending (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "state",
+    "both called",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "rule::u1",
+      "livePendingKey": "rule::u1",
+      "watching": false,
+    },
+  ],
+  [
+    "watch",
+    {
+      "type": "rule",
+      "uuid": "u1",
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "rule::u1",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > subscribe rejects (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "warn",
+    "[liveObjectSubscription] subscribe failed:",
+    "down",
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > subscribe rejects (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "warn",
+    "[liveObjectSubscription] subscribe failed:",
+    "down",
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > subscribe rejects with a bare value (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "warn",
+    "[liveObjectSubscription] subscribe failed:",
+    "bare",
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > subscribe rejects with a bare value (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "warn",
+    "[liveObjectSubscription] subscribe failed:",
+    "bare",
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 1,
+      "liveHandle": null,
+      "liveKey": "",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > switch object while active (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "mapping",
+    "u1",
+  ],
+  [
+    "state",
+    "first active",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "mapping::u1",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+  [
+    "unsubscribe",
+    {
+      "handle": 1,
+    },
+  ],
+  [
+    "subscribe",
+    "mapping",
+    "u2",
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": {
+        "handle": 2,
+      },
+      "liveKey": "mapping::u2",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > switch object while active (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "mapping",
+    "u1",
+  ],
+  [
+    "watch",
+    {
+      "type": "mapping",
+      "uuid": "u1",
+    },
+  ],
+  [
+    "state",
+    "first active",
+    {
+      "liveEpoch": 1,
+      "liveHandle": {
+        "handle": 1,
+      },
+      "liveKey": "mapping::u1",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+  [
+    "unwatch",
+  ],
+  [
+    "unsubscribe",
+    {
+      "handle": 1,
+    },
+  ],
+  [
+    "subscribe",
+    "mapping",
+    "u2",
+  ],
+  [
+    "watch",
+    {
+      "type": "mapping",
+      "uuid": "u2",
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": {
+        "handle": 2,
+      },
+      "liveKey": "mapping::u2",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > switch object while pending (bridge false) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "subscribe",
+    "rule",
+    "u2",
+  ],
+  [
+    "state",
+    "switched",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "rule::u2",
+      "livePendingKey": "rule::u2",
+      "watching": false,
+    },
+  ],
+  [
+    "unsubscribe",
+    {
+      "handle": 1,
+    },
+  ],
+  [
+    "state",
+    "first settled",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "rule::u2",
+      "livePendingKey": "rule::u2",
+      "watching": false,
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": {
+        "handle": 2,
+      },
+      "liveKey": "rule::u2",
+      "livePendingKey": "",
+      "watching": false,
+    },
+  ],
+]
+`;
+
+exports[`liveObjectSubscription golden > switch object while pending (bridge true) 1`] = `
+[
+  [
+    "subscribe",
+    "rule",
+    "u1",
+  ],
+  [
+    "subscribe",
+    "rule",
+    "u2",
+  ],
+  [
+    "state",
+    "switched",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "rule::u2",
+      "livePendingKey": "rule::u2",
+      "watching": false,
+    },
+  ],
+  [
+    "unsubscribe",
+    {
+      "handle": 1,
+    },
+  ],
+  [
+    "state",
+    "first settled",
+    {
+      "liveEpoch": 2,
+      "liveHandle": null,
+      "liveKey": "rule::u2",
+      "livePendingKey": "rule::u2",
+      "watching": false,
+    },
+  ],
+  [
+    "watch",
+    {
+      "type": "rule",
+      "uuid": "u2",
+    },
+  ],
+  [
+    "state",
+    "end",
+    {
+      "liveEpoch": 2,
+      "liveHandle": {
+        "handle": 2,
+      },
+      "liveKey": "rule::u2",
+      "livePendingKey": "",
+      "watching": true,
+    },
+  ],
+]
+`;

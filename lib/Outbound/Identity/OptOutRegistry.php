@@ -46,8 +46,8 @@ namespace OCA\Integriq\Outbound\Identity;
 use InvalidArgumentException;
 use OCA\Integriq\Db\OptOut;
 use OCA\Integriq\Db\OptOutLogEntry;
-use OCA\Integriq\Db\OptOutLogMapper;
-use OCA\Integriq\Db\OptOutMapper;
+use OCA\Integriq\Db\OptOutLogMapperInterface;
+use OCA\Integriq\Db\OptOutMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -65,7 +65,7 @@ use Throwable;
  *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md
  */
-class OptOutRegistry {
+class OptOutRegistry implements OptOutRegistryInterface {
 
 	/**
 	 * The OpenRegister schema opt-outs were stored under before the table.
@@ -74,34 +74,6 @@ class OptOutRegistry {
 	 * @var string
 	 */
 	public const SCHEMA = 'recipient_opt_out';
-
-	/**
-	 * An opt-out that stops everything but the exempt categories.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_INSTANCE = 'instance';
-
-	/**
-	 * An opt-out or consent for one channel.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_CHANNEL = 'channel';
-
-	/**
-	 * An opt-out that stops the updates on one case.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_CASE = 'case';
-
-	/**
-	 * An opt-out or consent for one list.
-	 *
-	 * @var string
-	 */
-	public const SCOPE_LIST = 'list';
 
 	/**
 	 * Every scope.
@@ -204,23 +176,23 @@ class OptOutRegistry {
 	/**
 	 * Constructor.
 	 *
-	 * @param OptOutMapper $mapper Reads and writes the opt-out table.
+	 * @param OptOutMapperInterface $mapper Reads and writes the opt-out table.
 	 * @param IAppConfig $appConfig Holds the authority flag.
 	 * @param ITimeFactory $time Stamps rows and log entries.
 	 * @param OptOutCategories $categories The exempt floor and the aliases.
 	 * @param RecipientKey $recipientKey Normalises a recipient per channel.
-	 * @param OptOutLogMapper $log The append-only decision log.
+	 * @param OptOutLogMapperInterface $log The append-only decision log.
 	 * @param UnsubscribeTokenService $tokens Builds the unsubscribe material.
 	 * @param LoggerInterface $logger Warns about failures that are answered closed.
 	 * @param OptOutRowBuilder $rows Builds and changes rows for record().
 	 */
 	public function __construct(
-		private readonly OptOutMapper $mapper,
+		private readonly OptOutMapperInterface $mapper,
 		private readonly IAppConfig $appConfig,
 		private readonly ITimeFactory $time,
 		private readonly OptOutCategories $categories,
 		private readonly RecipientKey $recipientKey,
-		private readonly OptOutLogMapper $log,
+		private readonly OptOutLogMapperInterface $log,
 		private readonly UnsubscribeTokenService $tokens,
 		private readonly LoggerInterface $logger,
 		private readonly OptOutRowBuilder $rows,

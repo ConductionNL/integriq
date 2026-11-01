@@ -39,6 +39,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use JWadhams\JsonLogic;
 use OCA\Integriq\Exception\FlowRunException;
+use OCA\Integriq\Service\Helper\FlowExecution;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -64,7 +65,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-orchestration/spec.md
  */
-class FlowRunnerService {
+class FlowRunnerService implements FlowRunnerServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding flow objects.
@@ -102,6 +103,14 @@ class FlowRunnerService {
 	 * @var array<int, string>
 	 */
 	private const TERMINAL_STATUSES = ['completed', 'stopped', 'dead_letter', 'failed'];
+
+	/**
+	 * Flow_run.status a failed step's `onError` policy ends the run with;
+	 * any other policy than `continue` stops it.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ERROR_TERMINAL_STATUSES = ['dead_letter' => 'dead_letter'];
 
 	/**
 	 * Constructor.
@@ -154,7 +163,7 @@ class FlowRunnerService {
 
 		$flowRun = $this->createFlowRun(flow: $flow, triggerSource: $triggerSource);
 
-		return $this->executeFrom(flow: $flow, steps: $steps, flowToken: $flowToken, flowRun: $flowRun, startOrder: null);
+		return $this->executeFrom(execution: new FlowExecution(steps: $steps, flowToken: $flowToken, flowRun: $flowRun), startOrder: null);
 	}//end run()
 
 	/**
@@ -193,7 +202,7 @@ class FlowRunnerService {
 			uuid: $flowRun->getUuid()
 		);
 
-		return $this->executeFrom(flow: $flow, steps: $steps, flowToken: $flowToken, flowRun: $flowRun, startOrder: $resumeStepOrder);
+		return $this->executeFrom(execution: new FlowExecution(steps: $steps, flowToken: $flowToken, flowRun: $flowRun), startOrder: $resumeStepOrder);
 	}//end resumeFromApproval()
 
 	/**
@@ -234,15 +243,12 @@ class FlowRunnerService {
 
 	/**
 	 * The main step loop, shared by a fresh `run()` and a `resumeFromApproval()`
-	 * re-entry. Iterates `$steps` (already sorted by `order` ascending)
+	 * re-entry. Iterates the execution's steps (sorted by `order` ascending)
 	 * starting either from the first step (`$startOrder === null`) or from
 	 * the step whose `order` equals `$startOrder`.
 	 *
-	 * @param ObjectEntity $flow The flow definition (only used for its uuid in log entries via $flowRun).
-	 * @param array $steps Steps sorted ascending by `order`.
-	 * @param FlowToken $flowToken The in-flight FlowToken.
-	 * @param ObjectEntity $flowRun The flow_run being executed/resumed.
-	 * @param integer|null $startOrder Resume point (an existing step `order`), or null to start at the first step.
+	 * @param FlowExecution $execution  The steps, FlowToken and flow_run of this pass.
+	 * @param integer|null  $startOrder Resume point (an existing step `order`), or null to start at the first step.
 	 *
 	 * @return ObjectEntity The flow_run in its terminal or `suspended` state.
 	 *
@@ -250,100 +256,139 @@ class FlowRunnerService {
 	 *
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
 	 */
-	private function executeFrom(ObjectEntity $flow, array $steps, FlowToken $flowToken, ObjectEntity $flowRun, ?int $startOrder): ObjectEntity {
-		if (count($steps) === 0) {
-			return $this->finalizeFlowRun(flowRun: $flowRun, status: 'completed');
+	private function executeFrom(FlowExecution $execution, ?int $startOrder): ObjectEntity {
+		$index = $execution->startIndex(startOrder: $startOrder);
+		if ($index === null) {
+			$this->finalizeFlowRun(flowRun: $execution->flowRun, status: 'failed');
+			throw new FlowRunException(message: 'Resume step order ' . $startOrder . ' does not resolve to an existing step');
 		}
 
-		$indexByOrder = [];
-		foreach ($steps as $i => $step) {
-			$indexByOrder[(int)$step['order']] = $i;
+		while ($index < count($execution->steps)) {
+			$next = $this->executeStep(execution: $execution, index: $index);
+			if ($next instanceof ObjectEntity) {
+				return $next;
+			}
+
+			$index = $next;
 		}
 
-		$index = 0;
-		if ($startOrder !== null) {
-			if (isset($indexByOrder[$startOrder]) === false) {
-				$this->finalizeFlowRun(flowRun: $flowRun, status: 'failed');
-				throw new FlowRunException(message: 'Resume step order ' . $startOrder . ' does not resolve to an existing step');
-			}
-
-			$index = $indexByOrder[$startOrder];
-		}
-
-		while ($index < count($steps)) {
-			$step = $steps[$index];
-			$order = (int)$step['order'];
-			$type = (string)($step['type'] ?? '');
-
-			$context = $this->buildContext(flowToken: $flowToken);
-
-			if ($this->conditionPasses(condition: ($step['condition'] ?? null), context: $context) === false) {
-				$this->appendLog(flowRun: $flowRun, stepOrder: $order, type: $type, status: 'skipped');
-				$index++;
-				continue;
-			}
-
-			if ($type === 'branch') {
-				$target = $this->selectBranchTarget(step: $step, context: $context);
-				$this->appendLog(flowRun: $flowRun, stepOrder: $order, type: $type, status: 'completed');
-
-				if ($target === null) {
-					$index++;
-					continue;
-				}
-
-				if (isset($indexByOrder[$target]) === false) {
-					return $this->finalizeFlowRun(flowRun: $flowRun, status: 'failed');
-				}
-
-				$index = $indexByOrder[$target];
-				continue;
-			}//end if
-
-			if ($type === 'approval') {
-				$nextOrder = ($steps[($index + 1)]['order'] ?? null);
-				$resumeStepOrder = $order;
-				if ($nextOrder !== null) {
-					$resumeStepOrder = (int)$nextOrder;
-				}
-
-				$this->dispatchApproval(step: $step, flowRun: $flowRun, flowToken: $flowToken, resumeStepOrder: $resumeStepOrder);
-				$this->appendLog(flowRun: $flowRun, stepOrder: $order, type: $type, status: 'completed');
-				return $this->suspendFlowRun(flowRun: $flowRun);
-			}
-
-			$startedAt = new DateTime();
-			try {
-				$result = $this->dispatchStep(step: $step, flowToken: $flowToken);
-				// Design.md Decision 2: a step's result becomes the NEXT
-				// step's syncInputAmended, not just its own syncOutputAmended
-				// snapshot — dispatchStep() always reads syncInputAmended for
-				// "the previous step's output (or the flow's initial input)",
-				// so both slots must carry the same value here.
-				$flowToken->setSyncOutputAmended(syncOutputAmended: $result);
-				$flowToken->setSyncInputAmended(syncInputAmended: $result);
-				$this->appendLog(flowRun: $flowRun, stepOrder: $order, type: $type, status: 'completed', startedAt: $startedAt);
-				$index++;
-			} catch (Throwable $e) {
-				$this->appendLog(flowRun: $flowRun, stepOrder: $order, type: $type, status: 'failed', startedAt: $startedAt, error: $e->getMessage());
-
-				$onError = (string)($step['onError'] ?? 'stop');
-				if ($onError === 'continue') {
-					$index++;
-					continue;
-				}
-
-				$terminal = 'stopped';
-				if ($onError === 'dead_letter') {
-					$terminal = 'dead_letter';
-				}
-
-				return $this->finalizeFlowRun(flowRun: $flowRun, status: $terminal);
-			}//end try
-		}//end while
-
-		return $this->finalizeFlowRun(flowRun: $flowRun, status: 'completed');
+		return $this->finalizeFlowRun(flowRun: $execution->flowRun, status: 'completed');
 	}//end executeFrom()
+
+	/**
+	 * Execute the step at one list position.
+	 *
+	 * @param FlowExecution $execution The steps, FlowToken and flow_run of this pass.
+	 * @param integer       $index     The list position of the step.
+	 *
+	 * @return integer|ObjectEntity The next list position, or the flow_run when the run ends or suspends.
+	 *
+	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
+	 */
+	private function executeStep(FlowExecution $execution, int $index): int|ObjectEntity {
+		$step = $execution->steps[$index];
+		$context = $this->buildContext(flowToken: $execution->flowToken);
+
+		if ($this->conditionPasses(condition: ($step['condition'] ?? null), context: $context) === false) {
+			$this->appendLog(flowRun: $execution->flowRun, stepOrder: (int)$step['order'], type: (string)($step['type'] ?? ''), status: 'skipped');
+			return ($index + 1);
+		}
+
+		return match ((string)($step['type'] ?? '')) {
+			'branch' => $this->executeBranch(execution: $execution, index: $index),
+			'approval' => $this->executeApproval(execution: $execution, index: $index),
+			default => $this->executeServiceStep(execution: $execution, index: $index),
+		};
+	}//end executeStep()
+
+	/**
+	 * Log a `branch` step and jump to the step its first matching branch names.
+	 *
+	 * @param FlowExecution $execution The steps, FlowToken and flow_run of this pass.
+	 * @param integer       $index     The list position of the branch step.
+	 *
+	 * @return integer|ObjectEntity The next list position, or the failed flow_run when the target does not exist.
+	 *
+	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
+	 */
+	private function executeBranch(FlowExecution $execution, int $index): int|ObjectEntity {
+		$step = $execution->steps[$index];
+		$target = $this->selectBranchTarget(step: $step, context: $this->buildContext(flowToken: $execution->flowToken));
+		$this->appendLog(flowRun: $execution->flowRun, stepOrder: (int)$step['order'], type: 'branch', status: 'completed');
+
+		if ($target === null) {
+			return ($index + 1);
+		}
+
+		return ($execution->indexOf(order: $target) ?? $this->finalizeFlowRun(flowRun: $execution->flowRun, status: 'failed'));
+	}//end executeBranch()
+
+	/**
+	 * Suspend the flow_run on an `approval` step: persist a `pending`
+	 * approval_request through `ApprovalService::suspendForFlow()` that
+	 * resumes at the next step (or at this step when it is the last one).
+	 *
+	 * @param FlowExecution $execution The steps, FlowToken and flow_run of this pass.
+	 * @param integer       $index     The list position of the approval step.
+	 *
+	 * @return ObjectEntity The suspended flow_run.
+	 *
+	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
+	 */
+	private function executeApproval(FlowExecution $execution, int $index): ObjectEntity {
+		$step = $execution->steps[$index];
+		$order = (int)$step['order'];
+		$resumeStepOrder = (int)($execution->steps[($index + 1)]['order'] ?? $order);
+
+		$this->approvalService->suspendForFlow(
+			flowRun: $execution->flowRun,
+			resumeStepOrder: $resumeStepOrder,
+			config: (array)($step['config'] ?? []),
+			flowToken: $execution->flowToken
+		);
+		$this->appendLog(flowRun: $execution->flowRun, stepOrder: $order, type: 'approval', status: 'completed');
+		return $this->suspendFlowRun(flowRun: $execution->flowRun);
+	}//end executeApproval()
+
+	/**
+	 * Dispatch a service step and apply its `onError` policy when it throws.
+	 *
+	 * @param FlowExecution $execution The steps, FlowToken and flow_run of this pass.
+	 * @param integer       $index     The list position of the step.
+	 *
+	 * @return integer|ObjectEntity The next list position, or the stopped/dead-lettered flow_run.
+	 *
+	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
+	 */
+	private function executeServiceStep(FlowExecution $execution, int $index): int|ObjectEntity {
+		$step = $execution->steps[$index];
+		$order = (int)$step['order'];
+		$type = (string)($step['type'] ?? '');
+		$flowToken = $execution->flowToken;
+
+		$startedAt = new DateTime();
+		try {
+			$result = $this->dispatchStep(step: $step, flowToken: $flowToken);
+			// Design.md Decision 2: a step's result becomes the NEXT
+			// step's syncInputAmended, not just its own syncOutputAmended
+			// snapshot — dispatchStep() always reads syncInputAmended for
+			// "the previous step's output (or the flow's initial input)",
+			// so both slots must carry the same value here.
+			$flowToken->setSyncOutputAmended(syncOutputAmended: $result);
+			$flowToken->setSyncInputAmended(syncInputAmended: $result);
+			$this->appendLog(flowRun: $execution->flowRun, stepOrder: $order, type: $type, status: 'completed', startedAt: $startedAt);
+			return ($index + 1);
+		} catch (Throwable $e) {
+			$this->appendLog(flowRun: $execution->flowRun, stepOrder: $order, type: $type, status: 'failed', startedAt: $startedAt, error: $e->getMessage());
+		}
+
+		$onError = (string)($step['onError'] ?? 'stop');
+		if ($onError === 'continue') {
+			return ($index + 1);
+		}
+
+		return $this->finalizeFlowRun(flowRun: $execution->flowRun, status: (self::ERROR_TERMINAL_STATUSES[$onError] ?? 'stopped'));
+	}//end executeServiceStep()
 
 	/**
 	 * Dispatch a `call`/`mapping`/`synchronization`/`event` step to the
@@ -503,33 +548,6 @@ class FlowRunnerService {
 
 		return ['emitted' => true, 'messageCount' => count($messages)];
 	}//end dispatchEvent()
-
-	/**
-	 * `approval` step: persist a `pending` `approval_request` carrying
-	 * `flowRunId`/`resumeStepOrder` via `ApprovalService::suspendForFlow()`
-	 * (mirroring `ApprovalService::suspend()`'s own persistence shape —
-	 * design.md Decision 4).
-	 *
-	 * @param array $step The step definition (`config.approverGroup`/`config.onReject`/`config.onTimeout`/`config.ttlSeconds`).
-	 * @param ObjectEntity $flowRun The in-flight flow_run being suspended.
-	 * @param FlowToken $flowToken The in-flight FlowToken, snapshotted into the approval_request.
-	 * @param integer $resumeStepOrder The step `order` to resume at once approved.
-	 *
-	 * @return ObjectEntity The created, `pending` approval_request.
-	 *
-	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
-	 */
-	private function dispatchApproval(array $step, ObjectEntity $flowRun, FlowToken $flowToken, int $resumeStepOrder): ObjectEntity {
-		$config = (array)($step['config'] ?? []);
-
-		return $this->approvalService->suspendForFlow(
-			flowRun: $flowRun,
-			resumeStepOrder: $resumeStepOrder,
-			config: $config,
-			flowToken: $flowToken
-		);
-
-	}//end dispatchApproval()
 
 	/**
 	 * Evaluate a `branch` step's `branches[]` in array order via

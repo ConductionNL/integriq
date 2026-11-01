@@ -4,7 +4,7 @@
  * Integriq MaterializeCatalogItems Repair Step
  *
  * Upserts one `catalog_item` OpenRegister object per entry returned by
- * {@see \OCA\Integriq\Service\CatalogRegistryService::collect()},
+ * {@see CatalogRegistryServiceInterface::collect()},
  * keyed by a stable `kind:slug` identifier so re-runs update in place
  * rather than duplicating (REQ-003 idempotency).
  *
@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Repair;
 
 use OCA\Integriq\Service\SystemWrite;
-use OCA\Integriq\Service\CatalogRegistryService;
+use OCA\Integriq\Service\CatalogRegistryServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
@@ -89,7 +89,7 @@ class MaterializeCatalogItems implements IRepairStep {
 		}
 
 		try {
-			$registryService = $this->container->get(CatalogRegistryService::class);
+			$registryService = $this->container->get(CatalogRegistryServiceInterface::class);
 			$orObjectService = $this->container->get(OrObjectService::class);
 		} catch (\Throwable $e) {
 			$output->warning('Integriq: could not resolve catalog services: ' . $e->getMessage());

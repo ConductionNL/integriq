@@ -266,6 +266,55 @@ class CallReplayServiceTest extends TestCase {
 	}//end testACredentialIsRedactedBeforeTheWrite()
 
 	/**
+	 * A session header, a Set-Cookie and the tokens an upstream issued never
+	 * reach the stored response, while the stored request a replay sends keeps
+	 * its session header and body intact.
+	 *
+	 * @return void
+	 */
+	public function testSessionHeadersAndIssuedTokensAreRedactedBeforeTheWrite(): void {
+		// An open investigation window, so the bodies are stored and can be checked.
+		$source = '4b1c1c1e-1111-4111-8111-111111111111';
+		$this->records[$source] = ['name' => 'oauth-partner', 'bodyCaptureUntil' => (new \DateTimeImmutable('+1 hour'))->format(\DATE_ATOM)];
+
+		$entity = $this->recorder->record(
+			[
+				'target' => $source,
+				'request' => [
+					'method' => 'POST',
+					'headers' => ['X-Session' => 's1', 'Content-Type' => 'application/json'],
+					'body' => '{"access_token":"t"}',
+				],
+				'response' => [
+					'headers' => ['Set-Cookie' => ['sid=1'], 'X-Session-Id' => 'live-session-42'],
+					'body' => '{"access_token":"abc123xyz","id_token":"eyJ.a.b","refresh_token":"r-1","meta":{}}',
+				],
+				'statusCode' => 500,
+			]
+		);
+
+		$uuid = (string)$entity->getUuid();
+		$record = $this->records[$uuid];
+
+		// The stored response masks them.
+		$this->assertSame([BodyRedactor::PLACEHOLDER], $record['response']['headers']['Set-Cookie']);
+		$this->assertSame(BodyRedactor::PLACEHOLDER, $record['response']['headers']['X-Session-Id']);
+		$this->assertStringContainsString('"meta":{}', $record['response']['body']);
+		foreach (['sid=1', 'live-session-42', 'abc123xyz', 'eyJ.a.b', 'r-1'] as $secret) {
+			$this->assertStringNotContainsString($secret, json_encode($record['response']), $secret);
+		}
+
+		// The stored request is what a replay sends, so its session header and body go out intact.
+		$dispatcher = new RecordingDispatcher(200);
+		$this->service($dispatcher)->replay($uuid, 'beheerder');
+
+		$this->assertCount(1, $dispatcher->sent);
+		$this->assertSame('s1', $dispatcher->sent[0]['request']['headers']['X-Session']);
+		$this->assertSame('{"access_token":"t"}', $dispatcher->sent[0]['request']['body']);
+
+	}//end testSessionHeadersAndIssuedTokensAreRedactedBeforeTheWrite()
+
+	/**
 	 * A replay appends an attempt and leaves the first one readable.
 	 *
 	 * @return void
@@ -709,6 +758,94 @@ class CallReplayServiceTest extends TestCase {
 		$this->assertSame(PreCheckService::NO_ANSWER, $answer['decision']);
 
 	}//end testAnUnrecognisedAnswerIsNoAnswer()
+
+	/**
+	 * Drop clock readings and generated ids, which differ per run.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed
+	 */
+	private function stableValue(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$out = [];
+		foreach ($value as $key => $item) {
+			if (is_string($key) === true && preg_match('/At$|^at$|time|^uuid$|^call$|^originId$|durationMs|expires/i', $key) === 1) {
+				$out[$key] = ($item === null ? null : '(set)');
+				continue;
+			}
+
+			$out[$key] = $this->stableValue($item);
+		}
+
+		return $out;
+	}//end stableValue()
+
+	/**
+	 * Every replay outcome matches the golden file recorded on the code before
+	 * replay() was split: the result, the attempts written, what was sent and
+	 * whether the call was dead-lettered.
+	 *
+	 * Regenerate with CALL_REPLAY_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryReplayOutcomeMatchesTheGoldenFile(): void {
+		$cases = [
+			'ok-200' => [200, null, [], []],
+			'ok-299' => [299, null, [], []],
+			'redirect-300' => [300, null, ['maxAttempts' => 6], []],
+			'informational-199' => [199, null, ['maxAttempts' => 6], []],
+			'unavailable-exhausted' => [503, null, ['maxAttempts' => 2], []],
+			'unavailable-attempts-left' => [503, null, ['maxAttempts' => 6], []],
+			'dispatch-fails-exhausted' => [200, 'no route to host', ['maxAttempts' => 2], []],
+			'dispatch-fails-attempts-left' => [200, 'no route to host', ['maxAttempts' => 6], []],
+			'dry-run' => [200, null, [], ['dryRun' => true]],
+			'dry-run-truthy-not-true' => [200, null, [], ['dryRun' => 1]],
+			'wanted-version-int' => [200, null, [], ['mappingVersion' => 3]],
+			'stripped-bodies' => [200, null, [], [], true],
+			'stripped-bodies-dry-run' => [200, null, [], ['dryRun' => true], true],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => $case) {
+			$this->records = [];
+			$uuid = $this->failedCall($case[2]);
+			if (($case[4] ?? false) === true) {
+				unset($this->records[$uuid]['replayRequest'], $this->records[$uuid]['bodyExpiresAt']);
+				$this->records[$uuid]['bodyCaptured'] = false;
+			}
+
+			$dispatcher = new RecordingDispatcher($case[0], $case[1]);
+			$result = $this->service($dispatcher)->replay($uuid, 'beheerder', $case[3]);
+
+			$actual[$name] = $this->stableValue(
+				[
+					'result' => $result,
+					'callIsUuid' => ($result['call'] === $uuid),
+					'attempts' => ($this->records[$uuid]['attempts'] ?? []),
+					'deadLettered' => ($this->records[$uuid]['deadLettered'] ?? null),
+					'deadLetterRecords' => count(array_filter($this->records, static fn (array $record): bool => (($record['phase'] ?? '') === 'outbound-call'))),
+					'sent' => $dispatcher->sent,
+				]
+			);
+		}
+
+		$golden = __DIR__ . '/../../fixtures/outbound/call-replay-outcomes.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('CALL_REPLAY_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryReplayOutcomeMatchesTheGoldenFile()
 
 	/**
 	 * A replay service over the doubles.

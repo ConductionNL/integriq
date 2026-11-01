@@ -4,7 +4,7 @@ parameters:
 			message: '#^Parameter \$className of method OCP\\EventDispatcher\\IEventDispatcher\:\:addServiceListener\(\) expects class\-string\<OCP\\EventDispatcher\\IEventListener\<OCP\\EventDispatcher\\Event\>\>, ''OCA\\\\Integriq\\\\Flow\\\\FlowNodeListener'' given\.$#'
 			identifier: argument.type
 			count: 1
-			path: lib/AppInfo/Application.php
+			path: lib/Flow/FlowBindings.php
 
 		-
 			message: '#^Parameter \#1 \$data of class OCP\\AppFramework\\Http\\JSONResponse constructor contains unresolvable type\.$#'
@@ -169,74 +169,8 @@ parameters:
 			path: lib/Service/Migration/LegacyToRegisterMigrator.php
 
 		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:BRON is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROPERTY_DEFINITIONS is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROP_DATUM_EXPORT is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROP_EXTERN_PAKKET is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROP_OBJECT_ID is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROP_OMSCHRIJVING is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROP_SWC_TYPE is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROP_TITEL_VIEW is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:PROP_VERBINDINGSROL is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Constant OCA\\Integriq\\Service\\RuleService\:\:RELATION_IDS is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
 			message: '#^Method OCA\\Integriq\\Service\\RuleService\:\:processCustomConnectionsRule\(\) never returns array so it can be removed from the return type\.$#'
 			identifier: return.unusedType
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: '#^Method OCA\\Integriq\\Service\\RuleService\:\:processNodes\(\) is unused\.$#'
-			identifier: method.unused
 			count: 1
 			path: lib/Service/RuleService.php
 

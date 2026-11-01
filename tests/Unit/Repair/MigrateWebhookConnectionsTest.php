@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MigrateWebhookConnections;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
 use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
 use OCP\Migration\IOutput;
@@ -175,7 +176,7 @@ class MigrateWebhookConnectionsTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($migrator);
 
-		return new MigrateWebhookConnections(container: $container);
+		return new MigrateWebhookConnections(container: $container, webhookProfiles: new WebhookProfiles());
 
 	}//end step()
 }//end class

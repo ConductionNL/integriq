@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\UserController;
+use OCA\Integriq\Service\SecurityService;
 use OCA\Integriq\Service\UserService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -90,8 +91,7 @@ class UserControllerTest extends TestCase {
 		$this->l10n = $this->createMock(IL10N::class);
 		$this->user = $this->createMock(IUser::class);
 
-		// SecurityService is instantiated inside UserController's constructor
-		// via `new SecurityService($cacheFactory, $logger)`. It calls
+		// The real SecurityService is handed to the controller. It calls
 		// $cacheFactory->createDistributed() so we must stub that to return
 		// a usable ICache mock.
 		$cache = $this->createMock(ICache::class);
@@ -106,7 +106,7 @@ class UserControllerTest extends TestCase {
 			$this->request,
 			$this->userManager,
 			$this->userSession,
-			$this->cacheFactory,
+			new SecurityService(cacheFactory: $this->cacheFactory, logger: $this->logger),
 			$this->logger,
 			$this->userService,
 			$this->l10n
@@ -446,7 +446,7 @@ class UserControllerTest extends TestCase {
 			$request,
 			$this->userManager,
 			$this->userSession,
-			$this->cacheFactory,
+			new SecurityService(cacheFactory: $this->cacheFactory, logger: $this->logger),
 			$this->logger,
 			$this->userService,
 			$this->l10n

@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Action;
 
 use Exception;
-use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\FlowRunnerServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -49,10 +49,10 @@ class FlowAction {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunnerService $flowRunnerService The service that executes a flow's steps.
+	 * @param FlowRunnerServiceInterface $flowRunnerService The service that executes a flow's steps.
 	 */
 	public function __construct(
-		private FlowRunnerService $flowRunnerService,
+		private FlowRunnerServiceInterface $flowRunnerService,
 	) {
 	}//end __construct()
 

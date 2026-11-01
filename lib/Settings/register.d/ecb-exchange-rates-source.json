@@ -1,0 +1,82 @@
+{
+  "$comment": "ADR-037 register fragment (openspec/changes/sources-ecb-exchange-rates). Declares the `exchange_rate` schema in register `integriq` and seeds the credential-free `ecb-eurofxref-daily` source for the euro foreign exchange reference rates of the European Central Bank. The rates are stored by OCA\\Integriq\\BackgroundJob\\ExchangeRateSyncJob through ExchangeRateImportService, not by a seeded mapping and synchronization: the ECB file carries the date on the parent `Cube time` element and the rate on each child `Cube currency`, so a per-item synchronization never sees the date of the item it maps (design.md D1). Any app reads the rates as OpenRegister objects: GET /apps/openregister/api/objects/integriq/exchange_rate?currency=USD&rateDate=2026-10-30. Authorization: any signed-in account reads; create, update and delete are EMPTY lists, which leaves them to the `admin` group (a non-empty block denies every action it does not grant, see 99-event-create-lockdown.json). The import writes in system context (`_rbac: false`).",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": ["exchange_rate"]
+      }
+    },
+    "schemas": {
+      "exchange_rate": {
+        "slug": "exchange_rate",
+        "title": "Exchange rate",
+        "icon": "CurrencyEur",
+        "version": "1.0.0",
+        "summary": "One reference rate of one currency against a base currency on one publication date",
+        "description": "Units of `currency` per one unit of `baseCurrency` on `rateDate`, as published by `source`. The ECB source stores base currency EUR, one object per currency per working day, never the same source, currency and date twice. The ECB publishes no rate on weekends and TARGET holidays: a reader that needs the rate for such a day takes the newest `rateDate` on or before it.",
+        "required": ["baseCurrency", "currency", "rateDate", "rate", "source"],
+        "type": "object",
+        "authorization": {
+          "create": [],
+          "read": ["authenticated"],
+          "update": [],
+          "delete": []
+        },
+        "properties": {
+          "baseCurrency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217 code of the base currency; always EUR for the ECB source",
+            "title": "Base currency"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217 code of the quoted currency",
+            "title": "Currency"
+          },
+          "rateDate": {
+            "type": "string",
+            "format": "date",
+            "description": "The publication date the rate applies to",
+            "title": "Rate date"
+          },
+          "rate": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Units of `currency` per one unit of `baseCurrency`",
+            "title": "Rate"
+          },
+          "source": {
+            "type": "string",
+            "description": "Who published the rate; `ecb` for the European Central Bank reference rates",
+            "title": "Source"
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "ecb-eurofxref-daily"
+        },
+        "name": "ECB euro reference rates",
+        "description": "The euro foreign exchange reference rates the European Central Bank publishes every working day around 16:00 CET (https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). Public and credential-free, so it ships enabled. ExchangeRateSyncJob reads `location` four times a day and stores each rate as an `exchange_rate` object; the first run against an empty store reads `configuration.historyLocation` instead, for the last 90 days. Disable the source to stop the import.",
+        "type": "api",
+        "location": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/xml"
+          },
+          "historyLocation": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml"
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

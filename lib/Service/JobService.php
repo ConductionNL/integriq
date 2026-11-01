@@ -29,6 +29,7 @@ use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
@@ -58,7 +59,7 @@ use Psr\Container\NotFoundExceptionInterface;
  * @spec openspec/specs/job-scheduling/spec.md
  * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
  */
-class JobService {
+class JobService implements JobServiceInterface {
 
 	/**
 	 * Retention (ms) applied to error JobLogs.
@@ -345,295 +346,220 @@ class JobService {
 	public function executeJob(ObjectEntity $job, bool $forceRun = false, ?ExecutionTraceContext $trace = null): ?ObjectEntity {
 		$jobData = $job->getObject();
 
-		// READ THE SINGLE-RUN FLAG HERE, while $jobData is still the job as
-		// LOADED. Two reasons, both real:
-		//
-		//  - The schema declares `singleRun` — it is what job-form-fields.json
-		//    renders and what every seeded connector writes. This method used
-		//    to read `isSingleRun`, which NOTHING writes, so the flag was
-		//    declared, editable, and enforced nowhere: a job marked "run once"
-		//    ran on every tick, forever. `isSingleRun` is still accepted, as
-		//    the spelling this method has always used.
-		//  - Read further down, after the method has assigned lastRun/nextRun,
-		//    static analysis has narrowed $jobData to those keys alone and
-		//    reports the offset as non-existent. Reading it up here describes
-		//    the job as it arrived, which is what the flag actually means.
-		// The job AS LOADED, kept immutable. $jobData is mutated below
-		// (lastRun, nextRun, isEnabled), and every later `??` read of a key
-		// this method never assigns is reported by static analysis as an
-		// offset that "does not exist" on the narrowed shape — three such
-		// reads were carrying baseline entries whose text embedded that
-		// inferred shape, so they broke the moment the inference shifted.
-		// Reading configuration from the loaded job is both analysable and
-		// closer to what these values mean.
-		$jobConfig = $job->getObject();
-
-		$isSingleRun = (($jobConfig['singleRun'] ?? null) === true || ($jobConfig['isSingleRun'] ?? null) === true);
-
-		// Initialize stack trace for logging.
-		$stackTrace = [];
-		if ($forceRun === true) {
-			$stackTrace[] = 'Doing a force run for this job, ignoring "enabled" & "nextRun" check...';
+		$gate = $this->checkJobMayRun(job: $job, jobData: $jobData, forceRun: $forceRun);
+		if ($gate['run'] === false) {
+			return $gate['log'];
 		}
 
-		// Check if the job is enabled (unless force run is requested).
+		// Execution-trace REQ-001: minted only once the job is confirmed to run,
+		// so a cron tick that finds nothing due produces no trace noise. A trace
+		// supplied by `ExecutionTraceService::replay()` is reused instead and
+		// persisted by its owner.
+		$ownsJobTrace = ($trace === null);
+		$trace = ($trace ?? $this->mintJobTrace(job: $job, forceRun: $forceRun));
+
+		$outcome = $this->runJobAction(job: $job, jobData: $jobData, trace: $trace, user: $gate['user']);
+		$logEntry = $this->recordJobRun(job: $job, jobData: $jobData, forceRun: $forceRun, outcome: $outcome);
+
+		if ($ownsJobTrace === true) {
+			$this->persistJobTrace(trace: $trace, exception: $outcome['exception']);
+		}
+
+		return $logEntry;
+	}//end executeJob()
+
+	/**
+	 * Decides whether a job may run now, and resolves the user it runs as.
+	 *
+	 * A disabled job and a job whose configured user is missing are skipped with a
+	 * WARNING log; a job that is not yet due is skipped silently. A force run
+	 * ignores the enabled flag and the schedule.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param array $jobData The job's data as loaded.
+	 * @param bool $forceRun Whether this is a force run.
+	 *
+	 * @return array{run: bool, log: ObjectEntity|null, user: IUser|null}
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function checkJobMayRun(ObjectEntity $job, array $jobData, bool $forceRun): array {
 		if ($forceRun === false && ($jobData['isEnabled'] ?? true) === false) {
-			return $this->saveJobLog(
+			$log = $this->saveJobLog(
 				job: $job,
 				jobData: $jobData,
-				logData: [
-					'level' => 'WARNING',
-					'message' => 'This job is disabled',
-				]
+				logData: ['level' => 'WARNING', 'message' => 'This job is disabled']
 			);
+			return ['run' => false, 'log' => $log, 'user' => null];
 		}
 
-		// Check if the job is scheduled to run (unless force run is requested).
-		$nextRunStr = ($jobData['nextRun'] ?? null);
-		if ($forceRun === false && $nextRunStr !== null) {
-			$nextRun = new DateTime($nextRunStr);
-			if ($nextRun > new DateTime()) {
-				// Do not log, just skip execution.
-				return null;
-			}
+		if ($this->isJobDue(jobData: $jobData, forceRun: $forceRun) === false) {
+			return ['run' => false, 'log' => null, 'user' => null];
 		}
 
-		// Set user session if job has a specific user configured.
-		// Capture the prior session user so we can restore it after the job runs
-		// — without restoration, the first user-scoped job's identity sticks
-		// for every subsequent job in the same cron pass (#1006).
 		$userId = ($jobData['userId'] ?? null);
-		$priorSessionUser = $this->userSession->getUser();
-		$sessionUserOverridden = false;
-		if (empty($userId) === false) {
-			$user = $this->userManager->get($userId);
-			if ($user === null) {
-				// Deleted/missing user — skip the job with a WARNING log entry
-				// rather than crashing setUser(null) inside the try/finally below.
-				return $this->saveJobLog(
-					job: $job,
-					jobData: $jobData,
-					logData: [
-						'level' => 'WARNING',
-						'message' => sprintf(
-							'Configured userId "%s" does not exist; skipping job.',
-							$userId
-						),
-					]
-				);
-			}
-
-			// Volatile: a job's acting identity belongs to the job, not to any
-			// session. `setUser()` would also write `user_id` into the PHP
-			// session, and the `finally` below does not run on a fatal — so a
-			// crashed job could leave its identity behind for whatever ran next
-			// in the same process. See ADR-099.
-			$this->userSession->setVolatileActiveUser($user);
-			$sessionUserOverridden = true;
-		}//end if
-
-		// Execution-trace REQ-001: a cron-triggered or manual job run is one
-		// of the four traced entry points. Minted here — once the job is
-		// confirmed enabled/due (or force-run) — not at the top of the
-		// method, so a cron tick that finds nothing due to run produces no
-		// trace noise. When invoked directly (no active trace supplied —
-		// the common cron/manual-run case), mint a fresh `job`-entryPoint
-		// context and own its persistence below. When `$trace` is already
-		// supplied (`ExecutionTraceService::replay()`'s job-entryPoint
-		// dry-run/forced dispatch), reuse it instead.
-		$ownsJobTrace = ($trace === null);
-		if ($ownsJobTrace === true) {
-			$jobTraceTriggeredBy = 'cron';
-			if ($forceRun === true) {
-				$jobTraceTriggeredBy = 'manual';
-			}
-
-			$trace = new ExecutionTraceContext(
-				entryPoint: 'job',
-				entryPointId: $job->getUuid(),
-				triggeredBy: $jobTraceTriggeredBy
-			);
+		if (empty($userId) === true) {
+			return ['run' => true, 'log' => null, 'user' => null];
 		}
 
-		// Record execution start time for performance tracking.
-		$timeStart = microtime(true);
+		$user = $this->userManager->get($userId);
+		if ($user === null) {
+			// A deleted user is skipped rather than crashing the identity swap.
+			$message = sprintf('Configured userId "%s" does not exist; skipping job.', $userId);
+			$log = $this->saveJobLog(job: $job, jobData: $jobData, logData: ['level' => 'WARNING', 'message' => $message]);
+			return ['run' => false, 'log' => $log, 'user' => null];
+		}
 
-		// Get the job action class from the container and execute it.
+		return ['run' => true, 'log' => null, 'user' => $user];
+	}//end checkJobMayRun()
+
+	/**
+	 * Checks whether a job's next run has arrived.
+	 *
+	 * @param array $jobData The job's data.
+	 * @param bool $forceRun Whether this is a force run, which is always due.
+	 *
+	 * @return bool True when the job is due.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function isJobDue(array $jobData, bool $forceRun): bool {
+		$nextRunStr = ($jobData['nextRun'] ?? null);
+		if ($forceRun === true || $nextRunStr === null) {
+			return true;
+		}
+
+		return (new DateTime($nextRunStr) > new DateTime()) === false;
+	}//end isJobDue()
+
+	/**
+	 * Mints the `job`-entryPoint trace context for a job run.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param bool $forceRun Whether this is a force (manual) run.
+	 *
+	 * @return ExecutionTraceContext The new trace context.
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+	 */
+	private function mintJobTrace(ObjectEntity $job, bool $forceRun): ExecutionTraceContext {
+		$triggeredBy = 'cron';
+		if ($forceRun === true) {
+			$triggeredBy = 'manual';
+		}
+
+		return new ExecutionTraceContext(
+			entryPoint: 'job',
+			entryPointId: $job->getUuid(),
+			triggeredBy: $triggeredBy
+		);
+	}//end mintJobTrace()
+
+	/**
+	 * Runs the job's action, as the job's user when one is configured.
+	 *
+	 * The prior session user is always restored, so identity does not bleed across
+	 * jobs in the same cron pass (#1006). A thrown exception is captured, not
+	 * rethrown, so the caller can log it.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param array $jobData The job's data.
+	 * @param ExecutionTraceContext $trace The active trace context.
+	 * @param IUser|null $user The user to run as, or null for the current session.
+	 *
+	 * @return array{result: mixed, exception: \Throwable|null, executionTime: int}
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function runJobAction(ObjectEntity $job, array $jobData, ExecutionTraceContext $trace, ?IUser $user): array {
+		$priorSessionUser = $this->userSession->getUser();
+		if ($user !== null) {
+			// Volatile: setUser() would also write the session, and a fatal skips
+			// the restore below. See ADR-099.
+			$this->userSession->setVolatileActiveUser($user);
+		}
+
+		$timeStart = microtime(true);
 		$action = $this->containerInterface->get($jobData['jobClass']);
+		$arguments = $this->buildJobArguments(job: $job, jobData: $jobData, trace: $trace);
+
+		$result = null;
+		$exception = null;
+		try {
+			$result = $action->run($arguments);
+		} catch (\Throwable $e) {
+			$exception = $e;
+		} finally {
+			if ($user !== null) {
+				$this->userSession->setVolatileActiveUser($priorSessionUser);
+			}
+		}
+
+		// The job_log schema requires an integer number of milliseconds.
+		$executionTime = (int)round((microtime(true) - $timeStart) * 1000);
+
+		return ['result' => $result, 'exception' => $exception, 'executionTime' => $executionTime];
+	}//end runJobAction()
+
+	/**
+	 * Builds the arguments passed to a job's action.
+	 *
+	 * Adds the active trace context and the job's own uuid; neither is persisted
+	 * as part of the job's `arguments` field.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param array $jobData The job's data.
+	 * @param ExecutionTraceContext $trace The active trace context.
+	 *
+	 * @return array The action arguments.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function buildJobArguments(ObjectEntity $job, array $jobData, ExecutionTraceContext $trace): array {
 		$arguments = ($jobData['arguments'] ?? []);
 		if (is_array($arguments) === false) {
 			$arguments = [];
 		}
 
-		// Thread the active trace context to job actions that know how to
-		// consume it (currently `SynchronizationAction`; other action
-		// classes ignore the extra key unchanged). Never persisted as part
-		// of the job's own `arguments` field.
 		$arguments['_executionTrace'] = $trace;
-
-		// The job's own uuid, for actions that load their job (ExchangeJobAction:
-		// learniq-exchange-jobs-native design D1). Like the trace, never persisted.
 		$arguments['_jobId'] = $job->getUuid();
 
-		// H3: wrap execution in a catch so executeJob writes a job_log on any
-		// thrown exception, not just when called from run().  Without this, a
-		// controller-invoked run (JobsController::run/test) swallows the
-		// exception and writes no evidence of the failure.
-		$result = null;
-		$executionThrew = false;
-		$thrownException = null;
+		return $arguments;
+	}//end buildJobArguments()
 
-		try {
-			$result = $action->run($arguments);
-		} catch (\Throwable $e) {
-			$executionThrew = true;
-			$thrownException = $e;
-		} finally {
-			// Always restore the prior session user so identity does not bleed
-			// across jobs in the same cron pass (#1006).
-			if ($sessionUserOverridden === true) {
-				$this->userSession->setVolatileActiveUser($priorSessionUser);
-			}
-		}
-
-		// Calculate execution time in milliseconds. The job_log schema requires an
-		// integer (or null), so round the millisecond delta to a whole number before
-		// it is persisted — a raw float fails OpenRegister object validation (500).
-		$timeEnd = microtime(true);
-		$executionTime = (int)round(($timeEnd - $timeStart) * 1000);
-
-		// Pre-compute lastRun/nextRun so the job log reflects the correct
-		// timeline even though we write the log BEFORE advancing the job row
-		// (M1 fix: log first, then advance the timeline).
+	/**
+	 * Writes the job log for a run, then advances the job's timeline.
+	 *
+	 * The log is written first so a failure saving the job row cannot leave the
+	 * timeline advanced with no log entry as evidence.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param array $jobData The job's data as loaded.
+	 * @param bool $forceRun Whether this is a force run, which keeps the schedule.
+	 * @param array{result: mixed, exception: \Throwable|null, executionTime: int} $outcome The run outcome.
+	 *
+	 * @return ObjectEntity The job log entry.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function recordJobRun(ObjectEntity $job, array $jobData, bool $forceRun, array $outcome): ObjectEntity {
+		$jobConfig = $jobData;
 		$jobData['lastRun'] = (new DateTime())->format('c');
 		if ($forceRun === false) {
-			if ($executionThrew === false) {
-				// Read from $jobConfig, the job AS LOADED: $jobData has been
-				// mutated above (lastRun) and static analysis narrows it to the
-				// keys this method assigns, so `interval` reads as non-existent.
-				// Same remedy the comment at the top of this method describes.
-				$nextRunDt = new DateTime('now + ' . ($jobConfig['interval'] ?? 0) . ' seconds');
-
-				// A batched action with work left runs again on the next tick.
-				if (($result['resumeSoon'] ?? false) === true) {
-					$nextRunDt = new DateTime();
-				}
-
-				// Handle rate limiting if specified in result.
-				if (isset($result['nextRun']) === true) {
-					$nextRunRateLimit = DateTime::createFromFormat('U', (string)$result['nextRun'], $nextRunDt->getTimezone());
-					if ($nextRunRateLimit !== false) {
-						// Check if the current seconds part is not zero, and if so, round up to the next minute.
-						if ($nextRunRateLimit->format('s') !== '00') {
-							$nextRunRateLimit->modify('next minute');
-						}
-
-						if ($nextRunRateLimit > $nextRunDt) {
-							$nextRunDt = $nextRunRateLimit;
-						}
-					}
-				}
-			} else {
-				// On failure advance by the job's interval so it doesn't block
-				// the next cron tick (same logic as run()'s catch block).
-				$nextRunDt = new DateTime('now + ' . ((int)($jobConfig['interval'] ?? 0)) . ' seconds');
-			}//end if
-
-			// Set time to the current hour and minute (remove seconds).
-			$nextRunDt->setTime(hour: (int)$nextRunDt->format('H'), minute: (int)$nextRunDt->format('i'));
-			$jobData['nextRun'] = $nextRunDt->format('c');
-		}//end if
-
-		// Handle single run jobs by disabling them after execution. The flag
-		// was captured at the top, from the job as loaded — see there for why.
-		if ($forceRun === false && $isSingleRun === true && $executionThrew === false) {
-			$jobData['isEnabled'] = false;
+			$jobData['nextRun'] = $this->calculateNextRun(jobConfig: $jobConfig, outcome: $outcome)->format('c');
+			if ($this->isSingleRunJob(jobConfig: $jobConfig) === true && $outcome['exception'] === null) {
+				$jobData['isEnabled'] = false;
+			}
 		}
 
-		// M1: Build and write the job log BEFORE persisting lastRun/nextRun so
-		// that any DB failure writing the job row cannot leave the timeline
-		// advanced with no log entry as evidence.
-		$logRetention = (int)($jobConfig['logRetention'] ?? 0);
-		$errorRetention = (int)($jobConfig['errorRetention'] ?? 0);
+		$stackTrace = [];
+		if ($forceRun === true) {
+			$stackTrace[] = 'Doing a force run for this job, ignoring "enabled" & "nextRun" check...';
+		}
 
-		if ($executionThrew === true && $thrownException !== null) {
-			// H3: write an error log for exceptions thrown during executeJob.
-			$throwableFrames = [];
-			foreach ($thrownException->getTrace() as $frame) {
-				if (isset($frame['file']) === true) {
-					$throwableFrames[] = $frame['file'] . ':' . ($frame['line'] ?? '?');
-				} elseif (isset($frame['class']) === true) {
-					$throwableFrames[] = $frame['class'] . ($frame['type'] ?? '::') . $frame['function'];
-				} else {
-					$throwableFrames[] = $frame['function'];
-				}
+		$logData = $this->buildJobLogData(jobConfig: $jobConfig, outcome: $outcome, stackTrace: $stackTrace);
+		$logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $logData);
 
-				if (count($throwableFrames) >= 50) {
-					break;
-				}
-			}
-
-			$stackTrace = array_merge($stackTrace, $throwableFrames);
-			$expiresDate = $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
-			$errorLogData = [
-				'level' => 'ERROR',
-				'message' => $this->truncateMessage(
-					message: sprintf('%s: %s', get_class($thrownException), $thrownException->getMessage())
-				),
-				'executionTime' => $executionTime,
-				'stackTrace' => $stackTrace,
-				'expires' => null,
-			];
-
-			if ($expiresDate !== null) {
-				$errorLogData['expires'] = $expiresDate->format('c');
-			}
-
-			$logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $errorLogData);
-		} else {
-			// Build success/non-error log.
-			$successExpiry = $this->calculateExpires(...[($logRetention * 1000), $this->successRetention]);
-
-			$logData = [
-				'level' => 'SUCCESS',
-				'message' => 'Success',
-				'executionTime' => $executionTime,
-				'expires' => null,
-			];
-
-			if ($successExpiry !== null) {
-				$logData['expires'] = $successExpiry->format('c');
-			}
-
-			// Process job execution result and update log accordingly.
-			if (is_array($result) === true) {
-				if (isset($result['level']) === true) {
-					$logData['level'] = $result['level'];
-
-					if ($result['level'] !== 'SUCCESS') {
-						$expiresDate = $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
-						if ($expiresDate !== null) {
-							$logData['expires'] = $expiresDate->format('c');
-						} else {
-							$logData['expires'] = null;
-						}
-					}
-				}
-
-				if (isset($result['message']) === true) {
-					$logData['message'] = $this->truncateMessage(message: $result['message']);
-				}
-
-				if (isset($result['stackTrace']) === true) {
-					$stackTrace = array_merge($stackTrace, $result['stackTrace']);
-				}
-			}//end if
-
-			$logData['stackTrace'] = $stackTrace;
-			$logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $logData);
-		}//end if
-
-		// M1: Advance the job's timeline only AFTER the log entry is safely written.
 		$this->objectService->saveObject(
 			object: $jobData,
 			register: 'integriq',
@@ -641,41 +567,252 @@ class JobService {
 			uuid: $job->getUuid()
 		);
 
-		// Execution-trace REQ-004: a self-minted `job`-entryPoint trace is
-		// persisted here, exactly once, when the run completes. Best-effort
-		// — a persistence failure MUST NOT fail the job run it is observing.
-		if ($ownsJobTrace === true && $trace !== null) {
-			$jobTraceStatus = 'success';
-			if ($executionThrew === true) {
-				$jobTraceStatus = 'failed';
-			}
-
-			$jobTraceError = null;
-			if ($executionThrew === true && $thrownException !== null) {
-				$jobTraceError = [
-					'message' => $thrownException->getMessage(),
-					'ruleType' => null,
-					'ruleName' => null,
-				];
-			}
-
-			try {
-				$this->containerInterface->get(ExecutionTraceService::class)->persist(
-					trace: $trace,
-					status: $jobTraceStatus,
-					error: $jobTraceError
-				);
-			} catch (\Throwable $exception) {
-				// Best-effort: execution_trace persistence failure MUST NOT
-				// fail the job run it is observing. JobService has no
-				// injected logger; the job_log entry above already captures
-				// the run's own outcome.
-				unset($exception);
-			}
-		}//end if
-
 		return $logEntry;
-	}//end executeJob()
+	}//end recordJobRun()
+
+	/**
+	 * Checks whether a job runs only once.
+	 *
+	 * The schema declares `singleRun`; `isSingleRun` is still accepted as the
+	 * spelling this service read before.
+	 *
+	 * @param array $jobConfig The job's data as loaded.
+	 *
+	 * @return bool True for a single-run job.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function isSingleRunJob(array $jobConfig): bool {
+		return ($jobConfig['singleRun'] ?? null) === true || ($jobConfig['isSingleRun'] ?? null) === true;
+	}//end isSingleRunJob()
+
+	/**
+	 * Calculates a job's next run, truncated to the minute.
+	 *
+	 * After a failure the job advances by its interval, so it doesn't block the
+	 * next cron tick.
+	 *
+	 * @param array $jobConfig The job's data as loaded.
+	 * @param array{result: mixed, exception: \Throwable|null, executionTime: int} $outcome The run outcome.
+	 *
+	 * @return DateTime The next run.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function calculateNextRun(array $jobConfig, array $outcome): DateTime {
+		if ($outcome['exception'] !== null) {
+			$nextRunDt = new DateTime('now + ' . ((int)($jobConfig['interval'] ?? 0)) . ' seconds');
+		} else {
+			$nextRunDt = $this->calculateNextRunAfterResult(jobConfig: $jobConfig, result: $outcome['result']);
+		}
+
+		$nextRunDt->setTime(hour: (int)$nextRunDt->format('H'), minute: (int)$nextRunDt->format('i'));
+
+		return $nextRunDt;
+	}//end calculateNextRun()
+
+	/**
+	 * Calculates the next run after a run that returned normally.
+	 *
+	 * A batched action with work left (`resumeSoon`) runs again on the next tick;
+	 * a later rate-limit `nextRun` in the result, rounded up to the minute, wins.
+	 *
+	 * @param array $jobConfig The job's data as loaded.
+	 * @param mixed $result The action's result.
+	 *
+	 * @return DateTime The next run.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function calculateNextRunAfterResult(array $jobConfig, mixed $result): DateTime {
+		$nextRunDt = new DateTime('now + ' . ($jobConfig['interval'] ?? 0) . ' seconds');
+		if (($result['resumeSoon'] ?? false) === true) {
+			$nextRunDt = new DateTime();
+		}
+
+		if (isset($result['nextRun']) === false) {
+			return $nextRunDt;
+		}
+
+		$nextRunRateLimit = DateTime::createFromFormat('U', (string)$result['nextRun'], $nextRunDt->getTimezone());
+		if ($nextRunRateLimit === false) {
+			return $nextRunDt;
+		}
+
+		if ($nextRunRateLimit->format('s') !== '00') {
+			$nextRunRateLimit->modify('next minute');
+		}
+
+		if ($nextRunRateLimit > $nextRunDt) {
+			return $nextRunRateLimit;
+		}
+
+		return $nextRunDt;
+	}//end calculateNextRunAfterResult()
+
+	/**
+	 * Builds the job log data for a run.
+	 *
+	 * @param array $jobConfig The job's data as loaded.
+	 * @param array{result: mixed, exception: \Throwable|null, executionTime: int} $outcome The run outcome.
+	 * @param string[] $stackTrace The stack trace collected so far.
+	 *
+	 * @return array The log data.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function buildJobLogData(array $jobConfig, array $outcome, array $stackTrace): array {
+		if ($outcome['exception'] !== null) {
+			return $this->buildJobErrorLogData(jobConfig: $jobConfig, outcome: $outcome, stackTrace: $stackTrace);
+		}
+
+		$expiry = $this->calculateExpires(...[((int)($jobConfig['logRetention'] ?? 0) * 1000), $this->successRetention]);
+		$logData = [
+			'level' => 'SUCCESS',
+			'message' => 'Success',
+			'executionTime' => $outcome['executionTime'],
+			'expires' => $expiry?->format('c'),
+		];
+
+		$result = $outcome['result'];
+		if (is_array($result) === true) {
+			$logData = $this->applyJobResultToLogData(logData: $logData, result: $result, jobConfig: $jobConfig);
+			if (isset($result['stackTrace']) === true) {
+				$stackTrace = array_merge($stackTrace, $result['stackTrace']);
+			}
+		}
+
+		$logData['stackTrace'] = $stackTrace;
+
+		return $logData;
+	}//end buildJobLogData()
+
+	/**
+	 * Applies the level and message an action returned to the log data.
+	 *
+	 * A level other than SUCCESS takes the error retention for its expiry.
+	 *
+	 * @param array $logData The log data so far.
+	 * @param array $result The action's result.
+	 * @param array $jobConfig The job's data as loaded.
+	 *
+	 * @return array The updated log data.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function applyJobResultToLogData(array $logData, array $result, array $jobConfig): array {
+		if (isset($result['level']) === true) {
+			$logData['level'] = $result['level'];
+			if ($result['level'] !== 'SUCCESS') {
+				$logData['expires'] = $this->calculateErrorExpiry(jobConfig: $jobConfig)?->format('c');
+			}
+		}
+
+		if (isset($result['message']) === true) {
+			$logData['message'] = $this->truncateMessage(message: $result['message']);
+		}
+
+		return $logData;
+	}//end applyJobResultToLogData()
+
+	/**
+	 * Builds the job log data for a run whose action threw.
+	 *
+	 * @param array $jobConfig The job's data as loaded.
+	 * @param array{result: mixed, exception: \Throwable, executionTime: int} $outcome The run outcome.
+	 * @param string[] $stackTrace The stack trace collected so far.
+	 *
+	 * @return array The log data.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function buildJobErrorLogData(array $jobConfig, array $outcome, array $stackTrace): array {
+		$exception = $outcome['exception'];
+		$stackTrace = array_merge($stackTrace, $this->describeThrowableFrames(exception: $exception));
+		$expiresDate = $this->calculateErrorExpiry(jobConfig: $jobConfig);
+
+		return [
+			'level' => 'ERROR',
+			'message' => $this->truncateMessage(
+				message: sprintf('%s: %s', get_class($exception), $exception->getMessage())
+			),
+			'executionTime' => $outcome['executionTime'],
+			'stackTrace' => $stackTrace,
+			'expires' => $expiresDate?->format('c'),
+		];
+	}//end buildJobErrorLogData()
+
+	/**
+	 * Calculates the expiry of an error log for a job.
+	 *
+	 * @param array $jobConfig The job's data as loaded.
+	 *
+	 * @return \DateTime|null The expiry, or null to keep the log indefinitely.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function calculateErrorExpiry(array $jobConfig): ?\DateTime {
+		$errorRetention = (int)($jobConfig['errorRetention'] ?? 0);
+
+		return $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
+	}//end calculateErrorExpiry()
+
+	/**
+	 * Describes up to 50 frames of a throwable's trace as `file:line` or `Class::function`.
+	 *
+	 * @param \Throwable $exception The throwable.
+	 *
+	 * @return string[] The frame descriptions.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function describeThrowableFrames(\Throwable $exception): array {
+		$frames = [];
+		foreach (array_slice($exception->getTrace(), 0, 50) as $frame) {
+			if (isset($frame['file']) === true) {
+				$frames[] = $frame['file'] . ':' . ($frame['line'] ?? '?');
+			} elseif (isset($frame['class']) === true) {
+				$frames[] = $frame['class'] . ($frame['type'] ?? '::') . $frame['function'];
+			} else {
+				$frames[] = $frame['function'];
+			}
+		}
+
+		return $frames;
+	}//end describeThrowableFrames()
+
+	/**
+	 * Persists a self-minted job trace once the run completes (execution-trace REQ-004).
+	 *
+	 * Best-effort: a persistence failure must not fail the job run it observes.
+	 *
+	 * @param ExecutionTraceContext $trace The trace context.
+	 * @param \Throwable|null $exception The exception the action threw, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+	 */
+	private function persistJobTrace(ExecutionTraceContext $trace, ?\Throwable $exception): void {
+		$status = 'success';
+		$error = null;
+		if ($exception !== null) {
+			$status = 'failed';
+			$error = ['message' => $exception->getMessage(), 'ruleType' => null, 'ruleName' => null];
+		}
+
+		try {
+			$this->containerInterface->get(ExecutionTraceService::class)->persist(
+				trace: $trace,
+				status: $status,
+				error: $error
+			);
+		} catch (\Throwable $persistError) {
+			// JobService has no injected logger; the job_log entry already
+			// captures the run's own outcome.
+			unset($persistError);
+		}
+	}//end persistJobTrace()
 
 	/**
 	 * Save a job log entry via ObjectService.

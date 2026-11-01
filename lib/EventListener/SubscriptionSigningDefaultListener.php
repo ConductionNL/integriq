@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -80,7 +80,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SubscriptionSigningPolicy $policy Decides the signing posture.
+	 * @param SubscriptionSigningPolicyInterface $policy Decides the signing posture.
 	 * @param RegisterMapper $registerMapper Resolves the object's register slug.
 	 * @param SchemaMapper $schemaMapper Resolves the object's schema slug.
 	 * @param IUserSession $userSession Names who set a subscription unsigned.
@@ -88,7 +88,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 	 * @param LoggerInterface $logger Names a lookup that failed.
 	 */
 	public function __construct(
-		private readonly SubscriptionSigningPolicy $policy,
+		private readonly SubscriptionSigningPolicyInterface $policy,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
@@ -129,7 +129,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 		}
 
 		$data = (array)$entity->getObject();
-		if ((string)($data['style'] ?? '') !== SubscriptionSigningPolicy::STYLE_PUSH) {
+		if ((string)($data['style'] ?? '') !== SubscriptionSigningPolicyInterface::STYLE_PUSH) {
 			return;
 		}
 
@@ -182,7 +182,7 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 		}
 
 		$read = $this->policy->forReading(
-			subscription: ['style' => SubscriptionSigningPolicy::STYLE_PUSH, 'protocolSettings' => $settings]
+			subscription: ['style' => SubscriptionSigningPolicyInterface::STYLE_PUSH, 'protocolSettings' => $settings]
 		);
 		$modified['signingPosture'] = $read['signingPosture'];
 		$modified['unsignedReason'] = (string)($read['unsignedReason'] ?? '');

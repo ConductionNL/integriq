@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
-class EudiCredentialOfferService {
+class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface {
 
 	/**
 	 * Default offer resolution TTL in seconds (REQ-EUDI-005: 15 minutes).
@@ -424,6 +424,50 @@ class EudiCredentialOfferService {
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
 	 */
 	public function exchangeToken(array $data): array {
+		$entity = $this->redeemableOffer(code: $this->presentedCode(data: $data));
+		$offerData = $entity->getObject();
+
+		if (($offerData['txCodeRequired'] ?? false) === true) {
+			$this->checkTxCode(offer: $entity, presented: ($data['tx_code'] ?? ''));
+		}
+
+		// Capture the fields the new session needs BEFORE mutating the offer
+		// row's status, so the session write below never depends on the
+		// post-mutation shape of $offerData.
+		$session = [
+			'offerId' => $entity->getUuid(),
+			'format' => $offerData['format'],
+			'credentialConfigurationId' => ($offerData['credentialConfigurationId'] ?? null),
+		];
+
+		// Consume the code atomically: flip status to claimed before issuing
+		// the token, so a concurrent/replayed second request observes a
+		// non-'created' status and is rejected above.
+		$offerData['status'] = 'claimed';
+		$this->orObjectService->saveObject(
+			object: $offerData,
+			register: 'integriq',
+			schema: 'eudi_credential_offer',
+			uuid: $entity->getUuid()
+		);
+
+		return $this->openIssuanceSession(session: $session);
+
+	}//end exchangeToken()
+
+	/**
+	 * The pre-authorized code of a token request that uses the
+	 * pre-authorized_code grant.
+	 *
+	 * @param array $data Request body: `grant_type`, `pre-authorized_code`.
+	 *
+	 * @return string The presented code.
+	 *
+	 * @throws EudiIssuanceException When the grant is another one (`unsupported_grant_type`) or the code is missing (`invalid_request`).
+	 *
+	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
+	 */
+	private function presentedCode(array $data): string {
 		$grantType = ($data['grant_type'] ?? '');
 		if ($grantType !== 'urn:ietf:params:oauth:grant-type:pre-authorized_code') {
 			throw new EudiIssuanceException(
@@ -438,6 +482,22 @@ class EudiCredentialOfferService {
 			throw new EudiIssuanceException(message: 'pre-authorized_code is required', httpStatus: 400, errorCode: 'invalid_request');
 		}
 
+		return $code;
+
+	}//end presentedCode()
+
+	/**
+	 * The offer a pre-authorized code redeems: known, still `created` and not expired.
+	 *
+	 * @param string $code The presented pre-authorized code.
+	 *
+	 * @return ObjectEntity The offer.
+	 *
+	 * @throws EudiIssuanceException When the code is unknown, already used or expired (`invalid_grant`).
+	 *
+	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
+	 */
+	private function redeemableOffer(string $code): ObjectEntity {
 		$entity = $this->findOfferByCode(code: $code);
 		if ($entity === null) {
 			throw new EudiIssuanceException(message: 'Unknown pre-authorized_code', httpStatus: 400, errorCode: 'invalid_grant');
@@ -456,51 +516,65 @@ class EudiCredentialOfferService {
 			throw new EudiIssuanceException(message: 'pre-authorized_code has expired', httpStatus: 400, errorCode: 'invalid_grant');
 		}
 
-		if (($offerData['txCodeRequired'] ?? false) === true) {
-			$attempts = (int)($offerData['txCodeFailedAttempts'] ?? 0);
-			if ($attempts >= self::TX_CODE_MAX_ATTEMPTS) {
-				throw new EudiIssuanceException(
-					message: 'Too many incorrect tx_code attempts',
-					httpStatus: 400,
-					errorCode: 'invalid_grant'
-				);
-			}
+		return $entity;
 
-			$presentedTxCode = ($data['tx_code'] ?? '');
-			if (is_string($presentedTxCode) === false || $presentedTxCode === ''
-				|| hash_equals((string)$offerData['txCodeHash'], self::hashSecret(value: $presentedTxCode)) === false
-			) {
-				// Wrong PIN does NOT consume the pre-authorized_code — the
-				// wallet retains its remaining attempts.
-				$offerData['txCodeFailedAttempts'] = ($attempts + 1);
-				$this->orObjectService->saveObject(
-					object: $offerData,
-					register: 'integriq',
-					schema: 'eudi_credential_offer',
-					uuid: $entity->getUuid()
-				);
+	}//end redeemableOffer()
 
-				throw new EudiIssuanceException(message: 'Incorrect tx_code', httpStatus: 400, errorCode: 'invalid_grant');
-			}
-		}//end if
+	/**
+	 * Check the presented tx_code (PIN) of an offer that requires one.
+	 *
+	 * A wrong PIN counts a failed attempt on the offer and does NOT consume the
+	 * pre-authorized_code, so the wallet keeps its remaining attempts.
+	 *
+	 * @param ObjectEntity $offer     The offer being redeemed.
+	 * @param mixed        $presented The `tx_code` of the request.
+	 *
+	 * @return void
+	 *
+	 * @throws EudiIssuanceException When the attempts are exhausted or the PIN is wrong (`invalid_grant`).
+	 *
+	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
+	 */
+	private function checkTxCode(ObjectEntity $offer, mixed $presented): void {
+		$offerData = $offer->getObject();
+		$attempts = (int)($offerData['txCodeFailedAttempts'] ?? 0);
+		if ($attempts >= self::TX_CODE_MAX_ATTEMPTS) {
+			throw new EudiIssuanceException(
+				message: 'Too many incorrect tx_code attempts',
+				httpStatus: 400,
+				errorCode: 'invalid_grant'
+			);
+		}
 
-		// Capture the fields the new session needs BEFORE mutating the offer
-		// row's status, so the session write below never depends on the
-		// post-mutation shape of $offerData.
-		$offerFormat = $offerData['format'];
-		$offerCredentialConfigId = ($offerData['credentialConfigurationId'] ?? null);
+		if (is_string($presented) === true && $presented !== ''
+			&& hash_equals((string)$offerData['txCodeHash'], self::hashSecret(value: $presented)) === true
+		) {
+			return;
+		}
 
-		// Consume the code atomically: flip status to claimed before issuing
-		// the token, so a concurrent/replayed second request observes a
-		// non-'created' status and is rejected above.
-		$offerData['status'] = 'claimed';
+		$offerData['txCodeFailedAttempts'] = ($attempts + 1);
 		$this->orObjectService->saveObject(
 			object: $offerData,
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
-			uuid: $entity->getUuid()
+			uuid: $offer->getUuid()
 		);
 
+		throw new EudiIssuanceException(message: 'Incorrect tx_code', httpStatus: 400, errorCode: 'invalid_grant');
+
+	}//end checkTxCode()
+
+	/**
+	 * Mint the access token and c_nonce of a redeemed offer and persist the
+	 * issuance session that holds the token's hash.
+	 *
+	 * @param array{offerId: string|null, format: mixed, credentialConfigurationId: mixed} $session The offer fields the session carries.
+	 *
+	 * @return array{access_token: string, token_type: string, c_nonce: string, c_nonce_expires_in: int, expires_in: int}
+	 *
+	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
+	 */
+	private function openIssuanceSession(array $session): array {
 		$accessToken = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
 		$cNonce = rtrim(strtr(base64_encode(random_bytes(16)), '+/', '-_'), '=');
 
@@ -511,12 +585,12 @@ class EudiCredentialOfferService {
 		$sessionUuid = self::generateUuid();
 		$this->orObjectService->saveObject(
 			object: [
-				'offerId' => $entity->getUuid(),
+				'offerId' => $session['offerId'],
 				'accessTokenHash' => self::hashSecret(value: $accessToken),
 				'cNonce' => $cNonce,
 				'cNonceExpiresAt' => $nonceExpires->format('c'),
-				'format' => $offerFormat,
-				'credentialConfigurationId' => $offerCredentialConfigId,
+				'format' => $session['format'],
+				'credentialConfigurationId' => $session['credentialConfigurationId'],
 				'expiresAt' => $sessionExpires->format('c'),
 			],
 			register: 'integriq',
@@ -532,7 +606,7 @@ class EudiCredentialOfferService {
 			'expires_in' => self::SESSION_TTL_SECONDS,
 		];
 
-	}//end exchangeToken()
+	}//end openIssuanceSession()
 
 	/**
 	 * Verify a wallet proof-of-possession JWT (`proof.jwt`).

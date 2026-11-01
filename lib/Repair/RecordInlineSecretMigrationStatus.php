@@ -13,7 +13,7 @@
  * safe thing was to REPORT only. openregister#450 (the sessionless
  * `actingOrganisationId` assertion on `resolveInjectable()`) and the `_rbac: false`
  * sessionless `mint()` (openregister#440) removed that blocker, so this step now
- * EXECUTES {@see \OCA\Integriq\Service\Security\InlineSecretMigrationExecutor}
+ * EXECUTES {@see InlineSecretMigrationExecutorInterface}
  * — for every `source` it mints a broker credential, VERIFIES the secret
  * round-trips, and only then writes the `{credentialRef}` placeholder and nulls
  * the inline value — and THEN records the status.
@@ -25,7 +25,7 @@
  * it can never brick an `occ upgrade`; the recording pass then reflects the true,
  * still-dirty state.
  *
- * After execution it runs the {@see InlineSecretMigrationPlanner} and persists the
+ * After execution it runs the {@see \OCA\Integriq\Service\Security\InlineSecretMigrationPlanner} and persists the
  * answer to one question into appconfig:
  *
  *     "Do any `source` objects still hold an inline secret?"
@@ -60,8 +60,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
-use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Security\InlineSecretMigrationExecutorInterface;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
+use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -86,19 +88,12 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	private const OR_OBJECT_SERVICE = 'OCA\\OpenRegister\\Service\\ObjectService';
 
 	/**
-	 * Appconfig app id.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'integriq';
-
-	/**
 	 * Appconfig key: '1' when NO source holds an unmigrated inline secret.
 	 * Phase D's gate — it may remove the schema properties only when this is '1'.
 	 *
 	 * @var string
 	 */
-	public const KEY_CLEAN = 'inline_secrets_clean';
+	public const KEY_CLEAN = InlineSecretMigrationPlannerInterface::KEY_CLEAN;
 
 	/**
 	 * Appconfig key: the count of inline secret fields still awaiting migration
@@ -106,7 +101,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	public const KEY_PENDING = 'inline_secrets_pending';
+	public const KEY_PENDING = InlineSecretMigrationPlannerInterface::KEY_PENDING;
 
 	/**
 	 * Appconfig key: the count of inline secret fields needing manual review
@@ -114,7 +109,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	public const KEY_MANUAL = 'inline_secrets_manual_review';
+	public const KEY_MANUAL = InlineSecretMigrationPlannerInterface::KEY_MANUAL;
 
 	/**
 	 * Constructor.
@@ -122,11 +117,13 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 * @param ContainerInterface $container The DI container (to resolve OR lazily).
 	 * @param IAppConfig $appConfig The appconfig store for the gate signal.
 	 * @param LoggerInterface $logger Secret-free logging only.
+	 * @param InlineSecretMigrationFactoryInterface $migrations Builds the planner and executor once OpenRegister is resolved.
 	 */
 	public function __construct(
 		private ContainerInterface $container,
 		private IAppConfig $appConfig,
 		private LoggerInterface $logger,
+		private InlineSecretMigrationFactoryInterface $migrations,
 	) {
 
 	}//end __construct()
@@ -159,10 +156,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 
 		try {
 			$objectService = $this->container->get(self::OR_OBJECT_SERVICE);
-			$planner = new InlineSecretMigrationPlanner(
-				objectService: $objectService,
-				logger: $this->logger
-			);
+			$planner = $this->migrations->planner(objectService: $objectService);
 
 			// PHASE C EXECUTION (now unblocked): mint → verify → write ref → null.
 			// Non-fatal and fail-closed — a failure here leaves every inline secret
@@ -179,9 +173,9 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 				$cleanFlag = '1';
 			}
 
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_CLEAN, value: $cleanFlag);
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_PENDING, value: (string)$pending);
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_MANUAL, value: (string)$manual);
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_CLEAN, value: $cleanFlag);
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_PENDING, value: (string)$pending);
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_MANUAL, value: (string)$manual);
 
 			if ($clean === true) {
 				$output->info('Integriq: no source holds an inline secret — Phase D gate is CLEAN.');
@@ -201,7 +195,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 		} catch (Throwable $e) {
 			// Never fatal. A failure here must not brick an upgrade — but it MUST
 			// fail the gate closed: an unknown status is not a clean status.
-			$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_CLEAN, value: '0');
+			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_CLEAN, value: '0');
 			$output->warning('Integriq: could not compute inline-secret migration status: ' . $e->getMessage());
 			$this->logger->error(
 				'[integriq] RecordInlineSecretMigrationStatus failed; Phase D gate set to NOT-clean',
@@ -223,14 +217,14 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 * (never a secret) are surfaced.
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service.
-	 * @param InlineSecretMigrationPlanner $planner The read-safe planner (reused by the executor).
+	 * @param InlineSecretMigrationPlannerInterface $planner The read-safe planner (reused by the executor).
 	 * @param IOutput $output The output interface.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
-	protected function runMigration(OrObjectService $objectService, InlineSecretMigrationPlanner $planner, IOutput $output): void {
+	protected function runMigration(OrObjectService $objectService, InlineSecretMigrationPlannerInterface $planner, IOutput $output): void {
 		try {
 			$executor = $this->makeExecutor(objectService: $objectService, planner: $planner);
 			// Drives migrateEverything(), NOT migrateAll(): on upgrade this is the only
@@ -268,18 +262,16 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 	 * Build the migration executor (a protected seam so tests can inject a double).
 	 *
 	 * @param OrObjectService $objectService The OpenRegister object service.
-	 * @param InlineSecretMigrationPlanner $planner The read-safe planner reused for classification + the post-run gate.
+	 * @param InlineSecretMigrationPlannerInterface $planner The read-safe planner reused for classification + the post-run gate.
 	 *
-	 * @return InlineSecretMigrationExecutor The executor.
+	 * @return InlineSecretMigrationExecutorInterface The executor.
 	 *
 	 * @spec exclude Construction seam — no domain behavior (overridden in tests).
 	 */
-	protected function makeExecutor(OrObjectService $objectService, InlineSecretMigrationPlanner $planner): InlineSecretMigrationExecutor {
-		return new InlineSecretMigrationExecutor(
-			objectService: $objectService,
-			planner: $planner,
-			logger: $this->logger,
-			container: $this->container
-		);
+	protected function makeExecutor(
+		OrObjectService $objectService,
+		InlineSecretMigrationPlannerInterface $planner
+	): InlineSecretMigrationExecutorInterface {
+		return $this->migrations->executor(objectService: $objectService, planner: $planner);
 	}//end makeExecutor()
 }//end class

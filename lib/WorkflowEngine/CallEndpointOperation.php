@@ -28,8 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\EndpointService;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\EndpointServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -49,13 +49,13 @@ class CallEndpointOperation implements ISpecificOperation {
 	/**
 	 * Constructor.
 	 *
-	 * @param EndpointService $endpointService Service that resolves and triggers endpoints.
+	 * @param EndpointServiceInterface $endpointService Service that resolves and triggers endpoints.
 	 * @param IL10N $l10n App-scoped translator for the operation's admin-UI copy.
 	 * @param IURLGenerator $urlGenerator Nextcloud URL generator, used for the operation icon.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		private readonly EndpointService $endpointService,
+		private readonly EndpointServiceInterface $endpointService,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
@@ -107,7 +107,7 @@ class CallEndpointOperation implements ISpecificOperation {
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath(Application::APP_ID, 'app.svg');
+		return $this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app.svg');
 	}//end getIcon()
 
 	/**
