@@ -152,7 +152,7 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -163,6 +163,7 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import EventDeliveryDetailModal from '../../modals/EventDelivery/EventDeliveryDetailModal.vue'
+import bulkSelection from '../../mixins/bulkSelection.js'
 
 export default {
 	name: 'EventDeliveriesPage',
@@ -175,6 +176,8 @@ export default {
 		NcTextField,
 		EventDeliveryDetailModal,
 	},
+
+	mixins: [bulkSelection],
 
 	data() {
 		return {
@@ -190,11 +193,7 @@ export default {
 			// because the pre-existing OR-object producer shares the
 			// `com.nextcloud.` type prefix with these new producers).
 			nextcloudOnly: false,
-			selected: [],
 			detail: { open: false, message: null },
-			bulkConfirm: null,
-			busy: false,
-			reloadTimer: null,
 		}
 	},
 
@@ -218,6 +217,29 @@ export default {
 
 	methods: {
 		t,
+
+		/**
+		 * The path of the bulk endpoint for a verb.
+		 *
+		 * @param {string} verb The bulk verb, `replay` or `discard`.
+		 * @return {string} The path.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
+		bulkUrl(verb) {
+			return `/apps/integriq/api/events/dead-letter/${verb}`
+		},
+
+		/**
+		 * The toast after a bulk run without failures.
+		 *
+		 * @param {number} ok How many ids were processed.
+		 * @return {string} The toast text.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
+		bulkSuccessText(ok) {
+			return t('integriq', '{ok} messages processed', { ok })
+		},
+
 		/**
 		 * Resolve a row's CloudEvent type for the list column.
 		 *
@@ -227,25 +249,6 @@ export default {
 		 */
 		rowEventType(row) {
 			return row?.payload?.type || row?.payload?.data?.type || '—'
-		},
-
-		isSelected(row) {
-			return this.selected.includes(row.uuid || row.id)
-		},
-
-		/**
-		 * Toggle a row in the bulk-selection set.
-		 *
-		 * @param {object} row Dead-letter message row.
-		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
-		 */
-		toggleSelect(row) {
-			const id = row.uuid || row.id
-			if (this.selected.includes(id)) {
-				this.selected = this.selected.filter((x) => x !== id)
-			} else {
-				this.selected = [...this.selected, id]
-			}
 		},
 
 		/**
@@ -265,16 +268,6 @@ export default {
 		 */
 		closeDetail() {
 			this.detail = { open: false, message: null }
-		},
-
-		/**
-		 * Debounced reload used by the subscription filter field.
-		 *
-		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
-		 */
-		reloadDebounced() {
-			clearTimeout(this.reloadTimer)
-			this.reloadTimer = setTimeout(() => this.reload(), 400)
 		},
 
 		/**
@@ -300,48 +293,6 @@ export default {
 				this.rows = []
 			} finally {
 				this.loading = false
-			}
-		},
-
-		/**
-		 * Apply the confirmed bulk verb (replay/discard) to the selected ids.
-		 *
-		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
-		 */
-		async commitBulk() {
-			const verb = this.bulkConfirm
-			if (!verb || !this.selected.length) {
-				return
-			}
-			this.busy = true
-			try {
-				const res = await axios.post(
-					generateUrl(`/apps/integriq/api/events/dead-letter/${verb}`),
-					{ ids: this.selected },
-				)
-				const results = res.data?.results || {}
-				const ok = Object.values(results).filter((r) => r === 'ok').length
-				const failed = Object.keys(results).length - ok
-				if (failed > 0) {
-					showError(
-						t('integriq', '{ok} processed, {failed} failed', {
-							ok,
-							failed,
-						}),
-					)
-				} else {
-					showSuccess(t('integriq', '{ok} messages processed', { ok }))
-				}
-				await this.reload()
-			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					t('integriq', 'Bulk action failed')
-						+ (detail ? `: ${detail}` : ''),
-				)
-			} finally {
-				this.busy = false
-				this.bulkConfirm = null
 			}
 		},
 	},
