@@ -173,19 +173,7 @@ class CallReplayService implements CallReplayServiceInterface {
 		try {
 			$response = $this->dispatcher->dispatch($call->target, $request);
 		} catch (CallDispatchException $exception) {
-			$this->recorder->appendAttempt(
-				$call->uuid,
-				[
-					'by' => $call->actorUid,
-					'kind' => CallRecorder::KIND_REPLAYED,
-					'statusCode' => 0,
-					'detail' => $exception->getMessage(),
-					'mappingVersion' => $call->mappingVersion,
-				]
-			);
-			$this->deadLetterIfExhausted(uuid: $call->uuid);
-
-			return $this->notSent(call: $call, detail: $exception->getMessage());
+			return $this->dispatchFailed(call: $call, exception: $exception);
 		}
 
 		$statusCode = (int)$response['statusCode'];
@@ -217,6 +205,34 @@ class CallReplayService implements CallReplayServiceInterface {
 		];
 
 	}//end send()
+
+	/**
+	 * Record a replay that never reached the partner as an attempt too, because
+	 * "we could not call them" is an answer somebody needs.
+	 *
+	 * @param ReplayTarget          $call      The call being replayed.
+	 * @param CallDispatchException $exception Why the dispatch failed.
+	 *
+	 * @return array<string,mixed> The outcome.
+	 *
+	 * @spec openspec/specs/outbound-call-log/spec.md
+	 */
+	private function dispatchFailed(ReplayTarget $call, CallDispatchException $exception): array {
+		$this->recorder->appendAttempt(
+			$call->uuid,
+			[
+				'by' => $call->actorUid,
+				'kind' => CallRecorder::KIND_REPLAYED,
+				'statusCode' => 0,
+				'detail' => $exception->getMessage(),
+				'mappingVersion' => $call->mappingVersion,
+			]
+		);
+		$this->deadLetterIfExhausted(uuid: $call->uuid);
+
+		return $this->notSent(call: $call, detail: $exception->getMessage());
+
+	}//end dispatchFailed()
 
 	/**
 	 * The outcome of a replay that never reached the partner.
