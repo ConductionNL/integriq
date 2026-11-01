@@ -99,3 +99,57 @@ exports[`form-dialog slot contract for the bespoke editor modals > Synchronizati
   },
 }
 `;
+
+exports[`name, open and cancel behaviour of the mapping and synchronization editors > src/modals/v2/MappingEditorModal.vue answers as recorded 1`] = `
+{
+  "closes": [
+    "idle",
+  ],
+  "isCreate": [
+    true,
+    false,
+  ],
+  "nameError": [
+    "",
+    "[Name is required]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "",
+    "",
+    "",
+    "",
+  ],
+  "nameLabel": "[Name] *",
+  "seeded": 1,
+  "showImmediate": true,
+}
+`;
+
+exports[`name, open and cancel behaviour of the mapping and synchronization editors > src/modals/v2/SynchronizationEditorModal.vue answers as recorded 1`] = `
+{
+  "closes": [
+    "idle",
+  ],
+  "isCreate": [
+    true,
+    false,
+  ],
+  "nameError": [
+    "",
+    "[Name is required]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "[Name must contain at least one letter or number]",
+    "",
+    "",
+    "",
+    "",
+  ],
+  "nameLabel": "[Name] *",
+  "seeded": 1,
+  "showImmediate": true,
+}
+`;
