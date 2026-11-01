@@ -90,6 +90,36 @@ export function mapColumnDescriptors(columns) {
 }
 
 /**
+ * The hint per column type, each given the normalised column and its
+ * constraints.
+ */
+const COLUMN_TYPE_HINTS = {
+	number: (c, cons) =>
+		cons.numberDecimals != null
+			? `number (${cons.numberDecimals} decimals)`
+			: 'number',
+	selection: (c, cons) => selectionHint(cons.selectionOptions),
+	datetime: (c) => (c.subtype ? `datetime (${c.subtype})` : 'datetime'),
+	text: (c, cons) =>
+		cons.textMaxLength != null ? `text (max ${cons.textMaxLength})` : 'text',
+	usergroup: () => 'usergroup (read-only — not writable)',
+}
+
+/**
+ * The hint for a selection column, listing its options when it has any.
+ *
+ * @param {unknown} options The `selectionOptions` constraint.
+ * @return {string} The hint.
+ */
+function selectionHint(options) {
+	const opts = Array.isArray(options) ? options : []
+	if (opts.length > 0) {
+		return `selection: ${opts.map(String).join(', ')}`
+	}
+	return 'selection'
+}
+
+/**
  * Produce a short human hint for a column's allowed values, used under each
  * mapping row so the user sees what a column accepts before saving (matches
  * the coercion rules in tables-bridge REQ-003).
@@ -101,34 +131,10 @@ export function mapColumnDescriptors(columns) {
  */
 export function columnTypeHint(column) {
 	const c = normaliseColumn(column)
-	const cons = c.constraints || {}
-	switch (c.type) {
-		case 'number':
-			if (cons.numberDecimals != null) {
-				return `number (${cons.numberDecimals} decimals)`
-			}
-			return 'number'
-		case 'selection': {
-			const opts = Array.isArray(cons.selectionOptions)
-				? cons.selectionOptions
-				: []
-			if (opts.length > 0) {
-				return `selection: ${opts.map(String).join(', ')}`
-			}
-			return 'selection'
-		}
-		case 'datetime':
-			return c.subtype ? `datetime (${c.subtype})` : 'datetime'
-		case 'text':
-			if (cons.textMaxLength != null) {
-				return `text (max ${cons.textMaxLength})`
-			}
-			return 'text'
-		case 'usergroup':
-			return 'usergroup (read-only — not writable)'
-		default:
-			return c.type || 'unknown'
+	if (Object.hasOwn(COLUMN_TYPE_HINTS, c.type)) {
+		return COLUMN_TYPE_HINTS[c.type](c, c.constraints || {})
 	}
+	return c.type || 'unknown'
 }
 
 /**

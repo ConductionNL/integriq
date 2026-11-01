@@ -1,0 +1,433 @@
+{
+    "no-session": {
+        "outcome": {
+            "status": 401,
+            "data": {
+                "error": "Not authenticated"
+            }
+        },
+        "calls": []
+    },
+    "action-refused": {
+        "outcome": {
+            "throws": "OCP\\AppFramework\\OCS\\OCSForbiddenException",
+            "message": "refused"
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ]
+        ]
+    },
+    "forged-user-param": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    },
+    "missing-input": {
+        "outcome": {
+            "status": 400,
+            "data": {
+                "error": "Bad request",
+                "message": "Both `inputObject` and `mapping` are required"
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ]
+        ]
+    },
+    "missing-mapping": {
+        "outcome": {
+            "status": 400,
+            "data": {
+                "error": "Bad request",
+                "message": "Both `inputObject` and `mapping` are required"
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ]
+        ]
+    },
+    "plain-mapping": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    },
+    "string-mapping-wrapped": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": "{\"fullName\":\"{{name}}\"}"
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    },
+    "mapping-throws": {
+        "outcome": {
+            "status": 400,
+            "data": {
+                "error": "Mapping error",
+                "message": "bad template"
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    },
+    "schema-without-openregister": {
+        "outcome": {
+            "status": 412,
+            "data": {
+                "error": "Setup error",
+                "message": "OpenRegisters must be installed to validate schema."
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ]
+        ]
+    },
+    "schema-not-found": {
+        "outcome": {
+            "status": 404,
+            "data": {
+                "error": "Not found",
+                "message": "The specified schema could not be found."
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "setSchema",
+                "7"
+            ]
+        ]
+    },
+    "schema-null-entity": {
+        "outcome": {
+            "status": 404,
+            "data": {
+                "error": "Not found",
+                "message": "The specified schema could not be found."
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "setSchema",
+                "7"
+            ]
+        ]
+    },
+    "schema-no-validation": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "setSchema",
+                "7"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    },
+    "schema-validation-valid": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "setSchema",
+                "slug-a"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ],
+            [
+                "validateObject",
+                {
+                    "fullName": "Ada"
+                },
+                "stdClass"
+            ]
+        ]
+    },
+    "schema-validation-invalid": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": false,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "setSchema",
+                "slug-a"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ],
+            [
+                "validateObject",
+                {
+                    "fullName": "Ada"
+                },
+                "stdClass"
+            ]
+        ]
+    },
+    "validation-without-schema": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    },
+    "empty-schema-ignored": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    },
+    "no-openregister-plain": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "resultObject": {
+                    "fullName": "Ada"
+                },
+                "isValid": true,
+                "validationErrors": []
+            }
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "mapping.test"
+            ],
+            [
+                "executeMapping",
+                {
+                    "mapping": {
+                        "fullName": "{{name}}"
+                    }
+                },
+                {
+                    "name": "Ada"
+                }
+            ]
+        ]
+    }
+}

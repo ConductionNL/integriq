@@ -129,13 +129,6 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 	public const DEFAULT_EXPIRY_WARNING_DAYS = 14;
 
 	/**
-	 * Default backfill window in days for a connection that has never synced.
-	 *
-	 * @var integer
-	 */
-	private const DEFAULT_BACKFILL_DAYS = 30;
-
-	/**
 	 * FQCN of the OpenRegister credential-store resolver (resolved lazily —
 	 * the class only exists on OpenRegister versions that ship the credential
 	 * broker; mirrors BrokeredCallService::BROKER_CLASS).
@@ -434,8 +427,6 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 	 * @throws Psd2ConsentRevokedException When the aggregator reports the consent revoked.
 	 */
 	private function syncConnection(ObjectEntity $connection): int {
-		$data = $connection->getObject();
-
 		if ($this->applyExpiryLifecycle(connection: $connection) === false) {
 			// Not syncable (pending / expired / revoked): no aggregator call.
 			return 0;
@@ -454,65 +445,20 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 		$source = $this->resolveSource(sourceSlug: (string)($data['aggregatorSourceSlug'] ?? ''));
 		$configuration = ($source->getObject()['configuration'] ?? []);
 		$provider = $this->resolveProvider(configuration: $configuration);
-
-		$defaultSince = (new DateTime())->sub(new DateInterval('P' . self::DEFAULT_BACKFILL_DAYS . 'D'))->format('c');
-		$since = (string)(($data['lastSyncAt'] ?? null) ?? ($data['consentGrantedAt'] ?? null) ?? $defaultSince);
-		$until = (new DateTime())->format('c');
+		$run = new BankfeedSyncRun(configuration: $configuration, connection: $data);
 
 		// Phase 1 — pull every account first; any throw aborts the whole
 		// connection before anything is persisted.
-		$pulled = [];
-		foreach ((array)($data['accounts'] ?? []) as $account) {
-			$accountId = (string)($account['aggregatorAccountId'] ?? '');
-			if ($accountId === '') {
-				continue;
-			}
-
-			$pulled[] = [
-				'iban' => (string)($account['iban'] ?? ''),
-				'transactions' => $provider->listTransactions(
-					sourceConfiguration: $configuration,
-					accountId: $accountId,
-					since: $since,
-					until: $until
-				),
-			];
-		}
+		$pulled = $this->pullAccounts(run: $run, provider: $provider);
 
 		// Phase 2 — persist batches + emit events, then advance the watermark.
-		$batchCount = 0;
 		foreach ($pulled as $pull) {
-			$batch = $this->objectService->saveObject(
-				object: [
-					'connectionId' => (string)($data['connectionId'] ?? ''),
-					'accountIban' => $pull['iban'],
-					'since' => $since,
-					'until' => $until,
-					'transactionCount' => count($pull['transactions']),
-					'transactions' => $pull['transactions'],
-				],
-				register: self::REGISTER,
-				schema: self::SCHEMA_BATCH
-			);
+			$this->persistBatch(run: $run, pull: $pull);
+		}
 
-			$this->eventService->emitCloudEvent(
-				type: self::EVENT_TYPE_TRANSACTIONS_SYNCED,
-				source: '/bankfeed/batches/' . $batch->getUuid(),
-				subject: (string)($data['connectionId'] ?? ''),
-				data: [
-					'connectionId' => ($data['connectionId'] ?? null),
-					'accountIban' => $pull['iban'],
-					'since' => $since,
-					'until' => $until,
-					'transactionCount' => count($pull['transactions']),
-					'batchUri' => '/apps/openregister/api/objects/integriq/bankfeed_batch/' . $batch->getUuid(),
-				]
-			);
+		$batchCount = count($pulled);
 
-			$batchCount++;
-		}//end foreach
-
-		$data['lastSyncAt'] = $until;
+		$data['lastSyncAt'] = $run->until;
 		$this->objectService->saveObject(
 			object: $data,
 			register: self::REGISTER,
@@ -532,6 +478,81 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 		return $batchCount;
 	}//end syncConnection()
+
+	/**
+	 * Pull the transactions of every account that has an aggregator account id.
+	 *
+	 * @param BankfeedSyncRun                 $run      The accounts and window of this sync.
+	 * @param Psd2AggregatorProviderInterface $provider The aggregator binding of the connection's source.
+	 *
+	 * @return array<int, array{iban: string, transactions: array}> The pulled transactions per account.
+	 *
+	 * @throws Psd2ProviderException When a pull fails (nothing persisted, watermark untouched).
+	 * @throws Psd2ConsentRevokedException When the aggregator reports the consent revoked.
+	 *
+	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+	 */
+	private function pullAccounts(BankfeedSyncRun $run, Psd2AggregatorProviderInterface $provider): array {
+		$pulled = [];
+		foreach ($run->accounts as $account) {
+			$accountId = (string)($account['aggregatorAccountId'] ?? '');
+			if ($accountId === '') {
+				continue;
+			}
+
+			$pulled[] = [
+				'iban' => (string)($account['iban'] ?? ''),
+				'transactions' => $provider->listTransactions(
+					sourceConfiguration: $run->configuration,
+					accountId: $accountId,
+					since: $run->since,
+					until: $run->until
+				),
+			];
+		}
+
+		return $pulled;
+	}//end pullAccounts()
+
+	/**
+	 * Persist one account's pulled transactions as a bankfeed_batch and emit
+	 * the synced event that points at it.
+	 *
+	 * @param BankfeedSyncRun                          $run  The connection and window of this sync.
+	 * @param array{iban: string, transactions: array} $pull One account's pulled transactions.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+	 */
+	private function persistBatch(BankfeedSyncRun $run, array $pull): void {
+		$batch = $this->objectService->saveObject(
+			object: [
+				'connectionId' => (string)($run->connectionId ?? ''),
+				'accountIban' => $pull['iban'],
+				'since' => $run->since,
+				'until' => $run->until,
+				'transactionCount' => count($pull['transactions']),
+				'transactions' => $pull['transactions'],
+			],
+			register: self::REGISTER,
+			schema: self::SCHEMA_BATCH
+		);
+
+		$this->eventService->emitCloudEvent(
+			type: self::EVENT_TYPE_TRANSACTIONS_SYNCED,
+			source: '/bankfeed/batches/' . $batch->getUuid(),
+			subject: (string)($run->connectionId ?? ''),
+			data: [
+				'connectionId' => $run->connectionId,
+				'accountIban' => $pull['iban'],
+				'since' => $run->since,
+				'until' => $run->until,
+				'transactionCount' => count($pull['transactions']),
+				'batchUri' => '/apps/openregister/api/objects/integriq/bankfeed_batch/' . $batch->getUuid(),
+			]
+		);
+	}//end persistBatch()
 
 	/**
 	 * Apply the consent expiry lifecycle to one connection.

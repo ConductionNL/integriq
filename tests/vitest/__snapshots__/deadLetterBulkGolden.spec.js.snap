@@ -1,0 +1,2169 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: bulk commit as recorded when the server answers all ok 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "2 messages processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "2 messages processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load event deliveries",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: bulk commit as recorded when the server answers bare error 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed",
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: bulk commit as recorded when the server answers error with error 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: locked",
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: locked",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: bulk commit as recorded when the server answers no results 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "0 messages processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "0 messages processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load event deliveries",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: bulk commit as recorded when the server answers one failed 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 1 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 1 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load event deliveries",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: bulk commit as recorded when the server answers some failed 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 2 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 2 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/events/dead-letter",
+        {
+          "params": {
+            "status": "failed,abandoned",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load event deliveries",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: bulk commit as recorded when the server answers transport error 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: Network Error",
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/events/dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: Network Error",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > EventDeliveriesPage: selection and debounced reload as recorded 1`] = `
+[
+  [
+    "state",
+    "initial",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+  ],
+  [
+    "isSelected",
+    true,
+    false,
+  ],
+  [
+    "state",
+    "toggled",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "b",
+        "c",
+      ],
+    },
+  ],
+  [
+    "state",
+    "before window",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "b",
+        "c",
+      ],
+    },
+  ],
+  [
+    "state",
+    "restarted",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "b",
+        "c",
+      ],
+    },
+  ],
+  [
+    "get",
+    "/index.php/apps/integriq/api/events/dead-letter",
+    {
+      "params": {
+        "status": "failed,abandoned",
+      },
+    },
+  ],
+  [
+    "state",
+    "reloaded",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+  ],
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: bulk commit as recorded when the server answers all ok 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "2 items processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "2 items processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load sync dead letters",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: bulk commit as recorded when the server answers bare error 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed",
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: bulk commit as recorded when the server answers error with error 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: locked",
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: locked",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: bulk commit as recorded when the server answers no results 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "0 items processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "success",
+        "0 items processed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load sync dead letters",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: bulk commit as recorded when the server answers one failed 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 1 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 1 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load sync dead letters",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: bulk commit as recorded when the server answers some failed 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 2 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "1 processed, 2 failed",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/sync-dead-letter",
+        {
+          "params": {
+            "status": "failed",
+          },
+        },
+      ],
+      [
+        "error",
+        "Failed to load sync dead letters",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: bulk commit as recorded when the server answers transport error 1`] = `
+[
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [],
+    "verb": null,
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "replay",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/replay",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: Network Error",
+      ],
+    ],
+    "verb": "replay",
+  },
+  {
+    "busyDuring": false,
+    "selected": [],
+    "state": {
+      "bulkConfirm": "discard",
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+    "trace": [],
+    "verb": "discard",
+  },
+  {
+    "busyDuring": true,
+    "selected": [
+      "a",
+      "b",
+    ],
+    "state": {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "a",
+        "b",
+      ],
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/sync-dead-letter/discard",
+        {
+          "ids": [
+            "a",
+            "b",
+          ],
+        },
+      ],
+      [
+        "error",
+        "Bulk action failed: Network Error",
+      ],
+    ],
+    "verb": "discard",
+  },
+]
+`;
+
+exports[`dead-letter bulk golden > SyncDeadLetterPage: selection and debounced reload as recorded 1`] = `
+[
+  [
+    "state",
+    "initial",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [],
+    },
+  ],
+  [
+    "isSelected",
+    true,
+    false,
+  ],
+  [
+    "state",
+    "toggled",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "b",
+        "c",
+      ],
+    },
+  ],
+  [
+    "state",
+    "before window",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "b",
+        "c",
+      ],
+    },
+  ],
+  [
+    "state",
+    "restarted",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [],
+      "selected": [
+        "b",
+        "c",
+      ],
+    },
+  ],
+  [
+    "get",
+    "/index.php/apps/integriq/api/sync-dead-letter",
+    {
+      "params": {
+        "status": "failed",
+      },
+    },
+  ],
+  [
+    "state",
+    "reloaded",
+    {
+      "bulkConfirm": null,
+      "busy": false,
+      "loading": false,
+      "rows": [
+        {
+          "uuid": "r1",
+        },
+      ],
+      "selected": [],
+    },
+  ],
+]
+`;

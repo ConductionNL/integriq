@@ -137,6 +137,17 @@ import { NcButton, NcPasswordField, NcTextField } from '@nextcloud/vue'
 const SLUG = 'berichtenbox'
 
 /**
+ * The settings endpoint of the Berichtenbox source.
+ *
+ * @return {string} The URL.
+ */
+function settingsUrl() {
+	return generateUrl('/apps/integriq/api/admin/berichtenbox/{slug}', {
+		slug: SLUG,
+	})
+}
+
+/**
  * Admin editor for the MijnOverheid Berichtenbox source: the sender OIN, the
  * CPA values, the ebMS adapter, the BerichtType per category and the
  * PKIoverheid certificate. The certificate and key are sent once and stored
@@ -325,6 +336,25 @@ export default {
 		async save() {
 			this.saving = true
 			this.fieldErrors = {}
+			const payload = this.savePayload()
+			try {
+				const { data } = await axios.put(settingsUrl(), payload)
+				this.afterSave(data)
+			} catch (e) {
+				this.showSaveFailure(e)
+			} finally {
+				this.saving = false
+			}
+		},
+
+		/**
+		 * The save body: the form and BerichtTypes, plus the certificate and the
+		 * adapter token only when the administrator entered new ones.
+		 *
+		 * @return {object} The request body.
+		 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
+		 */
+		savePayload() {
 			const payload = { ...this.form, berichtTypes: this.berichtTypes }
 			if (this.certificate.certificatePem.trim() !== '') {
 				payload.certificate = { ...this.certificate }
@@ -332,39 +362,48 @@ export default {
 			if (this.adapterToken !== '') {
 				payload.adapterToken = this.adapterToken
 			}
-			try {
-				const { data } = await axios.put(
-					generateUrl('/apps/integriq/api/admin/berichtenbox/{slug}', {
-						slug: SLUG,
-					}),
-					payload,
-				)
-				this.apply(data)
-				this.certificate = {
-					certificatePem: '',
-					privateKeyPem: '',
-					passphrase: '',
-					caBundlePem: '',
-				}
-				this.adapterToken = ''
-				showSuccess(this.t('integriq', 'Berichtenbox settings saved.'))
-				for (const warning of data.warnings || []) {
-					showWarning(warning)
-				}
-			} catch (e) {
-				const body = (e.response && e.response.data) || {}
-				this.fieldErrors = body.fieldErrors || {}
-				showError(
-					Array.isArray(body.errors)
-						? body.errors.join(' ')
-						: this.t(
-								'integriq',
-								'Failed to save the Berichtenbox settings.',
-							),
-				)
-			} finally {
-				this.saving = false
+			return payload
+		},
+
+		/**
+		 * Show the saved source, forget the entered secrets and toast the result
+		 * with the server's warnings.
+		 *
+		 * @param {object} data The response.
+		 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
+		 */
+		afterSave(data) {
+			this.apply(data)
+			this.certificate = {
+				certificatePem: '',
+				privateKeyPem: '',
+				passphrase: '',
+				caBundlePem: '',
 			}
+			this.adapterToken = ''
+			showSuccess(this.t('integriq', 'Berichtenbox settings saved.'))
+			for (const warning of data.warnings || []) {
+				showWarning(warning)
+			}
+		},
+
+		/**
+		 * Show the field errors and the reason a save failed.
+		 *
+		 * @param {object} e The rejection of the save request.
+		 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
+		 */
+		showSaveFailure(e) {
+			const body = (e.response && e.response.data) || {}
+			this.fieldErrors = body.fieldErrors || {}
+			showError(
+				Array.isArray(body.errors)
+					? body.errors.join(' ')
+					: this.t(
+							'integriq',
+							'Failed to save the Berichtenbox settings.',
+						),
+			)
 		},
 	},
 }

@@ -4,7 +4,7 @@
  * Contract of the DSOParserService.
  *
  * @category Contract
- * @package  OCA\Integriq\Service
+ * @package  OCA\Integriq\Service\Portal
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,12 +17,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service;
+namespace OCA\Integriq\Service\Portal;
 
 /**
- * Public operations of {@see DSOParserService} that other components call.
+ * Public operations of {@see \OCA\Integriq\Service\DSOParserService} that other components call.
  */
-interface DSOParserServiceInterface {
+interface PortalRequestParserInterface {
 	/**
 	 * Validate a DSO-verzoek payload against the STAM schema.
 	 *

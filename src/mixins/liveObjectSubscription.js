@@ -68,54 +68,101 @@ export default {
 			if (typeof store.subscribe !== 'function' || !type || !uuid) {
 				return
 			}
-			const key = `${type}::${uuid}`
-			if (this.liveHandle && this.liveKey === key) {
-				return
-			}
-			if (this.livePendingKey === key) {
-				// A subscribe for this exact object is already in flight —
-				// re-subscribing here would leak the first handle + watcher.
+			const scope = { store, type, uuid, key: `${type}::${uuid}`, epoch: 0 }
+			if (this.isLiveScopeCurrent(scope.key)) {
 				return
 			}
 			this.releaseLiveSubscription()
 			try {
-				const epoch = this.liveEpoch
-				this.livePendingKey = key
-				this.liveKey = key
-				const handle = await store.subscribe(type, uuid)
-				if (this.livePendingKey === key) {
-					this.livePendingKey = ''
-				}
-				if (this.liveEpoch !== epoch) {
-					// Released while awaiting (another object opened, or the
-					// component was destroyed) — drop the stale subscription.
-					store.unsubscribe(handle)
-					return
-				}
-				this.liveHandle = handle
-				if (typeof this.applyLiveObject === 'function') {
-					// Bridge: event → plugin refetch → objects[type][uuid]
-					// cache → component-local state (draft/pristine).
-					this.liveUnwatch = this.$watch(
-						() => store.getObject(type, uuid),
-						(fresh) => {
-							if (fresh && this.liveKey === key) {
-								this.applyLiveObject(fresh)
-							}
-						},
-					)
-				}
+				scope.epoch = this.liveEpoch
+				this.livePendingKey = scope.key
+				this.liveKey = scope.key
+				this.adoptLiveHandle(scope, await store.subscribe(type, uuid))
 			} catch (e) {
-				if (this.livePendingKey === key) {
-					this.livePendingKey = ''
-				}
-				this.liveHandle = null
-				this.liveKey = ''
-				console.warn(
-					'[liveObjectSubscription] subscribe failed:',
-					e?.message ?? e,
-				)
+				this.dropFailedLiveSubscription(scope.key, e)
 			}
+		},
+
+		/**
+		 * Whether the subscription for this key is already active or in flight.
+		 *
+		 * @param {string} key The `type::uuid` key
+		 * @return {boolean} True when no new subscribe is needed
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		isLiveScopeCurrent(key) {
+			if (this.liveHandle && this.liveKey === key) {
+				return true
+			}
+			// A subscribe for this exact object already in flight: re-subscribing
+			// here would leak the first handle + watcher.
+			return this.livePendingKey === key
+		},
+
+		/**
+		 * Take the handle a subscribe resolved with, or drop it when the
+		 * subscription was released while awaiting.
+		 *
+		 * @param {object} scope  The store, type, uuid, key and epoch of the subscribe
+		 * @param {object} handle The handle the store returned
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		adoptLiveHandle(scope, handle) {
+			if (this.livePendingKey === scope.key) {
+				this.livePendingKey = ''
+			}
+			if (this.liveEpoch !== scope.epoch) {
+				// Released while awaiting (another object opened, or the
+				// component was destroyed) — drop the stale subscription.
+				scope.store.unsubscribe(handle)
+				return
+			}
+			this.liveHandle = handle
+			if (typeof this.applyLiveObject === 'function') {
+				this.liveUnwatch = this.watchLiveObject(scope)
+			}
+		},
+
+		/**
+		 * Bridge: event → plugin refetch → objects[type][uuid] cache →
+		 * component-local state (draft/pristine).
+		 *
+		 * @param {object} scope The store, type, uuid and key of the subscription
+		 * @return {() => void} The unwatch function
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		watchLiveObject(scope) {
+			return this.$watch(
+				() => scope.store.getObject(scope.type, scope.uuid),
+				(fresh) => {
+					if (fresh && this.liveKey === scope.key) {
+						this.applyLiveObject(fresh)
+					}
+				},
+			)
+		},
+
+		/**
+		 * Reset the subscription state after a failed subscribe.
+		 *
+		 * @param {string} key The `type::uuid` key of the failed subscribe
+		 * @param {unknown} error What the subscribe rejected with
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		dropFailedLiveSubscription(key, error) {
+			if (this.livePendingKey === key) {
+				this.livePendingKey = ''
+			}
+			this.liveHandle = null
+			this.liveKey = ''
+			console.warn(
+				'[liveObjectSubscription] subscribe failed:',
+				error?.message ?? error,
+			)
 		},
 
 		/**
