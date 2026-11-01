@@ -1,0 +1,1228 @@
+{
+    "construct": [
+        {
+            "cachePrefix": "integriq.dashboarddatasource"
+        }
+    ],
+    "fetch": {
+        "trace": [
+            {
+                "find": [
+                    "src-ok",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_2f00859acf59730960de6759efcc9f1e6ec9cb36afae51d0f4c8ab2d16f5806c"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_a2a787bfd29a24ea81536282845369d8d61d002e4cf4afa4fe5112241225899b_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_a2a787bfd29a24ea81536282845369d8d61d002e4cf4afa4fe5112241225899b_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-ok",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    {
+                        "query": {
+                            "b": 2,
+                            "a": 1
+                        }
+                    },
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_2f00859acf59730960de6759efcc9f1e6ec9cb36afae51d0f4c8ab2d16f5806c",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_2f00859acf59730960de6759efcc9f1e6ec9cb36afae51d0f4c8ab2d16f5806c",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "fetch-again-hits-cache": {
+        "trace": [
+            {
+                "find": [
+                    "src-ok",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_2f00859acf59730960de6759efcc9f1e6ec9cb36afae51d0f4c8ab2d16f5806c"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "other-expression": {
+        "trace": [
+            {
+                "find": [
+                    "src-ok",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_db32682acfc6e30d43767f05b1ca3c7bde07d8c98eb18d9fda46d539de968691"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_a2a787bfd29a24ea81536282845369d8d61d002e4cf4afa4fe5112241225899b_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_a2a787bfd29a24ea81536282845369d8d61d002e4cf4afa4fe5112241225899b_<window>",
+                "value": 2,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-ok",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_db32682acfc6e30d43767f05b1ca3c7bde07d8c98eb18d9fda46d539de968691",
+                "value": {
+                    "value": "b",
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_db32682acfc6e30d43767f05b1ca3c7bde07d8c98eb18d9fda46d539de968691",
+                "value": {
+                    "value": "b",
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": "b",
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "requested-ttl-under-max": {
+        "trace": [
+            {
+                "find": [
+                    "src-maxttl",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_edfde16f78953fecbf43d3a4e7d075e74e70551c329b690891e5476f76fba73c"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_8e704d9c7d034df9090f8032d99f8a8c2d9acb54fcbdf2f3f2955c0187c27ded_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_8e704d9c7d034df9090f8032d99f8a8c2d9acb54fcbdf2f3f2955c0187c27ded_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-maxttl",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_edfde16f78953fecbf43d3a4e7d075e74e70551c329b690891e5476f76fba73c",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 3
+            },
+            {
+                "cacheSet": "stale_oc_ddc_edfde16f78953fecbf43d3a4e7d075e74e70551c329b690891e5476f76fba73c",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "requested-ttl-over-max": {
+        "trace": [
+            {
+                "find": [
+                    "src-maxttl",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_1685b7d832492390cd3a963f50c62a4adb5bb6504c7305095c8e87ed97775811"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_8e704d9c7d034df9090f8032d99f8a8c2d9acb54fcbdf2f3f2955c0187c27ded_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_8e704d9c7d034df9090f8032d99f8a8c2d9acb54fcbdf2f3f2955c0187c27ded_<window>",
+                "value": 2,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-maxttl",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_1685b7d832492390cd3a963f50c62a4adb5bb6504c7305095c8e87ed97775811",
+                "value": {
+                    "value": "Teller",
+                    "fetchedAt": "now"
+                },
+                "ttl": 20
+            },
+            {
+                "cacheSet": "stale_oc_ddc_1685b7d832492390cd3a963f50c62a4adb5bb6504c7305095c8e87ed97775811",
+                "value": {
+                    "value": "Teller",
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": "Teller",
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "requested-ttl-zero": {
+        "trace": [
+            {
+                "find": [
+                    "src-ttl0",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_0d1d383d8aac3a4b022d869fee91c4fb95c1e7c61bc6888a9a02f756d266143a"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_e6494f2e15f87a54851b100cb1732350f4b31f00e5ef793e493e99108f2a2ce1_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_e6494f2e15f87a54851b100cb1732350f4b31f00e5ef793e493e99108f2a2ce1_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-ttl0",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_0d1d383d8aac3a4b022d869fee91c4fb95c1e7c61bc6888a9a02f756d266143a",
+                "value": {
+                    "value": "Teller",
+                    "fetchedAt": "now"
+                },
+                "ttl": 1
+            },
+            {
+                "cacheSet": "stale_oc_ddc_0d1d383d8aac3a4b022d869fee91c4fb95c1e7c61bc6888a9a02f756d266143a",
+                "value": {
+                    "value": "Teller",
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": "Teller",
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "flaky-fetch": {
+        "trace": [
+            {
+                "find": [
+                    "src-flaky",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_3db4dfbacd0fe4a15f156ea49641f1090425c1f53a53e773c4104159145f8573"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_ba56e8df913986c1f2fe63caea1db567dc8a4c81a4c4fd0d4df7e0b7d7ebebbe_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_ba56e8df913986c1f2fe63caea1db567dc8a4c81a4c4fd0d4df7e0b7d7ebebbe_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-flaky",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    {
+                        "query": {
+                            "a": 1
+                        }
+                    },
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_3db4dfbacd0fe4a15f156ea49641f1090425c1f53a53e773c4104159145f8573",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_3db4dfbacd0fe4a15f156ea49641f1090425c1f53a53e773c4104159145f8573",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "upstream-500-serves-stale": {
+        "trace": [
+            {
+                "find": [
+                    "src-flaky",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_3db4dfbacd0fe4a15f156ea49641f1090425c1f53a53e773c4104159145f8573"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_ba56e8df913986c1f2fe63caea1db567dc8a4c81a4c4fd0d4df7e0b7d7ebebbe_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_ba56e8df913986c1f2fe63caea1db567dc8a4c81a4c4fd0d4df7e0b7d7ebebbe_<window>",
+                "value": 2,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-flaky",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    {
+                        "query": {
+                            "a": 1
+                        }
+                    },
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheGet": "stale_oc_ddc_3db4dfbacd0fe4a15f156ea49641f1090425c1f53a53e773c4104159145f8573"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": true
+            }
+        }
+    },
+    "upstream-throws-serves-stale": {
+        "trace": [
+            {
+                "find": [
+                    "src-throws",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_07d6efa6cc2aa8c033c48fab66a59bcedddfcb4e0bee3bd360206176273e1c73"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_17a1f961e7a44288c5bb5ad1a86ec9da75c76cc161f3286f1ed65480698fe03b_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_17a1f961e7a44288c5bb5ad1a86ec9da75c76cc161f3286f1ed65480698fe03b_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-throws",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "dashboard-http-datasource: upstream call threw for source src-throws: connection refused"
+            },
+            {
+                "cacheGet": "stale_oc_ddc_07d6efa6cc2aa8c033c48fab66a59bcedddfcb4e0bee3bd360206176273e1c73"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": null,
+                "fetchedAt": "now",
+                "stale": true
+            }
+        }
+    },
+    "status-199": {
+        "trace": [
+            {
+                "find": [
+                    "src-199",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_b8c2e23d1077b4b7ae616093cbc214df72acbb4bfea4f25b9b49790646297fd4"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_1abe96c9483bda0533687c8da1a428e457b96f1c1bdb3f247a0874d813c0891b_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_1abe96c9483bda0533687c8da1a428e457b96f1c1bdb3f247a0874d813c0891b_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-199",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheGet": "stale_oc_ddc_b8c2e23d1077b4b7ae616093cbc214df72acbb4bfea4f25b9b49790646297fd4"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": null,
+                "fetchedAt": "now",
+                "stale": true
+            }
+        }
+    },
+    "status-300": {
+        "trace": [
+            {
+                "find": [
+                    "src-300",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_fca55bf8b994bb035520d85ea1a6f72a29b8ee160acca7609f4bebd07d91f808"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_f9eb429a3c20f7ff37c1b8b5e5f114c0b4404fa32d590fd9615ac0a0d5c92916_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_f9eb429a3c20f7ff37c1b8b5e5f114c0b4404fa32d590fd9615ac0a0d5c92916_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-300",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheGet": "stale_oc_ddc_fca55bf8b994bb035520d85ea1a6f72a29b8ee160acca7609f4bebd07d91f808"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": null,
+                "fetchedAt": "now",
+                "stale": true
+            }
+        }
+    },
+    "status-200": {
+        "trace": [
+            {
+                "find": [
+                    "src-200",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_13a32a9dab7ed9768c77326c7b74c29315545b725e43ee66ba4d8501f44e87eb"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_a8179e40894234a7b1c5823004655abf7a5d063f0e8152e19086dcdbe6748a6c_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_a8179e40894234a7b1c5823004655abf7a5d063f0e8152e19086dcdbe6748a6c_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-200",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_13a32a9dab7ed9768c77326c7b74c29315545b725e43ee66ba4d8501f44e87eb",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_13a32a9dab7ed9768c77326c7b74c29315545b725e43ee66ba4d8501f44e87eb",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "status-299": {
+        "trace": [
+            {
+                "find": [
+                    "src-299",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_520c9742b280ff63a1823ec45e12abb24b0663a127b800c0ce2128d0890638c3"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_e6364188872320d6b80b65b7494ee3b2bf1f00539c0ed22f56a1f298f3e8d07c_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_e6364188872320d6b80b65b7494ee3b2bf1f00539c0ed22f56a1f298f3e8d07c_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-299",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_520c9742b280ff63a1823ec45e12abb24b0663a127b800c0ce2128d0890638c3",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_520c9742b280ff63a1823ec45e12abb24b0663a127b800c0ce2128d0890638c3",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "body-not-json": {
+        "trace": [
+            {
+                "find": [
+                    "src-text",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_c302a887a9a2775a848638d07e64fc82c62893289533f8cbb4e5d5a72cc3fc71"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_e8d800e75f6cce946bdd6e483211a093346ca9b595b655d225d09fad3ee302fd_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_e8d800e75f6cce946bdd6e483211a093346ca9b595b655d225d09fad3ee302fd_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-text",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_c302a887a9a2775a848638d07e64fc82c62893289533f8cbb4e5d5a72cc3fc71",
+                "value": {
+                    "value": null,
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_c302a887a9a2775a848638d07e64fc82c62893289533f8cbb4e5d5a72cc3fc71",
+                "value": {
+                    "value": null,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": null,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "body-scalar-json": {
+        "trace": [
+            {
+                "find": [
+                    "src-scalar",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_6f193bbddb917a52886501572ff48cc0fe34022cfa6ddb7a5f7ea0f1ea16469e"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_11a312601a43dc7481cf1d30abec008b78adce65fa95895d498f8e5909b7dfa3_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_11a312601a43dc7481cf1d30abec008b78adce65fa95895d498f8e5909b7dfa3_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-scalar",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    [],
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_6f193bbddb917a52886501572ff48cc0fe34022cfa6ddb7a5f7ea0f1ea16469e",
+                "value": {
+                    "value": [],
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_6f193bbddb917a52886501572ff48cc0fe34022cfa6ddb7a5f7ea0f1ea16469e",
+                "value": {
+                    "value": [],
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": [],
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "rate-1": {
+        "trace": [
+            {
+                "find": [
+                    "src-busy",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_04b9022357de9ab89f15edbd24a1ae203af4cbd82e348098371bc472894a5cb7"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>",
+                "value": 1,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-busy",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    {
+                        "query": {
+                            "n": 1
+                        }
+                    },
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_04b9022357de9ab89f15edbd24a1ae203af4cbd82e348098371bc472894a5cb7",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_04b9022357de9ab89f15edbd24a1ae203af4cbd82e348098371bc472894a5cb7",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "rate-2": {
+        "trace": [
+            {
+                "find": [
+                    "src-busy",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_90b727db8d19f5323472afef7063b28a4b596ab9a5c7147a0b2c361b8c1576f9"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>",
+                "value": 2,
+                "ttl": 3600
+            },
+            {
+                "call": "uuid-src-busy",
+                "args": [
+                    {
+                        "id": null
+                    },
+                    "",
+                    "GET",
+                    {
+                        "query": {
+                            "n": 2
+                        }
+                    },
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    null,
+                    null,
+                    true,
+                    false
+                ]
+            },
+            {
+                "cacheSet": "fresh_oc_ddc_90b727db8d19f5323472afef7063b28a4b596ab9a5c7147a0b2c361b8c1576f9",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 300
+            },
+            {
+                "cacheSet": "stale_oc_ddc_90b727db8d19f5323472afef7063b28a4b596ab9a5c7147a0b2c361b8c1576f9",
+                "value": {
+                    "value": 42,
+                    "fetchedAt": "now"
+                },
+                "ttl": 86400
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": false
+            }
+        }
+    },
+    "rate-3-limited-no-stale": {
+        "trace": [
+            {
+                "find": [
+                    "src-busy",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_18437df2db5f98027ab06d1202e0f0068975c53160746c1b3be1fa0db67e9a42"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>",
+                "value": 3,
+                "ttl": 3600
+            },
+            {
+                "log": "info",
+                "message": "dashboard-http-datasource: rate limit exceeded for source src-busy, serving stale/cached value"
+            },
+            {
+                "cacheGet": "stale_oc_ddc_18437df2db5f98027ab06d1202e0f0068975c53160746c1b3be1fa0db67e9a42"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": null,
+                "fetchedAt": "now",
+                "stale": true
+            }
+        }
+    },
+    "rate-4-limited-stale": {
+        "trace": [
+            {
+                "find": [
+                    "src-busy",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            },
+            {
+                "cacheGet": "fresh_oc_ddc_04b9022357de9ab89f15edbd24a1ae203af4cbd82e348098371bc472894a5cb7"
+            },
+            {
+                "cacheGet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>"
+            },
+            {
+                "cacheSet": "oc_ddc_rl_e946774cb5df04c239be459c2a65745ce3eaa6156fc774bfbf295c618a7c8530_<window>",
+                "value": 4,
+                "ttl": 3600
+            },
+            {
+                "log": "info",
+                "message": "dashboard-http-datasource: rate limit exceeded for source src-busy, serving stale/cached value"
+            },
+            {
+                "cacheGet": "stale_oc_ddc_04b9022357de9ab89f15edbd24a1ae203af4cbd82e348098371bc472894a5cb7"
+            }
+        ],
+        "outcome": {
+            "return": {
+                "value": 42,
+                "fetchedAt": "now",
+                "stale": true
+            }
+        }
+    },
+    "not-authorized": {
+        "trace": [
+            {
+                "find": [
+                    "src-denied",
+                    "integriq",
+                    "source",
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+            "message": "no read access"
+        }
+    }
+}
