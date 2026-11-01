@@ -55,10 +55,8 @@ trait LogPageListing {
 			$offset  = (($page - 1) * $limit);
 			unset($filters['_limit'], $filters['_page']);
 
-			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-			$orFilters = array_merge(['register' => 'integriq', 'schema' => $schema], $filters);
-			$matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+			$filters = array_merge(['register' => 'integriq', 'schema' => $schema], $searchService->unsetSpecialQueryParams(filters: $filters));
+			$matches = $this->orObjectService->findAll(config: ['filters' => $filters, 'limit' => $limit, 'offset' => $offset]);
 			$logs      = ($matches['results'] ?? $matches);
 			$total     = ($matches['total'] ?? count($logs));
 
