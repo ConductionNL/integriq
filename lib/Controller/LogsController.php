@@ -467,35 +467,7 @@ class LogsController extends Controller {
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
 			$logs = ($matches['results'] ?? $matches);
 
-			// Create CSV content.
-			$csvData = "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n";
-
-			foreach ($logs as $log) {
-				$data = $log->getObject();
-				if (isset($data['created']) === true) {
-					$created = $data['created'];
-				} else {
-					$created = '';
-				}
-
-				if (isset($data['expires']) === true) {
-					$expires = $data['expires'];
-				} else {
-					$expires = '';
-				}
-
-				$csvData .= sprintf(
-					"%s,%s,%s,%s,%s,%s,%s,%s\n",
-					($log->getUuid() ?? ''),
-					($data['level'] ?? ''),
-					'"' . str_replace('"', '""', ($data['message'] ?? '')) . '"',
-					($data['synchronizationId'] ?? ''),
-					($data['userId'] ?? ''),
-					($data['sessionId'] ?? ''),
-					$created,
-					$expires
-				);
-			}//end foreach
+			$csvData = $this->logsCsv(logs: $logs);
 
 			// Return CSV as response.
 			return new JSONResponse(
@@ -510,4 +482,33 @@ class LogsController extends Controller {
 		}//end try
 
 	}//end export()
+
+	/**
+	 * The CSV export of the given synchronization logs, header row first.
+	 *
+	 * @param iterable $logs The log objects.
+	 *
+	 * @return string The CSV text.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function logsCsv(iterable $logs): string {
+		$csvData = "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n";
+		foreach ($logs as $log) {
+			$data = $log->getObject();
+			$csvData .= sprintf(
+				"%s,%s,%s,%s,%s,%s,%s,%s\n",
+				($log->getUuid() ?? ''),
+				($data['level'] ?? ''),
+				'"' . str_replace('"', '""', ($data['message'] ?? '')) . '"',
+				($data['synchronizationId'] ?? ''),
+				($data['userId'] ?? ''),
+				($data['sessionId'] ?? ''),
+				($data['created'] ?? ''),
+				($data['expires'] ?? '')
+			);
+		}
+
+		return $csvData;
+	}//end logsCsv()
 }//end class
