@@ -1,8 +1,7 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
-  Add Rule to Endpoint modal — manifest-driven replacement for the legacy
-  src/modals/Endpoint/AddEndpointRule.vue (172 LoC). Renders an NcSelect
+  Add Rule to Endpoint modal, manifest-driven. Renders an NcSelect
   of available rules (those not already on the endpoint) and PATCHes the
   endpoint via OR.
 

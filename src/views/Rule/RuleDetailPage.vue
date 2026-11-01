@@ -2,8 +2,7 @@
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
   RuleDetailPage — bespoke `type: custom` page wrapping CnDetailPage to
-  give Rules the visual condition + action builder the legacy
-  EditRule modal never had.
+  give Rules a visual condition + action builder.
 
   Why a full custom page (not just an index-page slot like JobFormFields)?
   CnIndexPage's CnFormDialog gives you per-field overrides, but Rules

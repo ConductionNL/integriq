@@ -373,8 +373,8 @@ class RuleNestedAuthWriteOnlyTest extends TestCase {
 	 * The or#463 save-side contract this whole fix depends on, simulated locally (the real logic is
 	 * PropertyRbacHandler::collectOmittedWriteOnlyPaths + restoreWriteOnlyValues in openregister):
 	 * an update payload that OMITS `configuration.authentication.keys` PRESERVES the stored keys; a
-	 * payload that sends `keys: []` (present) CLEARS them. This documents exactly why the frontend
-	 * (buildAuthenticationConfiguration.js) MUST omit rather than send an empty array.
+	 * payload that sends `keys: []` (present) CLEARS them. This documents exactly why the rule editor
+	 * (src/views/Rule/actionForms/AuthenticationForm.vue) MUST omit rather than send an empty array.
 	 *
 	 * @return void
 	 */
@@ -417,7 +417,7 @@ class RuleNestedAuthWriteOnlyTest extends TestCase {
 			[],
 			$mergedEmpty['configuration']['authentication']['keys'],
 			'A present `keys: []` is NOT an omission — openregister#463 leaves it untouched and PUT '
-			. 'semantics clear the stored keys. This is why buildAuthenticationConfiguration must OMIT.'
+			. 'semantics clear the stored keys. This is why the rule editor must OMIT.'
 		);
 	}//end testSaveSidePreservesOmittedKeysAndClearsPresentEmptyKeys()
 
