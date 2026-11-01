@@ -478,53 +478,138 @@ export default {
 		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		async run() {
-			if (!this.mapping) return
-			const parsedInput = this.parseInput()
+			const parsedInput = this.mapping ? this.parseInput() : null
 			if (parsedInput === null) return
 
-			// Sequence guard: the debounce narrows the window but does not close
-			// it — a run slower than the next keystroke's request can still land
-			// after it and overwrite the newer result (and its validity) with a
-			// stale one. Only the most recently started run may touch state.
-			const runId = ++this.runSequence
+			const runId = this.beginRun()
+			try {
+				await this.requestMappingTest(parsedInput, runId)
+			} catch (err) {
+				this.failRun(runId, err)
+			} finally {
+				this.endRun(runId)
+			}
+		},
 
+		/**
+		 * Start a run: take the next sequence number and show the spinner.
+		 *
+		 * Sequence guard: the debounce narrows the window but does not close
+		 * it — a run slower than the next keystroke's request can still land
+		 * after it and overwrite the newer result (and its validity) with a
+		 * stale one. Only the most recently started run may touch state.
+		 *
+		 * @return {number} The sequence number of this run.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		beginRun() {
+			const runId = ++this.runSequence
 			this.running = true
 			this.runError = ''
-			try {
-				const payload = {
-					inputObject: parsedInput,
-					mapping: this.mapping,
-				}
-				if (this.selectedSchema?.id) {
-					payload.schema = this.selectedSchema.id
-					payload.validation = true
-				}
-				const response = await axios.post(
-					generateUrl('/apps/integriq/api/mappings/test'),
-					payload,
-				)
-				if (runId !== this.runSequence) return
-				this.result = response.data?.resultObject ?? response.data ?? null
-				this.isValid = response.data?.isValid !== false
-				this.validationErrors = response.data?.validationErrors ?? null
-				this.validatedSchemaId = this.selectedSchema?.id ?? null
-			} catch (err) {
-				if (runId !== this.runSequence) return
-				const status = err?.response?.status
-				const message =
-					err?.response?.data?.message
-					|| err?.response?.data?.error
-					|| err?.message
-					|| ''
-				this.runError =
-					this.t('integriq', 'Mapping test failed')
-					+ (status ? ` (${status})` : '')
-					+ (message ? `: ${message}` : '')
-			} finally {
-				// Guarded too: an older run finishing after a newer one started
-				// would otherwise clear the spinner while a request is still out.
-				if (runId === this.runSequence) this.running = false
+			return runId
+		},
+
+		/**
+		 * Show why a run failed, unless a newer run has started.
+		 *
+		 * @param {number} runId The sequence number of the failed run.
+		 * @param {object} err The rejection of the test request.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		failRun(runId, err) {
+			if (runId === this.runSequence) {
+				this.runError = this.mappingTestFailureText(err)
 			}
+		},
+
+		/**
+		 * End a run. Guarded too: an older run finishing after a newer one
+		 * started would otherwise clear the spinner while a request is still out.
+		 *
+		 * @param {number} runId The sequence number of the run that settled.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		endRun(runId) {
+			if (runId === this.runSequence) this.running = false
+		},
+
+		/**
+		 * Post the mapping test and show its result, unless a newer run has
+		 * started in the meantime.
+		 *
+		 * @param {object} parsedInput The parsed test input.
+		 * @param {number} runId The sequence number of this run.
+		 * @return {Promise<void>} Resolves once the result is applied or dropped.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		async requestMappingTest(parsedInput, runId) {
+			const response = await axios.post(
+				generateUrl('/apps/integriq/api/mappings/test'),
+				this.mappingTestPayload(parsedInput),
+			)
+			if (runId === this.runSequence) {
+				this.applyMappingTestResult(response.data)
+			}
+		},
+
+		/**
+		 * The mapping-test request body, with schema validation when a schema
+		 * is picked.
+		 *
+		 * @param {object} parsedInput The parsed test input.
+		 * @return {object} The request body.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		mappingTestPayload(parsedInput) {
+			const payload = {
+				inputObject: parsedInput,
+				mapping: this.mapping,
+			}
+			if (this.selectedSchema?.id) {
+				payload.schema = this.selectedSchema.id
+				payload.validation = true
+			}
+			return payload
+		},
+
+		/**
+		 * Put a mapping-test response on the result surface.
+		 *
+		 * @param {object|null|undefined} data The response body.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		applyMappingTestResult(data) {
+			this.result = data?.resultObject ?? data ?? null
+			this.isValid = data?.isValid !== false
+			this.validationErrors = data?.validationErrors ?? null
+			this.validatedSchemaId = this.selectedSchema?.id ?? null
+		},
+
+		/**
+		 * The error line for a failed mapping test, with the HTTP status and
+		 * the server's or the transport's message when there is one.
+		 *
+		 * @param {object} err The rejection of the test request.
+		 * @return {string} The error line.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		mappingTestFailureText(err) {
+			const status = err?.response?.status
+			const data = err?.response?.data
+			const message =
+				[data?.message, data?.error, err?.message].find(Boolean) || ''
+			return (
+				this.t('integriq', 'Mapping test failed')
+				+ (status ? ` (${status})` : '')
+				+ (message ? `: ${message}` : '')
+			)
 		},
 
 		/**
