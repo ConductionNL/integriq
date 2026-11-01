@@ -39,6 +39,7 @@ use RuntimeException;
  *
  * @covers \OCA\Integriq\Service\Datasource\DashboardDatasourceService
  * @uses   \OCA\Integriq\Service\Datasource\JsonPathLiteEvaluator
+ * @uses   \OCA\Integriq\Service\Datasource\DatasourceQuery
  */
 class DashboardDatasourceResolveGoldenTest extends TestCase {
 
