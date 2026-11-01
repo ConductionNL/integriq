@@ -522,6 +522,7 @@ import {
 	TYPE_OPTIONS,
 } from '../../views/Synchronization/syncDraft.js'
 import { NEXTCLOUD_TABLE_KIND } from '../../views/Synchronization/tablesBridge.js'
+import { editorSlotScopeProps } from '../editorSlotScope.js'
 
 /** A name has to carry at least one letter or digit — punctuation alone is not a name. */
 const NAME_PATTERN = /[\p{L}\p{N}]/u
@@ -553,43 +554,7 @@ export default {
 		SwapHorizontalIcon,
 	},
 
-	props: {
-		/** Slot scope: whether CnIndexPage wants the form dialog open. */
-		show: {
-			type: Boolean,
-			default: false,
-		},
-
-		/** Slot scope: the row being edited, or `null` in create mode. */
-		item: {
-			type: Object,
-			default: null,
-		},
-
-		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
-		schema: {
-			type: Object,
-			default: null,
-		},
-
-		/**
-		 * Slot scope: persists the object through CnIndexPage's own save path
-		 * and refreshes the list. Saving here instead of calling this would
-		 * leave the index stale until a reload — the built-in refresh only runs
-		 * inside that handler — and would write to a different store than the
-		 * one the list reads from.
-		 */
-		confirm: {
-			type: Function,
-			default: null,
-		},
-
-		/** Slot scope: closes the form dialog on CnIndexPage. */
-		close: {
-			type: Function,
-			default: null,
-		},
-	},
+	props: { ...editorSlotScopeProps },
 
 	data() {
 		return {
