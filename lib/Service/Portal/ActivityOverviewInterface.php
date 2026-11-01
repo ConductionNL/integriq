@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Contract of the DsoActivityOverview.
+ * Contract of the ActivityOverview.
  *
  * @category Contract
  * @package  OCA\Integriq\Service\Portal
@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Portal;
 
 /**
- * Public operations of {@see \OCA\Integriq\Service\Dso\DsoActivityOverview} that other components call.
+ * Public operations of {@see \OCA\Integriq\Service\Portal\ActivityOverview} that other components call.
  */
 interface ActivityOverviewInterface {
 	/**

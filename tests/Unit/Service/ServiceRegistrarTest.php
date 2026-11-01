@@ -67,7 +67,6 @@ use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\DSOParserService;
-use OCA\Integriq\Service\DSOParserServiceInterface;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceServiceInterface;
@@ -88,11 +87,8 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
 use OCA\Integriq\Service\DsoIngestService;
-use OCA\Integriq\Service\DsoIngestServiceInterface;
-use OCA\Integriq\Service\Dso\DsoActivityOverview;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
-use OCA\Integriq\Service\Dso\DsoAttachmentFetcherInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
@@ -209,9 +205,13 @@ use OCA\Integriq\Service\PaymentIntentServiceInterface;
 use OCA\Integriq\Service\PeppolTransmissionService;
 use OCA\Integriq\Service\PeppolTransmissionServiceInterface;
 use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
+use OCA\Integriq\Service\Portal\ActivityOverview;
 use OCA\Integriq\Service\Portal\ActivityOverviewInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
+use OCA\Integriq\Service\Portal\PortalRequestParserInterface;
+use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\Integriq\Service\Portal\UnmappedActivitiesInterface;
 use OCA\Integriq\Service\PromotionService;
 use OCA\Integriq\Service\PromotionServiceInterface;
@@ -334,7 +334,7 @@ class ServiceRegistrarTest extends TestCase {
 		FlowRunnerServiceInterface::class => FlowRunnerService::class,
 		KissSyncServiceInterface::class => KissSyncService::class,
 		JobToFlowGeneratorInterface::class => JobToFlowGenerator::class,
-		DsoIngestServiceInterface::class => DsoIngestService::class,
+		PortalRequestIntakeInterface::class => DsoIngestService::class,
 		AuthenticationServiceInterface::class => AuthenticationService::class,
 		SoftwareCatalogueServiceInterface::class => SoftwareCatalogueService::class,
 		OpenFormulierenIntakeServiceInterface::class => OpenFormulierenIntakeService::class,
@@ -356,7 +356,7 @@ class ServiceRegistrarTest extends TestCase {
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
 		EudiStatusListServiceInterface::class => EudiStatusListService::class,
-		DSOParserServiceInterface::class => DSOParserService::class,
+		PortalRequestParserInterface::class => DSOParserService::class,
 		ApprovalDecisionServiceInterface::class => ApprovalDecisionService::class,
 		UwlrEduVServiceInterface::class => UwlrEduVService::class,
 		PaymentIntentServiceInterface::class => PaymentIntentService::class,
@@ -369,7 +369,7 @@ class ServiceRegistrarTest extends TestCase {
 		SettingsServiceInterface::class => SettingsService::class,
 		ExchangeReadModelInterface::class => ExchangeReadModel::class,
 		SearchServiceInterface::class => SearchService::class,
-		DsoAttachmentFetcherInterface::class => DsoAttachmentFetcher::class,
+		RequestAttachmentFetcherInterface::class => DsoAttachmentFetcher::class,
 		ConnectionAlertServiceInterface::class => ConnectionAlertService::class,
 		SynchronizationContractServiceInterface::class => SynchronizationContractService::class,
 		BerichtenboxSourceSettingsInterface::class => BerichtenboxSourceSettings::class,
@@ -417,7 +417,7 @@ class ServiceRegistrarTest extends TestCase {
 		SubscriptionRequestHandlerInterface::class => SubscriptionRequestHandler::class,
 		SubscriptionRosterInterface::class => SubscriptionRoster::class,
 		AgentBatchGateInterface::class => AgentBatchGate::class,
-		ActivityOverviewInterface::class => DsoActivityOverview::class,
+		ActivityOverviewInterface::class => ActivityOverview::class,
 		WebhookGateInterface::class => WebhookGate::class,
 		EnvironmentServiceInterface::class => EnvironmentService::class,
 		FormsSyncAdapterInterface::class => FormsSyncAdapter::class,

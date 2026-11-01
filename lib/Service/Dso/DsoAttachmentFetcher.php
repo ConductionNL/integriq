@@ -44,6 +44,7 @@ use Exception;
 use OCA\Integriq\Exception\DsoAttachmentTooLargeException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -56,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
  */
-class DsoAttachmentFetcher implements DsoAttachmentFetcherInterface {
+class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 
 	/**
 	 * Downloads tried per entry before it is `failed` for good (REQ-DSO-005).

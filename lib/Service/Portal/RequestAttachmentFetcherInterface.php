@@ -4,7 +4,7 @@
  * Contract of the DsoAttachmentFetcher.
  *
  * @category Contract
- * @package  OCA\Integriq\Service\Dso
+ * @package  OCA\Integriq\Service\Portal
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,15 +17,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\Dso;
+namespace OCA\Integriq\Service\Portal;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 
 /**
- * Public operations of {@see DsoAttachmentFetcher} that other components call.
+ * Public operations of {@see \OCA\Integriq\Service\Dso\DsoAttachmentFetcher} that other components call.
  */
-interface DsoAttachmentFetcherInterface {
+interface RequestAttachmentFetcherInterface {
 	/**
 	 * Download every entry of one request that is still `pending`, or
 	 * `failed` with attempts left, and record each outcome on the request.
@@ -40,8 +40,8 @@ interface DsoAttachmentFetcherInterface {
 	public function fetchPending(string $requestUuid): ?array;
 
 	/**
-	 * Download one entry, with up to {@see self::MAX_ATTEMPTS} attempts in all,
-	 * and attach it to the request as a file tagged {@see self::TAG}.
+	 * Download one entry, with up to {@see \OCA\Integriq\Service\Dso\DsoAttachmentFetcher::MAX_ATTEMPTS} attempts in all,
+	 * and attach it to the request as a file tagged {@see \OCA\Integriq\Service\Dso\DsoAttachmentFetcher::TAG}.
 	 *
 	 * @param ObjectEntity $request The dso_verzoek the file belongs to.
 	 * @param array<string, mixed> $entry The attachment entry.

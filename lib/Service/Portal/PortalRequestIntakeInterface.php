@@ -4,7 +4,7 @@
  * Contract of the DsoIngestService.
  *
  * @category Contract
- * @package  OCA\Integriq\Service
+ * @package  OCA\Integriq\Service\Portal
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,7 +17,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service;
+namespace OCA\Integriq\Service\Portal;
 
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
@@ -26,12 +26,12 @@ use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
- * Public operations of {@see DsoIngestService} that other components call.
+ * Public operations of {@see \OCA\Integriq\Service\DsoIngestService} that other components call.
  */
-interface DsoIngestServiceInterface {
+interface PortalRequestIntakeInterface {
 	/**
 	 * Persist one already-verified, already-parsed DSO Verzoek
-	 * (`received`), then resolve + apply {@see DsoRequestTranslator}
+	 * (`received`), then resolve + apply {@see \OCA\Integriq\Service\Dso\DsoRequestTranslator}
 	 * (`mapped`|`failed`, isolated to this verzoek).
 	 *
 	 * Runs inside `DsoConnection::runAs()`: every read and write here happens
@@ -41,7 +41,7 @@ interface DsoIngestServiceInterface {
 	 * `handed_off` answers with the stored record and writes nothing;
 	 * `received` (a crash after the first save) is finished, not duplicated.
 	 *
-	 * @param array<string, mixed> $parsedRequest The {@see DSOParserService::parseRequest()} output.
+	 * @param array<string, mixed> $parsedRequest The {@see PortalRequestParserInterface::parseRequest()} output.
 	 * @param DsoIdentity|null     $identity      The account and connection the intake acts as;
 	 *                                            recorded in `receivedVia` and handed to the bijlage job.
 	 *
