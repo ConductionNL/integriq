@@ -401,6 +401,39 @@
         },
         "session": []
     },
+    "pin-empty-against-empty-hash": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "eudi_credential_offer",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a"
+                }
+            },
+            {
+                "save": "eudi_credential_offer",
+                "register": "integriq",
+                "uuidShape": "offer-1",
+                "object": {
+                    "status": "created",
+                    "preAuthorizedCodeHash": "51bd6639fed7c0b4826af6c06bfe4f4cce3aa7a8db3653978cd4d88ad0a18a8a",
+                    "format": "dc+sd-jwt",
+                    "credentialConfigurationId": "pid-sd-jwt",
+                    "consumerId": "consumer-1",
+                    "txCodeRequired": true,
+                    "txCodeHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "txCodeFailedAttempts": 1
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\EudiIssuanceException",
+            "message": "Incorrect tx_code",
+            "status": 400,
+            "error": "invalid_grant"
+        },
+        "session": []
+    },
     "pin-right": {
         "trace": [
             {

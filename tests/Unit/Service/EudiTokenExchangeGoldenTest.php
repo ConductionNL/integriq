@@ -117,6 +117,7 @@ class EudiTokenExchangeGoldenTest extends TestCase {
 			'pin-missing' => [$this->offer('code-1', $pin), $grant()],
 			'pin-empty' => [$this->offer('code-1', $pin), $grant(['tx_code' => ''])],
 			'pin-not-string' => [$this->offer('code-1', $pin), $grant(['tx_code' => 1234])],
+			'pin-empty-against-empty-hash' => [$this->offer('code-1', ['txCodeRequired' => true, 'txCodeHash' => hash('sha256', '')]), $grant(['tx_code' => ''])],
 			'pin-right' => [$this->offer('code-1', $pin + ['txCodeFailedAttempts' => 4]), $grant(['tx_code' => '1234'])],
 			'pin-flag-not-true' => [$this->offer('code-1', ['txCodeRequired' => 'true', 'txCodeHash' => 'x']), $grant()],
 			'no-configuration-id' => [$this->offer('code-1', ['credentialConfigurationId' => null]), $grant()],
