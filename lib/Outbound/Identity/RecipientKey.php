@@ -31,15 +31,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound\Identity;
 
-use OCA\Integriq\Service\Sms\PhoneNumberValidator;
+use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
 
 /**
  * Normalises a recipient per channel.
- *
- * @SuppressWarnings(PHPMD.StaticAccess) -- PhoneNumberValidator is the one pure phone
- * normaliser in integriq (ADR-011); it is a static helper by design.
  *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-a-digital-post-recipient-is-never-stored-as-a-plain-bsn-req-ooa-008
  */
@@ -101,10 +98,12 @@ class RecipientKey implements RecipientKeyInterface {
 	 *
 	 * @param IAppConfig $appConfig Holds the hashing secret.
 	 * @param ISecureRandom $random Mints the secret the first time one is needed.
+	 * @param PhoneNumberNormaliserInterface $phoneNumbers Normalises a phone number to E.164.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly ISecureRandom $random,
+		private readonly PhoneNumberNormaliserInterface $phoneNumbers,
 	) {
 
 	}//end __construct()
@@ -135,7 +134,7 @@ class RecipientKey implements RecipientKeyInterface {
 		}
 
 		if (in_array($channel, self::PHONE_CHANNELS, true) === true) {
-			return PhoneNumberValidator::toE164(rawNumber: $address);
+			return $this->phoneNumbers->toE164(rawNumber: $address);
 		}
 
 		if ($channel === self::CHANNEL_DIGITAL_POST) {
@@ -209,8 +208,6 @@ class RecipientKey implements RecipientKeyInterface {
 	 * @param string $address The address.
 	 *
 	 * @return string The key.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) -- see the class comment.
 	 */
 	private function guess(string $address): string {
 		if (str_contains($address, '@') === true) {
@@ -218,7 +215,7 @@ class RecipientKey implements RecipientKeyInterface {
 		}
 
 		if (preg_match('/^(\+|00|0)[\d\s().-]{6,}$/', $address) === 1) {
-			$e164 = PhoneNumberValidator::toE164(rawNumber: $address);
+			$e164 = $this->phoneNumbers->toE164(rawNumber: $address);
 			if ($e164 !== null) {
 				return $e164;
 			}
