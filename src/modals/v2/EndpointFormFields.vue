@@ -21,7 +21,7 @@
     • `method` and `targetType` selects. The schema declares both as plain
       strings with no enum, so the lib renders text inputs.
 
-    • `configurations` as a multiselect over OpenRegister's configurations,
+    • `configurations` as a multiselect over the OpenRegister configurations,
       storing ids (what the original modal wrote).
 
   Wired by CnPageRenderer when the manifest declares
@@ -76,7 +76,7 @@
 					"
 					:clearable="!field.required"
 					@update:modelValue="
-						(option) => updateField(field.key, option?.id ?? null)
+						updateField(field.key, $event?.id ?? null)
 					" />
 				<CnFieldHelper
 					:text="field.description"
@@ -195,28 +195,19 @@
 				:modelValue="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:modelValue="(value) => updateField(field.key, value)">
+				@update:modelValue="updateField(field.key, $event)">
 				{{ field.label }}
 			</NcCheckboxRadioSwitch>
 
 			<!-- Everything else: plain text (name, description, endpoint,
 			     endpointRegex, slug). -->
 			<template v-else>
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
-					:disabled="field.readOnly"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					:placeholder="placeholderFor(field.key)"
-					@update:modelValue="(value) => updateField(field.key, value)" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
+					@update="updateField(field.key, $event)" />
 			</template>
 		</div>
 
@@ -232,24 +223,20 @@
 				:options="validationModeOptions"
 				:clearable="false"
 				@update:modelValue="
-					(option) => setValidation('mode', option ? option.id : 'record')
+					setValidation('mode', $event ? $event.id : 'record')
 				" />
 			<NcSelect
 				:inputLabel="t('integriq', 'Request schema')"
 				:modelValue="messageSchemaOption('request')"
 				:options="messageSchemaOptions"
 				:loading="messageSchemasLoading"
-				@update:modelValue="
-					(option) => setValidationSchema('request', option)
-				" />
+				@update:modelValue="setValidationSchema('request', $event)" />
 			<NcSelect
 				:inputLabel="t('integriq', 'Answer schema')"
 				:modelValue="messageSchemaOption('response')"
 				:options="messageSchemaOptions"
 				:loading="messageSchemasLoading"
-				@update:modelValue="
-					(option) => setValidationSchema('response', option)
-				" />
+				@update:modelValue="setValidationSchema('response', $event)" />
 			<CnFieldHelper
 				:text="
 					t(
@@ -296,11 +283,13 @@ const FIELD_PLACEHOLDERS = {
 	endpoint: 'api/v1/objects/{id}',
 	endpointArray: 'api, v1, objects, {id}',
 }
+import SchemaTextField from './SchemaTextField.vue'
 
 export default {
 	name: 'EndpointFormFields',
 
 	components: {
+		SchemaTextField,
 		NcTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
