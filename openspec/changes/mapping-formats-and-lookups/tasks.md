@@ -24,7 +24,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 
 ### Task 3: Output format on the mapping and the XML writer
 - **spec_ref**: openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
-- **files**: `lib/Settings/register.d/mapping-formats-and-lookups.json`, `lib/Util/ArrayToXml.php`, `lib/Http/XMLResponse.php`, `lib/Service/MappingService.php`, `lib/Controller/MappingsController.php`, `src/views/wrappers/MappingDetailPage.vue`
+- **files**: `lib/Settings/register.d/mapping-formats-and-lookups.json`, `lib/Util/ArrayToXml.php`, `lib/Controller/XMLResponse.php`, `lib/Service/MappingService.php`, `lib/Controller/MappingsController.php`, `src/views/wrappers/MappingDetailPage.vue`
 - **acceptance_criteria**:
   - GIVEN the `xml-response` unit tests WHEN they run after the extraction THEN they pass unchanged
   - GIVEN `person-to-xml` WHEN the engineer previews a sample THEN XML with root `persoon` is shown

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Unit tests for OCA\Integriq\Http\XMLResponse.
+ * Unit tests for OCA\Integriq\Controller\XMLResponse.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Http
+ * @package  OCA\Integriq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -16,9 +16,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Http;
+namespace OCA\Integriq\Tests\Unit\Controller;
 
-use OCA\Integriq\Http\XMLResponse;
+use OCA\Integriq\Controller\XMLResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * It did not test this class. That file declares its OWN `MockResponse` and
  * its OWN `XMLResponse extends MockResponse` — a hand-written COPY of the
  * production class — and asserts against the copy, so the real
- * `OCA\Integriq\Http\XMLResponse` was never loaded by it. It also sits in
+ * `OCA\Integriq\Controller\XMLResponse` was never loaded by it. It also sits in
  * `tests/Http/`, which appears in no `<testsuite>` in either phpunit.xml or
  * phpunit-unit.xml (both list `tests/Unit` and `tests/Integration` only), so it
  * has never executed in CI either. Two independent reasons why the spec's

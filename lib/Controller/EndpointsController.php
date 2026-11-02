@@ -24,7 +24,6 @@
 namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\Integriq\Http\XMLResponse;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicyInterface;
