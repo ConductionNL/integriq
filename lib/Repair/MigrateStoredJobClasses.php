@@ -41,9 +41,9 @@
  *     `lib/Settings/register.d/environments-and-promotion.json`), and
  *     `adapterClass` is not declared on any schema in the register. It is an
  *     orphaned seed file, so there is nothing stored to repair.
- *   - Nextcloud's own `oc_jobs` rows for this app's `<background-jobs>` also
- *     hold class names, but that table is the SERVER's, not this app's, and is
- *     deliberately left to Nextcloud — see the note in the class body.
+ *   - Nextcloud's own `oc_jobs` rows also hold class names. This step leaves
+ *     them alone; {@see MigrateMovedJobClasses}, which runs right after it,
+ *     rewrites the rows of the job classes that moved inside this app.
  *
  * SAFETY. Matches the two sibling rename steps:
  *   - idempotent: a value that already carries the new prefix is skipped, so a

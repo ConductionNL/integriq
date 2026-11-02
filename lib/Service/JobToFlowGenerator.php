@@ -84,6 +84,7 @@ namespace OCA\Integriq\Service;
 use OCA\Integriq\Exception\EntityNotMigratableException;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\Integriq\Service\Job\MovedJobClasses;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUserManager;
@@ -700,6 +701,10 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	/**
 	 * The job's action class, normalised to a leading-backslash-free name.
 	 *
+	 * An old name of a moved action is read as its current name: a job can
+	 * hold one until the repair step has rewritten it, or after OpenRegister
+	 * writes one back.
+	 *
 	 * @param array $job The job's serialised record.
 	 *
 	 * @return string The class name; empty when there is none.
@@ -707,7 +712,9 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function jobClassOf(array $job): string {
-		return ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
+		$jobClass = ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
+
+		return (MovedJobClasses::NEW_NAMES[$jobClass] ?? $jobClass);
 	}//end jobClassOf()
 
 	/**

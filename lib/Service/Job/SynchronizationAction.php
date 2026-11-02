@@ -28,7 +28,7 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 /**
  * This action handles the synchronization of data from the source to the target.
  *
- * @package OCA\Integriq\Action
+ * @package OCA\Integriq\Service\Job
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
