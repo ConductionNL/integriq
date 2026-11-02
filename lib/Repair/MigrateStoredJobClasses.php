@@ -130,6 +130,20 @@ class MigrateStoredJobClasses implements IRepairStep {
 	private const REGISTER = 'integriq';
 
 	/**
+	 * The step name that prefixes its output and log lines.
+	 *
+	 * @var string
+	 */
+	protected const STEP = 'MigrateStoredJobClasses';
+
+	/**
+	 * What the stale values name, for the output lines.
+	 *
+	 * @var string
+	 */
+	protected const OLD_NAMES = 'the openconnector namespace';
+
+	/**
 	 * The schema whose objects carry a stored PHP class name.
 	 *
 	 * @var string
@@ -206,11 +220,11 @@ class MigrateStoredJobClasses implements IRepairStep {
 			$orObjectService = $this->container->get(OrObjectService::class);
 		} catch (Throwable $e) {
 			$output->warning(
-				'MigrateStoredJobClasses: could not resolve the OpenRegister object service; '
+				static::STEP . ': could not resolve the OpenRegister object service; '
 				. 'stored jobClass values were NOT migrated.'
 			);
 			$this->logger->error(
-				'Integriq: MigrateStoredJobClasses service resolution failed',
+				'Integriq: ' . static::STEP . ' service resolution failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
@@ -226,18 +240,18 @@ class MigrateStoredJobClasses implements IRepairStep {
 		$failed = (int)($counts['failed'] ?? 0);
 
 		if ($migrated === 0 && $failed === 0) {
-			$output->info('MigrateStoredJobClasses: no stored jobClass still names the openconnector namespace.');
+			$output->info(static::STEP . ': no stored jobClass still names ' . static::OLD_NAMES . '.');
 			return;
 		}
 
-		$output->info('MigrateStoredJobClasses: rewrote ' . $migrated . ' stored jobClass value(s).');
+		$output->info(static::STEP . ': rewrote ' . $migrated . ' stored jobClass value(s).');
 
 		if ($failed > 0) {
 			// Surfaced loudly: a job left on the old class name does not error
 			// at run time, it silently stops executing (see the class docblock).
 			$output->warning(
-				'MigrateStoredJobClasses: ' . $failed . ' job(s) could NOT be rewritten and still name the '
-				. 'openconnector namespace. Those jobs will not run until their jobClass is corrected.'
+				static::STEP . ': ' . $failed . ' job(s) could NOT be rewritten and still name '
+				. static::OLD_NAMES . '. Those jobs will not run until their jobClass is corrected.'
 			);
 		}
 	}//end run()
@@ -291,11 +305,11 @@ class MigrateStoredJobClasses implements IRepairStep {
 				);
 			} catch (Throwable $e) {
 				$output->warning(
-					'MigrateStoredJobClasses: could not enumerate stored jobs at offset ' . $offset
-					. '; stopping. Some jobClass values may still name the openconnector namespace.'
+					static::STEP . ': could not enumerate stored jobs at offset ' . $offset
+					. '; stopping. Some jobClass values may still name ' . static::OLD_NAMES . '.'
 				);
 				$this->logger->error(
-					'Integriq: MigrateStoredJobClasses enumeration failed',
+					'Integriq: ' . static::STEP . ' enumeration failed',
 					['offset' => $offset, 'exception' => $e->getMessage()]
 				);
 				break;
@@ -353,15 +367,12 @@ class MigrateStoredJobClasses implements IRepairStep {
 				return null;
 			}
 
-			// Only the exact old prefix is touched. An already-migrated value,
-			// a third-party class or anything unrecognised is left alone
-			// rather than guessed at.
-			if (str_starts_with($current, self::OLD_CLASS_PREFIX) === false) {
+			$renamed = $this->renamedClass(class: $current);
+			if ($renamed === null) {
 				return null;
 			}
 
-			$data[self::CLASS_PROPERTY] = self::NEW_CLASS_PREFIX
-				. substr($current, strlen(self::OLD_CLASS_PREFIX));
+			$data[self::CLASS_PROPERTY] = $renamed;
 
 			$orObjectService->saveObject(
 				object: $data,
@@ -379,4 +390,26 @@ class MigrateStoredJobClasses implements IRepairStep {
 			return false;
 		}//end try
 	}//end migrateOne()
+
+	/**
+	 * The new name of a stored class name, or null when it is left as it is.
+	 *
+	 * Only the exact old prefix is touched. An already-migrated value, a
+	 * third-party class or anything unrecognised is left alone rather than
+	 * guessed at.
+	 *
+	 * @param string $class The stored class name
+	 *
+	 * @return string|null The class name to store, or null to leave it
+	 *
+	 * @spec exclude One-off openconnector->integriq app-id rename plumbing: it
+	 *       maps a stored class-name string and adds no behaviour of its own.
+	 */
+	protected function renamedClass(string $class): ?string {
+		if (str_starts_with($class, self::OLD_CLASS_PREFIX) === false) {
+			return null;
+		}
+
+		return self::NEW_CLASS_PREFIX . substr($class, strlen(self::OLD_CLASS_PREFIX));
+	}//end renamedClass()
 }//end class

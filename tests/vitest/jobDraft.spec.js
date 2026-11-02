@@ -16,7 +16,7 @@
  *      layout groups, SFC → labels). That split is what makes the form
  *      declarative, but it also means a change in one file can silently
  *      contradict another. `FlowAction` going missing from the class picker
- *      while sitting in lib/Action/ is exactly that failure, so the last
+ *      while sitting in lib/Service/Job/ is exactly that failure, so the last
  *      describe block pins the three files against each other.
  */
 
@@ -285,13 +285,16 @@ describe('Jobs form configuration consistency', () => {
 	)
 	const fragmentProps = fragment.components.schemas.job.properties
 
-	it('offers exactly the Action classes that exist in lib/Action', () => {
+	it('offers exactly the Action classes that exist in lib/Service/Job', () => {
 		// This is the check whose absence let FlowAction sit in lib/Action for a
 		// release without ever appearing in the picker.
 		const onDisk = fs
-			.readdirSync(path.join(REPO_ROOT, 'lib/Action'))
-			.filter((file) => file.endsWith('.php'))
-			.map((file) => `OCA\\Integriq\\Action\\${file.replace(/\.php$/, '')}`)
+			.readdirSync(path.join(REPO_ROOT, 'lib/Service/Job'))
+			.filter((file) => file.endsWith('Action.php'))
+			.map(
+				(file) =>
+					`OCA\\Integriq\\Service\\Job\\${file.replace(/\.php$/, '')}`,
+			)
 		expect([...overrides.jobClass.enum].sort()).toEqual([...onDisk].sort())
 	})
 

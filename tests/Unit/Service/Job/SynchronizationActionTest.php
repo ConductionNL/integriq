@@ -4,7 +4,7 @@
  * Unit tests for SynchronizationAction, the cron Action that runs one synchronization.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Action
+ * @package  OCA\Integriq\Tests\Unit\Service\Job
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Action;
+namespace OCA\Integriq\Tests\Unit\Service\Job;
 
-use OCA\Integriq\Action\SynchronizationAction;
+use OCA\Integriq\Service\Job\SynchronizationAction;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;

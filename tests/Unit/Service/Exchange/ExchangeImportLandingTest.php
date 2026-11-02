@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Exchange;
 
-use OCA\Integriq\Action\ExchangeJobAction;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
 use OCA\Integriq\Event\ExchangeJobConcludedEvent;
 use OCA\Integriq\Event\ExchangeRecordsReceivedEvent;
@@ -33,6 +32,7 @@ use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
 use OCA\Integriq\Service\Exchange\ExchangeJobService;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
 use OCA\Integriq\Service\Exchange\ExchangeTargetDispatcher;
+use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\RodService;

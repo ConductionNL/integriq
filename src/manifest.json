@@ -2271,11 +2271,11 @@
           "jobClass": {
             "widget": "select",
             "enum": [
-              "OCA\\Integriq\\Action\\SynchronizationAction",
-              "OCA\\Integriq\\Action\\FlowAction",
-              "OCA\\Integriq\\Action\\EventAction",
-              "OCA\\Integriq\\Action\\PingAction",
-              "OCA\\Integriq\\Action\\ExchangeJobAction"
+              "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+              "OCA\\Integriq\\Service\\Job\\FlowAction",
+              "OCA\\Integriq\\Service\\Job\\EventAction",
+              "OCA\\Integriq\\Service\\Job\\PingAction",
+              "OCA\\Integriq\\Service\\Job\\ExchangeJobAction"
             ]
           },
           "arguments": {
@@ -2410,7 +2410,7 @@
         "rowDetail": true,
         "fixedLayout": true,
         "_columnsNote": "No `jobId` column: this page is not in the menu, so it is only ever reached from the Jobs row action or the run modal — both of which push `?jobId=` (see handlers/logTargets.js), making the column the same value on every row. `level` needs an explicit `widget: badge` because the job_log schema property carries no `enum`, so CnCellRenderer's auto-enum-badge path never fires; CnStatusBadge matches colorMap case-insensitively, which is what lets the lowercase keys resolve the uppercase INFO/WARNING/ERROR values JobService writes. `executionTime` is an integer of MILLISECONDS (JobService rounds `($end-$start)*1000`), hence the unit. `created` uses the absolute `datetime` formatter rather than the schema's relative-time default — a log wants a timestamp, not \"3 hours ago\".",
-        "_widthsNote": "Percentages summing to 100, paired with `fixedLayout` so they are honoured exactly. Under the default auto layout a table column's `width` is only a hint: `message` was the one unsized column so it absorbed every spare pixel, while `jobClass` — an unbreakable 41-char FQCN like OCA\\Integriq\\Action\\SynchronizationAction — was squeezed narrower than its own text and painted over the `stackTrace` cell next to it. Fixed layout makes the widths binding and lets long values wrap inside their cell. Keep the six summing to 100 when editing.",
+        "_widthsNote": "Percentages summing to 100, paired with `fixedLayout` so they are honoured exactly. Under the default auto layout a table column's `width` is only a hint: `message` was the one unsized column so it absorbed every spare pixel, while `jobClass` — an unbreakable 46-char FQCN like OCA\\Integriq\\Service\\Job\\SynchronizationAction — was squeezed narrower than its own text and painted over the `stackTrace` cell next to it. Fixed layout makes the widths binding and lets long values wrap inside their cell. Keep the six summing to 100 when editing.",
         "columns": [
           {
             "key": "created",

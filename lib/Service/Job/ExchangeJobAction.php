@@ -7,7 +7,7 @@
  * container and calls run() on the scheduler's pass.
  *
  * @category Action
- * @package  OCA\Integriq\Action
+ * @package  OCA\Integriq\Service\Job
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Action;
+namespace OCA\Integriq\Service\Job;
 
 use OCA\Integriq\Service\Exchange\ExchangeJobRunnerInterface;
 

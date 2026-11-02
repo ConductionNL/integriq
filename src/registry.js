@@ -169,7 +169,7 @@ export default {
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
 	// CnFormDialog inner content renders a Synchronization picker when
-	// `jobClass === OCA\Integriq\Action\SynchronizationAction`
+	// `jobClass === OCA\Integriq\Service\Job\SynchronizationAction`
 	// (per #847). Open follow-up upstream: CnFormDialog has no native
 	// per-field `condition`/`visibleWhen` prop — tracked as a ncv issue.
 	JobFormFields,

@@ -36,7 +36,7 @@ use Throwable;
  * per request that has bijlagen, so the STAM endpoint answers 202 straight
  * after the request is saved and the downloads run on the cron worker.
  *
- * A QueuedJob, like {@see FetchFilesJob}: it runs once and removes itself.
+ * A QueuedJob, like FetchFilesJob: it runs once and removes itself.
  * Running it again for the same request is safe, because the fetcher only
  * touches entries that are not `stored`.
  *

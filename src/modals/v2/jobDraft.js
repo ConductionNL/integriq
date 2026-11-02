@@ -24,12 +24,12 @@
 
 /**
  * Canonical FQN of the built-in synchronization-runner action. Lives in
- * lib/Action/SynchronizationAction.php; the form-side check has to use the
+ * lib/Service/Job/SynchronizationAction.php; the form-side check has to use the
  * exact same string the backend resolves with
  * `containerInterface->get($jobClass)`.
  */
 export const SYNCHRONIZATION_ACTION_CLASS =
-	'OCA\\Integriq\\Action\\SynchronizationAction'
+	'OCA\\Integriq\\Service\\Job\\SynchronizationAction'
 
 /**
  * The nested key inside a job's `arguments` object that
