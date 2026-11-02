@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Flow\ApprovalRequestNode;
+use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;

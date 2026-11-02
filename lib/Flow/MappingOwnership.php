@@ -39,7 +39,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use Adbar\Dot;
-use OCA\Integriq\Exception\FlowNodeException;
 use OCP\IL10N;
 use UnexpectedValueException;
 

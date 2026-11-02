@@ -10,7 +10,7 @@
  * reason, never credentials.
  *
  * @category Exception
- * @package  OCA\Integriq\Exception
+ * @package  OCA\Integriq\Service\Mail
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Exception;
+namespace OCA\Integriq\Service\Mail;
 
 use Exception;
 

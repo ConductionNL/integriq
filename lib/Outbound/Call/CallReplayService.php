@@ -34,7 +34,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound\Call;
 
 use DateTimeImmutable;
-use OCA\Integriq\Exception\CallDispatchException;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;

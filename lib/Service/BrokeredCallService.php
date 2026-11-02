@@ -42,7 +42,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;

@@ -34,9 +34,8 @@ namespace OCA\Integriq\Service\Psd2;
 
 use DateInterval;
 use DateTime;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
-use OCA\Integriq\Exception\Psd2ConsentRevokedException;
 use OCA\Integriq\Exception\Psd2ProviderException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;

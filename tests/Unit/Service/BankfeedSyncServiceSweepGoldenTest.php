@@ -22,11 +22,11 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\Integriq\Exception\Psd2ConsentRevokedException;
 use OCA\Integriq\Exception\Psd2ProviderException;
 use OCA\Integriq\Service\BankfeedSyncService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
+use OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException;
 use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;

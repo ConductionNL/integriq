@@ -20,7 +20,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 
 /**
  * Public operations of {@see BrokeredCallService} that other components call.

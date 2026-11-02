@@ -22,10 +22,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Outbound;
 
 use InvalidArgumentException;
-use OCA\Integriq\Exception\CallDispatchException;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
+use OCA\Integriq\Outbound\Call\CallDispatchException;
 use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Outbound\Call\CallReplayService;
 use OCA\Integriq\Outbound\Call\MappingVersionService;

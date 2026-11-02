@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\DocumentGeneration;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Exception\DocumentGenerationException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use Psr\Log\LoggerInterface;
 use Throwable;

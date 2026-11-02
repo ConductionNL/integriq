@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\MessageValidation;
 
-use OCA\Integriq\Exception\MessageValidationRefusedException;
 use Psr\Log\LoggerInterface;
 
 /**
