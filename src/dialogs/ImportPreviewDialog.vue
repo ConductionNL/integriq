@@ -4,7 +4,7 @@
 <!--
   ImportPreviewDialog — configuration import with preview + confirmation
   (connector-catalog-ui REQ-007/REQ-008/REQ-009), mounted once in ModalHost
-  and opened via the Catalog page's "Import configuration" header action.
+  and opened via the Import configuration header action of the Catalog page.
 
   Flow:
     1. pick a JSON file (an earlier export, REQ-001-shaped OAS document)
@@ -51,38 +51,18 @@
 				<h4>{{ t('integriq', 'Import preview') }}</h4>
 
 				<div class="oc-import-dialog__buckets">
-					<div
-						class="oc-import-dialog__bucket"
-						data-testid="preview-creates">
-						<h5>
-							{{ t('integriq', 'Will be created') }} ({{
-								preview.creates.length
-							}})
-						</h5>
-						<ul>
-							<li
-								v-for="entry in preview.creates"
-								:key="`c-${entry.type}-${entry.slug}`">
-								<code>{{ entry.type }}</code> {{ entry.slug }}
-							</li>
-						</ul>
-					</div>
-					<div
-						class="oc-import-dialog__bucket"
-						data-testid="preview-updates">
-						<h5>
-							{{ t('integriq', 'Will be updated') }} ({{
-								preview.updates.length
-							}})
-						</h5>
-						<ul>
-							<li
-								v-for="entry in preview.updates"
-								:key="`u-${entry.type}-${entry.slug}`">
-								<code>{{ entry.type }}</code> {{ entry.slug }}
-							</li>
-						</ul>
-					</div>
+					<PreviewBucket
+						block="oc-import-dialog"
+						:title="t('integriq', 'Will be created')"
+						:entries="preview.creates"
+						keyPrefix="c"
+						data-testid="preview-creates" />
+					<PreviewBucket
+						block="oc-import-dialog"
+						:title="t('integriq', 'Will be updated')"
+						:entries="preview.updates"
+						keyPrefix="u"
+						data-testid="preview-updates" />
 				</div>
 
 				<NcNoteCard
@@ -217,7 +197,12 @@ import {
 	NcDialog,
 	NcNoteCard,
 } from '@nextcloud/vue'
+import PreviewBucket from '../components/PreviewBucket.vue'
+import { withDetail } from '../errorDetail.js'
 import { getRouter } from '../handlers/routerRef.js'
+
+/** What parseChosen yields for a file that is not JSON. */
+const INVALID = Symbol('invalid')
 
 const EMPTY_PREVIEW = {
 	creates: [],
@@ -231,6 +216,7 @@ export default {
 	name: 'ImportPreviewDialog',
 
 	components: {
+		PreviewBucket,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcDialog,
@@ -318,30 +304,79 @@ export default {
 			if (!file) {
 				return
 			}
-			let parsed
+			const parsed = await this.parseChosen(file)
+			if (parsed === INVALID) {
+				return
+			}
+			this.document = parsed
+			await this.requestPreview(parsed)
+		},
+
+		/**
+		 * Read a chosen file as JSON; invalid JSON says so and yields INVALID.
+		 *
+		 * @param {File} file The chosen file.
+		 * @return {Promise<unknown>} The parsed document, or INVALID.
+		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 */
+		async parseChosen(file) {
 			try {
-				parsed = JSON.parse(await file.text())
+				return JSON.parse(await file.text())
 			} catch (err) {
 				this.errorMessage = t(
 					'integriq',
 					'The selected file is not valid JSON',
 				)
-				return
+				return INVALID
 			}
-			this.document = parsed
+		},
+
+		/**
+		 * Ask the server what importing a document would do, and show it.
+		 *
+		 * @param {unknown} document The parsed configuration document.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 */
+		async requestPreview(document) {
 			try {
 				const url = generateUrl(
 					'/apps/integriq/api/configurations/import/preview',
 				)
-				const { data } = await axios.post(url, { document: parsed })
+				const { data } = await axios.post(url, { document })
 				this.preview = { ...EMPTY_PREVIEW, ...data }
 				this.unresolvedAcknowledged = false
 				this.step = 'preview'
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage =
-					t('integriq', 'Preview failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage = withDetail(t('integriq', 'Preview failed'), err)
 			}
+		},
+
+		/**
+		 * Show what the import did on the done step.
+		 *
+		 * @param {object|null} data The import result.
+		 * @return {void}
+		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 */
+		showImported(data) {
+			this.preview = { ...EMPTY_PREVIEW, ...data }
+			this.step = 'done'
+		},
+
+		/**
+		 * POST the confirmed import of the chosen document.
+		 *
+		 * @return {Promise<object>} What the import did.
+		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 */
+		async postImport() {
+			const url = generateUrl('/apps/integriq/api/configurations/import')
+			const { data } = await axios.post(url, {
+				document: this.document,
+				confirmed: true,
+			})
+			return data
 		},
 
 		/**
@@ -358,17 +393,9 @@ export default {
 			this.importRunning = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/integriq/api/configurations/import')
-				const { data } = await axios.post(url, {
-					document: this.document,
-					confirmed: true,
-				})
-				this.preview = { ...EMPTY_PREVIEW, ...data }
-				this.step = 'done'
+				this.showImported(await this.postImport())
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage =
-					t('integriq', 'Import failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage = withDetail(t('integriq', 'Import failed'), err)
 			} finally {
 				this.importRunning = false
 			}
@@ -435,11 +462,11 @@ export default {
 	gap: 12px;
 }
 
-.oc-import-dialog__bucket h5 {
+.oc-import-dialog__bucket :deep(h5) {
 	margin: 0 0 4px;
 }
 
-.oc-import-dialog__bucket ul {
+.oc-import-dialog__bucket :deep(ul) {
 	margin: 0;
 	padding-inline-start: 18px;
 	max-height: 180px;
