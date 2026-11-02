@@ -317,7 +317,7 @@ export default {
 		 *
 		 * @param {File} file The chosen file.
 		 * @return {Promise<unknown>} The parsed document, or INVALID.
-		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
 		 */
 		async parseChosen(file) {
 			try {
@@ -336,7 +336,7 @@ export default {
 		 *
 		 * @param {unknown} document The parsed configuration document.
 		 * @return {Promise<void>}
-		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
 		 */
 		async requestPreview(document) {
 			try {
@@ -357,7 +357,7 @@ export default {
 		 *
 		 * @param {object|null} data The import result.
 		 * @return {void}
-		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-008--import-requires-explicit-confirmation-after-preview
 		 */
 		showImported(data) {
 			this.preview = { ...EMPTY_PREVIEW, ...data }
@@ -368,7 +368,7 @@ export default {
 		 * POST the confirmed import of the chosen document.
 		 *
 		 * @return {Promise<object>} What the import did.
-		 * @spec openspec/specs/connector-catalog-ui/spec.md
+		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-008--import-requires-explicit-confirmation-after-preview
 		 */
 		async postImport() {
 			const url = generateUrl('/apps/integriq/api/configurations/import')

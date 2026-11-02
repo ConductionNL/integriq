@@ -8,7 +8,7 @@ import { translate } from '@nextcloud/l10n'
  * Characterisation of ImportPreviewDialog: reading the chosen file, the
  * preview request, and the confirmed import, with every failure text.
  *
- * @spec openspec/specs/connector-catalog-ui/spec.md
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
