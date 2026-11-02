@@ -86,7 +86,7 @@
 				<p>{{ saveError }}</p>
 			</NcNoteCard>
 
-			<!-- Identity fields — the synchronization's own metadata, so they sit
+			<!-- Identity fields — the synchronization metadata itself, so they sit
 			     above the source → transform → target columns rather than inside
 			     one, stacked and capped short of the modal width. -->
 			<div class="cn-sync-editor__identity">
@@ -131,12 +131,8 @@
 							:type="draft.sourceType"
 							:sourceId="draft.sourceId"
 							:config="draft.sourceConfig"
-							@update:sourceId="
-								(value) => updateDraft('sourceId', value)
-							"
-							@update:config="
-								(value) => updateDraft('sourceConfig', value)
-							" />
+							@update:sourceId="updateDraft('sourceId', $event)"
+							@update:config="updateDraft('sourceConfig', $event)" />
 
 						<label class="cn-sync-editor__label">{{
 							t('integriq', 'Sync mode')
@@ -155,8 +151,7 @@
 								:label="t('integriq', 'Cursor field')"
 								:disabled="saving"
 								@update:modelValue="
-									(value) =>
-										updateSourceConfigField('cursorField', value)
+									updateSourceConfigField('cursorField', $event)
 								" />
 							<label class="cn-sync-editor__label">{{
 								t('integriq', 'Cursor comparator')
@@ -181,11 +176,10 @@
 							:disabled="saving"
 							data-testid="sync-editor-ownership-mode"
 							@update:modelValue="
-								(option) =>
-									updateSourceConfigField(
-										'ownershipMode',
-										option?.id || 'local',
-									)
+								updateSourceConfigField(
+									'ownershipMode',
+									$event?.id || 'local',
+								)
 							" />
 						<NcSelect
 							inputId="cn-sync-editor-disappearance-policy"
@@ -201,11 +195,10 @@
 							:disabled="saving"
 							data-testid="sync-editor-disappearance-policy"
 							@update:modelValue="
-								(option) =>
-									updateSourceConfigField(
-										'disappearancePolicy',
-										option?.id || 'delete',
-									)
+								updateSourceConfigField(
+									'disappearancePolicy',
+									$event?.id || 'delete',
+								)
 							" />
 						<NcSelect
 							inputId="cn-sync-editor-source-destroyed"
@@ -264,12 +257,8 @@
 							:type="draft.targetType"
 							:sourceId="draft.targetId"
 							:config="draft.targetConfig"
-							@update:sourceId="
-								(value) => updateDraft('targetId', value)
-							"
-							@update:config="
-								(value) => updateDraft('targetConfig', value)
-							" />
+							@update:sourceId="updateDraft('targetId', $event)"
+							@update:config="updateDraft('targetConfig', $event)" />
 
 						<!-- REQ-CSD-001: only a register/schema source has an object
 						     to write the push's outcome back onto. -->
@@ -277,9 +266,7 @@
 							v-if="draft.sourceType === 'register/schema'"
 							:value="draft.writeBack"
 							:disabled="saving"
-							@update:value="
-								(value) => updateDraft('writeBack', value)
-							" />
+							@update:value="updateDraft('writeBack', $event)" />
 
 						<!-- Dry-run result. The row action discards this payload for a
 						     bare toast; here it is the point of pressing Test. -->
@@ -363,9 +350,7 @@
 									:emptyLabel="
 										t('integriq', 'No rules linked yet.')
 									"
-									@input="
-										(value) => updateDraft('actions', value)
-									" />
+									@input="updateDraft('actions', $event)" />
 							</div>
 						</CnTab>
 
@@ -376,16 +361,13 @@
 									:hashValue="draft.sourceHashMapping"
 									:targetSourceValue="draft.targetSourceMapping"
 									@update:value="
-										(value) =>
-											updateDraft('sourceTargetMapping', value)
+										updateDraft('sourceTargetMapping', $event)
 									"
 									@update:hashValue="
-										(value) =>
-											updateDraft('sourceHashMapping', value)
+										updateDraft('sourceHashMapping', $event)
 									"
 									@update:targetSourceValue="
-										(value) =>
-											updateDraft('targetSourceMapping', value)
+										updateDraft('targetSourceMapping', $event)
 									" />
 							</div>
 						</CnTab>
@@ -423,9 +405,7 @@
 									:emptyLabel="
 										t('integriq', 'No follow-ups linked yet.')
 									"
-									@input="
-										(value) => updateDraft('followUps', value)
-									" />
+									@input="updateDraft('followUps', $event)" />
 							</div>
 						</CnTab>
 					</CnTabs>
