@@ -216,6 +216,99 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 
+/**
+ * Append the server's or the client's reason to a translated failure text.
+ *
+ * @param {string} message The translated failure text.
+ * @param {Error} err The failed request.
+ * @return {string} The message, with ": detail" when there is one.
+ */
+function withDetail(message, err) {
+	const detail = err?.response?.data?.error || err?.message || ''
+	return message + (detail ? `: ${detail}` : '')
+}
+
+const PREVIEW_PATH = '/apps/integriq/api/promotions/preview'
+const PROMOTE_PATH = '/apps/integriq/api/promotions'
+
+/**
+ * POST a JSON body to an app-relative URL.
+ *
+ * @param {string} path The app-relative URL.
+ * @param {object} body The request body.
+ * @return {Promise<object>} The response body.
+ */
+async function postJson(path, body) {
+	const { data } = await axios.post(generateUrl(path), body)
+	return data
+}
+
+/**
+ * The rows of an OpenRegister-style list answer.
+ *
+ * @param {string} path The app-relative list URL.
+ * @return {Promise<Array<object>>} The listed rows, or an empty list.
+ */
+async function fetchRows(path) {
+	const { data } = await axios.get(generateUrl(path))
+	return data?.results || []
+}
+
+/**
+ * A configuration group as a select option.
+ *
+ * @param {object} row One configuration from OpenRegister.
+ * @return {{id: string|number, label: string}} The option.
+ */
+function configurationOption(row) {
+	return {
+		id: row.uuid || row.id,
+		label: row.title || row.name || row.uuid || String(row.id),
+	}
+}
+
+/**
+ * An environment as a select option.
+ *
+ * @param {object} row One environment.
+ * @return {{id: string, label: string}} The option.
+ */
+function environmentOption(row) {
+	return { id: row.slug, label: row.name || row.slug }
+}
+
+/**
+ * The preview answer with every bucket present.
+ *
+ * @param {object} data The preview response body.
+ * @return {object} The four buckets, missing ones as empty lists.
+ */
+function previewBuckets(data) {
+	return {
+		creates: data.creates || [],
+		updates: data.updates || [],
+		collisions: data.collisions || [],
+		credentialRefsNeedingRebind: data.credentialRefsNeedingRebind || [],
+	}
+}
+
+/**
+ * The state of the select and preview steps before anything is chosen.
+ *
+ * @return {object} The step, the option lists and the selections.
+ */
+function selectionState() {
+	return {
+		step: 'select',
+		configOptions: [],
+		selectedConfig: null,
+		environmentOptions: [],
+		selectedEnvironment: null,
+		preview: null,
+		credentialBindings: {},
+	}
+}
+
 export default {
 	name: 'PromotePreviewModal',
 
@@ -236,17 +329,11 @@ export default {
 
 	data() {
 		return {
-			step: 'select',
-			configOptions: [],
-			selectedConfig: null,
+			...selectionState(),
 			loadingConfigs: false,
-			environmentOptions: [],
-			selectedEnvironment: null,
 			loadingEnvironments: false,
 			previewing: false,
 			confirming: false,
-			preview: null,
-			credentialBindings: {},
 			errorMessage: '',
 		}
 	},
@@ -303,19 +390,13 @@ export default {
 		async fetchConfigurations() {
 			this.loadingConfigs = true
 			try {
-				const { data } = await axios.get(
-					generateUrl('/apps/openregister/api/configurations'),
-				)
-				const rows = data?.results || []
-				this.configOptions = rows.map((row) => ({
-					id: row.uuid || row.id,
-					label: row.title || row.name || row.uuid || String(row.id),
-				}))
+				const rows = await fetchRows('/apps/openregister/api/configurations')
+				this.configOptions = rows.map(configurationOption)
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage =
-					t('integriq', 'Could not load configuration groups')
-					+ (detail ? `: ${detail}` : '')
+				this.errorMessage = withDetail(
+					t('integriq', 'Could not load configuration groups'),
+					err,
+				)
 			} finally {
 				this.loadingConfigs = false
 			}
@@ -330,19 +411,13 @@ export default {
 		async fetchEnvironments() {
 			this.loadingEnvironments = true
 			try {
-				const { data } = await axios.get(
-					generateUrl('/apps/integriq/api/environments'),
-				)
-				const rows = data?.results || []
-				this.environmentOptions = rows.map((row) => ({
-					id: row.slug,
-					label: row.name || row.slug,
-				}))
+				const rows = await fetchRows('/apps/integriq/api/environments')
+				this.environmentOptions = rows.map(environmentOption)
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage =
-					t('integriq', 'Could not load environments')
-					+ (detail ? `: ${detail}` : '')
+				this.errorMessage = withDetail(
+					t('integriq', 'Could not load environments'),
+					err,
+				)
 			} finally {
 				this.loadingEnvironments = false
 			}
@@ -417,6 +492,60 @@ export default {
 		},
 
 		/**
+		 * The request body shared by the preview and the confirmation.
+		 *
+		 * @param {Array<object>} credentialBindings The rebinds to send.
+		 * @return {object} The selection plus the bindings.
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-exports-locally-unchanged-and-dispatches-to-the-targets-existing-import-endpoints-req-002
+		 */
+		promotionRequest(credentialBindings) {
+			return {
+				configurationId: this.selectedConfig.id,
+				targetEnvironmentSlug: this.selectedEnvironment.id,
+				credentialBindings,
+			}
+		},
+
+		/**
+		 * The confirmation body: the selection, the operator's rebinds and
+		 * the explicit `confirmed: true` flag.
+		 *
+		 * @return {object} The request body.
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
+		 */
+		confirmedRequest() {
+			const bindings = this.buildCredentialBindings()
+			return { ...this.promotionRequest(bindings), confirmed: true }
+		},
+
+		/**
+		 * Tell the operator the promotion went through, and close.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-export-import-req-005
+		 */
+		announcePromotion() {
+			showSuccess(
+				t('integriq', 'Configuration promoted to {environment}.', {
+					environment: this.selectedEnvironment.label,
+				}),
+			)
+			this.close()
+		},
+
+		/**
+		 * Advance to step 2 with the preview the target answered.
+		 *
+		 * @param {object} data The preview response body.
+		 * @return {void}
+		 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
+		 */
+		showPreview(data) {
+			this.preview = previewBuckets(data)
+			this.step = 'preview'
+		},
+
+		/**
 		 * Fetch the merged diff preview (REQ-003) and advance to step 2.
 		 *
 		 * Sends an EMPTY `credentialBindings` array deliberately: the preview
@@ -434,24 +563,10 @@ export default {
 			this.previewing = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/integriq/api/promotions/preview')
-				const { data } = await axios.post(url, {
-					configurationId: this.selectedConfig.id,
-					targetEnvironmentSlug: this.selectedEnvironment.id,
-					credentialBindings: [],
-				})
-				this.preview = {
-					creates: data.creates || [],
-					updates: data.updates || [],
-					collisions: data.collisions || [],
-					credentialRefsNeedingRebind:
-						data.credentialRefsNeedingRebind || [],
-				}
-				this.step = 'preview'
+				const data = await postJson(PREVIEW_PATH, this.promotionRequest([]))
+				this.showPreview(data)
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage =
-					t('integriq', 'Preview failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage = withDetail(t('integriq', 'Preview failed'), err)
 			} finally {
 				this.previewing = false
 			}
@@ -471,23 +586,13 @@ export default {
 			this.confirming = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/integriq/api/promotions')
-				await axios.post(url, {
-					configurationId: this.selectedConfig.id,
-					targetEnvironmentSlug: this.selectedEnvironment.id,
-					credentialBindings: this.buildCredentialBindings(),
-					confirmed: true,
-				})
-				showSuccess(
-					t('integriq', 'Configuration promoted to {environment}.', {
-						environment: this.selectedEnvironment.label,
-					}),
-				)
-				this.close()
+				await postJson(PROMOTE_PATH, this.confirmedRequest())
+				this.announcePromotion()
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage =
-					t('integriq', 'Promotion failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage = withDetail(
+					t('integriq', 'Promotion failed'),
+					err,
+				)
 			} finally {
 				this.confirming = false
 			}
