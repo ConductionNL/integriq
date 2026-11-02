@@ -7,7 +7,7 @@
  * appropriate Content-Type / Content-Disposition headers.
  *
  * @category Http
- * @package  OCA\Integriq\Http
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,7 +18,7 @@
  * @link https://www.Integriq.nl
  */
 
-namespace OCA\Integriq\Http;
+namespace OCA\Integriq\Controller;
 
 use DOMDocument;
 use DOMElement;
