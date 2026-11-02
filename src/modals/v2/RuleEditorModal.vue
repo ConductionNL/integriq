@@ -98,7 +98,7 @@
 				<p>{{ saveError }}</p>
 			</NcNoteCard>
 
-			<!-- Identity fields — the rule's own metadata, so they sit above the
+			<!-- Identity fields — the rule metadata itself, so they sit above the
 			     when/then sections rather than inside one, stacked and capped
 			     short of the modal width. -->
 			<div class="cn-rule-editor__identity">
@@ -108,7 +108,7 @@
 					:error="!!nameError"
 					:helperText="nameError"
 					:disabled="saving"
-					@update:modelValue="(value) => updateDraft('name', value)"
+					@update:modelValue="updateDraft('name', $event)"
 					@blur="nameTouched = true" />
 				<NcTextArea
 					:modelValue="draft.description"
@@ -116,9 +116,7 @@
 					:disabled="saving"
 					rows="1"
 					resize="vertical"
-					@update:modelValue="
-						(value) => updateDraft('description', value)
-					" />
+					@update:modelValue="updateDraft('description', $event)" />
 			</div>
 
 			<!-- ── When: conditions ────────────────────────────────────── -->
@@ -214,8 +212,7 @@
 							:disabled="saving"
 							:aria-label-combobox="t('integriq', 'Timing')"
 							@update:modelValue="
-								(option) =>
-									updateDraft('timing', option?.id || 'before')
+								updateDraft('timing', $event?.id || 'before')
 							" />
 						<span class="cn-rule-editor__helper">
 							{{
@@ -259,7 +256,7 @@
 							:disabled="saving"
 							:aria-label-combobox="t('integriq', 'Action')"
 							@update:modelValue="
-								(option) => updateDraft('action', option?.id || '')
+								updateDraft('action', $event?.id || '')
 							" />
 						<span class="cn-rule-editor__helper">
 							{{
@@ -334,9 +331,7 @@
 							maxlength="255"
 							:disabled="saving"
 							:placeholder="t('integriq', 'Something went wrong')"
-							@update:modelValue="
-								(value) => updateErrorField('name', value)
-							" />
+							@update:modelValue="updateErrorField('name', $event)" />
 					</div>
 				</div>
 
@@ -350,16 +345,14 @@
 					:placeholder="
 						t('integriq', 'We encountered an unexpected problem')
 					"
-					@update:modelValue="
-						(value) => updateErrorField('message', value)
-					" />
+					@update:modelValue="updateErrorField('message', $event)" />
 
 				<NcCheckboxRadioSwitch
 					type="checkbox"
 					:modelValue="!!errorConfig.includeJsonLogicResult"
 					:disabled="saving"
 					@update:modelValue="
-						(value) => updateErrorField('includeJsonLogicResult', value)
+						updateErrorField('includeJsonLogicResult', $event)
 					">
 					{{ t('integriq', 'Include JSON Logic results in errors array') }}
 				</NcCheckboxRadioSwitch>
@@ -400,7 +393,6 @@
 </template>
 
 <script>
-import { showSuccess } from '@nextcloud/dialogs'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -420,6 +412,8 @@ import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import FlowForm from '../../views/Rule/actionForms/FlowForm.vue'
 import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
+import confirmSave from '../../mixins/confirmSave.js'
+import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import {
 	ACTION_OPTIONS,
 	ACTION_TYPES,
@@ -432,9 +426,6 @@ import {
 	TIMING_OPTIONS,
 } from '../../views/Rule/ruleDraft.js'
 
-/** A name has to carry at least one letter or digit — punctuation alone is not a name. */
-const NAME_PATTERN = /[\p{L}\p{N}]/u
-
 /**
  * Example condition tree shown in the raw editor. Deliberately not run through
  * `t()` — it is a code-shaped example, not prose, and a dynamic `t(variable)`
@@ -442,6 +433,18 @@ const NAME_PATTERN = /[\p{L}\p{N}]/u
  */
 const CONDITIONS_PLACEHOLDER =
 	'{"and": [{"==": [{"var": "status"}, "active"]}, {">=": [{"var": "age"}, 18]}]}'
+
+/**
+ * Whether a rule draft carries the fields the rule schema requires: a valid
+ * name, an action and a type.
+ *
+ * @param {object} draft The rule draft.
+ * @param {string} nameError The current name validation message.
+ * @return {boolean} True when the draft is complete.
+ */
+function draftComplete(draft, nameError) {
+	return !!draft.name && !nameError && !!draft.action && !!draft.type
+}
 
 export default {
 	name: 'RuleEditorModal',
@@ -465,6 +468,8 @@ export default {
 		PlayOutlineIcon,
 		PlusIcon,
 	},
+
+	mixins: [namedEditorDialog, confirmSave],
 
 	props: {
 		/** Slot scope: whether CnIndexPage wants the form dialog open. */
@@ -532,42 +537,10 @@ export default {
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
-		isCreate() {
-			return !this.item
-		},
-
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
 				? this.t('integriq', 'Create rule')
 				: this.t('integriq', 'Edit rule')
-		},
-
-		/**
-		 * Required marker on the label. NcTextField/NcInputField has no
-		 * `required` prop and renders no marker of its own, so the ` *` suffix
-		 * is appended here — the same convention CnFormDialog uses for
-		 * schema-required fields.
-		 *
-		 * @return {string} Label text.
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		nameLabel() {
-			return this.t('integriq', 'Name') + ' *'
-		},
-
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
-		nameError() {
-			if (!this.draft.name) {
-				return this.nameTouched ? this.t('integriq', 'Name is required') : ''
-			}
-			return NAME_PATTERN.test(this.draft.name)
-				? ''
-				: this.t(
-						'integriq',
-						'Name must contain at least one letter or number',
-					)
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -588,10 +561,7 @@ export default {
 		canSave() {
 			return (
 				!this.saving
-				&& !!this.draft.name
-				&& !this.nameError
-				&& !!this.draft.action
-				&& !!this.draft.type
+				&& draftComplete(this.draft, this.nameError)
 				&& !this.flowError
 				&& !this.rawConditionsError
 				// No `confirm` means the host did not bind the slot scope, so
@@ -725,21 +695,6 @@ export default {
 	},
 
 	watch: {
-		show: {
-			immediate: true,
-			/**
-			 * Re-seed the draft every time the dialog opens, so a cancelled edit
-			 * leaves nothing behind for the next one.
-			 *
-			 * @param {boolean} value Whether the dialog is now open.
-			 *
-			 * @spec openspec/specs/rule-editor-ui/spec.md
-			 */
-			handler(value) {
-				if (value) this.seedDraft()
-			},
-		},
-
 		/**
 		 * Seed the raw-JSON textarea from the current condition tree whenever
 		 * the editor is switched into raw mode, so the user starts from the
@@ -765,6 +720,42 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The record to save.
+		 *
+		 * @return {object} The payload for the slot's `confirm` binding.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		savePayload() {
+			return {
+				...(this.item || {}),
+				...this.draft,
+				conditions: serializeRuleConditions(this.draft.conditions),
+			}
+		},
+
+		/**
+		 * The toast after a save.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		savedText() {
+			return this.isCreate
+				? this.t('integriq', 'Rule created')
+				: this.t('integriq', 'Rule saved')
+		},
+
+		/**
+		 * The reason shown when a save fails without one.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		saveFailedText() {
+			return this.t('integriq', 'Failed to save rule')
+		},
+
 		/**
 		 * Copy the row being edited into the local draft, normalising the
 		 * conditions tree — persisted records carry it as an object, but rows
@@ -979,46 +970,6 @@ export default {
 					'Invalid JSON: {message}',
 					{ message: parseErr.message },
 				)
-			}
-		},
-
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
-		onCancel() {
-			if (this.saving) return
-			this.close?.()
-		},
-
-		/**
-		 * Persist through the slot's `confirm` binding. The item's own keys are
-		 * spread underneath the draft so server-managed fields the draft does
-		 * not carry (`uuid`, `slug`, `created`, `version`, …) survive the round
-		 * trip.
-		 *
-		 * @return {Promise<void>} Resolves once the save has settled.
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		async onSave() {
-			if (!this.canSave) return
-			this.saving = true
-			this.saveError = ''
-			try {
-				await this.confirm({
-					...(this.item || {}),
-					...this.draft,
-					conditions: serializeRuleConditions(this.draft.conditions),
-				})
-				showSuccess(
-					this.isCreate
-						? this.t('integriq', 'Rule created')
-						: this.t('integriq', 'Rule saved'),
-				)
-				this.close?.()
-			} catch (err) {
-				this.saveError =
-					err?.message || this.t('integriq', 'Failed to save rule')
-			} finally {
-				this.saving = false
 			}
 		},
 	},
