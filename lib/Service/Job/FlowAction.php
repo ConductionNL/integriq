@@ -10,7 +10,7 @@
  * Action interface introduced (job-management REQ-JOB-003).
  *
  * @category Action
- * @package  OCA\Integriq\Action
+ * @package  OCA\Integriq\Service\Job
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Action;
+namespace OCA\Integriq\Service\Job;
 
 use Exception;
 use OCA\Integriq\Service\FlowRunnerServiceInterface;

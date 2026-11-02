@@ -144,7 +144,7 @@ unchanged:
   consistently-typed column (an ISO date string, or an empty string when
   no date is scheduled).
 - The `job` object SHALL set `jobClass:
-  "OCA\\Integriq\\Action\\SynchronizationAction"`,
+  "OCA\\Integriq\\Service\\Job\\SynchronizationAction"`,
   `arguments.synchronizationId` to that product's `synchronization` slug,
   `interval: 86400` (daily), and `isEnabled: true` — the existing, generic
   job-dispatch mechanism (`job-scheduling` REQ-003/REQ-004); no new job

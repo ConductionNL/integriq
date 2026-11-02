@@ -681,7 +681,7 @@ interface SynchronizationServiceInterface extends SynchronizationLookupInterface
 	public function runFetchFileRule(string $ruleId, array $data, ?string $objectId = null): array;
 
 	/**
-	 * Public entry point for {@see \OCA\Integriq\BackgroundJob\FetchFilesJob}.
+	 * Public entry point for {@see \OCA\Integriq\Service\Synchronization\FetchFilesJob}.
 	 *
 	 * Re-resolves the source and runs the SAME fetch path the inline mode uses,
 	 * so `sync` and `async` cannot drift into fetching differently — the only

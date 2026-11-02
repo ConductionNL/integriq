@@ -49,6 +49,7 @@ use OCA\Integriq\Settings\SettingsRegistrar;
 use OCA\Integriq\SetupCheck\SetupCheckRegistrar;
 use OCA\Integriq\Sources\SourcesRegistrar;
 use OCA\Integriq\Db\DbRegistrar;
+use OCA\Integriq\Service\Job\MovedJobClasses;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\BackgroundJob\BackgroundJobRegistrar;
 use OCA\Integriq\WorkflowEngine\RegisterOperationsListener;
@@ -120,6 +121,8 @@ class Application extends App implements IBootstrap {
 		// (never throws) when OpenRegister is absent or disabled — fall through
 		// to the degraded path.
 		OpenRegisterAutoloader::register();
+		// Stored job classes may still carry a moved class's old name.
+		MovedJobClasses::registerAliases();
 
 		$this->assertStorageMigrated();
 

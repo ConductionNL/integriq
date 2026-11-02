@@ -88,7 +88,7 @@
         },
         "name": "BOAMP France Weekly Sync",
         "description": "Runs the boamp-france-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
-        "jobClass": "OCA\\Integriq\\Action\\SynchronizationAction",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
         "arguments": {
           "synchronizationId": "boamp-france-to-spectr-tender"
         },

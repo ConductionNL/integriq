@@ -12,7 +12,7 @@ events for cross-app commands, no server-side HTTP between apps). The full inter
 
 ### Requirement: REQ-001: An exchange job is a tagged native job
 Integriq MUST store an exchange job as a `job` row whose `jobClass` is
-`OCA\Integriq\Action\ExchangeJobAction`, carrying `exchangeTarget`, `exchangeDirection`,
+`OCA\Integriq\Service\Job\ExchangeJobAction`, carrying `exchangeTarget`, `exchangeDirection`,
 `ownerApp`, `ownerRef`, `exchangeScope`, `exchangeMapping` and `exchangeStatus`. It MUST accept
 exactly the fourteen targets of the contract and only the directions the contract lists for
 each target. A new exchange job MUST be enabled, single-run and `queued`, so the next scheduler
@@ -21,7 +21,7 @@ pass runs it once.
 #### Scenario: an app asks integriq to carry a ROD export
 - GIVEN integriq is installed
 - WHEN learniq dispatches `ExchangeJobRequestedEvent` for target `bron-rod`, direction `export`
-- THEN a `job` row exists with `jobClass` `OCA\Integriq\Action\ExchangeJobAction`, `exchangeTarget` `bron-rod`, `ownerApp` `learniq`, `singleRun` true, `isEnabled` true and `exchangeStatus` `queued`
+- THEN a `job` row exists with `jobClass` `OCA\Integriq\Service\Job\ExchangeJobAction`, `exchangeTarget` `bron-rod`, `ownerApp` `learniq`, `singleRun` true, `isEnabled` true and `exchangeStatus` `queued`
 - AND the event's `getJobId()` returns that row's uuid
 
 #### Scenario: an unknown target is refused

@@ -7,7 +7,7 @@
  * source and records the call log entry.
  *
  * @category Action
- * @package  OCA\Integriq\Action
+ * @package  OCA\Integriq\Service\Job
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,7 +18,7 @@
  * @link https://www.Integriq.nl
  */
 
-namespace OCA\Integriq\Action;
+namespace OCA\Integriq\Service\Job;
 
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;

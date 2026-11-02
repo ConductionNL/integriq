@@ -66,14 +66,14 @@ class JobToFlowGeneratorTest extends TestCase {
 	 *
 	 * @var string
 	 */
-	private const SYNC_ACTION = 'OCA\Integriq\Action\SynchronizationAction';
+	private const SYNC_ACTION = 'OCA\Integriq\Service\Job\SynchronizationAction';
 
 	/**
 	 * The action class a migratable flow job points at.
 	 *
 	 * @var string
 	 */
-	private const FLOW_ACTION = 'OCA\Integriq\Action\FlowAction';
+	private const FLOW_ACTION = 'OCA\Integriq\Service\Job\FlowAction';
 
 	/**
 	 * The configured account converted jobs act as.
@@ -617,7 +617,7 @@ class JobToFlowGeneratorTest extends TestCase {
 		$reasons = $this->refusal(
 			job: $this->job(
 				[
-					'jobClass' => 'OCA\Integriq\Action\PingAction',
+					'jobClass' => 'OCA\Integriq\Service\Job\PingAction',
 					'arguments' => ['sourceId' => 'some-source'],
 				]
 			)
@@ -637,7 +637,7 @@ class JobToFlowGeneratorTest extends TestCase {
 		$reasons = $this->refusal(
 			job: $this->job(
 				[
-					'jobClass' => 'OCA\Integriq\Action\EventAction',
+					'jobClass' => 'OCA\Integriq\Service\Job\EventAction',
 					'arguments' => ['type' => 'x', 'source' => 'y'],
 				]
 			)

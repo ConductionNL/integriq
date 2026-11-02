@@ -1702,7 +1702,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Flow/FetchFileNode.php (openconnector.fetch-file flow node, runs a configured fetch_file Rule against every synced item through SynchronizationService); lib/BackgroundJob/FetchFilesJob.php; lib/Service/StorageService.php stores fetched files into Nextcloud Files",
+				"evidence": "lib/Flow/FetchFileNode.php (openconnector.fetch-file flow node, runs a configured fetch_file Rule against every synced item through SynchronizationService); lib/Service/Synchronization/FetchFilesJob.php; lib/Service/StorageService.php stores fetched files into Nextcloud Files",
 				"spec": "openspec/specs/synchronization-files"
 			},
 			"reachedOn": "/synchronizations/:id detail -> Rules of type fetch_file attached to the sync (Rules/RuleDetail pages configure the rule; the fetch itself runs during a sync run, not from a page action)",
@@ -3890,7 +3890,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Action/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule.",
+				"evidence": "lib/Service/Job/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule.",
 				"spec": "openspec/specs/synchronization-engine"
 			},
 			"reachedOn": "/synchronizations index + /synchronizations/:id detail page (SynchronizationEditorModal.vue / SynchronizationDetailPage.vue) configure the sync; a job (Jobs page, /jobs) with jobClass=SynchronizationAction runs it on a cron schedule",

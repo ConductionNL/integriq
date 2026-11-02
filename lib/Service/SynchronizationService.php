@@ -12386,7 +12386,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function enqueueFileFetch(FileFetchRequest $request): void {
 		try {
 			$this->containerInterface->get(\OCP\BackgroundJob\IJobList::class)->add(
-				\OCA\Integriq\BackgroundJob\FetchFilesJob::class,
+				\OCA\Integriq\Service\Synchronization\FetchFilesJob::class,
 				[
 					'config' => $request->config,
 					'endpoint' => $request->endpoint,
@@ -12407,7 +12407,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	}//end enqueueFileFetch()
 
 	/**
-	 * Public entry point for {@see \OCA\Integriq\BackgroundJob\FetchFilesJob}.
+	 * Public entry point for {@see \OCA\Integriq\Service\Synchronization\FetchFilesJob}.
 	 *
 	 * Re-resolves the source and runs the SAME fetch path the inline mode uses,
 	 * so `sync` and `async` cannot drift into fetching differently — the only
