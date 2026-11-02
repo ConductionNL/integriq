@@ -120,7 +120,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 	 * @param ORObjectService $objectService OR object service for source/account/batch persistence.
 	 * @param LogCardfeedProvider $logProvider The sandbox provider binding.
 	 * @param RestCardfeedProvider $restProvider The generic REST provider binding.
-	 * @param EventService $eventService Emits the synced CloudEvent.
+	 * @param CloudEventEmitterInterface $eventService Emits the synced CloudEvent.
 	 * @param IL10N $l The localization service (operator-facing detail text).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
@@ -128,7 +128,7 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 		private readonly ORObjectService $objectService,
 		private readonly LogCardfeedProvider $logProvider,
 		private readonly RestCardfeedProvider $restProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

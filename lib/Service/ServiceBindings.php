@@ -631,6 +631,7 @@ final class ServiceBindings {
 		$context->registerServiceAlias(IntakeDocumentDispatcherInterface::class, IntakeDocumentDispatcher::class);
 		$context->registerServiceAlias(EndpointCorsPolicyInterface::class, EndpointCorsPolicy::class);
 		$context->registerServiceAlias(SourceTestServiceInterface::class, SourceTestService::class);
+		$context->registerServiceAlias(SynchronizationLookupInterface::class, SynchronizationService::class);
 	}//end registerSupportingContracts()
 
 	/**
@@ -667,5 +668,6 @@ final class ServiceBindings {
 		$context->registerServiceAlias(ActivityMappingTableInterface::class, DsoActivityTable::class);
 		$context->registerServiceAlias(ApiVersionNegotiationInterface::class, ZgwVersionNegotiationService::class);
 		$context->registerServiceAlias(SubscriptionSigningPolicyInterface::class, SubscriptionSigningPolicy::class);
+		$context->registerServiceAlias(CloudEventEmitterInterface::class, EventService::class);
 	}//end registerInjectedHelpers()
 }

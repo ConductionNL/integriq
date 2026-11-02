@@ -50,6 +50,7 @@ use OCA\Integriq\Service\CardfeedSyncService;
 use OCA\Integriq\Service\CardfeedSyncServiceInterface;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
+use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\Integriq\Service\ConfigurationImportPreviewService;
 use OCA\Integriq\Service\ConfigurationImportPreviewServiceInterface;
 use OCA\Integriq\Service\ConfigurationService;
@@ -283,6 +284,7 @@ use OCA\Integriq\Service\SynchronizationFlowGenerator;
 use OCA\Integriq\Service\SynchronizationFlowGeneratorInterface;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationLogServiceInterface;
+use OCA\Integriq\Service\SynchronizationLookupInterface;
 use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
 use OCA\Integriq\Service\SynchronizationService;
@@ -425,6 +427,7 @@ class ServiceRegistrarTest extends TestCase {
 		IntakeDocumentDispatcherInterface::class => IntakeDocumentDispatcher::class,
 		EndpointCorsPolicyInterface::class => EndpointCorsPolicy::class,
 		SourceTestServiceInterface::class => SourceTestService::class,
+		SynchronizationLookupInterface::class => SynchronizationService::class,
 		EgressGuardInterface::class => EgressGuard::class,
 		SecurityServiceInterface::class => SecurityService::class,
 		ResponseDecoderInterface::class => ResponseDecoder::class,
@@ -450,6 +453,7 @@ class ServiceRegistrarTest extends TestCase {
 		ActivityMappingTableInterface::class => DsoActivityTable::class,
 		ApiVersionNegotiationInterface::class => ZgwVersionNegotiationService::class,
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
+		CloudEventEmitterInterface::class => EventService::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
 

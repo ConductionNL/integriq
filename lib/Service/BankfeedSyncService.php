@@ -143,7 +143,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 	 * @param ORObjectService $objectService OR object service for source/connection/batch persistence.
 	 * @param LogPsd2AggregatorProvider $logProvider The sandbox provider binding.
 	 * @param RestPsd2AggregatorProvider $restProvider The generic REST provider binding.
-	 * @param EventService $eventService Emits the synced + consent-lifecycle CloudEvents.
+	 * @param CloudEventEmitterInterface $eventService Emits the synced + consent-lifecycle CloudEvents.
 	 * @param IL10N $l The localization service (operator-facing detail text).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param ContainerInterface $container App container the OpenRegister credential store resolver is resolved from.
@@ -165,7 +165,7 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 		private readonly ORObjectService $objectService,
 		private readonly LogPsd2AggregatorProvider $logProvider,
 		private readonly RestPsd2AggregatorProvider $restProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,

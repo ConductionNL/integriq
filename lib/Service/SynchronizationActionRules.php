@@ -76,12 +76,12 @@ class SynchronizationActionRules {
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizations Resolves a rule by id.
+	 * @param SynchronizationLookupInterface $synchronizations Resolves a rule by id.
 	 * @param IL10N $l10n Translations, so a refusal reads as a sentence.
 	 * @param SynchronizationSemanticRefusals $semantic The meaning-level refusals, fronted here.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizations,
+		private readonly SynchronizationLookupInterface $synchronizations,
 		private readonly IL10N $l10n,
 		private readonly SynchronizationSemanticRefusals $semantic,
 	) {
