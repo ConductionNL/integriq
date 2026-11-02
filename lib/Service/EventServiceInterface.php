@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * Public operations of {@see EventService} that other components call.
  */
-interface EventServiceInterface {
+interface EventServiceInterface extends CloudEventEmitterInterface {
 	/**
 	 * Default maximum number of delivery attempts before a message reaches
 	 * terminal `abandoned`, used when a subscription declares no
@@ -241,30 +241,6 @@ interface EventServiceInterface {
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 */
 	public function pullEvents(ObjectEntity $subscription, ?int $limit = 100, ?string $cursor = null): array;
-
-	/**
-	 * Construct and process an arbitrary CloudEvent.
-	 *
-	 * Generalises the `handleObjectCreated`/`Updated`/`Deleted` shape (build a
-	 * CloudEvents-shaped `event` OR object, then fan it out via
-	 * {@see processEvent}) for connectors that need to emit a domain-specific
-	 * event `type` — e.g. `nl.conduction.peppol.delivery.status` — rather than
-	 * one of the fixed `com.nextcloud.openregister.object.*` types.
-	 *
-	 * @param string $type The CloudEvents `type` attribute (e.g. `nl.conduction.peppol.delivery.status`).
-	 * @param string $source The CloudEvents `source` attribute (the producing component identity).
-	 * @param string|null $subject The CloudEvents `subject` attribute, or null when not applicable.
-	 * @param array $data The CloudEvents `data` payload.
-	 * @param string|null $userId The Nextcloud user id that produced this event, or null for system-produced.
-	 *
-	 * @return ObjectEntity[] The created CloudEvent messages.
-	 *
-	 * @throws Exception On event processing failure.
-	 * @throws \OCP\DB\Exception On persistence failure.
-	 *
-	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
-	 */
-	public function emitCloudEvent(string $type, string $source, ?string $subject, array $data, ?string $userId = null): array;
 
 	/**
 	 * Ingest an ADR-041 cross-app delivery request into the CloudEvents

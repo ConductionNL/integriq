@@ -241,13 +241,13 @@ class SynchronizationFlowGenerator implements SynchronizationFlowGeneratorInterf
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizationService Resolves a synchronization by uuid, slug or reference.
+	 * @param SynchronizationLookupInterface $synchronizationService Resolves a synchronization by uuid, slug or reference.
 	 * @param MappingService $mappingService Resolves the source→target mapping whose keys become the written fields.
 	 * @param IL10N $l10n Translations.
 	 * @param SynchronizationActionRules $actionRules The whole refusal surface, and the steps a rule becomes.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationLookupInterface $synchronizationService,
 		private readonly MappingService $mappingService,
 		private readonly IL10N $l10n,
 		private readonly SynchronizationActionRules $actionRules,

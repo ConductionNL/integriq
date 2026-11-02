@@ -110,7 +110,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 * @param ORObjectService $objectService OR object service for source/payment_intent persistence.
 	 * @param LogPaymentProvider $logProvider The sandbox provider binding.
 	 * @param MolliePaymentProvider $mollieProvider The Mollie REST provider binding.
-	 * @param EventService $eventService Emits the payment-status CloudEvent.
+	 * @param CloudEventEmitterInterface $eventService Emits the payment-status CloudEvent.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
@@ -118,7 +118,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 		private readonly ORObjectService $objectService,
 		private readonly LogPaymentProvider $logProvider,
 		private readonly MolliePaymentProvider $mollieProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

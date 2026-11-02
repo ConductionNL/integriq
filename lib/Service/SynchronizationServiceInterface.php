@@ -26,7 +26,6 @@ use OCA\Integriq\Exception\TablesFeatureDisabledException;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -43,7 +42,7 @@ use Twig\Error\SyntaxError;
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-interface SynchronizationServiceInterface {
+interface SynchronizationServiceInterface extends SynchronizationLookupInterface {
 	/**
 	 * Default share (0.0-1.0) of a synchronization's existing contracts that
 	 * `deleteInvalidObjects()` may garbage-collect in a single run before the
@@ -646,43 +645,6 @@ interface SynchronizationServiceInterface {
 	): array;
 
 	/**
-	 * Resolve one rule by id, for callers outside this service.
-	 *
-	 * `SynchronizationFlowGenerator` has to know what a synchronization's
-	 * `actions` ARE before it can decide whether they are expressible as flow
-	 * steps — refusing every synchronization that declares any is what kept 74
-	 * of them unmigratable. It needs the rule's `type` and `timing`, nothing
-	 * more, and re-implementing the lookup against register `openconnector` /
-	 * schema `rule` in a second place is how the two drift.
-	 *
-	 * ⚠️ THE READ IS DELIBERATELY UNSCOPED, and delegating to `getRuleById()`
-	 * was wrong for exactly that reason. That method reads WITH rbac and
-	 * multitenancy, which is right for the legacy engine's in-request rule
-	 * pipeline and wrong here: the generator runs under `occ`, where there is
-	 * no user session, so a scoped read filters every rule away and returns
-	 * null. The generator then cannot establish what the rule does and refuses
-	 * the synchronization — which is not "this rule is unsupported", it is "I
-	 * could not look".
-	 *
-	 * MEASURED, and this is why the flag matters rather than being defensive:
-	 * after `openconnector.fetch-file` shipped, a full sweep of all 240
-	 * synchronizations still refused the same 74, and ALL 74 gave
-	 * `actions: rule "…" could not be resolved`. Not one of them was refused
-	 * for its rule's TYPE. The feature was complete and unreachable.
-	 *
-	 * `MigrationEntityReader` already reads this way and says why in its own
-	 * docblock; this is the same rule applied to the one entity that did not go
-	 * through it.
-	 *
-	 * @param string $id The rule's OpenRegister uuid or slug.
-	 *
-	 * @return array|null The rule payload, or null when there is no such rule.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function findRule(string $id): ?array;
-
-	/**
 	 * Run ONE `fetch_file` rule, by id, outside the legacy rule pipeline.
 	 *
 	 * WHY THIS SEAM EXISTS. `openconnector.fetch-file` is a flow step over the
@@ -748,24 +710,6 @@ interface SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array;
-
-	/**
-	 * Fetch a synchronization OpenRegister object by id or other characteristics.
-	 *
-	 * Post-cutover, synchronizations are OpenRegister objects (register
-	 * `openconnector`, schema `synchronization`); this resolves them without any
-	 * caller needing to touch the OpenRegister object service directly.
-	 *
-	 * @param string|int|null $id The OpenRegister id (UUID) of the synchronization.
-	 * @param array $filters Other filters to find the synchronization by.
-	 *
-	 * @return ObjectEntity The resulting synchronization object.
-	 *
-	 * @throws DoesNotExistException Thrown if the synchronization does not exist.
-	 *
-	 * @spec exclude declaration only, the behaviour and its spec live on SynchronizationService::getSynchronization()
-	 */
-	public function getSynchronization(null|string|int $id = null, array $filters = []) :ObjectEntity;
 
 	/**
 	 * Cleans up files for an object based on the current attachments array.

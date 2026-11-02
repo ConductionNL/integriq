@@ -99,7 +99,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @param ORObjectService $objectService OR object service for source/message persistence.
 	 * @param LogSmsProvider $logProvider The sandbox provider binding.
 	 * @param RestNotifyNlProvider $notifyNlProvider The NotifyNL REST provider binding.
-	 * @param EventService $eventService Emits delivery-status CloudEvents.
+	 * @param CloudEventEmitterInterface $eventService Emits delivery-status CloudEvents.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
@@ -109,7 +109,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		private readonly ORObjectService $objectService,
 		private readonly LogSmsProvider $logProvider,
 		private readonly RestNotifyNlProvider $notifyNlProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
