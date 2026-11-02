@@ -8,6 +8,7 @@
 // @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 
 /**
@@ -95,6 +96,84 @@ export async function recentFailedCalls(limit = 100) {
 	)
 	const rows = Array.isArray(data?.results) ? data.results : []
 	return rows.filter((row) => row.direction !== 'inbound' && callFailed(row))
+}
+
+/**
+ * The server's reason for a failed request, or a fallback text.
+ *
+ * @param {Error} error the failed request
+ * @param {string} fallback the translated text to show when the server gave none
+ * @return {string} the text to show
+ */
+export function serverError(error, fallback) {
+	return error?.response?.data?.error || fallback
+}
+
+/**
+ * Why a replay could not be started.
+ *
+ * @param {Error} error the failed request
+ * @return {string} the server's reason, or a translated fallback
+ */
+export function replayError(error) {
+	return serverError(error, t('integriq', 'The replay could not be started.'))
+}
+
+/**
+ * Why a hand-fired call could not be sent.
+ *
+ * @param {Error} error the failed request
+ * @return {string} the server's reason, or a translated fallback
+ */
+export function fireError(error) {
+	return serverError(error, t('integriq', 'The call could not be fired.'))
+}
+
+/**
+ * The sentence for a dry run that would have succeeded.
+ *
+ * @return {string} the translated sentence
+ */
+export function dryRunText() {
+	return t('integriq', 'Dry run: this is what would be sent. Nothing was sent.')
+}
+
+/**
+ * The sources a call can be fired at, as select options.
+ *
+ * @return {Promise<Array<{id: string, label: string}>>} the options
+ */
+export async function listSourceOptions() {
+	const { data } = await axios.get(
+		generateUrl('/apps/openregister/api/objects/integriq/source'),
+		// `_limit`, not `limit`: an unprefixed param is a property filter.
+		{ params: { _limit: 500 } },
+	)
+	const list = Array.isArray(data?.results) ? data.results : []
+	return list.map(sourceOption)
+}
+
+/**
+ * One source as a select option.
+ *
+ * @param {object} item a source object
+ * @return {{id: string, label: string}} the option
+ */
+function sourceOption(item) {
+	return {
+		id: String(item['@self']?.id || item.id || item.uuid),
+		label: item.name || item.title || String(item.id),
+	}
+}
+
+/**
+ * Whether an outcome is a dry run that would have succeeded.
+ *
+ * @param {object} item a per-item outcome
+ * @return {boolean} true when nothing was sent
+ */
+export function isDryRun(item) {
+	return item.sent === false && item.succeeded === true
 }
 
 /**
