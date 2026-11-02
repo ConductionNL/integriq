@@ -899,16 +899,6 @@ export default {
 		},
 
 		/**
-		 * Handle a pick in the Form selector under the `nextcloud-form`
-		 * source kind.
-		 *
-		 * @param {{ id: number|string, label: string }|null} option Chosen entry from
-		 *   `formOptions`; null (or a missing id) clears `config.formId`.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
-		 */
-		/**
 		 * Empty the table list and say why it could not be loaded.
 		 *
 		 * @param {object} err The failed request.
@@ -925,6 +915,16 @@ export default {
 			console.warn('[SyncConfigWidget] tables fetch failed', err)
 		},
 
+		/**
+		 * Handle a pick in the Form selector under the `nextcloud-form`
+		 * source kind.
+		 *
+		 * @param {{ id: number|string, label: string }|null} option Chosen entry from
+		 *   `formOptions`; null (or a missing id) clears `config.formId`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
 		onFormPick(option) {
 			// Store the numeric form id in the config blob; clear no other
 			// keys — unlike nextcloud-table there is no columnMapping stored
@@ -962,18 +962,6 @@ export default {
 		},
 
 		/**
-		 * Handle a pick in the Register selector of `register/schema` mode.
-		 * Emits the half-formed `<registerId>/` id — the schema half stays
-		 * empty until the user picks below — and caches the full record so
-		 * `schemaOptions` keeps its schemas after the prop round-trips.
-		 *
-		 * @param {{ id: string, label: string, schemas: object[] }|null} option Chosen
-		 *   entry from `registerOptions`; null clears the id and the cache.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md
-		 */
-		/**
 		 * Empty the form list and say why it could not be loaded.
 		 *
 		 * @param {object} err The failed request.
@@ -990,6 +978,18 @@ export default {
 			console.warn('[SyncConfigWidget] forms fetch failed', err)
 		},
 
+		/**
+		 * Handle a pick in the Register selector of `register/schema` mode.
+		 * Emits the half-formed `<registerId>/` id — the schema half stays
+		 * empty until the user picks below — and caches the full record so
+		 * `schemaOptions` keeps its schemas after the prop round-trips.
+		 *
+		 * @param {{ id: string, label: string, schemas: object[] }|null} option Chosen
+		 *   entry from `registerOptions`; null clears the id and the cache.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onRegisterPick(option) {
 			if (!option?.id) {
 				this.$emit('update:sourceId', '')
@@ -1100,7 +1100,6 @@ export default {
 			}
 		},
 
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		/**
 		 * When the parent already holds a register/schema id, pick that
 		 * register so the schema picker has its options without a second
@@ -1119,6 +1118,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {
