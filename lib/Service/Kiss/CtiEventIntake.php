@@ -38,7 +38,7 @@ use Throwable;
 /**
  * Turns a verified inbound payload into dispatched call events.
  */
-class CtiEventIntake {
+class CtiEventIntake implements CtiEventIntakeInterface {
 
 	/**
 	 * The headers a provider may be handed for verification.

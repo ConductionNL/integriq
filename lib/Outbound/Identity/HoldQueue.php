@@ -42,7 +42,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
  */
-class HoldQueue {
+class HoldQueue implements HoldQueueInterface {
 
 	/**
 	 * The message is waiting out its hold window.

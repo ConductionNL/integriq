@@ -29,7 +29,7 @@ namespace OCA\Integriq\Service\AgentTools;
  *
  * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-109--the-dead-letter-read-must-be-payload-free-and-no-tool-may-return-or-accept-payload-content
  */
-class DeadLetterProjection {
+class DeadLetterProjection implements DeadLetterProjectionInterface {
 
 	/**
 	 * The exact key set of every row.

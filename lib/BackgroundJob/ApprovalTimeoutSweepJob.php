@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -56,14 +56,14 @@ class ApprovalTimeoutSweepJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param ApprovalService $approvalService The approval state-machine service.
+	 * @param ApprovalServiceInterface $approvalService The approval state-machine service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes.
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ApprovalService $approvalService,
+		private readonly ApprovalServiceInterface $approvalService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

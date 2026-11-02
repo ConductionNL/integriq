@@ -40,7 +40,7 @@ use function React\Promise\all;
 /**
  * Handles Software Catalogue model/view extension and organisation/contact lifecycle events.
  */
-class SoftwareCatalogueService {
+class SoftwareCatalogueService implements SoftwareCatalogueServiceInterface {
 
 	public const SUFFIX = '-sc';
 

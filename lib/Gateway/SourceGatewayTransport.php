@@ -20,8 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Gateway;
 
-use OCA\Integriq\Service\CallService;
-use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -36,13 +36,13 @@ class SourceGatewayTransport implements GatewayTransport {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConnectionStore $connectionStore Source lookup by slug.
-	 * @param CallService $callService The shared outbound call engine.
+	 * @param ConnectionStoreInterface $connectionStore Source lookup by slug.
+	 * @param CallServiceInterface $callService The shared outbound call engine.
 	 * @param LoggerInterface $logger Structured logger.
 	 */
 	public function __construct(
-		private readonly ConnectionStore $connectionStore,
-		private readonly CallService $callService,
+		private readonly ConnectionStoreInterface $connectionStore,
+		private readonly CallServiceInterface $callService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

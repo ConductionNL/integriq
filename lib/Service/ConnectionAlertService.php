@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-thresholds-per-source-and-synchronization-open-an-alert-req-crun-004
  */
-class ConnectionAlertService {
+class ConnectionAlertService implements ConnectionAlertServiceInterface {
 
 	/**
 	 * The register every schema here lives in.

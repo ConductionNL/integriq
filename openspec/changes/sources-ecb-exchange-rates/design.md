@@ -11,7 +11,9 @@ Kind: code. Size S. Read at integriq development `966d6458` on 2026-09-28.
 
 ## D1. Source and store
 
-Source `ecb-eurofxref`: `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml`, no authentication, XML. A second seeded synchronization reads `eurofxref-hist-90d.xml` once, for a first fill. Schema `exchange_rate`: `baseCurrency` (always EUR for this source), `currency`, `rateDate`, `rate` (units of `currency` per euro), `source` (`ecb`), unique on `source`, `currency` and `rateDate`. The daily job runs after 16:00 CET, when the ECB publishes.
+Source `ecb-eurofxref-daily`: `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml`, no authentication, XML, shipped enabled. Its `configuration.historyLocation` names `eurofxref-hist-90d.xml`, which the first run against an empty store reads instead, for a first fill. Schema `exchange_rate` in register `integriq`: `baseCurrency` (always EUR for this source), `currency`, `rateDate`, `rate` (units of `currency` per euro), `source` (`ecb`), unique on `source`, `currency` and `rateDate`. Any signed-in account reads it; writes are left to administrators and the import's system context.
+
+The import is a small service and a timed job (`ExchangeRateImportService`, `ExchangeRateSyncJob`), not a seeded mapping and synchronization. Measured while building: the ECB file puts the date on the parent `Cube time` element and the rate on each child `Cube currency`, so a per-item synchronization over the children never sees the date of the item it maps, and the contract key would have to combine two fields. The job runs every six hours; the ECB publishes around 16:00 CET, a run before that stores nothing, and the newest date lands the same day. Uniqueness is kept by reading the currencies stored for a date before saving.
 
 ## D2. The request answers one pair on one date
 
@@ -31,12 +33,12 @@ A catalogue item for `ecb-eurofxref` in category `Bank`, one of the categories s
 
 | Behaviour | Path | Rationale |
 |---|---|---|
-| Fetching and storing rates | Declarative: seeded source, mapping, synchronization and job | Same as `endoflife-date-source`. |
+| Fetching and storing rates | Seeded source; imperative import service and timed job | The date sits on the parent element (D1). |
 | Answering a pair on a date | Imperative, a typed event and a small service | Cross rates and date fallback are arithmetic. |
 
 ## Seed data
 
-The source, the two synchronizations (daily enabled, history run once) and five `exchange_rate` objects for 2026-09-25 (USD 1.1203, GBP 0.8391, CHF 0.9412, SEK 11.0730, JPY 162.41) as test fixtures, marked as fixtures in their description.
+The source only. Test fixtures are stored copies of the ECB files under `tests/fixtures/ecb/` (the daily file of 2026-10-30 and the 90-day file trimmed to three days), not seeded objects.
 
 ## Risks
 

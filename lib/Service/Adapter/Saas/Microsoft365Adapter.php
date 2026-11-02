@@ -41,7 +41,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
  */
-class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements DocumentSearchSource {
+class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements DocumentSearchSource, Microsoft365AdapterInterface {
 
 	/**
 	 * Graph `$select` fields for the mail-metadata-only read.

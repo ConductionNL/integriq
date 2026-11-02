@@ -4,7 +4,7 @@
  * Integriq PDOK WMS Client (mock).
  *
  * Deterministic, no-network implementation of {@see PdokWmsClient}. Ships
- * dormant; DI in {@see \OCA\Integriq\AppInfo\Application::register()}
+ * dormant; DI in {@see \OCA\Integriq\Adapters\AdaptersRegistrar}
  * returns this class until `pdok.feature_flag` is set to `1`.
  *
  * Returns a hand-rolled but standards-shaped GetCapabilities document and a

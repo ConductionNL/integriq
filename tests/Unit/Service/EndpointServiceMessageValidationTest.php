@@ -99,6 +99,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 			fn ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity => match ($schema) {
 				'message_schema' => ObjectServiceMockBuilder::objectEntity($this, $this->personSchema(), self::SCHEMA_UUID),
 				'source' => ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bron.example.nl', 'isEnabled' => true], 'source-1'),
+				'call_log' => ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200, 'direction' => 'outbound', 'response' => ['statusCode' => 200]], 'call-log-1'),
 				default => null,
 			}
 		);
@@ -358,4 +359,32 @@ class EndpointServiceMessageValidationTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 	}//end testAnEndpointWithoutValidationIsUnchanged()
+
+	/**
+	 * A proxied answer reaches the inbound caller without the upstream's cookies, address or server headers.
+	 *
+	 * @return void
+	 */
+	public function testAProxiedAnswerCarriesNoUpstreamSecrets(): void {
+		$service = $this->service(rawBody: '{"naam":"Jansen"}');
+		$callLog = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'statusCode' => 200,
+				'response' => [
+					'statusCode' => 200,
+					'remoteIp' => '10.0.4.17',
+					'headers' => ['Content-Type' => ['application/json'], 'Set-Cookie' => ['session=abc123secret'], 'Server' => ['nginx/1.25.3']],
+					'body' => '{"ok":true}',
+				],
+			],
+			'call-log-1'
+		);
+		$this->callService->method('call')->willReturn($callLog);
+
+		$response = $service->handleRequest($this->endpoint([]), $this->request(), '/personen');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['statusCode' => 200, 'headers' => ['Content-Type' => ['application/json']], 'body' => '{"ok":true}'], $response->getData());
+	}//end testAProxiedAnswerCarriesNoUpstreamSecrets()
 }//end class

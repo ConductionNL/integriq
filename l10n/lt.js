@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "sinchronizavimai",
         "A signing secret is configured (hidden).": "Pasirašymo paslaptis sukonfigūruota (paslėpta).",
         "Copied to clipboard": "Nukopijuota į iškarpinę",
         "Copy": "Kopijuoti",

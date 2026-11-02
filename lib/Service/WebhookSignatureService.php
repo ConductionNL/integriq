@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
  */
-class WebhookSignatureService {
+class WebhookSignatureService implements WebhookSignatureServiceInterface {
 
 	/**
 	 * Recognizable prefix for generated secrets (secret-scanner friendly).
@@ -52,13 +52,6 @@ class WebhookSignatureService {
 	 * @var integer
 	 */
 	public const ROTATION_GRACE_SECONDS = 86400;
-
-	/**
-	 * Default inbound timestamp tolerance in seconds.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_TOLERANCE_SECONDS = 300;
 
 	/**
 	 * Constructor.

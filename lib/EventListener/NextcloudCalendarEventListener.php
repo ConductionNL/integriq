@@ -46,7 +46,7 @@ namespace OCA\Integriq\EventListener;
 use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
 use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\Calendar\Events\CalendarObjectCreatedEvent;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
 use OCP\Calendar\Events\CalendarObjectUpdatedEvent;
@@ -79,11 +79,11 @@ class NextcloudCalendarEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param EventServiceInterface $eventService Service for managing CloudEvents.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly LoggerInterface $logger,
 	) {
 

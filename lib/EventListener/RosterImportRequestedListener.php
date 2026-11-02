@@ -4,7 +4,7 @@
  * Integriq Roster Import Requested Listener.
  *
  * Answers {@see \OCA\Integriq\Event\RosterImportRequestedEvent} by running
- * {@see \OCA\Integriq\Sources\Roster\RosterDeliveryService} for the event's
+ * {@see RosterDeliveryServiceInterface} for the event's
  * source, inside integriq's own DI context (ADR-041). Always answers: a failed
  * delivery comes back handled with `status: failed` and the contract's error
  * code, so the asking app can tell "integriq could not deliver" from
@@ -31,8 +31,8 @@ namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\Sources\Roster\RosterDeliveryException;
-use OCA\Integriq\Sources\Roster\RosterDeliveryService;
-use OCA\Integriq\Sources\Roster\RosterTargetConfiguration;
+use OCA\Integriq\Sources\Roster\RosterDeliveryServiceInterface;
+use OCA\Integriq\Sources\Roster\RosterTargetConfigurationInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -49,11 +49,11 @@ class RosterImportRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param RosterDeliveryService $delivery The delivery service.
+	 * @param RosterDeliveryServiceInterface $delivery The delivery service.
 	 * @param LoggerInterface       $logger   Structured logger.
 	 */
 	public function __construct(
-		private readonly RosterDeliveryService $delivery,
+		private readonly RosterDeliveryServiceInterface $delivery,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -99,7 +99,7 @@ class RosterImportRequestedListener implements IEventListener {
 				'contractVersion' => RosterImportRequestedEvent::CONTRACT_VERSION,
 				'status' => 'failed',
 				'systemId' => $event->getSystemId(),
-				'target' => RosterTargetConfiguration::TARGET,
+				'target' => RosterTargetConfigurationInterface::TARGET,
 				'errorCode' => $code,
 				'error' => $message,
 			]

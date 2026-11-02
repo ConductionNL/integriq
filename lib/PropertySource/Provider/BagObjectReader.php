@@ -46,7 +46,7 @@ use Throwable;
  * The answer is a plain array, so an app that reaches this class by name at
  * runtime needs none of integriq's types.
  *
- * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
  */
 class BagObjectReader {
 	/**
@@ -104,7 +104,7 @@ class BagObjectReader {
 	 *
 	 * @return array{available:bool,reason:string,found:bool,simulated:bool,object:array<string,mixed>|null}
 	 *
-	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
 	 */
 	public function read(string $type, string $identificatie): array {
 		if (isset(self::TYPES[$type]) === false) {

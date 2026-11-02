@@ -27,8 +27,7 @@ namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use Exception;
-use OCA\Integriq\Rule\Plugin\ConnectRelationsPlugin;
-use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistry;
+use OCA\Integriq\Rule\Plugin\EndpointRulePluginRegistryInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -157,29 +156,26 @@ class RuleService {
 	 * Constructor for RuleService.
 	 *
 	 * @param ObjectService $objectService Integriq object-service facade.
-	 * @param SoftwareCatalogueService $catalogueService Software-catalog rule helper.
 	 * @param RegisterMapper $registerMapper Mapper used to resolve register IDs.
 	 * @param SchemaMapper $schemaMapper Mapper used to resolve schema IDs.
 	 * @param CallService $callService Service used for outbound HTTP calls during rule evaluation.
 	 * @param ORObjectService $orObjectService OpenRegister object-service used by extend / save rules.
+	 * @param EndpointRulePluginRegistryInterface $pluginRegistry The rule plug-ins a `custom` rule names.
 	 * @param RegisterResolverService|null $registerResolver Resolves `<context>_property` config keys to property
 	 *                                                       identifiers; nullable so unit tests that don't
 	 *                                                       exercise the catalogue rule path can omit the
 	 *                                                       dependency.
-	 * @param EndpointRulePluginRegistry|null $pluginRegistry The rule plug-ins a `custom` rule names; null
-	 *                                                       falls back to integriq's own (connectRelations).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
-		private readonly SoftwareCatalogueService $catalogueService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly CallService $callService,
 		private readonly ORObjectService $orObjectService,
+		private readonly EndpointRulePluginRegistryInterface $pluginRegistry,
 		private readonly ?RegisterResolverService $registerResolver = null,
-		private ?EndpointRulePluginRegistry $pluginRegistry = null,
 	) {
 	}//end __construct()
 
@@ -210,9 +206,9 @@ class RuleService {
 		$configuration = ($ruleData['configuration'] ?? []);
 		$pluginId = (string)($configuration['plugin'] ?? $configuration['type'] ?? '');
 
-		$plugin = $this->pluginRegistry()->pluginFor(pluginId: $pluginId);
+		$plugin = $this->pluginRegistry->pluginFor(pluginId: $pluginId);
 		if ($plugin === null) {
-			$installed = implode(', ', $this->pluginRegistry()->ids());
+			$installed = implode(', ', $this->pluginRegistry->ids());
 			if ($installed === '') {
 				$installed = 'none';
 			}
@@ -224,23 +220,6 @@ class RuleService {
 
 		return $plugin->process(rule: $ruleData, data: $data);
 	}//end processCustomRule()
-
-	/**
-	 * The plug-in registry, or integriq's own plug-ins when none was injected.
-	 *
-	 * @return EndpointRulePluginRegistry The registry.
-	 *
-	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
-	 */
-	private function pluginRegistry(): EndpointRulePluginRegistry {
-		if ($this->pluginRegistry === null) {
-			$this->pluginRegistry = new EndpointRulePluginRegistry(
-				plugins: [new ConnectRelationsPlugin(catalogueService: $this->catalogueService)]
-			);
-		}
-
-		return $this->pluginRegistry;
-	}//end pluginRegistry()
 
 	/**
 	 * Create an ArchiMate connection entry tying a relation/source/target triple together.

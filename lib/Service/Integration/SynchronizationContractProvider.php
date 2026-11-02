@@ -5,7 +5,7 @@
  *
  * Exposes Integriq SyncContract objects as "leaves" on the OR objects they
  * synchronise. Registered with OR's IntegrationRegistry at app boot (see
- * {@see \OCA\Integriq\AppInfo\Application::boot()}). When a user opens any
+ * {@see \OCA\Integriq\Service\ServiceRegistrar::boot()}). When a user opens any
  * OR object (in opencatalogi, decidesk, integriq itself, or any fleet
  * app), the object's sidebar shows a "Synced from" leaf with the SyncContract
  * summary — making the cross-app sync origin visible everywhere.

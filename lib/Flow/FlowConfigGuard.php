@@ -53,6 +53,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
+use OCA\Integriq\Kernel\EndpointContainment;
 use OCP\IL10N;
 use UnexpectedValueException;
 
@@ -68,35 +69,35 @@ final class FlowConfigGuard {
 	 *
 	 * @var string
 	 */
-	public const ESCAPE_CONTROL_CHARACTER = 'control-character';
+	public const ESCAPE_CONTROL_CHARACTER = EndpointContainment::ESCAPE_CONTROL_CHARACTER;
 
 	/**
 	 * Escape code: the endpoint is scheme-relative (`//host`, `\\host`).
 	 *
 	 * @var string
 	 */
-	public const ESCAPE_SCHEME_RELATIVE = 'scheme-relative';
+	public const ESCAPE_SCHEME_RELATIVE = EndpointContainment::ESCAPE_SCHEME_RELATIVE;
 
 	/**
 	 * Escape code: the endpoint is an absolute URL (it carries a scheme).
 	 *
 	 * @var string
 	 */
-	public const ESCAPE_ABSOLUTE_URL = 'absolute-url';
+	public const ESCAPE_ABSOLUTE_URL = EndpointContainment::ESCAPE_ABSOLUTE_URL;
 
 	/**
 	 * Escape code: the endpoint percent-decodes to a scheme-relative reference.
 	 *
 	 * @var string
 	 */
-	public const ESCAPE_DECODED_SCHEME_RELATIVE = 'decoded-scheme-relative';
+	public const ESCAPE_DECODED_SCHEME_RELATIVE = EndpointContainment::ESCAPE_DECODED_SCHEME_RELATIVE;
 
 	/**
 	 * Escape code: the endpoint leaves its Source location via `../`.
 	 *
 	 * @var string
 	 */
-	public const ESCAPE_PATH_TRAVERSAL = 'path-traversal';
+	public const ESCAPE_PATH_TRAVERSAL = EndpointContainment::ESCAPE_PATH_TRAVERSAL;
 
 	/**
 	 * Config keys that would let a flow document name an outbound target.
@@ -399,55 +400,25 @@ final class FlowConfigGuard {
 	 * Name, as a stable machine code, the reason an endpoint escapes its
 	 * Source — or null when the endpoint is contained.
 	 *
-	 * THE RULES LIVE HERE AND ONLY HERE. This is the single containment
-	 * predicate for the whole app: {@see endpointEscapeReason()} translates its
-	 * verdict for the flow-node validation messages, and
-	 * {@see \OCA\Integriq\Service\CallService::renderEndpointPath()} calls
-	 * it directly (it has no IL10N and needs a verdict, not a sentence) for the
-	 * templated `targetType: api` upstream path (ocon#1069). The class docblock
-	 * already states that a divergence between two copies of these rules would
-	 * be a security defect rather than a style inconsistency; a shared,
-	 * translation-free predicate is how that is prevented.
+	 * The rules live in {@see EndpointContainment::escapeCode()}, the single
+	 * containment predicate for the whole app: {@see endpointEscapeReason()}
+	 * translates its verdict for the flow-node validation messages, and
+	 * {@see \OCA\Integriq\Service\CallService::renderEndpointPath()} asks
+	 * it directly for the templated `targetType: api` upstream path (ocon#1069).
+	 * A divergence between two copies of these rules would be a security
+	 * defect, which one shared, translation-free predicate prevents.
 	 *
 	 * @param string $endpoint The endpoint value (literal or rendered).
 	 *
 	 * @return string|null One of the ESCAPE_* codes, or null when contained.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) delegates to the one shared rule set
 	 */
 	public static function endpointEscapeCode(string $endpoint): ?string {
-		// A control character or a newline would let an endpoint smuggle a
-		// second request line or an extra header past the HTTP client.
-		if (preg_match('/[\x00-\x1F\x7F]/', $endpoint) === 1) {
-			return self::ESCAPE_CONTROL_CHARACTER;
-		}
+		return EndpointContainment::escapeCode(endpoint: $endpoint);
 
-		if (str_starts_with($endpoint, '//') === true || str_starts_with($endpoint, '\\\\') === true) {
-			return self::ESCAPE_SCHEME_RELATIVE;
-		}
-
-		if (preg_match('#^[A-Za-z][A-Za-z0-9+.\-]*:#', $endpoint) === 1) {
-			return self::ESCAPE_ABSOLUTE_URL;
-		}
-
-		$decoded = strtolower(rawurldecode($endpoint));
-		if ($decoded !== strtolower($endpoint)) {
-			// Re-run the host-ish checks over the percent-decoded form so an
-			// encoded `%2f%2f` or `%2e%2e%2f` cannot slip through.
-			if (str_starts_with($decoded, '//') === true) {
-				return self::ESCAPE_DECODED_SCHEME_RELATIVE;
-			}
-		}
-
-		if ($decoded === '..'
-			|| str_starts_with($decoded, '../') === true
-			|| str_contains($decoded, '/../') === true
-			|| str_ends_with($decoded, '/..') === true
-		) {
-			return self::ESCAPE_PATH_TRAVERSAL;
-		}
-
-		return null;
 	}//end endpointEscapeCode()
 
 	/**

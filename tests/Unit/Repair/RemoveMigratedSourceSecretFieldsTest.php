@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\RemoveMigratedSourceSecretFields;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
@@ -368,7 +369,7 @@ class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 			}
 		);
 
-		$step = new RemoveMigratedSourceSecretFields($container, $appConfig, ($logger ?? new NullLogger()));
+		$step = new RemoveMigratedSourceSecretFields($container, $appConfig, ($logger ?? new NullLogger()), new InlineSecretMigrationFactory(($logger ?? new NullLogger()), $container));
 		return ['step' => $step, 'mapper' => $mapper];
 	}//end makeStep()
 
@@ -535,7 +536,7 @@ class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 			}
 		);
 
-		$mutant = new GateBypassingRemoveStep($container, $appConfig, new NullLogger());
+		$mutant = new GateBypassingRemoveStep($container, $appConfig, new NullLogger(), new InlineSecretMigrationFactory(new NullLogger(), $container));
 		$mutant->run($this->createMock(IOutput::class));
 
 		// The mutant removed fields DESPITE the dirty source — exactly the disaster

@@ -26,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
 /**
  * Decrypts a source's WS-Security UsernameToken.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
  */
 class StufZdsCredentialResolver {
 
@@ -64,7 +64,7 @@ class StufZdsCredentialResolver {
 	 *
 	 * @throws StufZknProviderException When a user name is set but its password is missing or cannot be decrypted.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
 	 */
 	public function usernameToken(array $sourceConfiguration): ?array {
 		$wsse     = (array)($sourceConfiguration['authentication']['wsse'] ?? []);

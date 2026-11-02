@@ -34,7 +34,7 @@ use Throwable;
  *
  * @spec openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
  */
-class MessageParser {
+class MessageParser implements MessageParserInterface {
 
 	/**
 	 * Constructor.

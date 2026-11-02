@@ -37,7 +37,7 @@ use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-a-dormant-slo-source-template-carries-the-set-profiles-and-the-attribution-req-001
  */
-final class SloCurriculumPresetRegistry {
+final class SloCurriculumPresetRegistry implements SloCurriculumPresetRegistryInterface {
 	/**
 	 * Slug of the seeded source object.
 	 */

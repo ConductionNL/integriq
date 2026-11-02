@@ -1,0 +1,1491 @@
+{
+    "self-id-existing-contract": {
+        "outcome": {
+            "return": {
+                "uuid": "c-1",
+                "originId": "o-1",
+                "synced": true
+            }
+        },
+        "object": {
+            "@self": {
+                "id": "o-1"
+            },
+            "naam": "x",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "uuid": "c-1",
+                    "originId": "o-1"
+                },
+                "sync-1",
+                {
+                    "@self": {
+                        "id": "o-1"
+                    },
+                    "naam": "x"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "plain-id-new-contract": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-2",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-2",
+            "naam": "y",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-2"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-2"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-2",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-2",
+                    "naam": "y"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "no-id-new-contract": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": null,
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "naam": "z",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null,
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "naam": "z"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "no-id-test": {
+        "outcome": {
+            "return": {
+                "log": [
+                    "ok"
+                ],
+                "contract": {
+                    "synchronizationId": "sync-1",
+                    "originId": null,
+                    "synced": true
+                },
+                "resultAction": "update"
+            }
+        },
+        "object": {
+            "naam": "z",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null
+                },
+                "sync-1",
+                {
+                    "naam": "z"
+                },
+                true,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "existing-contract-test": {
+        "outcome": {
+            "return": {
+                "log": [
+                    "ok"
+                ],
+                "contract": {
+                    "uuid": "c-1",
+                    "originId": "o-1",
+                    "synced": true
+                },
+                "resultAction": "update"
+            }
+        },
+        "object": {
+            "id": "o-1",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "uuid": "c-1",
+                    "originId": "o-1"
+                },
+                "sync-1",
+                {
+                    "id": "o-1"
+                },
+                true,
+                true,
+                true,
+                "update",
+                false
+            ]
+        ]
+    },
+    "entity-with-uuid": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "inner",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "uuid": "e-1",
+            "naam": "entity",
+            "id": "inner",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "inner"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "inner"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "inner",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "uuid": "e-1",
+                    "naam": "entity",
+                    "id": "inner"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "entity-without-uuid": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": null,
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "uuid": "",
+            "naam": "entity",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null,
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "uuid": "",
+                    "naam": "entity"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "sync-uuid-when-no-id": {
+        "outcome": {
+            "return": {
+                "synchronizationId": null,
+                "originId": "o-3",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-3",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-uuid",
+                    "originId": "o-3"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": null,
+                    "originId": "o-3"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": null,
+                    "originId": "o-3",
+                    "uuid": "new-contract"
+                },
+                null,
+                {
+                    "id": "o-3"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "conditions-hold": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-4",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-4",
+            "status": "open",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-4"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-4"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-4",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-4",
+                    "status": "open"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "conditions-fail": {
+        "outcome": {
+            "return": null
+        },
+        "object": {
+            "id": "o-4",
+            "status": "closed"
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "conditions-list": {
+        "outcome": {
+            "return": null
+        },
+        "object": {
+            "id": "o-4",
+            "status": "open"
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ]
+        ]
+    },
+    "extend-before-conditions": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-5",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-5",
+            "zaak": {
+                "uuid": "found",
+                "found": "z-9"
+            },
+            "mist": "missing",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "extendInputBeforeConditions": "zaak,mist"
+                }
+            ],
+            [
+                "logger.debug",
+                "internToExtern before extendInputBeforeConditions",
+                {
+                    "objectId": "o-5",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "mapper.find",
+                "z-9"
+            ],
+            [
+                "mapper.find",
+                "missing"
+            ],
+            [
+                "logger.debug",
+                "internToExtern after extendInputBeforeConditions",
+                {
+                    "objectId": "o-5",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-5"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-5"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-5",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-5",
+                    "zaak": {
+                        "uuid": "found",
+                        "found": "z-9"
+                    },
+                    "mist": "missing"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "extend-before-conditions-fetch": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": null,
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "uuid": "found",
+            "found": [
+                "o-6",
+                null
+            ],
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "extendInputBeforeConditions": [
+                        "zaak"
+                    ],
+                    "extendInputFetchObjectBeforeConditions": "yes"
+                }
+            ],
+            [
+                "logger.debug",
+                "internToExtern before extendInputBeforeConditions",
+                {
+                    "objectId": "o-6",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "openRegisters.find",
+                [
+                    "o-6",
+                    null
+                ]
+            ],
+            [
+                "logger.debug",
+                "internToExtern after extendInputBeforeConditions",
+                {
+                    "objectId": null,
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null,
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "uuid": "found",
+                    "found": [
+                        "o-6",
+                        null
+                    ]
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "extend-before-conditions-fetch-off": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-6",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-6",
+            "zaak": {
+                "uuid": "found",
+                "found": "z"
+            },
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "extendInputBeforeConditions": [
+                        "zaak"
+                    ],
+                    "extendInputFetchObjectBeforeConditions": "no"
+                }
+            ],
+            [
+                "logger.debug",
+                "internToExtern before extendInputBeforeConditions",
+                {
+                    "objectId": "o-6",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "mapper.find",
+                "z"
+            ],
+            [
+                "logger.debug",
+                "internToExtern after extendInputBeforeConditions",
+                {
+                    "objectId": "o-6",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-6"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-6"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-6",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-6",
+                    "zaak": {
+                        "uuid": "found",
+                        "found": "z"
+                    }
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "extend-before-conditions-entity": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-7",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "uuid": "e-2",
+            "id": "o-7",
+            "zaak": {
+                "uuid": "found",
+                "found": "z"
+            },
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "extendInputBeforeConditions": [
+                        "zaak"
+                    ]
+                }
+            ],
+            [
+                "logger.debug",
+                "internToExtern before extendInputBeforeConditions",
+                {
+                    "objectId": "o-7",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "mapper.find",
+                "z"
+            ],
+            [
+                "logger.debug",
+                "internToExtern after extendInputBeforeConditions",
+                {
+                    "objectId": "o-7",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-7"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-7"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-7",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "uuid": "e-2",
+                    "id": "o-7",
+                    "zaak": {
+                        "uuid": "found",
+                        "found": "z"
+                    }
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "extend-before-then-conditions-fail": {
+        "outcome": {
+            "return": null
+        },
+        "object": {
+            "id": "o-8",
+            "zaak": "z"
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "extendInputBeforeConditions": [
+                        "zaak"
+                    ]
+                }
+            ],
+            [
+                "logger.debug",
+                "internToExtern before extendInputBeforeConditions",
+                {
+                    "objectId": "o-8",
+                    "betrokkeneIdentificatie": null
+                }
+            ],
+            [
+                "mapper.find",
+                "z"
+            ],
+            [
+                "logger.debug",
+                "internToExtern after extendInputBeforeConditions",
+                {
+                    "objectId": "o-8",
+                    "betrokkeneIdentificatie": null
+                }
+            ]
+        ]
+    },
+    "target-extend": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-9",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-9",
+            "zaak": {
+                "uuid": "found",
+                "found": "z"
+            },
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "mapper.find",
+                "z"
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-9",
+                    "zaak": {
+                        "uuid": "found",
+                        "found": "z"
+                    }
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "target-extend-fetch-zero": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-9",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-9",
+            "uuid": "found",
+            "found": [
+                "o-9",
+                null
+            ],
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "openRegisters.find",
+                [
+                    "o-9",
+                    null
+                ]
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-9",
+                    "uuid": "found",
+                    "found": [
+                        "o-9",
+                        null
+                    ]
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "target-extend-fetch-true": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-9",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-9",
+            "uuid": "found",
+            "found": [
+                "o-9",
+                null
+            ],
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "openRegisters.find",
+                [
+                    "o-9",
+                    null
+                ]
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-9",
+                    "uuid": "found",
+                    "found": [
+                        "o-9",
+                        null
+                    ]
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "target-extend-fetch-string-true": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-9",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-9",
+            "uuid": "found",
+            "found": [
+                "o-9",
+                null
+            ],
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "openRegisters.find",
+                [
+                    "o-9",
+                    null
+                ]
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-9",
+                    "uuid": "found",
+                    "found": [
+                        "o-9",
+                        null
+                    ]
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "target-extend-fetch-string-false": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-9",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-9",
+            "uuid": "found",
+            "found": [
+                "o-9",
+                null
+            ],
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "openRegisters.find",
+                [
+                    "o-9",
+                    null
+                ]
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-9",
+                    "uuid": "found",
+                    "found": [
+                        "o-9",
+                        null
+                    ]
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "target-extend-fetch-false": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-9",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-9",
+            "zaak": "z",
+            "uuid": "found",
+            "found": [
+                "o-9",
+                null
+            ],
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "openRegisters.find",
+                [
+                    "o-9",
+                    null
+                ]
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-9",
+                    "zaak": "z",
+                    "uuid": "found",
+                    "found": [
+                        "o-9",
+                        null
+                    ]
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "target-extend-fetch-two": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": "o-9",
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "id": "o-9",
+            "zaak": "z",
+            "uuid": "found",
+            "found": [
+                "o-9",
+                null
+            ],
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "openRegisters.find",
+                [
+                    "o-9",
+                    null
+                ]
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-9",
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "id": "o-9",
+                    "zaak": "z",
+                    "uuid": "found",
+                    "found": [
+                        "o-9",
+                        null
+                    ]
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "target-extend-entity": {
+        "outcome": {
+            "return": {
+                "synchronizationId": "sync-1",
+                "originId": null,
+                "uuid": "new-contract",
+                "synced": true
+            }
+        },
+        "object": {
+            "uuid": "e-3",
+            "zaak": {
+                "uuid": "found",
+                "found": "z"
+            },
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "mapper.find",
+                "z"
+            ],
+            [
+                "contracts.createFromArray",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": null,
+                    "uuid": "new-contract"
+                },
+                "sync-1",
+                {
+                    "uuid": "e-3",
+                    "zaak": {
+                        "uuid": "found",
+                        "found": "z"
+                    }
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "contract-exception": {
+        "outcome": {
+            "return": null
+        },
+        "object": {
+            "id": "o-1",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "uuid": "c-1",
+                    "originId": "o-1"
+                },
+                "sync-1",
+                {
+                    "id": "o-1"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "contract-exception-test": {
+        "outcome": {
+            "return": null
+        },
+        "object": {
+            "id": "o-1",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-1"
+                },
+                "sync-1",
+                {
+                    "id": "o-1"
+                },
+                true,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    },
+    "contract-without-contract-key": {
+        "outcome": {
+            "return": null
+        },
+        "object": {
+            "id": "o-1",
+            "touchedByContract": true
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                []
+            ],
+            [
+                "contracts.findAllObjects",
+                {
+                    "synchronizationId": "sync-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                {
+                    "uuid": "c-1",
+                    "originId": "o-1"
+                },
+                "sync-1",
+                {
+                    "id": "o-1"
+                },
+                false,
+                false,
+                true,
+                null,
+                false
+            ]
+        ]
+    }
+}

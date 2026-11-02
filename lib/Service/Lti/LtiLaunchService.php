@@ -53,7 +53,7 @@ use Throwable;
  *
  * @spec openspec/specs/lti-platform/spec.md
  */
-class LtiLaunchService {
+class LtiLaunchService implements LtiLaunchServiceInterface {
 
 	/**
 	 * LTI 1.3 claim URIs.
@@ -233,12 +233,13 @@ class LtiLaunchService {
 	 *
 	 * @param string $idToken The posted `id_token` JWS (compact serialization).
 	 * @param string $deploymentUuid The `lti_deployment` route parameter.
-	 * @param string|null $cookieState The `state` value round-tripped via the login's `SameSite=None` cookie.
-	 * @param string|null $presentedState The `state` value posted alongside the `id_token`.
+	 * @param string|null $cookieState The `state` value round-tripped via the login's `SameSite=None` cookie; required.
+	 * @param string|null $presentedState The `state` value posted alongside the `id_token`; required.
 	 *
 	 * @return array{launchReference: string, redirectUrl: string}
 	 *
-	 * @throws LtiValidationException On any validation failure (HTTP 400/401, no partial-trust fallback).
+	 * @throws LtiValidationException On any validation failure (HTTP 400/401, no partial-trust fallback),
+	 *                                including a missing or mismatching state (401).
 	 *
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
@@ -253,7 +254,12 @@ class LtiLaunchService {
 			throw new LtiValidationException(message: 'Unknown LTI deployment', details: [], httpStatus: 400);
 		}
 
-		if ($cookieState !== null && $presentedState !== null && hash_equals($cookieState, $presentedState) === false) {
+		// State is mandatory: it binds the launch to the browser that started the login (OIDC login-CSRF).
+		if ($cookieState === null || $cookieState === '' || $presentedState === null || $presentedState === '') {
+			throw new LtiValidationException(message: 'Missing state', details: [], httpStatus: 401);
+		}
+
+		if (hash_equals($cookieState, $presentedState) === false) {
 			throw new LtiValidationException(message: 'State mismatch', details: [], httpStatus: 401);
 		}
 

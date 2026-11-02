@@ -31,7 +31,7 @@ use InvalidArgumentException;
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-its-standard-and-its-conformance-claim-req-sg-001
  * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008
  */
-class GatewayRegistry {
+class GatewayRegistry implements GatewayRegistryInterface {
 	/**
 	 * The gateway entries this instance ships, keyed by id.
 	 *

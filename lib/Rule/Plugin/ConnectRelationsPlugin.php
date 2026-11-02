@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Rule\Plugin;
 
-use OCA\Integriq\Service\SoftwareCatalogueService;
+use OCA\Integriq\Service\SoftwareCatalogueServiceInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use Symfony\Component\Uid\Uuid;
 
@@ -39,12 +39,12 @@ class ConnectRelationsPlugin implements EndpointRulePluginInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param SoftwareCatalogueService $catalogueService Extends the model's views.
+	 * @param SoftwareCatalogueServiceInterface $catalogueService Extends the model's views.
 	 *
 	 * @spec openspec/specs/rule-pipeline/spec.md#requirement-a-custom-rule-runs-a-registered-plug-in-req-gtp-002
 	 */
 	public function __construct(
-		private readonly SoftwareCatalogueService $catalogueService,
+		private readonly SoftwareCatalogueServiceInterface $catalogueService,
 	) {
 	}//end __construct()
 

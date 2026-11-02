@@ -50,7 +50,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/zgw-version-translation/spec.md
  */
-class ZgwVersionTranslationService {
+class ZgwVersionTranslationService implements ZgwVersionTranslationServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding the translation log.

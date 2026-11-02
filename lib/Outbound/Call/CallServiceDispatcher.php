@@ -29,7 +29,7 @@ namespace OCA\Integriq\Outbound\Call;
 
 use OCA\Integriq\Exception\CallDispatchException;
 use OCA\Integriq\Outbound\MessageRecorder;
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -45,11 +45,11 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CallService $callService The engine every outbound HTTP call goes through.
+	 * @param CallServiceInterface $callService The engine every outbound HTTP call goes through.
 	 * @param ORObjectService $objectService Resolves the target source.
 	 */
 	public function __construct(
-		private readonly CallService $callService,
+		private readonly CallServiceInterface $callService,
 		private readonly ORObjectService $objectService,
 	) {
 

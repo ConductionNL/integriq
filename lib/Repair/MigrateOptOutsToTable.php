@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Outbound\Identity\OptOutTableMigrator;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Outbound\Identity\OptOutTableMigratorInterface;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -90,12 +90,12 @@ class MigrateOptOutsToTable implements IRepairStep {
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function run(IOutput $output): void {
-		if ($this->appConfig->getValueBool(Application::APP_ID, self::MARKER_KEY, false) === true) {
+		if ($this->appConfig->getValueBool(AppIdentity::APP_ID, self::MARKER_KEY, false) === true) {
 			return;
 		}
 
 		try {
-			$migrator = $this->container->get(OptOutTableMigrator::class);
+			$migrator = $this->container->get(OptOutTableMigratorInterface::class);
 			$result = $migrator->migrate();
 		} catch (Throwable $exception) {
 			$output->warning(
@@ -105,7 +105,7 @@ class MigrateOptOutsToTable implements IRepairStep {
 			return;
 		}
 
-		$this->appConfig->setValueBool(Application::APP_ID, self::MARKER_KEY, true);
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, self::MARKER_KEY, true);
 		$output->info(
 			sprintf(
 				'MigrateOptOutsToTable: %d read, %d copied, %d already present, %d skipped (no address).',

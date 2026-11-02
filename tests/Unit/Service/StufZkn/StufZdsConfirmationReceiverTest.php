@@ -271,7 +271,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function testAContradictingLaterConfirmationChangesNothing(): void {
 		$receiver = $this->receiver();
@@ -375,7 +375,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function testABodyOverTheCeilingIsRefusedBeforeAnyLookup(): void {
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
@@ -417,7 +417,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function testAReplayedConfirmationIsRefused(): void {
 		$receiver = $this->receiver();

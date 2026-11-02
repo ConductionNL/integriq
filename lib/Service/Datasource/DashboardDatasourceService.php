@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
  */
-class DashboardDatasourceService {
+class DashboardDatasourceService implements DashboardDatasourceServiceInterface {
 
 	/**
 	 * Default TTL (seconds) applied when the caller does not request one.

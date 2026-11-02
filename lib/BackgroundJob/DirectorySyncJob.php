@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Directory\DirectorySyncService;
+use OCA\Integriq\Directory\DirectorySyncServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -59,14 +59,14 @@ class DirectorySyncJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param DirectorySyncService $directorySyncService The directory sync orchestrator.
+	 * @param DirectorySyncServiceInterface $directorySyncService The directory sync orchestrator.
 	 * @param LoggerInterface $logger Logger for run outcomes.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly DirectorySyncService $directorySyncService,
+		private readonly DirectorySyncServiceInterface $directorySyncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

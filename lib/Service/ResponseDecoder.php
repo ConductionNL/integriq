@@ -65,64 +65,7 @@ use Symfony\Component\Yaml\Yaml;
  *
  * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
  */
-class ResponseDecoder {
-
-	/**
-	 * Today's behaviour: JSON when it parses, YAML when the server says YAML,
-	 * otherwise the string as it came.
-	 *
-	 * @var string
-	 */
-	public const MODE_AUTO = 'auto';
-
-	/**
-	 * The body is JSON.
-	 *
-	 * @var string
-	 */
-	public const MODE_JSON = 'json';
-
-	/**
-	 * The body is YAML.
-	 *
-	 * @var string
-	 */
-	public const MODE_YAML = 'yaml';
-
-	/**
-	 * The body, or its `content` field, is base64-encoded YAML.
-	 *
-	 * @var string
-	 */
-	public const MODE_BASE64_YAML = 'base64+yaml';
-
-	/**
-	 * The body, or its `content` field, is base64-encoded JSON.
-	 *
-	 * @var string
-	 */
-	public const MODE_BASE64_JSON = 'base64+json';
-
-	/**
-	 * The body is kept as text, unparsed.
-	 *
-	 * @var string
-	 */
-	public const MODE_TEXT = 'text';
-
-	/**
-	 * Every mode a caller may name.
-	 *
-	 * @var array<int, string>
-	 */
-	public const MODES = [
-		self::MODE_AUTO,
-		self::MODE_JSON,
-		self::MODE_YAML,
-		self::MODE_BASE64_YAML,
-		self::MODE_BASE64_JSON,
-		self::MODE_TEXT,
-	];
+class ResponseDecoder implements ResponseDecoderInterface {
 
 	/**
 	 * Content types that announce YAML.
@@ -234,6 +177,20 @@ class ResponseDecoder {
 		return null;
 
 	}//end headerValue()
+
+	/**
+	 * Find a response's Content-Type in its header map, ignoring case.
+	 *
+	 * @param array<string, mixed> $headers The header map; values may be lists.
+	 *
+	 * @return string|null The first Content-Type value, or null when it is absent.
+	 *
+	 * @spec openspec/specs/github-publiccode-source/spec.md#requirement-a-step-decodes-a-yaml-or-base64-response-req-ghp-002
+	 */
+	public function contentType(array $headers): ?string {
+		return self::headerValue(headers: $headers, name: 'Content-Type');
+
+	}//end contentType()
 
 	/**
 	 * Decode without a named mode, the way responses always were.

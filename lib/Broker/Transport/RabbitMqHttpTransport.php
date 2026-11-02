@@ -40,14 +40,7 @@ use Throwable;
  *
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-broker-that-accepted-a-message-it-delivered-to-nobody-is-a-failure-req-014
  */
-class RabbitMqHttpTransport implements BrokerTransportInterface {
-
-	/**
-	 * The broker id.
-	 *
-	 * @var string
-	 */
-	public const BROKER_ID = 'rabbitmq';
+class RabbitMqHttpTransport implements BrokerTransportInterface, RabbitMqHttpTransportInterface {
 
 	/**
 	 * Constructor.

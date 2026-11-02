@@ -32,7 +32,7 @@ namespace OCA\Integriq\Observability\Otel;
  *
  * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-spans-carry-no-message-content-req-otel-003
  */
-class SpanMapper {
+class SpanMapper implements SpanMapperInterface {
 
 	/**
 	 * OTLP span kinds.

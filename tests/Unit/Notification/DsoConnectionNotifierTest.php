@@ -21,6 +21,7 @@ namespace OCA\Integriq\Tests\Unit\Notification;
 
 use OCA\Integriq\Notification\DsoConnectionNotifier;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -63,7 +64,7 @@ class DsoConnectionNotifierTest extends TestCase {
 		$notification->method('setLink')->willReturnSelf();
 		$notification->method('setIcon')->willReturnSelf();
 
-		(new DsoConnectionNotifier(l10nFactory: $factory, urlGenerator: $urls))->prepare($notification, 'nl');
+		(new DsoConnectionNotifier(l10nFactory: $factory, urlGenerator: $urls, webhookProfiles: new WebhookProfiles()))->prepare($notification, 'nl');
 
 		return $parsed;
 

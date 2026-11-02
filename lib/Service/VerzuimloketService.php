@@ -52,7 +52,7 @@ use Throwable;
  *
  * @spec openspec/specs/verzuimloket-adapter/spec.md
  */
-class VerzuimloketService {
+class VerzuimloketService implements VerzuimloketServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding Verzuimloket sources and message records.

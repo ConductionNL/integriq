@@ -37,9 +37,9 @@ namespace OCA\Integriq\Sources\Slo;
 
 use InvalidArgumentException;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
-use OCA\Integriq\Adapters\Slo\SloCurriculumMapper;
-use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
-use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
+use OCA\Integriq\Adapters\Slo\SloCurriculumMapperInterface;
+use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistryInterface;
+use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalkerInterface;
 use OCA\Integriq\Exception\SloCurriculumException;
 use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
 use OCP\IAppConfig;
@@ -59,7 +59,7 @@ final class SloCurriculumSourceAdapter {
 	/**
 	 * App-config key of the dormant flag.
 	 */
-	public const FLAG_KEY = 'slo.curriculum.feature_flag';
+	public const FLAG_KEY = SloCurriculumClient::FLAG_KEY;
 
 	/**
 	 * Base URL of SLO's REST API, for an aggregate framework's sourceRef.
@@ -77,17 +77,17 @@ final class SloCurriculumSourceAdapter {
 	 * @param IAppConfig $config App config (dormant flag).
 	 * @param LoggerInterface $logger Structured logger.
 	 * @param SloCurriculumClient $sloClient Resolved client (mock or live).
-	 * @param SloCurriculumPresetRegistry $registry The seeded source template and mapping presets.
-	 * @param SloCurriculumTreeWalker $walker Reads and flattens SLO trees.
-	 * @param SloCurriculumMapper $mapper Maps nodes to learniq records.
+	 * @param SloCurriculumPresetRegistryInterface $registry The seeded source template and mapping presets.
+	 * @param SloCurriculumTreeWalkerInterface $walker Reads and flattens SLO trees.
+	 * @param SloCurriculumMapperInterface $mapper Maps nodes to learniq records.
 	 */
 	public function __construct(
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
 		private readonly SloCurriculumClient $sloClient,
-		private readonly SloCurriculumPresetRegistry $registry,
-		private readonly SloCurriculumTreeWalker $walker,
-		private readonly SloCurriculumMapper $mapper,
+		private readonly SloCurriculumPresetRegistryInterface $registry,
+		private readonly SloCurriculumTreeWalkerInterface $walker,
+		private readonly SloCurriculumMapperInterface $mapper,
 	) {
 	}//end __construct()
 
@@ -295,7 +295,7 @@ final class SloCurriculumSourceAdapter {
 			'roots' => [$root],
 			'rootInfo' => $this->walker->describeEntity(entity: $root),
 			'rootUuid' => $rootUuid,
-			'sourceRef' => SloCurriculumMapper::SLO_URI_BASE . $rootUuid,
+			'sourceRef' => SloCurriculumMapperInterface::SLO_URI_BASE . $rootUuid,
 			'originId' => $rootUuid,
 		];
 	}//end loadRoots()

@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Command;
 
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Service\RuleToFlowGenerator;
+use OCA\Integriq\Service\RuleToFlowGeneratorInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,10 +60,10 @@ class RuleToFlow extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleToFlowGenerator $generator The migration generator.
+	 * @param RuleToFlowGeneratorInterface $generator The migration generator.
 	 */
 	public function __construct(
-		private readonly RuleToFlowGenerator $generator,
+		private readonly RuleToFlowGeneratorInterface $generator,
 	) {
 		parent::__construct();
 

@@ -21,7 +21,7 @@
 namespace OCA\Integriq\Action;
 
 use Exception;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
@@ -37,17 +37,17 @@ class SynchronizationAction {
 	/**
 	 * The synchronization service that runs the synchronization.
 	 *
-	 * @var SynchronizationService
+	 * @var SynchronizationServiceInterface
 	 */
-	private SynchronizationService $synchronizationService;
+	private SynchronizationServiceInterface $synchronizationService;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizationService The synchronization service.
+	 * @param SynchronizationServiceInterface $synchronizationService The synchronization service.
 	 */
 	public function __construct(
-		SynchronizationService $synchronizationService,
+		SynchronizationServiceInterface $synchronizationService,
 	) {
 		$this->synchronizationService = $synchronizationService;
 

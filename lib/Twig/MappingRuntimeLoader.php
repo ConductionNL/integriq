@@ -35,10 +35,10 @@
 
 namespace OCA\Integriq\Twig;
 
-use OCA\Integriq\Service\CallService;
-use OCA\Integriq\Service\MappingService;
-use OCA\Integriq\Service\SourceMappingService;
-use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Service\CallServiceInterface;
+use OCA\Integriq\Service\MappingServiceInterface;
+use OCA\Integriq\Service\SourceMappingServiceInterface;
+use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\FileService;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
@@ -49,18 +49,18 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MappingService $mappingService Service that executes mappings.
-	 * @param CallService $callService Service that performs outbound calls.
+	 * @param MappingServiceInterface $mappingService Service that executes mappings.
+	 * @param CallServiceInterface $callService Service that performs outbound calls.
 	 * @param FileService $fileService Service that resolves file metadata.
-	 * @param SourceMappingService $objectService Service that resolves OR objects.
-	 * @param SynchronizationContractService $synchronizationContractService Service for contract lookups.
+	 * @param SourceMappingServiceInterface $objectService Service that resolves OR objects.
+	 * @param SynchronizationContractServiceInterface $synchronizationContractService Service for contract lookups.
 	 */
 	public function __construct(
-		private readonly MappingService $mappingService,
-		private readonly CallService $callService,
+		private readonly MappingServiceInterface $mappingService,
+		private readonly CallServiceInterface $callService,
 		private readonly FileService $fileService,
-		private readonly SourceMappingService $objectService,
-		private readonly SynchronizationContractService $synchronizationContractService,
+		private readonly SourceMappingServiceInterface $objectService,
+		private readonly SynchronizationContractServiceInterface $synchronizationContractService,
 	) {
 
 	}//end __construct()

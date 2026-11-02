@@ -85,7 +85,8 @@ class WebhookConnectionsSettingsControllerTest extends TestCase {
 			groupManager: $groupManager,
 			groups: $this->buildWorldIntakeGroups(),
 			l: $this->webhookL10n(),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			webhookProfiles: new WebhookProfiles()
 		);
 
 	}//end controller()

@@ -22,8 +22,7 @@ namespace OCA\Integriq\Service\DigitalPost;
 
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxException;
-use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxLetterBuilder;
-use OCA\Integriq\Adapters\Berichtenbox\EbmsAdapterClient;
+use OCA\Integriq\Adapters\Berichtenbox\LetterBuilderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,12 +67,12 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 *
 	 * @param BerichtenboxClient $client The shipped Berichtenbox client.
 	 * @param LoggerInterface $logger Structured logger.
-	 * @param BerichtenboxLetterBuilder $letters Builds the letter to the Logius schema.
+	 * @param LetterBuilderInterface $letters Builds the letter to the Logius schema.
 	 */
 	public function __construct(
 		private readonly BerichtenboxClient $client,
 		private readonly LoggerInterface $logger,
-		private readonly BerichtenboxLetterBuilder $letters = new BerichtenboxLetterBuilder(),
+		private readonly LetterBuilderInterface $letters,
 	) {
 	}//end __construct()
 
@@ -230,7 +229,7 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 		$simulated = ($this->client->flavour() === 'mock');
 		$reference = strtolower($providerReference);
 
-		$transportMessageId = EbmsAdapterClient::messageIdFor($reference);
+		$transportMessageId = $this->client->transportMessageIdFor(berichtId: $reference);
 		$result = ($this->client->results($config)[$reference] ?? null);
 		if ($result !== null) {
 			$this->pendingAcks[$reference] = ['kind' => 'result', 'id' => $result['resultMessageId']];

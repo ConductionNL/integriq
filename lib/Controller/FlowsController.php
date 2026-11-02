@@ -32,8 +32,8 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use OCA\Integriq\Exception\FlowRunException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\FlowRunnerService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\FlowRunnerServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -59,16 +59,16 @@ class FlowsController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param FlowRunnerService $flowRunnerService Executes a flow's steps.
-	 * @param ActionAuthService $actionAuth ADR-023 action-matrix authorization gate.
+	 * @param FlowRunnerServiceInterface $flowRunnerService Executes a flow's steps.
+	 * @param ActionAuthServiceInterface $actionAuth ADR-023 action-matrix authorization gate.
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FlowRunnerService $flowRunnerService,
-		private readonly ActionAuthService $actionAuth,
+		private readonly FlowRunnerServiceInterface $flowRunnerService,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 	) {

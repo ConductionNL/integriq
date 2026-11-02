@@ -57,7 +57,8 @@ namespace OCA\Integriq\Flow;
 
 use DateTime;
 use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowStop;
@@ -95,7 +96,7 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	 *
 	 * @var string
 	 */
-	public const NODE_ID = 'openconnector.approval-request';
+	public const NODE_ID = FlowNodeIds::APPROVAL_REQUEST;
 
 	/**
 	 * The context key the engine delivers a signal payload under.
@@ -150,13 +151,13 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	/**
 	 * Constructor.
 	 *
-	 * @param ApprovalService $approvalService The HITL state machine — persistence, mirror task, notifications.
+	 * @param ApprovalServiceInterface $approvalService The HITL state machine — persistence, mirror task, notifications.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
 	 */
 	public function __construct(
-		private readonly ApprovalService $approvalService,
+		private readonly ApprovalServiceInterface $approvalService,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,

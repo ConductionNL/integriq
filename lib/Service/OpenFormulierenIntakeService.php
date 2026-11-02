@@ -57,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md
  */
-class OpenFormulierenIntakeService {
+class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding sources, mappings, and submissions.

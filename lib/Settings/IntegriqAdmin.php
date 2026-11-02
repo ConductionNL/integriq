@@ -24,7 +24,7 @@
  *
  * The constructor + service wiring (appId/sectionId/priority + collaborators)
  * is registered in
- * {@see \OCA\Integriq\AppInfo\Application::registerAppHostBoilerplate()}.
+ * {@see \OCA\Integriq\Settings\SettingsRegistrar}.
  *
  * @category Settings
  * @package  OCA\Integriq\Settings

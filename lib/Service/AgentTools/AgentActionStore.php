@@ -33,7 +33,7 @@ use Throwable;
  *
  * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-108--every-invocation-including-refusals-must-be-attributed-to-the-agent-principal-in-the-audit-trail
  */
-class AgentActionStore {
+class AgentActionStore implements AgentActionStoreInterface {
 
 	/**
 	 * The schema slug, in integriq's register.

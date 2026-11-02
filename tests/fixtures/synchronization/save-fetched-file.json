@@ -1,0 +1,1300 @@
+{
+    "plain-body-given-filename": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "a.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "a.txt",
+                "plain text body",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "json-content-and-filename-paths": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "from-body.pdf",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "from-body.pdf",
+                "PDF-BYTES",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "json-empty-paths-ignored": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "q.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "q.txt",
+                "quoted",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "json-with-disposition-stays-string": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "header.pdf",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "header.pdf",
+                "{\"a\":1}",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "lowercase-disposition": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "low.bin",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "low.bin",
+                "{\"a\":1}",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "base64-body": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "b.bin",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "b.bin",
+                "BINARY",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "file-extension": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "stem.odt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "stem.odt",
+                "\ufffd",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "file-extension-empty": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "stem",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "stem",
+                "\ufffd",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "file-extension-null-filename": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": ".odt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                ".odt",
+                "\ufffd",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "write-false-body": {
+        "outcome": {
+            "return": "UkFX"
+        },
+        "filename": null,
+        "log": []
+    },
+    "write-false-plain": {
+        "outcome": {
+            "return": "bm90IGJhc2U2NCE="
+        },
+        "filename": null,
+        "log": []
+    },
+    "write-true-explicit": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "w.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "w.txt",
+                "not base64!",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "write-false-sink": {
+        "outcome": {
+            "return": "U1RSRUFNRUQgQllURVM="
+        },
+        "filename": null,
+        "log": []
+    },
+    "filename-from-url-and-type": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "report.pdf",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "report.pdf",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "filename-from-url-with-ext": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "report.docx",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "report.docx",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "filename-no-url-no-type": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "invalid-object-id": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Invalid object ID format: not-a-uuid. Expected a valid UUID."
+        },
+        "filename": "f.txt",
+        "log": []
+    },
+    "empty-object-id": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Invalid object ID format: . Expected a valid UUID."
+        },
+        "filename": "f.txt",
+        "log": []
+    },
+    "uppercase-uuid": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "B7A4C3D2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "B7A4C3D2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "no-response": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Failed to fetch file from endpoint: /files/42. No response received."
+        },
+        "filename": "f.txt",
+        "log": []
+    },
+    "no-response-sink": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Failed to fetch file from endpoint: /files/42. No response received."
+        },
+        "filename": "f.txt",
+        "log": []
+    },
+    "sink-unreadable": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Could not reopen streamed download for /files/42"
+        },
+        "filename": "f.txt",
+        "log": []
+    },
+    "tags-autoshare": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                true,
+                [
+                    "t1"
+                ]
+            ]
+        ]
+    },
+    "tags-autoshare-false": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "t1"
+                ]
+            ]
+        ]
+    },
+    "no-tags-autoshare": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                []
+            ]
+        ]
+    },
+    "null-tags": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                null
+            ]
+        ]
+    },
+    "published-true": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ],
+            [
+                "file.publishFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt"
+            ]
+        ]
+    },
+    "published-one": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ],
+            [
+                "file.publishFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt"
+            ]
+        ]
+    },
+    "published-false": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "published-date": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ],
+            [
+                "file.publishFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt"
+            ]
+        ]
+    },
+    "published-atom": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ],
+            [
+                "file.publishFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt"
+            ]
+        ]
+    },
+    "published-garbage": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "published-null-file": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "publish-fails": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ],
+            [
+                "file.publishFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt"
+            ],
+            [
+                "logger.warning",
+                "Failed to publish file f.txt for object b7a4c3d2-1111-4222-8333-944455556666: file.publishFile broke"
+            ]
+        ]
+    },
+    "save-fails": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Failed to save file f.txt for object b7a4c3d2-1111-4222-8333-944455556666: file.saveFile broke"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    },
+    "find-fails": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Failed to save file f.txt for object b7a4c3d2-1111-4222-8333-944455556666: or.find broke"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ]
+        ]
+    },
+    "object-missing-add": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "QURE",
+                true,
+                [
+                    "x"
+                ],
+                "s1",
+                "r1",
+                7
+            ]
+        ]
+    },
+    "object-missing-add-defaults": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "a b",
+                false,
+                [],
+                null,
+                null,
+                null
+            ]
+        ]
+    },
+    "object-missing-add-publish": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "a b",
+                false,
+                [
+                    "default-tag"
+                ],
+                null,
+                null,
+                "r-9"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.publishFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt"
+            ]
+        ]
+    },
+    "object-missing-add-publish-missing": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "a b",
+                false,
+                [
+                    "default-tag"
+                ],
+                null,
+                null,
+                null
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "logger.warning",
+                "Failed to publish file f.txt for object b7a4c3d2-1111-4222-8333-944455556666: not found"
+            ]
+        ]
+    },
+    "object-missing-add-null-file": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "a b",
+                false,
+                [
+                    "default-tag"
+                ],
+                null,
+                null,
+                null
+            ]
+        ]
+    },
+    "save-says-missing-add-publish": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "i",
+                false,
+                [
+                    "default-tag"
+                ]
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "a b",
+                false,
+                [
+                    "default-tag"
+                ],
+                null,
+                null,
+                null
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.publishFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt"
+            ]
+        ]
+    },
+    "object-missing-add-fails": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "file.addFile broke"
+        },
+        "filename": "f.txt",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "f.txt",
+                "a b",
+                false,
+                [
+                    "default-tag"
+                ],
+                null,
+                null,
+                null
+            ]
+        ]
+    },
+    "sink-save": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "s.bin",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "s.bin",
+                {
+                    "stream": "STREAM-SAVE",
+                    "at": 0
+                },
+                true,
+                [
+                    "t"
+                ]
+            ]
+        ]
+    },
+    "sink-add": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": "s.bin",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.addFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                "s.bin",
+                {
+                    "stream": "STREAM-ADD",
+                    "at": 0
+                },
+                false,
+                [
+                    "default-tag"
+                ],
+                null,
+                null,
+                null
+            ]
+        ]
+    },
+    "sink-filename-from-header": {
+        "outcome": {
+            "return": "/files/42"
+        },
+        "filename": ".z",
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "b7a4c3d2-1111-4222-8333-944455556666"
+            ],
+            [
+                "file.saveFile",
+                "b7a4c3d2-1111-4222-8333-944455556666",
+                ".z",
+                {
+                    "stream": "S",
+                    "at": 0
+                },
+                false,
+                [
+                    "default-tag"
+                ]
+            ]
+        ]
+    }
+}

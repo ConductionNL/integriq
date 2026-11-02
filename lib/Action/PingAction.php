@@ -20,7 +20,7 @@
 
 namespace OCA\Integriq\Action;
 
-use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -31,9 +31,9 @@ class PingAction {
 	/**
 	 * Service used to execute outbound calls.
 	 *
-	 * @var CallService
+	 * @var CallServiceInterface
 	 */
-	private CallService $callService;
+	private CallServiceInterface $callService;
 
 	/**
 	 * OpenRegister object service used to resolve sources.
@@ -45,11 +45,11 @@ class PingAction {
 	/**
 	 * Constructor.
 	 *
-	 * @param CallService $callService Service used to execute outbound calls.
+	 * @param CallServiceInterface $callService Service used to execute outbound calls.
 	 * @param OrObjectService $orObjectService Service used to resolve sources.
 	 */
 	public function __construct(
-		CallService $callService,
+		CallServiceInterface $callService,
 		OrObjectService $orObjectService,
 	) {
 		$this->callService = $callService;

@@ -7,4 +7,5 @@
 - [x] `SynchronizationAction` reports `resumeSoon`; `JobService` schedules that job on the next tick.
 - [x] Ship the ten external gathering connector Jobs disabled.
 - [x] Tests: streaming to a removed temp file, batch and resume, a whole-file run is complete, a failed download keeps its batch, a 24 MB file read under a 2 MB budget with a control, a batch run deletes nothing and persists the next batch, `resumeSoon` scheduling, the fragment test asserts disabled jobs.
-- [ ] Live pass: a fresh install runs cron with no integriq job pulling an external feed; enabling the Austria job imports it in batches without a fatal.
+- [x] Review follow-ups (integriq#2643): a failed batch keeps the job's interval, a JSONL synchronization refuses a tar endpoint, a batch run does not warn about the disappearance pass, a cycle restarts when the file changes between batches, the ten job objects carry version 1.0.1.
+- [ ] Live pass: a fresh install runs cron with no integriq job pulling an external feed; enabling the Austria job imports it in batches without a fatal. Not run yet: the batched Austria import is unverified on a live instance.

@@ -45,48 +45,21 @@ namespace OCA\Integriq\Service\Subscriptions;
 
 use DateTimeImmutable;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 
 /**
  * Decides a push subscription's signing posture, and refuses the requests that hide it.
  *
  * @spec openspec/specs/webhook-signing/spec.md#requirement-a-push-subscription-is-signed-unless-somebody-says-otherwise-req-sow-001
  */
-class SubscriptionSigningPolicy {
-
-	/**
-	 * The subscription style this policy applies to.
-	 *
-	 * @var string
-	 */
-	public const STYLE_PUSH = 'push';
-
-	/**
-	 * What a read of a stored secret shows instead of the secret.
-	 *
-	 * @var string
-	 */
-	public const REDACTED = '__redacted__';
-
-	/**
-	 * An attempt that carried a signature.
-	 *
-	 * @var string
-	 */
-	public const ATTEMPT_SIGNED = 'signed';
-
-	/**
-	 * An attempt that did not.
-	 *
-	 * @var string
-	 */
-	public const ATTEMPT_UNSIGNED = 'unsigned';
+class SubscriptionSigningPolicy implements SubscriptionSigningPolicyInterface {
 
 	/**
 	 * Wire the policy.
 	 *
-	 * @param WebhookSignatureService $signatures The existing secret generator and signer.
+	 * @param WebhookSignatureServiceInterface $signatures The existing secret generator and signer.
 	 */
-	public function __construct(private readonly WebhookSignatureService $signatures) {
+	public function __construct(private readonly WebhookSignatureServiceInterface $signatures) {
 	}//end __construct()
 
 	/**
@@ -355,4 +328,15 @@ class SubscriptionSigningPolicy {
 			'graceSeconds' => WebhookSignatureService::ROTATION_GRACE_SECONDS,
 		];
 	}//end verificationRecipe()
+
+	/**
+	 * A fresh signing secret, for a first generate or a rotation.
+	 *
+	 * @return string The new secret.
+	 *
+	 * @spec openspec/specs/webhook-signing/spec.md
+	 */
+	public function generateSecret(): string {
+		return $this->signatures->generateSecret();
+	}//end generateSecret()
 }//end class

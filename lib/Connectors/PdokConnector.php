@@ -45,7 +45,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class PdokConnector {
+class PdokConnector implements PdokConnectorInterface {
 	/**
 	 * Base URL for the PDOK Locatieserver v3.1.
 	 */

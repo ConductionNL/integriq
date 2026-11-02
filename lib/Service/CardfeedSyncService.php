@@ -52,7 +52,7 @@ use Throwable;
  *
  * @spec openspec/specs/corporate-card-feed/spec.md
  */
-class CardfeedSyncService {
+class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding cardfeed sources, accounts, and batches.

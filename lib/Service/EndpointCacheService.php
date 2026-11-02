@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
  */
-class EndpointCacheService {
+class EndpointCacheService implements EndpointCacheServiceInterface {
 
 	/**
 	 * Cache key for endpoint data.

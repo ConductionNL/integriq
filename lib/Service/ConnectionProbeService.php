@@ -37,14 +37,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-probes-linked-sources-every-hour-req-conn-005
  */
-class ConnectionProbeService {
-
-	/**
-	 * The most probes one health job run makes (D7).
-	 *
-	 * @var int
-	 */
-	public const PROBE_LIMIT = 25;
+class ConnectionProbeService implements ConnectionProbeServiceInterface {
 
 	/**
 	 * The longest message stored on a probe.
@@ -86,7 +79,7 @@ class ConnectionProbeService {
 		$linked = array_values(
 			array_filter(
 				$this->store->findRows(),
-				static fn (array $row): bool => (string)($row['data']['source'] ?? '') !== ''
+				fn (array $row): bool => (string)($row['data']['source'] ?? '') !== '' && $this->isSwitchedOff(sourceId: (string)$row['data']['source']) === false
 			)
 		);
 
@@ -110,6 +103,27 @@ class ConnectionProbeService {
 
 		return $probed;
 	}//end probeDue()
+
+	/**
+	 * Whether the linked source is switched off (`isEnabled` false), such as an
+	 * example set's made-up source: nothing calls it, so the hourly job does
+	 * not either. A source that cannot be read is not switched off; its probe
+	 * reports it missing.
+	 *
+	 * @param string $sourceId The source uuid.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/connection-registry/spec.md#requirement-the-health-job-skips-a-switched-off-source
+	 */
+	private function isSwitchedOff(string $sourceId): bool {
+		$source = $this->store->findSource(uuid: $sourceId);
+		if ($source === null) {
+			return false;
+		}
+
+		return (($source->getObject()['isEnabled'] ?? true) === false);
+	}//end isSwitchedOff()
 
 	/**
 	 * Probe one row's source, write `lastProbe`, resolve and save.

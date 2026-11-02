@@ -36,7 +36,7 @@ use Throwable;
  *
  * @spec openspec/specs/lti-platform/spec.md
  */
-class LtiNrpsService {
+class LtiNrpsService implements LtiNrpsServiceInterface {
 	/**
 	 * Constructor.
 	 *

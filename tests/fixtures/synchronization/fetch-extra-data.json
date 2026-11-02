@@ -1,0 +1,620 @@
+{
+    "no-endpoint-config": {
+        "outcome": {
+            "return": {
+                "id": "o-1",
+                "links": {
+                    "detail": "/detail/o-1"
+                },
+                "sub": {
+                    "id": "s-9"
+                },
+                "alt": {
+                    "id": "a-3"
+                },
+                "naam": "x"
+            }
+        },
+        "log": []
+    },
+    "dynamic": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "dynamic-missing": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Could not get static or dynamic endpoint, object: {\"id\":\"o-1\",\"links\":{\"detail\":\"\\/detail\\/o-1\"},\"sub\":{\"id\":\"s-9\"},\"alt\":{\"id\":\"a-3\"},\"naam\":\"x\"}"
+        },
+        "log": []
+    },
+    "static-origin-from-object": {
+        "outcome": {
+            "return": {
+                "fetched": "/x/o-1/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/x/o-1/o-1",
+                null
+            ]
+        ]
+    },
+    "static-origin-given": {
+        "outcome": {
+            "return": {
+                "fetched": "/x/given"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/x/given",
+                null
+            ]
+        ]
+    },
+    "static-id-location": {
+        "outcome": {
+            "return": {
+                "fetched": "/x/a-3"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/x/a-3",
+                null
+            ]
+        ]
+    },
+    "static-id-location-missing": {
+        "outcome": {
+            "return": {
+                "fetched": "/x/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/x/o-1",
+                null
+            ]
+        ]
+    },
+    "static-id-position": {
+        "outcome": {
+            "return": {
+                "fetched": "/x/s-9"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "idPosition": "sub.id"
+                },
+                "/x/s-9",
+                null
+            ]
+        ]
+    },
+    "static-no-origin": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Could not find origin id in object for key: id"
+        },
+        "log": []
+    },
+    "static-sub-object": {
+        "outcome": {
+            "return": {
+                "fetched": "/x/o-1/s/s-9/s-9"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/x/o-1/s/s-9/s-9",
+                null
+            ]
+        ]
+    },
+    "static-sub-object-missing": {
+        "outcome": {
+            "return": {
+                "fetched": "/x/{{ subObjectId }}"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/x/{{ subObjectId }}",
+                null
+            ]
+        ]
+    },
+    "dynamic-and-static": {
+        "outcome": {
+            "return": {
+                "fetched": "/static/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/static/o-1",
+                null
+            ]
+        ]
+    },
+    "template": {
+        "outcome": {
+            "return": {
+                "fetched": "rendered:{{ endpoint }}?x=1"
+            }
+        },
+        "log": [
+            [
+                "mapping.renderTemplateString",
+                "{{ endpoint }}?x=1",
+                {
+                    "endpoint": "/detail/o-1",
+                    "object": {
+                        "id": "o-1",
+                        "links": {
+                            "detail": "/detail/o-1"
+                        },
+                        "sub": {
+                            "id": "s-9"
+                        },
+                        "alt": {
+                            "id": "a-3"
+                        },
+                        "naam": "x"
+                    },
+                    "originId": null,
+                    "extraDataConfig": {
+                        "dynamicEndpointLocation": "links.detail",
+                        "endpointTemplate": "{{ endpoint }}?x=1"
+                    }
+                }
+            ],
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "rendered:{{ endpoint }}?x=1",
+                null
+            ]
+        ]
+    },
+    "template-empty": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "template-not-string": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "template-only-static": {
+        "outcome": {
+            "return": {
+                "fetched": "rendered:t"
+            }
+        },
+        "log": [
+            [
+                "mapping.renderTemplateString",
+                "t",
+                {
+                    "endpoint": "/s/o-1",
+                    "object": {
+                        "id": "o-1",
+                        "links": {
+                            "detail": "/detail/o-1"
+                        },
+                        "sub": {
+                            "id": "s-9"
+                        },
+                        "alt": {
+                            "id": "a-3"
+                        },
+                        "naam": "x"
+                    },
+                    "originId": "o-1",
+                    "extraDataConfig": {
+                        "staticEndpoint": "/s/{{ originId }}",
+                        "endpointTemplate": "t"
+                    }
+                }
+            ],
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "rendered:t",
+                null
+            ]
+        ]
+    },
+    "unset-config-key": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "keep": true
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "unset-config-key-absent": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "keep": true
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "source-scalar": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                "src-2"
+            ]
+        ]
+    },
+    "source-not-scalar": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "per-result": {
+        "outcome": {
+            "return": [
+                {
+                    "more": {
+                        "fetched": "/r/1"
+                    }
+                },
+                {
+                    "more": {
+                        "fetched": "/r/2"
+                    }
+                }
+            ]
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/list/o-1",
+                null
+            ],
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/r/1",
+                null
+            ],
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/r/2",
+                null
+            ]
+        ]
+    },
+    "static-id-location-no-origin": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Could not find origin id in object for key: id"
+        },
+        "log": []
+    },
+    "per-result-keeps-origin": {
+        "outcome": {
+            "return": [
+                {
+                    "fetched": "/per/o-1"
+                },
+                {
+                    "fetched": "/per/o-1"
+                }
+            ]
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/list/o-1",
+                null
+            ],
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/per/o-1",
+                null
+            ],
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/per/o-1",
+                null
+            ]
+        ]
+    },
+    "per-result-no-location": {
+        "outcome": {
+            "throws": "TypeError",
+            "message": "OCA\\Integriq\\Service\\SynchronizationService::fetchExtraDataForObject(): Argument #3 ($object) must be of type array, string given"
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/one",
+                null
+            ]
+        ]
+    },
+    "key": {
+        "outcome": {
+            "return": {
+                "extra": {
+                    "fetched": "/detail/o-1"
+                }
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "merge-true": {
+        "outcome": {
+            "return": {
+                "id": "o-1",
+                "links": {
+                    "detail": "/detail/o-1"
+                },
+                "sub": {
+                    "id": "s-9"
+                },
+                "alt": {
+                    "id": "a-3"
+                },
+                "naam": "x",
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "merge-string": {
+        "outcome": {
+            "return": {
+                "id": "o-1",
+                "links": {
+                    "detail": "/detail/o-1"
+                },
+                "sub": {
+                    "id": "s-9"
+                },
+                "alt": {
+                    "id": "a-3"
+                },
+                "naam": "x",
+                "extra": {
+                    "fetched": "/detail/o-1"
+                }
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    },
+    "merge-other": {
+        "outcome": {
+            "return": {
+                "fetched": "/detail/o-1"
+            }
+        },
+        "log": [
+            [
+                "getObjectFromSource",
+                {
+                    "headers": {
+                        "h": 1
+                    }
+                },
+                "/detail/o-1",
+                null
+            ]
+        ]
+    }
+}

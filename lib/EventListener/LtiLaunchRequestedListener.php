@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
-use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
+use OCA\Integriq\Service\Lti\LtiPlatformLoginServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -43,13 +43,13 @@ class LtiLaunchRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param LtiPlatformLoginService $loginService Builds the login initiation.
+	 * @param LtiPlatformLoginServiceInterface $loginService Builds the login initiation.
 	 * @param LoggerInterface $logger Logger for key-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly LtiPlatformLoginService $loginService,
+		private readonly LtiPlatformLoginServiceInterface $loginService,
 		private readonly LoggerInterface $logger,
 	) {
 

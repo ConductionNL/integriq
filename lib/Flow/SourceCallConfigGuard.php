@@ -50,7 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Service\ResponseDecoder;
+use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCP\IL10N;
 use UnexpectedValueException;
 
@@ -267,11 +267,11 @@ final class SourceCallConfigGuard {
 		}
 
 		$mode = strtolower(trim((string)$config['decode']));
-		if (in_array($mode, ResponseDecoder::MODES, true) === false) {
+		if (in_array($mode, ResponseDecoderInterface::MODES, true) === false) {
 			throw new UnexpectedValueException(
 				$l10n->t(
 					'The "decode" field must be one of %1$s.',
-					[implode(', ', ResponseDecoder::MODES)]
+					[implode(', ', ResponseDecoderInterface::MODES)]
 				)
 			);
 		}

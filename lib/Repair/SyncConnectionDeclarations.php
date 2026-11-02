@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\ConnectionRegistryService;
+use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -79,7 +79,7 @@ class SyncConnectionDeclarations implements IRepairStep {
 		}
 
 		try {
-			$summary = $this->container->get(ConnectionRegistryService::class)->sync();
+			$summary = $this->container->get(ConnectionRegistryServiceInterface::class)->sync();
 		} catch (\Throwable $e) {
 			$output->warning('Integriq: the connection declaration sync failed: ' . $e->getMessage());
 			$this->logger->error(

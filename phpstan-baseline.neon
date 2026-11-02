@@ -4,7 +4,7 @@ parameters:
 			message: '#^Parameter \$className of method OCP\\EventDispatcher\\IEventDispatcher\:\:addServiceListener\(\) expects class\-string\<OCP\\EventDispatcher\\IEventListener\<OCP\\EventDispatcher\\Event\>\>, ''OCA\\\\Integriq\\\\Flow\\\\FlowNodeListener'' given\.$#'
 			identifier: argument.type
 			count: 1
-			path: lib/AppInfo/Application.php
+			path: lib/Flow/FlowBindings.php
 
 		-
 			message: '#^Parameter \#1 \$data of class OCP\\AppFramework\\Http\\JSONResponse constructor contains unresolvable type\.$#'

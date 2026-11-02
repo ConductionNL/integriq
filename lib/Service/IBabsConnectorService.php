@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
  */
-class IBabsConnectorService {
+class IBabsConnectorService implements IBabsConnectorServiceInterface {
 
 	/**
 	 * IBabs REST API base path for organisations.

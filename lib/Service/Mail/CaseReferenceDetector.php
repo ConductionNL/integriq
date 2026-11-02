@@ -31,7 +31,7 @@ namespace OCA\Integriq\Service\Mail;
  *
  * @spec openspec/specs/mail-intake/spec.md#requirement-a-received-message-is-offered-to-the-owning-app-as-a-typed-event-req-mail-003
  */
-class CaseReferenceDetector {
+class CaseReferenceDetector implements CaseReferenceDetectorInterface {
 
 	/**
 	 * The fleet case-number shape, used when a source configures no pattern.

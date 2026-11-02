@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Zgw;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -45,7 +45,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.StaticAccess) ZgwSetCatalogue is a catalogue of constants with no
  * state to instantiate, the same reason ZgwSetInstallGuard gives.
  */
-class ZgwSetInstaller {
+class ZgwSetInstaller implements ZgwSetInstallerInterface {
 
 	/**
 	 * App config key holding the bindings, as JSON {"register/schema": "set slug"}.
@@ -133,7 +133,7 @@ class ZgwSetInstaller {
 
 		$bindings = array_filter($bindings, fn (string $holder): bool => $holder !== $slug);
 		$bindings[$binding] = $slug;
-		$this->appConfig->setValueString(Application::APP_ID, self::BINDINGS_KEY, (string)json_encode($bindings));
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::BINDINGS_KEY, (string)json_encode($bindings));
 
 		return ['set' => $slug, 'binding' => $binding, 'synchronizations' => array_keys($bound)];
 	}//end install()
@@ -183,7 +183,7 @@ class ZgwSetInstaller {
 			$subscriptions[$dataSet] = (string)$abonnement->getUuid();
 		}//end foreach
 
-		$this->appConfig->setValueString(Application::APP_ID, self::SUBSCRIPTIONS_KEY, (string)json_encode($subscriptions));
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::SUBSCRIPTIONS_KEY, (string)json_encode($subscriptions));
 
 		return ['set' => $slug, 'binding' => null, 'synchronizations' => [], 'subscriptions' => $subscriptions, 'refused' => $refused];
 	}//end subscribe()
@@ -228,7 +228,7 @@ class ZgwSetInstaller {
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-an-external-change-shows-within-a-minute-and-a-local-change-writes-back-req-zgwc-003
 	 */
 	public function subscriptions(): array {
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::SUBSCRIPTIONS_KEY, '{}'), true);
+		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::SUBSCRIPTIONS_KEY, '{}'), true);
 		if (is_array($decoded) === false) {
 			return [];
 		}
@@ -244,7 +244,7 @@ class ZgwSetInstaller {
 	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
 	 */
 	public function bindings(): array {
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::BINDINGS_KEY, '{}'), true);
+		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::BINDINGS_KEY, '{}'), true);
 		if (is_array($decoded) === false) {
 			return [];
 		}
@@ -333,4 +333,24 @@ class ZgwSetInstaller {
 		$synchronization['targetId']   = $binding;
 		return $synchronization;
 	}//end bind()
+
+	/**
+	 * Every packaged set, with its title and whether it writes back.
+	 *
+	 * @return list<array{slug: string, title: string, writesBack: bool}>
+	 *
+	 * @spec openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors/spec.md#requirement-a-set-binds-to-an-operator-chosen-register-and-schema-req-zgwc-002
+	 */
+	public function catalogue(): array {
+		$sets = [];
+		foreach (ZgwSetCatalogue::SETS as $slug => $title) {
+			$sets[] = [
+				'slug'       => $slug,
+				'title'      => $title,
+				'writesBack' => ZgwSetCatalogue::writesBack(slug: $slug),
+			];
+		}
+
+		return $sets;
+	}//end catalogue()
 }//end class

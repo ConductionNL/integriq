@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-008-apps-read-their-own-jobs-through-the-read-model
  */
-class ExchangeReadModel {
+class ExchangeReadModel implements ExchangeReadModelInterface {
 
 	public const MAX_LIMIT = 200;
 

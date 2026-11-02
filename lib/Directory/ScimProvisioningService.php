@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
  */
-class ScimProvisioningService {
+class ScimProvisioningService implements ScimProvisioningServiceInterface {
 
 	/**
 	 * The SCIM 2.0 user schema urn.

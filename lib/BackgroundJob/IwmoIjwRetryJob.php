@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\IwmoIjwSyncService;
+use OCA\Integriq\Service\IwmoIjwSyncServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -57,14 +57,14 @@ class IwmoIjwRetryJob extends TimedJob {
 	 * IwmoIjwRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param IwmoIjwSyncService $syncService The iWMO/iJW sync service.
+	 * @param IwmoIjwSyncServiceInterface $syncService The iWMO/iJW sync service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
 	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly IwmoIjwSyncService $syncService,
+		private readonly IwmoIjwSyncServiceInterface $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

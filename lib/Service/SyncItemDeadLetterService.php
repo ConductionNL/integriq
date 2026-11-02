@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
  */
-class SyncItemDeadLetterService {
+class SyncItemDeadLetterService implements SyncItemDeadLetterServiceInterface {
 	/**
 	 * Constructor.
 	 *

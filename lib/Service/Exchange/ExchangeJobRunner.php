@@ -45,7 +45,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ExchangeJobRunner {
+class ExchangeJobRunner implements ExchangeJobRunnerInterface {
 
 	/**
 	 * Constructor.

@@ -1,0 +1,64 @@
+{
+	"$comment": "The knowledge base a Zuiddrecht demo searches, without running xWiki: the shipped `xwiki` source (integriq register.d/xwiki-source.json, dormant) is switched on in mock mode, so OpenRegister's xWiki integration answers every page search with these six Kennisbank articles, the two PqKlant/PqOrganisatie's Kennisbank card draws among them. OpenRegister's integration router returns `configuration.mockResponse` for a source with `configuration.mock` true, as it does for the KvK and BRP mocks. A change, so remove puts the source back as it shipped.",
+	"changes": [
+		{
+			"key": "kennisbank-xwiki-mock",
+			"register": "integriq",
+			"schema": "source",
+			"where": {
+				"name": "xWiki",
+				"location": "http://xwiki:8080/xwiki"
+			},
+			"set": {
+				"isEnabled": true,
+				"configuration.mock": true,
+				"configuration.mockResponse": {
+					"results": [
+						{
+							"reference": "Kennisbank.EvenementenvergunningWatRegelJe",
+							"space": "Kennisbank",
+							"page": "EvenementenvergunningWatRegelJe",
+							"title": "Evenementenvergunning: wat regel je",
+							"url": "https://kennisbank.zuiddrecht.example/bin/view/Kennisbank/EvenementenvergunningWatRegelJe"
+						},
+						{
+							"reference": "Kennisbank.VerhuizenBinnenZuiddrecht",
+							"space": "Kennisbank",
+							"page": "VerhuizenBinnenZuiddrecht",
+							"title": "Verhuizen binnen Zuiddrecht",
+							"url": "https://kennisbank.zuiddrecht.example/bin/view/Kennisbank/VerhuizenBinnenZuiddrecht"
+						},
+						{
+							"reference": "Kennisbank.AfvalpasAanvragenOfVervangen",
+							"space": "Kennisbank",
+							"page": "AfvalpasAanvragenOfVervangen",
+							"title": "Afvalpas aanvragen of vervangen",
+							"url": "https://kennisbank.zuiddrecht.example/bin/view/Kennisbank/AfvalpasAanvragenOfVervangen"
+						},
+						{
+							"reference": "Kennisbank.ParkeervergunningVoorBewoners",
+							"space": "Kennisbank",
+							"page": "ParkeervergunningVoorBewoners",
+							"title": "Parkeervergunning voor bewoners",
+							"url": "https://kennisbank.zuiddrecht.example/bin/view/Kennisbank/ParkeervergunningVoorBewoners"
+						},
+						{
+							"reference": "Kennisbank.MeldingOpenbareRuimteDoen",
+							"space": "Kennisbank",
+							"page": "MeldingOpenbareRuimteDoen",
+							"title": "Een melding openbare ruimte doen",
+							"url": "https://kennisbank.zuiddrecht.example/bin/view/Kennisbank/MeldingOpenbareRuimteDoen"
+						},
+						{
+							"reference": "Kennisbank.PaspoortOfIdKaartAanvragen",
+							"space": "Kennisbank",
+							"page": "PaspoortOfIdKaartAanvragen",
+							"title": "Paspoort of ID-kaart aanvragen",
+							"url": "https://kennisbank.zuiddrecht.example/bin/view/Kennisbank/PaspoortOfIdKaartAanvragen"
+						}
+					]
+				}
+			}
+		}
+	]
+}

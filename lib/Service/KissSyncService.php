@@ -53,7 +53,7 @@ use Throwable;
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
-class KissSyncService {
+class KissSyncService implements KissSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding KISS sources and klantcontact records.

@@ -43,21 +43,7 @@ use OCP\Security\ISecureRandom;
  *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-a-digital-post-recipient-is-never-stored-as-a-plain-bsn-req-ooa-008
  */
-class RecipientKey {
-
-	/**
-	 * Email.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_EMAIL = 'email';
-
-	/**
-	 * SMS.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_SMS = 'sms';
+class RecipientKey implements RecipientKeyInterface {
 
 	/**
 	 * WhatsApp.
@@ -72,20 +58,6 @@ class RecipientKey {
 	 * @var string
 	 */
 	public const CHANNEL_DIGITAL_POST = 'digital-post';
-
-	/**
-	 * A messaging gateway keyed on a phone number.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_MESSAGING = 'messaging';
-
-	/**
-	 * Microsoft Teams.
-	 *
-	 * @var string
-	 */
-	public const CHANNEL_TEAMS = 'teams';
 
 	/**
 	 * The channels whose recipient is a phone number.

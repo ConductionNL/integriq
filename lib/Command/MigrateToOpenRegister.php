@@ -36,7 +36,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Command;
 
 use InvalidArgumentException;
-use OCA\Integriq\Service\Migration\LegacyToRegisterMigrator;
+use OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -76,10 +76,10 @@ class MigrateToOpenRegister extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param LegacyToRegisterMigrator $migrator The legacy → OR migrator service.
+	 * @param LegacyToRegisterMigratorInterface $migrator The legacy → OR migrator service.
 	 */
 	public function __construct(
-		private readonly LegacyToRegisterMigrator $migrator,
+		private readonly LegacyToRegisterMigratorInterface $migrator,
 	) {
 		parent::__construct();
 

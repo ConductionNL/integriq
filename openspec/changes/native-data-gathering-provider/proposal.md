@@ -120,6 +120,7 @@ are not touched or depended on.
   `source-management`, `job-scheduling`, `logs-and-statistics`,
   `dead-letter-replay` (the HAVE surface this contract stands on).
 - **Fresh install:** ships the Wave-0 connectors provisioned; keyless public
-  feeds `isEnabled: true`, credential/broker-gated ones `isEnabled: false`
+  feeds with their Source enabled and their Job `isEnabled: false` (an
+  administrator opts in, bounded-jsonl-sync), credential/broker-gated ones `isEnabled: false`
   (dormant) until an operator supplies the secret — the same convention the
   existing seed sources use.

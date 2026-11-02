@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\SetupCheck;
 
 use DateTimeImmutable;
-use OCA\Integriq\Service\DigitalPost\BerichtenboxHealth;
+use OCA\Integriq\Service\DigitalPost\BerichtenboxHealthInterface;
 use OCP\IL10N;
 use OCP\SetupCheck\ISetupCheck;
 use OCP\SetupCheck\SetupResult;
@@ -75,7 +75,7 @@ class BerichtenboxCheck implements ISetupCheck {
 	 */
 	public function run(): SetupResult {
 		try {
-			$findings = $this->container->get(BerichtenboxHealth::class)->findings(now: new DateTimeImmutable());
+			$findings = $this->container->get(BerichtenboxHealthInterface::class)->findings(now: new DateTimeImmutable());
 		} catch (Throwable) {
 			return SetupResult::success($this->l10n->t('The Berichtenbox needs OpenRegister, which is not available.'));
 		}

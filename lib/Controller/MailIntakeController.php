@@ -28,10 +28,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\MailboxTransportException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\Mail\MailboxSourceHandler;
-use OCA\Integriq\Service\Mail\MailIntakeService;
-use OCA\Integriq\Service\Mail\MessageParser;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Mail\MailboxSourceHandlerInterface;
+use OCA\Integriq\Service\Mail\MailIntakeServiceInterface;
+use OCA\Integriq\Service\Mail\MessageParserInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -72,22 +72,22 @@ class MailIntakeController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal making the write.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
 	 * @param OrObjectService $orObjectService Reads the mailbox source.
-	 * @param MessageParser $messageParser Parses the uploaded file.
-	 * @param MailIntakeService $intakeService Takes the message in.
-	 * @param MailboxSourceHandler $mailboxHandler Runs an on-demand poll.
+	 * @param MessageParserInterface $messageParser Parses the uploaded file.
+	 * @param MailIntakeServiceInterface $intakeService Takes the message in.
+	 * @param MailboxSourceHandlerInterface $mailboxHandler Runs an on-demand poll.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly OrObjectService $orObjectService,
-		private readonly MessageParser $messageParser,
-		private readonly MailIntakeService $intakeService,
-		private readonly MailboxSourceHandler $mailboxHandler,
+		private readonly MessageParserInterface $messageParser,
+		private readonly MailIntakeServiceInterface $intakeService,
+		private readonly MailboxSourceHandlerInterface $mailboxHandler,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -222,7 +222,7 @@ class MailIntakeController extends Controller {
 		try {
 			$source = $this->orObjectService->find(
 				id: $sourceId,
-				register: MailIntakeService::REGISTER,
+				register: MailIntakeServiceInterface::REGISTER,
 				schema: 'source',
 			);
 		} catch (DoesNotExistException) {
@@ -234,7 +234,7 @@ class MailIntakeController extends Controller {
 		}
 
 		$type = strtolower((string)($source->getObject()['type'] ?? ''));
-		if ($type !== MailIntakeService::SOURCE_TYPE) {
+		if ($type !== MailIntakeServiceInterface::SOURCE_TYPE) {
 			return null;
 		}
 

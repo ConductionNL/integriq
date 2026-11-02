@@ -1,0 +1,726 @@
+{
+    "success": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "success-with-origin": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "https://app.example",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "missing-password": {
+        "outcome": {
+            "status": 400,
+            "data": {
+                "error": "Username and password are required"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": []
+    },
+    "short-username": {
+        "outcome": {
+            "status": 400,
+            "data": {
+                "error": "Username must be at least 2 characters long"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": []
+    },
+    "bad-username": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan&lt;",
+                "x"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "x"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "user-locked-out": {
+        "outcome": {
+            "status": 429,
+            "data": {
+                "error": "Account temporarily locked due to too many failed login attempts",
+                "retry_after": null,
+                "lockout_until": "TIME"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": {
+            "integriq_user_lockout_jan": "TIME"
+        },
+        "log": [
+            [
+                "logger.warning",
+                "Security event: login_attempt_during_lockout",
+                [
+                    "username",
+                    "ip_address",
+                    "lockout_until",
+                    "event",
+                    "timestamp"
+                ]
+            ]
+        ]
+    },
+    "ip-locked-out": {
+        "outcome": {
+            "status": 429,
+            "data": {
+                "error": "IP address temporarily blocked due to suspicious activity",
+                "retry_after": null,
+                "lockout_until": "TIME"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": {
+            "integriq_ip_lockout_203.0.113.7": "TIME"
+        },
+        "log": []
+    },
+    "lockout-expired": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": {
+            "integriq_user_lockout_jan": 1
+        },
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "too-many-attempts": {
+        "outcome": {
+            "status": 429,
+            "data": {
+                "error": "Too many login attempts. Please wait before trying again.",
+                "retry_after": 0,
+                "lockout_until": null
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": {
+            "integriq_login_attempts_jan": 5,
+            "integriq_progressive_delay_jan_203.0.113.7": 0
+        },
+        "log": []
+    },
+    "wrong-password": {
+        "outcome": {
+            "status": 401,
+            "data": {
+                "error": "Invalid username or password"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": {
+            "integriq_ip_attempts_203.0.113.7": 1,
+            "integriq_login_attempts_jan": 1
+        },
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ]
+        ]
+    },
+    "wrong-password-fourth": {
+        "outcome": {
+            "status": 401,
+            "data": {
+                "error": "Invalid username or password"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": {
+            "integriq_ip_attempts_203.0.113.7": 1,
+            "integriq_login_attempts_jan": 4
+        },
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ]
+        ]
+    },
+    "disabled": {
+        "outcome": {
+            "status": 400,
+            "data": {
+                "error": "Account is disabled"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": {
+            "integriq_ip_attempts_203.0.113.7": 1,
+            "integriq_login_attempts_jan": 1
+        },
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ]
+        ]
+    },
+    "no-session-user": {
+        "outcome": {
+            "status": 500,
+            "data": {
+                "error": "Failed to establish persistent session"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ]
+        ]
+    },
+    "other-session-user": {
+        "outcome": {
+            "status": 500,
+            "data": {
+                "error": "Failed to establish persistent session"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ]
+        ]
+    },
+    "check-throws": {
+        "outcome": {
+            "status": 500,
+            "data": {
+                "error": "Login failed due to a system error"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "logger.error",
+                "Login method exception",
+                [
+                    "exception",
+                    "trace",
+                    "file",
+                    "line"
+                ],
+                "backend down"
+            ]
+        ]
+    },
+    "build-throws": {
+        "outcome": {
+            "status": 500,
+            "data": {
+                "error": "Login failed due to a system error"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ],
+            [
+                "logger.error",
+                "Login method exception",
+                [
+                    "exception",
+                    "trace",
+                    "file",
+                    "line"
+                ],
+                "profile failed"
+            ]
+        ]
+    },
+    "memory-pressure": {
+        "outcome": {
+            "status": 503,
+            "data": {
+                "error": "Server memory usage too high, please try again later"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": []
+    },
+    "success-clears-attempts": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+                "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": {
+            "integriq_ip_attempts_203.0.113.7": 2
+        },
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    }
+}

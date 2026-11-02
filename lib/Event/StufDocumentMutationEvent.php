@@ -18,7 +18,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ namespace OCA\Integriq\Event;
 /**
  * A document kennisgeving (edcLk01).
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
  */
 class StufDocumentMutationEvent extends StufProviderQueryEvent {
 
@@ -57,7 +57,7 @@ class StufDocumentMutationEvent extends StufProviderQueryEvent {
 	 *
 	 * @return string T, W, V or E; '' when absent.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function getMutatiesoort(): string {
 		return $this->mutatiesoort;
@@ -69,7 +69,7 @@ class StufDocumentMutationEvent extends StufProviderQueryEvent {
 	 *
 	 * @return array<string, string> StUF element name to value.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function getFields(): array {
 		return $this->fields;
@@ -99,7 +99,7 @@ class StufDocumentMutationEvent extends StufProviderQueryEvent {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function accept(string $appId, string $identification): void {
 		$this->setAnswer(appId: $appId, payload: ['identification' => $identification]);

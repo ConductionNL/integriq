@@ -49,7 +49,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class ConfigurationImportPreviewService {
+class ConfigurationImportPreviewService implements ConfigurationImportPreviewServiceInterface {
 	/**
 	 * OAS `components` bucket name => openconnector schema slug, in the
 	 * same order importConfiguration() processes them.

@@ -53,7 +53,7 @@ use OCP\IUserManager;
  *
  * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#requirement-a-signed-webhook-acts-as-its-consumers-account-req-cm-020
  */
-class WebhookConnection {
+class WebhookConnection implements WebhookConnectionInterface {
 
 	/**
 	 * Constructor.

@@ -42,15 +42,13 @@ use Throwable;
  *
  * @spec openspec/specs/lti-platform/spec.md
  */
-class LtiAgsService {
+class LtiAgsService implements LtiAgsServiceInterface {
 
 	/**
 	 * AGS scope URIs (1EdTech LTI Advantage AGS 2.0).
 	 *
 	 * @var string
 	 */
-	public const SCOPE_LINEITEM = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem';
-	public const SCOPE_LINEITEM_READONLY = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly';
 	public const SCOPE_SCORE = 'https://purl.imsglobal.org/spec/lti-ags/scope/score';
 	public const SCOPE_RESULT = 'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly';
 	public const SCOPE_NRPS = 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly';

@@ -33,8 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Service\Intake\WebhookProfiles;
-use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
+use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -53,11 +53,13 @@ class MigrateWebhookConnections implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Resolves the migrator lazily, so the step loads without OpenRegister.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
 
 	}//end __construct()
@@ -85,13 +87,13 @@ class MigrateWebhookConnections implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$migrator = $this->container->get(WebhookTrustMigrator::class);
+			$migrator = $this->container->get(WebhookTrustMigratorInterface::class);
 		} catch (Throwable $exception) {
 			$output->warning('Webhook connection migration skipped: OpenRegister is not available (' . $exception->getMessage() . ').');
 			return;
 		}
 
-		foreach (WebhookProfiles::all() as $profile) {
+		foreach ($this->webhookProfiles->profiles() as $profile) {
 			try {
 				$created = $migrator->migrate(profile: $profile);
 			} catch (Throwable $exception) {

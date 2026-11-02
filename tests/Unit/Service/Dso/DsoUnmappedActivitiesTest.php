@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
 use OCA\Integriq\Controller\DsoActivityMappingController;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
+use OCA\Integriq\Service\Dso\DsoActivityOverview;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoUnmappedActivities;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -158,7 +159,7 @@ class DsoUnmappedActivitiesTest extends TestCase {
 		$this->assertCount(1, $attributes);
 		$this->assertSame(IntegriqAdmin::class, ($attributes[0]->getArguments()[0] ?? $attributes[0]->getArguments()['settings'] ?? null));
 
-		$response = (new DsoActivityMappingController($this->createMock(IRequest::class), $this->service()))->unmapped();
+		$response = (new DsoActivityMappingController($this->createMock(IRequest::class), $this->service(), $this->createMock(DsoActivityOverview::class)))->unmapped();
 		$this->assertSame(['activities' => [], 'withoutIdentifier' => 0, 'scanned' => 0, 'limit' => 500], $response->getData());
 	}//end testTheEndpointIsAdminOnly()
 }//end class

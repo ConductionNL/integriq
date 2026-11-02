@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
  */
-class PropertySourceRegistry {
+class PropertySourceRegistry implements PropertySourceRegistryInterface {
 	/**
 	 * Providers keyed by their id.
 	 *

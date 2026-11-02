@@ -37,7 +37,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
  */
-class EudiStatusListService {
+class EudiStatusListService implements EudiStatusListServiceInterface {
 
 	/**
 	 * Default number of assignable bit indices per status list.

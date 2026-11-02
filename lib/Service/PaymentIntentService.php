@@ -49,7 +49,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/live-payment-providers/spec.md
  */
-class PaymentIntentService {
+class PaymentIntentService implements PaymentIntentServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding payment sources and intents.

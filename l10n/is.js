@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "samstillingar",
         "A signing secret is configured (hidden).": "Undirritunarleyndarmál er stillt (falið).",
         "Copied to clipboard": "Afritað á klippiborð",
         "Copy": "Afrita",

@@ -34,10 +34,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
-use OCA\Integriq\Service\DSOSignatureVerifierService;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
+use OCA\Integriq\Service\SignedPayloadVerifierInterface;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
@@ -57,14 +57,14 @@ class MigrateDsoStamConnection implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param IAppConfig                  $appConfig         The legacy `dso_pki_*` keys.
-	 * @param DSOSignatureVerifierService $signatureVerifier Normalises the legacy mode name.
+	 * @param SignedPayloadVerifierInterface $signatureVerifier Normalises the legacy mode name.
 	 * @param ContainerInterface          $container         Resolves the OpenRegister-backed services lazily.
 	 *
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly DSOSignatureVerifierService $signatureVerifier,
+		private readonly SignedPayloadVerifierInterface $signatureVerifier,
 		private readonly ContainerInterface $container,
 	) {
 
@@ -98,9 +98,9 @@ class MigrateDsoStamConnection implements IRepairStep {
 		}
 
 		try {
-			$connection = $this->container->get(DsoConnection::class);
+			$connection = $this->container->get(PortalConnectionInterface::class);
 			$objectService = $this->container->get(OrObjectService::class);
-			$alerts = $this->container->get(DsoConnectionAlerts::class);
+			$alerts = $this->container->get(PortalConnectionAlertsInterface::class);
 		} catch (Throwable $exception) {
 			$output->warning('DSO connection migration skipped: OpenRegister is not available (' . $exception->getMessage() . ').');
 			return;
@@ -115,16 +115,16 @@ class MigrateDsoStamConnection implements IRepairStep {
 				object: [
 					'name' => 'DSO-LV (STAM)',
 					'description' => 'The STAM koppelvlak of the Omgevingsloket (DSO-LV). Every push is stored as the account in userId.',
-					'authorizationType' => DsoConnection::AUTHORIZATION_TYPE,
+					'authorizationType' => PortalConnectionInterface::AUTHORIZATION_TYPE,
 					'authorizationConfiguration' => $trust,
 					'userId' => '',
 				],
-				register: DsoConnection::REGISTER,
-				schema: DsoConnection::SCHEMA_CONSUMER
+				register: PortalConnectionInterface::REGISTER,
+				schema: PortalConnectionInterface::SCHEMA_CONSUMER
 			)
 		);
 
-		$alerts->notify(reason: DsoConnectionAlerts::REASON_CHOOSE_ACCOUNT);
+		$alerts->notify(reason: PortalConnectionAlertsInterface::REASON_CHOOSE_ACCOUNT);
 		$output->info('Created the dso-stam consumer from the dso_pki_* app config. Choose the account the DSO intake acts as.');
 
 	}//end run()
@@ -150,14 +150,14 @@ class MigrateDsoStamConnection implements IRepairStep {
 	 * @return array<string, string>|null
 	 */
 	private function legacyTrust(): ?array {
-		$read = fn (string $key): string => $this->appConfig->getValueString(Application::APP_ID, $key, '');
+		$read = fn (string $key): string => $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
 
 		$trust = [
-			'mode' => $read(DSOSignatureVerifierService::CONFIG_MODE),
-			'hmacSecret' => $read(DSOSignatureVerifierService::CONFIG_HMAC_SECRET),
-			'signingCertificate' => $read(DSOSignatureVerifierService::CONFIG_SIGNING_CERTIFICATE),
-			'intermediateChain' => $read(DSOSignatureVerifierService::CONFIG_INTERMEDIATE_CHAIN),
-			'rootCa' => $read(DSOSignatureVerifierService::CONFIG_ROOT_CA),
+			'mode' => $read(SignedPayloadVerifierInterface::CONFIG_MODE),
+			'hmacSecret' => $read(SignedPayloadVerifierInterface::CONFIG_HMAC_SECRET),
+			'signingCertificate' => $read(SignedPayloadVerifierInterface::CONFIG_SIGNING_CERTIFICATE),
+			'intermediateChain' => $read(SignedPayloadVerifierInterface::CONFIG_INTERMEDIATE_CHAIN),
+			'rootCa' => $read(SignedPayloadVerifierInterface::CONFIG_ROOT_CA),
 		];
 
 		if (implode('', $trust) === '') {

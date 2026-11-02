@@ -65,7 +65,7 @@ class StufMessageLockdownTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
 	 */
 	public function testEveryVerbOnTheStufMessageSchemaIsAdminOnly(): void {
 		$schema = $this->effectiveSchema();

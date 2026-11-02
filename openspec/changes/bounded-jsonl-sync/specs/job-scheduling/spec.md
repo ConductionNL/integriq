@@ -10,8 +10,8 @@ When a job's action returns `resumeSoon: true`, the scheduler SHALL set the
 job's `nextRun` to now, so the next cron tick runs it again, instead of
 advancing it by the job's interval. `SynchronizationAction` SHALL return
 `resumeSoon: true` when the synchronization run's result carries `resume`
-(a batched source with batches left). A job that does not return the flag
-SHALL keep its interval.
+(a batched source with batches left; a batch whose download failed does not
+carry it). A job that does not return the flag SHALL keep its interval.
 
 #### Scenario: a batched synchronization continues on the next tick
 

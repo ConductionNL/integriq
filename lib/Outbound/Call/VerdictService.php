@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-an-external-verdict-is-recorded-against-the-record-it-judges-req-ocd-006
  */
-class VerdictService {
+class VerdictService implements VerdictServiceInterface {
 
 	/**
 	 * The schema one verdict is stored under.

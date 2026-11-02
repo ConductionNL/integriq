@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Command;
 
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Service\JobToFlowGenerator;
+use OCA\Integriq\Service\JobToFlowGeneratorInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -56,10 +56,10 @@ class JobToFlow extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobToFlowGenerator $generator The migration generator.
+	 * @param JobToFlowGeneratorInterface $generator The migration generator.
 	 */
 	public function __construct(
-		private readonly JobToFlowGenerator $generator,
+		private readonly JobToFlowGeneratorInterface $generator,
 	) {
 		parent::__construct();
 

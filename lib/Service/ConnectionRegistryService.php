@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/connection-registry/spec.md#requirement-the-sync-turns-declaration-files-into-connection-rows-req-conn-001
  */
-class ConnectionRegistryService {
+class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 
 	/**
 	 * Where an app keeps its declaration, relative to its app path.

@@ -45,7 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegisterInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -77,13 +77,13 @@ class RegisterBootstrapJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Clock for the job base class.
 	 * @param IAppConfig $appConfig Reads and persists the bootstrap marker.
-	 * @param InitializeRegister $repair The repair step this job stands in for.
+	 * @param InitializeRegisterInterface $repair The repair step this job stands in for.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
-		private readonly InitializeRegister $repair,
+		private readonly InitializeRegisterInterface $repair,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

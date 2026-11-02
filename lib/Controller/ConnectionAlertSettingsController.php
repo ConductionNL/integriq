@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
-use OCA\Integriq\Notification\ConnectionAlertRecipientResolver;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Notification\AlertRecipientResolverInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -49,16 +49,16 @@ class ConnectionAlertSettingsController extends Controller {
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param IL10N $l The localization service.
-	 * @param ConnectionAlertRecipientResolver $recipients Reads the group in force.
+	 * @param AlertRecipientResolverInterface $recipients Reads the group in force.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly IAppConfig $appConfig,
 		private readonly IGroupManager $groupManager,
 		private readonly IL10N $l,
-		private readonly ConnectionAlertRecipientResolver $recipients,
+		private readonly AlertRecipientResolverInterface $recipients,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -93,11 +93,11 @@ class ConnectionAlertSettingsController extends Controller {
 		}
 
 		if ($group === '') {
-			$this->appConfig->deleteKey(Application::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY);
-			return new JSONResponse(['group' => ConnectionAlertRecipientResolver::DEFAULT_GROUP]);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, AlertRecipientResolverInterface::CONFIG_KEY);
+			return new JSONResponse(['group' => AlertRecipientResolverInterface::DEFAULT_GROUP]);
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, ConnectionAlertRecipientResolver::CONFIG_KEY, $group);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, AlertRecipientResolverInterface::CONFIG_KEY, $group);
 
 		return new JSONResponse(['group' => $group]);
 	}//end setConfig()

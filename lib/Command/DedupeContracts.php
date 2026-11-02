@@ -46,7 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
-use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -70,11 +70,11 @@ class DedupeContracts extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationContractService $contracts The contract lifecycle service.
+	 * @param SynchronizationContractServiceInterface $contracts The contract lifecycle service.
 	 * @param OrObjectService $objects The OpenRegister object service.
 	 */
 	public function __construct(
-		private readonly SynchronizationContractService $contracts,
+		private readonly SynchronizationContractServiceInterface $contracts,
 		private readonly OrObjectService $objects,
 	) {
 		parent::__construct();

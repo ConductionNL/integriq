@@ -40,11 +40,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-a-per-source-target-configuration-links-school-codes-to-fleet-ids-req-003
  */
-class RosterTargetConfiguration {
-	/**
-	 * The one delivery target.
-	 */
-	public const TARGET = 'planninq';
+class RosterTargetConfiguration implements RosterTargetConfigurationInterface {
 
 	/**
 	 * App id used for IAppConfig look-ups.

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -86,7 +86,7 @@ class LogsController extends Controller {
 	 * @param OrObjectService $orObjectService The OR object service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The ADR-023 action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action authorization service.
 	 */
 	public function __construct(
 		string $appName,
@@ -94,7 +94,7 @@ class LogsController extends Controller {
 		OrObjectService $orObjectService,
 		IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

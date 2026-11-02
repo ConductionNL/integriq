@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
  */
-class ExchangeRejectionService {
+class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 
 	public const SCHEMA = 'sync_item_dead_letter';
 

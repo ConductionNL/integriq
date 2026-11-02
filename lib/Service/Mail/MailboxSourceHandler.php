@@ -44,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
  */
-class MailboxSourceHandler {
+class MailboxSourceHandler implements MailboxSourceHandlerInterface {
 
 	/**
 	 * Constructor.

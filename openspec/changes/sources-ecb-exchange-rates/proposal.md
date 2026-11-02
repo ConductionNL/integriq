@@ -30,8 +30,8 @@ Row in the shillinq matrix: `bnk-fx-rates`, "Book foreign-currency transactions 
 
 ## What this change builds
 
-1. A seeded source `ecb-eurofxref` for the ECB daily reference rates, with a 90-day history file for a first fill.
-2. An `exchange_rate` schema and a daily synchronization that stores one object per currency per date.
+1. A seeded source `ecb-eurofxref-daily` for the ECB daily reference rates, with a 90-day history file for a first fill.
+2. An `exchange_rate` schema in register `integriq` and an import job that stores one object per currency per date, so any app reads the rates as OpenRegister objects.
 3. `OCA\Integriq\Event\ExchangeRateRequestedEvent`: a sibling asks for the rate of a currency pair on a date and gets the rate, the date it applies to and the source, with cross rates computed through the euro.
 4. A CloudEvent when a new day of rates is stored, and a catalogue item.
 
@@ -43,8 +43,8 @@ Row in the shillinq matrix: `bnk-fx-rates`, "Book foreign-currency transactions 
 
 ## Impact
 
-- New: `lib/Settings/register.d/ecb-exchange-rates-source.json` (schema, source, mapping, synchronization, job), `lib/Event/ExchangeRateRequestedEvent.php`, its listener and `lib/Service/ExchangeRateService.php`.
-- Changed: `lib/AppInfo/Application.php`, `lib/Service/CatalogRegistryService.php`.
+- New: `lib/Settings/register.d/ecb-exchange-rates-source.json` (schema, source), `lib/Service/ExchangeRate/EcbReferenceRateParser.php`, `lib/Service/ExchangeRate/ExchangeRateImportService.php`, `lib/BackgroundJob/ExchangeRateSyncJob.php`, `lib/Event/ExchangeRateRequestedEvent.php`, its listener and `lib/Service/ExchangeRateService.php`.
+- Changed: `appinfo/info.xml`, `lib/AppInfo/Application.php`, `lib/Service/CatalogRegistryService.php`.
 
 ## Cross-project dependencies
 

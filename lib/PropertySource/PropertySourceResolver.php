@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/registry-field-source/spec.md#requirement-live-means-a-stated-staleness-budget-req-rfs-004
  * @spec openspec/specs/registry-field-source/spec.md#requirement-an-unreachable-source-degrades-to-a-labelled-last-value-req-rfs-005
  */
-class PropertySourceResolver {
+class PropertySourceResolver implements PropertySourceResolverInterface {
 	/**
 	 * Cache namespace for resolved registry values.
 	 */

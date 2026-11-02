@@ -83,7 +83,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Kernel\FlowNodeIds;
 use OCP\IL10N;
 
 /**
@@ -93,7 +93,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
-class RuleToFlowGenerator {
+class RuleToFlowGenerator implements RuleToFlowGeneratorInterface {
 
 	/**
 	 * The item key the synchronization result is written under.
@@ -623,7 +623,7 @@ class RuleToFlowGenerator {
 
 		return [
 			'id' => 'act',
-			'type' => SynchronizationRunNode::NODE_ID,
+			'type' => FlowNodeIds::SYNCHRONIZATION_RUN,
 			'config' => $config,
 		];
 

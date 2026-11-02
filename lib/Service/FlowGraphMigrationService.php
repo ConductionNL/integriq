@@ -59,14 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
  */
-class FlowGraphMigrationService {
-
-	/**
-	 * Result marker: the flow's graph was written (or would be, on a dry run).
-	 *
-	 * @var string
-	 */
-	public const MIGRATED = 'migrated';
+class FlowGraphMigrationService implements FlowGraphMigrationServiceInterface {
 
 	/**
 	 * Result marker: the flow already carries `nodes` and was left alone.
@@ -74,13 +67,6 @@ class FlowGraphMigrationService {
 	 * @var string
 	 */
 	public const SKIPPED = 'skipped';
-
-	/**
-	 * Result marker: the translator refused the flow; reasons attached.
-	 *
-	 * @var string
-	 */
-	public const REFUSED = 'refused';
 
 	/**
 	 * Result marker: the graph was removed (or would be, on a dry run).

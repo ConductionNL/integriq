@@ -400,7 +400,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-credentials-stay-encrypted
 	 */
 	public function testThePersistedEnvelopeHoldsNoCredentialsButEveryAttemptSendsThem(): void {
 		$client = $this->client([new Response(503, [], ''), self::bevestiging()]);
@@ -557,6 +557,39 @@ class StufZdsCaseClientTest extends TestCase {
 	}//end testALogModeSourceIsRefused()
 
 	/**
+	 * A source that names its app in `configuration.owningApp` sends no case command from another app.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+	 */
+	public function testACommandFromAnotherAppIsRefusedWhenTheSourceNamesItsOwner(): void {
+		$this->sources['zsh']['configuration']['owningApp'] = 'pipelinq';
+		try {
+			$this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding', ['sourceApp' => 'dossiq']);
+			$this->fail('A command from another app than the owning app must be refused');
+		} catch (StufZknProviderException $exception) {
+			$this->assertStringContainsString('pipelinq', $exception->getMessage());
+			$this->assertSame([], $this->rows);
+			$this->assertSame([], $this->history, 'nothing is sent');
+		}
+	}//end testACommandFromAnotherAppIsRefusedWhenTheSourceNamesItsOwner()
+
+	/**
+	 * The owning app's own command is sent as before.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-messages-are-a-cross-app-command
+	 */
+	public function testTheOwningAppsCommandIsSent(): void {
+		$this->sources['zsh']['configuration']['owningApp'] = 'dossiq';
+		$result = $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'Melding'], 'Melding', ['sourceApp' => 'dossiq']);
+
+		$this->assertTrue($result['success']);
+	}//end testTheOwningAppsCommandIsSent()
+
+	/**
 	 * An unregistered vrij bericht is refused.
 	 *
 	 * @return void
@@ -584,7 +617,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testA5xxWithAnHtmlPageIsRetried(): void {
 		$page   = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><html><head><title>503 Service Unavailable</title></head><body>down</body></html>';
@@ -601,7 +634,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testAPlainText502IsRetried(): void {
 		$result = $this->client([new Response(502, ['Content-Type' => 'text/plain'], 'Bad Gateway')])->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq']);
@@ -614,7 +647,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testAConfirmedZaakIsASuccessWhenItsRowCannotBeSaved(): void {
 		$this->failSaveOfStatus = 'sent';
@@ -632,7 +665,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testARetryThatCannotBeScheduledConcludesTheMessageAsFailed(): void {
 		$this->failSchedule = true;
@@ -653,7 +686,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testARowThatCannotBeMarkedForARetryConcludesAsFailed(): void {
 		$client = $this->client([new Response(503, [], '')]);
@@ -672,7 +705,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testAConfirmedZaakIsASuccessWhenTheBreakerCannotRecordIt(): void {
 		$this->failBreaker = true;
@@ -688,7 +721,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testAFailedAttemptIsRetriedWhenTheBreakerCannotRecordIt(): void {
 		$this->failBreaker = true;
@@ -704,7 +737,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function testAnAnsweredQuestionStaysAnsweredWhenItsRowCannotBeSaved(): void {
 		$this->failSaveOfStatus = 'sent';
@@ -722,7 +755,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testACooldownThatCannotBeRescheduledConcludesTheMessageAsFailed(): void {
 		$client = $this->client([new Response(503, [], '')]);
@@ -749,7 +782,7 @@ class StufZdsCaseClientTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function testARetryWhoseBreakerCannotBeReadIsSentAnyway(): void {
 		$client = $this->client([new Response(503, [], ''), self::bevestiging()]);

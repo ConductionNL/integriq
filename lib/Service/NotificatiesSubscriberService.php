@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/notificaties-api-connector/spec.md
  */
-class NotificatiesSubscriberService {
+class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInterface {
 	/**
 	 * Abonnement lifecycle statuses (design.md Decision 5).
 	 *

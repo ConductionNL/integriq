@@ -37,7 +37,7 @@ use Throwable;
  *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
  */
-class SubscriptionRequestHandler {
+class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface {
 	/**
 	 * Constructor.
 	 *

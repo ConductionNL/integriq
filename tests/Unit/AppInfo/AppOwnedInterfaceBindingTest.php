@@ -165,7 +165,12 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 		$owned = $this->appOwnedInterfaces($files);
 		$this->assertNotEmpty($owned, 'The scan found no interfaces at all, so it is not scanning.');
 
-		$application = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/AppInfo/Application.php');
+		$application = '';
+		foreach ($files as $file) {
+			if (basename($file) === 'Application.php' || str_ends_with($file, 'Registrar.php') === true || str_ends_with($file, 'Bindings.php') === true) {
+				$application .= (string)file_get_contents($file);
+			}
+		}
 
 		$unbound = [];
 		foreach ($files as $file) {
@@ -213,7 +218,7 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 			[],
 			$unbound,
 			"These app-owned interfaces are injected as required constructor parameters but nothing binds them in "
-			. "Application.php, so every class that needs them fails to construct and its routes answer 500:\n  "
+			. "Application.php or a component registrar, so every class that needs them fails to construct and its routes answer 500:\n  "
 			. implode("\n  ", $unbound)
 		);
 

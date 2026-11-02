@@ -56,7 +56,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -73,31 +73,19 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm {
-
-	/**
-	 * The step type this node answers to.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
-	 */
-	public const NODE_ID = 'openconnector.apply-mapping';
+class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, ApplyMappingNodeInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param MappingService $mappingService The existing transformation engine.
+	 * @param MappingServiceInterface $mappingService The existing transformation engine.
 	 * @param FlowOwner $flowOwner Fail-closed run-owner resolution.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
 	 */
 	public function __construct(
-		private readonly MappingService $mappingService,
+		private readonly MappingServiceInterface $mappingService,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,

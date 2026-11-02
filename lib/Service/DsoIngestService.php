@@ -64,7 +64,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  */
-class DsoIngestService {
+class DsoIngestService implements DsoIngestServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding sources, verzoeken, and outbound messages.

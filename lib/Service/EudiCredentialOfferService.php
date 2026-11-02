@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
-class EudiCredentialOfferService {
+class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface {
 
 	/**
 	 * Default offer resolution TTL in seconds (REQ-EUDI-005: 15 minutes).
