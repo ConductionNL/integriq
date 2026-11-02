@@ -115,12 +115,15 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import closableDialog from '../mixins/closableDialog.js'
 import { claimText, jurisdictionText } from './gatewayCatalogue.js'
 
 export default {
 	name: 'GatewayCatalogueDialog',
 
 	components: { NcButton, NcDialog, NcNoteCard, NcSelect },
+
+	mixins: [closableDialog],
 
 	props: {
 		open: {
@@ -217,18 +220,6 @@ export default {
 				this.overview = res.data?.results ?? []
 			} catch {
 				this.overview = []
-			}
-		},
-
-		/**
-		 * Close when the dialog reports it closed.
-		 *
-		 * @param {boolean} isOpen Whether the dialog is open.
-		 * @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-its-standard-and-its-conformance-claim-req-sg-001
-		 */
-		onOpenChanged(isOpen) {
-			if (!isOpen) {
-				this.$emit('close')
 			}
 		},
 	},

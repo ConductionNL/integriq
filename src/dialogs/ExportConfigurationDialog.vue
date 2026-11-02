@@ -75,6 +75,7 @@ import axios from '@nextcloud/axios'
 import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import closableDialog from '../mixins/closableDialog.js'
 
 export default {
 	name: 'ExportConfigurationDialog',
@@ -85,6 +86,8 @@ export default {
 		NcNoteCard,
 		NcSelect,
 	},
+
+	mixins: [closableDialog],
 
 	props: {
 		open: { type: Boolean, default: false },
@@ -197,29 +200,6 @@ export default {
 			} finally {
 				this.exporting = false
 			}
-		},
-
-		/**
-		 * NcDialog open-state relay.
-		 *
-		 * @param {boolean} isOpen New open state from NcDialog.
-		 * @return {void}
-		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
-		 */
-		onOpenChanged(isOpen) {
-			if (!isOpen) {
-				this.close()
-			}
-		},
-
-		/**
-		 * Ask ModalHost to close the dialog.
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
-		 */
-		close() {
-			this.$emit('close')
 		},
 	},
 }
