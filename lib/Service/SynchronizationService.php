@@ -1315,7 +1315,6 @@ class SynchronizationService
 		$synchronizationContract->setOriginHash($originHash);
 		$synchronizationContract->setSourceLastChanged(new DateTime());
 		$synchronizationContract->setSourceLastChecked(new DateTime());
-
         // Execute mapping if found
 		$objectBeforeMapping = $object;
         if ($sourceTargetMapping) {
@@ -2455,6 +2454,13 @@ class SynchronizationService
 
 		$targetConfig = $this->callService->applyConfigDot($synchronization->getTargetConfig());
 
+		// followUpRequest is only consumed by applyFollowUpRequest() after this call returns.
+		// CallService::call() Twig-renders every string in $targetConfig with its own plain
+		// environment (no MappingExtension), so leaving this nested here makes it choke on
+		// functions like getTargetIdByOriginId() that only exist in MappingService's Twig env.
+		$followUpRequestConfig = $targetConfig['followUpRequest'] ?? null;
+		unset($targetConfig['followUpRequest']);
+
 		if (str_starts_with($endpoint, $target->getLocation()) === true) {
 			$endpoint = str_replace(search: $target->getLocation(), replace: '', subject: $endpoint);
 		}
@@ -2543,7 +2549,7 @@ class SynchronizationService
 			$contract->setTargetId($targetId);
 			$targetObject = array_merge($body, ['targetId' => $targetId]);
 
-			$this->applyFollowUpRequest(synchronization: $synchronization, target: $target, targetConfig: $targetConfig, object: $object, contract: $contract);
+			$this->applyFollowUpRequest(synchronization: $synchronization, target: $target, followUpConfig: $followUpRequestConfig, object: $object, contract: $contract);
 
 			return $contract;
 		}
@@ -2607,9 +2613,8 @@ class SynchronizationService
 	 *
 	 * @return void
 	 */
-	private function applyFollowUpRequest(Synchronization $synchronization, Source $target, array $targetConfig, array $object, SynchronizationContract $contract): void
+	private function applyFollowUpRequest(Synchronization $synchronization, Source $target, ?array $followUpConfig, array $object, SynchronizationContract $contract): void
 	{
-		$followUpConfig = $targetConfig['followUpRequest'] ?? null;
 		if (is_array($followUpConfig) === false || isset($followUpConfig['endpoint']) === false) {
 			return;
 		}
@@ -2632,6 +2637,22 @@ class SynchronizationService
 			if (isset($followUpConfig['mapping']) === true) {
 				$mapping = $this->mappingService->getMapping((string) $followUpConfig['mapping']);
 				$body = $this->processMapping(mapping: $mapping, data: $object);
+			}
+
+			// A mapped field resolving empty (e.g. getTargetIdByOriginId() finding no contract
+			// yet for a related object that hasn't synced) means the target isn't ready for this
+			// follow-up. Sending it anyway is a guaranteed-failing request (e.g. Zaaksysteem's
+			// "not assigned to a case" 500 on an empty case_number) for data that may well become
+			// available a moment later via a related-object retrigger. Skip and log instead.
+			foreach ($body as $bodyKey => $bodyValue) {
+				if ($bodyValue === null || $bodyValue === '') {
+					$this->logger->warning(
+						'Follow-up request skipped for synchronization ' . $synchronization->getId()
+						. ' contract ' . $contract->getOriginId() . ': mapped field "' . $bodyKey
+						. '" resolved empty, target is not ready yet'
+					);
+					return;
+				}
 			}
 
 			$method = $followUpConfig['method'] ?? 'POST';
