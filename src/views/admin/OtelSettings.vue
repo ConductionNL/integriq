@@ -91,6 +91,23 @@ import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 
 const URL = '/apps/integriq/api/admin/otel'
 
+/**
+ * The export settings before the stored ones are read.
+ *
+ * @return {object} Export switched off, sampling at 10 percent.
+ */
+function defaultForm() {
+	return {
+		enabled: false,
+		endpoint: '',
+		allowLocal: false,
+		serviceName: '',
+		samplingRatio: 0.1,
+		credentialName: '',
+		headerName: '',
+	}
+}
+
 export default {
 	name: 'OtelSettings',
 
@@ -101,15 +118,7 @@ export default {
 			loading: true,
 			busy: false,
 			error: '',
-			form: {
-				enabled: false,
-				endpoint: '',
-				allowLocal: false,
-				serviceName: '',
-				samplingRatio: 0.1,
-				credentialName: '',
-				headerName: '',
-			},
+			form: defaultForm(),
 		}
 	},
 
