@@ -4,7 +4,7 @@
  * Unit tests for ViewDeletedEventListener (ADR-078 / gate-61).
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\EventListener
+ * @package  OCA\Integriq\Tests\Unit\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -13,10 +13,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\EventListener;
+namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
 use OCA\Integriq\BackgroundJob\DeferredViewCascadeJob;
-use OCA\Integriq\EventListener\ViewDeletedEventListener;
+use OCA\Integriq\BackgroundJob\ViewDeletedEventListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;

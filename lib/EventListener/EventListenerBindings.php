@@ -25,6 +25,7 @@ use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
 use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
+use OCA\Integriq\BackgroundJob\ViewDeletedEventListener;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
