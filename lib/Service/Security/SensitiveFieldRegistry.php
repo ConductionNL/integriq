@@ -27,7 +27,7 @@ namespace OCA\Integriq\Service\Security;
  *
  * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
  */
-class SensitiveFieldRegistry {
+class SensitiveFieldRegistry implements SecretRedactorInterface {
 
 	/**
 	 * Placeholder written in place of a redacted value. Irreversible masking —

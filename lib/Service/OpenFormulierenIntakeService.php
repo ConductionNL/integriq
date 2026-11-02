@@ -37,10 +37,10 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use GuzzleHttp\Client;
-use OCA\Integriq\Exception\MappingResolutionException;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
+use OCA\Integriq\Service\OpenFormulieren\MappingResolutionException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\FileService;

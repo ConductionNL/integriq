@@ -91,7 +91,7 @@
       { "file": "lib/EventListener/ObjectCreatedEventListener.php", "method": "handle()", "reason": "listener dispatch to SynchronizationService" },
       { "file": "lib/EventListener/ObjectDeletedEventListener.php", "method": "handle()", "reason": "listener dispatch to SynchronizationService" },
       { "file": "lib/EventListener/ObjectUpdatedEventListener.php", "method": "handle()", "reason": "listener dispatch to SynchronizationService" },
-      { "file": "lib/EventListener/ViewDeletedEventListener.php", "method": "handle()", "reason": "listener dispatch" },
+      { "file": "lib/BackgroundJob/ViewDeletedEventListener.php", "method": "handle()", "reason": "listener dispatch" },
       { "file": "lib/EventListener/ViewUpdatedOrCreatedEventListener.php", "method": "handle()", "reason": "listener dispatch" },
       { "file": "lib/Exception/AuthenticationException.php", "method": "__construct()", "reason": "exception ctor" },
       { "file": "lib/Exception/AuthenticationException.php", "method": "getDetails()", "reason": "trivial getter" },
@@ -552,13 +552,13 @@
         { "file": "lib/Service/StorageService.php", "method": "attemptCloseUpload()", "observed_behavior": "Finalise upload once all parts arrive" }
       ],
       "xml-response": [
-        { "file": "lib/Http/XMLResponse.php", "method": "getData()", "observed_behavior": "Return stored data array" },
-        { "file": "lib/Http/XMLResponse.php", "method": "setRenderCallback()", "observed_behavior": "Override render with callable" },
-        { "file": "lib/Http/XMLResponse.php", "method": "render()", "observed_behavior": "Emit XML body" },
-        { "file": "lib/Http/XMLResponse.php", "method": "arrayToXml()", "observed_behavior": "Public array→XML serializer" },
-        { "file": "lib/Http/XMLResponse.php", "method": "buildXmlElement()", "observed_behavior": "DOM walk for arrays" },
-        { "file": "lib/Http/XMLResponse.php", "method": "createChildElement()", "observed_behavior": "Create one DOM child" },
-        { "file": "lib/Http/XMLResponse.php", "method": "createSafeTextNode()", "observed_behavior": "Escape text → DOM text node" }
+        { "file": "lib/Controller/XMLResponse.php", "method": "getData()", "observed_behavior": "Return stored data array" },
+        { "file": "lib/Controller/XMLResponse.php", "method": "setRenderCallback()", "observed_behavior": "Override render with callable" },
+        { "file": "lib/Controller/XMLResponse.php", "method": "render()", "observed_behavior": "Emit XML body" },
+        { "file": "lib/Controller/XMLResponse.php", "method": "arrayToXml()", "observed_behavior": "Public array→XML serializer" },
+        { "file": "lib/Controller/XMLResponse.php", "method": "buildXmlElement()", "observed_behavior": "DOM walk for arrays" },
+        { "file": "lib/Controller/XMLResponse.php", "method": "createChildElement()", "observed_behavior": "Create one DOM child" },
+        { "file": "lib/Controller/XMLResponse.php", "method": "createSafeTextNode()", "observed_behavior": "Escape text → DOM text node" }
       ],
       "flow-token-helper": [
         { "file": "lib/Service/Helper/FlowToken.php", "method": "setRequestOriginal()", "observed_behavior": "Stash original request" },
@@ -716,10 +716,10 @@
         { "file": "lib/EventListener/ObjectDeletedEventListener.php" },
         { "file": "lib/EventListener/ObjectUpdatedEventListener.php" },
         { "file": "lib/EventListener/SoftwareCatalogEventListener.php" },
-        { "file": "lib/EventListener/ViewDeletedEventListener.php" },
+        { "file": "lib/BackgroundJob/ViewDeletedEventListener.php" },
         { "file": "lib/EventListener/ViewUpdatedOrCreatedEventListener.php" },
         { "file": "lib/Exception/AuthenticationException.php" },
-        { "file": "lib/Http/XMLResponse.php" },
+        { "file": "lib/Controller/XMLResponse.php" },
         { "file": "lib/Repair/InitializeRegister.php" },
         { "file": "lib/Sections/IntegriqAdmin.php" },
         { "file": "lib/Service/AuthenticationService.php" },

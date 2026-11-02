@@ -35,6 +35,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\BackgroundJob\MessageRetryJobScheduler;
 use OCA\Integriq\BackgroundJob\StufZdsRetryJob;
 use OCA\Integriq\Event\StufZdsCaseConcludedEvent;
 use OCA\Integriq\Exception\StufZknProviderException;
@@ -261,7 +262,7 @@ class StufZdsCaseClientTest extends TestCase {
 			new StufZdsResponseReader(),
 			$breaker,
 			$log,
-			$jobs,
+			new MessageRetryJobScheduler($jobs),
 			$dispatcher,
 			$logger,
 			new StufZdsMessageBuilder(),

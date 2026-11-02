@@ -20,8 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\OpenFormulieren;
 
-use OCA\Integriq\Exception\MappingResolutionException;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
+use OCA\Integriq\Service\OpenFormulieren\MappingResolutionException;
 use PHPUnit\Framework\TestCase;
 
 /**

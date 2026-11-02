@@ -24,7 +24,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 
 ### Task 3: Output format on the mapping and the XML writer
 - **spec_ref**: openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
-- **files**: `lib/Settings/register.d/mapping-formats-and-lookups.json`, `lib/Util/ArrayToXml.php`, `lib/Http/XMLResponse.php`, `lib/Service/MappingService.php`, `lib/Controller/MappingsController.php`, `src/views/wrappers/MappingDetailPage.vue`
+- **files**: `lib/Settings/register.d/mapping-formats-and-lookups.json`, `lib/Util/ArrayToXml.php`, `lib/Controller/XMLResponse.php`, `lib/Service/MappingService.php`, `lib/Controller/MappingsController.php`, `src/views/wrappers/MappingDetailPage.vue`
 - **acceptance_criteria**:
   - GIVEN the `xml-response` unit tests WHEN they run after the extraction THEN they pass unchanged
   - GIVEN `person-to-xml` WHEN the engineer previews a sample THEN XML with root `persoon` is shown
@@ -43,7 +43,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 
 ### Task 5: The lookup function and its allowlist
 - **spec_ref**: openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
-- **files**: `lib/Twig/MappingExtension.php`, `lib/Listener/MappingFunctionRegistrationListener.php`, `lib/Twig/MappingRuntime.php`, `lib/Twig/LookupAllowlist.php`, `lib/Controller/MappingLookupController.php`, `appinfo/routes.php`, the admin settings section
+- **files**: `lib/Twig/MappingExtension.php`, `lib/Twig/MappingFunctionRegistrationListener.php`, `lib/Twig/MappingRuntime.php`, `lib/Twig/LookupAllowlist.php`, `lib/Controller/MappingLookupController.php`, `appinfo/routes.php`, the admin settings section
 - **acceptance_criteria**:
   - GIVEN an allowed schema with one match WHEN `lookup` runs THEN the field value is returned
   - GIVEN a schema off the allowlist WHEN `lookup` runs THEN the mapping fails naming the schema and ObjectService is not called

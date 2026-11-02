@@ -73,7 +73,6 @@ namespace OCA\Integriq\Service\Dso;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\Integriq\Exception\DsoAttachmentTooLargeException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;

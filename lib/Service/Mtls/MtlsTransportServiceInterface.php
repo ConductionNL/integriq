@@ -20,7 +20,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Mtls;
 
 use GuzzleHttp\Client;
-use OCA\Integriq\Exception\MtlsHandshakeException;
 use Psr\Http\Message\ResponseInterface;
 
 /**

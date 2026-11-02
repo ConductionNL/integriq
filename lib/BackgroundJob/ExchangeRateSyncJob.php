@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\ExchangeRate\ExchangeRateImportService;
+use OCA\Integriq\BackgroundJob\ExchangeRate\ExchangeRateImportService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

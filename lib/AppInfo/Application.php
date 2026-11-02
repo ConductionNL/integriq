@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
-use OCA\Integriq\Capabilities;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Outbound\OutboundRegistrar;
 use OCA\Integriq\Expression\ExpressionRegistrar;
@@ -40,7 +39,6 @@ use OCA\Integriq\Controller\HealthController;
 use OCA\Integriq\Controller\MetricsController;
 use OCA\Integriq\EventListener\EventListenerRegistrar;
 use OCA\Integriq\Gateway\GatewayRegistrar;
-use OCA\Integriq\Mcp\McpRegistrar;
 use OCA\Integriq\Migration\MigrationRegistrar;
 use OCA\Integriq\Notification\NotificationRegistrar;
 use OCA\Integriq\PropertySource\PropertySourceRegistrar;
@@ -621,7 +619,7 @@ class Application extends App implements IBootstrap {
 		// way; OpenRegister must load on an instance without Integriq.
 		$dispatcher->addServiceListener(
 			eventName: \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent::class,
-			className: \OCA\Integriq\Listener\MappingFunctionRegistrationListener::class
+			className: \OCA\Integriq\Twig\MappingFunctionRegistrationListener::class
 		);
 
 	}//end registerMappingFunctions()

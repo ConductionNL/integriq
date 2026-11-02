@@ -22,6 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
+use OCA\Integriq\BackgroundJob\AttachmentFetchSchedulerInterface;
+use OCA\Integriq\BackgroundJob\EventFanOutSchedulerInterface;
+use OCA\Integriq\BackgroundJob\MessageRetryJobScheduler;
+use OCA\Integriq\BackgroundJob\MessageRetrySchedulerInterface;
+use OCA\Integriq\BackgroundJob\OtelExportJobScheduler;
+use OCA\Integriq\BackgroundJob\ProcessEventJobScheduler;
+use OCA\Integriq\BackgroundJob\TraceExportSchedulerInterface;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
@@ -58,6 +66,8 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
+use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoConnection;
@@ -169,6 +179,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
@@ -646,6 +658,7 @@ final class ServiceBindings {
 	 */
 	private function registerInjectedHelpers(IRegistrationContext $context): void {
 		$context->registerServiceAlias(EgressGuardInterface::class, EgressGuard::class);
+		$context->registerServiceAlias(SecretRedactorInterface::class, SensitiveFieldRegistry::class);
 		$context->registerServiceAlias(SecurityServiceInterface::class, SecurityService::class);
 		$context->registerServiceAlias(ResponseDecoderInterface::class, ResponseDecoder::class);
 		$context->registerServiceAlias(OpenRegisterCredentialBridgeInterface::class, OpenRegisterCredentialBridge::class);
@@ -657,6 +670,8 @@ final class ServiceBindings {
 		$context->registerServiceAlias(AgentActionStoreInterface::class, AgentActionStore::class);
 		$context->registerServiceAlias(CaseReferenceDetectorInterface::class, CaseReferenceDetector::class);
 		$context->registerServiceAlias(LocalDeleteGuardInterface::class, LocalDeleteGuard::class);
+		$context->registerServiceAlias(EventFanOutSchedulerInterface::class, ProcessEventJobScheduler::class);
+		$context->registerServiceAlias(MessageRetrySchedulerInterface::class, MessageRetryJobScheduler::class);
 		$context->registerServiceAlias(MessageParserInterface::class, MessageParser::class);
 		$context->registerServiceAlias(DeadLetterProjectionInterface::class, DeadLetterProjection::class);
 		$context->registerServiceAlias(MtlsTransportServiceInterface::class, MtlsTransportService::class);
@@ -664,6 +679,8 @@ final class ServiceBindings {
 		$context->registerServiceAlias(MessageValidationServiceInterface::class, MessageValidationService::class);
 		$context->registerServiceAlias(DigitalPostProviderRegistryInterface::class, DigitalPostProviderRegistry::class);
 		$context->registerServiceAlias(DocumentConnectionGuardInterface::class, DocumentConnectionGuard::class);
+		$context->registerServiceAlias(TraceExportSchedulerInterface::class, OtelExportJobScheduler::class);
+		$context->registerServiceAlias(AttachmentFetchSchedulerInterface::class, AttachmentFetchJobScheduler::class);
 		$context->registerServiceAlias(SubscriptionRegistryInterface::class, SubscriptionRegistry::class);
 		$context->registerServiceAlias(DocumentProviderRegistryInterface::class, DocumentGenerationProviderRegistry::class);
 		$context->registerServiceAlias(ToolPlatformDetailsInterface::class, LtiPlatformDetailsService::class);
@@ -672,5 +689,7 @@ final class ServiceBindings {
 		$context->registerServiceAlias(SubscriptionSigningPolicyInterface::class, SubscriptionSigningPolicy::class);
 		$context->registerServiceAlias(PhoneNumberNormaliserInterface::class, E164PhoneNumberNormaliser::class);
 		$context->registerServiceAlias(CloudEventEmitterInterface::class, EventService::class);
+		// Not shared: each listener keeps its own chain counter.
+		$context->registerService(EventForwardingGuardInterface::class, static fn (): EventLoopGuard => new EventLoopGuard(), false);
 	}//end registerInjectedHelpers()
 }

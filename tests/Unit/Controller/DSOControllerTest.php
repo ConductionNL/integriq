@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Controller;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
 use OCA\Integriq\Controller\DSOController;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
@@ -511,7 +512,7 @@ class DSOControllerTest extends TestCase {
 			restProvider: $this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class)),
-			jobList: $jobList,
+			attachmentFetches: new AttachmentFetchJobScheduler($jobList),
 			activityMapper: new DsoActivityMapper(new DsoActivityTable($objectService))
 		);
 
@@ -687,7 +688,7 @@ class DSOControllerTest extends TestCase {
 			restProvider: $this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
 			logger: $this->createMock(LoggerInterface::class),
 			rawSourceResolver: new RawSourceResolver($this->worldObjectService, $this->createMock(LoggerInterface::class)),
-			jobList: $jobList,
+			attachmentFetches: new AttachmentFetchJobScheduler($jobList),
 			activityMapper: new DsoActivityMapper(new DsoActivityTable($this->worldObjectService))
 		);
 

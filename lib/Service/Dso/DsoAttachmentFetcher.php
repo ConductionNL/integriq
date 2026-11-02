@@ -41,7 +41,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Dso;
 
 use Exception;
-use OCA\Integriq\Exception\DsoAttachmentTooLargeException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;

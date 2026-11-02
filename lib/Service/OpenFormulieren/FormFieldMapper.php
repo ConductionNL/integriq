@@ -40,8 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\OpenFormulieren;
 
-use OCA\Integriq\Exception\MappingResolutionException;
-
 /**
  * Resolves per-form `fieldMapping` config against submitted values.
  *

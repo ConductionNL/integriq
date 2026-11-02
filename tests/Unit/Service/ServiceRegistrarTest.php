@@ -19,6 +19,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
+use OCA\Integriq\BackgroundJob\AttachmentFetchSchedulerInterface;
+use OCA\Integriq\BackgroundJob\EventFanOutSchedulerInterface;
+use OCA\Integriq\BackgroundJob\MessageRetryJobScheduler;
+use OCA\Integriq\BackgroundJob\MessageRetrySchedulerInterface;
+use OCA\Integriq\BackgroundJob\OtelExportJobScheduler;
+use OCA\Integriq\BackgroundJob\ProcessEventJobScheduler;
+use OCA\Integriq\BackgroundJob\TraceExportSchedulerInterface;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
@@ -97,6 +105,8 @@ use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointCorsPolicyInterface;
+use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointServiceInterface;
 use OCA\Integriq\Service\EnvironmentService;
@@ -236,6 +246,8 @@ use OCA\Integriq\Service\RunSummaryService;
 use OCA\Integriq\Service\RunSummaryServiceInterface;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SearchServiceInterface;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\SecurityService;
 use OCA\Integriq\Service\SecurityServiceInterface;
 use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
@@ -431,6 +443,7 @@ class ServiceRegistrarTest extends TestCase {
 		SourceTestServiceInterface::class => SourceTestService::class,
 		SynchronizationLookupInterface::class => SynchronizationService::class,
 		EgressGuardInterface::class => EgressGuard::class,
+		SecretRedactorInterface::class => SensitiveFieldRegistry::class,
 		SecurityServiceInterface::class => SecurityService::class,
 		ResponseDecoderInterface::class => ResponseDecoder::class,
 		OpenRegisterCredentialBridgeInterface::class => OpenRegisterCredentialBridge::class,
@@ -442,6 +455,8 @@ class ServiceRegistrarTest extends TestCase {
 		AgentActionStoreInterface::class => AgentActionStore::class,
 		CaseReferenceDetectorInterface::class => CaseReferenceDetector::class,
 		LocalDeleteGuardInterface::class => LocalDeleteGuard::class,
+		EventFanOutSchedulerInterface::class => ProcessEventJobScheduler::class,
+		MessageRetrySchedulerInterface::class => MessageRetryJobScheduler::class,
 		MessageParserInterface::class => MessageParser::class,
 		DeadLetterProjectionInterface::class => DeadLetterProjection::class,
 		MtlsTransportServiceInterface::class => MtlsTransportService::class,
@@ -449,6 +464,8 @@ class ServiceRegistrarTest extends TestCase {
 		MessageValidationServiceInterface::class => MessageValidationService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
+		TraceExportSchedulerInterface::class => OtelExportJobScheduler::class,
+		AttachmentFetchSchedulerInterface::class => AttachmentFetchJobScheduler::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
 		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
 		ToolPlatformDetailsInterface::class => LtiPlatformDetailsService::class,
@@ -464,6 +481,7 @@ class ServiceRegistrarTest extends TestCase {
 	 * The services the registrar builds with a factory, in registration order.
 	 */
 	private const FACTORIES = [
+		'OCA\\Integriq\\Service\\Event\\EventForwardingGuardInterface',
 		'OCA\\Integriq\\Service\\SettingsService',
 		'OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry',
 		'OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry',
@@ -520,6 +538,32 @@ class ServiceRegistrarTest extends TestCase {
 			$this->assertTrue(interface_exists($contract), $contract);
 			$this->assertContains($contract, class_implements($implementation), $implementation);
 		}
+	}
+
+	/**
+	 * The forwarding guard is built per resolution, so every listener keeps its own chain counter.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude container wiring invariant, the guard's decision is specified on EventLoopGuard
+	 */
+	public function testForwardingGuardIsANewEventLoopGuardPerResolution(): void {
+		$registered = [];
+		$context = $this->createMock(IRegistrationContext::class);
+		$context->method('registerService')->willReturnCallback(
+			function (string $name, callable $factory, bool $shared = true) use (&$registered): void {
+				$registered[$name] = [$factory, $shared];
+			}
+		);
+
+		(new ServiceRegistrar())->register(context: $context);
+
+		[$factory, $shared] = $registered[EventForwardingGuardInterface::class];
+		$this->assertFalse($shared);
+		$first = $factory();
+		$this->assertInstanceOf(EventLoopGuard::class, $first);
+		$this->assertNotSame($first, $factory());
+		$this->assertSame('chain-ceiling-reached-in-one-request', EventLoopGuard::REFUSED_CEILING);
 	}
 
 	/**

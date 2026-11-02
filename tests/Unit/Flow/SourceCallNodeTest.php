@@ -23,7 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Flow;
 
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
-use OCA\Integriq\Exception\FlowNodeException;
+use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SourceCallNode;

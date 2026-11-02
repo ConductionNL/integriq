@@ -64,7 +64,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;

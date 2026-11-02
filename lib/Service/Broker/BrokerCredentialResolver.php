@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Broker;
 
 use OCA\Integriq\Broker\Transport\RabbitMqHttpTransportInterface;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallServiceInterface;
 
 /**

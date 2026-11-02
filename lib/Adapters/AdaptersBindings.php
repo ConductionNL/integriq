@@ -138,7 +138,7 @@ final class AdaptersBindings {
 	 * @return void
 	 */
 	private function registerDormantSourceClients(IRegistrationContext $context): void {
-		// Dormant SLO curriculum adapter (slo-kerndoelen-import, lib/Sources/Slo/).
+		// Dormant SLO curriculum adapter (slo-kerndoelen-import, lib/Adapters/Slo/).
 		// The abstract `SloCurriculumClient` resolves to the recorded-fixture
 		// mock until `slo.curriculum.feature_flag` is '1' or 'true'; then to
 		// the live client, which calls SLO through CallService with the

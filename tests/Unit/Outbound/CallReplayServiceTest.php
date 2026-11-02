@@ -22,15 +22,16 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Outbound;
 
 use InvalidArgumentException;
-use OCA\Integriq\Exception\CallDispatchException;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\CallDispatcherInterface;
+use OCA\Integriq\Outbound\Call\CallDispatchException;
 use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Outbound\Call\CallReplayService;
 use OCA\Integriq\Outbound\Call\MappingVersionService;
 use OCA\Integriq\Outbound\Call\PreCheckService;
 use OCA\Integriq\Outbound\Call\VerdictService;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -187,7 +188,7 @@ class CallReplayServiceTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnArgument(2);
-		$this->recorder = new CallRecorder($this->objectService, new BodyRedactor(), new BodyCapturePolicy($appConfig));
+		$this->recorder = new CallRecorder($this->objectService, new BodyRedactor(), new BodyCapturePolicy($appConfig), new SensitiveFieldRegistry());
 
 	}//end setUp()
 

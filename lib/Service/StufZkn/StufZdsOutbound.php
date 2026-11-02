@@ -30,10 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\StufZkn;
 
-use OCA\Integriq\BackgroundJob\StufZdsRetryJob;
+use OCA\Integriq\BackgroundJob\MessageRetrySchedulerInterface;
 use OCA\Integriq\Event\StufZdsCaseConcludedEvent;
 use OCA\Integriq\Exception\StufZknProviderException;
-use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -78,7 +77,7 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 * @param StufZdsResponseReader $reader     Reads the answers.
 	 * @param StufZdsCircuitBreaker $breaker    The per-source circuit breaker.
 	 * @param StufZdsMessageLog     $log        Audit rows and source reads.
-	 * @param IJobList              $jobList    Schedules retries.
+	 * @param MessageRetrySchedulerInterface $retries Schedules retries.
 	 * @param IEventDispatcher      $dispatcher Announces conclusions.
 	 * @param LoggerInterface       $logger     The logger.
 	 * @param StufZdsMessageBuilder $builder    Adds the UsernameToken to an envelope at send time.
@@ -89,7 +88,7 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 		private readonly StufZdsResponseReader $reader,
 		private readonly StufZdsCircuitBreaker $breaker,
 		private readonly StufZdsMessageLog $log,
-		private readonly IJobList $jobList,
+		private readonly MessageRetrySchedulerInterface $retries,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
 		private readonly StufZdsMessageBuilder $builder,
@@ -536,7 +535,7 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 */
 	private function schedule(string $messageId, int $delay): bool {
 		try {
-			$this->jobList->scheduleAfter(StufZdsRetryJob::class, (time() + $delay), ['messageId' => $messageId]);
+			$this->retries->scheduleRetry(messageId: $messageId, runAfter: (time() + $delay));
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'StUF-ZDS retry could not be scheduled for {id}: {error}',

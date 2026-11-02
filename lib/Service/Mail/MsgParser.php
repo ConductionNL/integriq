@@ -59,7 +59,7 @@ class MsgParser {
 	 *
 	 * @return ParsedMessage The parsed message.
 	 *
-	 * @throws \OCA\Integriq\Exception\MessageParseException When the bytes are not a readable compound file.
+	 * @throws \OCA\Integriq\Service\Mail\MessageParseException When the bytes are not a readable compound file.
 	 *
 	 * @spec openspec/specs/mail-intake/spec.md
 	 */
