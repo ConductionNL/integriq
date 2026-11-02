@@ -37,7 +37,7 @@ one new Twig function behind an allowlist.
   `src/views/wrappers/MappingDetailPage.vue` shows it read-only when the output
   format is not JSON.
 - Lookup: `lib/Twig/MappingExtension.php:79` registers `lookup` for
-  integriq's own engine, and `lib/Listener/MappingFunctionRegistrationListener.php:68`
+  integriq's own engine, and `lib/Twig/MappingFunctionRegistrationListener.php:68`
   contributes it to OpenRegister's engine next to the three functions it
   already contributes, so a mapping behaves the same in both;
   `lib/Twig/MappingRuntime.php:73` gains OpenRegister's object service and a

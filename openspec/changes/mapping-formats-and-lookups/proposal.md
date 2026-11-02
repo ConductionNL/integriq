@@ -93,7 +93,7 @@ This change covers three rows: `integriq:map-csv`, `integriq:map-lookup` and
   mapping engine (`lib/Service/MappingService.php:119`): an outbound call from
   a template is an SSRF path. The same function is still contributed to
   OpenRegister's mapping engine by
-  `lib/Listener/MappingFunctionRegistrationListener.php:68`, so the two engines
+  `lib/Twig/MappingFunctionRegistrationListener.php:68`, so the two engines
   disagree about it.
 
 ## What this change builds
