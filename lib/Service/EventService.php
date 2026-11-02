@@ -27,7 +27,6 @@ use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerTransportRegistryInterface;
 use OCA\Integriq\Broker\CloudEventHttpBindingInterface;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Event\DeliveryConcludedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\Exception\BrokerTransportException;

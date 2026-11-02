@@ -21,10 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Exception\TranslationUnavailableException;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\TranslationService;
+use OCA\Integriq\Service\TranslationUnavailableException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;

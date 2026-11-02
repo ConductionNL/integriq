@@ -61,7 +61,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use GuzzleHttp\Promise\PromiseInterface;
-use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\CallServiceInterface;

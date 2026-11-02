@@ -912,7 +912,7 @@
     },
     "create-conflict-refused": {
         "exception": [
-            "OCA\\Integriq\\Exception\\TargetWriteRefusedException",
+            "OCA\\Integriq\\Service\\TargetWriteRefusedException",
             "The target refused the write with status 409; the local change is kept and marked as a conflict."
         ],
         "targetObject": {
@@ -1195,7 +1195,7 @@
     },
     "create-validation-refuse": {
         "exception": [
-            "OCA\\Integriq\\Exception\\MessageValidationRefusedException",
+            "OCA\\Integriq\\Service\\MessageValidation\\MessageValidationRefusedException",
             "The target message could not be checked against message schema ms-1: message validation is not available"
         ],
         "targetObject": {
@@ -2053,7 +2053,7 @@
     },
     "update-conflict-refused": {
         "exception": [
-            "OCA\\Integriq\\Exception\\TargetWriteRefusedException",
+            "OCA\\Integriq\\Service\\TargetWriteRefusedException",
             "The target refused the write with status 412; the local change is kept and marked as a conflict."
         ],
         "targetObject": {

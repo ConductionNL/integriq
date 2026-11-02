@@ -9,7 +9,7 @@
  * bad object never stops the run.
  *
  * @category Exception
- * @package  OCA\Integriq\Exception
+ * @package  OCA\Integriq\Service\MessageValidation
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Exception;
+namespace OCA\Integriq\Service\MessageValidation;
 
 use RuntimeException;
 

@@ -51,7 +51,6 @@ use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Kernel\EndpointContainment;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;

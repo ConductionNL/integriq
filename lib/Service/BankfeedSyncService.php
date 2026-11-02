@@ -33,10 +33,10 @@ namespace OCA\Integriq\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\Integriq\Exception\Psd2ConsentRevokedException;
 use OCA\Integriq\Exception\Psd2ProviderException;
 use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
 use OCA\Integriq\Service\Psd2\Psd2AggregatorProviderInterface;
+use OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException;
 use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;

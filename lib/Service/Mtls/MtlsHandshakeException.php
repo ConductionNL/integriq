@@ -9,7 +9,7 @@
  * a signal to retry without a client certificate — mTLS never fails open.
  *
  * @category Exception
- * @package  OCA\Integriq\Exception
+ * @package  OCA\Integriq\Service\Mtls
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,7 +25,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Exception;
+namespace OCA\Integriq\Service\Mtls;
+
+use OCA\Integriq\Exception\MtlsTransportException;
 
 /**
  * Thrown when an mTLS-configured HTTP dispatch fails.

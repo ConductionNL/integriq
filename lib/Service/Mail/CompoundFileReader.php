@@ -28,8 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Mail;
 
-use OCA\Integriq\Exception\MessageParseException;
-
 /**
  * Reads streams and storages out of a compound file.
  *

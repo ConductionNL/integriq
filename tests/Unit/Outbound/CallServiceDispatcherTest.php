@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Outbound;
 
-use OCA\Integriq\Exception\CallDispatchException;
+use OCA\Integriq\Outbound\Call\CallDispatchException;
 use OCA\Integriq\Outbound\Call\CallServiceDispatcher;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;

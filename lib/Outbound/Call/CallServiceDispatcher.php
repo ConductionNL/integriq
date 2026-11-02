@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound\Call;
 
-use OCA\Integriq\Exception\CallDispatchException;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;

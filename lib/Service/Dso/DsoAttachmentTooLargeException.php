@@ -8,7 +8,7 @@
  * not help, so the download job records the entry as `too-large` and stops.
  *
  * @category Exception
- * @package  OCA\Integriq\Exception
+ * @package  OCA\Integriq\Service\Dso
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Exception;
+namespace OCA\Integriq\Service\Dso;
+
+use OCA\Integriq\Exception\DsoProviderException;
 
 /**
  * Thrown when a bijlage exceeds the configured maximum file size.

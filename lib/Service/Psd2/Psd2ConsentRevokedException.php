@@ -11,7 +11,7 @@
  * dead consent.
  *
  * @category Exception
- * @package  OCA\Integriq\Exception
+ * @package  OCA\Integriq\Service\Psd2
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,7 +27,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Exception;
+namespace OCA\Integriq\Service\Psd2;
+
+use OCA\Integriq\Exception\Psd2ProviderException;
 
 /**
  * Thrown when the aggregator reports a revoked/unusable PSD2 consent.
