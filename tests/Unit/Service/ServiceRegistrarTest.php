@@ -97,6 +97,8 @@ use OCA\Integriq\Service\EndpointCacheService;
 use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\Integriq\Service\EndpointCorsPolicy;
 use OCA\Integriq\Service\EndpointCorsPolicyInterface;
+use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointServiceInterface;
 use OCA\Integriq\Service\EnvironmentService;
@@ -461,6 +463,7 @@ class ServiceRegistrarTest extends TestCase {
 	 * The services the registrar builds with a factory, in registration order.
 	 */
 	private const FACTORIES = [
+		'OCA\\Integriq\\Service\\Event\\EventForwardingGuardInterface',
 		'OCA\\Integriq\\Service\\SettingsService',
 		'OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry',
 		'OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry',
@@ -517,6 +520,32 @@ class ServiceRegistrarTest extends TestCase {
 			$this->assertTrue(interface_exists($contract), $contract);
 			$this->assertContains($contract, class_implements($implementation), $implementation);
 		}
+	}
+
+	/**
+	 * The forwarding guard is built per resolution, so every listener keeps its own chain counter.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude container wiring invariant, the guard's decision is specified on EventLoopGuard
+	 */
+	public function testForwardingGuardIsANewEventLoopGuardPerResolution(): void {
+		$registered = [];
+		$context = $this->createMock(IRegistrationContext::class);
+		$context->method('registerService')->willReturnCallback(
+			function (string $name, callable $factory, bool $shared = true) use (&$registered): void {
+				$registered[$name] = [$factory, $shared];
+			}
+		);
+
+		(new ServiceRegistrar())->register(context: $context);
+
+		[$factory, $shared] = $registered[EventForwardingGuardInterface::class];
+		$this->assertFalse($shared);
+		$first = $factory();
+		$this->assertInstanceOf(EventLoopGuard::class, $first);
+		$this->assertNotSame($first, $factory());
+		$this->assertSame('chain-ceiling-reached-in-one-request', EventLoopGuard::REFUSED_CEILING);
 	}
 
 	/**
