@@ -92,7 +92,21 @@
 <script>
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { NcButton, NcCheckboxRadioSwitch, NcModal } from '@nextcloud/vue'
-import { callId, recentFailedCalls, replayCalls } from './callLogApi.js'
+import { callId, recentFailedCalls, replayCalls, replayError } from './callLogApi.js'
+
+/**
+ * Per-item outcomes keyed by their call uuid.
+ *
+ * @param {object[]|undefined} items the per-item outcomes of a replay
+ * @return {object} the outcomes by call
+ */
+function outcomesByCall(items) {
+	const outcomes = {}
+	for (const item of items ?? []) {
+		outcomes[String(item.call)] = item
+	}
+	return outcomes
+}
 
 export default {
 	name: 'CallBulkReplayModal',
@@ -155,15 +169,25 @@ export default {
 			this.outcomes = {}
 			this.summary = ''
 			try {
-				this.calls = await recentFailedCalls()
-				this.selected = this.calls.map(callId).filter((id) => id !== '')
+				this.showCalls(await recentFailedCalls())
 			} catch {
-				this.calls = []
-				this.selected = []
+				this.showCalls([])
 				this.error = t('integriq', 'The failed calls could not be loaded.')
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Show the loaded calls, all of them that have an id selected.
+		 *
+		 * @param {object[]} calls the failed calls
+		 * @return {void}
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 */
+		showCalls(calls) {
+			this.calls = calls
+			this.selected = calls.map(callId).filter((id) => id !== '')
 		},
 
 		/**
@@ -212,6 +236,21 @@ export default {
 		},
 
 		/**
+		 * Show a replay's per-call outcomes and its summary.
+		 *
+		 * @param {object|null} result the replay result
+		 * @return {void}
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 */
+		showResult(result) {
+			this.outcomes = outcomesByCall(result?.items)
+			this.summary = t('integriq', '{succeeded} sent, {failed} failed.', {
+				succeeded: result?.succeeded ?? 0,
+				failed: result?.failed ?? 0,
+			})
+		},
+
+		/**
 		 * Replay the checked calls and show each one's outcome.
 		 *
 		 * @return {Promise<void>}
@@ -222,20 +261,10 @@ export default {
 			this.error = ''
 			try {
 				const result = await replayCalls([...this.selected])
-				const outcomes = {}
-				for (const item of result?.items ?? []) {
-					outcomes[String(item.call)] = item
-				}
-				this.outcomes = outcomes
-				this.summary = t('integriq', '{succeeded} sent, {failed} failed.', {
-					succeeded: result?.succeeded ?? 0,
-					failed: result?.failed ?? 0,
-				})
+				this.showResult(result)
 				this.$emit('replayed', result)
 			} catch (e) {
-				this.error =
-					e?.response?.data?.error
-					|| t('integriq', 'The replay could not be started.')
+				this.error = replayError(e)
 			} finally {
 				this.busy = false
 			}
