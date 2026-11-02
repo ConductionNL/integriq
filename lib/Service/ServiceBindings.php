@@ -169,6 +169,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
+use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
+use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -668,6 +670,7 @@ final class ServiceBindings {
 		$context->registerServiceAlias(ActivityMappingTableInterface::class, DsoActivityTable::class);
 		$context->registerServiceAlias(ApiVersionNegotiationInterface::class, ZgwVersionNegotiationService::class);
 		$context->registerServiceAlias(SubscriptionSigningPolicyInterface::class, SubscriptionSigningPolicy::class);
+		$context->registerServiceAlias(PhoneNumberNormaliserInterface::class, E164PhoneNumberNormaliser::class);
 		$context->registerServiceAlias(CloudEventEmitterInterface::class, EventService::class);
 	}//end registerInjectedHelpers()
 }

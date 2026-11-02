@@ -254,6 +254,8 @@ use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\SettingsService;
 use OCA\Integriq\Service\SettingsServiceInterface;
 use OCA\Integriq\Service\SignedPayloadVerifierInterface;
+use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
+use OCA\Integriq\Service\Sms\PhoneNumberNormaliserInterface;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\SoftwareCatalogueService;
@@ -453,6 +455,7 @@ class ServiceRegistrarTest extends TestCase {
 		ActivityMappingTableInterface::class => DsoActivityTable::class,
 		ApiVersionNegotiationInterface::class => ZgwVersionNegotiationService::class,
 		SubscriptionSigningPolicyInterface::class => SubscriptionSigningPolicy::class,
+		PhoneNumberNormaliserInterface::class => E164PhoneNumberNormaliser::class,
 		CloudEventEmitterInterface::class => EventService::class,
 		HermiqVerdictClient::class => HttpHermiqVerdictClient::class,
 	];
