@@ -1,12 +1,12 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ConsumerEditorModal > renders create as recorded 1`] = `
-"<div class="NcDialog" data-name="Create consumer">
+exports[`ConsumerEditorModal > renders an invalid name while saving as recorded 1`] = `
+"<div class="NcDialog" data-name="Edit consumer" data-attrs="noClose=true size=normal">
   <div class="cn-consumer-editor">
     <div class="cn-consumer-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="!!" data-attrs="maxlength=255" data-disabled="yes" data-error="yes" data-helper="A name is required.">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="d" data-attrs="resize=vertical rows=2" data-disabled="yes">
       </div>
     </div>
     <section class="cn-consumer-editor__section">
@@ -15,15 +15,94 @@ exports[`ConsumerEditorModal > renders create as recorded 1`] = `
       </header>
       <div class="cn-consumer-editor__grid">
         <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-domains" class="cn-consumer-editor__label">Allowed domains</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Allowed domains clearable=true inputId=cn-consumer-editor-domains keepOpen=true multiple=true options= placeholder=example.com, *.example.org taggable=true" data-disabled="yes">
           </div><span class="cn-consumer-editor__helper">Press Enter after each entry. Exact hostname, or a suffix wildcard like *.example.com (which also matches example.com). Matched against the caller's verified reverse DNS, never against a header.</span>
         </div>
         <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-ips" class="cn-consumer-editor__label">Allowed IPs</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Allowed IPs clearable=true inputId=cn-consumer-editor-ips keepOpen=true multiple=true options= placeholder=203.0.113.4, 10.0.0.0/8 taggable=true" data-disabled="yes">
           </div><span class="cn-consumer-editor__helper">Press Enter after each entry. Exact IPv4/IPv6 address or a CIDR range.</span>
         </div>
       </div>
-      <div class="NcNoteCard">
+      <div class="NcNoteCard" data-attrs="type=info">
+        <p>The two lists combine as a union — a caller is admitted when it matches an entry in either one, and rejected with HTTP 403 otherwise.</p>
+      </div>
+    </section>
+    <section class="cn-consumer-editor__section">
+      <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon key-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"></path></svg></span>
+        <h3>Authentication</h3>
+      </header>
+      <div class="cn-consumer-editor__field cn-consumer-editor__field--narrow"><label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">Authorization type</label>
+        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" data-disabled="yes">
+        </div><span class="cn-consumer-editor__helper">Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.</span>
+      </div>
+      <div class="cn-consumer-editor__field"><span class="cn-consumer-editor__label">Authorization configuration</span>
+        <div class="CnJsonViewer">
+        </div><span class="cn-consumer-editor__helper">Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.</span>
+        <div class="cn-consumer-editor__helper-actions">
+          <div class="NcButton" data-attrs="size=small" data-disabled="yes">Insert example
+          </div>
+          <div class="NcButton" data-attrs="size=small" data-disabled="yes">Clear stored credential
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="cn-consumer-editor__section">
+      <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon speedometer-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z"></path></svg></span>
+        <h3>Limits</h3>
+      </header>
+      <div class="cn-consumer-editor__grid">
+        <div class="cn-consumer-editor__field">
+          <div class="NcInputField" data-label="Requests per window" data-value="" data-attrs="min=1 placeholder=60 type=number" data-disabled="yes">
+          </div>
+        </div>
+        <div class="cn-consumer-editor__field">
+          <div class="NcInputField" data-label="Window (seconds)" data-value="" data-attrs="min=1 placeholder=60 type=number" data-disabled="yes">
+          </div>
+        </div>
+        <div class="cn-consumer-editor__field">
+          <div class="NcInputField" data-label="Quota limit" data-value="" data-attrs="min=1 placeholder=10000 type=number" data-disabled="yes">
+          </div>
+        </div>
+        <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-quota-period" class="cn-consumer-editor__label">Quota period</label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Quota period clearable=true inputId=cn-consumer-editor-quota-period options=[object Object],[object Object],[object Object]" data-disabled="yes">
+          </div>
+        </div>
+      </div><span class="cn-consumer-editor__helper">Both halves of a pair are needed for it to apply — a half-filled rate limit or quota is saved as unlimited. Leave all four empty for no limits at all.</span>
+    </section>
+  </div>
+  <div class="NcButton" data-disabled="yes">Cancel
+  </div>
+  <div class="NcButton" data-disabled="yes">
+    <div class="NcLoadingIcon" data-attrs="size=20">
+    </div> Save
+  </div>
+</div>"
+`;
+
+exports[`ConsumerEditorModal > renders create as recorded 1`] = `
+"<div class="NcDialog" data-name="Create consumer" data-attrs="noClose=false size=normal">
+  <div class="cn-consumer-editor">
+    <div class="cn-consumer-editor__identity">
+      <div class="NcTextField" data-label="Name *" data-value="" data-attrs="maxlength=255">
+      </div>
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=2">
+      </div>
+    </div>
+    <section class="cn-consumer-editor__section">
+      <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon shield-check-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9"></path></svg></span>
+        <h3>Allowed sources</h3>
+      </header>
+      <div class="cn-consumer-editor__grid">
+        <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-domains" class="cn-consumer-editor__label">Allowed domains</label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Allowed domains clearable=true inputId=cn-consumer-editor-domains keepOpen=true multiple=true options= placeholder=example.com, *.example.org taggable=true">
+          </div><span class="cn-consumer-editor__helper">Press Enter after each entry. Exact hostname, or a suffix wildcard like *.example.com (which also matches example.com). Matched against the caller's verified reverse DNS, never against a header.</span>
+        </div>
+        <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-ips" class="cn-consumer-editor__label">Allowed IPs</label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Allowed IPs clearable=true inputId=cn-consumer-editor-ips keepOpen=true multiple=true options= placeholder=203.0.113.4, 10.0.0.0/8 taggable=true">
+          </div><span class="cn-consumer-editor__helper">Press Enter after each entry. Exact IPv4/IPv6 address or a CIDR range.</span>
+        </div>
+      </div>
+      <div class="NcNoteCard" data-attrs="type=warning">
         <p>Both lists are empty, so this consumer may call from any source. Add an entry to restrict it.</p>
       </div>
     </section>
@@ -32,7 +111,7 @@ exports[`ConsumerEditorModal > renders create as recorded 1`] = `
         <h3>Authentication</h3>
       </header>
       <div class="cn-consumer-editor__field cn-consumer-editor__field--narrow"><label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">Authorization type</label>
-        <div class="NcSelect">
+        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
         </div><span class="cn-consumer-editor__helper">No credential is checked. Restrict access with the allowed sources above instead.</span>
       </div>
     </section>
@@ -42,19 +121,19 @@ exports[`ConsumerEditorModal > renders create as recorded 1`] = `
       </header>
       <div class="cn-consumer-editor__grid">
         <div class="cn-consumer-editor__field">
-          <div class="NcInputField" data-label="Requests per window">
+          <div class="NcInputField" data-label="Requests per window" data-value="" data-attrs="min=1 placeholder=60 type=number">
           </div>
         </div>
         <div class="cn-consumer-editor__field">
-          <div class="NcInputField" data-label="Window (seconds)">
+          <div class="NcInputField" data-label="Window (seconds)" data-value="" data-attrs="min=1 placeholder=60 type=number">
           </div>
         </div>
         <div class="cn-consumer-editor__field">
-          <div class="NcInputField" data-label="Quota limit">
+          <div class="NcInputField" data-label="Quota limit" data-value="" data-attrs="min=1 placeholder=10000 type=number">
           </div>
         </div>
         <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-quota-period" class="cn-consumer-editor__label">Quota period</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Quota period clearable=true inputId=cn-consumer-editor-quota-period options=[object Object],[object Object],[object Object]">
           </div>
         </div>
       </div><span class="cn-consumer-editor__helper">Both halves of a pair are needed for it to apply — a half-filled rate limit or quota is saved as unlimited. Leave all four empty for no limits at all.</span>
@@ -75,12 +154,12 @@ exports[`ConsumerEditorModal > renders create as recorded 2`] = `
 `;
 
 exports[`ConsumerEditorModal > renders edit as recorded 1`] = `
-"<div class="NcDialog" data-name="Edit consumer">
+"<div class="NcDialog" data-name="Edit consumer" data-attrs="noClose=false size=normal">
   <div class="cn-consumer-editor">
     <div class="cn-consumer-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="Partner" data-attrs="maxlength=255">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="d" data-attrs="resize=vertical rows=2">
       </div>
     </div>
     <section class="cn-consumer-editor__section">
@@ -89,15 +168,15 @@ exports[`ConsumerEditorModal > renders edit as recorded 1`] = `
       </header>
       <div class="cn-consumer-editor__grid">
         <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-domains" class="cn-consumer-editor__label">Allowed domains</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Allowed domains clearable=true inputId=cn-consumer-editor-domains keepOpen=true multiple=true options= placeholder=example.com, *.example.org taggable=true">
           </div><span class="cn-consumer-editor__helper">Press Enter after each entry. Exact hostname, or a suffix wildcard like *.example.com (which also matches example.com). Matched against the caller's verified reverse DNS, never against a header.</span>
         </div>
         <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-ips" class="cn-consumer-editor__label">Allowed IPs</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Allowed IPs clearable=true inputId=cn-consumer-editor-ips keepOpen=true multiple=true options= placeholder=203.0.113.4, 10.0.0.0/8 taggable=true">
           </div><span class="cn-consumer-editor__helper">Press Enter after each entry. Exact IPv4/IPv6 address or a CIDR range.</span>
         </div>
       </div>
-      <div class="NcNoteCard">
+      <div class="NcNoteCard" data-attrs="type=info">
         <p>The two lists combine as a union — a caller is admitted when it matches an entry in either one, and rejected with HTTP 403 otherwise.</p>
       </div>
     </section>
@@ -106,16 +185,16 @@ exports[`ConsumerEditorModal > renders edit as recorded 1`] = `
         <h3>Authentication</h3>
       </header>
       <div class="cn-consumer-editor__field cn-consumer-editor__field--narrow"><label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">Authorization type</label>
-        <div class="NcSelect">
+        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
         </div><span class="cn-consumer-editor__helper">Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.</span>
       </div>
       <div class="cn-consumer-editor__field"><span class="cn-consumer-editor__label">Authorization configuration</span>
         <div class="CnJsonViewer">
         </div><span class="cn-consumer-editor__helper">Write-only, so it always opens empty — that is not a missing value. Leave it empty to keep the stored credential unchanged.</span>
         <div class="cn-consumer-editor__helper-actions">
-          <div class="NcButton">Insert example
+          <div class="NcButton" data-attrs="size=small">Insert example
           </div>
-          <div class="NcButton">Clear stored credential
+          <div class="NcButton" data-attrs="size=small">Clear stored credential
           </div>
         </div>
       </div>
@@ -126,19 +205,19 @@ exports[`ConsumerEditorModal > renders edit as recorded 1`] = `
       </header>
       <div class="cn-consumer-editor__grid">
         <div class="cn-consumer-editor__field">
-          <div class="NcInputField" data-label="Requests per window">
+          <div class="NcInputField" data-label="Requests per window" data-value="" data-attrs="min=1 placeholder=60 type=number">
           </div>
         </div>
         <div class="cn-consumer-editor__field">
-          <div class="NcInputField" data-label="Window (seconds)">
+          <div class="NcInputField" data-label="Window (seconds)" data-value="" data-attrs="min=1 placeholder=60 type=number">
           </div>
         </div>
         <div class="cn-consumer-editor__field">
-          <div class="NcInputField" data-label="Quota limit">
+          <div class="NcInputField" data-label="Quota limit" data-value="" data-attrs="min=1 placeholder=10000 type=number">
           </div>
         </div>
         <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-quota-period" class="cn-consumer-editor__label">Quota period</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Quota period clearable=true inputId=cn-consumer-editor-quota-period options=[object Object],[object Object],[object Object]">
           </div>
         </div>
       </div><span class="cn-consumer-editor__helper">Both halves of a pair are needed for it to apply — a half-filled rate limit or quota is saved as unlimited. Leave all four empty for no limits at all.</span>
@@ -668,13 +747,61 @@ exports[`ConsumerEditorModal credential > explains authorization type oauth 1`] 
 
 exports[`ConsumerEditorModal credential > explains authorization type undefined 1`] = `"The credential this consumer presents is verified against the configuration below."`;
 
-exports[`MappingEditorModal > renders create as recorded 1`] = `
-"<div class="NcDialog" data-name="Create mapping">
+exports[`MappingEditorModal > renders an invalid name while saving as recorded 1`] = `
+"<div class="NcDialog" data-name="Edit mapping" data-attrs="noClose=true size=large">
   <div class="cn-mapping-editor">
     <div class="cn-mapping-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="!!" data-attrs="required=" data-disabled="yes" data-error="yes" data-helper="Name must contain at least one letter or number">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1" data-disabled="yes">
+      </div>
+    </div>
+    <div class="cn-mapping-editor__columns">
+      <section class="cn-mapping-editor__column cn-mapping-editor__column--input">
+        <header class="cn-mapping-editor__column-header"><span aria-hidden="true" class="material-design-icon database-arrow-right-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M20 22V20H16V18H20V16L23 19L20 22Z"></path></svg></span>
+          <h3>Input</h3><span class="cn-mapping-editor__column-note">not stored</span>
+        </header>
+        <div class="cn-mapping-editor__column-body"><label class="cn-mapping-editor__label" for="cn-mapping-editor-input">Test input (JSON)</label><textarea id="cn-mapping-editor-input" class="cn-mapping-editor__textarea" rows="8" spellcheck="false" placeholder="{
+  &quot;name&quot;: &quot;hello&quot;
+}"></textarea>
+        </div>
+      </section><span class="cn-mapping-editor__arrow material-design-icon arrow-right-icon cn-mapping-editor__arrow" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"></path></svg></span>
+      <section class="cn-mapping-editor__column cn-mapping-editor__column--transform">
+        <header class="cn-mapping-editor__column-header"><span aria-hidden="true" class="material-design-icon swap-horizontal-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"></path></svg></span>
+          <h3>Transform</h3>
+        </header>
+        <div class="cn-mapping-editor__column-body">
+          <mapping-rules-editor-stub mappingrules="[object Object]" castrules="[object Object]" unsetrules="x" passthrough="true" saving="true" showoptionstab="true"></mapping-rules-editor-stub>
+        </div>
+      </section><span class="cn-mapping-editor__arrow material-design-icon arrow-right-icon cn-mapping-editor__arrow" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"></path></svg></span>
+      <section class="cn-mapping-editor__column cn-mapping-editor__column--output">
+        <header class="cn-mapping-editor__column-header"><span aria-hidden="true" class="material-design-icon database-arrow-left-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M22 18V20H18V22L15 19L18 16V18H22Z"></path></svg></span>
+          <h3>Output</h3><span class="cn-mapping-editor__column-note">live</span>
+        </header>
+        <div class="cn-mapping-editor__column-body">
+          <mapping-result-panel-stub mapping="[object Object]" inputobject="{}" auto="true" debouncems="400" allowsavetoregister="true" showschemapicker="true"></mapping-result-panel-stub>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="NcButton" data-disabled="yes">Cancel
+  </div>
+  <div class="NcButton" data-disabled="yes"><span aria-hidden="true" class="material-design-icon test-tube-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M7,2V4H8V18A4,4 0 0,0 12,22A4,4 0 0,0 16,18V4H17V2H7M11,16C10.4,16 10,15.6 10,15C10,14.4 10.4,14 11,14C11.6,14 12,14.4 12,15C12,15.6 11.6,16 11,16M13,12C12.4,12 12,11.6 12,11C12,10.4 12.4,10 13,10C13.6,10 14,10.4 14,11C14,11.6 13.6,12 13,12M14,7H10V4H14V7Z"></path></svg></span> Test
+  </div>
+  <div class="NcButton" data-disabled="yes">
+    <div class="NcLoadingIcon" data-attrs="size=20">
+    </div> Save
+  </div>
+</div>"
+`;
+
+exports[`MappingEditorModal > renders create as recorded 1`] = `
+"<div class="NcDialog" data-name="Create mapping" data-attrs="noClose=false size=large">
+  <div class="cn-mapping-editor">
+    <div class="cn-mapping-editor__identity">
+      <div class="NcTextField" data-label="Name *" data-value="" data-attrs="required=">
+      </div>
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1">
       </div>
     </div>
     <div class="cn-mapping-editor__columns">
@@ -722,12 +849,12 @@ exports[`MappingEditorModal > renders create as recorded 2`] = `
 `;
 
 exports[`MappingEditorModal > renders edit as recorded 1`] = `
-"<div class="NcDialog" data-name="Edit mapping">
+"<div class="NcDialog" data-name="Edit mapping" data-attrs="noClose=false size=large">
   <div class="cn-mapping-editor">
     <div class="cn-mapping-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="Mapping" data-attrs="required=">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1">
       </div>
     </div>
     <div class="cn-mapping-editor__columns">
@@ -1120,19 +1247,19 @@ exports[`MappingEditorModal > writes each listener into the draft as recorded 1`
 ]
 `;
 
-exports[`RuleEditorModal > renders create as recorded 1`] = `
-"<div class="NcDialog" data-name="Create rule">
+exports[`RuleEditorModal > renders an invalid name while saving as recorded 1`] = `
+"<div class="NcDialog" data-name="Edit rule" data-attrs="noClose=true size=large">
   <div class="cn-rule-editor">
     <div class="cn-rule-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="!!" data-disabled="yes" data-error="yes" data-helper="Name must contain at least one letter or number">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1" data-disabled="yes">
       </div>
     </div>
     <section class="cn-rule-editor__section">
       <header class="cn-rule-editor__section-header"><span aria-hidden="true" class="material-design-icon filter-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M15,19.88C15.04,20.18 14.94,20.5 14.71,20.71C14.32,21.1 13.69,21.1 13.3,20.71L9.29,16.7C9.06,16.47 8.96,16.16 9,15.87V10.75L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L15,10.75V19.88M7.04,5L11,10.06V15.58L13,17.58V10.05L16.96,5H7.04Z"></path></svg></span>
         <h3>When (conditions)</h3>
-        <div class="NcButton"><span aria-hidden="true" class="material-design-icon code-json-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M5,3H7V5H5V10A2,2 0 0,1 3,12A2,2 0 0,1 5,14V19H7V21H5C3.93,20.73 3,20.1 3,19V15A2,2 0 0,0 1,13H0V11H1A2,2 0 0,0 3,9V5A2,2 0 0,1 5,3M19,3A2,2 0 0,1 21,5V9A2,2 0 0,0 23,11H24V13H23A2,2 0 0,0 21,15V19A2,2 0 0,1 19,21H17V19H19V14A2,2 0 0,1 21,12A2,2 0 0,1 19,10V5H17V3H19M12,15A1,1 0 0,1 13,16A1,1 0 0,1 12,17A1,1 0 0,1 11,16A1,1 0 0,1 12,15M8,15A1,1 0 0,1 9,16A1,1 0 0,1 8,17A1,1 0 0,1 7,16A1,1 0 0,1 8,15M16,15A1,1 0 0,1 17,16A1,1 0 0,1 16,17A1,1 0 0,1 15,16A1,1 0 0,1 16,15Z"></path></svg></span> Raw JSON
+        <div class="NcButton" data-attrs="aria-label=Edit conditions as raw JSON" data-disabled="yes"><span aria-hidden="true" class="material-design-icon code-json-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M5,3H7V5H5V10A2,2 0 0,1 3,12A2,2 0 0,1 5,14V19H7V21H5C3.93,20.73 3,20.1 3,19V15A2,2 0 0,0 1,13H0V11H1A2,2 0 0,0 3,9V5A2,2 0 0,1 5,3M19,3A2,2 0 0,1 21,5V9A2,2 0 0,0 23,11H24V13H23A2,2 0 0,0 21,15V19A2,2 0 0,1 19,21H17V19H19V14A2,2 0 0,1 21,12A2,2 0 0,1 19,10V5H17V3H19M12,15A1,1 0 0,1 13,16A1,1 0 0,1 12,17A1,1 0 0,1 11,16A1,1 0 0,1 12,15M8,15A1,1 0 0,1 9,16A1,1 0 0,1 8,17A1,1 0 0,1 7,16A1,1 0 0,1 8,15M16,15A1,1 0 0,1 17,16A1,1 0 0,1 16,17A1,1 0 0,1 15,16A1,1 0 0,1 16,15Z"></path></svg></span> Raw JSON
         </div>
       </header>
       <rule-condition-group-stub node="[object Object]" removable="false"></rule-condition-group-stub>
@@ -1143,19 +1270,19 @@ exports[`RuleEditorModal > renders create as recorded 1`] = `
       </header>
       <div class="cn-rule-editor__grid">
         <div class="cn-rule-editor__field"><label for="cn-rule-editor-timing" class="cn-rule-editor__label">Timing</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Timing clearable=false inputId=cn-rule-editor-timing options=[object Object],[object Object]" data-disabled="yes">
           </div><span class="cn-rule-editor__helper">Whether the rule runs before or after the endpoint handles the request.</span>
         </div>
         <div class="cn-rule-editor__field">
-          <div class="NcInputField" data-label="Order">
+          <div class="NcInputField" data-label="Order" data-value="100" data-attrs="placeholder=100 type=number" data-disabled="yes">
           </div><span class="cn-rule-editor__helper">Execution order within the timing slot — lower runs first.</span>
         </div>
         <div class="cn-rule-editor__field"><label for="cn-rule-editor-action" class="cn-rule-editor__label">Action * </label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Action clearable=false inputId=cn-rule-editor-action options=[object Object],[object Object],[object Object],[object Object]" data-disabled="yes">
           </div><span class="cn-rule-editor__helper">The request method this rule applies to.</span>
         </div>
         <div class="cn-rule-editor__field"><label for="cn-rule-editor-type" class="cn-rule-editor__label">Type * </label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Type clearable=false inputId=cn-rule-editor-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" data-disabled="yes">
           </div><span class="cn-rule-editor__helper">The error response is configured below.</span>
         </div>
       </div>
@@ -1166,17 +1293,86 @@ exports[`RuleEditorModal > renders create as recorded 1`] = `
       </header>
       <div class="cn-rule-editor__grid">
         <div class="cn-rule-editor__field">
-          <div class="NcInputField" data-label="Error Code">
+          <div class="NcInputField" data-label="Error Code" data-value="500" data-attrs="max=999 min=100 placeholder=500 type=number" data-disabled="yes">
           </div>
         </div>
         <div class="cn-rule-editor__field">
-          <div class="NcTextField" data-label="Error Title">
+          <div class="NcTextField" data-label="Error Title" data-value="Something went wrong" data-attrs="maxlength=255 placeholder=Something went wrong" data-disabled="yes">
           </div>
         </div>
       </div>
-      <div class="NcTextArea" data-label="Error Message">
+      <div class="NcTextArea" data-label="Error Message" data-value="We encountered an unexpected problem" data-attrs="maxlength=2550 placeholder=We encountered an unexpected problem resize=vertical rows=3" data-disabled="yes">
       </div>
-      <div class="NcCheckboxRadioSwitch">Include JSON Logic results in errors array
+      <div class="NcCheckboxRadioSwitch" data-attrs="type=checkbox" data-disabled="yes">Include JSON Logic results in errors array
+      </div>
+    </section>
+  </div>
+  <div class="NcButton" data-disabled="yes">Cancel
+  </div>
+  <div class="NcButton" data-disabled="yes">
+    <div class="NcLoadingIcon" data-attrs="size=20">
+    </div> Save
+  </div>
+</div>"
+`;
+
+exports[`RuleEditorModal > renders create as recorded 1`] = `
+"<div class="NcDialog" data-name="Create rule" data-attrs="noClose=false size=large">
+  <div class="cn-rule-editor">
+    <div class="cn-rule-editor__identity">
+      <div class="NcTextField" data-label="Name *" data-value="">
+      </div>
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1">
+      </div>
+    </div>
+    <section class="cn-rule-editor__section">
+      <header class="cn-rule-editor__section-header"><span aria-hidden="true" class="material-design-icon filter-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M15,19.88C15.04,20.18 14.94,20.5 14.71,20.71C14.32,21.1 13.69,21.1 13.3,20.71L9.29,16.7C9.06,16.47 8.96,16.16 9,15.87V10.75L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L15,10.75V19.88M7.04,5L11,10.06V15.58L13,17.58V10.05L16.96,5H7.04Z"></path></svg></span>
+        <h3>When (conditions)</h3>
+        <div class="NcButton" data-attrs="aria-label=Edit conditions as raw JSON"><span aria-hidden="true" class="material-design-icon code-json-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M5,3H7V5H5V10A2,2 0 0,1 3,12A2,2 0 0,1 5,14V19H7V21H5C3.93,20.73 3,20.1 3,19V15A2,2 0 0,0 1,13H0V11H1A2,2 0 0,0 3,9V5A2,2 0 0,1 5,3M19,3A2,2 0 0,1 21,5V9A2,2 0 0,0 23,11H24V13H23A2,2 0 0,0 21,15V19A2,2 0 0,1 19,21H17V19H19V14A2,2 0 0,1 21,12A2,2 0 0,1 19,10V5H17V3H19M12,15A1,1 0 0,1 13,16A1,1 0 0,1 12,17A1,1 0 0,1 11,16A1,1 0 0,1 12,15M8,15A1,1 0 0,1 9,16A1,1 0 0,1 8,17A1,1 0 0,1 7,16A1,1 0 0,1 8,15M16,15A1,1 0 0,1 17,16A1,1 0 0,1 16,17A1,1 0 0,1 15,16A1,1 0 0,1 16,15Z"></path></svg></span> Raw JSON
+        </div>
+      </header>
+      <rule-condition-group-stub node="[object Object]" removable="false"></rule-condition-group-stub>
+    </section>
+    <section class="cn-rule-editor__section">
+      <header class="cn-rule-editor__section-header"><span aria-hidden="true" class="material-design-icon play-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M8.5,8.64L13.77,12L8.5,15.36V8.64M6.5,5V19L17.5,12"></path></svg></span>
+        <h3>Then (action)</h3>
+      </header>
+      <div class="cn-rule-editor__grid">
+        <div class="cn-rule-editor__field"><label for="cn-rule-editor-timing" class="cn-rule-editor__label">Timing</label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Timing clearable=false inputId=cn-rule-editor-timing options=[object Object],[object Object]">
+          </div><span class="cn-rule-editor__helper">Whether the rule runs before or after the endpoint handles the request.</span>
+        </div>
+        <div class="cn-rule-editor__field">
+          <div class="NcInputField" data-label="Order" data-value="100" data-attrs="placeholder=100 type=number">
+          </div><span class="cn-rule-editor__helper">Execution order within the timing slot — lower runs first.</span>
+        </div>
+        <div class="cn-rule-editor__field"><label for="cn-rule-editor-action" class="cn-rule-editor__label">Action * </label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Action clearable=false inputId=cn-rule-editor-action options=[object Object],[object Object],[object Object],[object Object]">
+          </div><span class="cn-rule-editor__helper">The request method this rule applies to.</span>
+        </div>
+        <div class="cn-rule-editor__field"><label for="cn-rule-editor-type" class="cn-rule-editor__label">Type * </label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Type clearable=false inputId=cn-rule-editor-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
+          </div><span class="cn-rule-editor__helper">The error response is configured below.</span>
+        </div>
+      </div>
+    </section>
+    <section class="cn-rule-editor__section">
+      <header class="cn-rule-editor__section-header"><span aria-hidden="true" class="material-design-icon alert-circle-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z"></path></svg></span>
+        <h3>Error response</h3>
+      </header>
+      <div class="cn-rule-editor__grid">
+        <div class="cn-rule-editor__field">
+          <div class="NcInputField" data-label="Error Code" data-value="500" data-attrs="max=999 min=100 placeholder=500 type=number">
+          </div>
+        </div>
+        <div class="cn-rule-editor__field">
+          <div class="NcTextField" data-label="Error Title" data-value="Something went wrong" data-attrs="maxlength=255 placeholder=Something went wrong">
+          </div>
+        </div>
+      </div>
+      <div class="NcTextArea" data-label="Error Message" data-value="We encountered an unexpected problem" data-attrs="maxlength=2550 placeholder=We encountered an unexpected problem resize=vertical rows=3">
+      </div>
+      <div class="NcCheckboxRadioSwitch" data-attrs="type=checkbox">Include JSON Logic results in errors array
       </div>
     </section>
   </div>
@@ -1195,18 +1391,18 @@ exports[`RuleEditorModal > renders create as recorded 2`] = `
 `;
 
 exports[`RuleEditorModal > renders edit as recorded 1`] = `
-"<div class="NcDialog" data-name="Edit rule">
+"<div class="NcDialog" data-name="Edit rule" data-attrs="noClose=false size=large">
   <div class="cn-rule-editor">
     <div class="cn-rule-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="Rule">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1">
       </div>
     </div>
     <section class="cn-rule-editor__section">
       <header class="cn-rule-editor__section-header"><span aria-hidden="true" class="material-design-icon filter-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M15,19.88C15.04,20.18 14.94,20.5 14.71,20.71C14.32,21.1 13.69,21.1 13.3,20.71L9.29,16.7C9.06,16.47 8.96,16.16 9,15.87V10.75L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L15,10.75V19.88M7.04,5L11,10.06V15.58L13,17.58V10.05L16.96,5H7.04Z"></path></svg></span>
         <h3>When (conditions)</h3>
-        <div class="NcButton"><span aria-hidden="true" class="material-design-icon code-json-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M5,3H7V5H5V10A2,2 0 0,1 3,12A2,2 0 0,1 5,14V19H7V21H5C3.93,20.73 3,20.1 3,19V15A2,2 0 0,0 1,13H0V11H1A2,2 0 0,0 3,9V5A2,2 0 0,1 5,3M19,3A2,2 0 0,1 21,5V9A2,2 0 0,0 23,11H24V13H23A2,2 0 0,0 21,15V19A2,2 0 0,1 19,21H17V19H19V14A2,2 0 0,1 21,12A2,2 0 0,1 19,10V5H17V3H19M12,15A1,1 0 0,1 13,16A1,1 0 0,1 12,17A1,1 0 0,1 11,16A1,1 0 0,1 12,15M8,15A1,1 0 0,1 9,16A1,1 0 0,1 8,17A1,1 0 0,1 7,16A1,1 0 0,1 8,15M16,15A1,1 0 0,1 17,16A1,1 0 0,1 16,17A1,1 0 0,1 15,16A1,1 0 0,1 16,15Z"></path></svg></span> Raw JSON
+        <div class="NcButton" data-attrs="aria-label=Edit conditions as raw JSON"><span aria-hidden="true" class="material-design-icon code-json-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M5,3H7V5H5V10A2,2 0 0,1 3,12A2,2 0 0,1 5,14V19H7V21H5C3.93,20.73 3,20.1 3,19V15A2,2 0 0,0 1,13H0V11H1A2,2 0 0,0 3,9V5A2,2 0 0,1 5,3M19,3A2,2 0 0,1 21,5V9A2,2 0 0,0 23,11H24V13H23A2,2 0 0,0 21,15V19A2,2 0 0,1 19,21H17V19H19V14A2,2 0 0,1 21,12A2,2 0 0,1 19,10V5H17V3H19M12,15A1,1 0 0,1 13,16A1,1 0 0,1 12,17A1,1 0 0,1 11,16A1,1 0 0,1 12,15M8,15A1,1 0 0,1 9,16A1,1 0 0,1 8,17A1,1 0 0,1 7,16A1,1 0 0,1 8,15M16,15A1,1 0 0,1 17,16A1,1 0 0,1 16,17A1,1 0 0,1 15,16A1,1 0 0,1 16,15Z"></path></svg></span> Raw JSON
         </div>
       </header>
       <rule-condition-group-stub node="[object Object]" removable="false"></rule-condition-group-stub>
@@ -1217,19 +1413,19 @@ exports[`RuleEditorModal > renders edit as recorded 1`] = `
       </header>
       <div class="cn-rule-editor__grid">
         <div class="cn-rule-editor__field"><label for="cn-rule-editor-timing" class="cn-rule-editor__label">Timing</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Timing clearable=false inputId=cn-rule-editor-timing options=[object Object],[object Object]">
           </div><span class="cn-rule-editor__helper">Whether the rule runs before or after the endpoint handles the request.</span>
         </div>
         <div class="cn-rule-editor__field">
-          <div class="NcInputField" data-label="Order">
+          <div class="NcInputField" data-label="Order" data-value="100" data-attrs="placeholder=100 type=number">
           </div><span class="cn-rule-editor__helper">Execution order within the timing slot — lower runs first.</span>
         </div>
         <div class="cn-rule-editor__field"><label for="cn-rule-editor-action" class="cn-rule-editor__label">Action * </label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Action clearable=false inputId=cn-rule-editor-action options=[object Object],[object Object],[object Object],[object Object]">
           </div><span class="cn-rule-editor__helper">The request method this rule applies to.</span>
         </div>
         <div class="cn-rule-editor__field"><label for="cn-rule-editor-type" class="cn-rule-editor__label">Type * </label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Type clearable=false inputId=cn-rule-editor-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
           </div><span class="cn-rule-editor__helper">The error response is configured below.</span>
         </div>
       </div>
@@ -1240,17 +1436,17 @@ exports[`RuleEditorModal > renders edit as recorded 1`] = `
       </header>
       <div class="cn-rule-editor__grid">
         <div class="cn-rule-editor__field">
-          <div class="NcInputField" data-label="Error Code">
+          <div class="NcInputField" data-label="Error Code" data-value="500" data-attrs="max=999 min=100 placeholder=500 type=number">
           </div>
         </div>
         <div class="cn-rule-editor__field">
-          <div class="NcTextField" data-label="Error Title">
+          <div class="NcTextField" data-label="Error Title" data-value="Something went wrong" data-attrs="maxlength=255 placeholder=Something went wrong">
           </div>
         </div>
       </div>
-      <div class="NcTextArea" data-label="Error Message">
+      <div class="NcTextArea" data-label="Error Message" data-value="We encountered an unexpected problem" data-attrs="maxlength=2550 placeholder=We encountered an unexpected problem resize=vertical rows=3">
       </div>
-      <div class="NcCheckboxRadioSwitch">Include JSON Logic results in errors array
+      <div class="NcCheckboxRadioSwitch" data-attrs="type=checkbox">Include JSON Logic results in errors array
       </div>
     </section>
   </div>
@@ -1914,13 +2110,13 @@ exports[`RuleEditorModal > writes each listener into the draft as recorded 1`] =
 ]
 `;
 
-exports[`SynchronizationEditorModal > renders create as recorded 1`] = `
-"<div class="NcDialog" data-name="Create synchronization">
+exports[`SynchronizationEditorModal > renders an invalid name while saving as recorded 1`] = `
+"<div class="NcDialog" data-name="Edit synchronization" data-attrs="noClose=true size=large">
   <div class="cn-sync-editor">
     <div class="cn-sync-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="!!" data-attrs="required=" data-disabled="yes" data-error="yes" data-helper="Name must contain at least one letter or number">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1" data-disabled="yes">
       </div>
     </div>
     <div class="cn-sync-editor__columns">
@@ -1929,16 +2125,16 @@ exports[`SynchronizationEditorModal > renders create as recorded 1`] = `
           <h3>Source</h3>
         </header>
         <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Source type</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object]" data-disabled="yes">
           </div>
           <sync-config-widget-stub kind="source" type="api" sourceid="" config="[object Object]"></sync-config-widget-stub><label class="cn-sync-editor__label">Sync mode</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Sync mode clearable=false options=[object Object],[object Object]" data-disabled="yes">
           </div>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-ownership-mode inputId=cn-sync-editor-ownership-mode inputLabel=Who owns these records options=[object Object],[object Object],[object Object]" data-disabled="yes">
           </div>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-disappearance-policy inputId=cn-sync-editor-disappearance-policy inputLabel=When the source stops sending a record options=[object Object],[object Object],[object Object],[object Object]" data-disabled="yes">
           </div>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-source-destroyed inputId=cn-sync-editor-source-destroyed inputLabel=When the source says it destroyed a record options=[object Object],[object Object]" data-disabled="yes">
           </div>
         </div>
       </section><span class="cn-sync-editor__arrow material-design-icon arrow-right-icon cn-sync-editor__arrow" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"></path></svg></span>
@@ -1947,7 +2143,90 @@ exports[`SynchronizationEditorModal > renders create as recorded 1`] = `
           <h3>Target</h3>
         </header>
         <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Target type</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Target type clearable=false options=[object Object],[object Object],[object Object]" data-disabled="yes">
+          </div>
+          <sync-config-widget-stub kind="target" type="register/schema" sourceid="" config="[object Object]"></sync-config-widget-stub>
+        </div>
+      </section>
+    </div>
+    <section class="cn-sync-editor__transform">
+      <header class="cn-sync-editor__column-header"><span aria-hidden="true" class="material-design-icon swap-horizontal-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"></path></svg></span>
+        <h3>Transform</h3>
+      </header>
+      <div class="cn-sync-editor__transform-body">
+        <div class="CnTabs">
+          <div class="CnTab">
+            <div class="cn-sync-editor__panel">
+              <p class="cn-sync-editor__hint">Gate which source records are synchronised. Leave empty to sync everything — raw JSON editing lives in the full editor.</p>
+              <rule-condition-group-stub node="[object Object]" removable="false"></rule-condition-group-stub>
+            </div>
+          </div>
+          <div class="CnTab"><span class="cn-sync-editor__tab-label">Rules <span class="cn-sync-editor__tab-count">0</span></span>
+            <div class="cn-sync-editor__panel">
+              <p class="cn-sync-editor__hint">Rules applied during each sync pass.</p>
+              <sync-reference-list-stub schema="rule" labelkey="name" excludeid="" placeholder="Pick rules to run during sync" emptylabel="No rules linked yet." inputlabel="Rules" value=""></sync-reference-list-stub>
+            </div>
+          </div>
+          <div class="CnTab">
+            <div class="cn-sync-editor__panel">
+              <sync-mapping-picker-stub targetsourcevalue="" hashvalue="" value=""></sync-mapping-picker-stub>
+            </div>
+          </div>
+          <div class="CnTab"><span class="cn-sync-editor__tab-label">Follow-ups <span class="cn-sync-editor__tab-count">0</span></span>
+            <div class="cn-sync-editor__panel">
+              <p class="cn-sync-editor__hint">Synchronizations to trigger when this one completes.</p>
+              <sync-reference-list-stub schema="synchronization" labelkey="name" excludeid="s1" placeholder="Pick follow-up synchronizations" emptylabel="No follow-ups linked yet." inputlabel="Follow-ups" value=""></sync-reference-list-stub>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="NcButton" data-disabled="yes">Cancel
+  </div>
+  <div class="NcButton" data-attrs="title=Save first — the dry run tests the saved version" data-disabled="yes"><span aria-hidden="true" class="material-design-icon play-circle-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M10,16.5L16,12L10,7.5V16.5Z"></path></svg></span> Test
+  </div>
+  <div class="NcButton" data-disabled="yes">
+    <div class="NcLoadingIcon" data-attrs="size=20">
+    </div> Save
+  </div>
+</div>"
+`;
+
+exports[`SynchronizationEditorModal > renders create as recorded 1`] = `
+"<div class="NcDialog" data-name="Create synchronization" data-attrs="noClose=false size=large">
+  <div class="cn-sync-editor">
+    <div class="cn-sync-editor__identity">
+      <div class="NcTextField" data-label="Name *" data-value="" data-attrs="required=">
+      </div>
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1">
+      </div>
+    </div>
+    <div class="cn-sync-editor__columns">
+      <section class="cn-sync-editor__column cn-sync-editor__column--source">
+        <header class="cn-sync-editor__column-header"><span aria-hidden="true" class="material-design-icon database-arrow-right-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M20 22V20H16V18H20V16L23 19L20 22Z"></path></svg></span>
+          <h3>Source</h3>
+        </header>
+        <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Source type</label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object]">
+          </div>
+          <sync-config-widget-stub kind="source" type="api" sourceid="" config="[object Object]"></sync-config-widget-stub><label class="cn-sync-editor__label">Sync mode</label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Sync mode clearable=false options=[object Object],[object Object]">
+          </div>
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-ownership-mode inputId=cn-sync-editor-ownership-mode inputLabel=Who owns these records options=[object Object],[object Object],[object Object]">
+          </div>
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-disappearance-policy inputId=cn-sync-editor-disappearance-policy inputLabel=When the source stops sending a record options=[object Object],[object Object],[object Object],[object Object]">
+          </div>
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-source-destroyed inputId=cn-sync-editor-source-destroyed inputLabel=When the source says it destroyed a record options=[object Object],[object Object]">
+          </div>
+        </div>
+      </section><span class="cn-sync-editor__arrow material-design-icon arrow-right-icon cn-sync-editor__arrow" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"></path></svg></span>
+      <section class="cn-sync-editor__column cn-sync-editor__column--target">
+        <header class="cn-sync-editor__column-header"><span aria-hidden="true" class="material-design-icon database-arrow-left-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M20 13.09V7C20 4.79 16.42 3 12 3S4 4.79 4 7V17C4 19.21 7.59 21 12 21C12.46 21 12.9 21 13.33 20.94C13.12 20.33 13 19.68 13 19L13 18.95C12.68 19 12.35 19 12 19C8.13 19 6 17.5 6 17V14.77C7.61 15.55 9.72 16 12 16C12.65 16 13.27 15.96 13.88 15.89C14.93 14.16 16.83 13 19 13C19.34 13 19.67 13.04 20 13.09M18 12.45C16.7 13.4 14.42 14 12 14S7.3 13.4 6 12.45V9.64C7.47 10.47 9.61 11 12 11S16.53 10.47 18 9.64V12.45M12 9C8.13 9 6 7.5 6 7S8.13 5 12 5 18 6.5 18 7 15.87 9 12 9M22 18V20H18V22L15 19L18 16V18H22Z"></path></svg></span>
+          <h3>Target</h3>
+        </header>
+        <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Target type</label>
+          <div class="NcSelect" data-attrs="aria-label-combobox=Target type clearable=false options=[object Object],[object Object],[object Object]">
           </div>
           <sync-config-widget-stub kind="target" type="register/schema" sourceid="" config="[object Object]"></sync-config-widget-stub>
         </div>
@@ -2001,12 +2280,12 @@ exports[`SynchronizationEditorModal > renders create as recorded 2`] = `
 `;
 
 exports[`SynchronizationEditorModal > renders edit as recorded 1`] = `
-"<div class="NcDialog" data-name="Edit synchronization">
+"<div class="NcDialog" data-name="Edit synchronization" data-attrs="noClose=false size=large">
   <div class="cn-sync-editor">
     <div class="cn-sync-editor__identity">
-      <div class="NcTextField" data-label="Name *">
+      <div class="NcTextField" data-label="Name *" data-value="Sync" data-attrs="required=">
       </div>
-      <div class="NcTextArea" data-label="Description">
+      <div class="NcTextArea" data-label="Description" data-value="" data-attrs="resize=vertical rows=1">
       </div>
     </div>
     <div class="cn-sync-editor__columns">
@@ -2015,16 +2294,16 @@ exports[`SynchronizationEditorModal > renders edit as recorded 1`] = `
           <h3>Source</h3>
         </header>
         <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Source type</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object]">
           </div>
           <sync-config-widget-stub kind="source" type="api" sourceid="" config="[object Object]"></sync-config-widget-stub><label class="cn-sync-editor__label">Sync mode</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Sync mode clearable=false options=[object Object],[object Object]">
           </div>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-ownership-mode inputId=cn-sync-editor-ownership-mode inputLabel=Who owns these records options=[object Object],[object Object],[object Object]">
           </div>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-disappearance-policy inputId=cn-sync-editor-disappearance-policy inputLabel=When the source stops sending a record options=[object Object],[object Object],[object Object],[object Object]">
           </div>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="clearable=false data-testid=sync-editor-source-destroyed inputId=cn-sync-editor-source-destroyed inputLabel=When the source says it destroyed a record options=[object Object],[object Object]">
           </div>
         </div>
       </section><span class="cn-sync-editor__arrow material-design-icon arrow-right-icon cn-sync-editor__arrow" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"></path></svg></span>
@@ -2033,7 +2312,7 @@ exports[`SynchronizationEditorModal > renders edit as recorded 1`] = `
           <h3>Target</h3>
         </header>
         <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Target type</label>
-          <div class="NcSelect">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Target type clearable=false options=[object Object],[object Object],[object Object]">
           </div>
           <sync-config-widget-stub kind="target" type="register/schema" sourceid="" config="[object Object]"></sync-config-widget-stub>
         </div>
@@ -2074,7 +2353,7 @@ exports[`SynchronizationEditorModal > renders edit as recorded 1`] = `
   </div>
   <div class="NcButton">Cancel
   </div>
-  <div class="NcButton"><span aria-hidden="true" class="material-design-icon play-circle-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M10,16.5L16,12L10,7.5V16.5Z"></path></svg></span> Test
+  <div class="NcButton" data-attrs="title="><span aria-hidden="true" class="material-design-icon play-circle-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M10,16.5L16,12L10,7.5V16.5Z"></path></svg></span> Test
   </div>
   <div class="NcButton"><span aria-hidden="true" class="material-design-icon content-save-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M17 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V7L17 3M19 19H5V5H16.17L19 7.83V19M12 12C10.34 12 9 13.34 9 15S10.34 18 12 18 15 16.66 15 15 13.66 12 12 12M6 6H15V10H6V6Z"></path></svg></span> Save
   </div>

@@ -89,22 +89,17 @@
 			<!-- Identity fields — the synchronization metadata itself, so they sit
 			     above the source → transform → target columns rather than inside
 			     one, stacked and capped short of the modal width. -->
-			<div class="cn-sync-editor__identity">
-				<NcTextField
-					v-model="draft.name"
-					:label="nameLabel"
-					:error="!!nameError"
-					:helperText="nameError"
-					:disabled="saving"
-					required
-					@blur="nameTouched = true" />
-				<NcTextArea
-					v-model="draft.description"
-					:label="t('integriq', 'Description')"
-					:disabled="saving"
-					rows="1"
-					resize="vertical" />
-			</div>
+			<EditorIdentityFields
+				block="cn-sync-editor"
+				:name="draft.name"
+				:description="draft.description"
+				:nameLabel="nameLabel"
+				:nameError="nameError"
+				:disabled="saving"
+				required
+				@update:name="draft.name = $event"
+				@update:description="draft.description = $event"
+				@blur="nameTouched = true" />
 
 			<div class="cn-sync-editor__columns">
 				<!-- ── Source ──────────────────────────────────────────── -->
@@ -444,14 +439,11 @@
 				</template>
 				{{ t('integriq', 'Test') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<PlusIcon v-else-if="isCreate" :size="20" />
-					<ContentSaveOutlineIcon v-else :size="20" />
-				</template>
-				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
-			</NcButton>
+			<EditorSaveButton
+				:disabled="!canSave"
+				:saving="saving"
+				:isCreate="isCreate"
+				@click="onSave" />
 		</template>
 	</NcDialog>
 </template>
@@ -466,21 +458,20 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
-	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
 import ArrowRightIcon from 'vue-material-design-icons/ArrowRight.vue'
-import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseArrowLeftOutlineIcon from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseArrowRightOutlineIcon from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import PlayCircleOutlineIcon from 'vue-material-design-icons/PlayCircleOutline.vue'
-import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import SwapHorizontalIcon from 'vue-material-design-icons/SwapHorizontal.vue'
 import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from '../../views/Synchronization/SyncConfigWidget.vue'
 import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue'
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
 import SyncWriteBackFields from '../../views/Synchronization/SyncWriteBackFields.vue'
+import EditorIdentityFields from './EditorIdentityFields.vue'
+import EditorSaveButton from './EditorSaveButton.vue'
 import confirmSave from '../../mixins/confirmSave.js'
 import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import syncKindOptions from '../../mixins/syncKindOptions.js'
@@ -506,6 +497,8 @@ export default {
 	name: 'SynchronizationEditorModal',
 
 	components: {
+		EditorSaveButton,
+		EditorIdentityFields,
 		CnTab,
 		CnTabs,
 		NcButton,
@@ -513,7 +506,6 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
-		NcTextArea,
 		NcTextField,
 		RuleConditionGroup,
 		SyncConfigWidget,
@@ -521,11 +513,9 @@ export default {
 		SyncReferenceList,
 		SyncWriteBackFields,
 		ArrowRightIcon,
-		ContentSaveOutlineIcon,
 		DatabaseArrowLeftOutlineIcon,
 		DatabaseArrowRightOutlineIcon,
 		PlayCircleOutlineIcon,
-		PlusIcon,
 		SwapHorizontalIcon,
 	},
 

@@ -72,22 +72,17 @@
 			     the input → transform → output columns rather than inside one,
 			     stacked and capped short of the modal width: they are not the
 			     work, and stacking sidesteps the input/textarea height gap. -->
-			<div class="cn-mapping-editor__identity">
-				<NcTextField
-					v-model="draft.name"
-					:label="nameLabel"
-					:error="!!nameError"
-					:helperText="nameError"
-					:disabled="saving"
-					required
-					@blur="nameTouched = true" />
-				<NcTextArea
-					v-model="draft.description"
-					:label="t('integriq', 'Description')"
-					:disabled="saving"
-					rows="1"
-					resize="vertical" />
-			</div>
+			<EditorIdentityFields
+				block="cn-mapping-editor"
+				:name="draft.name"
+				:description="draft.description"
+				:nameLabel="nameLabel"
+				:nameError="nameError"
+				:disabled="saving"
+				required
+				@update:name="draft.name = $event"
+				@update:description="draft.description = $event"
+				@blur="nameTouched = true" />
 
 			<!-- The pipeline. Arrows live in the grid gutters rather than in a
 			     separate strip: they carry the input → transform → output
@@ -185,36 +180,26 @@
 				</template>
 				{{ t('integriq', 'Test') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<PlusIcon v-else-if="isCreate" :size="20" />
-					<ContentSaveOutlineIcon v-else :size="20" />
-				</template>
-				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
-			</NcButton>
+			<EditorSaveButton
+				:disabled="!canSave"
+				:saving="saving"
+				:isCreate="isCreate"
+				@click="onSave" />
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-	NcTextArea,
-	NcTextField,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcNoteCard } from '@nextcloud/vue'
 import ArrowRightIcon from 'vue-material-design-icons/ArrowRight.vue'
-import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseArrowLeftOutlineIcon from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseArrowRightOutlineIcon from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import SwapHorizontalIcon from 'vue-material-design-icons/SwapHorizontal.vue'
 import TestTubeIcon from 'vue-material-design-icons/TestTube.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import MappingRulesEditor from '../../views/wrappers/MappingRulesEditor.vue'
+import EditorIdentityFields from './EditorIdentityFields.vue'
+import EditorSaveButton from './EditorSaveButton.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
 import confirmSave from '../../mixins/confirmSave.js'
 import namedEditorDialog from '../../mixins/namedEditorDialog.js'
@@ -224,19 +209,16 @@ export default {
 	name: 'MappingEditorModal',
 
 	components: {
+		EditorSaveButton,
+		EditorIdentityFields,
 		NcButton,
 		NcDialog,
-		NcLoadingIcon,
 		NcNoteCard,
-		NcTextArea,
-		NcTextField,
 		MappingRulesEditor,
 		MappingResultPanel,
 		ArrowRightIcon,
-		ContentSaveOutlineIcon,
 		DatabaseArrowLeftOutlineIcon,
 		DatabaseArrowRightOutlineIcon,
-		PlusIcon,
 		SwapHorizontalIcon,
 		TestTubeIcon,
 	},

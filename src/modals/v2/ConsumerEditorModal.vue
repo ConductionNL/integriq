@@ -358,14 +358,11 @@
 			<NcButton :disabled="saving" @click="onCancel">
 				{{ t('integriq', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<PlusIcon v-else-if="isCreate" :size="20" />
-					<ContentSaveOutlineIcon v-else :size="20" />
-				</template>
-				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
-			</NcButton>
+			<EditorSaveButton
+				:disabled="!canSave"
+				:saving="saving"
+				:isCreate="isCreate"
+				@click="onSave" />
 		</template>
 	</NcDialog>
 </template>
@@ -377,17 +374,15 @@ import {
 	NcButton,
 	NcDialog,
 	NcInputField,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import KeyOutlineIcon from 'vue-material-design-icons/KeyOutline.vue'
-import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import ShieldCheckOutlineIcon from 'vue-material-design-icons/ShieldCheckOutline.vue'
 import SpeedometerIcon from 'vue-material-design-icons/Speedometer.vue'
+import EditorSaveButton from './EditorSaveButton.vue'
 import confirmSave from '../../mixins/confirmSave.js'
 import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import { editorSlotScopeProps } from '../editorSlotScope.js'
@@ -501,18 +496,16 @@ export default {
 	name: 'ConsumerEditorModal',
 
 	components: {
+		EditorSaveButton,
 		CnJsonViewer,
 		NcButton,
 		NcDialog,
 		NcInputField,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		NcTextArea,
 		NcTextField,
-		ContentSaveOutlineIcon,
 		KeyOutlineIcon,
-		PlusIcon,
 		ShieldCheckOutlineIcon,
 		SpeedometerIcon,
 	},

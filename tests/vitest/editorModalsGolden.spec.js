@@ -33,6 +33,15 @@ vi.mock('@nextcloud/dialogs', () => ({
 }))
 vi.mock('@nextcloud/vue', async () => {
 	const { defineComponent, h } = await import('vue')
+	// The non-listener attributes a template sets, so they are pinned too.
+	const plainAttrs = (attrs) => {
+		const keys = Object.keys(attrs)
+			.filter((key) => !/^on[A-Z]/.test(key) && key !== 'class')
+			.sort()
+		return keys.length
+			? keys.map((key) => `${key}=${attrs[key]}`).join(' ')
+			: undefined
+	}
 	const stub = (name) =>
 		defineComponent({
 			name,
@@ -56,6 +65,11 @@ vi.mock('@nextcloud/vue', async () => {
 						'data-error': this.error ? 'yes' : undefined,
 						'data-helper': this.helperText || undefined,
 						'data-name': this.name,
+						'data-value':
+							typeof this.modelValue === 'string'
+								? this.modelValue
+								: undefined,
+						'data-attrs': plainAttrs(this.$attrs),
 					},
 					[
 						this.$slots.icon?.(),
@@ -238,6 +252,31 @@ describe.each(MODALS)('$name', (modal) => {
 		await flushPromises()
 		expect(markup(wrapper)).toMatchSnapshot()
 		expect([wrapper.vm.isCreate, wrapper.vm.nameLabel]).toMatchSnapshot()
+	})
+
+	it('renders an invalid name while saving as recorded', async () => {
+		const wrapper = mountModal(modal, { item: modal.item })
+		await flushPromises()
+		wrapper.vm.draft.name = '!!'
+		wrapper.vm.nameTouched = true
+		wrapper.vm.saving = true
+		await flushPromises()
+		expect(markup(wrapper)).toMatchSnapshot()
+	})
+
+	it('saves from the primary button', async () => {
+		const confirm = vi.fn().mockResolvedValue(undefined)
+		const wrapper = mountModal(modal, { item: modal.item, confirm })
+		await flushPromises()
+		Object.assign(wrapper.vm.draft, { name: 'Named', ...modal.ready })
+		await flushPromises()
+		const buttons = wrapper.findAllComponents({ name: 'NcButton' })
+		const primary = buttons
+			.filter((b) => b.props('variant') === 'primary')
+			.at(-1)
+		primary.vm.$attrs.onClick()
+		await flushPromises()
+		expect(confirm).toHaveBeenCalledTimes(1)
 	})
 
 	it('writes each listener into the draft as recorded', async () => {
