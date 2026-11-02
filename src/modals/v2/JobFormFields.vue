@@ -291,8 +291,8 @@ import {
 	dateValueFromStored,
 	formatDateValue,
 	groupFieldRuns,
+	needsSynchronizationPicker,
 	readSynchronizationId,
-	SYNCHRONIZATION_ACTION_CLASS,
 	writeSynchronizationId,
 } from './jobDraft.js'
 
@@ -388,12 +388,13 @@ export default {
 		/**
 		 * Whether the Synchronization picker applies to the current draft.
 		 *
-		 * @return {boolean} True when the chosen class is SynchronizationAction.
+		 * @return {boolean} True when the chosen class is SynchronizationAction,
+		 *   under its current or its old name.
 		 *
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		needsSynchronizationPicker() {
-			return this.formData?.jobClass === SYNCHRONIZATION_ACTION_CLASS
+			return needsSynchronizationPicker(this.formData?.jobClass)
 		},
 
 		/**

@@ -58,6 +58,7 @@ use RuntimeException;
  * @covers \OCA\Integriq\Service\MigrationSubject
  * @covers \OCA\Integriq\Service\MigrationEntityReader
  * @covers \OCA\Integriq\Exception\EntityNotMigratableException
+ * @uses   \OCA\Integriq\Service\Job\MovedJobClasses
  */
 class JobToFlowGeneratorTest extends TestCase {
 
@@ -865,4 +866,64 @@ class JobToFlowGeneratorTest extends TestCase {
 		);
 
 	}//end testAMigratableJobIsNotRefused()
+
+	/**
+	 * A job still holding a moved action's old name is read under its current name.
+	 *
+	 * The repair step rewrites stored names, but a job read before it ran, or
+	 * written back under the old name by OpenRegister, still holds one.
+	 *
+	 * @param string $oldName The old action class name.
+	 * @param string $node    The node type of the step it must become.
+	 * @param array  $config  The step config it must get.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider oldActionNames
+	 */
+	public function testAJobHoldingAnOldActionNameIsMigratedLikeItsCurrentName(string $oldName, string $node, array $config): void {
+		$arguments = ['synchronizationId' => 's1'];
+		if (isset($config['flowId']) === true) {
+			$arguments = ['flowId' => 'f1'];
+		}
+
+		$job = $this->job(overrides: ['jobClass' => $oldName, 'arguments' => $arguments]);
+
+		$this->assertSame(expected: [], actual: $this->generator->refusalsFor(job: $job));
+		$flow = $this->generator->generateFrom(job: $job);
+		$this->assertSame(expected: $node, actual: $this->node(flow: $flow, id: 'run')['type']);
+		$this->assertSame(expected: $config, actual: $this->node(flow: $flow, id: 'run')['config']);
+
+	}//end testAJobHoldingAnOldActionNameIsMigratedLikeItsCurrentName()
+
+	/**
+	 * The old names of the actions a flow can express, with the step each becomes.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: array}>
+	 */
+	public static function oldActionNames(): array {
+		$sync = ['synchronization' => 's1', 'output' => JobToFlowGenerator::KEY_SYNC_RESULT];
+		$flow = ['flowId' => 'f1', 'wait' => true, 'fanOut' => false];
+
+		return [
+			'synchronization' => ['OCA\Integriq\Action\SynchronizationAction', SynchronizationRunNode::NODE_ID, $sync],
+			'synchronization, leading backslash' => ['\\OCA\Integriq\Action\SynchronizationAction', SynchronizationRunNode::NODE_ID, $sync],
+			'flow' => ['OCA\Integriq\Action\FlowAction', 'openregister.sub-flow', $flow],
+		];
+
+	}//end oldActionNames()
+
+	/**
+	 * An old ping action name is refused for what a ping cannot do, not as an unknown class.
+	 *
+	 * @return void
+	 */
+	public function testAnOldPingActionNameIsRefusedAsAPing(): void {
+		$reasons = $this->refusal(
+			job: $this->job(overrides: ['jobClass' => 'OCA\Integriq\Action\PingAction', 'arguments' => ['sourceId' => 's']])
+		);
+
+		$this->assertStringContainsString(needle: 'refuses an empty "endpoint"', haystack: $reasons);
+
+	}//end testAnOldPingActionNameIsRefusedAsAPing()
 }//end class

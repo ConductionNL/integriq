@@ -32,6 +32,46 @@ export const SYNCHRONIZATION_ACTION_CLASS =
 	'OCA\\Integriq\\Service\\Job\\SynchronizationAction'
 
 /**
+ * Old name => current name of every job action that moved out of
+ * `OCA\Integriq\Action`. Mirrors the action entries of
+ * lib/Service/Job/MovedJobClasses.php: a job object keeps an old name until the
+ * repair step rewrites it, and OpenRegister can write one back.
+ */
+export const MOVED_JOB_CLASSES = Object.freeze({
+	'OCA\\Integriq\\Action\\EventAction': 'OCA\\Integriq\\Service\\Job\\EventAction',
+	'OCA\\Integriq\\Action\\ExchangeJobAction':
+		'OCA\\Integriq\\Service\\Job\\ExchangeJobAction',
+	'OCA\\Integriq\\Action\\FlowAction': 'OCA\\Integriq\\Service\\Job\\FlowAction',
+	'OCA\\Integriq\\Action\\PingAction': 'OCA\\Integriq\\Service\\Job\\PingAction',
+	'OCA\\Integriq\\Action\\SynchronizationAction': SYNCHRONIZATION_ACTION_CLASS,
+})
+
+/**
+ * A job's action class under its current name.
+ *
+ * @param {string|undefined} jobClass The stored class name.
+ *
+ * @return {string|undefined} The current name of a moved action, otherwise
+ *   the value as given.
+ */
+export function currentJobClass(jobClass) {
+	return Object.hasOwn(MOVED_JOB_CLASSES, jobClass ?? '')
+		? MOVED_JOB_CLASSES[jobClass]
+		: jobClass
+}
+
+/**
+ * Whether the Synchronization picker applies to a job with this action class.
+ *
+ * @param {string|undefined} jobClass The stored class name, old or current.
+ *
+ * @return {boolean} True for the synchronization action.
+ */
+export function needsSynchronizationPicker(jobClass) {
+	return currentJobClass(jobClass) === SYNCHRONIZATION_ACTION_CLASS
+}
+
+/**
  * The nested key inside a job's `arguments` object that
  * `SynchronizationAction::run()` reads to find the synchronization to run.
  */
