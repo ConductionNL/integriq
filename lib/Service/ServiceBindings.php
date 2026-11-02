@@ -171,6 +171,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
 use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClient;
@@ -646,6 +648,7 @@ final class ServiceBindings {
 	 */
 	private function registerInjectedHelpers(IRegistrationContext $context): void {
 		$context->registerServiceAlias(EgressGuardInterface::class, EgressGuard::class);
+		$context->registerServiceAlias(SecretRedactorInterface::class, SensitiveFieldRegistry::class);
 		$context->registerServiceAlias(SecurityServiceInterface::class, SecurityService::class);
 		$context->registerServiceAlias(ResponseDecoderInterface::class, ResponseDecoder::class);
 		$context->registerServiceAlias(OpenRegisterCredentialBridgeInterface::class, OpenRegisterCredentialBridge::class);

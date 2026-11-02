@@ -238,6 +238,8 @@ use OCA\Integriq\Service\RunSummaryService;
 use OCA\Integriq\Service\RunSummaryServiceInterface;
 use OCA\Integriq\Service\SearchService;
 use OCA\Integriq\Service\SearchServiceInterface;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\SecurityService;
 use OCA\Integriq\Service\SecurityServiceInterface;
 use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
@@ -431,6 +433,7 @@ class ServiceRegistrarTest extends TestCase {
 		SourceTestServiceInterface::class => SourceTestService::class,
 		SynchronizationLookupInterface::class => SynchronizationService::class,
 		EgressGuardInterface::class => EgressGuard::class,
+		SecretRedactorInterface::class => SensitiveFieldRegistry::class,
 		SecurityServiceInterface::class => SecurityService::class,
 		ResponseDecoderInterface::class => ResponseDecoder::class,
 		OpenRegisterCredentialBridgeInterface::class => OpenRegisterCredentialBridge::class,

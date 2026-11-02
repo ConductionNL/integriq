@@ -116,6 +116,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\SourceTestServiceInterface, OCA\\Integriq\\Service\\SourceTestService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\SynchronizationLookupInterface, OCA\\Integriq\\Service\\SynchronizationService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\EgressGuardInterface, OCA\\Integriq\\Service\\Security\\EgressGuard)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\SecretRedactorInterface, OCA\\Integriq\\Service\\Security\\SensitiveFieldRegistry)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\SecurityServiceInterface, OCA\\Integriq\\Service\\SecurityService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ResponseDecoderInterface, OCA\\Integriq\\Service\\ResponseDecoder)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Consumer\\OpenRegisterCredentialBridgeInterface, OCA\\Integriq\\Service\\Consumer\\OpenRegisterCredentialBridge)",

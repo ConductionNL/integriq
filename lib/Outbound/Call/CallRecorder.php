@@ -35,7 +35,7 @@ namespace OCA\Integriq\Outbound\Call;
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\MessageRecorder;
-use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -101,13 +101,13 @@ class CallRecorder implements CallRecorderInterface {
 	 * @param ORObjectService $objectService Persists the records.
 	 * @param BodyRedactor $redactor Redacts before the write, never after.
 	 * @param BodyCapturePolicy $bodyCapturePolicy Keeps bodies only inside a source's investigation window.
-	 * @param SensitiveFieldRegistry $sensitiveFields The header-name and issued-token rules CallService's call log uses.
+	 * @param SecretRedactorInterface $sensitiveFields The header-name and issued-token rules CallService's call log uses.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly BodyRedactor $redactor,
 		private readonly BodyCapturePolicy $bodyCapturePolicy,
-		private readonly SensitiveFieldRegistry $sensitiveFields = new SensitiveFieldRegistry(),
+		private readonly SecretRedactorInterface $sensitiveFields,
 	) {
 
 	}//end __construct()
