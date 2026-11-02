@@ -64,9 +64,7 @@
 					:label="t('integriq', 'Endpoint')"
 					:modelValue="configValue('endpoint')"
 					:placeholder="t('integriq', 'Path appended to the source URL')"
-					@update:modelValue="
-						(value) => onConfigUpdate('endpoint', value)
-					" />
+					@update:modelValue="onConfigUpdate('endpoint', $event)" />
 			</div>
 
 			<div class="sync-config__field">
@@ -76,9 +74,7 @@
 					:placeholder="
 						t('integriq', 'Dot-path to the id field in the API response')
 					"
-					@update:modelValue="
-						(value) => onConfigUpdate('idPosition', value)
-					" />
+					@update:modelValue="onConfigUpdate('idPosition', $event)" />
 			</div>
 
 			<div class="sync-config__field">
@@ -86,9 +82,7 @@
 					:label="t('integriq', 'Results position')"
 					:modelValue="configValue('resultsPosition')"
 					:placeholder="t('integriq', 'Dot-path to the list of items')"
-					@update:modelValue="
-						(value) => onConfigUpdate('resultsPosition', value)
-					" />
+					@update:modelValue="onConfigUpdate('resultsPosition', $event)" />
 			</div>
 
 			<!-- REQ-MSV-003: the message schema each source object or target
@@ -156,9 +150,7 @@
 					:label="t('integriq', 'Object filter (optional)')"
 					:modelValue="configValue('filter')"
 					:placeholder="t('integriq', 'JSON-encoded OR query filter')"
-					@update:modelValue="
-						(value) => onConfigUpdate('filter', value)
-					" />
+					@update:modelValue="onConfigUpdate('filter', $event)" />
 			</div>
 		</template>
 
@@ -188,9 +180,7 @@
 						class="sync-config__file-field"
 						:modelValue="sourceIdValue"
 						placeholder="/example/path/*.json"
-						@update:modelValue="
-							(value) => $emit('update:sourceId', value)
-						" />
+						@update:modelValue="$emit('update:sourceId', $event)" />
 					<NcButton
 						variant="secondary"
 						:aria-label="t('integriq', 'Browse Files app')"
@@ -221,9 +211,7 @@
 					:label="t('integriq', 'File format')"
 					:modelValue="configValue('format')"
 					placeholder="json | xml | csv"
-					@update:modelValue="
-						(value) => onConfigUpdate('format', value)
-					" />
+					@update:modelValue="onConfigUpdate('format', $event)" />
 			</div>
 
 			<div class="sync-config__field">
@@ -233,9 +221,7 @@
 					:placeholder="
 						t('integriq', 'Dot-path to the id field in each record')
 					"
-					@update:modelValue="
-						(value) => onConfigUpdate('idPosition', value)
-					" />
+					@update:modelValue="onConfigUpdate('idPosition', $event)" />
 			</div>
 		</template>
 
@@ -302,7 +288,7 @@
 				:sourceId="sourceIdValue"
 				:tableId="configValue('tableId')"
 				:config="config"
-				@update:config="(value) => $emit('update:config', value)" />
+				@update:config="$emit('update:config', $event)" />
 		</template>
 
 		<!-- Nextcloud Form mode (source only — nextcloud-forms-connector REQ-002) -->
@@ -380,14 +366,28 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { FilePickerType, getFilePickerBuilder } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
 import FormsFieldMapping from './FormsFieldMapping.vue'
 import TablesColumnMapping from './TablesColumnMapping.vue'
-import { mapFormOptions } from './formsBridge.js'
-import { extractResults, mapTableOptions } from './tablesBridge.js'
+import messageSchemaOptions from '../../mixins/messageSchemaOptions.js'
+import {
+	bridgeError,
+	bridgeState,
+	configCopy,
+	formOptionsFor,
+	listOf,
+	lookupState,
+	pickerFailure,
+	registerOption,
+	schemaLabelMap,
+	schemaOption,
+	sourceFilePicker,
+	sourceOption,
+	tableOptionsFor,
+	TYPE_LOADERS,
+} from './syncConfigOptions.js'
 
 /**
  * Generate a stable input-id suffix so the two SyncConfigWidget
@@ -408,6 +408,8 @@ export default {
 		TablesColumnMapping,
 		FormsFieldMapping,
 	},
+
+	mixins: [messageSchemaOptions],
 
 	props: {
 		/**
@@ -463,28 +465,10 @@ export default {
 		const seq = ++widgetSeq
 		return {
 			widgetUid: seq,
-			sourceOptions: [],
-			sourcesLoading: false,
-			registerOptions: [],
-			registersLoading: false,
-			selectedRegisterRecord: null,
-			/**
-			 * Schema id → display label, from `/apps/openregister/api/schemas`.
-			 * A register's own `schemas` array carries bare ids, so without
-			 * this the picker can only show the id back to the user.
-			 */
-			schemaLabelsById: {},
+			...lookupState(),
 			pickingFile: false,
 			pickerError: '',
-			tableOptions: [],
-			tablesLoading: false,
-			tablesError: '',
-			formOptions: [],
-			formsLoading: false,
-			formsError: '',
-			/** Message schemas a source object or target body can be checked against. */
-			messageSchemaOptions: [],
-			messageSchemasLoading: false,
+			...bridgeState(),
 		}
 	},
 
@@ -521,13 +505,8 @@ export default {
 		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		validationSchemaOption() {
-			const uuid = this.config?.validation?.messageSchema
-			if (!uuid) return null
-			return (
-				this.messageSchemaOptions.find((option) => option.id === uuid) || {
-					id: uuid,
-					label: uuid,
-				}
+			return this.messageSchemaOptionFor(
+				this.config?.validation?.messageSchema,
 			)
 		},
 
@@ -595,22 +574,9 @@ export default {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg) return []
 			const schemas = Array.isArray(reg.schemas) ? reg.schemas : []
-			return schemas.map((schema) => {
-				const isRecord = schema !== null && typeof schema === 'object'
-				const id = String(
-					isRecord ? (schema.id ?? schema.slug ?? '') : schema,
-				)
-				const inlineLabel = isRecord
-					? schema.title || schema.name || schema.slug || ''
-					: ''
-				return {
-					id,
-					// Fall back to the id only when the schema list has not
-					// resolved (or no longer contains this schema) — better a
-					// visible id than an empty option.
-					label: inlineLabel || this.schemaLabelsById[id] || id,
-				}
-			})
+			return schemas.map((schema) =>
+				schemaOption(schema, this.schemaLabelsById),
+			)
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
@@ -688,38 +654,9 @@ export default {
 			 * @spec openspec/specs/sync-editor-ui/spec.md
 			 */
 			handler(value) {
-				if (value === 'api' && this.sourceOptions.length === 0) {
-					this.fetchSources()
-				}
-				if (value === 'api' && this.messageSchemaOptions.length === 0) {
-					this.fetchMessageSchemas()
-				}
-				if (value === 'register/schema') {
-					if (this.registerOptions.length === 0) {
-						this.fetchRegisters()
-					}
-					// Separate call, separately guarded: registers carry schema
-					// IDS only, so the names come from the schema endpoint, and
-					// the two caches must not be able to drift apart.
-					if (Object.keys(this.schemaLabelsById).length === 0) {
-						this.fetchSchemaLabels()
-					}
-				}
-				if (value === 'nextcloud-table') {
-					if (this.sourceOptions.length === 0) {
-						this.fetchSources()
-					}
-					if (this.sourceIdValue) {
-						this.fetchTables()
-					}
-				}
-				if (value === 'nextcloud-form') {
-					if (this.sourceOptions.length === 0) {
-						this.fetchSources()
-					}
-					if (this.sourceIdValue) {
-						this.fetchForms()
-					}
+				const loader = TYPE_LOADERS[value]
+				if (loader) {
+					this[loader]()
 				}
 			},
 		},
@@ -739,6 +676,76 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The lists the api type needs: sources and message schemas.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		loadApiLists() {
+			this.loadSourcesOnce()
+			if (this.messageSchemaOptions.length === 0) {
+				this.fetchMessageSchemas()
+			}
+		},
+
+		/**
+		 * The lists the register/schema type needs. Registers carry schema
+		 * ids only, so the names come from the schema endpoint in a separate,
+		 * separately guarded call, and the two caches cannot drift apart.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		loadRegisterLists() {
+			if (this.registerOptions.length === 0) {
+				this.fetchRegisters()
+			}
+			if (Object.keys(this.schemaLabelsById).length === 0) {
+				this.fetchSchemaLabels()
+			}
+		},
+
+		/**
+		 * The lists the nextcloud-table type needs: sources, and the tables
+		 * of the chosen source.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
+		loadTableLists() {
+			this.loadSourcesOnce()
+			if (this.sourceIdValue) {
+				this.fetchTables()
+			}
+		},
+
+		/**
+		 * The lists the nextcloud-form type needs: sources, and the forms of
+		 * the chosen source.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		loadFormLists() {
+			this.loadSourcesOnce()
+			if (this.sourceIdValue) {
+				this.fetchForms()
+			}
+		},
+
+		/**
+		 * Load the sources unless they are already loaded.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		loadSourcesOnce() {
+			if (this.sourceOptions.length === 0) {
+				this.fetchSources()
+			}
+		},
+
 		/**
 		 * Read one key out of the `config` blob as a string for binding to a
 		 * text input. Missing keys and null become '' so inputs never bind
@@ -769,12 +776,7 @@ export default {
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		onConfigUpdate(key, value) {
-			const next =
-				this.config
-				&& typeof this.config === 'object'
-				&& !Array.isArray(this.config)
-					? { ...this.config }
-					: {}
+			const next = configCopy(this.config)
 			if (value === '' || value == null) {
 				delete next[key]
 			} else {
@@ -793,12 +795,7 @@ export default {
 		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
 		writeValidation(validation) {
-			const next =
-				this.config
-				&& typeof this.config === 'object'
-				&& !Array.isArray(this.config)
-					? { ...this.config }
-					: {}
+			const next = configCopy(this.config)
 			if (validation === null) {
 				delete next.validation
 			} else {
@@ -841,37 +838,6 @@ export default {
 		},
 
 		/**
-		 * Load the message schemas. Soft-fails to an empty list.
-		 *
-		 * @return {Promise<void>} Resolves once loaded.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
-		 */
-		async fetchMessageSchemas() {
-			this.messageSchemasLoading = true
-			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/integriq/message_schema',
-					),
-				)
-				this.messageSchemaOptions = (response.data?.results || []).map(
-					(schema) => ({
-						id: schema['@self']?.id || schema.id,
-						label:
-							schema.name
-							+ (schema.version ? ' (' + schema.version + ')' : ''),
-					}),
-				)
-			} catch (err) {
-				this.messageSchemaOptions = []
-				// eslint-disable-next-line no-console
-				console.warn('[SyncConfigWidget] message schema fetch failed', err)
-			} finally {
-				this.messageSchemasLoading = false
-			}
-		},
-
-		/**
 		 * Handle a pick in the Source selector, emitting the Source UUID up
 		 * to the parent's `sourceId`/`targetId` field. Clearing the select
 		 * emits '' so the parent unsets the id.
@@ -899,12 +865,7 @@ export default {
 		onTablePick(option) {
 			// Store the numeric table id in the config blob; clear any stale
 			// column mapping since it referenced the previous table's columns.
-			const next =
-				this.config
-				&& typeof this.config === 'object'
-				&& !Array.isArray(this.config)
-					? { ...this.config }
-					: {}
+			const next = configCopy(this.config)
 			if (option?.id) {
 				next.tableId = Number(option.id)
 			} else {
@@ -929,20 +890,9 @@ export default {
 			this.tablesLoading = true
 			this.tablesError = ''
 			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/integriq/api/synchronizations/tables-bridge/tables',
-					),
-					{ params: { sourceId: this.sourceIdValue } },
-				)
-				this.tableOptions = mapTableOptions(extractResults(response.data))
+				this.tableOptions = await tableOptionsFor(this.sourceIdValue)
 			} catch (err) {
-				this.tableOptions = []
-				this.tablesError =
-					err?.response?.data?.error
-					|| t('integriq', 'Could not load tables for this source.')
-				// eslint-disable-next-line no-console
-				console.warn('[SyncConfigWidget] tables fetch failed', err)
+				this.tablesFailed(err)
 			} finally {
 				this.tablesLoading = false
 			}
@@ -958,16 +908,28 @@ export default {
 		 *
 		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
 		 */
+		/**
+		 * Empty the table list and say why it could not be loaded.
+		 *
+		 * @param {object} err The failed request.
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
+		tablesFailed(err) {
+			this.tableOptions = []
+			this.tablesError = bridgeError(
+				err,
+				t('integriq', 'Could not load tables for this source.'),
+			)
+			// eslint-disable-next-line no-console
+			console.warn('[SyncConfigWidget] tables fetch failed', err)
+		},
+
 		onFormPick(option) {
 			// Store the numeric form id in the config blob; clear no other
 			// keys — unlike nextcloud-table there is no columnMapping stored
 			// here (FormsFieldMapping is read-only labelling, no write payload).
-			const next =
-				this.config
-				&& typeof this.config === 'object'
-				&& !Array.isArray(this.config)
-					? { ...this.config }
-					: {}
+			const next = configCopy(this.config)
 			if (option?.id) {
 				next.formId = Number(option.id)
 			} else {
@@ -991,20 +953,9 @@ export default {
 			this.formsLoading = true
 			this.formsError = ''
 			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/integriq/api/synchronizations/forms-bridge/forms',
-					),
-					{ params: { sourceId: this.sourceIdValue } },
-				)
-				this.formOptions = mapFormOptions(extractResults(response.data))
+				this.formOptions = await formOptionsFor(this.sourceIdValue)
 			} catch (err) {
-				this.formOptions = []
-				this.formsError =
-					err?.response?.data?.error
-					|| t('integriq', 'Could not load forms for this source.')
-				// eslint-disable-next-line no-console
-				console.warn('[SyncConfigWidget] forms fetch failed', err)
+				this.formsFailed(err)
 			} finally {
 				this.formsLoading = false
 			}
@@ -1022,6 +973,23 @@ export default {
 		 *
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
+		/**
+		 * Empty the form list and say why it could not be loaded.
+		 *
+		 * @param {object} err The failed request.
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		formsFailed(err) {
+			this.formOptions = []
+			this.formsError = bridgeError(
+				err,
+				t('integriq', 'Could not load forms for this source.'),
+			)
+			// eslint-disable-next-line no-console
+			console.warn('[SyncConfigWidget] forms fetch failed', err)
+		},
+
 		onRegisterPick(option) {
 			if (!option?.id) {
 				this.$emit('update:sourceId', '')
@@ -1067,16 +1035,7 @@ export default {
 					// under HTTP 200. See FlowDetailPage.fetchPickerOptions().
 					{ params: { _limit: 500 } },
 				)
-				const data = response.data
-				const list = Array.isArray(data?.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.sourceOptions = list.map((row) => ({
-					id: String(row.id || row.uuid),
-					label: row.name || row.title || row.id,
-				}))
+				this.sourceOptions = listOf(response.data).map(sourceOption)
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn('[SyncConfigWidget] sources fetch failed', err)
@@ -1104,26 +1063,12 @@ export default {
 			this.pickerError = ''
 			this.pickingFile = true
 			try {
-				const picker = getFilePickerBuilder(
-					t('integriq', 'Pick a sync source file'),
-				)
-					.setMultiSelect(false)
-					.setMimeTypeFilter([])
-					.setModal(true)
-					.setType(FilePickerType.Choose)
-					.allowDirectories(false)
-					.build()
-				const path = await picker.pick()
+				const path = await sourceFilePicker().pick()
 				if (path) {
 					this.$emit('update:sourceId', String(path))
 				}
 			} catch (err) {
-				// User-cancellation in @nextcloud/dialogs 3.x rejects the
-				// promise — treat any non-string-path error as a soft
-				// dismissal and only surface a real error message.
-				if (err && err.message && !/cancel/i.test(err.message)) {
-					this.pickerError = err.message
-				}
+				this.pickerError = pickerFailure(err)
 				// eslint-disable-next-line no-console
 				console.debug('[SyncConfigWidget] file picker closed', err)
 			} finally {
@@ -1147,20 +1092,7 @@ export default {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/schemas'),
 				)
-				const data = response.data
-				const list = Array.isArray(data?.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				const labels = {}
-				for (const schema of list) {
-					const id = schema?.id ?? schema?.uuid
-					if (id === undefined || id === null) continue
-					labels[String(id)] =
-						schema.title || schema.name || schema.slug || String(id)
-				}
-				this.schemaLabelsById = labels
+				this.schemaLabelsById = schemaLabelMap(listOf(response.data))
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn('[SyncConfigWidget] schemas fetch failed', err)
@@ -1169,33 +1101,32 @@ export default {
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * When the parent already holds a register/schema id, pick that
+		 * register so the schema picker has its options without a second
+		 * round-trip.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		seedSelectedRegister() {
+			const [regId] = this.sourceIdValue.split('/')
+			if (regId) {
+				this.selectedRegisterRecord =
+					this.registerOptions.find(
+						(opt) => String(opt.id) === String(regId),
+					) || null
+			}
+		},
+
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/registers'),
 				)
-				const data = response.data
-				const list = Array.isArray(data?.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.registerOptions = list.map((reg) => ({
-					id: String(reg.id),
-					label: reg.title || reg.name || reg.slug || String(reg.id),
-					schemas: Array.isArray(reg.schemas) ? reg.schemas : [],
-				}))
-				// If the parent has a pre-existing register/schema id,
-				// seed selectedRegisterRecord so the schema picker has its
-				// options ready without a second round-trip.
-				const [regId] = this.sourceIdValue.split('/')
-				if (regId) {
-					this.selectedRegisterRecord =
-						this.registerOptions.find(
-							(opt) => String(opt.id) === String(regId),
-						) || null
-				}
+				this.registerOptions = listOf(response.data).map(registerOption)
+				this.seedSelectedRegister()
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn('[SyncConfigWidget] registers fetch failed', err)
