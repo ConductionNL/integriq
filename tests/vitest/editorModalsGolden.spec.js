@@ -18,12 +18,13 @@ import { describe, expect, it, vi } from 'vitest'
 import ConsumerEditorModal from '@/modals/v2/ConsumerEditorModal.vue'
 import MappingEditorModal from '@/modals/v2/MappingEditorModal.vue'
 import RuleEditorModal from '@/modals/v2/RuleEditorModal.vue'
+import SynchronizationEditorModal from '@/modals/v2/SynchronizationEditorModal.vue'
 
-const { toasts } = vi.hoisted(() => ({ toasts: [] }))
+const { toasts, post } = vi.hoisted(() => ({ toasts: [], post: vi.fn() }))
 vi.mock('@nextcloud/axios', () => ({
 	default: {
 		get: vi.fn().mockResolvedValue({ data: { results: [] } }),
-		post: vi.fn().mockResolvedValue({ data: {} }),
+		post,
 	},
 }))
 vi.mock('@nextcloud/dialogs', () => ({
@@ -95,8 +96,13 @@ vi.mock('@conduction/nextcloud-vue', async () => {
 })
 
 globalThis.t = translate
+post.mockResolvedValue({ data: {} })
 
 const STUBS = {
+	SyncConfigWidget: true,
+	SyncMappingPicker: true,
+	SyncReferenceList: true,
+	SyncWriteBackFields: true,
 	FlowForm: true,
 	RuleConditionGroup: true,
 	MappingResultPanel: true,
@@ -138,6 +144,17 @@ const MODALS = [
 		name: 'MappingEditorModal',
 		component: MappingEditorModal,
 		item: { id: 'm1', name: 'Mapping', mapping: { a: '{{ b }}' }, unset: ['x'] },
+	},
+	{
+		name: 'SynchronizationEditorModal',
+		component: SynchronizationEditorModal,
+		item: {
+			id: 's1',
+			name: 'Sync',
+			sourceType: 'api',
+			targetType: 'register/schema',
+			sourceConfig: { disappearancePolicy: 'delete' },
+		},
 	},
 ]
 
@@ -310,6 +327,42 @@ describe.each(MODALS)('$name', (modal) => {
 		noConfirm.vm.draft.name = 'Named'
 		await noConfirm.vm.onSave()
 		expect(confirm).not.toHaveBeenCalled()
+	})
+})
+
+describe('SynchronizationEditorModal disappearance policy', () => {
+	it.each([
+		[
+			'a refused policy',
+			() =>
+				Promise.reject({
+					response: { status: 400, data: { error: 'unknown' } },
+				}),
+		],
+		[
+			'a refused policy without reason',
+			() => Promise.reject({ response: { status: 400 } }),
+		],
+		['a failed check', () => Promise.reject(new Error('down'))],
+	])('stops the save on %s', async (_label, answer) => {
+		toasts.length = 0
+		post.mockImplementationOnce(answer)
+		const confirm = vi.fn()
+		const close = vi.fn()
+		const wrapper = mountModal(MODALS[3], {
+			item: MODALS[3].item,
+			confirm,
+			close,
+		})
+		await flushPromises()
+		await wrapper.vm.onSave()
+		expect({
+			confirmed: confirm.mock.calls.length,
+			closed: close.mock.calls.length,
+			toasts: [...toasts],
+			saving: wrapper.vm.saving,
+			saveError: wrapper.vm.saveError,
+		}).toMatchSnapshot()
 	})
 })
 
