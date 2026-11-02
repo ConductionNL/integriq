@@ -24,10 +24,10 @@ namespace OCA\Integriq\Tests\Unit\Adapters\Slo;
 use OCA\Integriq\Adapters\Slo\JsonTagReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
+use OCA\Integriq\Adapters\Slo\SloCurriculumException;
 use OCA\Integriq\Adapters\Slo\SloCurriculumNodeReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
-use OCA\Integriq\Exception\SloCurriculumException;
 use PHPUnit\Framework\TestCase;
 
 /**

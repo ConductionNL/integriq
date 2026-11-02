@@ -17,7 +17,7 @@
  * uuid, counts and the client flavour, nothing else.
  *
  * @category Source
- * @package  OCA\Integriq\Sources\Slo
+ * @package  OCA\Integriq\Adapters\Slo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,15 +33,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Sources\Slo;
+namespace OCA\Integriq\Adapters\Slo;
 
 use InvalidArgumentException;
-use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
-use OCA\Integriq\Adapters\Slo\SloCurriculumMapperInterface;
-use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistryInterface;
-use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalkerInterface;
-use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 

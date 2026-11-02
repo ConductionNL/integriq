@@ -19,9 +19,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
-
 /**
  * Public operations of {@see SloCurriculumPresetRegistry} that other components call.
  */
