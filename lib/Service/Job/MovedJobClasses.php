@@ -62,20 +62,6 @@ final class MovedJobClasses {
 	private static bool $registered = false;
 
 	/**
-	 * The current name of a moved class, or null when the name did not move.
-	 *
-	 * @param string $class A class name, as stored
-	 *
-	 * @return string|null The current class name, or null
-	 *
-	 * @spec exclude Class-move plumbing: maps a stored class name to where the
-	 *       class lives now and adds no behaviour of its own.
-	 */
-	public static function newNameOf(string $class): ?string {
-		return (self::NEW_NAMES[$class] ?? null);
-	}//end newNameOf()
-
-	/**
 	 * Make every old name resolve to its moved class, lazily, on first use.
 	 *
 	 * Safe to call more than once: the autoloader is registered once per process.
@@ -93,9 +79,8 @@ final class MovedJobClasses {
 		self::$registered = true;
 		spl_autoload_register(
 			static function (string $class): void {
-				$newName = self::newNameOf(class: $class);
-				if ($newName !== null) {
-					class_alias($newName, $class);
+				if (isset(self::NEW_NAMES[$class]) === true) {
+					class_alias(self::NEW_NAMES[$class], $class);
 				}
 			}
 		);

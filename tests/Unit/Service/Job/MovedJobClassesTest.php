@@ -48,21 +48,6 @@ class MovedJobClassesTest extends TestCase {
 	}//end testEveryNewNameExistsAndNoOldNameIsAFile()
 
 	/**
-	 * Names that did not move have no new name.
-	 *
-	 * @return void
-	 */
-	public function testANameThatDidNotMoveHasNoNewName(): void {
-		$this->assertNull(MovedJobClasses::newNameOf(class: 'OCA\\Integriq\\Service\\Job\\SynchronizationAction'));
-		$this->assertNull(MovedJobClasses::newNameOf(class: 'OCA\\OpenConnector\\Action\\SynchronizationAction'));
-		$this->assertNull(MovedJobClasses::newNameOf(class: ''));
-		$this->assertSame(
-			'OCA\\Integriq\\Service\\Job\\SynchronizationAction',
-			MovedJobClasses::newNameOf(class: 'OCA\\Integriq\\Action\\SynchronizationAction')
-		);
-	}//end testANameThatDidNotMoveHasNoNewName()
-
-	/**
 	 * After registerAliases() an old name loads, and is the moved class itself,
 	 * so the container builds the same object for either name.
 	 *
