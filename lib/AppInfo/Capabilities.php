@@ -20,7 +20,7 @@
  * leaf's probe simply finds no key at all).
  *
  * @category Capabilities
- * @package  OCA\Integriq
+ * @package  OCA\Integriq\AppInfo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,7 +35,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq;
+namespace OCA\Integriq\AppInfo;
 
 use OCP\Capabilities\ICapability;
 

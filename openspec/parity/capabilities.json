@@ -9930,7 +9930,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Datasource/DashboardDatasourceService.php:140 resolve(sourceId, valueExpr, params, ttl); HTTP facade appinfo/routes.php:351 -> lib/Controller/DatasourceController.php:84 (egress guard strips url/host); capability advertised lib/Capabilities.php:69 registered at lib/AppInfo/Application.php:690; docs/developers/dashboard-http-datasource.md; consumer ConductionNL/launchpad development lib/Service/LiveTileService.php:146,156 calls Service\\Datasource\\DashboardDatasourceService::resolve in-process (fetched via gh api ?ref=development)",
+				"evidence": "lib/Service/Datasource/DashboardDatasourceService.php:140 resolve(sourceId, valueExpr, params, ttl); HTTP facade appinfo/routes.php:351 -> lib/Controller/DatasourceController.php:84 (egress guard strips url/host); capability advertised lib/AppInfo/Capabilities.php:69 registered at lib/AppInfo/Application.php:690; docs/developers/dashboard-http-datasource.md; consumer ConductionNL/launchpad development lib/Service/LiveTileService.php:146,156 calls Service\\Datasource\\DashboardDatasourceService::resolve in-process (fetched via gh api ?ref=development)",
 				"spec": "openspec/specs/dashboard-http-datasource",
 				"requirement": "Resolve endpoint returns a single value from a named source"
 			},
@@ -11649,7 +11649,7 @@
 			"built": {
 				"state": "decided-no",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -riE 'breaking.?change|upgrade.?report|preUpgrade' over lib/ finds only docblocks at lib/Capabilities.php:51 and lib/Flow/SynchronizationRunNode.php:121; migrations and repair steps run during the upgrade, nothing reports their impact beforehand"
+				"evidence": "grep -riE 'breaking.?change|upgrade.?report|preUpgrade' over lib/ finds only docblocks at lib/AppInfo/Capabilities.php:51 and lib/Flow/SynchronizationRunNode.php:121; migrations and repair steps run during the upgrade, nothing reports their impact beforehand"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "n8n 1.119.0 (2025-11-03) added a breaking-change audit rule engine and a migration report in the settings. Decided no (build-all pass 2026-09-28): Single competitor yes (n8n) plus its own changelog, no tender or request, outside the core area.",

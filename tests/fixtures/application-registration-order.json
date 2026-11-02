@@ -326,6 +326,6 @@
 	"context.registerService(OCA\\Integriq\\Controller\\HealthController, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Controller\\MetricsController, closure, bool)",
 	"context.registerService(OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService, closure, bool)",
-	"context.registerCapability(OCA\\Integriq\\Capabilities)",
+	"context.registerCapability(OCA\\Integriq\\AppInfo\\Capabilities)",
 	"context.registerServiceAlias(OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface, OCA\\OpenRegister\\Service\\RegisterSlugResolver)"
 ]
