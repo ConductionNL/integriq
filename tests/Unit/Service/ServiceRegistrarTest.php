@@ -19,6 +19,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
+use OCA\Integriq\BackgroundJob\AttachmentFetchSchedulerInterface;
+use OCA\Integriq\BackgroundJob\EventFanOutSchedulerInterface;
+use OCA\Integriq\BackgroundJob\MessageRetryJobScheduler;
+use OCA\Integriq\BackgroundJob\MessageRetrySchedulerInterface;
+use OCA\Integriq\BackgroundJob\OtelExportJobScheduler;
+use OCA\Integriq\BackgroundJob\ProcessEventJobScheduler;
+use OCA\Integriq\BackgroundJob\TraceExportSchedulerInterface;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
@@ -445,6 +453,8 @@ class ServiceRegistrarTest extends TestCase {
 		AgentActionStoreInterface::class => AgentActionStore::class,
 		CaseReferenceDetectorInterface::class => CaseReferenceDetector::class,
 		LocalDeleteGuardInterface::class => LocalDeleteGuard::class,
+		EventFanOutSchedulerInterface::class => ProcessEventJobScheduler::class,
+		MessageRetrySchedulerInterface::class => MessageRetryJobScheduler::class,
 		MessageParserInterface::class => MessageParser::class,
 		DeadLetterProjectionInterface::class => DeadLetterProjection::class,
 		MtlsTransportServiceInterface::class => MtlsTransportService::class,
@@ -452,6 +462,8 @@ class ServiceRegistrarTest extends TestCase {
 		MessageValidationServiceInterface::class => MessageValidationService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
+		TraceExportSchedulerInterface::class => OtelExportJobScheduler::class,
+		AttachmentFetchSchedulerInterface::class => AttachmentFetchJobScheduler::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
 		DocumentProviderRegistryInterface::class => DocumentGenerationProviderRegistry::class,
 		ToolPlatformDetailsInterface::class => LtiPlatformDetailsService::class,

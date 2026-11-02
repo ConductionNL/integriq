@@ -26,12 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Otel;
 
-use OCA\Integriq\BackgroundJob\OtelExportJob;
+use OCA\Integriq\BackgroundJob\TraceExportSchedulerInterface;
 use OCA\Integriq\Observability\Otel\OtelExportBreakerInterface;
 use OCA\Integriq\Observability\Otel\OtelSettingsInterface;
 use OCA\Integriq\Service\Helper\ExecutionTraceContextInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,14 +45,14 @@ class TraceExportQueue {
 	 * Constructor.
 	 *
 	 * @param OtelSettingsInterface $settings The export settings.
-	 * @param IJobList $jobList The background job list.
+	 * @param TraceExportSchedulerInterface $scheduler Queues the export job of a trace.
 	 * @param LoggerInterface $logger Logs a trace that could not be queued.
 	 * @param OtelExportBreakerInterface|null $breaker Pauses queuing during a collector outage; absent, never paused.
 	 * @param ITimeFactory|null $time The clock the breaker is read against; the system clock when absent.
 	 */
 	public function __construct(
 		private readonly OtelSettingsInterface $settings,
-		private readonly IJobList $jobList,
+		private readonly TraceExportSchedulerInterface $scheduler,
 		private readonly LoggerInterface $logger,
 		private readonly ?OtelExportBreakerInterface $breaker = null,
 		private readonly ?ITimeFactory $time = null,
@@ -93,7 +92,7 @@ class TraceExportQueue {
 				return false;
 			}
 
-			$this->jobList->add(OtelExportJob::class, ['traceId' => $trace->getTraceId(), 'attempt' => 0]);
+			$this->scheduler->scheduleExport(traceId: $trace->getTraceId());
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'TraceExportQueue: could not queue the trace for OpenTelemetry export: ' . $e->getMessage(),
