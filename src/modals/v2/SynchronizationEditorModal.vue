@@ -459,7 +459,6 @@
 <script>
 import { CnTab, CnTabs } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
-import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
@@ -482,6 +481,7 @@ import SyncConfigWidget from '../../views/Synchronization/SyncConfigWidget.vue'
 import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue'
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
 import SyncWriteBackFields from '../../views/Synchronization/SyncWriteBackFields.vue'
+import confirmSave from '../../mixins/confirmSave.js'
 import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import syncKindOptions from '../../mixins/syncKindOptions.js'
 import {
@@ -529,7 +529,7 @@ export default {
 		SwapHorizontalIcon,
 	},
 
-	mixins: [namedEditorDialog, syncKindOptions],
+	mixins: [namedEditorDialog, confirmSave, syncKindOptions],
 
 	props: { ...editorSlotScopeProps },
 
@@ -897,47 +897,37 @@ export default {
 		},
 
 		/**
-		 * Persist the draft through CnIndexPage's `confirm` binding rather than
-		 * saving here directly — that is what runs the index's list refresh and
-		 * keeps the write in the store the list reads from.
+		 * Refuse an unknown disappearance policy at save (REQ-SOR-002), rather
+		 * than discovering it at the first run that deletes nothing.
 		 *
-		 * The draft is merged over `item` so fields this dialog does not edit
-		 * (slug, version, status, the engine-managed hashes and timestamps)
-		 * survive; no `id` means create. `conditions` is re-serialised to the
-		 * schema's `array<object>` wire shape on the way out.
+		 * @return {Promise<boolean>} True when the policy was refused.
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 */
+		async saveRefused() {
+			this.saveError = await disappearancePolicyError(this.draft.sourceConfig)
+			return this.saveError !== ''
+		},
+
+		/**
+		 * The toast after a save.
 		 *
-		 * @return {Promise<void>} Resolves once the save has settled.
-		 *
+		 * @return {string} The translated text.
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
-		async onSave() {
-			if (!this.canSave) return
-			this.saving = true
-			this.saveError = ''
-			try {
-				// REQ-SOR-002: an unknown policy is refused at save, not
-				// discovered at the first run that deletes nothing.
-				const policyError = await disappearancePolicyError(
-					this.draft.sourceConfig,
-				)
-				if (policyError) {
-					this.saveError = policyError
-					return
-				}
-				await this.confirm(this.savePayload())
-				showSuccess(
-					this.isCreate
-						? this.t('integriq', 'Synchronization created')
-						: this.t('integriq', 'Synchronization saved'),
-				)
-				this.close?.()
-			} catch (err) {
-				this.saveError =
-					err?.message
-					|| this.t('integriq', 'Failed to save synchronization')
-			} finally {
-				this.saving = false
-			}
+		savedText() {
+			return this.isCreate
+				? this.t('integriq', 'Synchronization created')
+				: this.t('integriq', 'Synchronization saved')
+		},
+
+		/**
+		 * The reason shown when a save fails without one.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		saveFailedText() {
+			return this.t('integriq', 'Failed to save synchronization')
 		},
 	},
 }

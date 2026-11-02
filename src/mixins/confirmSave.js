@@ -7,12 +7,23 @@ import { showSuccess } from '@nextcloud/dialogs'
  * Save of the editor dialogs that persist through CnIndexPage's form-dialog
  * slot `confirm` binding. The component provides `canSave`, `saving`,
  * `saveError`, and the hooks `savePayload()`, `savedText()` and
- * `saveFailedText()`.
+ * `saveFailedText()`; it may override `saveRefused()` to stop a save
+ * before it is sent.
  *
  * @spec openspec/specs/mapping-editor-ui/spec.md
  */
 export default {
 	methods: {
+		/**
+		 * Whether a check before sending stops the save. None by default.
+		 *
+		 * @return {Promise<boolean>} True when the save must not be sent.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		async saveRefused() {
+			return false
+		},
+
 		/**
 		 * Persist through the slot's `confirm` binding, then say so and close;
 		 * a failure stays open with its reason.
@@ -25,6 +36,7 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			try {
+				if (await this.saveRefused()) return
 				await this.confirm(this.savePayload())
 				showSuccess(this.savedText())
 				this.close?.()

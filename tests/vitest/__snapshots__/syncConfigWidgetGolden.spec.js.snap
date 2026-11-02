@@ -1,0 +1,3100 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SyncConfigWidget > does not reload lists it already has 1`] = `
+[
+  [
+    "/index.php/apps/integriq/api/synchronizations/tables-bridge/tables",
+    {
+      "params": {
+        "sourceId": "s1",
+      },
+    },
+  ],
+  [
+    "/index.php/apps/integriq/api/synchronizations/forms-bridge/forms",
+    {
+      "params": {
+        "sourceId": "s1",
+      },
+    },
+  ],
+]
+`;
+
+exports[`SyncConfigWidget > keeps lists when a type returns without a source, and clears stale errors 1`] = `
+[
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [
+      {
+        "id": "m1",
+        "label": "Msg (2)",
+      },
+      {
+        "id": "m2",
+        "label": "Plain",
+      },
+    ],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": null,
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [
+      {
+        "id": 5,
+        "label": "Table five",
+      },
+    ],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  "Could not load forms for this source.",
+  {
+    "formOptions": [
+      {
+        "id": 7,
+        "label": "Form seven",
+      },
+    ],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s3",
+      "label": "s3",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+]
+`;
+
+exports[`SyncConfigWidget > picks a file with a bare rejection as recorded 1`] = `
+{
+  "during": true,
+  "emitted": null,
+  "pickerError": "",
+  "pickingFile": false,
+  "requests": [
+    [
+      "picker",
+      "Pick a sync source file",
+    ],
+    [
+      "picker.setMultiSelect",
+      false,
+    ],
+    [
+      "picker.setMimeTypeFilter",
+      [],
+    ],
+    [
+      "picker.setModal",
+      true,
+    ],
+    [
+      "picker.setType",
+      1,
+    ],
+    [
+      "picker.allowDirectories",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > picks a file with a cancel as recorded 1`] = `
+{
+  "during": true,
+  "emitted": null,
+  "pickerError": "",
+  "pickingFile": false,
+  "requests": [
+    [
+      "picker",
+      "Pick a sync source file",
+    ],
+    [
+      "picker.setMultiSelect",
+      false,
+    ],
+    [
+      "picker.setMimeTypeFilter",
+      [],
+    ],
+    [
+      "picker.setModal",
+      true,
+    ],
+    [
+      "picker.setType",
+      1,
+    ],
+    [
+      "picker.allowDirectories",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > picks a file with a path as recorded 1`] = `
+{
+  "during": true,
+  "emitted": [
+    [
+      "/x/y.json",
+    ],
+  ],
+  "pickerError": "",
+  "pickingFile": false,
+  "requests": [
+    [
+      "picker",
+      "Pick a sync source file",
+    ],
+    [
+      "picker.setMultiSelect",
+      false,
+    ],
+    [
+      "picker.setMimeTypeFilter",
+      [],
+    ],
+    [
+      "picker.setModal",
+      true,
+    ],
+    [
+      "picker.setType",
+      1,
+    ],
+    [
+      "picker.allowDirectories",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > picks a file with an error as recorded 1`] = `
+{
+  "during": true,
+  "emitted": null,
+  "pickerError": "Disk full",
+  "pickingFile": false,
+  "requests": [
+    [
+      "picker",
+      "Pick a sync source file",
+    ],
+    [
+      "picker.setMultiSelect",
+      false,
+    ],
+    [
+      "picker.setMimeTypeFilter",
+      [],
+    ],
+    [
+      "picker.setModal",
+      true,
+    ],
+    [
+      "picker.setType",
+      1,
+    ],
+    [
+      "picker.allowDirectories",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > picks a file with no path as recorded 1`] = `
+{
+  "during": true,
+  "emitted": null,
+  "pickerError": "",
+  "pickingFile": false,
+  "requests": [
+    [
+      "picker",
+      "Pick a sync source file",
+    ],
+    [
+      "picker.setMultiSelect",
+      false,
+    ],
+    [
+      "picker.setMimeTypeFilter",
+      [],
+    ],
+    [
+      "picker.setModal",
+      true,
+    ],
+    [
+      "picker.setType",
+      1,
+    ],
+    [
+      "picker.allowDirectories",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > reads every answer shape and failure as recorded 1`] = `
+[
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [
+      {
+        "id": "3",
+        "label": "3",
+        "schemas": [],
+      },
+    ],
+    "registersLoading": false,
+    "schemaLabelsById": {
+      "1": "s",
+    },
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": {
+      "id": "3",
+      "label": "3",
+      "schemas": [],
+    },
+    "selectedRegisterRecord": {
+      "id": "3",
+      "label": "3",
+      "schemas": [],
+    },
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "3/1",
+      "label": "3/1",
+    },
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "3/1",
+      "label": "3/1",
+    },
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "3/1",
+      "label": "3/1",
+    },
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": null,
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "a",
+        "label": "a",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": null,
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": null,
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "srv",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "Could not load tables for this source.",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  [
+    0,
+    {
+      "formOptions": [],
+      "formsError": "",
+      "formsLoading": false,
+      "messageSchemaOptions": [],
+      "messageSchemasLoading": false,
+      "pickerError": "",
+      "pickingFile": false,
+      "registerOptions": [],
+      "registersLoading": false,
+      "schemaLabelsById": {},
+      "schemaOptions": [],
+      "selectedForm": null,
+      "selectedRegister": null,
+      "selectedRegisterRecord": null,
+      "selectedSchema": null,
+      "selectedSource": null,
+      "selectedTable": null,
+      "sourceOptions": [
+        {
+          "id": "s1",
+          "label": "One",
+        },
+        {
+          "id": "u2",
+          "label": "Two",
+        },
+        {
+          "id": "s3",
+          "label": "s3",
+        },
+        {
+          "id": "s4",
+          "label": "Named",
+        },
+      ],
+      "sourcesLoading": false,
+      "tableOptions": [],
+      "tablesError": "",
+      "tablesLoading": false,
+      "validationModeOption": {
+        "id": "record",
+        "label": "Record",
+      },
+      "validationSchemaOption": null,
+    },
+  ],
+  {
+    "formOptions": [],
+    "formsError": "srv",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "Could not load forms for this source.",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+  [
+    0,
+    {
+      "formOptions": [],
+      "formsError": "",
+      "formsLoading": false,
+      "messageSchemaOptions": [],
+      "messageSchemasLoading": false,
+      "pickerError": "",
+      "pickingFile": false,
+      "registerOptions": [],
+      "registersLoading": false,
+      "schemaLabelsById": {},
+      "schemaOptions": [],
+      "selectedForm": null,
+      "selectedRegister": null,
+      "selectedRegisterRecord": null,
+      "selectedSchema": null,
+      "selectedSource": null,
+      "selectedTable": null,
+      "sourceOptions": [
+        {
+          "id": "s1",
+          "label": "One",
+        },
+        {
+          "id": "u2",
+          "label": "Two",
+        },
+        {
+          "id": "s3",
+          "label": "s3",
+        },
+        {
+          "id": "s4",
+          "label": "Named",
+        },
+      ],
+      "sourcesLoading": false,
+      "tableOptions": [],
+      "tablesError": "",
+      "tablesLoading": false,
+      "validationModeOption": {
+        "id": "record",
+        "label": "Record",
+      },
+      "validationSchemaOption": null,
+    },
+  ],
+]
+`;
+
+exports[`SyncConfigWidget > refetches the bridge lists when the source changes 1`] = `
+[
+  [
+    "nextcloud-table",
+    [
+      [
+        "/index.php/apps/integriq/api/synchronizations/tables-bridge/tables",
+        {
+          "params": {
+            "sourceId": "s3",
+          },
+        },
+      ],
+    ],
+  ],
+  [
+    "nextcloud-form",
+    [
+      [
+        "/index.php/apps/integriq/api/synchronizations/forms-bridge/forms",
+        {
+          "params": {
+            "sourceId": "s3",
+          },
+        },
+      ],
+    ],
+  ],
+  [
+    "api",
+    [],
+  ],
+]
+`;
+
+exports[`SyncConfigWidget > type "" emits from every listener as recorded 1`] = `
+{
+  "emitted": {},
+  "steps": [],
+}
+`;
+
+exports[`SyncConfigWidget > type "" loads and renders as recorded 1`] = `
+{
+  "requests": [],
+  "state": {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": null,
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+}
+`;
+
+exports[`SyncConfigWidget > type "" loads and renders as recorded 2`] = `
+"<div class="sync-config">
+  <div class="sync-config__placeholder">Pick a source type above to configure it.</div>
+</div>"
+`;
+
+exports[`SyncConfigWidget > type "api" emits from every listener as recorded 1`] = `
+{
+  "emitted": {
+    "config": [
+      [
+        {
+          "endpoint": {
+            "id": "picked",
+            "label": "P",
+          },
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "typed",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "idPosition": {
+            "id": "picked",
+            "label": "P",
+          },
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "idPosition": "typed",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "resultsPosition": {
+            "id": "picked",
+            "label": "P",
+          },
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "resultsPosition": "typed",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "picked",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "picked",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "record",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "record",
+          },
+        },
+      ],
+      [
+        {
+          "endpoint": "/x",
+          "validation": {
+            "messageSchema": "m9",
+            "mode": "record",
+          },
+        },
+      ],
+    ],
+    "sourceId": [
+      [
+        "picked",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+    ],
+  },
+  "steps": [
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > type "api" loads and renders as recorded 1`] = `
+{
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/integriq/message_schema",
+      null,
+    ],
+  ],
+  "state": {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [
+      {
+        "id": "m1",
+        "label": "Msg (2)",
+      },
+      {
+        "id": "m2",
+        "label": "Plain",
+      },
+    ],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "refuse",
+      "label": "Refuse",
+    },
+    "validationSchemaOption": {
+      "id": "m9",
+      "label": "m9",
+    },
+  },
+}
+`;
+
+exports[`SyncConfigWidget > type "api" loads and renders as recorded 2`] = `
+"<div class="sync-config">
+  <div class="sync-config__field"><label for="sync-config-1-api-source" class="sync-config__label">Source source (API)</label>
+    <div class="NcSelect" data-id="sync-config-1-api-source" data-value="{&quot;id&quot;:&quot;s1&quot;,&quot;label&quot;:&quot;One&quot;}" data-options="[{&quot;id&quot;:&quot;s1&quot;,&quot;label&quot;:&quot;One&quot;},{&quot;id&quot;:&quot;u2&quot;,&quot;label&quot;:&quot;Two&quot;},{&quot;id&quot;:&quot;s3&quot;,&quot;label&quot;:&quot;s3&quot;},{&quot;id&quot;:&quot;s4&quot;,&quot;label&quot;:&quot;Named&quot;}]">
+    </div><span class="sync-config__helper">The Source record that defines the API base URL + auth.</span>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="Endpoint" data-value="&quot;/x&quot;">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="ID position" data-value="&quot;&quot;">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="Results position" data-value="&quot;&quot;">
+    </div>
+  </div>
+  <fieldset class="sync-config__validation">
+    <legend class="sync-config__label">Message validation</legend>
+    <div class="NcSelect" data-label="Message schema" data-value="{&quot;id&quot;:&quot;m9&quot;,&quot;label&quot;:&quot;m9&quot;}" data-options="[{&quot;id&quot;:&quot;m1&quot;,&quot;label&quot;:&quot;Msg (2)&quot;},{&quot;id&quot;:&quot;m2&quot;,&quot;label&quot;:&quot;Plain&quot;}]">
+    </div>
+    <div class="NcSelect" data-label="Mode" data-value="{&quot;id&quot;:&quot;refuse&quot;,&quot;label&quot;:&quot;Refuse&quot;}" data-options="[{&quot;id&quot;:&quot;record&quot;,&quot;label&quot;:&quot;Record&quot;},{&quot;id&quot;:&quot;refuse&quot;,&quot;label&quot;:&quot;Refuse&quot;}]">
+    </div><span class="sync-config__helper">Record lets the message through and logs the errors. Refuse puts it on the dead-letter list</span>
+  </fieldset>
+</div>"
+`;
+
+exports[`SyncConfigWidget > type "file" emits from every listener as recorded 1`] = `
+{
+  "emitted": {
+    "config": [
+      [
+        {
+          "format": {
+            "id": "picked",
+            "label": "P",
+          },
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "format": "typed",
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "format": "csv",
+          "idPosition": {
+            "id": "picked",
+            "label": "P",
+          },
+        },
+      ],
+      [
+        {
+          "format": "csv",
+        },
+      ],
+      [
+        {
+          "format": "csv",
+          "idPosition": "typed",
+        },
+      ],
+      [
+        {
+          "format": "csv",
+        },
+      ],
+    ],
+    "sourceId": [
+      [
+        {
+          "id": "picked",
+          "label": "P",
+        },
+      ],
+      [
+        null,
+      ],
+      [
+        "typed",
+      ],
+      [
+        "",
+      ],
+      [
+        "/a/file.csv",
+      ],
+      [
+        "/a/file.csv",
+      ],
+      [
+        "/a/file.csv",
+      ],
+      [
+        "/a/file.csv",
+      ],
+    ],
+  },
+  "steps": [
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcButton",
+      "onClick",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcButton",
+      "onClick",
+      null,
+      1,
+    ],
+    [
+      "NcButton",
+      "onClick",
+      "typed",
+      1,
+    ],
+    [
+      "NcButton",
+      "onClick",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > type "file" loads and renders as recorded 1`] = `
+{
+  "requests": [],
+  "state": {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "/data/x.csv",
+      "label": "/data/x.csv",
+    },
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+}
+`;
+
+exports[`SyncConfigWidget > type "file" loads and renders as recorded 2`] = `
+"<div class="sync-config">
+  <div class="sync-config__field"><label for="sync-config-6-file-path" class="sync-config__label">File path or glob</label>
+    <div class="sync-config__file-row">
+      <div class="NcTextField" data-value="&quot;/data/x.csv&quot;">
+      </div>
+      <div class="NcButton" data-value="null"><span aria-hidden="true" class="material-design-icon folder-open-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><path d="M6.1,10L4,18V8H21A2,2 0 0,0 19,6H12L10,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H19C19.9,20 20.7,19.4 20.9,18.5L23.2,10H6.1M19,18H6L7.6,12H20.6L19,18Z"></path></svg></span> Browse…</div>
+    </div><span class="sync-config__helper">Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.</span>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="File format" data-value="&quot;csv&quot;">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="ID position" data-value="&quot;&quot;">
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`SyncConfigWidget > type "nextcloud-form" emits from every listener as recorded 1`] = `
+{
+  "emitted": {
+    "config": [
+      [
+        {
+          "formId": null,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {},
+      ],
+      [
+        {},
+      ],
+    ],
+    "sourceId": [
+      [
+        "picked",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+    ],
+  },
+  "steps": [
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > type "nextcloud-form" loads and renders as recorded 1`] = `
+{
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/synchronizations/forms-bridge/forms",
+      {
+        "params": {
+          "sourceId": "s1",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "formOptions": [
+      {
+        "id": 7,
+        "label": "Form seven",
+      },
+    ],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": {
+      "id": 7,
+      "label": "Form seven",
+    },
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": null,
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+}
+`;
+
+exports[`SyncConfigWidget > type "nextcloud-form" loads and renders as recorded 2`] = `
+"<div class="sync-config">
+  <div class="sync-config__field"><label for="sync-config-5-form-source" class="sync-config__label">Source source (Nextcloud instance)</label>
+    <div class="NcSelect" data-label="Source (Nextcloud instance)" data-id="sync-config-5-form-source" data-value="{&quot;id&quot;:&quot;s1&quot;,&quot;label&quot;:&quot;One&quot;}" data-options="[{&quot;id&quot;:&quot;s1&quot;,&quot;label&quot;:&quot;One&quot;},{&quot;id&quot;:&quot;u2&quot;,&quot;label&quot;:&quot;Two&quot;},{&quot;id&quot;:&quot;s3&quot;,&quot;label&quot;:&quot;s3&quot;},{&quot;id&quot;:&quot;s4&quot;,&quot;label&quot;:&quot;Named&quot;}]">
+    </div><span class="sync-config__helper">The Source record whose base URL + credential reach the Forms API.</span>
+  </div>
+  <div class="sync-config__field"><label for="sync-config-5-form" class="sync-config__label">Form</label>
+    <div class="NcSelect" data-label="Form" data-id="sync-config-5-form" data-value="{&quot;id&quot;:7,&quot;label&quot;:&quot;Form seven&quot;}" data-options="[{&quot;id&quot;:7,&quot;label&quot;:&quot;Form seven&quot;}]">
+    </div><span class="sync-config__helper">Submissions are read from this form (nextcloud-form is a source-only type).</span>
+  </div>
+  <forms-field-mapping-stub sourceid="s1" formid="7"></forms-field-mapping-stub>
+</div>"
+`;
+
+exports[`SyncConfigWidget > type "nextcloud-table" emits from every listener as recorded 1`] = `
+{
+  "emitted": {
+    "config": [
+      [
+        {
+          "tableId": null,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {},
+      ],
+      [
+        {},
+      ],
+    ],
+    "sourceId": [
+      [
+        "picked",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+    ],
+  },
+  "steps": [
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > type "nextcloud-table" loads and renders as recorded 1`] = `
+{
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/integriq/api/synchronizations/tables-bridge/tables",
+      {
+        "params": {
+          "sourceId": "s1",
+        },
+      },
+    ],
+  ],
+  "state": {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [],
+    "registersLoading": false,
+    "schemaLabelsById": {},
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": null,
+    "selectedRegisterRecord": null,
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "s1",
+      "label": "One",
+    },
+    "selectedTable": {
+      "id": 5,
+      "label": "Table five",
+    },
+    "sourceOptions": [
+      {
+        "id": "s1",
+        "label": "One",
+      },
+      {
+        "id": "u2",
+        "label": "Two",
+      },
+      {
+        "id": "s3",
+        "label": "s3",
+      },
+      {
+        "id": "s4",
+        "label": "Named",
+      },
+    ],
+    "sourcesLoading": false,
+    "tableOptions": [
+      {
+        "id": 5,
+        "label": "Table five",
+      },
+    ],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+}
+`;
+
+exports[`SyncConfigWidget > type "nextcloud-table" loads and renders as recorded 2`] = `
+"<div class="sync-config">
+  <div class="sync-config__field"><label for="sync-config-4-table-source" class="sync-config__label">Source source (Nextcloud instance)</label>
+    <div class="NcSelect" data-label="Source (Nextcloud instance)" data-id="sync-config-4-table-source" data-value="{&quot;id&quot;:&quot;s1&quot;,&quot;label&quot;:&quot;One&quot;}" data-options="[{&quot;id&quot;:&quot;s1&quot;,&quot;label&quot;:&quot;One&quot;},{&quot;id&quot;:&quot;u2&quot;,&quot;label&quot;:&quot;Two&quot;},{&quot;id&quot;:&quot;s3&quot;,&quot;label&quot;:&quot;s3&quot;},{&quot;id&quot;:&quot;s4&quot;,&quot;label&quot;:&quot;Named&quot;}]">
+    </div><span class="sync-config__helper">The Source record whose base URL + credential reach the Tables API.</span>
+  </div>
+  <div class="sync-config__field"><label for="sync-config-4-table" class="sync-config__label">Table</label>
+    <div class="NcSelect" data-label="Table" data-id="sync-config-4-table" data-value="{&quot;id&quot;:5,&quot;label&quot;:&quot;Table five&quot;}" data-options="[{&quot;id&quot;:5,&quot;label&quot;:&quot;Table five&quot;}]">
+    </div><span class="sync-config__helper">Rows are read from (source) or written to (target) this table.</span>
+  </div>
+</div>"
+`;
+
+exports[`SyncConfigWidget > type "register/schema" emits from every listener as recorded 1`] = `
+{
+  "emitted": {
+    "config": [
+      [
+        {
+          "filter": {
+            "id": "picked",
+            "label": "P",
+          },
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "filter": "typed",
+        },
+      ],
+      [
+        {},
+      ],
+    ],
+    "sourceId": [
+      [
+        "picked/",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+      [
+        "1/picked",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "1/",
+      ],
+    ],
+  },
+  "steps": [
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > type "register/schema" emits from every listener as recorded 2`] = `
+{
+  "emitted": {
+    "config": [
+      [
+        {
+          "filter": {
+            "id": "picked",
+            "label": "P",
+          },
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "filter": "typed",
+        },
+      ],
+      [
+        {},
+      ],
+    ],
+    "sourceId": [
+      [
+        "picked/",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+      [
+        "2/picked",
+      ],
+      [
+        "2/",
+      ],
+      [
+        "2/",
+      ],
+      [
+        "2/",
+      ],
+    ],
+  },
+  "steps": [
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcSelect",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      {
+        "id": "picked",
+        "label": "P",
+      },
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      null,
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "typed",
+      1,
+    ],
+    [
+      "NcTextField",
+      "onUpdate:modelValue",
+      "",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`SyncConfigWidget > type "register/schema" loads and renders as recorded 1`] = `
+{
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/registers",
+      null,
+    ],
+    [
+      "/index.php/apps/openregister/api/schemas",
+      null,
+    ],
+  ],
+  "state": {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [
+      {
+        "id": "1",
+        "label": "Reg",
+        "schemas": [
+          10,
+          {
+            "id": 11,
+            "title": "Inline",
+          },
+          {
+            "slug": "sl",
+          },
+          null,
+          {
+            "id": "u-x",
+            "title": "Own",
+          },
+        ],
+      },
+      {
+        "id": "2",
+        "label": "two",
+        "schemas": [],
+      },
+      {
+        "id": "3",
+        "label": "Three",
+        "schemas": [],
+      },
+    ],
+    "registersLoading": false,
+    "schemaLabelsById": {
+      "10": "Ten",
+      "u-x": "Named",
+    },
+    "schemaOptions": [
+      {
+        "id": "10",
+        "label": "Ten",
+      },
+      {
+        "id": "11",
+        "label": "Inline",
+      },
+      {
+        "id": "sl",
+        "label": "sl",
+      },
+      {
+        "id": "null",
+        "label": "null",
+      },
+      {
+        "id": "u-x",
+        "label": "Own",
+      },
+    ],
+    "selectedForm": null,
+    "selectedRegister": {
+      "id": "1",
+      "label": "Reg",
+      "schemas": [
+        10,
+        {
+          "id": 11,
+          "title": "Inline",
+        },
+        {
+          "slug": "sl",
+        },
+        null,
+        {
+          "id": "u-x",
+          "title": "Own",
+        },
+      ],
+    },
+    "selectedRegisterRecord": {
+      "id": "1",
+      "label": "Reg",
+      "schemas": [
+        10,
+        {
+          "id": 11,
+          "title": "Inline",
+        },
+        {
+          "slug": "sl",
+        },
+        null,
+        {
+          "id": "u-x",
+          "title": "Own",
+        },
+      ],
+    },
+    "selectedSchema": {
+      "id": "10",
+      "label": "Ten",
+    },
+    "selectedSource": {
+      "id": "1/10",
+      "label": "1/10",
+    },
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+}
+`;
+
+exports[`SyncConfigWidget > type "register/schema" loads and renders as recorded 2`] = `
+"<div class="sync-config">
+  <div class="sync-config__field"><label for="sync-config-2-register" class="sync-config__label">Register</label>
+    <div class="NcSelect" data-id="sync-config-2-register" data-value="{&quot;id&quot;:&quot;1&quot;,&quot;label&quot;:&quot;Reg&quot;,&quot;schemas&quot;:[10,{&quot;id&quot;:11,&quot;title&quot;:&quot;Inline&quot;},{&quot;slug&quot;:&quot;sl&quot;},null,{&quot;id&quot;:&quot;u-x&quot;,&quot;title&quot;:&quot;Own&quot;}]}" data-options="[{&quot;id&quot;:&quot;1&quot;,&quot;label&quot;:&quot;Reg&quot;,&quot;schemas&quot;:[10,{&quot;id&quot;:11,&quot;title&quot;:&quot;Inline&quot;},{&quot;slug&quot;:&quot;sl&quot;},null,{&quot;id&quot;:&quot;u-x&quot;,&quot;title&quot;:&quot;Own&quot;}]},{&quot;id&quot;:&quot;2&quot;,&quot;label&quot;:&quot;two&quot;,&quot;schemas&quot;:[]},{&quot;id&quot;:&quot;3&quot;,&quot;label&quot;:&quot;Three&quot;,&quot;schemas&quot;:[]}]">
+    </div>
+  </div>
+  <div class="sync-config__field"><label for="sync-config-2-schema" class="sync-config__label">Schema</label>
+    <div class="NcSelect" data-id="sync-config-2-schema" data-value="{&quot;id&quot;:&quot;10&quot;,&quot;label&quot;:&quot;Ten&quot;}" data-options="[{&quot;id&quot;:&quot;10&quot;,&quot;label&quot;:&quot;Ten&quot;},{&quot;id&quot;:&quot;11&quot;,&quot;label&quot;:&quot;Inline&quot;},{&quot;id&quot;:&quot;sl&quot;,&quot;label&quot;:&quot;sl&quot;},{&quot;id&quot;:&quot;null&quot;,&quot;label&quot;:&quot;null&quot;},{&quot;id&quot;:&quot;u-x&quot;,&quot;label&quot;:&quot;Own&quot;}]">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="Object filter (optional)" data-value="&quot;&quot;">
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`SyncConfigWidget > type "register/schema" loads and renders as recorded 3`] = `
+{
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/registers",
+      null,
+    ],
+    [
+      "/index.php/apps/openregister/api/schemas",
+      null,
+    ],
+  ],
+  "state": {
+    "formOptions": [],
+    "formsError": "",
+    "formsLoading": false,
+    "messageSchemaOptions": [],
+    "messageSchemasLoading": false,
+    "pickerError": "",
+    "pickingFile": false,
+    "registerOptions": [
+      {
+        "id": "1",
+        "label": "Reg",
+        "schemas": [
+          10,
+          {
+            "id": 11,
+            "title": "Inline",
+          },
+          {
+            "slug": "sl",
+          },
+          null,
+          {
+            "id": "u-x",
+            "title": "Own",
+          },
+        ],
+      },
+      {
+        "id": "2",
+        "label": "two",
+        "schemas": [],
+      },
+      {
+        "id": "3",
+        "label": "Three",
+        "schemas": [],
+      },
+    ],
+    "registersLoading": false,
+    "schemaLabelsById": {
+      "10": "Ten",
+      "u-x": "Named",
+    },
+    "schemaOptions": [],
+    "selectedForm": null,
+    "selectedRegister": {
+      "id": "2",
+      "label": "two",
+      "schemas": [],
+    },
+    "selectedRegisterRecord": {
+      "id": "2",
+      "label": "two",
+      "schemas": [],
+    },
+    "selectedSchema": null,
+    "selectedSource": {
+      "id": "2",
+      "label": "2",
+    },
+    "selectedTable": null,
+    "sourceOptions": [],
+    "sourcesLoading": false,
+    "tableOptions": [],
+    "tablesError": "",
+    "tablesLoading": false,
+    "validationModeOption": {
+      "id": "record",
+      "label": "Record",
+    },
+    "validationSchemaOption": null,
+  },
+}
+`;
+
+exports[`SyncConfigWidget > type "register/schema" loads and renders as recorded 4`] = `
+"<div class="sync-config">
+  <div class="sync-config__field"><label for="sync-config-3-register" class="sync-config__label">Register</label>
+    <div class="NcSelect" data-id="sync-config-3-register" data-value="{&quot;id&quot;:&quot;2&quot;,&quot;label&quot;:&quot;two&quot;,&quot;schemas&quot;:[]}" data-options="[{&quot;id&quot;:&quot;1&quot;,&quot;label&quot;:&quot;Reg&quot;,&quot;schemas&quot;:[10,{&quot;id&quot;:11,&quot;title&quot;:&quot;Inline&quot;},{&quot;slug&quot;:&quot;sl&quot;},null,{&quot;id&quot;:&quot;u-x&quot;,&quot;title&quot;:&quot;Own&quot;}]},{&quot;id&quot;:&quot;2&quot;,&quot;label&quot;:&quot;two&quot;,&quot;schemas&quot;:[]},{&quot;id&quot;:&quot;3&quot;,&quot;label&quot;:&quot;Three&quot;,&quot;schemas&quot;:[]}]">
+    </div>
+  </div>
+  <div class="sync-config__field"><label for="sync-config-3-schema" class="sync-config__label">Schema</label>
+    <div class="NcSelect" data-id="sync-config-3-schema" data-value="null" data-options="[]">
+    </div>
+  </div>
+  <div class="sync-config__field">
+    <div class="NcTextField" data-label="Object filter (optional)" data-value="&quot;&quot;">
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`SyncConfigWidget > writes config keys, tables, forms and validation as recorded 1`] = `
+[
+  [
+    "configValue",
+    [
+      "1",
+      "5",
+      "",
+    ],
+  ],
+  [
+    [
+      [
+        {
+          "columnMapping": {},
+          "formId": 7,
+          "tableId": 5,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "b": "v",
+          "columnMapping": {},
+          "formId": 7,
+          "tableId": 5,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "columnMapping": {},
+          "formId": 7,
+          "tableId": 5,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "formId": 7,
+          "tableId": 9,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "formId": 7,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "columnMapping": {},
+          "formId": 8,
+          "tableId": 5,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "columnMapping": {},
+          "tableId": 5,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "columnMapping": {},
+          "formId": 7,
+          "tableId": 5,
+          "validation": {
+            "messageSchema": "42",
+            "mode": "refuse",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "columnMapping": {},
+          "formId": 7,
+          "tableId": 5,
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "columnMapping": {},
+          "formId": 7,
+          "tableId": 5,
+          "validation": {
+            "mode": "record",
+          },
+        },
+      ],
+      [
+        {
+          "a": 1,
+          "columnMapping": {},
+          "formId": 7,
+          "tableId": 5,
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+    ],
+    [
+      [
+        "3",
+      ],
+      [
+        "",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "1/10",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+    ],
+  ],
+  [
+    "configValue",
+    [
+      "",
+      "",
+      "",
+    ],
+  ],
+  [
+    [
+      [
+        {},
+      ],
+      [
+        {
+          "b": "v",
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "tableId": 9,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "formId": 8,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "validation": {
+            "messageSchema": "42",
+          },
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "validation": {
+            "mode": "record",
+          },
+        },
+      ],
+      [
+        {
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+    ],
+    [
+      [
+        "3",
+      ],
+      [
+        "",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "1/10",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+    ],
+  ],
+  [
+    "configValue",
+    [
+      "",
+      "",
+      "",
+    ],
+  ],
+  [
+    [
+      [
+        {},
+      ],
+      [
+        {
+          "b": "v",
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "tableId": 9,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "formId": 8,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "validation": {
+            "messageSchema": "42",
+          },
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "validation": {
+            "mode": "record",
+          },
+        },
+      ],
+      [
+        {
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+    ],
+    [
+      [
+        "3",
+      ],
+      [
+        "",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "1/10",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+    ],
+  ],
+  [
+    "configValue",
+    [
+      "",
+      "",
+      "",
+    ],
+  ],
+  [
+    [
+      [
+        {},
+      ],
+      [
+        {
+          "b": "v",
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "tableId": 9,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "formId": 8,
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "validation": {
+            "messageSchema": "42",
+          },
+        },
+      ],
+      [
+        {},
+      ],
+      [
+        {
+          "validation": {
+            "mode": "record",
+          },
+        },
+      ],
+      [
+        {
+          "validation": {
+            "mode": "refuse",
+          },
+        },
+      ],
+    ],
+    [
+      [
+        "3",
+      ],
+      [
+        "",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "1/10",
+      ],
+      [
+        "1/",
+      ],
+      [
+        "",
+      ],
+      [
+        "",
+      ],
+    ],
+  ],
+]
+`;

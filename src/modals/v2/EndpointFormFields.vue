@@ -284,6 +284,7 @@ const FIELD_PLACEHOLDERS = {
 	endpointArray: 'api, v1, objects, {id}',
 }
 import SchemaTextField from './SchemaTextField.vue'
+import messageSchemaOptions from '../../mixins/messageSchemaOptions.js'
 
 export default {
 	name: 'EndpointFormFields',
@@ -295,6 +296,8 @@ export default {
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
 	},
+
+	mixins: [messageSchemaOptions],
 
 	props: {
 		/** Resolved field descriptors from CnFormDialog. */
@@ -321,9 +324,6 @@ export default {
 			configurationsLoading: false,
 			/** True once the OpenRegister registers endpoint has soft-failed. */
 			registerUnavailable: false,
-			/** Message schemas an endpoint can check its messages against. */
-			messageSchemaOptions: [],
-			messageSchemasLoading: false,
 		}
 	},
 
@@ -715,13 +715,8 @@ export default {
 		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		messageSchemaOption(direction) {
-			const uuid = this.formData.validation?.[direction]?.messageSchema
-			if (!uuid) return null
-			return (
-				this.messageSchemaOptions.find((option) => option.id === uuid) || {
-					id: uuid,
-					label: uuid,
-				}
+			return this.messageSchemaOptionFor(
+				this.formData.validation?.[direction]?.messageSchema,
 			)
 		},
 
@@ -758,37 +753,6 @@ export default {
 			}
 			const current = this.formData.validation?.[direction] || {}
 			this.setValidation(direction, { ...current, messageSchema: option.id })
-		},
-
-		/**
-		 * Load the message schemas. Soft-fails to an empty list.
-		 *
-		 * @return {Promise<void>} Resolves once loaded.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
-		 */
-		async fetchMessageSchemas() {
-			this.messageSchemasLoading = true
-			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/integriq/message_schema',
-					),
-				)
-				this.messageSchemaOptions = (response.data?.results || []).map(
-					(schema) => ({
-						id: schema['@self']?.id || schema.id,
-						label:
-							schema.name
-							+ (schema.version ? ' (' + schema.version + ')' : ''),
-					}),
-				)
-			} catch (err) {
-				this.messageSchemaOptions = []
-				// eslint-disable-next-line no-console
-				console.warn('[EndpointFormFields] message schema fetch failed', err)
-			} finally {
-				this.messageSchemasLoading = false
-			}
 		},
 
 		/**

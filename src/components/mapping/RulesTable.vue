@@ -116,7 +116,7 @@ export default {
 			 * @return {Array} The rows, for the drag and drop list.
 			 * @spec openspec/specs/mapping-editor-ui/spec.md
 			 */
-			get() {
+			get: function () {
 				return this.rows
 			},
 
@@ -124,7 +124,7 @@ export default {
 			 * @param {Array} next The rows in their dragged order.
 			 * @spec openspec/specs/mapping-editor-ui/spec.md
 			 */
-			set(next) {
+			set: function (next) {
 				this.$emit('update:rows', next)
 			},
 		},
