@@ -6,7 +6,7 @@ Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk
 
 ### Task 1: Source, schema, mapping, synchronizations and job
 - **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001`
-- **files**: `lib/Settings/register.d/ecb-exchange-rates-source.json`, `lib/Service/ExchangeRate/EcbReferenceRateParser.php`, `lib/Service/ExchangeRate/ExchangeRateImportService.php`, `lib/BackgroundJob/ExchangeRateSyncJob.php`, `appinfo/info.xml`, a stored copy of the daily and 90-day files under `tests/fixtures/ecb/`
+- **files**: `lib/Settings/register.d/ecb-exchange-rates-source.json`, `lib/BackgroundJob/ExchangeRate/EcbReferenceRateParser.php`, `lib/BackgroundJob/ExchangeRate/ExchangeRateImportService.php`, `lib/BackgroundJob/ExchangeRateSyncJob.php`, `appinfo/info.xml`, a stored copy of the daily and 90-day files under `tests/fixtures/ecb/`
 - **acceptance_criteria**:
   - GIVEN the stored daily file WHEN the synchronization runs twice THEN one `exchange_rate` per currency exists for that date
 - [x] Implement
@@ -25,7 +25,7 @@ Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk
 
 ### Task 3: Published event and catalogue item
 - **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001`
-- **files**: `lib/Service/ExchangeRate/ExchangeRateImportService.php`, `lib/Service/CatalogRegistryService.php`, `docs/features/`, `l10n/nl.json`, `l10n/en.json`
+- **files**: `lib/BackgroundJob/ExchangeRate/ExchangeRateImportService.php`, `lib/Service/CatalogRegistryService.php`, `docs/features/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN a run that stores a new date WHEN it finishes THEN one `nl.conduction.fx.rates.published` event names that date
 - [x] Implement the published event (`ExchangeRateImportService::storeRates`)

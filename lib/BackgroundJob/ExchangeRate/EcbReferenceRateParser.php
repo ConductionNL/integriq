@@ -7,7 +7,7 @@
  * Bank publishes (eurofxref-daily.xml, eurofxref-hist-90d.xml).
  *
  * @category Service
- * @package  OCA\Integriq\Service\ExchangeRate
+ * @package  OCA\Integriq\BackgroundJob\ExchangeRate
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\ExchangeRate;
+namespace OCA\Integriq\BackgroundJob\ExchangeRate;
 
 use InvalidArgumentException;
 use OCA\Integriq\Util\SafeXmlParser;

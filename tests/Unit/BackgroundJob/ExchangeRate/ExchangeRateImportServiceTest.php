@@ -4,7 +4,7 @@
  * Unit tests for ExchangeRateImportService.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Service\ExchangeRate
+ * @package  OCA\Integriq\Tests\Unit\BackgroundJob\ExchangeRate
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,11 +15,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service\ExchangeRate;
+namespace OCA\Integriq\Tests\Unit\BackgroundJob\ExchangeRate;
 
+use OCA\Integriq\BackgroundJob\ExchangeRate\EcbReferenceRateParser;
+use OCA\Integriq\BackgroundJob\ExchangeRate\ExchangeRateImportService;
 use OCA\Integriq\Service\EventServiceInterface;
-use OCA\Integriq\Service\ExchangeRate\EcbReferenceRateParser;
-use OCA\Integriq\Service\ExchangeRate\ExchangeRateImportService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;

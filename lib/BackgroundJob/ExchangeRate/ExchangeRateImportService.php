@@ -7,7 +7,7 @@
  * source and stores them as `exchange_rate` objects in register `integriq`.
  *
  * @category Service
- * @package  OCA\Integriq\Service\ExchangeRate
+ * @package  OCA\Integriq\BackgroundJob\ExchangeRate
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\ExchangeRate;
+namespace OCA\Integriq\BackgroundJob\ExchangeRate;
 
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
