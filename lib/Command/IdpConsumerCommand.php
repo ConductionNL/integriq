@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
-use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
+use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpConsumer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -52,10 +52,10 @@ class IdpConsumerCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param IdpBrokerConfig $config The broker's settings.
+	 * @param IdpBrokerConfigInterface $config The broker's settings.
 	 */
 	public function __construct(
-		private readonly IdpBrokerConfig $config,
+		private readonly IdpBrokerConfigInterface $config,
 	) {
 		parent::__construct();
 

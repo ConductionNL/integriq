@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\SettingsService;
+use OCA\Integriq\Service\SettingsServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -48,14 +48,14 @@ class SettingsController extends Controller {
 	 *
 	 * @param string $appName The app identifier.
 	 * @param IRequest $request The current request.
-	 * @param SettingsService $settingsService Service that performs the rebase action.
+	 * @param SettingsServiceInterface $settingsService Service that performs the rebase action.
 	 * @param LoggerInterface $logger Logger instance.
 	 * @param IL10N $l Localisation service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SettingsService $settingsService,
+		private readonly SettingsServiceInterface $settingsService,
 		private readonly LoggerInterface $logger,
 		private readonly IL10N $l,
 	) {

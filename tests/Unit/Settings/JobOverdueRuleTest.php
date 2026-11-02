@@ -76,7 +76,7 @@ final class JobOverdueRuleTest extends TestCase {
 	private function job(bool $enabled, string $nextRun): array {
 		$job = [
 			'name'      => 'Nightly BAG pull',
-			'jobClass'  => 'OCA\\Integriq\\Action\\SynchronizationAction',
+			'jobClass'  => 'OCA\\Integriq\\Service\\Job\\SynchronizationAction',
 			'interval'  => 3600,
 			'isEnabled' => $enabled,
 			'userId'    => 'admin',

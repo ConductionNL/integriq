@@ -55,7 +55,7 @@ use Throwable;
  *
  * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
-class IwmoIjwSyncService {
+class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding iWMO/iJW sources and message records.

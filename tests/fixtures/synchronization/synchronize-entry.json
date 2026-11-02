@@ -1,0 +1,1530 @@
+{
+    "invalid-mutation": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "Invalid mutation type: explode given. Allowed mutation types are: create, update, delete"
+        },
+        "flowTokenMinted": true,
+        "calls": []
+    },
+    "intern-owned-trace": {
+        "outcome": null,
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "log.persist",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": null,
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "internToExtern"
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-1",
+                    "triggeredBy": "manual"
+                },
+                "success"
+            ]
+        ]
+    },
+    "intern-callers-trace": {
+        "outcome": null,
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "log.persist",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": null,
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "internToExtern"
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": true,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ]
+        ]
+    },
+    "intern-without-object-runs-extern": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-1",
+                    "triggeredBy": "manual"
+                },
+                "success"
+            ]
+        ]
+    },
+    "extern-delete-owned-trace": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-1",
+                    "triggeredBy": "manual"
+                },
+                "success"
+            ]
+        ]
+    },
+    "extern-delete-cron-trace": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": true,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "cron"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": true,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ]
+        ]
+    },
+    "extern-delete-manual-trace": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ]
+        ]
+    },
+    "extern-delete-rerun": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    false,
+                    "source-1",
+                    "rerun"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-1",
+                    "triggeredBy": "manual"
+                },
+                "success"
+            ]
+        ]
+    },
+    "extern-delete-unknown-trigger": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-1",
+                    "triggeredBy": "manual"
+                },
+                "success"
+            ]
+        ]
+    },
+    "extern-delete-uuid-only": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-uuid-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-uuid-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-uuid-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-uuid-1",
+                    "triggeredBy": "manual"
+                },
+                "success"
+            ]
+        ]
+    },
+    "extern-delete-empty-source": {
+        "outcome": {
+            "throws": "Exception",
+            "message": "sourceId of synchronization cannot be empty. Canceling synchronization..."
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    null,
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "sourceId of synchronization cannot be empty. Canceling synchronization...",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern"
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ]
+        ]
+    },
+    "extern-delete-object-entity": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "Success",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 0,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "follow_ups": {
+                            "duration_ms": "(set)",
+                            "description": "Executing follow-up synchronizations",
+                            "follow_ups_executed": 0,
+                            "follow_ups_skipped": []
+                        }
+                    },
+                    "total_ms": "(set)",
+                    "summary": {
+                        "slowest_stage": {
+                            "name": "configuration_validation",
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "efficiency_ratio": 0,
+                        "objects_per_second": 0
+                    }
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "Success",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 0,
+                            "skipped": 0,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "follow_ups": {
+                                    "duration_ms": "(set)",
+                                    "description": "Executing follow-up synchronizations",
+                                    "follow_ups_executed": 0,
+                                    "follow_ups_skipped": []
+                                }
+                            },
+                            "total_ms": "(set)",
+                            "summary": {
+                                "slowest_stage": {
+                                    "name": "configuration_validation",
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "efficiency_ratio": 0,
+                                "objects_per_second": 0
+                            }
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 0,
+                        "processed": 0,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    null
+                ]
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-1",
+                    "triggeredBy": "manual"
+                },
+                "success"
+            ]
+        ]
+    },
+    "extern-gated-paused": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "pending_approval",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 1,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "fetch_objects": {
+                            "duration_ms": "(set)",
+                            "description": "Fetching objects from external source (optimized pagination)",
+                            "objects_fetched": 1,
+                            "rate_limited": false,
+                            "fetch_method": "optimized_sequential"
+                        },
+                        "object_preparation": {
+                            "duration_ms": "(set)",
+                            "description": "Object list preparation and counting",
+                            "final_object_count": 1
+                        }
+                    },
+                    "total_ms": "(set)"
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "pending_approval",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 1,
+                            "skipped": 1,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "fetch_objects": {
+                                    "duration_ms": "(set)",
+                                    "description": "Fetching objects from external source (optimized pagination)",
+                                    "objects_fetched": 1,
+                                    "rate_limited": false,
+                                    "fetch_method": "optimized_sequential"
+                                },
+                                "object_preparation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Object list preparation and counting",
+                                    "final_object_count": 1
+                                }
+                            },
+                            "total_ms": "(set)"
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 1,
+                        "processed": 1,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    "pending_approval"
+                ]
+            ],
+            [
+                "trace.persist",
+                {
+                    "entryPoint": "sync",
+                    "entryPointId": "sync-1",
+                    "triggeredBy": "manual"
+                },
+                "short_circuited"
+            ]
+        ]
+    },
+    "extern-gated-paused-callers-trace": {
+        "outcome": {
+            "id": "(set)",
+            "uuid": "(set)",
+            "message": "pending_approval",
+            "synchronizationId": "sync-1",
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 1,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": [],
+                "type": "externToIntern",
+                "timing": {
+                    "stages": {
+                        "configuration_validation": {
+                            "duration_ms": "(set)",
+                            "description": "Configuration loading and source validation"
+                        },
+                        "fetch_objects": {
+                            "duration_ms": "(set)",
+                            "description": "Fetching objects from external source (optimized pagination)",
+                            "objects_fetched": 1,
+                            "rate_limited": false,
+                            "fetch_method": "optimized_sequential"
+                        },
+                        "object_preparation": {
+                            "duration_ms": "(set)",
+                            "description": "Object list preparation and counting",
+                            "final_object_count": 1
+                        }
+                    },
+                    "total_ms": "(set)"
+                }
+            },
+            "userId": null,
+            "sessionId": "",
+            "test": false,
+            "force": false,
+            "executionTime": "(set)",
+            "created": null,
+            "expires": "(set)",
+            "size": 4096
+        },
+        "flowTokenMinted": true,
+        "calls": [
+            [
+                "progress.start",
+                [
+                    "sync-1",
+                    true,
+                    "source-1",
+                    "manual"
+                ]
+            ],
+            [
+                "log.update",
+                {
+                    "id": "(set)",
+                    "uuid": "(set)",
+                    "message": "pending_approval",
+                    "synchronizationId": "sync-1",
+                    "result": {
+                        "objects": {
+                            "found": 1,
+                            "skipped": 1,
+                            "created": 0,
+                            "updated": 0,
+                            "deleted": 0,
+                            "invalid": 0
+                        },
+                        "contracts": [],
+                        "logs": [],
+                        "type": "externToIntern",
+                        "timing": {
+                            "stages": {
+                                "configuration_validation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Configuration loading and source validation"
+                                },
+                                "fetch_objects": {
+                                    "duration_ms": "(set)",
+                                    "description": "Fetching objects from external source (optimized pagination)",
+                                    "objects_fetched": 1,
+                                    "rate_limited": false,
+                                    "fetch_method": "optimized_sequential"
+                                },
+                                "object_preparation": {
+                                    "duration_ms": "(set)",
+                                    "description": "Object list preparation and counting",
+                                    "final_object_count": 1
+                                }
+                            },
+                            "total_ms": "(set)"
+                        }
+                    },
+                    "userId": null,
+                    "sessionId": "",
+                    "test": false,
+                    "force": false,
+                    "executionTime": "(set)",
+                    "created": null,
+                    "expires": "(set)",
+                    "size": 4096
+                }
+            ],
+            [
+                "progress.finish",
+                [
+                    "success",
+                    {
+                        "found": 1,
+                        "processed": 1,
+                        "created": 0,
+                        "updated": 0,
+                        "deleted": 0,
+                        "invalid": 0
+                    },
+                    "pending_approval"
+                ]
+            ]
+        ]
+    }
+}

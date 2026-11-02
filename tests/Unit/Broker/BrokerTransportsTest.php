@@ -327,4 +327,75 @@ class BrokerTransportsTest extends TestCase {
 		$this->assertSame('nl.conduction.zaak.closed', $publication->getRoutingKey());
 	}//end testAnAbsentRoutingKeyFallsBackToTheEventType()
 
+	/**
+	 * Every RabbitMQ publish outcome matches the golden file recorded before
+	 * publish() was split: the request sent and the result for configuration
+	 * gaps, transport failures, status codes and the routed flag.
+	 *
+	 * Regenerate with RABBITMQ_PUBLISH_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryRabbitMqPublishMatchesTheGoldenFile(): void {
+		$config = ['baseUrl' => ' https://rabbit.example.nl/ ', 'vhost' => ' a/b ', 'username' => 'u', 'password' => 'p'];
+		$cases = [
+			'no-base-url' => [[], 200, '{"routed": true}', null],
+			'blank-base-url' => [['baseUrl' => '  '], 200, '{"routed": true}', null],
+			'no-exchange' => [$config, 200, '{"routed": true}', 'no-topic'],
+			'routed' => [$config, 200, '{"routed": true}', null],
+			'default-vhost-no-credentials' => [['baseUrl' => 'https://r.example'], 200, '{"routed": true}', null],
+			'routed-false' => [$config, 200, '{"routed": false}', null],
+			'routed-missing' => [$config, 200, '{}', null],
+			'routed-truthy-not-true' => [$config, 200, '{"routed": 1}', null],
+			'not-json' => [$config, 200, 'nope', null],
+			'status-199' => [$config, 199, '{"routed": true}', null],
+			'status-299' => [$config, 299, '{"routed": true}', null],
+			'status-300' => [$config, 300, '{"routed": true}', null],
+			'transport-throws' => [$config, 0, '', null],
+			'binary-mode-with-headers' => [$config, 200, '{"routed": true}', 'binary'],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$configuration, $status, $body, $variant]) {
+			$this->seen = [];
+			$clientService = $this->clientAnswering($status, $body);
+			if ($status === 0) {
+				$client = $this->createMock(IClient::class);
+				$client->method('post')->willThrowException(new \RuntimeException('connection refused'));
+				$clientService = $this->createMock(IClientService::class);
+				$clientService->method('newClient')->willReturn($client);
+			}
+
+			$publication = $this->publication();
+			if ($variant === 'no-topic') {
+				$publication = new BrokerPublication(cloudEvent: $publication->getCloudEvent(), topic: '', routingKey: 'zaak.created');
+			}
+
+			if ($variant === 'binary') {
+				$publication = new BrokerPublication(
+					cloudEvent: $publication->getCloudEvent(),
+					topic: 'zaken',
+					routingKey: 'zaak.created',
+					contentMode: CloudEventHttpBinding::MODE_BINARY,
+					headers: ['X-Trace' => 't-1']
+				);
+			}
+
+			$transport = new RabbitMqHttpTransport(clientService: $clientService, binding: new CloudEventHttpBinding());
+			$result = $transport->publish(publication: $publication, configuration: $configuration);
+			$actual[$name] = ['result' => $result->toArray(), 'sent' => $this->seen];
+		}//end foreach
+
+		$golden = __DIR__ . '/../../fixtures/broker/rabbitmq-publish.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('RABBITMQ_PUBLISH_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryRabbitMqPublishMatchesTheGoldenFile()
 }//end class

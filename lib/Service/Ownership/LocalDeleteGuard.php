@@ -31,11 +31,7 @@ use OCP\IL10N;
  *
  * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
  */
-class LocalDeleteGuard {
-	/**
-	 * The key an override is recorded on the object under.
-	 */
-	public const OVERRIDE_KEY = 'ownershipDeleteOverride';
+class LocalDeleteGuard implements LocalDeleteGuardInterface {
 
 	/**
 	 * Constructor.

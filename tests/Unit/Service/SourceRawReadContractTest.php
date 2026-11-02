@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoClient;
@@ -180,7 +181,7 @@ class SourceRawReadContractTest extends TestCase {
 				$this->getMockBuilder(DsoClient::class)->disableOriginalConstructor()->getMock(),
 				$logger,
 				$resolver,
-				$this->createMock(IJobList::class),
+				new AttachmentFetchJobScheduler($this->createMock(IJobList::class)),
 				new DsoActivityMapper(new DsoActivityTable($fake))
 			),
 			'Kiss' => new KissSyncService(

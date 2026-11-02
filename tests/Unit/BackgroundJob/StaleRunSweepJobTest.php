@@ -235,4 +235,85 @@ final class StaleRunSweepJobTest extends TestCase {
 		$this->invokeRun($this->makeJob($objects, $this->createMock(LoggerInterface::class)));
 
 	}//end testNoRunningRunsIsANoOp()
+	/**
+	 * Every sweep decision matches the golden file recorded before run() was
+	 * split: which timestamp is read, which runs are closed, what a closed run
+	 * is saved as, and what is logged.
+	 *
+	 * Regenerate with STALE_SWEEP_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEverySweepDecisionMatchesTheGoldenFile(): void {
+		$old = gmdate('c', (time() - 7200));
+		$recent = gmdate('c', (time() - 60));
+		$runs = [
+			$this->runEntity(['status' => 'running', 'updatedAt' => $recent, 'n' => 1], 'recent-updated'),
+			$this->runEntity(['status' => 'running', 'updatedAt' => $old, 'n' => 2], 'stale-updated'),
+			$this->runEntity(['status' => 'running', 'startedAt' => $old], 'stale-started'),
+			$this->runEntity(['status' => 'running', 'updatedAt' => $recent, 'startedAt' => $old], 'updated-wins'),
+			$this->runEntity(['status' => 'running', 'updatedAt' => 'not a date'], 'garbage-created-stale', $old),
+			$this->runEntity(['status' => 'running'], 'none-created-recent', $recent),
+			$this->runEntity(['status' => 'running'], 'nothing-usable'),
+			$this->runEntity(['status' => 'running', 'updatedAt' => (time() - 7200)], 'int-stale'),
+			$this->runEntity(['status' => 'running', 'updatedAt' => (time() - 1700)], 'just-under'),
+			$this->runEntity(['status' => 'running', 'updatedAt' => $old], 'save-fails'),
+		];
+
+		$actual = [];
+		foreach (['paged' => ['results' => $runs], 'bare' => $runs, 'read-fails' => 'throw', 'empty' => ['results' => []]] as $shape => $answer) {
+			$saved = [];
+			$logged = [];
+			$objects = $this->createMock(OrObjectService::class);
+			$objects->method('findAll')->willReturnCallback(
+				function (array $config = [], bool $rbac = true, bool $multitenancy = true) use ($answer, &$logged) {
+					$logged[] = ['findAll', $config, $rbac, $multitenancy];
+					if ($answer === 'throw') {
+						throw new \RuntimeException('db down');
+					}
+
+					return $answer;
+				}
+			);
+			$objects->method('saveObject')->willReturnCallback(
+				function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $rbac = true, bool $multitenancy = true, bool $silent = false, bool $validation = true) use (&$saved) {
+					if ($uuid === 'save-fails') {
+						throw new \RuntimeException('write refused');
+					}
+
+					foreach (['finishedAt', 'updatedAt', 'startedAt'] as $clock) {
+						if (isset($object[$clock]) === true) {
+							$object[$clock] = (is_int($object[$clock]) === true ? '(int)' : '(set)');
+						}
+					}
+
+					$saved[] = ['uuid' => $uuid, 'object' => $object, 'register' => $register, 'schema' => $schema, 'flags' => [$rbac, $multitenancy, $silent, $validation]];
+					return new \OCA\OpenRegister\Db\ObjectEntity();
+				}
+			);
+			$logger = $this->createMock(LoggerInterface::class);
+			foreach (['warning', 'info'] as $level) {
+				$logger->method($level)->willReturnCallback(
+					function (string $message) use ($level, &$logged) {
+						$logged[] = [$level, $message];
+					}
+				);
+			}
+
+			$this->invokeRun($this->makeJob($objects, $logger));
+			$actual[$shape] = ['saved' => $saved, 'logged' => $logged];
+		}//end foreach
+
+		$golden = __DIR__ . '/../../fixtures/backgroundjob/stale-run-sweep.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('STALE_SWEEP_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEverySweepDecisionMatchesTheGoldenFile()
 }//end class

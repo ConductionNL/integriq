@@ -1,0 +1,238 @@
+{
+    "paged": {
+        "saved": [
+            {
+                "uuid": "stale-updated",
+                "object": {
+                    "status": "failed",
+                    "updatedAt": "(set)",
+                    "n": 2,
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            },
+            {
+                "uuid": "stale-started",
+                "object": {
+                    "status": "failed",
+                    "startedAt": "(set)",
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            },
+            {
+                "uuid": "garbage-created-stale",
+                "object": {
+                    "status": "failed",
+                    "updatedAt": "(set)",
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            },
+            {
+                "uuid": "int-stale",
+                "object": {
+                    "status": "failed",
+                    "updatedAt": "(int)",
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            }
+        ],
+        "logged": [
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_run",
+                        "status": "running"
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "warning",
+                "[StaleRunSweepJob] run nothing-usable has no usable timestamp; not closing it."
+            ],
+            [
+                "warning",
+                "[StaleRunSweepJob] could not close abandoned run save-fails: write refused"
+            ],
+            [
+                "info",
+                "[StaleRunSweepJob] closed 4 abandoned synchronization run(s)."
+            ]
+        ]
+    },
+    "bare": {
+        "saved": [
+            {
+                "uuid": "stale-updated",
+                "object": {
+                    "status": "failed",
+                    "updatedAt": "(set)",
+                    "n": 2,
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            },
+            {
+                "uuid": "stale-started",
+                "object": {
+                    "status": "failed",
+                    "startedAt": "(set)",
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            },
+            {
+                "uuid": "garbage-created-stale",
+                "object": {
+                    "status": "failed",
+                    "updatedAt": "(set)",
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            },
+            {
+                "uuid": "int-stale",
+                "object": {
+                    "status": "failed",
+                    "updatedAt": "(int)",
+                    "finishedAt": "(set)",
+                    "message": "Abandoned: no progress recorded for over 30 minutes; the run's process is presumed dead. This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are the last ones observed rather than a final tally."
+                },
+                "register": "integriq",
+                "schema": "synchronization_run",
+                "flags": [
+                    false,
+                    false,
+                    true,
+                    false
+                ]
+            }
+        ],
+        "logged": [
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_run",
+                        "status": "running"
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "warning",
+                "[StaleRunSweepJob] run nothing-usable has no usable timestamp; not closing it."
+            ],
+            [
+                "warning",
+                "[StaleRunSweepJob] could not close abandoned run save-fails: write refused"
+            ],
+            [
+                "info",
+                "[StaleRunSweepJob] closed 4 abandoned synchronization run(s)."
+            ]
+        ]
+    },
+    "read-fails": {
+        "saved": [],
+        "logged": [
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_run",
+                        "status": "running"
+                    }
+                },
+                false,
+                false
+            ],
+            [
+                "warning",
+                "[StaleRunSweepJob] could not read running synchronization runs: db down"
+            ]
+        ]
+    },
+    "empty": {
+        "saved": [],
+        "logged": [
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_run",
+                        "status": "running"
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    }
+}

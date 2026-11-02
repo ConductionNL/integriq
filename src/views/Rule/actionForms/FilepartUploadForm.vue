@@ -87,19 +87,4 @@ export default {
 }
 </script>
 
-<style scoped>
-.action-form {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.action-form__label {
-	font-weight: bold;
-}
-
-.action-form__helper {
-	color: var(--color-text-maxcontrast);
-	font-size: 12px;
-}
-</style>
+<style scoped src="./actionForm.css"></style>

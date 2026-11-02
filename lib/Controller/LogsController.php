@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -86,7 +86,7 @@ class LogsController extends Controller {
 	 * @param OrObjectService $orObjectService The OR object service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The ADR-023 action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action authorization service.
 	 */
 	public function __construct(
 		string $appName,
@@ -94,7 +94,7 @@ class LogsController extends Controller {
 		OrObjectService $orObjectService,
 		IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -467,35 +467,7 @@ class LogsController extends Controller {
 			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
 			$logs = ($matches['results'] ?? $matches);
 
-			// Create CSV content.
-			$csvData = "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n";
-
-			foreach ($logs as $log) {
-				$data = $log->getObject();
-				if (isset($data['created']) === true) {
-					$created = $data['created'];
-				} else {
-					$created = '';
-				}
-
-				if (isset($data['expires']) === true) {
-					$expires = $data['expires'];
-				} else {
-					$expires = '';
-				}
-
-				$csvData .= sprintf(
-					"%s,%s,%s,%s,%s,%s,%s,%s\n",
-					($log->getUuid() ?? ''),
-					($data['level'] ?? ''),
-					'"' . str_replace('"', '""', ($data['message'] ?? '')) . '"',
-					($data['synchronizationId'] ?? ''),
-					($data['userId'] ?? ''),
-					($data['sessionId'] ?? ''),
-					$created,
-					$expires
-				);
-			}//end foreach
+			$csvData = $this->logsCsv(logs: $logs);
 
 			// Return CSV as response.
 			return new JSONResponse(
@@ -510,4 +482,33 @@ class LogsController extends Controller {
 		}//end try
 
 	}//end export()
+
+	/**
+	 * The CSV export of the given synchronization logs, header row first.
+	 *
+	 * @param iterable $logs The log objects.
+	 *
+	 * @return string The CSV text.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function logsCsv(iterable $logs): string {
+		$csvData = "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n";
+		foreach ($logs as $log) {
+			$data = $log->getObject();
+			$csvData .= sprintf(
+				"%s,%s,%s,%s,%s,%s,%s,%s\n",
+				($log->getUuid() ?? ''),
+				($data['level'] ?? ''),
+				'"' . str_replace('"', '""', ($data['message'] ?? '')) . '"',
+				($data['synchronizationId'] ?? ''),
+				($data['userId'] ?? ''),
+				($data['sessionId'] ?? ''),
+				($data['created'] ?? ''),
+				($data['expires'] ?? '')
+			);
+		}
+
+		return $csvData;
+	}//end logsCsv()
 }//end class

@@ -31,15 +31,23 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
+import namedEditorDialog from '../../src/mixins/namedEditorDialog.js'
+import { editorSlotScopeProps } from '../../src/modals/editorSlotScope.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
+
+/**
+ * Imports the loader binds to the real module instead of a stub, because the
+ * options object spreads or mixes them in.
+ */
+const REAL_BINDINGS = { editorSlotScopeProps, namedEditorDialog }
 
 /**
  * Load an SFC's `export default {…}` options object without a bundler.
  *
  * The repo's vitest environment is `node` with no SFC transform, so the
- * component cannot be imported. Every `import` is replaced with a stub of the
- * same shape: the options object references imported identifiers only in
+ * component cannot be imported. Every `import` except those in REAL_BINDINGS
+ * is replaced with a stub of the same shape: the options object references imported identifiers only in
  * `components:` (never in the logic under test), so a stub is indistinguishable
  * from the real binding for these assertions — and using the real file is the
  * point. A copied-out `canSave` would pass forever after someone edited the
@@ -84,11 +92,11 @@ function loadSfcOptions(relPath) {
 	script = script.replace(/import\s+['"][^'"]+['"]\s*;?/g, '')
 
 	const stubs = [...bound]
-		.map((name) => `const ${name} = function () {};`)
+		.map((name) => `const ${name} = REAL.${name} ?? function () {};`)
 		.join('\n')
 	const body = `${stubs}\n${script.replace('export default', 'return')}`
 
-	return new Function(body)()
+	return new Function('REAL', body)(REAL_BINDINGS)
 }
 
 /**
@@ -189,6 +197,67 @@ describe('the installed nextcloud-vue must bind the save path this app depends o
 	})
 })
 
+/**
+ * One options section of a component with its mixins merged under it, the
+ * way Vue resolves them (the component's own entries win).
+ *
+ * @param {object} options Component options.
+ * @param {string} key Section name, such as `computed`.
+ * @return {object} The merged section.
+ */
+function section(options, key) {
+	return Object.assign(
+		{},
+		...(options.mixins || []).map((mixin) => mixin[key] || {}),
+		options[key] || {},
+	)
+}
+
+describe('name, open and cancel behaviour of the mapping and synchronization editors', () => {
+	const NAMES = ['', '   ', '---', 'a', 'Sync 1']
+
+	for (const relPath of [
+		'src/modals/v2/MappingEditorModal.vue',
+		'src/modals/v2/SynchronizationEditorModal.vue',
+	]) {
+		const options = loadSfcOptions(relPath)
+		const computed = section(options, 'computed')
+		const t = (app, text) => '[' + text + ']'
+
+		it(`${relPath} answers as recorded`, () => {
+			const seen = []
+			const vm = { t, seedDraft: () => seen.push('seed') }
+			const record = {
+				isCreate: [null, { id: 1 }].map((item) =>
+					computed.isCreate.call({ ...vm, item }),
+				),
+				nameLabel: computed.nameLabel.call(vm),
+				nameError: NAMES.flatMap((name) =>
+					[false, true].map((nameTouched) =>
+						computed.nameError.call({
+							...vm,
+							draft: { name },
+							nameTouched,
+						}),
+					),
+				),
+			}
+			const watcher = section(options, 'watch').show
+			record.showImmediate = watcher.immediate
+			watcher.handler.call(vm, false)
+			watcher.handler.call(vm, true)
+			record.seeded = seen.length
+			const closes = []
+			const cancel = section(options, 'methods').onCancel
+			cancel.call({ saving: true, close: () => closes.push('busy') })
+			cancel.call({ saving: false, close: () => closes.push('idle') })
+			cancel.call({ saving: false, close: undefined })
+			record.closes = closes
+			expect(record).toMatchSnapshot()
+		})
+	}
+})
+
 describe('form-dialog slot contract for the bespoke editor modals', () => {
 	for (const { name, file: relPath, validDraft, extraVm } of MODALS) {
 		describe(name, () => {
@@ -207,6 +276,16 @@ describe('form-dialog slot contract for the bespoke editor modals', () => {
 				...extraVm,
 				draft: { ...validDraft },
 				...overrides,
+			})
+
+			it('declares the recorded slot scope props', () => {
+				const props = Object.fromEntries(
+					Object.entries(options.props).map(([prop, def]) => [
+						prop,
+						{ type: def.type.name, default: def.default },
+					]),
+				)
+				expect(props).toMatchSnapshot()
 			})
 
 			it('declares only props the host slot actually binds', () => {

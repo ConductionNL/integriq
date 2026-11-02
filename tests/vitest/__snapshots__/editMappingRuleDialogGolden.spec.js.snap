@@ -1,0 +1,1110 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EditMappingRuleDialog drafts golden > seeds the drafts as recorded 1`] = `
+[
+  [
+    "mapping",
+    null,
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    "  x  ",
+    {
+      "propertyDraft": "",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    "{{ a }}",
+    {
+      "propertyDraft": "",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    null,
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    "  x  ",
+    {
+      "propertyDraft": "",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    "{{ a }}",
+    {
+      "propertyDraft": "",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    undefined,
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    "  x  ",
+    {
+      "propertyDraft": "",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    "{{ a }}",
+    {
+      "propertyDraft": "",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    "",
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    "",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    "  x  ",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    "{{ a }}",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    0,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    42,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    false,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    true,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    null,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    undefined,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "mapping",
+    "name",
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "name",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "cast",
+    null,
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    null,
+    "  x  ",
+    {
+      "propertyDraft": "",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "cast",
+    null,
+    "{{ a }}",
+    {
+      "propertyDraft": "",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "cast",
+    null,
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "cast",
+    null,
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "cast",
+    null,
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "cast",
+    null,
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "cast",
+    null,
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    null,
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    null,
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    "  x  ",
+    {
+      "propertyDraft": "",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    "{{ a }}",
+    {
+      "propertyDraft": "",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    undefined,
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "cast",
+    "",
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    "",
+    "  x  ",
+    {
+      "propertyDraft": "",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "cast",
+    "",
+    "{{ a }}",
+    {
+      "propertyDraft": "",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "cast",
+    "",
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "cast",
+    "",
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "cast",
+    "",
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "cast",
+    "",
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "cast",
+    "",
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    "",
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    "",
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    "",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    "  x  ",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    "{{ a }}",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    0,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    42,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    false,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    true,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    null,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    undefined,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "cast",
+    "name",
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "name",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "unset",
+    null,
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    null,
+    "  x  ",
+    {
+      "propertyDraft": "  x  ",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "unset",
+    null,
+    "{{ a }}",
+    {
+      "propertyDraft": "{{ a }}",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "unset",
+    null,
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "unset",
+    null,
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "unset",
+    null,
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "unset",
+    null,
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "unset",
+    null,
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    null,
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    null,
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    "  x  ",
+    {
+      "propertyDraft": "  x  ",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    "{{ a }}",
+    {
+      "propertyDraft": "{{ a }}",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    undefined,
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "unset",
+    "",
+    "",
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    "",
+    "  x  ",
+    {
+      "propertyDraft": "",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "unset",
+    "",
+    "{{ a }}",
+    {
+      "propertyDraft": "",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "unset",
+    "",
+    0,
+    {
+      "propertyDraft": "",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "unset",
+    "",
+    42,
+    {
+      "propertyDraft": "",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "unset",
+    "",
+    false,
+    {
+      "propertyDraft": "",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "unset",
+    "",
+    true,
+    {
+      "propertyDraft": "",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "unset",
+    "",
+    null,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    "",
+    undefined,
+    {
+      "propertyDraft": "",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    "",
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "",
+      "valueDraft": "[object Object]",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    "",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    "  x  ",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "  x  ",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    "{{ a }}",
+    {
+      "propertyDraft": "name",
+      "valueDraft": "{{ a }}",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    0,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "0",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    42,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "42",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    false,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "false",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    true,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "true",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    null,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    undefined,
+    {
+      "propertyDraft": "name",
+      "valueDraft": "",
+    },
+  ],
+  [
+    "unset",
+    "name",
+    {
+      "a": 1,
+    },
+    {
+      "propertyDraft": "name",
+      "valueDraft": "[object Object]",
+    },
+  ],
+]
+`;

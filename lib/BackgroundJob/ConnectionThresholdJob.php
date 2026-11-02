@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\Integriq\Service\ConnectionAlertService;
+use OCA\Integriq\Service\ConnectionAlertServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -50,12 +50,12 @@ class ConnectionThresholdJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
-	 * @param ConnectionAlertService $alerts Counts and opens or clears alerts.
+	 * @param ConnectionAlertServiceInterface $alerts Counts and opens or clears alerts.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ConnectionAlertService $alerts,
+		private readonly ConnectionAlertServiceInterface $alerts,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

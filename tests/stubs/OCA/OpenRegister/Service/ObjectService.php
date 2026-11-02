@@ -294,6 +294,39 @@ class ObjectService {
 	 * @param string $register
 	 * @return static
 	 */
+	/**
+	 * Count the objects matching a query.
+	 *
+	 * @param array $config The query, with its `filters`.
+	 * @return int
+	 */
+	public function count(array $config = []): int {
+		return 0;
+	}
+
+	/**
+	 * The audit-trail rows of an object (signature as OpenRegister ObjectService::getLogs()).
+	 *
+	 * @param string $uuid The object uuid.
+	 * @param array $filters Row filters.
+	 * @param bool $_rbac Apply RBAC filters when true.
+	 * @param bool $_multitenancy Apply multitenancy filters when true.
+	 * @return array
+	 */
+	public function getLogs(string $uuid, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
+		return [];
+	}
+
+	/**
+	 * Turn a validation failure into its JSON answer (as OpenRegister ObjectService::handleValidationException()).
+	 *
+	 * @param \Exception $exception The validation failure.
+	 * @return \OCP\AppFramework\Http\JSONResponse
+	 */
+	public function handleValidationException(\Exception $exception): \OCP\AppFramework\Http\JSONResponse {
+		return new \OCP\AppFramework\Http\JSONResponse(['message' => $exception->getMessage()], 400);
+	}
+
 	public function setRegister(string $register): static {
 		return $this;
 	}

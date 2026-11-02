@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\Registry\SubscriptionRequestHandler;
+use OCA\Integriq\Service\Registry\SubscriptionRequestHandlerInterface;
 use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -53,11 +53,11 @@ class RegistrySubscriptionRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SubscriptionRequestHandler $handler The half that was already built.
+	 * @param SubscriptionRequestHandlerInterface $handler The half that was already built.
 	 * @param LoggerInterface            $logger  Structured logger.
 	 */
 	public function __construct(
-		private readonly SubscriptionRequestHandler $handler,
+		private readonly SubscriptionRequestHandlerInterface $handler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

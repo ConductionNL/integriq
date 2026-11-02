@@ -16,7 +16,7 @@
  *      layout groups, SFC → labels). That split is what makes the form
  *      declarative, but it also means a change in one file can silently
  *      contradict another. `FlowAction` going missing from the class picker
- *      while sitting in lib/Action/ is exactly that failure, so the last
+ *      while sitting in lib/Service/Job/ is exactly that failure, so the last
  *      describe block pins the three files against each other.
  */
 
@@ -26,9 +26,12 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
 	coerceNumber,
+	currentJobClass,
 	dateValueFromStored,
 	formatDateValue,
 	groupFieldRuns,
+	MOVED_JOB_CLASSES,
+	needsSynchronizationPicker,
 	readSynchronizationId,
 	SYNCHRONIZATION_ACTION_CLASS,
 	writeSynchronizationId,
@@ -285,13 +288,16 @@ describe('Jobs form configuration consistency', () => {
 	)
 	const fragmentProps = fragment.components.schemas.job.properties
 
-	it('offers exactly the Action classes that exist in lib/Action', () => {
+	it('offers exactly the Action classes that exist in lib/Service/Job', () => {
 		// This is the check whose absence let FlowAction sit in lib/Action for a
 		// release without ever appearing in the picker.
 		const onDisk = fs
-			.readdirSync(path.join(REPO_ROOT, 'lib/Action'))
-			.filter((file) => file.endsWith('.php'))
-			.map((file) => `OCA\\Integriq\\Action\\${file.replace(/\.php$/, '')}`)
+			.readdirSync(path.join(REPO_ROOT, 'lib/Service/Job'))
+			.filter((file) => file.endsWith('Action.php'))
+			.map(
+				(file) =>
+					`OCA\\Integriq\\Service\\Job\\${file.replace(/\.php$/, '')}`,
+			)
 		expect([...overrides.jobClass.enum].sort()).toEqual([...onDisk].sort())
 	})
 
@@ -381,5 +387,77 @@ describe('Jobs form configuration consistency', () => {
 		expect(fragmentProps.jobClass.enum).toBeUndefined()
 		expect(fragmentProps.errorRetention.default).toBeUndefined()
 		expect(overrides.errorRetention.default).toBe(86400)
+	})
+})
+
+describe('moved job class names', () => {
+	const OLD_SYNCHRONIZATION = 'OCA\\Integriq\\Action\\SynchronizationAction'
+	const OLD_FLOW = 'OCA\\Integriq\\Action\\FlowAction'
+
+	it('reads an old action name as its current name', () => {
+		expect(currentJobClass(OLD_SYNCHRONIZATION)).toBe(
+			SYNCHRONIZATION_ACTION_CLASS,
+		)
+		expect(currentJobClass(OLD_FLOW)).toBe(
+			'OCA\\Integriq\\Service\\Job\\FlowAction',
+		)
+	})
+
+	it('leaves current, unknown and empty names as they are', () => {
+		expect(currentJobClass(SYNCHRONIZATION_ACTION_CLASS)).toBe(
+			SYNCHRONIZATION_ACTION_CLASS,
+		)
+		expect(currentJobClass('OCA\\Custom\\Action\\Other')).toBe(
+			'OCA\\Custom\\Action\\Other',
+		)
+		expect(currentJobClass(undefined)).toBe(undefined)
+		expect(currentJobClass('')).toBe('')
+	})
+
+	it('offers the synchronization picker for a synchronization job under either name', () => {
+		expect(needsSynchronizationPicker(SYNCHRONIZATION_ACTION_CLASS)).toBe(true)
+		expect(needsSynchronizationPicker(OLD_SYNCHRONIZATION)).toBe(true)
+	})
+
+	it('offers no synchronization picker for any other job', () => {
+		expect(needsSynchronizationPicker(OLD_FLOW)).toBe(false)
+		expect(
+			needsSynchronizationPicker('OCA\\Integriq\\Service\\Job\\FlowAction'),
+		).toBe(false)
+		expect(needsSynchronizationPicker(undefined)).toBe(false)
+		expect(needsSynchronizationPicker('')).toBe(false)
+	})
+
+	it('lets the form decide the picker through the name-aware helper', () => {
+		// Read as text, like the label check above: vitest runs this spec
+		// without mounting the SFC.
+		const sfc = fs.readFileSync(
+			path.join(REPO_ROOT, 'src/modals/v2/JobFormFields.vue'),
+			'utf8',
+		)
+		expect(sfc).toMatch(
+			/needsSynchronizationPicker\(\) \{\s*return needsSynchronizationPicker\(this\.formData\?\.jobClass\)\s*\}/,
+		)
+	})
+
+	it('maps the same old action names as lib/Service/Job/MovedJobClasses.php', () => {
+		// The PHP map is the authority; a moved action missing here would open
+		// an old-name job with the wrong form again.
+		const php = fs.readFileSync(
+			path.join(REPO_ROOT, 'lib/Service/Job/MovedJobClasses.php'),
+			'utf8',
+		)
+		const namespace = php.match(/^namespace ([^;]+);/m)[1]
+		const imports = Object.fromEntries(
+			[...php.matchAll(/^use ([^;]+\\(\w+));/gm)].map((m) => [m[2], m[1]]),
+		)
+		const fromPhp = {}
+		for (const m of php.matchAll(/'(OCA\\[^']+)' => (\w+)::class,/g)) {
+			if (m[1].startsWith('OCA\\Integriq\\Action\\')) {
+				fromPhp[m[1]] = imports[m[2]] ?? `${namespace}\\${m[2]}`
+			}
+		}
+		expect(Object.keys(fromPhp).length).toBeGreaterThan(0)
+		expect(MOVED_JOB_CLASSES).toEqual(fromPhp)
 	})
 })

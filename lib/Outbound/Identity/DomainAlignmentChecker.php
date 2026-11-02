@@ -35,7 +35,7 @@ use DateTimeImmutable;
  *
  * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
  */
-class DomainAlignmentChecker {
+class DomainAlignmentChecker implements DomainAlignmentCheckerInterface {
 
 	/**
 	 * The record is published and says what it should.

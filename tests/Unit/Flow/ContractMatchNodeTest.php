@@ -21,8 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
 use OCA\Integriq\Flow\ContractMatchNode;
+use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Db\ObjectEntity;

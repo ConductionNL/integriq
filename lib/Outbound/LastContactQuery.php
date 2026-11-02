@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-log-answers-when-a-recipient-was-last-told-anything-req-ocl-006
  */
-class LastContactQuery {
+class LastContactQuery implements LastContactQueryInterface {
 
 	/**
 	 * Constructor.

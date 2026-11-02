@@ -23,17 +23,16 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Service\StufZkn;
 
-use OCA\Integriq\BackgroundJob\StufZdsRetryJob;
+use OCA\Integriq\BackgroundJob\MessageRetrySchedulerInterface;
 use OCA\Integriq\Event\StufZdsCaseConcludedEvent;
 use OCA\Integriq\Exception\StufZknProviderException;
-use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -47,9 +46,9 @@ use Throwable;
  *     circuit breaker, audit log, retry job, conclusion event and, since the credentials moved out of the persisted
  *     envelope, the message builder and credential resolver that add the UsernameToken at send time.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
-class StufZdsOutbound {
+class StufZdsOutbound implements StufZdsOutboundInterface {
 
 	/**
 	 * Seconds to wait before each retry of a transient failure.
@@ -78,7 +77,7 @@ class StufZdsOutbound {
 	 * @param StufZdsResponseReader $reader     Reads the answers.
 	 * @param StufZdsCircuitBreaker $breaker    The per-source circuit breaker.
 	 * @param StufZdsMessageLog     $log        Audit rows and source reads.
-	 * @param IJobList              $jobList    Schedules retries.
+	 * @param MessageRetrySchedulerInterface $retries Schedules retries.
 	 * @param IEventDispatcher      $dispatcher Announces conclusions.
 	 * @param LoggerInterface       $logger     The logger.
 	 * @param StufZdsMessageBuilder $builder    Adds the UsernameToken to an envelope at send time.
@@ -89,7 +88,7 @@ class StufZdsOutbound {
 		private readonly StufZdsResponseReader $reader,
 		private readonly StufZdsCircuitBreaker $breaker,
 		private readonly StufZdsMessageLog $log,
-		private readonly IJobList $jobList,
+		private readonly MessageRetrySchedulerInterface $retries,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
 		private readonly StufZdsMessageBuilder $builder,
@@ -108,7 +107,7 @@ class StufZdsOutbound {
 	 *
 	 * @return array The result (ZdsResult).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function kennisgeving(array $source, string $operation, array $message, array $context): array {
 		$row      = $this->openRow(source: $source, operation: $operation, message: $message, context: $context, keepEnvelope: true);
@@ -129,7 +128,7 @@ class StufZdsOutbound {
 	 *
 	 * @return array The result (ZdsResult) plus `answer`, the answer XML.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-case-operations
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function question(array $source, string $operation, array $message, array $context): array {
 		$row      = $this->openRow(source: $source, operation: $operation, message: $message, context: $context, keepEnvelope: false);
@@ -163,7 +162,7 @@ class StufZdsOutbound {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function retry(string $messageId): void {
 		$row = $this->log->find(messageId: $messageId);
@@ -536,7 +535,7 @@ class StufZdsOutbound {
 	 */
 	private function schedule(string $messageId, int $delay): bool {
 		try {
-			$this->jobList->scheduleAfter(StufZdsRetryJob::class, (time() + $delay), ['messageId' => $messageId]);
+			$this->retries->scheduleRetry(messageId: $messageId, runAfter: (time() + $delay));
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'StUF-ZDS retry could not be scheduled for {id}: {error}',

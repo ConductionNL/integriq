@@ -30,7 +30,7 @@ use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
@@ -64,14 +64,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
-class EudiIssuerKeyService {
-
-	/**
-	 * Signing algorithm for the issuer key (OpenID4VCI/EUDI convention: ES256/P-256).
-	 *
-	 * @var string
-	 */
-	public const ALGORITHM = 'ES256';
+class EudiIssuerKeyService implements EudiIssuerKeyServiceInterface {
 
 	/**
 	 * Maximum number of archived (retired) public keys retained per organisation,
@@ -135,7 +128,7 @@ class EudiIssuerKeyService {
 	 * @return array{active: array|null, archived: array[]}
 	 */
 	private function loadKeySet(?string $organisationId): array {
-		$raw = $this->appConfig->getValueString(Application::APP_ID, $this->configKey(organisationId: $organisationId), '');
+		$raw = $this->appConfig->getValueString(AppIdentity::APP_ID, $this->configKey(organisationId: $organisationId), '');
 		if ($raw === '') {
 			return ['active' => null, 'archived' => []];
 		}
@@ -162,7 +155,7 @@ class EudiIssuerKeyService {
 	 */
 	private function saveKeySet(?string $organisationId, array $keySet): void {
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			$this->configKey(organisationId: $organisationId),
 			json_encode($keySet),
 			sensitive: true

@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "sinhronizācijas",
         "A signing secret is configured (hidden).": "Parakstīšanas noslēpums ir konfigurēts (paslēpts).",
         "Copied to clipboard": "Nokopēts starpliktuvē",
         "Copy": "Kopēt",

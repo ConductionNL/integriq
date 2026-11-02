@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "συγχρονισμοί",
         "A signing secret is configured (hidden).": "Έχει ρυθμιστεί ένα μυστικό υπογραφής (κρυφό).",
         "Copied to clipboard": "Αντιγράφηκε στο πρόχειρο",
         "Copy": "Αντιγραφή",

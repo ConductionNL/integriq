@@ -17,9 +17,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Adapters\Slo;
 
+use OCA\Integriq\Adapters\Slo\SloCurriculumException;
 use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
-use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
+use OCA\Integriq\Adapters\Slo\UnknownSloCurriculumSetException;
 use PHPUnit\Framework\TestCase;
 
 /**

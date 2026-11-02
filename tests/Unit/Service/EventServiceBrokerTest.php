@@ -17,12 +17,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Broker\BrokerCredentialResolver;
+use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerResult;
 use OCA\Integriq\Broker\BrokerTransportInterface;
 use OCA\Integriq\Broker\BrokerTransportRegistry;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;

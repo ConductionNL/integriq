@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
-class PeppolTransmissionService {
+class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding Peppol sources and transmissions.
@@ -141,7 +141,7 @@ class PeppolTransmissionService {
 	 * @param ORObjectService $objectService OR object service for source/transmission persistence.
 	 * @param LogPeppolAccessPointProvider $logProvider The sandbox provider binding.
 	 * @param RestPeppolAccessPointProvider $restProvider The generic REST provider binding.
-	 * @param EventService $eventService Emits delivery-status / inbound-received CloudEvents.
+	 * @param CloudEventEmitterInterface $eventService Emits delivery-status / inbound-received CloudEvents.
 	 * @param IL10N $l The localization service (default status detail text).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param IRootFolder $rootFolder Reads the UBL document `payloadFileUri` names in Nextcloud Files.
@@ -150,7 +150,7 @@ class PeppolTransmissionService {
 		private readonly ORObjectService $objectService,
 		private readonly LogPeppolAccessPointProvider $logProvider,
 		private readonly RestPeppolAccessPointProvider $restProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly IRootFolder $rootFolder,

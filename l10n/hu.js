@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "synchronizations": "szinkronizálások",
         "A signing secret is configured (hidden).": "Aláírási titok van beállítva (rejtett).",
         "Copied to clipboard": "Vágólapra másolva",
         "Copy": "Másolás",

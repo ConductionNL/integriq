@@ -27,7 +27,7 @@ namespace OCA\Integriq\Service\Lti;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\CallService;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\CloudEventEmitterInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -42,15 +42,13 @@ use Throwable;
  *
  * @spec openspec/specs/lti-platform/spec.md
  */
-class LtiAgsService {
+class LtiAgsService implements LtiAgsServiceInterface {
 
 	/**
 	 * AGS scope URIs (1EdTech LTI Advantage AGS 2.0).
 	 *
 	 * @var string
 	 */
-	public const SCOPE_LINEITEM = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem';
-	public const SCOPE_LINEITEM_READONLY = 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly';
 	public const SCOPE_SCORE = 'https://purl.imsglobal.org/spec/lti-ags/scope/score';
 	public const SCOPE_RESULT = 'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly';
 	public const SCOPE_NRPS = 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly';
@@ -98,7 +96,7 @@ class LtiAgsService {
 	 * @param LtiKeyService $keyService This instance's own signing keys (Tool-role assertions).
 	 * @param AuthenticationService $authenticationService Reused `fetchOAuthTokens()` (Tool-role outbound grant).
 	 * @param CallService $callService Outbound HTTP call engine for the AGS REST call itself.
-	 * @param EventService $eventService Reused `emitCloudEvent()` (AGS score passback fan-out).
+	 * @param CloudEventEmitterInterface $eventService Reused `emitCloudEvent()` (AGS score passback fan-out).
 	 * @param ICacheFactory $cacheFactory Cache factory for issued-token storage.
 	 * @param LoggerInterface $logger Logger for issuance/dispatch outcomes.
 	 */
@@ -108,7 +106,7 @@ class LtiAgsService {
 		private readonly LtiKeyService $keyService,
 		private readonly AuthenticationService $authenticationService,
 		private readonly CallService $callService,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {

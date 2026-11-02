@@ -95,38 +95,38 @@ export function draftFromUnmapped(activity) {
  * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-2.1
  */
 export function draftProblems(draft) {
-	const problems = []
 	const imowId = text(draft.imowId)
-	if (imowId === '' && text(draft.activityId) === '') {
-		problems.push(t('integriq', 'Fill in the imow-id or the activity id.'))
-	}
-	if (imowId !== '' && !IMOW_PATTERN.test(imowId)) {
-		problems.push(
+	const checks = [
+		[
+			imowId === '' && text(draft.activityId) === '',
+			t('integriq', 'Fill in the imow-id or the activity id.'),
+		],
+		[
+			imowId !== '' && !IMOW_PATTERN.test(imowId),
 			t(
 				'integriq',
 				'The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen.',
 			),
-		)
-	}
-	if (text(draft.activityName) === '') {
-		problems.push(t('integriq', 'Fill in the activity name.'))
-	}
-	if (!draft.caseTypes.some((caseType) => text(caseType.reference) !== '')) {
-		problems.push(t('integriq', 'Add at least one case type with a reference.'))
-	}
-	if (
-		draft.samenloopRules.some(
-			(rule) => !IMOW_PATTERN.test(text(rule.withImowId)),
-		)
-	) {
-		problems.push(
+		],
+		[
+			text(draft.activityName) === '',
+			t('integriq', 'Fill in the activity name.'),
+		],
+		[
+			!draft.caseTypes.some((caseType) => text(caseType.reference) !== ''),
+			t('integriq', 'Add at least one case type with a reference.'),
+		],
+		[
+			draft.samenloopRules.some(
+				(rule) => !IMOW_PATTERN.test(text(rule.withImowId)),
+			),
 			t(
 				'integriq',
 				'Every samenloop rule needs the imow-id of the other activity.',
 			),
-		)
-	}
-	return problems
+		],
+	]
+	return checks.filter(([failed]) => failed).map(([, problem]) => problem)
 }
 
 /**

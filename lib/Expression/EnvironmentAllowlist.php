@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/allowlisted-expression-sources/specs/expression-value-sources/spec.md
  */
-class EnvironmentAllowlist {
+class EnvironmentAllowlist implements EnvironmentAllowlistInterface {
 
 	/**
 	 * The app the list is stored under.

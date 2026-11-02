@@ -16,8 +16,9 @@ every job after it in that pass with it.
 
 - A `sourceConfig.format: "jsonl"` synchronization streams its download to a temporary file (the
   call engine's existing `sink`), and reads it back one line at a time with `gzopen`/`gzgets`,
-  which reads gzip and plain files alike. Neither the compressed nor the decompressed body is
-  held whole, and the call log records no body for it.
+  which reads gzip and plain files alike. For a streamed response neither the compressed nor the
+  decompressed body is held whole, and the call log records no body for it; a body an in-process
+  source returns on the call log is written to the temporary file first.
 - One run reads one batch: `sourceConfig.pageSize` records, default 5,000. The next batch is
   kept in the synchronization's `currentPage`, and the run's result carries
   `resume: {page, reason}`. The batch after the last one is batch 1 again.
@@ -42,10 +43,11 @@ every job after it in that pass with it.
 - A failing job already cannot stop the others: `JobService` catches `\Throwable` per job and
   around each action. Memory exhaustion is a fatal that no handler sees, which is why the fix is
   the bounded reader.
-- Existing installs keep the enabled state their jobs already have: the seeded job objects keep
-  their version.
+- The ten job objects carry version 1.0.1, so an upgrade disables a job an earlier version
+  imported enabled. An administrator's own edits to those jobs are overwritten with it.
 
 ## Impact
 
-No schema or route change. `currentPage` already exists on `synchronization`. A large JSONL
+No route change. `currentPage` already exists on `synchronization`; `currentPageVersion` is added
+next to it (synchronization schema 1.2.1) to tie a cycle to one version of the file. A large JSONL
 source now takes several cron ticks per full pass and downloads the file once per batch.

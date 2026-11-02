@@ -123,13 +123,8 @@ class OutboundDocumentTranslator {
 	/**
 	 * Build the `voegZaakdocumentToe_Lk01` kennisgeving (`edcLk01`).
 	 *
-	 * @param array                                                $document              The mapped delivery (ZGW field names).
-	 * @param string                                               $documentId The identificatie from genereerDocumentIdentificatie.
-	 * @param string                                               $zaakIdentificatie     The case the document belongs to.
-	 * @param string                                               $documenttype          The case type's document type description (`dct.omschrijving`).
-	 * @param array{content:string,filename:string,mimeType:string} $file                  The file, sent inline.
-	 * @param array{organisatie:string,applicatie:string}          $zender                This bridge as sender.
-	 * @param array{organisatie:string,applicatie?:string}         $ontvanger             The case system.
+	 * @param CaseDocumentDelivery $delivery   The document, its case, its file and the two systems.
+	 * @param string               $documentId The identificatie from genereerDocumentIdentificatie.
 	 *
 	 * @return array{referentienummer: string, xml: string}
 	 *
@@ -137,28 +132,8 @@ class OutboundDocumentTranslator {
 	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
-	public function documentMessage(
-		array $document,
-		string $documentId,
-		string $zaakIdentificatie,
-		string $documenttype,
-		array $file,
-		array $zender,
-		array $ontvanger,
-	): array {
-		$required = [
-			'identificatie' => $documentId,
-			'zaakIdentificatie' => $zaakIdentificatie,
-			'documenttype' => $documenttype,
-			'titel' => trim((string)($document['titel'] ?? '')),
-		];
-		foreach ($required as $name => $value) {
-			if (trim($value) === '') {
-				throw new StufZknTranslationException(
-					message: 'A voegZaakdocumentToe message needs a ' . $name . '; refusing to send without one.'
-				);
-			}
-		}
+	public function documentMessage(CaseDocumentDelivery $delivery, string $documentId): array {
+		$fields = $this->edcFields(delivery: $delivery, documentId: $documentId);
 
 		$referenceNumber = 'ZDS-' . bin2hex(random_bytes(8));
 		[$xml, $body] = $this->envelope();
@@ -170,8 +145,8 @@ class OutboundDocumentTranslator {
 			parent: $lk01,
 			berichtcode: 'Lk01',
 			referenceNumber: $referenceNumber,
-			zender: $zender,
-			ontvanger: $ontvanger,
+			zender: $delivery->zender,
+			ontvanger: $delivery->ontvanger,
 			tail: ['entiteittype' => 'EDC']
 		);
 
@@ -184,16 +159,49 @@ class OutboundDocumentTranslator {
 		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:entiteittype', 'EDC');
 		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', 'T');
 		$lk01->appendChild($object);
+		foreach ($fields as $name => $value) {
+			$this->appendZknField(document: $xml, parent: $object, name: $name, value: $value);
+		}
 
-		// The EDC element order of the ZDS 1.2 zkn0310 entity schema.
-		$fields = [
+		$this->appendFileAndCase(object: $object, delivery: $delivery);
+
+		return ['referentienummer' => $referenceNumber, 'xml' => $this->render(document: $xml)];
+	}//end documentMessage()
+
+	/**
+	 * The EDC fields in the element order of the ZDS 1.2 zkn0310 entity schema.
+	 *
+	 * @param CaseDocumentDelivery $delivery   The document, its case, its file and the two systems.
+	 * @param string               $documentId The identificatie from genereerDocumentIdentificatie.
+	 *
+	 * @return array<string, string> Field name to value, '' for none.
+	 *
+	 * @throws StufZknTranslationException When a required value is missing.
+	 */
+	private function edcFields(CaseDocumentDelivery $delivery, string $documentId): array {
+		$document = $delivery->document;
+		$required = [
 			'identificatie' => $documentId,
-			'dct.omschrijving' => $documenttype,
+			'zaakIdentificatie' => $delivery->zaakIdentificatie,
+			'documenttype' => $delivery->documenttype,
+			'titel' => trim((string)($document['titel'] ?? '')),
+		];
+		foreach ($required as $name => $value) {
+			if (trim($value) === '') {
+				throw new StufZknTranslationException(
+					message: 'A voegZaakdocumentToe message needs a ' . $name . '; refusing to send without one.'
+				);
+			}
+		}
+
+		return [
+			'identificatie' => $documentId,
+			'dct.omschrijving' => $delivery->documenttype,
 			'creatiedatum' => $this->stufDate(value: (string)($document['creatiedatum'] ?? '')),
 			'ontvangstdatum' => $this->stufDate(value: (string)($document['ontvangstdatum'] ?? '')),
 			'titel' => $required['titel'],
 			'beschrijving' => (string)($document['beschrijving'] ?? ''),
-			'formaat' => (string)($document['formaat'] ?? $file['mimeType']),
+			'formaat' => (string)($document['formaat'] ?? $delivery->file['mimeType']),
 			'taal' => (string)($document['taal'] ?? ''),
 			'versie' => (string)($document['versie'] ?? ''),
 			'status' => (string)($document['status'] ?? ''),
@@ -202,9 +210,19 @@ class OutboundDocumentTranslator {
 			'auteur' => (string)($document['auteur'] ?? ''),
 			'link' => (string)($document['link'] ?? ''),
 		];
-		foreach ($fields as $name => $value) {
-			$this->appendZknField(document: $xml, parent: $object, name: $name, value: $value);
-		}
+	}//end edcFields()
+
+	/**
+	 * Append the inline file and the relation to the case to the EDC object.
+	 *
+	 * @param DOMElement           $object   The EDC object.
+	 * @param CaseDocumentDelivery $delivery The document, its case, its file and the two systems.
+	 *
+	 * @return void
+	 */
+	private function appendFileAndCase(DOMElement $object, CaseDocumentDelivery $delivery): void {
+		$xml  = $object->ownerDocument;
+		$file = $delivery->file;
 
 		$content = $xml->createElementNS(StufZknNamespaces::ZKN, 'zkn:inhoud', base64_encode($file['content']));
 		$content->setAttributeNS(StufZknNamespaces::STUF, 'StUF:bestandsnaam', $file['filename']);
@@ -219,10 +237,8 @@ class OutboundDocumentTranslator {
 		$case->setAttributeNS(StufZknNamespaces::STUF, 'StUF:entiteittype', 'ZAK');
 		$case->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', 'I');
 		$relation->appendChild($case);
-		$this->appendText(document: $xml, parent: $case, name: 'zkn:identificatie', value: $zaakIdentificatie);
-
-		return ['referentienummer' => $referenceNumber, 'xml' => $this->render(document: $xml)];
-	}//end documentMessage()
+		$this->appendText(document: $xml, parent: $case, name: 'zkn:identificatie', value: $delivery->zaakIdentificatie);
+	}//end appendFileAndCase()
 
 	/**
 	 * A SOAP envelope with the StUF, zkn, xsi and xmime prefixes declared.

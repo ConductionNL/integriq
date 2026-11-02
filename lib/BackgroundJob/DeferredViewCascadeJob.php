@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Deletes the `extendview` objects that belonged to a deleted `view`.
  *
- * ADR-078: {@see \OCA\Integriq\EventListener\ViewDeletedEventListener}
+ * ADR-078: {@see \OCA\Integriq\BackgroundJob\ViewDeletedEventListener}
  * used to run this cascade inside the user's delete request — one unbounded
  * `findAll()` plus one `delete()` per matching row, all before the delete
  * response was written. Nothing about the cascade can change the outcome of the
@@ -67,7 +67,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 	 * @param IUserManager $userManager Resolver for the captured user id.
 	 * @param OrganisationService $organisation Active-organisation resolver (drift logging).
 	 * @param LoggerInterface $logger The logger.
-	 * @param SourceMappingService $objectService Service providing access to the OR object layer.
+	 * @param SourceMappingServiceInterface $objectService Service providing access to the OR object layer.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -75,7 +75,7 @@ class DeferredViewCascadeJob extends ActorForwardedJob {
 		IUserManager $userManager,
 		OrganisationService $organisation,
 		LoggerInterface $logger,
-		private readonly SourceMappingService $objectService,
+		private readonly SourceMappingServiceInterface $objectService,
 	) {
 		parent::__construct(
 			time: $time,

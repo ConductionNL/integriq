@@ -71,7 +71,7 @@ use Throwable;
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
  */
-class AuthenticationConfigRemover {
+class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterface {
 
 	/**
 	 * Outcome: the value was cleared and the save persisted.

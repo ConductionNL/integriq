@@ -85,14 +85,7 @@ namespace OCA\Integriq\Service\Security;
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
  */
-class AuthenticationConfigAuditor {
-
-	/**
-	 * The vestigial field this auditor reports on.
-	 *
-	 * @var string
-	 */
-	public const FIELD = 'authenticationConfig';
+class AuthenticationConfigAuditor implements AuthenticationConfigAuditorInterface {
 
 	/**
 	 * A source whose `authenticationConfig` is absent / null / empty.

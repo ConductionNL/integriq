@@ -43,7 +43,7 @@ namespace OCA\Integriq\Service;
  *
  * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
  */
-final class RetentionDefaults {
+final class RetentionDefaults implements RetentionDefaultsInterface {
 
 	/**
 	 * Successful call, job and synchronization logs: one hour.
@@ -51,13 +51,6 @@ final class RetentionDefaults {
 	 * @var int
 	 */
 	public const SUCCESS_LOG = 3600000;
-
-	/**
-	 * Call logs: 30 days.
-	 *
-	 * @var int
-	 */
-	public const CALL_LOG = 2592000000;
 
 	/**
 	 * Event messages: 7 days.

@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class CatalogRegistryService {
+class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	/**
 	 * Directory holding the register.d seed fragments this service reads
 	 * for seeded source templates.
@@ -157,6 +157,109 @@ class CatalogRegistryService {
 		'sourceTemplateSlug' => '',
 		'standards' => ['Objecten API 2', 'Objecttypen API 2'],
 		'icon' => 'Api',
+	];
+
+	/**
+	 * How a vendor document-generation adapter ships and what a live source of it needs.
+	 *
+	 * @var string
+	 */
+	private const DOCUMENT_GENERATION_NOTE = 'Ships in mock mode with fixture templates, so the path works before a licence exists. '
+		. 'A live source needs a baseUrl and a '
+		. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.';
+
+	/**
+	 * The built-in adapters not registered with OR's IntegrationRegistry, as
+	 * catalog descriptors (see {@see collectStaticDescriptors()}).
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const STATIC_DESCRIPTORS = [
+		[
+			'slug' => 'adapter:pdok',
+			'name' => 'PDOK Locatieserver & kaartlagen',
+			'description' => 'Dutch national geo-data platform (Publieke Dienstverlening Op de Kaart) — address/location suggest+lookup, '
+				. 'WMS/WFS map layers. Ships with a deterministic mock flavour so the leaf is demonstrably functional without a live '
+				. 'PDOK dependency; flip `pdok.feature_flag` to reach the real api.pdok.nl / service.pdok.nl endpoints.',
+			'category' => 'Geo / Maps',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'pdok.feature_flag',
+			'sourceTemplateSlug' => '',
+			'standards' => ['OGC WMS', 'OGC WFS', 'PDOK Locatieserver'],
+			'icon' => 'MapMarkerOutline',
+		],
+		[
+			'slug' => 'adapter:digikoppeling',
+			'name' => 'Digikoppeling',
+			'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '
+				. 'PKIoverheid credentials, Grote Berichten large-message reference transfer) for secure inter-government data exchange.',
+			'category' => 'Government messaging',
+			'kind' => 'adapter',
+			'mechanism' => 'always-available',
+			'flagKey' => '',
+			'sourceTemplateSlug' => '',
+			'standards' => ['Digikoppeling WUS', 'ebMS2', 'PKIoverheid'],
+			'icon' => 'SwapHorizontal',
+		],
+		[
+			'slug' => 'adapter:berichtenbox',
+			'name' => 'Berichtenbox (Logius)',
+			'description' => 'MijnOverheid Berichtenbox: letters to the message box a citizen reads in MijnOverheid. '
+				. 'Letters go over Digikoppeling ebMS through an ebMS adapter you run; the subscription is checked over '
+				. 'Digikoppeling WUS before every letter. It needs a Logius aansluiting, a PKIoverheid certificate with '
+				. 'your OIN (uploaded under Administration settings, Integriq, and stored encrypted) and the CPA values '
+				. 'Logius gives you. Ships mock while `logius.berichtenbox.feature_flag` is unset, and every send is then '
+				. 'reported as simulated. With the flag set the mock is not served: a source that lacks a value is '
+				. 'refused, naming each one. Logius reports delivered or not, never read.',
+			'category' => 'Government messaging',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'logius.berichtenbox.feature_flag',
+			'sourceTemplateSlug' => '',
+			'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
+			'icon' => 'EmailOutline',
+		],
+		[
+			'slug' => 'adapter:smartdocuments',
+			'name' => 'SmartDocuments',
+			'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+				. self::DOCUMENT_GENERATION_NOTE,
+			'category' => 'Document generation',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'smartdocuments',
+			'standards' => ['REST API'],
+			'icon' => 'FileDocumentOutline',
+		],
+		[
+			'slug' => 'adapter:xential',
+			'name' => 'Xential',
+			'description' => 'Vendor document generation (Xential). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+				. self::DOCUMENT_GENERATION_NOTE,
+			'category' => 'Document generation',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'xential',
+			'standards' => ['REST API'],
+			'icon' => 'FileDocumentOutline',
+		],
+		[
+			'slug' => 'adapter:dso',
+			'name' => 'DSO / Omgevingsloket STAM',
+			'description' => 'Digitaal Stelsel Omgevingswet (DSO) STAM koppelvlak — receives Omgevingsloket verzoeken with '
+				. 'PKIoverheid certificate-chain / HMAC shared-secret signature verification.',
+			'category' => 'DSO / Omgevingsloket',
+			'kind' => 'adapter',
+			'mechanism' => 'always-available',
+			'flagKey' => '',
+			'sourceTemplateSlug' => '',
+			'standards' => ['STAM'],
+			'icon' => 'CityVariantOutline',
+		],
+		self::OBJECTEN_DESCRIPTOR,
 	];
 
 	/**
@@ -290,95 +393,7 @@ class CatalogRegistryService {
 	 * @return array<int, array<string,mixed>>
 	 */
 	private function collectStaticDescriptors(): array {
-		return [
-			[
-				'slug' => 'adapter:pdok',
-				'name' => 'PDOK Locatieserver & kaartlagen',
-				'description' => 'Dutch national geo-data platform (Publieke Dienstverlening Op de Kaart) — address/location suggest+lookup, '
-					. 'WMS/WFS map layers. Ships with a deterministic mock flavour so the leaf is demonstrably functional without a live '
-					. 'PDOK dependency; flip `pdok.feature_flag` to reach the real api.pdok.nl / service.pdok.nl endpoints.',
-				'category' => 'Geo / Maps',
-				'kind' => 'adapter',
-				'mechanism' => 'flag-gated',
-				'flagKey' => 'pdok.feature_flag',
-				'sourceTemplateSlug' => '',
-				'standards' => ['OGC WMS', 'OGC WFS', 'PDOK Locatieserver'],
-				'icon' => 'MapMarkerOutline',
-			],
-			[
-				'slug' => 'adapter:digikoppeling',
-				'name' => 'Digikoppeling',
-				'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '
-					. 'PKIoverheid credentials, Grote Berichten large-message reference transfer) for secure inter-government data exchange.',
-				'category' => 'Government messaging',
-				'kind' => 'adapter',
-				'mechanism' => 'always-available',
-				'flagKey' => '',
-				'sourceTemplateSlug' => '',
-				'standards' => ['Digikoppeling WUS', 'ebMS2', 'PKIoverheid'],
-				'icon' => 'SwapHorizontal',
-			],
-			[
-				'slug' => 'adapter:berichtenbox',
-				'name' => 'Berichtenbox (Logius)',
-				'description' => 'MijnOverheid Berichtenbox: letters to the message box a citizen reads in MijnOverheid. '
-					. 'Letters go over Digikoppeling ebMS through an ebMS adapter you run; the subscription is checked over '
-					. 'Digikoppeling WUS before every letter. It needs a Logius aansluiting, a PKIoverheid certificate with '
-					. 'your OIN (uploaded under Administration settings, Integriq, and stored encrypted) and the CPA values '
-					. 'Logius gives you. Ships mock while `logius.berichtenbox.feature_flag` is unset, and every send is then '
-					. 'reported as simulated. With the flag set the mock is not served: a source that lacks a value is '
-					. 'refused, naming each one. Logius reports delivered or not, never read.',
-				'category' => 'Government messaging',
-				'kind' => 'adapter',
-				'mechanism' => 'flag-gated',
-				'flagKey' => 'logius.berichtenbox.feature_flag',
-				'sourceTemplateSlug' => '',
-				'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
-				'icon' => 'EmailOutline',
-			],
-			[
-				'slug' => 'adapter:smartdocuments',
-				'name' => 'SmartDocuments',
-				'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
-					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
-					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
-				'category' => 'Document generation',
-				'kind' => 'adapter',
-				'mechanism' => 'mock-seeded',
-				'flagKey' => '',
-				'sourceTemplateSlug' => 'smartdocuments',
-				'standards' => ['REST API'],
-				'icon' => 'FileDocumentOutline',
-			],
-			[
-				'slug' => 'adapter:xential',
-				'name' => 'Xential',
-				'description' => 'Vendor document generation (Xential). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
-					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
-					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
-				'category' => 'Document generation',
-				'kind' => 'adapter',
-				'mechanism' => 'mock-seeded',
-				'flagKey' => '',
-				'sourceTemplateSlug' => 'xential',
-				'standards' => ['REST API'],
-				'icon' => 'FileDocumentOutline',
-			],
-			[
-				'slug' => 'adapter:dso',
-				'name' => 'DSO / Omgevingsloket STAM',
-				'description' => 'Digitaal Stelsel Omgevingswet (DSO) STAM koppelvlak — receives Omgevingsloket verzoeken with '
-					. 'PKIoverheid certificate-chain / HMAC shared-secret signature verification.',
-				'category' => 'DSO / Omgevingsloket',
-				'kind' => 'adapter',
-				'mechanism' => 'always-available',
-				'flagKey' => '',
-				'sourceTemplateSlug' => '',
-				'standards' => ['STAM'],
-				'icon' => 'CityVariantOutline',
-			],
-			self::OBJECTEN_DESCRIPTOR,
-		];
+		return self::STATIC_DESCRIPTORS;
 
 	}//end collectStaticDescriptors()
 

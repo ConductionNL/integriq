@@ -22,7 +22,7 @@
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\SoftwareCatalogueService;
+use OCA\Integriq\Service\SoftwareCatalogueServiceInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -54,11 +54,11 @@ class SoftwareCatalogEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SoftwareCatalogueService $softwareCatalogueService The software catalog service.
+	 * @param SoftwareCatalogueServiceInterface $softwareCatalogueService The software catalog service.
 	 * @param LoggerInterface $logger The logger instance.
 	 */
 	public function __construct(
-		private readonly SoftwareCatalogueService $softwareCatalogueService,
+		private readonly SoftwareCatalogueServiceInterface $softwareCatalogueService,
 		private readonly LoggerInterface $logger,
 	) {
 

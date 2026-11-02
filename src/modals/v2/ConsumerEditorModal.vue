@@ -398,6 +398,7 @@ import KeyOutlineIcon from 'vue-material-design-icons/KeyOutline.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import ShieldCheckOutlineIcon from 'vue-material-design-icons/ShieldCheckOutline.vue'
 import SpeedometerIcon from 'vue-material-design-icons/Speedometer.vue'
+import { editorSlotScopeProps } from '../editorSlotScope.js'
 import {
 	AUTHORIZATION_TYPES,
 	buildConsumerPayload,
@@ -457,46 +458,7 @@ export default {
 		SpeedometerIcon,
 	},
 
-	props: {
-		/** Slot scope: whether CnIndexPage wants the form dialog open. */
-		show: {
-			type: Boolean,
-			default: false,
-		},
-
-		/** Slot scope: the row being edited, or `null` in create mode. */
-		item: {
-			type: Object,
-			default: null,
-		},
-
-		/**
-		 * Slot scope: the effective JSON schema. Unused — the fields are
-		 * bespoke, and their labels are `t()` literals so string extraction can
-		 * see them (schema `title`s reach the detail page, not this modal).
-		 */
-		schema: {
-			type: Object,
-			default: null,
-		},
-
-		/**
-		 * Slot scope: persists the object through CnIndexPage's own save path
-		 * and refreshes the list. Saving here instead of calling this would
-		 * leave the index stale until a reload and would write to a different
-		 * store than the one the list reads from.
-		 */
-		confirm: {
-			type: Function,
-			default: null,
-		},
-
-		/** Slot scope: closes the form dialog on CnIndexPage. */
-		close: {
-			type: Function,
-			default: null,
-		},
-	},
+	props: { ...editorSlotScopeProps },
 
 	data() {
 		return {

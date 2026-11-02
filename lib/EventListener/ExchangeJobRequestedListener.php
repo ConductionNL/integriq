@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
-use OCA\Integriq\Service\Exchange\ExchangeJobService;
-use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
+use OCA\Integriq\Service\Exchange\ExchangeJobServiceInterface;
+use OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -45,13 +45,13 @@ class ExchangeJobRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExchangeJobService       $jobs       Creates the job.
-	 * @param ExchangeRejectionService $rejections Stores a migrated job's rejections.
+	 * @param ExchangeJobServiceInterface       $jobs       Creates the job.
+	 * @param ExchangeRejectionServiceInterface $rejections Stores a migrated job's rejections.
 	 * @param LoggerInterface          $logger     Logger.
 	 */
 	public function __construct(
-		private readonly ExchangeJobService $jobs,
-		private readonly ExchangeRejectionService $rejections,
+		private readonly ExchangeJobServiceInterface $jobs,
+		private readonly ExchangeRejectionServiceInterface $rejections,
 		private readonly LoggerInterface $logger,
 	) {
 

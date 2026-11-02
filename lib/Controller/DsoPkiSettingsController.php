@@ -30,11 +30,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\DSOSignatureVerifierService;
-use OCA\Integriq\Service\Intake\IntakeGroups;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\SignedPayloadVerifierInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -61,10 +61,10 @@ class DsoPkiSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request           The request.
-	 * @param DsoConnection               $connection        Finds, checks and saves the consumer.
-	 * @param DSOSignatureVerifierService $signatureVerifier Chain-validation helper.
+	 * @param PortalConnectionInterface               $connection        Finds, checks and saves the consumer.
+	 * @param SignedPayloadVerifierInterface $signatureVerifier Chain-validation helper.
 	 * @param IGroupManager               $groupManager      Tells an administrator account apart.
-	 * @param IntakeGroups                $groups            Puts the chosen account in the dso-intake group.
+	 * @param IntakeGroupsInterface                $groups            Puts the chosen account in the dso-intake group.
 	 * @param IL10N                       $l                 Field errors and warnings.
 	 * @param LoggerInterface             $logger            Diagnostics.
 	 *
@@ -72,14 +72,14 @@ class DsoPkiSettingsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly DsoConnection $connection,
-		private readonly DSOSignatureVerifierService $signatureVerifier,
+		private readonly PortalConnectionInterface $connection,
+		private readonly SignedPayloadVerifierInterface $signatureVerifier,
 		private readonly IGroupManager $groupManager,
-		private readonly IntakeGroups $groups,
+		private readonly IntakeGroupsInterface $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -120,7 +120,7 @@ class DsoPkiSettingsController extends Controller {
 				'rootCa' => (string)($trust['rootCa'] ?? ''),
 				'userId' => $userId,
 				'account' => $this->describeAccount(userId: $userId),
-				'handlerGroup' => $this->groups->describe(groupId: IntakeGroups::DSO_HANDLERS),
+				'handlerGroup' => $this->groups->describe(groupId: IntakeGroupsInterface::DSO_HANDLERS),
 			]
 		);
 
@@ -139,7 +139,7 @@ class DsoPkiSettingsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
-		$mode = $this->signatureVerifier->normalizeMode(mode: $this->request->getParam('mode', DSOSignatureVerifierService::MODE_HMAC));
+		$mode = $this->signatureVerifier->normalizeMode(mode: $this->request->getParam('mode', SignedPayloadVerifierInterface::MODE_HMAC));
 		$trust = [
 			'mode' => $mode,
 			'hmacSecret' => (string)$this->request->getParam('hmacSecret', ''),
@@ -197,7 +197,7 @@ class DsoPkiSettingsController extends Controller {
 	 * @return JSONResponse|null The refusal.
 	 */
 	private function refusal(array $trust, string $userId, array &$warnings): ?JSONResponse {
-		if ($trust['mode'] === DSOSignatureVerifierService::MODE_PKIOVERHEID) {
+		if ($trust['mode'] === SignedPayloadVerifierInterface::MODE_PKIOVERHEID) {
 			$errors = $this->signatureVerifier->validateChainConfig(
 				certPem: $trust['signingCertificate'],
 				rootPem: $trust['rootCa'],
@@ -250,7 +250,7 @@ class DsoPkiSettingsController extends Controller {
 			$trust['hmacSecret'] = (string)(((array)($data['authorizationConfiguration'] ?? []))['hmacSecret'] ?? '');
 		}
 
-		$data['authorizationType'] = DsoConnection::AUTHORIZATION_TYPE;
+		$data['authorizationType'] = PortalConnectionInterface::AUTHORIZATION_TYPE;
 		$data['authorizationConfiguration'] = $trust;
 		$data['userId'] = $userId;
 
@@ -284,7 +284,7 @@ class DsoPkiSettingsController extends Controller {
 	private function withdrawPrevious(?ObjectEntity $consumer, string $userId): void {
 		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
 		if ($previous !== '' && $previous !== $userId) {
-			$this->groups->withdraw(groupId: IntakeGroups::DSO_INTAKE, userId: $previous);
+			$this->groups->withdraw(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $previous);
 		}
 
 	}//end withdrawPrevious()
@@ -313,12 +313,12 @@ class DsoPkiSettingsController extends Controller {
 		// The authorization block grants the intake group, so the chosen
 		// account joins it before its rights are checked. It leaves again when
 		// the check still refuses it and it was not a member before.
-		$wasMember = $this->groups->isMember(groupId: IntakeGroups::DSO_INTAKE, userId: $userId);
-		$this->groups->enrol(groupId: IntakeGroups::DSO_INTAKE, userId: $userId);
+		$wasMember = $this->groups->isMember(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $userId);
+		$this->groups->enrol(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $userId);
 
 		$missing = $this->connection->missingRights(userId: $userId);
 		if ($missing !== null && $missing !== [] && $wasMember === false) {
-			$this->groups->withdraw(groupId: IntakeGroups::DSO_INTAKE, userId: $userId);
+			$this->groups->withdraw(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $userId);
 		}
 
 		if ($missing === null) {

@@ -117,16 +117,17 @@ class StufZdsDocumentDelivery {
 			);
 		}
 
-		// Refuse an incomplete document before the case system hands out an identificatie for it.
-		$this->translator->documentMessage(
+		$delivery = new CaseDocumentDelivery(
 			document: $document,
-			documentId: 'probe',
 			zaakIdentificatie: $zaakIdentificatie,
 			documenttype: $documenttype,
 			file: $file,
 			zender: $zender,
 			ontvanger: $ontvanger
 		);
+
+		// Refuse an incomplete document before the case system hands out an identificatie for it.
+		$this->translator->documentMessage(delivery: $delivery, documentId: 'probe');
 
 		$request = $this->translator->identificationRequest(zender: $zender, ontvanger: $ontvanger);
 		$answer  = $this->client->exchange(
@@ -137,15 +138,7 @@ class StufZdsDocumentDelivery {
 		);
 		$identificatie = $this->translator->identificationFromAnswer(xml: $answer);
 
-		$message = $this->translator->documentMessage(
-			document: $document,
-			documentId: $identificatie,
-			zaakIdentificatie: $zaakIdentificatie,
-			documenttype: $documenttype,
-			file: $file,
-			zender: $zender,
-			ontvanger: $ontvanger
-		);
+		$message = $this->translator->documentMessage(delivery: $delivery, documentId: $identificatie);
 		$this->client->exchange(
 			sourceConfiguration: $configuration,
 			soapAction: self::ACTION_ADD_DOCUMENT,

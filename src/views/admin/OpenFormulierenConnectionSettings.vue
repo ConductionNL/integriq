@@ -111,7 +111,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
-import { generateOcsUrl, generateUrl } from '@nextcloud/router'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcNoteCard,
@@ -120,6 +120,7 @@ import {
 	NcSelectUsers,
 	NcTextField,
 } from '@nextcloud/vue'
+import accountPicker from '../../mixins/accountPicker.js'
 
 /**
  * Admin editor for the Open Formulieren connection: the instance's one
@@ -140,6 +141,8 @@ export default {
 		NcTextField,
 	},
 
+	mixins: [accountPicker],
+
 	data() {
 		return {
 			loading: true,
@@ -153,9 +156,6 @@ export default {
 			account: null,
 			accountInfo: { state: 'none', displayName: '' },
 			handlerGroup: { id: '', empty: false },
-			accountOptions: [],
-			searchingAccounts: false,
-			accountError: '',
 			schemeOptions: [
 				{
 					label: this.t('integriq', 'Timestamped HMAC (t=…,v1=…)'),
@@ -246,43 +246,6 @@ export default {
 				)
 			} finally {
 				this.loading = false
-			}
-		},
-
-		/**
-		 * Look up accounts for the picker through Nextcloud's autocomplete.
-		 *
-		 * @param {string} search The typed text.
-		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
-		 */
-		async searchAccounts(search) {
-			if (!search || search.length < 2) {
-				return
-			}
-
-			this.searchingAccounts = true
-			try {
-				const { data } = await axios.get(
-					generateOcsUrl('core/autocomplete/get'),
-					{
-						params: {
-							search,
-							itemType: '',
-							itemId: '',
-							shareTypes: [0],
-							limit: 10,
-						},
-					},
-				)
-				this.accountOptions = (data.ocs.data || []).map((entry) => ({
-					id: entry.id,
-					user: entry.id,
-					displayName: entry.label || entry.id,
-				}))
-			} catch {
-				this.accountError = this.t('integriq', 'Searching accounts failed.')
-			} finally {
-				this.searchingAccounts = false
 			}
 		},
 

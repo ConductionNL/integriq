@@ -42,8 +42,8 @@ namespace OCA\Integriq\Directory;
 
 use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
-use OCA\Integriq\Service\SynchronizationLogService;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationLogServiceInterface;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md
  */
-class DirectorySyncService {
+class DirectorySyncService implements DirectorySyncServiceInterface {
 
 	/**
 	 * Guard reason: the directory did not answer completely.
@@ -81,7 +81,7 @@ class DirectorySyncService {
 	 * @param DirectorySource $directorySource Reads the connection.
 	 * @param GroupMappingResolver $mappingResolver Resolves the declared mapping.
 	 * @param OpenWorkReporter $openWorkReporter Asks consumers what a leaver still holds.
-	 * @param SynchronizationLogService $logService Writes the run record.
+	 * @param SynchronizationLogServiceInterface $logService Writes the run record.
 	 * @param IGroupManager $groupManager Nextcloud's group model.
 	 * @param IUserManager $userManager Nextcloud's account model.
 	 * @param IEventDispatcher $eventDispatcher Dispatches the guard event.
@@ -94,7 +94,7 @@ class DirectorySyncService {
 		private readonly DirectorySource $directorySource,
 		private readonly GroupMappingResolver $mappingResolver,
 		private readonly OpenWorkReporter $openWorkReporter,
-		private readonly SynchronizationLogService $logService,
+		private readonly SynchronizationLogServiceInterface $logService,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserManager $userManager,
 		private readonly IEventDispatcher $eventDispatcher,
@@ -344,13 +344,13 @@ class DirectorySyncService {
 		}
 
 		$total = (int)$plan['currentTotal'];
-		if ($total < SynchronizationService::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
+		if ($total < SynchronizationServiceInterface::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
 			// A percentage computed from a handful of memberships is not a
 			// signal, which is the engine's own reasoning for this floor.
 			return null;
 		}
 
-		$threshold = (float)($configuration['deletionRatioThreshold'] ?? SynchronizationService::DEFAULT_DELETION_RATIO_THRESHOLD);
+		$threshold = (float)($configuration['deletionRatioThreshold'] ?? SynchronizationServiceInterface::DEFAULT_DELETION_RATIO_THRESHOLD);
 		$ratio = (count($plan['removals']) / $total);
 
 		if ($ratio <= $threshold) {

@@ -6,7 +6,7 @@
  *
  * `outputMapping` sat on the endpoint schema and its edit form, and no line of
  * the runtime read it, so a consumer got the register's shape whatever the
- * endpoint declared. `dispatchAfterBeforeRules()` now hands the body the
+ * endpoint declared. `answerSchemaRequest()` now hands the body the
  * `after` rules produced to `applyOutputMapping()` before it answers. These
  * tests run that step with a real MappingService and a real mapping object,
  * for one object and for a list. (The whole tail cannot run in a unit test:
@@ -240,7 +240,7 @@ class EndpointServiceOutputMappingTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRequestTailAppliesTheOutputMappingAfterTheAfterRules(): void {
-		$tail = new ReflectionMethod(EndpointService::class, 'dispatchAfterBeforeRules');
+		$tail = new ReflectionMethod(EndpointService::class, 'answerSchemaRequest');
 		$lines = file((string)$tail->getFileName());
 		$body = implode('', array_slice($lines, $tail->getStartLine() - 1, $tail->getEndLine() - $tail->getStartLine() + 1));
 
@@ -249,7 +249,7 @@ class EndpointServiceOutputMappingTest extends TestCase {
 		$answer = strpos($body, 'return new JSONResponse(data: $answerBody');
 
 		$this->assertNotFalse($afterRules);
-		$this->assertNotFalse($mapping, 'dispatchAfterBeforeRules() must call applyOutputMapping().');
+		$this->assertNotFalse($mapping, 'answerSchemaRequest() must call applyOutputMapping().');
 		$this->assertNotFalse($answer, 'The answer must be built from the mapped body.');
 		$this->assertTrue($afterRules < $mapping && $mapping < $answer);
 	}//end testTheRequestTailAppliesTheOutputMappingAfterTheAfterRules()

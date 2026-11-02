@@ -33,6 +33,7 @@ namespace OCA\Integriq\Service\Datasource;
 
 use DateTime;
 use OCA\Integriq\Service\CallService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -48,7 +49,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
  */
-class DashboardDatasourceService {
+class DashboardDatasourceService implements DashboardDatasourceServiceInterface {
 
 	/**
 	 * Default TTL (seconds) applied when the caller does not request one.
@@ -153,15 +154,12 @@ class DashboardDatasourceService {
 			_multitenancy: true
 		);
 
-		$sourceData = $source->getObject();
-		$cacheKey = $this->buildCacheKey(sourceId: $sourceId, valueExpr: $valueExpr, params: $params);
-		$freshKey = 'fresh_' . $cacheKey;
-		$staleKey = 'stale_' . $cacheKey;
+		$query = new DatasourceQuery(sourceId: $sourceId, valueExpr: $valueExpr, params: $params, ttl: $ttl);
 
 		// Cache hit within TTL — ICache/Redis natively expires the fresh
 		// entry once its own TTL elapses, so a hit here IS "within TTL" by
 		// construction; no upstream fetch is performed.
-		$cached = $this->cache->get($freshKey);
+		$cached = $this->cache->get($query->freshKey());
 		if (is_array($cached) === true) {
 			return [
 				'value' => $cached['value'],
@@ -175,42 +173,33 @@ class DashboardDatasourceService {
 		// exists) and never reach the upstream.
 		if ($this->isRateLimited(sourceId: $sourceId) === true) {
 			$this->logger->info('dashboard-http-datasource: rate limit exceeded for source ' . $sourceId . ', serving stale/cached value');
-			return $this->staleOrNullResponse(staleKey: $staleKey);
+			return $this->staleOrNullResponse(staleKey: $query->staleKey());
 		}
 
-		$effectiveTtl = $this->effectiveTtl(sourceData: $sourceData, requestedTtl: $ttl);
+		return $this->fetchValue(source: $source, query: $query);
 
-		$requestConfig = [];
-		if (empty($params) === false) {
-			$requestConfig = ['query' => $params];
+	}//end resolve()
+
+	/**
+	 * Fetch the value from the source, cache it fresh and stale, or fall back
+	 * to the stale entry when the upstream call fails.
+	 *
+	 * @param ObjectEntity    $source The source the current user may read.
+	 * @param DatasourceQuery $query  The value asked of it.
+	 *
+	 * @return array{value: mixed, fetchedAt: string, stale: bool} The resolved value and cache-freshness metadata.
+	 *
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-responses-are-cached-with-stale-on-error-fallback
+	 */
+	private function fetchValue(ObjectEntity $source, DatasourceQuery $query): array {
+		$effectiveTtl = $this->effectiveTtl(sourceData: $source->getObject(), requestedTtl: $query->ttl);
+
+		$decoded = $this->fetchBody(source: $source, query: $query);
+		if ($decoded === null) {
+			return $this->staleOrNullResponse(staleKey: $query->staleKey());
 		}
 
-		try {
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: '',
-				method: 'GET',
-				config: $requestConfig,
-				read: true
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning('dashboard-http-datasource: upstream call threw for source ' . $sourceId . ': ' . $e->getMessage());
-			return $this->staleOrNullResponse(staleKey: $staleKey);
-		}
-
-		$logData = $callLog->getObject();
-		$statusCode = (int)($logData['response']['statusCode'] ?? 0);
-
-		if ($statusCode < 200 || $statusCode >= 300) {
-			return $this->staleOrNullResponse(staleKey: $staleKey);
-		}
-
-		$decoded = json_decode((string)($logData['response']['body'] ?? ''), true);
-		if (is_array($decoded) === false) {
-			$decoded = [];
-		}
-
-		$value = $this->evaluator->evaluate(data: $decoded, expr: $valueExpr);
+		$value = $this->evaluator->evaluate(data: $decoded, expr: $query->valueExpr);
 		$fetchedAt = (new DateTime())->format(DateTime::ATOM);
 
 		$entry = [
@@ -218,8 +207,8 @@ class DashboardDatasourceService {
 			'fetchedAt' => $fetchedAt,
 		];
 
-		$this->cache->set($freshKey, $entry, $effectiveTtl);
-		$this->cache->set($staleKey, $entry, self::STALE_RETENTION_SECONDS);
+		$this->cache->set($query->freshKey(), $entry, $effectiveTtl);
+		$this->cache->set($query->staleKey(), $entry, self::STALE_RETENTION_SECONDS);
 
 		return [
 			'value' => $value,
@@ -227,7 +216,47 @@ class DashboardDatasourceService {
 			'stale' => false,
 		];
 
-	}//end resolve()
+	}//end fetchValue()
+
+	/**
+	 * GET the source's own location with the query parameters and decode the
+	 * JSON body.
+	 *
+	 * @param ObjectEntity    $source The source the current user may read.
+	 * @param DatasourceQuery $query  The value asked of it.
+	 *
+	 * @return array|null The decoded body (empty when it is no JSON object or list), or null when the call threw or answered outside 2xx.
+	 *
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-egress-is-constrained-to-the-source-never-the-caller
+	 */
+	private function fetchBody(ObjectEntity $source, DatasourceQuery $query): ?array {
+		try {
+			$callLog = $this->callService->call(
+				source: $source,
+				endpoint: '',
+				method: 'GET',
+				config: $query->requestConfig(),
+				read: true
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning('dashboard-http-datasource: upstream call threw for source ' . $query->sourceId . ': ' . $e->getMessage());
+			return null;
+		}
+
+		$logData = $callLog->getObject();
+		$statusCode = (int)($logData['response']['statusCode'] ?? 0);
+		if ($statusCode < 200 || $statusCode >= 300) {
+			return null;
+		}
+
+		$decoded = json_decode((string)($logData['response']['body'] ?? ''), true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
+
+	}//end fetchBody()
 
 	/**
 	 * Build the stale-on-error / no-cache response shape.
@@ -275,22 +304,6 @@ class DashboardDatasourceService {
 
 		return max(1, min((int)$requested, (int)$sourceMax));
 	}//end effectiveTtl()
-
-	/**
-	 * Build the deterministic cache key for a (source, expression, params) triple.
-	 *
-	 * @param string $sourceId Source UUID.
-	 * @param string $valueExpr JSONPath-lite expression.
-	 * @param array $params Query parameters forwarded to the source call.
-	 *
-	 * @return string A short, control-character-safe cache key.
-	 */
-	private function buildCacheKey(string $sourceId, string $valueExpr, array $params): string {
-		ksort($params);
-		$paramsJson = json_encode($params);
-
-		return 'oc_ddc_' . hash('sha256', $sourceId . '|' . $valueExpr . '|' . $paramsJson);
-	}//end buildCacheKey()
 
 	/**
 	 * Whether the given source has exceeded its resolve rate limit for the

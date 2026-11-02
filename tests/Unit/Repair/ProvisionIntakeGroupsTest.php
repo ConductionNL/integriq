@@ -21,6 +21,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\ProvisionIntakeGroups;
 use OCA\Integriq\Service\Dso\DsoConnection;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
 use OCA\Integriq\Tests\Helpers\WebhookWorld;
 use OCP\Migration\IOutput;
@@ -55,11 +56,11 @@ class ProvisionIntakeGroupsTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id): object => match ($id) {
-				DsoConnection::class => $connection,
+				PortalConnectionInterface::class => $connection,
 			}
 		);
 
-		return new ProvisionIntakeGroups(groups: $this->buildWorldIntakeGroups(), container: $container);
+		return new ProvisionIntakeGroups(groups: $this->buildWorldIntakeGroups(), container: $container, webhookProfiles: new WebhookProfiles());
 
 	}//end step()
 

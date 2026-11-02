@@ -12,7 +12,7 @@ one new Twig function behind an allowlist.
   `fgetcsv()` on a `php://temp` stream so a quoted field with a line break
   stays one field. `lib/Migration/Source/FileMigrationSource.php:200`
   (`parse()`) and `:234` (`headers()`) call it instead of splitting lines.
-- XML writer: the body of `lib/Http/XMLResponse.php:157` (`arrayToXml()`)
+- XML writer: the body of `lib/Controller/XMLResponse.php:157` (`arrayToXml()`)
   moves to a new `lib/Util/ArrayToXml.php`; `XMLResponse` calls it, so the
   thirteen scenarios of `openspec/specs/xml-response/spec.md` keep guarding the
   same code.
@@ -37,7 +37,7 @@ one new Twig function behind an allowlist.
   `src/views/wrappers/MappingDetailPage.vue` shows it read-only when the output
   format is not JSON.
 - Lookup: `lib/Twig/MappingExtension.php:79` registers `lookup` for
-  integriq's own engine, and `lib/Listener/MappingFunctionRegistrationListener.php:68`
+  integriq's own engine, and `lib/Twig/MappingFunctionRegistrationListener.php:68`
   contributes it to OpenRegister's engine next to the three functions it
   already contributes, so a mapping behaves the same in both;
   `lib/Twig/MappingRuntime.php:73` gains OpenRegister's object service and a

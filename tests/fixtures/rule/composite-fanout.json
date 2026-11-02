@@ -1,0 +1,339 @@
+{
+    "no-parent": {
+        "outcome": {
+            "throws": "Composite fan-out rule is missing a parent configuration (register/schema).",
+            "previous": null
+        },
+        "calls": []
+    },
+    "parent-without-schema": {
+        "outcome": {
+            "throws": "Composite fan-out rule is missing a parent configuration (register/schema).",
+            "previous": null
+        },
+        "calls": []
+    },
+    "parent-whole-body": {
+        "outcome": {
+            "result": {
+                "body": {
+                    "uuid": "uuid-1",
+                    "saved": "ticket"
+                },
+                "keep": "me"
+            }
+        },
+        "calls": [
+            [
+                "save",
+                {
+                    "a": 1
+                },
+                "reg",
+                "ticket"
+            ]
+        ]
+    },
+    "missing-parent-body-key": {
+        "outcome": {
+            "result": {
+                "body": {
+                    "uuid": "uuid-1",
+                    "saved": "ticket"
+                },
+                "keep": "me"
+            }
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ]
+        ]
+    },
+    "child-register-defaults-to-parent": {
+        "outcome": {
+            "result": {
+                "body": {
+                    "uuid": "uuid-1",
+                    "saved": "ticket"
+                },
+                "keep": "me"
+            }
+        },
+        "calls": [
+            [
+                "save",
+                {
+                    "x": 1
+                },
+                "reg",
+                "ticket"
+            ],
+            [
+                "save",
+                {
+                    "y": 2,
+                    "ticket": "uuid-1"
+                },
+                "reg",
+                "contact"
+            ]
+        ]
+    },
+    "child-own-register-no-parent-field": {
+        "outcome": {
+            "result": {
+                "body": {
+                    "uuid": "uuid-1",
+                    "saved": "ticket"
+                },
+                "keep": "me"
+            }
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ],
+            [
+                "save",
+                {
+                    "y": 2
+                },
+                "other",
+                "contact"
+            ]
+        ]
+    },
+    "optional-child-absent": {
+        "outcome": {
+            "result": {
+                "body": {
+                    "uuid": "uuid-1",
+                    "saved": "ticket"
+                },
+                "keep": "me"
+            }
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ]
+        ]
+    },
+    "required-child-absent": {
+        "outcome": {
+            "throws": "Composite fan-out failed, all writes rolled back: Composite fan-out is missing required child \"c\".",
+            "previous": "Composite fan-out is missing required child \"c\"."
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ],
+            [
+                "delete",
+                [
+                    "uuid-1",
+                    "reg",
+                    "ticket",
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ]
+        ]
+    },
+    "required-child-without-key": {
+        "outcome": {
+            "throws": "Composite fan-out failed, all writes rolled back: Composite fan-out is missing required child \"\".",
+            "previous": "Composite fan-out is missing required child \"\"."
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ],
+            [
+                "delete",
+                [
+                    "uuid-1",
+                    "reg",
+                    "ticket",
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ]
+        ]
+    },
+    "sibling-parent-ref": {
+        "outcome": {
+            "result": {
+                "body": {
+                    "uuid": "uuid-1",
+                    "saved": "ticket"
+                },
+                "keep": "me"
+            }
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ],
+            [
+                "save",
+                {
+                    "n": 1,
+                    "ticket": "uuid-1"
+                },
+                "reg",
+                "betrokkene"
+            ],
+            [
+                "save",
+                {
+                    "m": 2,
+                    "owner": "uuid-2"
+                },
+                "reg",
+                "adres"
+            ]
+        ]
+    },
+    "unresolved-parent-ref": {
+        "outcome": {
+            "throws": "Composite fan-out failed, all writes rolled back: Composite fan-out child \"d\" references unresolved parentRef \"b\".",
+            "previous": "Composite fan-out child \"d\" references unresolved parentRef \"b\"."
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ],
+            [
+                "delete",
+                [
+                    "uuid-1",
+                    "reg",
+                    "ticket",
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ]
+        ]
+    },
+    "child-save-fails-rollback": {
+        "outcome": {
+            "throws": "Composite fan-out failed, all writes rolled back: write refused",
+            "previous": "write refused"
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ],
+            [
+                "save",
+                [],
+                "reg",
+                "betrokkene"
+            ],
+            [
+                "save",
+                [],
+                "reg",
+                "boom"
+            ],
+            [
+                "delete",
+                [
+                    "uuid-2",
+                    "reg",
+                    "betrokkene",
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "delete",
+                [
+                    "uuid-1",
+                    "reg",
+                    "ticket",
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ]
+        ]
+    },
+    "rollback-delete-fails": {
+        "outcome": {
+            "throws": "Composite fan-out failed, all writes rolled back: write refused",
+            "previous": "write refused"
+        },
+        "calls": [
+            [
+                "save",
+                [],
+                "reg",
+                "ticket"
+            ],
+            [
+                "save",
+                [],
+                "reg",
+                "boom"
+            ],
+            [
+                "delete",
+                [
+                    "uuid-1",
+                    "reg",
+                    "ticket",
+                    true,
+                    true,
+                    false,
+                    null,
+                    false
+                ]
+            ],
+            [
+                "log",
+                "Composite fan-out rollback failed to delete reg/ticket/uuid-1: delete refused"
+            ]
+        ]
+    }
+}

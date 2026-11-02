@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
-use OCA\Integriq\Service\FlowGraphMigrationService;
+use OCA\Integriq\Service\FlowGraphMigrationServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -56,10 +56,10 @@ class FlowStepsToGraph extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowGraphMigrationService $migration The shared migration behaviour.
+	 * @param FlowGraphMigrationServiceInterface $migration The shared migration behaviour.
 	 */
 	public function __construct(
-		private readonly FlowGraphMigrationService $migration,
+		private readonly FlowGraphMigrationServiceInterface $migration,
 	) {
 		parent::__construct();
 
@@ -116,7 +116,7 @@ class FlowStepsToGraph extends Command {
 			$line = sprintf('[%s] %s (%s)', $row['action'], $row['name'], $row['id']);
 			$output->writeln($line);
 
-			if ($row['action'] === FlowGraphMigrationService::REFUSED) {
+			if ($row['action'] === FlowGraphMigrationServiceInterface::REFUSED) {
 				$refusals++;
 				foreach ($row['reasons'] as $reason) {
 					$output->writeln('    - ' . $reason);

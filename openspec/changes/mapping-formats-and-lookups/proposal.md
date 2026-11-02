@@ -84,7 +84,7 @@ This change covers three rows: `integriq:map-csv`, `integriq:map-lookup` and
   `lib/Service/SynchronizationService.php:8135` reads "@TODO For now only JSON
   APIs are supported".
 - An array to XML serializer exists for endpoint responses:
-  `lib/Http/XMLResponse.php:157` (`arrayToXml()`), with `@root`, `@attributes`
+  `lib/Controller/XMLResponse.php:157` (`arrayToXml()`), with `@root`, `@attributes`
   and `#text` handling specified in `openspec/specs/xml-response/spec.md`.
 - Mapping Twig functions are listed at `lib/Twig/MappingExtension.php:79`:
   `generateUuid`, `executeMapping`, `getFileContents`, `getFiles`,
@@ -93,7 +93,7 @@ This change covers three rows: `integriq:map-csv`, `integriq:map-lookup` and
   mapping engine (`lib/Service/MappingService.php:119`): an outbound call from
   a template is an SSRF path. The same function is still contributed to
   OpenRegister's mapping engine by
-  `lib/Listener/MappingFunctionRegistrationListener.php:68`, so the two engines
+  `lib/Twig/MappingFunctionRegistrationListener.php:68`, so the two engines
   disagree about it.
 
 ## What this change builds

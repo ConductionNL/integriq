@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\MappingExecutionRequestedEvent;
-use OCA\Integriq\Service\MappingService;
+use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -57,11 +57,11 @@ class MappingExecutionRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param MappingService $mappingService Resolves and runs the mapping.
+	 * @param MappingServiceInterface $mappingService Resolves and runs the mapping.
 	 * @param LoggerInterface $logger Names a mapping that failed.
 	 */
 	public function __construct(
-		private readonly MappingService $mappingService,
+		private readonly MappingServiceInterface $mappingService,
 		private readonly LoggerInterface $logger,
 	) {
 

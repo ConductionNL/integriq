@@ -35,7 +35,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
  */
-class UnsubscribeShortLinkMapper extends QBMapper {
+class UnsubscribeShortLinkMapper extends QBMapper implements UnsubscribeShortLinkMapperInterface {
 
 	/**
 	 * The table, unprefixed.

@@ -303,10 +303,23 @@ export default {
 			}
 			this.inputError = ''
 			this.runError = ''
-			let parsedInput = null
+			const parsed = this.parsePreviewInput()
+			if (parsed === null) return
+			await this.postPreview(parsed.input)
+		},
+
+		/**
+		 * Parse the input text; an empty text is an empty object. A parse
+		 * failure is shown and clears the result.
+		 *
+		 * @return {{input: unknown}|null} The parsed input, or null when it is not valid JSON.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		parsePreviewInput() {
 			const raw = (this.inputJson || '').trim()
 			try {
-				parsedInput = raw.length > 0 ? JSON.parse(raw) : {}
+				return { input: raw.length > 0 ? JSON.parse(raw) : {} }
 			} catch (parseErr) {
 				this.inputError = t(
 					'integriq',
@@ -314,27 +327,47 @@ export default {
 					{ message: parseErr.message },
 				)
 				this.result = null
-				return
+				return null
 			}
+		},
+
+		/**
+		 * Run the mapping test on the input and show its result or failure.
+		 *
+		 * @param {unknown} parsedInput The parsed input.
+		 * @return {Promise<void>} Resolves once the preview has settled.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		async postPreview(parsedInput) {
 			this.running = true
 			try {
+				const body = { inputObject: parsedInput, mapping: this.mapping }
 				const response = await axios.post(
 					generateUrl('/apps/integriq/api/mappings/test'),
-					{
-						inputObject: parsedInput,
-						mapping: this.mapping,
-					},
+					body,
 				)
 				this.result = response.data?.resultObject ?? response.data
 			} catch (err) {
-				this.runError =
-					err?.response?.data?.message
-					|| err?.message
-					|| t('integriq', 'Mapping preview failed.')
-				this.result = null
+				this.showPreviewFailure(err)
 			} finally {
 				this.running = false
 			}
+		},
+
+		/**
+		 * Show why the mapping test failed and clear the result.
+		 *
+		 * @param {object} err The rejection of the test request.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		showPreviewFailure(err) {
+			this.runError =
+				err?.response?.data?.message
+				|| err?.message
+				|| t('integriq', 'Mapping preview failed.')
+			this.result = null
 		},
 	},
 }

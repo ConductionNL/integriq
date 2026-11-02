@@ -1,0 +1,3581 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`sync mapping preview run golden > previews as recorded when the server answers bare body 1`] = `
+[
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": null,
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 2,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": [
+            1,
+            2,
+          ],
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [],
+  },
+]
+`;
+
+exports[`sync mapping preview run golden > previews as recorded when the server answers bare error 1`] = `
+[
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Mapping preview failed.",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Mapping preview failed.",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Mapping preview failed.",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Mapping preview failed.",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Mapping preview failed.",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": null,
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Mapping preview failed.",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": [
+            1,
+            2,
+          ],
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [],
+  },
+]
+`;
+
+exports[`sync mapping preview run golden > previews as recorded when the server answers error with message 1`] = `
+[
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "bad mapping",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "bad mapping",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "bad mapping",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "bad mapping",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "bad mapping",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": null,
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "bad mapping",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": [
+            1,
+            2,
+          ],
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [],
+  },
+]
+`;
+
+exports[`sync mapping preview run golden > previews as recorded when the server answers no data 1`] = `
+[
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": undefined,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": undefined,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": undefined,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": undefined,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": undefined,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": null,
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": undefined,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": [
+            1,
+            2,
+          ],
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [],
+  },
+]
+`;
+
+exports[`sync mapping preview run golden > previews as recorded when the server answers null body 1`] = `
+[
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": null,
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": [
+            1,
+            2,
+          ],
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [],
+  },
+]
+`;
+
+exports[`sync mapping preview run golden > previews as recorded when the server answers result object 1`] = `
+[
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": null,
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": {
+        "a": 1,
+      },
+      "runError": "",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": [
+            1,
+            2,
+          ],
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [],
+  },
+]
+`;
+
+exports[`sync mapping preview run golden > previews as recorded when the server answers transport error 1`] = `
+[
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": null,
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": null,
+      "mappingId": "m-1",
+    },
+    "returned": "reloaded",
+    "runningDuring": false,
+    "state": {
+      "inputError": "stale input",
+      "result": {
+        "stale": true,
+      },
+      "runError": "stale run",
+      "running": false,
+    },
+    "trace": [
+      [
+        "loadAndRun",
+      ],
+    ],
+  },
+  {
+    "inputJson": undefined,
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Network Error",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Network Error",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "   ",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Network Error",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {},
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{"b":1}",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Network Error",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": {
+            "b": 1,
+          },
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "null",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Network Error",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": null,
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "[1,2]",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": true,
+    "state": {
+      "inputError": "",
+      "result": null,
+      "runError": "Network Error",
+      "running": false,
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/mappings/test",
+        {
+          "inputObject": [
+            1,
+            2,
+          ],
+          "mapping": {
+            "mapping": {
+              "a": "{{ b }}",
+            },
+          },
+        },
+      ],
+    ],
+  },
+  {
+    "inputJson": "{bad",
+    "mapping": {
+      "mapping": {
+        "mapping": {
+          "a": "{{ b }}",
+        },
+      },
+      "mappingId": "m-1",
+    },
+    "returned": undefined,
+    "runningDuring": false,
+    "state": {
+      "inputError": "Input is not valid JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "result": null,
+      "runError": "",
+      "running": false,
+    },
+    "trace": [],
+  },
+]
+`;

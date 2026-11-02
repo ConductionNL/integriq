@@ -124,13 +124,12 @@ class EndpointRulePluginTest extends TestCase {
 	private function ruleService(?EndpointRulePluginRegistry $registry): RuleService {
 		return new RuleService(
 			$this->createMock(ObjectService::class),
-			$this->catalogueService,
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(CallService::class),
 			ObjectServiceMockBuilder::make($this),
+			($registry ?? new EndpointRulePluginRegistry(plugins: [new ConnectRelationsPlugin(catalogueService: $this->catalogueService)])),
 			null,
-			$registry,
 		);
 	}//end ruleService()
 

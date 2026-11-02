@@ -1,0 +1,1733 @@
+{
+    "conditions-refuse": {
+        "trace": [],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 400,
+            "data": {
+                "error": "The following parameters are not correctly set",
+                "fields": [
+                    "q may not be zoek"
+                ]
+            }
+        }
+    },
+    "conditions-pass": {
+        "trace": [
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": {
+                            "q": "zoek"
+                        },
+                        "headers": {
+                            "x_golden": "yes"
+                        },
+                        "body": "{\"bsn\":\"1\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": []
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "message-refused": {
+        "trace": [
+            {
+                "find": "message_schema",
+                "id": "b7f1c2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 400,
+            "data": {
+                "type": "about:blank",
+                "title": "The request does not match its message schema",
+                "status": 400,
+                "errors": [
+                    {
+                        "path": "/bsn",
+                        "message": "The required property \"bsn\" is missing"
+                    }
+                ]
+            }
+        }
+    },
+    "message-recorded": {
+        "trace": [
+            {
+                "find": "message_schema",
+                "id": "b7f1c2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
+            },
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": {
+                            "q": "zoek"
+                        },
+                        "headers": {
+                            "x_golden": "yes"
+                        },
+                        "body": "{\"naam\":\"Jansen\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[integriq] endpoint endpoint-1 let a message through that does not match its message schema (mode record)",
+                "context": {
+                    "findings": [
+                        {
+                            "direction": "request",
+                            "messageSchema": "b7f1c2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+                            "errors": [
+                                {
+                                    "path": "/bsn",
+                                    "message": "The required property \"bsn\" is missing"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "find": "call_log",
+                "id": "call-log-1"
+            },
+            {
+                "log": "error",
+                "message": "[integriq] call log call-log-1 not found; validation findings are in the server log only",
+                "context": []
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": []
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "rules-see-the-envelope": {
+        "trace": [
+            {
+                "find": "rule",
+                "id": "r-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-wins"
+            },
+            {
+                "find": "rule",
+                "id": "r-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-params"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-no-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-after"
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule path-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-path-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule path-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule query-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-query-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule query-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule query-wins of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule header of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-header"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule header of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule path of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-path"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule path of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-path of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-path"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-path of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-params of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-params"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-params of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-header of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-header"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-header of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule body-no-path-param of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule after of type: mapping",
+                "context": []
+            },
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": {
+                            "q": "zoek"
+                        },
+                        "headers": {
+                            "x_golden": "yes"
+                        },
+                        "body": "{\"bsn\":\"1\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": [
+                    {
+                        "type": "rule",
+                        "name": "path-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-wins",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "header",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "path",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-path",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-params",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-header",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-no-path-param",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "after",
+                        "timing": "before",
+                        "status": "skipped"
+                    }
+                ]
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "rules-path-param-only": {
+        "trace": [
+            {
+                "find": "rule",
+                "id": "r-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-wins"
+            },
+            {
+                "find": "rule",
+                "id": "r-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-params"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-no-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-after"
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule path-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-path-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule path-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule query-param of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule query-wins of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule header of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule path of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-path"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule path of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-path of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-path"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-path of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule body-param of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule body-params of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule body-header of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule body-no-path-param of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule after of type: mapping",
+                "context": []
+            },
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": [],
+                        "headers": [],
+                        "body": "{\"bsn\":\"1\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": [
+                    {
+                        "type": "rule",
+                        "name": "path-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-param",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-wins",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "header",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "path",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-path",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-param",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-params",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-header",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-no-path-param",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "after",
+                        "timing": "before",
+                        "status": "skipped"
+                    }
+                ]
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "rules-query-id": {
+        "trace": [
+            {
+                "find": "rule",
+                "id": "r-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-wins"
+            },
+            {
+                "find": "rule",
+                "id": "r-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-params"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-no-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-after"
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule path-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-path-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule path-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule query-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-query-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule query-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule query-wins of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule header of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-header"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule header of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule path of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-path"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule path of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-path of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-path"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-path of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-params of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-params"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-params of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-header of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-header"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-header of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-no-path-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-no-path-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-no-path-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule after of type: mapping",
+                "context": []
+            },
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": {
+                            "id": "from-query",
+                            "q": "zoek"
+                        },
+                        "headers": {
+                            "x_golden": "yes"
+                        },
+                        "body": "{\"bsn\":\"1\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": [
+                    {
+                        "type": "rule",
+                        "name": "path-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-wins",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "header",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "path",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-path",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-params",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-header",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-no-path-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "after",
+                        "timing": "before",
+                        "status": "skipped"
+                    }
+                ]
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "rules-short-path": {
+        "trace": [
+            {
+                "find": "rule",
+                "id": "r-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-query-wins"
+            },
+            {
+                "find": "rule",
+                "id": "r-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-method"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-path"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-params"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-header"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-utility"
+            },
+            {
+                "find": "rule",
+                "id": "r-body-no-path-param"
+            },
+            {
+                "find": "rule",
+                "id": "r-after"
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule path-param of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule query-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-query-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule query-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule query-wins of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule header of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-header"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule header of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule path of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-method"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-method of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule body-path of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-param of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-param"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-param of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-params of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-params"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-params of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-header of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-header"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-header of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Applying rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "mapping": "mapping-body-utility"
+            },
+            {
+                "log": "info",
+                "message": "Successfully applied rule for endpoint Personen with rule body-utility of type mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule body-no-path-param of type: mapping",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "Rule condition check failed for endpoint Personen and rule after of type: mapping",
+                "context": []
+            },
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": {
+                            "q": "zoek"
+                        },
+                        "headers": {
+                            "x_golden": "yes"
+                        },
+                        "body": "{\"bsn\":\"1\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": [
+                    {
+                        "type": "rule",
+                        "name": "path-param",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "query-wins",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "header",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "path",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-method",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-path",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-param",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-params",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-header",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-utility",
+                        "timing": "before",
+                        "status": "success"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "body-no-path-param",
+                        "timing": "before",
+                        "status": "skipped"
+                    },
+                    {
+                        "type": "rule",
+                        "name": "after",
+                        "timing": "before",
+                        "status": "skipped"
+                    }
+                ]
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "no-rules": {
+        "trace": [
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": {
+                            "q": "zoek"
+                        },
+                        "headers": {
+                            "x_golden": "yes"
+                        },
+                        "body": "{\"bsn\":\"1\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": []
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "traceparent": {
+        "trace": [
+            {
+                "find": "source",
+                "id": "source-1"
+            },
+            {
+                "call": {
+                    "1": "/personen",
+                    "2": "POST",
+                    "3": {
+                        "query": [],
+                        "headers": [],
+                        "body": "{\"bsn\":\"1\"}"
+                    },
+                    "4": false,
+                    "5": true,
+                    "6": false,
+                    "7": false,
+                    "8": false,
+                    "9": null,
+                    "10": {},
+                    "11": true,
+                    "12": false
+                }
+            },
+            {
+                "persistTrace": "success",
+                "error": null,
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": "0af76519-16cd-43dd-8448-eb211c80319c",
+                "parentSpanId": "b7ad6b7169203331",
+                "steps": []
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 200,
+            "data": {
+                "statusCode": 200,
+                "body": "{\"bsn\":\"1\"}"
+            }
+        }
+    },
+    "unknown-target-fails": {
+        "trace": [
+            {
+                "log": "error",
+                "message": "Error handling endpoint request: Endpoint must specify either a schema or source connection",
+                "context": []
+            },
+            {
+                "persistTrace": "failed",
+                "error": {
+                    "message": "Endpoint must specify either a schema or source connection",
+                    "ruleType": null,
+                    "ruleName": null
+                },
+                "resume": false,
+                "entryPoint": "endpoint",
+                "entryPointId": "endpoint-1",
+                "triggeredBy": "http",
+                "inboundOtelTraceId": null,
+                "parentSpanId": null,
+                "steps": []
+            }
+        ],
+        "outcome": {
+            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "status": 400,
+            "data": {
+                "error": "Internal server error"
+            }
+        }
+    }
+}

@@ -1,0 +1,4489 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`subscription form save golden > saves as recorded when the server answers api-error 1`] = `
+[
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: kanaal unknown",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`subscription form save golden > saves as recorded when the server answers bare 1`] = `
+[
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`subscription form save golden > saves as recorded when the server answers message 1`] = `
+[
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "error",
+        "Failed to save abonnement: Network Error",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`subscription form save golden > saves as recorded when the server answers ok 1`] = `
+[
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+      "name": "Name is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "name": "Name is required",
+    },
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement created",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "",
+      "authScheme": "",
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement created",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement created",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "name": "Zaken",
+      "sourceId": "s1",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "Authorization",
+          "authScheme": "",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "s1",
+        },
+      ],
+      [
+        "success",
+        "Abonnement created",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": false,
+    "errors": {
+      "kanalen": "At least one kanaal is required",
+    },
+    "kanaalNames": [],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [],
+  },
+  {
+    "abonnement": null,
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "success",
+        "Abonnement created",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 7,
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/7",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "id": 8,
+      "uuid": "u-8",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/8",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "uuid": "u-9",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "put",
+        "/index.php/apps/integriq/api/notificaties/abonnementen/u-9",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "success",
+        "Abonnement updated",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+  {
+    "abonnement": {
+      "name": "no id",
+    },
+    "busyAfter": false,
+    "busyDuring": true,
+    "errors": {},
+    "kanaalNames": [
+      "zaken",
+      "besluiten",
+    ],
+    "model": {
+      "authHeaderName": "X-Key",
+      "authScheme": "Token",
+      "name": "Zaken",
+      "sourceId": "",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/notificaties/abonnementen",
+        {
+          "authHeaderName": "X-Key",
+          "authScheme": "Token",
+          "kanalen": [
+            {
+              "filters": {},
+              "naam": "zaken",
+            },
+            {
+              "filters": {},
+              "naam": "besluiten",
+            },
+          ],
+          "name": "Zaken",
+          "sourceId": "",
+        },
+      ],
+      [
+        "success",
+        "Abonnement created",
+      ],
+      [
+        "emit",
+        "saved",
+      ],
+    ],
+  },
+]
+`;

@@ -20,8 +20,8 @@
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\Event\EventLoopGuard;
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -80,21 +80,23 @@ class CloudEventListener implements IEventListener {
 	 * its own output. One instance per listener, and the listener is built
 	 * once per request, so its chain counter bounds one request.
 	 *
-	 * @var EventLoopGuard
+	 * @var EventForwardingGuardInterface
 	 */
-	private EventLoopGuard $guard;
+	private EventForwardingGuardInterface $guard;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param EventServiceInterface $eventService Service for managing CloudEvents.
 	 * @param LoggerInterface $logger Logger instance.
+	 * @param EventForwardingGuardInterface $guard The loop guard of this listener instance.
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly LoggerInterface $logger,
+		EventForwardingGuardInterface $guard,
 	) {
-		$this->guard = new EventLoopGuard();
+		$this->guard = $guard;
 
 	}//end __construct()
 
@@ -221,7 +223,7 @@ class CloudEventListener implements IEventListener {
 		// and the schema ids both failed to recognise our own output, and
 		// the only thing standing between this instance and the storm is a
 		// counter. It is also the one refusal an operator can act on.
-		if ($decision['reason'] === EventLoopGuard::REFUSED_CEILING) {
+		if ($decision['reason'] === EventForwardingGuardInterface::REFUSED_CEILING) {
 			$ceilingNote = '';
 			if ($decision['identified'] === false) {
 				$ceilingNote = '; the event-machinery schema ids resolved to nothing, so only the ceiling was left';

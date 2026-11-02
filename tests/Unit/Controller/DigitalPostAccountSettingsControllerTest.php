@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\DigitalPostAccountSettingsController;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
 use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\Intake\IntakeGroups;
@@ -201,7 +202,7 @@ class DigitalPostAccountSettingsControllerTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $id): object => match ($id) {
-				DigitalPostAccount::class => $account,
+				DigitalPostAccountInterface::class => $account,
 				default => $this->objectService,
 			}
 		);

@@ -42,7 +42,7 @@ use Symfony\Component\Uid\Uuid;
  *   to satisfy the count would put half the lifecycle behind a second collaborator that
  *   every caller of the first also needs, which is a worse shape than the number.
  */
-class SynchronizationContractService {
+class SynchronizationContractService implements SynchronizationContractServiceInterface {
 
 	/**
 	 * The OpenRegister register the contract lives in.

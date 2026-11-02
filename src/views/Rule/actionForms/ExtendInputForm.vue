@@ -162,17 +162,9 @@ export default {
 }
 </script>
 
+<style scoped src="./actionForm.css"></style>
+
 <style scoped>
-.action-form {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.action-form__label {
-	font-weight: bold;
-}
-
 .action-form__row {
 	display: grid;
 	grid-template-columns: 1fr 1fr auto;

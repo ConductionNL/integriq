@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Repair;
 
-use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
+use OCA\Integriq\Auth\Idp\IdpBrokerConfigInterface;
 use OCA\Integriq\Auth\Idp\IdpConsumer;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -57,10 +57,10 @@ class SeedIdpBrokerConsumers implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IdpBrokerConfig $config The broker's settings.
+	 * @param IdpBrokerConfigInterface $config The broker's settings.
 	 */
 	public function __construct(
-		private readonly IdpBrokerConfig $config,
+		private readonly IdpBrokerConfigInterface $config,
 	) {
 
 	}//end __construct()

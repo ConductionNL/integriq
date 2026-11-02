@@ -37,7 +37,7 @@ use Throwable;
  *
  * @spec openspec/changes/connectors-graph-document-search/design.md#d3-typed-commands
  */
-class DocumentConnectionGuard {
+class DocumentConnectionGuard implements DocumentConnectionGuardInterface {
 
 	/**
 	 * Constructor.

@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
  *
  * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-upgrade-moves-the-source-trust-into-the-consumer
  */
-class WebhookTrustMigrator {
+class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 
 	/**
 	 * The schema that held the trust before.

@@ -20,6 +20,8 @@ namespace OCA\Integriq\Tests\Unit\PropertySource\Provider;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
+use OCA\Integriq\PropertySource\PropertySourceResolver;
 use OCA\Integriq\PropertySource\Provider\BrpRelationReader;
 use OCA\Integriq\PropertySource\RegistrySourceGateway;
 use OCA\Integriq\Service\AuthenticationService;
@@ -30,7 +32,6 @@ use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
-use OCA\Integriq\PropertySource\PropertySourceResolver;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUser;
@@ -144,7 +145,6 @@ class BrpRelationReadCallLogTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
-			null,
 			new BodyCapturePolicy($appConfig, null, $session),
 		);
 		$client = $this->createMock(Client::class);
@@ -276,7 +276,7 @@ class BrpRelationReadCallLogTest extends TestCase {
 			return $found;
 		};
 
-		$this->assertContains(BodyCapturePolicy::class, $types(CallService::class));
+		$this->assertContains(BodyCapturePolicyInterface::class, $types(CallService::class));
 		$this->assertContains(IUserSession::class, $types(BodyCapturePolicy::class));
 	}//end testTheSessionReachesTheCallEngineThroughTypedConstructorParameters()
 }//end class

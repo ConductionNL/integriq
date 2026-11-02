@@ -22,12 +22,13 @@ use OCA\Integriq\BackgroundJob\ConnectionHealthJob;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Service\ConnectionDeclarationValidator;
 use OCA\Integriq\Service\ConnectionProbeService;
+use OCA\Integriq\Service\ConnectionProbeServiceInterface;
 use OCA\Integriq\Service\ConnectionRegistryService;
 use OCA\Integriq\Service\ConnectionStatusResolver;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\SourceTestService;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -62,7 +63,7 @@ class ConnectionHealthJobTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($registry, $probe): object {
-				if ($id === ConnectionProbeService::class) {
+				if ($id === ConnectionProbeServiceInterface::class) {
 					return $probe;
 				}
 

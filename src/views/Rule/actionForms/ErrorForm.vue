@@ -76,17 +76,9 @@ export default {
 }
 </script>
 
+<style scoped src="./actionForm.css"></style>
+
 <style scoped>
-.action-form {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.action-form__label {
-	font-weight: bold;
-}
-
 .action-form__textarea {
 	width: 100%;
 	padding: 8px;

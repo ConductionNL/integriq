@@ -27,9 +27,9 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\Exchange\ExchangeReadModel;
-use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Exchange\ExchangeReadModelInterface;
+use OCA\Integriq\Service\Exchange\ExchangeRejectionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -57,18 +57,18 @@ class ExchangeController extends Controller {
 	 *
 	 * @param string                   $appName     The app id.
 	 * @param IRequest                 $request     The request.
-	 * @param ExchangeReadModel        $readModel   The read model.
-	 * @param ExchangeRejectionService $rejections  The correction actions.
-	 * @param ActionAuthService        $actionAuth  ADR-023 action checks.
+	 * @param ExchangeReadModelInterface        $readModel   The read model.
+	 * @param ExchangeRejectionServiceInterface $rejections  The correction actions.
+	 * @param ActionAuthServiceInterface        $actionAuth  ADR-023 action checks.
 	 * @param IUserSession             $userSession The session.
 	 * @param IL10N                    $l           Translations.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ExchangeReadModel $readModel,
-		private readonly ExchangeRejectionService $rejections,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ExchangeReadModelInterface $readModel,
+		private readonly ExchangeRejectionServiceInterface $rejections,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
 	) {

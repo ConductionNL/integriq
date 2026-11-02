@@ -21,9 +21,9 @@
 namespace OCA\Integriq\Controller;
 
 use Exception;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\MappingService;
-use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\MappingServiceInterface;
+use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
@@ -74,22 +74,22 @@ class MappingsController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param MappingService $mappingService The mapping service.
-	 * @param SourceMappingService $objectService The object service (OC).
+	 * @param MappingServiceInterface $mappingService The mapping service.
+	 * @param SourceMappingServiceInterface $objectService The object service (OC).
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param ContainerInterface $container App container OpenRegister's mappers are resolved from.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly MappingService $mappingService,
-		private readonly SourceMappingService $objectService,
+		private readonly MappingServiceInterface $mappingService,
+		private readonly SourceMappingServiceInterface $objectService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {
@@ -102,7 +102,7 @@ class MappingsController extends Controller {
 	 *
 	 * This method tests a mapping with provided input data and optional schema validation.
 	 *
-	 * @param SourceMappingService $objectService Source mapping service used to access OpenRegister.
+	 * @param SourceMappingServiceInterface $objectService Source mapping service used to access OpenRegister.
 	 *
 	 * @return JSONResponse A JSON response containing the test results.
 	 *
@@ -142,7 +142,7 @@ class MappingsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function test(SourceMappingService $objectService): JSONResponse {
+	public function test(SourceMappingServiceInterface $objectService): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
@@ -167,82 +167,21 @@ class MappingsController extends Controller {
 			);
 		}
 
-		// Decode the input object from JSON.
-		$inputObject = $data['inputObject'];
-
-		// Decode the mapping from JSON.
-		$mapping = $data['mapping'];
-
-		// Initialize schema and validation flags.
-		$schema = false;
-		$validation = false;
-
-		// If a schema is provided, retrieve it.
-		if (empty($data['schema']) === false) {
-			if ($openRegisters === null) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l->t('Setup error'),
-						'message' => $this->l->t('OpenRegisters must be installed to validate schema.'),
-					],
-					statusCode: 412
-				);
-			}
-
-			$schemaId = $data['schema'];
-			try {
-				// Resolve via setSchema(), NOT getMapper('schema').
-				//
-				// ObjectService::getMapper()'s first parameter is a REGISTER, not
-				// an entity-type name, and its non-numeric-string branch treats
-				// 'schema' as a caller type-hint — so it returned an
-				// *unconstrained* ObjectServiceMapperAdapter and find($schemaId)
-				// asked for an OBJECT with that id across every register. With a
-				// numeric schema id that then died inside OpenRegister
-				// (ObjectService::find() accepts int|string, GetObject::find()
-				// narrows to string) as a TypeError, which this catch cannot
-				// intercept — hence a 500 instead of the intended 404. Only
-				// `?schema=<slug>` ever appeared to work, and only by accident.
-				//
-				// setSchema() resolves numeric ids, uuids and slugs through
-				// SchemaMapper (with request-scoped caching) and rethrows
-				// DoesNotExistException, which is what this handler expects.
-				$schema = $openRegisters->setSchema($schemaId)->getCurrentSchemaEntity();
-			} catch (DoesNotExistException $exception) {
-				$schema = null;
-			}//end try
-
-			if ($schema === null) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l->t('Not found'),
-						'message' => $this->l->t('The specified schema could not be found.'),
-					],
-					statusCode: 404
-				);
-			}
-		}//end if
-
-		// Check if validation is requested.
-		if (empty($data['validation']) === false) {
-			$validation = $data['validation'];
+		$schema = $this->resolveTestSchema(openRegisters: $openRegisters, schemaId: ($data['schema'] ?? null));
+		if ($schema instanceof JSONResponse) {
+			return $schema;
 		}
 
-		// Build a polymorphic mapping payload accepted directly by
-		// MappingService::executeMapping(): post chain-C the service hydrates
-		// arrays into an \OCA\OpenRegister\Db\Mapping value object internally,
-		// so the controller no longer constructs a typed entity here.
-		if (is_array($mapping) === true) {
-			$mappingPayload = $mapping;
-		} else {
-			$mappingPayload = ['mapping' => $mapping];
+		// MappingService::executeMapping() accepts a polymorphic payload and
+		// hydrates arrays into a Mapping value object itself.
+		$mappingPayload = $data['mapping'];
+		if (is_array($mappingPayload) === false) {
+			$mappingPayload = ['mapping' => $mappingPayload];
 		}
 
-		// Perform the mapping operation.
 		try {
-			$resultObject = $this->mappingService->executeMapping(mapping: $mappingPayload, input: $inputObject);
+			$resultObject = $this->mappingService->executeMapping(mapping: $mappingPayload, input: $data['inputObject']);
 		} catch (Exception $e) {
-			// If mapping fails, return an error response.
 			return new JSONResponse(
 				[
 					'error' => $this->l->t('Mapping error'),
@@ -252,43 +191,89 @@ class MappingsController extends Controller {
 			);
 		}
 
-		// Initialize validation variables.
-		$isValid = true;
-		$validationErrors = [];
+		$report = ['isValid' => true, 'validationErrors' => []];
 
-		// Perform schema validation if both schema and validation are provided.
-		if ($schema !== false && $validation !== false && $openRegisters !== null) {
-			// Validation lives on the ValidateObject handler, reached via
-			// getValidateHandler(); ObjectService::validateObject() no longer
-			// exists (it was a delegating shim that went away when the object
-			// handlers were split out), so calling it raised a fatal "undefined
-			// method". Pass the Schema entity rather than a pre-built
-			// schemaObject: the handler derives that itself via
-			// getSchemaObject(), and it additionally runs unique-field and
-			// extended-type checks that a bare schemaObject argument skips.
-			$result = $openRegisters->getValidateHandler()->validateObject(
-				object: $resultObject,
-				schema: $schema
+		// A resolved schema implies OpenRegister is installed (412 above otherwise).
+		if ($schema !== false && empty($data['validation']) === false) {
+			// Validation lives on the ValidateObject handler; passing the Schema
+			// entity lets it derive the schema object and run the unique-field
+			// and extended-type checks too.
+			$report = $this->validationReport(
+				result: $openRegisters->getValidateHandler()->validateObject(object: $resultObject, schema: $schema)
 			);
+		}
 
-			$isValid = $result->isValid();
-
-			if ($result->hasError() === true) {
-				// Class imported without use because it only exists when OpenRegisters is installed.
-				$validationErrors = (new \Opis\JsonSchema\Errors\ErrorFormatter())->format(error: $result->error());
-			}
-		}//end if
-
-		// Return the result as a JSON response.
-		return new JSONResponse(
-			[
-				'resultObject' => $resultObject,
-				'isValid' => $isValid,
-				'validationErrors' => $validationErrors,
-			]
-		);
+		return new JSONResponse(['resultObject' => $resultObject] + $report);
 
 	}//end test()
+
+	/**
+	 * Resolve the schema a mapping test validates against.
+	 *
+	 * Resolved via setSchema(), not getMapper('schema'): getMapper()'s first
+	 * parameter is a register, so it searched every register for an object with
+	 * the schema id. setSchema() resolves numeric ids, uuids and slugs and
+	 * rethrows DoesNotExistException.
+	 *
+	 * @param \OCA\OpenRegister\Service\ObjectService|null $openRegisters OpenRegister's object service, null when not installed.
+	 * @param mixed                                          $schemaId      The requested schema, empty for none.
+	 *
+	 * @return object|false The schema entity, false when none was requested, or the error response.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function resolveTestSchema(?\OCA\OpenRegister\Service\ObjectService $openRegisters, mixed $schemaId): object|false {
+		if (empty($schemaId) === true) {
+			return false;
+		}
+
+		if ($openRegisters === null) {
+			return new JSONResponse(
+				data: [
+					'error' => $this->l->t('Setup error'),
+					'message' => $this->l->t('OpenRegisters must be installed to validate schema.'),
+				],
+				statusCode: 412
+			);
+		}
+
+		try {
+			$schema = $openRegisters->setSchema($schemaId)->getCurrentSchemaEntity();
+		} catch (DoesNotExistException $exception) {
+			$schema = null;
+		}
+
+		if ($schema === null) {
+			return new JSONResponse(
+				data: [
+					'error' => $this->l->t('Not found'),
+					'message' => $this->l->t('The specified schema could not be found.'),
+				],
+				statusCode: 404
+			);
+		}
+
+		return $schema;
+	}//end resolveTestSchema()
+
+	/**
+	 * Turn a schema validation result into the test response's validity fields.
+	 *
+	 * @param object $result The validation result (Opis ValidationResult).
+	 *
+	 * @return array{isValid: bool, validationErrors: array} The validity fields.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function validationReport(object $result): array {
+		$validationErrors = [];
+		if ($result->hasError() === true) {
+			// Class imported without use because it only exists when OpenRegisters is installed.
+			$validationErrors = (new \Opis\JsonSchema\Errors\ErrorFormatter())->format(error: $result->error());
+		}
+
+		return ['isValid' => $result->isValid(), 'validationErrors' => $validationErrors];
+	}//end validationReport()
 
 	/**
 	 * Saves a mapping object.

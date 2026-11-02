@@ -277,7 +277,10 @@ class DsoActivityMapper {
 				continue;
 			}
 
-			$caseTypes[] = (['reference' => trim((string)$caseType['reference'])] + $this->identifierFields(source: $caseType, keys: ['title', 'department']));
+			$caseTypes[] = (['reference' => trim((string)$caseType['reference'])] + $this->identifierFields(
+				source: $caseType,
+				keys: ['title', 'department', 'variant']
+			));
 		}
 
 		return $caseTypes;

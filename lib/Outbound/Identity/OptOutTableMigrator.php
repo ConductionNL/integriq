@@ -30,7 +30,7 @@ namespace OCA\Integriq\Outbound\Identity;
 
 use DateTimeImmutable;
 use OCA\Integriq\Db\OptOut;
-use OCA\Integriq\Db\OptOutMapper;
+use OCA\Integriq\Db\OptOutMapperInterface;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
  */
-class OptOutTableMigrator {
+class OptOutTableMigrator implements OptOutTableMigratorInterface {
 
 	/**
 	 * How many objects one read fetches.
@@ -54,13 +54,13 @@ class OptOutTableMigrator {
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService Reads the old opt-outs (read only).
-	 * @param OptOutMapper $mapper Writes the table.
+	 * @param OptOutMapperInterface $mapper Writes the table.
 	 *
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/outbound-sender-identity/spec.md
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
-		private readonly OptOutMapper $mapper,
+		private readonly OptOutMapperInterface $mapper,
 	) {
 
 	}//end __construct()

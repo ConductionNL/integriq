@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
-use OCA\Integriq\Service\SynchronizationRunProgressService;
+use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -106,27 +106,8 @@ class StaleRunSweepJob extends TimedJob {
 	 *   this annotation or a fake use of the value.
 	 */
 	protected function run($argument): void {
-		try {
-			// The findAll() method takes ONE `$config` array — register and
-			// schema are filters inside it, not named arguments. Passing them
-			// as named arguments is a fatal TypeError, not a soft failure.
-			$result = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => SynchronizationRunProgressService::REGISTER,
-						'schema' => SynchronizationRunProgressService::SCHEMA,
-						'status' => 'running',
-					],
-				],
-				_rbac: false,
-				_multitenancy: false,
-			);
-			$running = ($result['results'] ?? $result);
-		} catch (\Throwable $exception) {
-			$this->logger->warning(
-				'[StaleRunSweepJob] could not read running synchronization runs: ' . $exception->getMessage()
-			);
-
+		$running = $this->runningRuns();
+		if ($running === null) {
 			return;
 		}
 
@@ -134,67 +115,133 @@ class StaleRunSweepJob extends TimedJob {
 		$closed = 0;
 
 		foreach ($running as $entity) {
-			$object = $entity->getObject();
-
-			// Fall back to startedAt: a run killed before its first tick has no
-			// updatedAt at all, and those are exactly the ones that hang around.
-			$last = ($object['updatedAt'] ?? $object['startedAt'] ?? null);
-			$lastAt = null;
-			if ($last !== null) {
-				$lastAt = $this->toTimestamp(value: $last);
-			}
-
-			// No timestamp we can trust — use the record's own created stamp
-			// rather than either closing it blindly or leaving it for ever.
-			if ($lastAt === null) {
-				$lastAt = $this->toTimestamp(value: $entity->getCreated());
-			}
-
-			// Still nothing usable: leave it alone and say so. Closing a record
-			// whose age cannot be established would be guessing.
-			if ($lastAt === null) {
-				$this->logger->warning(
-					'[StaleRunSweepJob] run ' . $entity->getUuid()
-					. ' has no usable timestamp; not closing it.'
-				);
+			if ($this->isAbandoned(entity: $entity, now: $now) === false) {
 				continue;
 			}
 
-			if (($now - (int)$lastAt) < self::STALE_AFTER_SECONDS) {
-				continue;
-			}
-
-			$object['status'] = 'failed';
-			$object['finishedAt'] = (new DateTime())->format('c');
-			$object['message'] = 'Abandoned: no progress recorded for over '
-				. (int)(self::STALE_AFTER_SECONDS / 60) . ' minutes; the run\'s process is presumed dead. '
-				. 'This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are '
-				. 'the last ones observed rather than a final tally.';
-
-			try {
-				$this->objectService->saveObject(
-					object: $object,
-					register: SynchronizationRunProgressService::REGISTER,
-					schema: SynchronizationRunProgressService::SCHEMA,
-					uuid: $entity->getUuid(),
-					_rbac: false,
-					_multitenancy: false,
-					silent: true,
-					_validation: false,
-				);
+			if ($this->closeAbandoned(entity: $entity) === true) {
 				$closed++;
-			} catch (\Throwable $exception) {
-				$this->logger->warning(
-					'[StaleRunSweepJob] could not close abandoned run ' . $entity->getUuid()
-					. ': ' . $exception->getMessage()
-				);
-			}//end try
-		}//end foreach
+			}
+		}
 
 		if ($closed > 0) {
 			$this->logger->info('[StaleRunSweepJob] closed ' . $closed . ' abandoned synchronization run(s).');
 		}
 	}//end run()
+
+	/**
+	 * The run records still marked `running`, or null when they cannot be read.
+	 *
+	 * @return iterable|null The running run records.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function runningRuns(): ?iterable {
+		try {
+			// The findAll() method takes ONE `$config` array — register and
+			// schema are filters inside it, not named arguments. Passing them
+			// as named arguments is a fatal TypeError, not a soft failure.
+			$result = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => SynchronizationRunProgressServiceInterface::REGISTER,
+						'schema' => SynchronizationRunProgressServiceInterface::SCHEMA,
+						'status' => 'running',
+					],
+				],
+				_rbac: false,
+				_multitenancy: false,
+			);
+		} catch (\Throwable $exception) {
+			$this->logger->warning(
+				'[StaleRunSweepJob] could not read running synchronization runs: ' . $exception->getMessage()
+			);
+
+			return null;
+		}
+
+		return ($result['results'] ?? $result);
+	}//end runningRuns()
+
+	/**
+	 * Whether a running record has shown no progress for STALE_AFTER_SECONDS.
+	 *
+	 * @param object $entity The run record.
+	 * @param int    $now    The current unix time.
+	 *
+	 * @return bool True when the run is abandoned.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function isAbandoned(object $entity, int $now): bool {
+		$object = $entity->getObject();
+
+		// Fall back to startedAt: a run killed before its first tick has no
+		// updatedAt at all, and those are exactly the ones that hang around.
+		$last = ($object['updatedAt'] ?? $object['startedAt'] ?? null);
+		$lastAt = null;
+		if ($last !== null) {
+			$lastAt = $this->toTimestamp(value: $last);
+		}
+
+		// No timestamp we can trust — use the record's own created stamp
+		// rather than either closing it blindly or leaving it for ever.
+		if ($lastAt === null) {
+			$lastAt = $this->toTimestamp(value: $entity->getCreated());
+		}
+
+		// Still nothing usable: leave it alone and say so. Closing a record
+		// whose age cannot be established would be guessing.
+		if ($lastAt === null) {
+			$this->logger->warning(
+				'[StaleRunSweepJob] run ' . $entity->getUuid()
+				. ' has no usable timestamp; not closing it.'
+			);
+			return false;
+		}
+
+		return ($now - (int)$lastAt) >= self::STALE_AFTER_SECONDS;
+	}//end isAbandoned()
+
+	/**
+	 * Close an abandoned run as failed.
+	 *
+	 * @param object $entity The run record.
+	 *
+	 * @return bool True when the record was saved.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 */
+	private function closeAbandoned(object $entity): bool {
+		$object = $entity->getObject();
+		$object['status'] = 'failed';
+		$object['finishedAt'] = (new DateTime())->format('c');
+		$object['message'] = 'Abandoned: no progress recorded for over '
+			. (int)(self::STALE_AFTER_SECONDS / 60) . ' minutes; the run\'s process is presumed dead. '
+			. 'This record was closed by StaleRunSweepJob, NOT by the run itself, so its counters are '
+			. 'the last ones observed rather than a final tally.';
+
+		try {
+			$this->objectService->saveObject(
+				object: $object,
+				register: SynchronizationRunProgressServiceInterface::REGISTER,
+				schema: SynchronizationRunProgressServiceInterface::SCHEMA,
+				uuid: $entity->getUuid(),
+				_rbac: false,
+				_multitenancy: false,
+				silent: true,
+				_validation: false,
+			);
+		} catch (\Throwable $exception) {
+			$this->logger->warning(
+				'[StaleRunSweepJob] could not close abandoned run ' . $entity->getUuid()
+				. ': ' . $exception->getMessage()
+			);
+			return false;
+		}//end try
+
+		return true;
+	}//end closeAbandoned()
 
 	/**
 	 * Coerce a stored timestamp to a unix time, whatever shape it arrives in.

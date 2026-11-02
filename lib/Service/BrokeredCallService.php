@@ -42,7 +42,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use GuzzleHttp\Psr7\Response;
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
@@ -78,7 +77,7 @@ use Throwable;
  *
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
-class BrokeredCallService {
+class BrokeredCallService implements BrokeredCallServiceInterface {
 
 	/**
 	 * The configuration keys that carry a TLS client identity (Guzzle's `cert` / `ssl_key`).
@@ -86,19 +85,6 @@ class BrokeredCallService {
 	 * @var array<int, string>
 	 */
 	private const TLS_IDENTITY_KEYS = ['cert', 'ssl_key'];
-
-	/**
-	 * The app id the broker authorises against the credential's allowedApps.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is NOT this app's Nextcloud app id but the identity
-	// OpenRegister's credential broker matches against a stored credential's
-	// `allowedApps` (strict in_array). Every credential minted so far carries
-	// "openconnector"; renaming it fails every brokered call CLOSED.
-	// Moves only with a credential re-provisioning pass — as do the hint strings
-	// below that tell the admin which value to add to `allowedApps`.
-	public const APP_ID = 'openconnector';
 
 	/**
 	 * FQCN of the OpenRegister credential broker (resolved lazily — the class

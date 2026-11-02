@@ -32,9 +32,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
-use OCA\Integriq\Outbound\Call\VerdictService;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Outbound\Call\VerdictServiceInterface;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -70,16 +70,16 @@ class VerdictController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal reading verdicts back.
-	 * @param VerdictService $verdicts Stores and reads the verdicts.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param VerdictServiceInterface $verdicts Stores and reads the verdicts.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly VerdictService $verdicts,
-		private readonly WebhookGate $gate,
+		private readonly VerdictServiceInterface $verdicts,
+		private readonly WebhookGateInterface $gate,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -102,7 +102,7 @@ class VerdictController extends Controller {
 	public function inbound(): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$identity = $this->gate->identify(
-			profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
+			profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
 			rawBody: $rawBody,
 			request: $this->request
 		);
@@ -133,7 +133,7 @@ class VerdictController extends Controller {
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the checker delivers again.
 			return $this->gate->notStored(
-				profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
+				profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
 				reason: $exception->getMessage()
 			);
 		}
@@ -152,6 +152,11 @@ class VerdictController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Reads through VerdictService::forObject(), which lists verdicts with
+	 *   OpenRegister's ObjectService::findAll() under the default RBAC and multitenancy, so the
+	 *   caller only sees verdicts they may read. The controller takes the interface, which this
+	 *   checker cannot follow to the class.
 	 *
 	 * @spec openspec/specs/outbound-call-log/spec.md
 	 */

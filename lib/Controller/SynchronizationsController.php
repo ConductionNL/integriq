@@ -22,10 +22,10 @@ namespace OCA\Integriq\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\SearchService;
-use OCA\Integriq\Service\SynchronizationRunProgressService;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\SearchServiceInterface;
+use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -59,29 +59,31 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class SynchronizationsController extends Controller {
+	use LogPageListing;
+
 	/**
 	 * Constructor for the SynchronizationsController.
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param OrObjectService $orObjectService The OR object service.
-	 * @param SynchronizationService $synchronizationService The synchronization service.
+	 * @param SynchronizationServiceInterface $synchronizationService The synchronization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param SynchronizationRunProgressService|null $runProgress The run progress service, for the id of the run just started.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
+	 * @param SynchronizationRunProgressServiceInterface|null $runProgress The run progress service, for the id of the run just started.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly OrObjectService $orObjectService,
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationServiceInterface $synchronizationService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
-		private readonly ?SynchronizationRunProgressService $runProgress = null,
+		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly ?SynchronizationRunProgressServiceInterface $runProgress = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -140,107 +142,15 @@ class SynchronizationsController extends Controller {
 	 * - limit: Number of results per page (default: 20)
 	 * - offset: Offset for pagination (default: 0)
 	 *
-	 * @param SearchService $searchService Search helper service injected by route resolution.
+	 * @param SearchServiceInterface $searchService Search helper service injected by route resolution.
 	 *
 	 * @return JSONResponse A JSON response containing the filtered synchronization logs and pagination.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
-	public function logs(SearchService $searchService): JSONResponse {
-		try {
-			// Get filters from request.
-			$filters = $this->request->getParams();
-			$specialFilters = [];
-
-			// Pagination using _page and _limit.
-			if (isset($filters['_limit']) === true) {
-				$limit = (int)$filters['_limit'];
-			} else {
-				$limit = 20;
-			}
-
-			if (isset($filters['_page']) === true) {
-				$page = (int)$filters['_page'];
-			} else {
-				$page = 1;
-			}
-
-			$offset = (($page - 1) * $limit);
-			unset($filters['_limit'], $filters['_page']);
-
-			// Handle special filters.
-			if (empty($filters['date_from']) === false) {
-				$specialFilters['date_from'] = $filters['date_from'];
-			}
-
-			if (empty($filters['date_to']) === false) {
-				$specialFilters['date_to'] = $filters['date_to'];
-			}
-
-			if (empty($filters['status']) === false) {
-				$specialFilters['status'] = $filters['status'];
-			}
-
-			if (empty($filters['slow_syncs']) === false) {
-				// 5 seconds in milliseconds.
-				$specialFilters['slow_syncs'] = 5000;
-			}
-
-			// Build search conditions and parameters.
-			$searchConditions = [];
-			$searchParams = [];
-
-			if (empty($specialFilters['date_from']) === false) {
-				$searchConditions[] = 'created >= ?';
-				$searchParams[] = $specialFilters['date_from'];
-			}
-
-			if (empty($specialFilters['date_to']) === false) {
-				$searchConditions[] = 'created <= ?';
-				$searchParams[] = $specialFilters['date_to'];
-			}
-
-			if (empty($specialFilters['status']) === false) {
-				$searchConditions[] = 'status = ?';
-				$searchParams[] = $specialFilters['status'];
-			}
-
-			if (empty($specialFilters['slow_syncs']) === false) {
-				$searchConditions[] = 'sync_time > ?';
-				$searchParams[] = $specialFilters['slow_syncs'];
-			}
-
-			// Remove special query params from filters.
-			$filters = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-			// Get synchronization logs with filters and pagination via OR ObjectService.
-			$orFilters = array_merge(['register' => 'integriq', 'schema' => 'synchronization_log'], $filters);
-			$matches = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
-			$syncLogs = ($matches['results'] ?? $matches);
-			$total = ($matches['total'] ?? count($syncLogs));
-			if ($limit > 0) {
-				$pages = ceil($total / $limit);
-				$currentPage = (floor($offset / $limit) + 1);
-			} else {
-				$pages = 1;
-				$currentPage = 1;
-			}
-
-			// Return flattened paginated response.
-			return new JSONResponse(
-				[
-					'results' => $syncLogs,
-					'page' => $currentPage,
-					'pages' => $pages,
-					'results_count' => count($syncLogs),
-					'total' => $total,
-				]
-			);
-		} catch (\Exception $e) {
-			return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
-		}//end try
-
+	public function logs(SearchServiceInterface $searchService): JSONResponse {
+		return $this->logPage(searchService: $searchService, schema: 'synchronization_log');
 	}//end logs()
 
 	/**
@@ -381,8 +291,8 @@ class SynchronizationsController extends Controller {
 		// Only Run again may name the trigger. Anything else is left to the
 		// engine, which reads it from the trace: a browser cannot claim `cron`.
 		$triggeredBy = null;
-		if (($parameters['triggeredBy'] ?? null) === SynchronizationRunProgressService::TRIGGER_RERUN) {
-			$triggeredBy = SynchronizationRunProgressService::TRIGGER_RERUN;
+		if (($parameters['triggeredBy'] ?? null) === SynchronizationRunProgressServiceInterface::TRIGGER_RERUN) {
+			$triggeredBy = SynchronizationRunProgressServiceInterface::TRIGGER_RERUN;
 		}
 
 		try {

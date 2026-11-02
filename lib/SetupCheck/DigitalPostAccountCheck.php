@@ -25,8 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\SetupCheck;
 
-use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
-use OCA\Integriq\Service\DigitalPost\DigitalPostService;
+use OCA\Integriq\Service\DigitalPost\DigitalPostAccountInterface;
+use OCA\Integriq\Service\DigitalPost\DigitalPostServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
 use OCP\SetupCheck\ISetupCheck;
@@ -98,7 +98,7 @@ class DigitalPostAccountCheck implements ISetupCheck {
 	 */
 	public function run(): SetupResult {
 		try {
-			$state = $this->container->get(DigitalPostAccount::class)->describe();
+			$state = $this->container->get(DigitalPostAccountInterface::class)->describe();
 		} catch (Throwable) {
 			return SetupResult::success($this->l10n->t('Digital post needs OpenRegister, which is not available.'));
 		}
@@ -128,7 +128,7 @@ class DigitalPostAccountCheck implements ISetupCheck {
 	private function hasDigitalPostSource(): bool {
 		try {
 			$result = $this->container->get(self::OBJECT_SERVICE)->findAll(
-				config: ['filters' => ['register' => DigitalPostService::REGISTER, 'schema' => 'source']],
+				config: ['filters' => ['register' => DigitalPostServiceInterface::REGISTER, 'schema' => 'source']],
 				_rbac: false,
 				_multitenancy: false
 			);

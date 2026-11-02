@@ -251,6 +251,20 @@ class ResponseDecoderTest extends TestCase {
 	}//end testHeaderValueIgnoresCase()
 
 	/**
+	 * The Content-Type lookup takes the first value of a list, ignores case and
+	 * answers null when the header is absent.
+	 *
+	 * @return void
+	 */
+	public function testContentTypeReadsTheHeaderMap(): void {
+		$this->assertSame('text/yaml', $this->decoder->contentType(headers: ['content-type' => ['text/yaml', 'text/plain']]));
+		$this->assertSame('application/json', $this->decoder->contentType(headers: ['Content-Type' => 'application/json']));
+		$this->assertNull($this->decoder->contentType(headers: ['Accept' => 'application/json']));
+		$this->assertNull($this->decoder->contentType(headers: ['Content-Type' => []]));
+
+	}//end testContentTypeReadsTheHeaderMap()
+
+	/**
 	 * Read a test fixture.
 	 *
 	 * @param string $name The file name under tests/fixtures/publiccode.

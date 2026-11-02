@@ -20,7 +20,7 @@
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\JobService;
+use OCA\Integriq\Service\JobServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -39,9 +39,9 @@ class JobTask extends TimedJob {
 	/**
 	 * Job service for handling job execution logic.
 	 *
-	 * @var JobService
+	 * @var JobServiceInterface
 	 */
-	private readonly JobService $jobService;
+	private readonly JobServiceInterface $jobService;
 
 	/**
 	 * Constructor.
@@ -50,11 +50,11 @@ class JobTask extends TimedJob {
 	 * background job settings.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param JobService $jobService Service for handling job execution.
+	 * @param JobServiceInterface $jobService Service for handling job execution.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		JobService $jobService,
+		JobServiceInterface $jobService,
 	) {
 		parent::__construct(time: $time);
 		$this->jobService = $jobService;

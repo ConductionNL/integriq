@@ -1696,7 +1696,7 @@
         "slug": "synchronization",
         "title": "Synchronization",
         "icon": "Sync",
-        "version": "1.2.0",
+        "version": "1.2.1",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
         "required": [
@@ -1784,6 +1784,11 @@
             "description": "Pagination cursor for in-flight sync passes",
             "default": 1,
             "title": "Current Page"
+          },
+          "currentPageVersion": {
+            "type": "string",
+            "description": "The version (ETag, or Last-Modified with Content-Length) of the JSONL file the current batch cycle reads; empty when the source sends neither. A later batch that finds another version starts the cycle again at batch 1.",
+            "title": "Current Page Version"
           },
           "syncMode": {
             "type": "string",
@@ -4507,7 +4512,7 @@
         "slug": "dso_verzoek",
         "title": "DSO Verzoek",
         "icon": "HomeCityOutline",
-        "version": "1.6.0",
+        "version": "1.7.0",
         "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping; the case system makes the case",
         "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). Status tracks received -> mapped | failed, isolated per verzoek. Integriq declares no case handoff: the case system (dossiq) reads the mapped verzoek and makes one case on the case type in mappedCaseTypes. handed_off survives only on records from the retired manual handoff. See openspec/changes/retire-dso-case-handoff.",
         "authorization": {
@@ -4783,6 +4788,12 @@
                         "type": "string",
                         "description": "The department that handles this case type",
                         "title": "Department"
+                      },
+                      "variant": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "description": "The route (variant) of this case type the case takes, as the matched mapping row gives it",
+                        "title": "Variant"
                       }
                     }
                   }

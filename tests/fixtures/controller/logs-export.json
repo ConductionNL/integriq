@@ -1,0 +1,147 @@
+{
+    "no-session": {
+        "status": 401,
+        "data": {
+            "error": "Not authenticated"
+        },
+        "calls": []
+    },
+    "refused": {
+        "status": 403,
+        "data": {
+            "error": "not for you"
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "log.export"
+            ]
+        ]
+    },
+    "forged-user-param": {
+        "status": 200,
+        "data": {
+            "filename": "synchronization_logs_(date).csv",
+            "content": "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\nu-1,error,\"said \"\"hi\"\", twice\",s-1,alice,x,2026-01-01,2026-02-01\n,,\"plain\",,,,,\nu-3,info,\"\",,,,,2026-03-01\n",
+            "contentType": "text/csv"
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "log.export"
+            ],
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_log"
+                    }
+                }
+            ]
+        ]
+    },
+    "all-filters": {
+        "status": 200,
+        "data": {
+            "filename": "synchronization_logs_(date).csv",
+            "content": "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\nu-1,error,\"said \"\"hi\"\", twice\",s-1,alice,x,2026-01-01,2026-02-01\n,,\"plain\",,,,,\nu-3,info,\"\",,,,,2026-03-01\n",
+            "contentType": "text/csv"
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "log.export"
+            ],
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_log",
+                        "level": "error",
+                        "message": "m",
+                        "synchronization_id": "s-1",
+                        "date_from": "2026-01-01",
+                        "date_to": "2026-12-31"
+                    }
+                }
+            ]
+        ]
+    },
+    "some-filters": {
+        "status": 200,
+        "data": {
+            "filename": "synchronization_logs_(date).csv",
+            "content": "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n",
+            "contentType": "text/csv"
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "log.export"
+            ],
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_log",
+                        "message": "",
+                        "date_to": "2026-12-31"
+                    }
+                }
+            ]
+        ]
+    },
+    "bare-list": {
+        "status": 200,
+        "data": {
+            "filename": "synchronization_logs_(date).csv",
+            "content": "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\nu-1,error,\"said \"\"hi\"\", twice\",s-1,alice,x,2026-01-01,2026-02-01\n,,\"plain\",,,,,\nu-3,info,\"\",,,,,2026-03-01\n",
+            "contentType": "text/csv"
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "log.export"
+            ],
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_log"
+                    }
+                }
+            ]
+        ]
+    },
+    "query-fails": {
+        "status": 500,
+        "data": {
+            "error": "Could not export logs"
+        },
+        "calls": [
+            [
+                "requireAction",
+                "session-user",
+                "log.export"
+            ],
+            [
+                "findAll",
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_log"
+                    }
+                }
+            ]
+        ]
+    }
+}

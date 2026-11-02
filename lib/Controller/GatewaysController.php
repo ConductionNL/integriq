@@ -20,11 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Bridge\BridgeRegistry;
-use OCA\Integriq\Gateway\GatewayDescriptor;
-use OCA\Integriq\Gateway\GatewayRegistry;
-use OCA\Integriq\Gateway\ZgwRegistryBinding;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Bridge\BridgeRegistryInterface;
+use OCA\Integriq\Gateway\GatewayDescriptorInterface;
+use OCA\Integriq\Gateway\GatewayRegistryInterface;
+use OCA\Integriq\Gateway\ZgwRegistryBindingInterface;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -52,19 +52,19 @@ class GatewaysController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request The request.
-	 * @param GatewayRegistry $registry The gateway entries.
-	 * @param ZgwRegistryBinding $binding The ZGW registry binding.
-	 * @param BridgeRegistry $bridges The on-premise bridges.
-	 * @param ActionAuthService $actionAuth ADR-023 action gate.
+	 * @param GatewayRegistryInterface $registry The gateway entries.
+	 * @param ZgwRegistryBindingInterface $binding The ZGW registry binding.
+	 * @param BridgeRegistryInterface $bridges The on-premise bridges.
+	 * @param ActionAuthServiceInterface $actionAuth ADR-023 action gate.
 	 * @param IUserSession $userSession The current session.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly GatewayRegistry $registry,
-		private readonly ZgwRegistryBinding $binding,
-		private readonly BridgeRegistry $bridges,
-		private readonly ActionAuthService $actionAuth,
+		private readonly GatewayRegistryInterface $registry,
+		private readonly ZgwRegistryBindingInterface $binding,
+		private readonly BridgeRegistryInterface $bridges,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -99,7 +99,7 @@ class GatewaysController extends Controller {
 			[
 				'standards' => $this->registry->standards(),
 				'results' => array_map(
-					static fn (GatewayDescriptor $g): array => $g->toArray(),
+					static fn (GatewayDescriptorInterface $g): array => $g->toArray(),
 					$this->registry->all($standardFilter)
 				),
 			]

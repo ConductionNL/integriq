@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\DigitalPost;
 
 use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\Integriq\Adapters\Berichtenbox\BerichtenboxLetterBuilder;
 use OCA\Integriq\Gateway\GatewayDelivery;
 use OCA\Integriq\Gateway\GatewayTransport;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
@@ -129,7 +130,7 @@ class DigitalPostProviderTest extends TestCase {
 	public function testTheRegistryDescribesWhatEachBindingNeeds(): void {
 		$registry = new DigitalPostProviderRegistry(
 			[
-				new BerichtenboxProvider(new BerichtenboxClientMock(), $this->createMock(LoggerInterface::class)),
+				new BerichtenboxProvider(new BerichtenboxClientMock(), $this->createMock(LoggerInterface::class), new BerichtenboxLetterBuilder()),
 				new LogDigitalPostProvider($this->createMock(LoggerInterface::class)),
 			]
 		);

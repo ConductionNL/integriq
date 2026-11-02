@@ -100,6 +100,34 @@ const CAST_TYPE_OPTIONS = [
 	{ id: 'htmlDecode', label: 'HTML Decode' },
 ]
 
+/**
+ * A prop value as draft text: strings as they are, other values stringified,
+ * null and undefined as empty.
+ *
+ * @param {string|number|boolean|object|null|undefined} value The prop value.
+ * @return {string} The draft text.
+ */
+function draftText(value) {
+	if (typeof value === 'string') {
+		return value
+	}
+	return value == null ? '' : String(value)
+}
+
+/**
+ * The initial property draft. An unset rule without a property falls back to
+ * a string value, since its value is the property name itself.
+ *
+ * @param {{kind: string, property: ?string, value: unknown}} props The dialog props.
+ * @return {string} The property draft.
+ */
+function initialPropertyDraft(props) {
+	if (props.kind === 'unset') {
+		return props.property ?? (typeof props.value === 'string' ? props.value : '')
+	}
+	return props.property ?? ''
+}
+
 export default {
 	name: 'EditMappingRuleDialog',
 
@@ -150,18 +178,8 @@ export default {
 
 	data() {
 		return {
-			propertyDraft:
-				this.kind === 'unset'
-					? (this.property
-						?? (typeof this.value === 'string' ? this.value : ''))
-					: (this.property ?? ''),
-
-			valueDraft:
-				typeof this.value === 'string'
-					? this.value
-					: this.value != null
-						? String(this.value)
-						: '',
+			propertyDraft: initialPropertyDraft(this),
+			valueDraft: draftText(this.value),
 		}
 	},
 

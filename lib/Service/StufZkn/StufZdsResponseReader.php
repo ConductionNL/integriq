@@ -24,7 +24,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use SimpleXMLElement;
 /**
  * Parses StUF-ZDS case answers.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
  */
 class StufZdsResponseReader {
 
@@ -66,7 +66,7 @@ class StufZdsResponseReader {
 	 *
 	 * @return array{crossRefnummer:string,caseIdentification:string|null}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
 	 */
 	public function confirmation(string $xml): array {
 		$root = $this->load(xml: $xml);
@@ -99,7 +99,7 @@ class StufZdsResponseReader {
 	 *
 	 * @return array<string,mixed> The zaak (identificatie, omschrijving, startdatum, einddatum, zaaktype, statussen, betrokkenen); [] when unreadable.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
 	 */
 	public function caseDetails(string $xml): array {
 		$root = $this->load(xml: $xml);
@@ -143,7 +143,7 @@ class StufZdsResponseReader {
 	 *
 	 * @return array{code:string,omschrijving:string,details:string,kind:string}
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
 	 */
 	public function fault(string $xml): array {
 		$root = $this->load(xml: $xml);

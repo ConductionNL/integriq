@@ -1,0 +1,484 @@
+{
+    "jobs/defaults": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "jobs/limit-and-page": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 3.0,
+            "pages": 5.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log"
+                },
+                "limit": 10,
+                "offset": 20
+            }
+        ]
+    },
+    "jobs/limit-zero": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1,
+            "pages": 1,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log"
+                },
+                "limit": 0,
+                "offset": 0
+            }
+        ]
+    },
+    "jobs/negative-page": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": -1.0,
+            "pages": 9.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log"
+                },
+                "limit": 5,
+                "offset": -10
+            }
+        ]
+    },
+    "jobs/special-filters-pass-through": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log",
+                    "date_from": "2026-01-01",
+                    "date_to": "2026-02-01",
+                    "status": "error",
+                    "slow_executions": "1",
+                    "slow_syncs": "1",
+                    "name": "n"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "jobs/empty-special-filters": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log",
+                    "date_from": "",
+                    "status": 0,
+                    "other": "kept"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "jobs/bare-list-answer": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "only"
+                }
+            ],
+            "page": 1.0,
+            "pages": 1.0,
+            "results_count": 1,
+            "total": 1
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "jobs/no-total": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                },
+                {
+                    "id": "c"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 3,
+            "total": 3
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log"
+                },
+                "limit": 1,
+                "offset": 0
+            }
+        ]
+    },
+    "jobs/query-fails": {
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve logs: database gone"
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "job_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "synchronizations/defaults": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "synchronizations/limit-and-page": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 3.0,
+            "pages": 5.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log"
+                },
+                "limit": 10,
+                "offset": 20
+            }
+        ]
+    },
+    "synchronizations/limit-zero": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1,
+            "pages": 1,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log"
+                },
+                "limit": 0,
+                "offset": 0
+            }
+        ]
+    },
+    "synchronizations/negative-page": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": -1.0,
+            "pages": 9.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log"
+                },
+                "limit": 5,
+                "offset": -10
+            }
+        ]
+    },
+    "synchronizations/special-filters-pass-through": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log",
+                    "date_from": "2026-01-01",
+                    "date_to": "2026-02-01",
+                    "status": "error",
+                    "slow_executions": "1",
+                    "slow_syncs": "1",
+                    "name": "n"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "synchronizations/empty-special-filters": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 2,
+            "total": 45
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log",
+                    "date_from": "",
+                    "status": 0,
+                    "other": "kept"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "synchronizations/bare-list-answer": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "only"
+                }
+            ],
+            "page": 1.0,
+            "pages": 1.0,
+            "results_count": 1,
+            "total": 1
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "synchronizations/no-total": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                },
+                {
+                    "id": "c"
+                }
+            ],
+            "page": 1.0,
+            "pages": 3.0,
+            "results_count": 3,
+            "total": 3
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log"
+                },
+                "limit": 1,
+                "offset": 0
+            }
+        ]
+    },
+    "synchronizations/query-fails": {
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve logs: database gone"
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "synchronization_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    }
+}

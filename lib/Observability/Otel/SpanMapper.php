@@ -32,7 +32,7 @@ namespace OCA\Integriq\Observability\Otel;
  *
  * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-spans-carry-no-message-content-req-otel-003
  */
-class SpanMapper {
+class SpanMapper implements SpanMapperInterface {
 
 	/**
 	 * OTLP span kinds.
@@ -78,53 +78,26 @@ class SpanMapper {
 			$otelTraceId = $traceId;
 		}
 
-		$traceHex = $this->traceParent->toHex(traceId: $otelTraceId);
-		$rootSpanId = $this->spanId(traceId: $traceId, salt: 'root');
-		$rootStart = $this->micros(micros: ($trace['startedAtUs'] ?? null), iso: ($trace['startedAt'] ?? null));
-		$rootEnd = $this->micros(micros: ($trace['finishedAtUs'] ?? null), iso: ($trace['finishedAt'] ?? null));
-		$rootEnd = max($rootEnd, $rootStart);
+		$frame = new TraceFrame(
+			traceId: $traceId,
+			traceHex: $this->traceParent->toHex(traceId: $otelTraceId),
+			rootSpanId: $this->spanId(traceId: $traceId, salt: 'root'),
+			rootStart: $this->micros(micros: ($trace['startedAtUs'] ?? null), iso: ($trace['startedAt'] ?? null))
+		);
 
 		$spans = [];
-		$dropped = 0;
-		foreach (($trace['steps'] ?? []) as $step) {
-			if (is_array($step) === false) {
-				continue;
-			}
-
+		foreach (array_filter((array)($trace['steps'] ?? []), 'is_array') as $step) {
 			if (($step['status'] ?? null) === 'truncated') {
 				// The tally of steps counted but not kept is a root attribute,
 				// not a span (REQ-OTEL-001).
-				$dropped = (int)($step['output']['droppedSteps'] ?? 0);
+				$frame->droppedSteps = (int)($step['output']['droppedSteps'] ?? 0);
 				continue;
 			}
 
-			$spans[] = $this->stepSpan(step: $step, traceId: $traceId, traceHex: $traceHex, rootSpanId: $rootSpanId, fallbackStart: $rootStart);
+			$spans[] = $this->stepSpan(step: $step, frame: $frame);
 		}
 
-		$entryPoint = (string)($trace['entryPoint'] ?? 'execution');
-		$root = [
-			'traceId' => $traceHex,
-			'spanId' => $rootSpanId,
-			'name' => 'integriq.' . $entryPoint,
-			'kind' => $this->rootKind(entryPoint: $entryPoint),
-			'startTimeUnixNano' => $this->nanos(micros: $rootStart),
-			'endTimeUnixNano' => $this->nanos(micros: $rootEnd),
-			'attributes' => $this->attributes(
-				values: [
-					'integriq.entry_point' => $entryPoint,
-					'integriq.entry_point_id' => ($trace['entryPointId'] ?? null),
-					'integriq.trace_id' => $traceId,
-					'integriq.steps.dropped' => $dropped,
-				]
-			),
-			'status' => ['code' => $this->rootStatus(status: (string)($trace['status'] ?? ''))],
-		];
-		$parent = (string)($trace['parentSpanId'] ?? '');
-		if (preg_match('/^[0-9a-f]{16}$/', $parent) === 1) {
-			$root['parentSpanId'] = $parent;
-		}
-
-		array_unshift($spans, $root);
+		array_unshift($spans, $this->rootSpan(trace: $trace, frame: $frame));
 
 		return [
 			'resourceSpans' => [
@@ -143,6 +116,44 @@ class SpanMapper {
 		];
 
 	}//end map()
+
+	/**
+	 * The root span of a trace.
+	 *
+	 * @param array      $trace The `execution_trace` object data.
+	 * @param TraceFrame $frame The trace's shared ids and start.
+	 *
+	 * @return array The root span.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-a-persisted-trace-is-exported-as-opentelemetry-spans-req-otel-001
+	 */
+	private function rootSpan(array $trace, TraceFrame $frame): array {
+		$rootEnd = $this->micros(micros: ($trace['finishedAtUs'] ?? null), iso: ($trace['finishedAt'] ?? null));
+		$entryPoint = (string)($trace['entryPoint'] ?? 'execution');
+		$root = [
+			'traceId' => $frame->traceHex,
+			'spanId' => $frame->rootSpanId,
+			'name' => 'integriq.' . $entryPoint,
+			'kind' => $this->rootKind(entryPoint: $entryPoint),
+			'startTimeUnixNano' => $this->nanos(micros: $frame->rootStart),
+			'endTimeUnixNano' => $this->nanos(micros: max($rootEnd, $frame->rootStart)),
+			'attributes' => $this->attributes(
+				values: [
+					'integriq.entry_point' => $entryPoint,
+					'integriq.entry_point_id' => ($trace['entryPointId'] ?? null),
+					'integriq.trace_id' => $frame->traceId,
+					'integriq.steps.dropped' => $frame->droppedSteps,
+				]
+			),
+			'status' => ['code' => $this->rootStatus(status: (string)($trace['status'] ?? ''))],
+		];
+		$parent = (string)($trace['parentSpanId'] ?? '');
+		if (preg_match('/^[0-9a-f]{16}$/', $parent) === 1) {
+			$root['parentSpanId'] = $parent;
+		}
+
+		return $root;
+	}//end rootSpan()
 
 	/**
 	 * The span id a step gets: the one its outbound call carried in its
@@ -169,19 +180,16 @@ class SpanMapper {
 	/**
 	 * One child span.
 	 *
-	 * @param array $step The step.
-	 * @param string $traceId The execution trace id.
-	 * @param string $traceHex The trace id in hex.
-	 * @param string $rootSpanId The root span id.
-	 * @param int $fallbackStart The root start, for a step without a time.
+	 * @param array      $step  The step.
+	 * @param TraceFrame $frame The trace's shared ids, and the root start for a step without a time.
 	 *
 	 * @return array The span.
 	 */
-	private function stepSpan(array $step, string $traceId, string $traceHex, string $rootSpanId, int $fallbackStart): array {
+	private function stepSpan(array $step, TraceFrame $frame): array {
 		$type = (string)($step['type'] ?? 'step');
 		$start = $this->micros(micros: ($step['startedAtUs'] ?? null), iso: ($step['startedAt'] ?? null));
 		if ($start === 0) {
-			$start = $fallbackStart;
+			$start = $frame->rootStart;
 		}
 
 		$durationMs = max(0, (int)($step['durationMs'] ?? 0));
@@ -205,9 +213,9 @@ class SpanMapper {
 		}
 
 		return [
-			'traceId' => $traceHex,
-			'spanId' => $this->stepSpanId(step: $step, traceId: $traceId),
-			'parentSpanId' => $rootSpanId,
+			'traceId' => $frame->traceHex,
+			'spanId' => $this->stepSpanId(step: $step, traceId: $frame->traceId),
+			'parentSpanId' => $frame->rootSpanId,
 			'name' => trim($type . ' ' . (string)($step['name'] ?? '')),
 			'kind' => $kind,
 			'startTimeUnixNano' => $this->nanos(micros: $start),

@@ -24,12 +24,52 @@
 
 /**
  * Canonical FQN of the built-in synchronization-runner action. Lives in
- * lib/Action/SynchronizationAction.php; the form-side check has to use the
+ * lib/Service/Job/SynchronizationAction.php; the form-side check has to use the
  * exact same string the backend resolves with
  * `containerInterface->get($jobClass)`.
  */
 export const SYNCHRONIZATION_ACTION_CLASS =
-	'OCA\\Integriq\\Action\\SynchronizationAction'
+	'OCA\\Integriq\\Service\\Job\\SynchronizationAction'
+
+/**
+ * Old name => current name of every job action that moved out of
+ * `OCA\Integriq\Action`. Mirrors the action entries of
+ * lib/Service/Job/MovedJobClasses.php: a job object keeps an old name until the
+ * repair step rewrites it, and OpenRegister can write one back.
+ */
+export const MOVED_JOB_CLASSES = Object.freeze({
+	'OCA\\Integriq\\Action\\EventAction': 'OCA\\Integriq\\Service\\Job\\EventAction',
+	'OCA\\Integriq\\Action\\ExchangeJobAction':
+		'OCA\\Integriq\\Service\\Job\\ExchangeJobAction',
+	'OCA\\Integriq\\Action\\FlowAction': 'OCA\\Integriq\\Service\\Job\\FlowAction',
+	'OCA\\Integriq\\Action\\PingAction': 'OCA\\Integriq\\Service\\Job\\PingAction',
+	'OCA\\Integriq\\Action\\SynchronizationAction': SYNCHRONIZATION_ACTION_CLASS,
+})
+
+/**
+ * A job's action class under its current name.
+ *
+ * @param {string|undefined} jobClass The stored class name.
+ *
+ * @return {string|undefined} The current name of a moved action, otherwise
+ *   the value as given.
+ */
+export function currentJobClass(jobClass) {
+	return Object.hasOwn(MOVED_JOB_CLASSES, jobClass ?? '')
+		? MOVED_JOB_CLASSES[jobClass]
+		: jobClass
+}
+
+/**
+ * Whether the Synchronization picker applies to a job with this action class.
+ *
+ * @param {string|undefined} jobClass The stored class name, old or current.
+ *
+ * @return {boolean} True for the synchronization action.
+ */
+export function needsSynchronizationPicker(jobClass) {
+	return currentJobClass(jobClass) === SYNCHRONIZATION_ACTION_CLASS
+}
 
 /**
  * The nested key inside a job's `arguments` object that
@@ -66,26 +106,45 @@ export function groupFieldRuns(fields) {
 		// A descriptor without a string key cannot be rendered or :key'd, so
 		// skip it rather than emitting a run that would break the v-for.
 		if (!field || typeof field.key !== 'string') continue
-		// Only a non-empty STRING groups. `group: ''` or `group: 5` is treated
-		// as ungrouped so a stray value can't silently merge unrelated fields.
-		const group =
-			typeof field.group === 'string' && field.group !== ''
-				? field.group
-				: null
-		const last = runs[runs.length - 1]
-		if (group !== null && last !== undefined && last.group === group) {
-			last.fields.push(field)
-			continue
-		}
-		runs.push({
-			// Prefixed so a group run and a field run can never collide on the
-			// same Vue :key, even if a group is named after a field.
-			key: (group !== null ? `group:${group}:` : 'field:') + field.key,
-			group,
-			fields: [field],
-		})
+		addFieldToRuns(runs, field)
 	}
 	return runs
+}
+
+/**
+ * The group a field descriptor belongs to. Only a non-empty STRING groups:
+ * `group: ''` or `group: 5` is treated as ungrouped so a stray value can't
+ * silently merge unrelated fields.
+ *
+ * @param {object} field The field descriptor.
+ * @return {string|null} The group name, or null when ungrouped.
+ */
+function fieldGroup(field) {
+	return typeof field.group === 'string' && field.group !== '' ? field.group : null
+}
+
+/**
+ * Append a field to the last run when it continues that run's group, or
+ * start a new run for it.
+ *
+ * @param {Array<object>} runs The runs so far; changed in place.
+ * @param {object} field The field descriptor.
+ * @return {void}
+ */
+function addFieldToRuns(runs, field) {
+	const group = fieldGroup(field)
+	const last = runs[runs.length - 1]
+	if (group !== null && last !== undefined && last.group === group) {
+		last.fields.push(field)
+		return
+	}
+	runs.push({
+		// Prefixed so a group run and a field run can never collide on the
+		// same Vue :key, even if a group is named after a field.
+		key: (group !== null ? `group:${group}:` : 'field:') + field.key,
+		group,
+		fields: [field],
+	})
 }
 
 /**

@@ -217,9 +217,8 @@ import TestTubeIcon from 'vue-material-design-icons/TestTube.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import MappingRulesEditor from '../../views/wrappers/MappingRulesEditor.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
-
-/** A name has to carry at least one letter or digit — punctuation alone is not a name. */
-const NAME_PATTERN = /[\p{L}\p{N}]/u
+import namedEditorDialog from '../../mixins/namedEditorDialog.js'
+import { editorSlotScopeProps } from '../editorSlotScope.js'
 
 export default {
 	name: 'MappingEditorModal',
@@ -242,43 +241,9 @@ export default {
 		TestTubeIcon,
 	},
 
-	props: {
-		/** Slot scope: whether CnIndexPage wants the form dialog open. */
-		show: {
-			type: Boolean,
-			default: false,
-		},
+	mixins: [namedEditorDialog],
 
-		/** Slot scope: the row being edited, or `null` in create mode. */
-		item: {
-			type: Object,
-			default: null,
-		},
-
-		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
-		schema: {
-			type: Object,
-			default: null,
-		},
-
-		/**
-		 * Slot scope: persists the object through CnIndexPage's own save path
-		 * and refreshes the list. Saving here instead of calling this would
-		 * leave the index stale until a reload — the built-in refresh only
-		 * runs inside this handler — and would write to a different store
-		 * than the one the list reads from.
-		 */
-		confirm: {
-			type: Function,
-			default: null,
-		},
-
-		/** Slot scope: closes the form dialog on CnIndexPage. */
-		close: {
-			type: Function,
-			default: null,
-		},
-	},
+	props: { ...editorSlotScopeProps },
 
 	data() {
 		return {
@@ -298,10 +263,6 @@ export default {
 	},
 
 	computed: {
-		isCreate() {
-			return !this.item
-		},
-
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		dialogTitle() {
 			return this.isCreate
@@ -312,33 +273,6 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		inputPlaceholder() {
 			return '{\n  "name": "hello"\n}'
-		},
-
-		/**
-		 * Required marker on the label. NcTextField/NcInputField has no
-		 * `required` prop and renders no marker of its own, so the ` *`
-		 * suffix is appended here — the same convention CnFormDialog uses for
-		 * schema-required fields, so both dialogs read alike.
-		 *
-		 * @return {string} Label text.
-		 *
-		 * @spec openspec/specs/mapping-editor-ui/spec.md
-		 */
-		nameLabel() {
-			return this.t('integriq', 'Name') + ' *'
-		},
-
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
-		nameError() {
-			if (!this.draft.name) {
-				return this.nameTouched ? this.t('integriq', 'Name is required') : ''
-			}
-			return NAME_PATTERN.test(this.draft.name)
-				? ''
-				: this.t(
-						'integriq',
-						'Name must contain at least one letter or number',
-					)
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
@@ -366,23 +300,6 @@ export default {
 		 */
 		testableMapping() {
 			return { ...(this.item || {}), ...this.draft }
-		},
-	},
-
-	watch: {
-		show: {
-			immediate: true,
-			/**
-			 * Re-seed the draft every time the dialog opens, so a cancelled
-			 * edit leaves nothing behind for the next one.
-			 *
-			 * @param {boolean} value Whether the dialog is now open.
-			 *
-			 * @spec openspec/specs/mapping-editor-ui/spec.md
-			 */
-			handler(value) {
-				if (value) this.seedDraft()
-			},
 		},
 	},
 
@@ -435,12 +352,6 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onTest() {
 			this.$refs.result?.run()
-		},
-
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
-		onCancel() {
-			if (this.saving) return
-			this.close?.()
 		},
 
 		/**

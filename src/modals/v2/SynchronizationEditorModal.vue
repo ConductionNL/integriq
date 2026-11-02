@@ -502,6 +502,7 @@ import SyncConfigWidget from '../../views/Synchronization/SyncConfigWidget.vue'
 import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue'
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
 import SyncWriteBackFields from '../../views/Synchronization/SyncWriteBackFields.vue'
+import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
 import {
 	disappearancePolicyError,
@@ -522,9 +523,7 @@ import {
 	TYPE_OPTIONS,
 } from '../../views/Synchronization/syncDraft.js'
 import { NEXTCLOUD_TABLE_KIND } from '../../views/Synchronization/tablesBridge.js'
-
-/** A name has to carry at least one letter or digit — punctuation alone is not a name. */
-const NAME_PATTERN = /[\p{L}\p{N}]/u
+import { editorSlotScopeProps } from '../editorSlotScope.js'
 
 export default {
 	name: 'SynchronizationEditorModal',
@@ -553,43 +552,9 @@ export default {
 		SwapHorizontalIcon,
 	},
 
-	props: {
-		/** Slot scope: whether CnIndexPage wants the form dialog open. */
-		show: {
-			type: Boolean,
-			default: false,
-		},
+	mixins: [namedEditorDialog],
 
-		/** Slot scope: the row being edited, or `null` in create mode. */
-		item: {
-			type: Object,
-			default: null,
-		},
-
-		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
-		schema: {
-			type: Object,
-			default: null,
-		},
-
-		/**
-		 * Slot scope: persists the object through CnIndexPage's own save path
-		 * and refreshes the list. Saving here instead of calling this would
-		 * leave the index stale until a reload — the built-in refresh only runs
-		 * inside that handler — and would write to a different store than the
-		 * one the list reads from.
-		 */
-		confirm: {
-			type: Function,
-			default: null,
-		},
-
-		/** Slot scope: closes the form dialog on CnIndexPage. */
-		close: {
-			type: Function,
-			default: null,
-		},
-	},
+	props: { ...editorSlotScopeProps },
 
 	data() {
 		return {
@@ -613,10 +578,6 @@ export default {
 	},
 
 	computed: {
-		isCreate() {
-			return !this.item
-		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		itemIdString() {
 			return this.item?.id != null ? String(this.item.id) : ''
@@ -627,33 +588,6 @@ export default {
 			return this.isCreate
 				? this.t('integriq', 'Create synchronization')
 				: this.t('integriq', 'Edit synchronization')
-		},
-
-		/**
-		 * Required marker on the label. NcTextField/NcInputField has no
-		 * `required` prop and renders no marker of its own, so the ` *` suffix
-		 * is appended here — the same convention CnFormDialog uses for
-		 * schema-required fields. `name` is the schema's only required property.
-		 *
-		 * @return {string} Label text.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md
-		 */
-		nameLabel() {
-			return this.t('integriq', 'Name') + ' *'
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		nameError() {
-			if (!this.draft.name) {
-				return this.nameTouched ? this.t('integriq', 'Name is required') : ''
-			}
-			return NAME_PATTERN.test(this.draft.name)
-				? ''
-				: this.t(
-						'integriq',
-						'Name must contain at least one letter or number',
-					)
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
@@ -859,23 +793,6 @@ export default {
 		},
 	},
 
-	watch: {
-		show: {
-			immediate: true,
-			/**
-			 * Re-seed the draft every time the dialog opens, so a cancelled edit
-			 * leaves nothing behind for the next one.
-			 *
-			 * @param {boolean} value Whether the dialog is now open.
-			 *
-			 * @spec openspec/specs/sync-editor-ui/spec.md
-			 */
-			handler(value) {
-				if (value) this.seedDraft()
-			},
-		},
-	},
-
 	/** @spec openspec/specs/sync-editor-ui/spec.md */
 	async mounted() {
 		// Probe both bridges once: their kinds are only offered when the
@@ -1003,12 +920,6 @@ export default {
 		 */
 		onConditionsChange(node) {
 			this.updateDraft('conditions', node)
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		onCancel() {
-			if (this.saving) return
-			this.close?.()
 		},
 
 		/**

@@ -1,0 +1,429 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`runAgain golden > runs again as recorded when the server answers bare error 1`] = `
+[
+  {
+    "returned": null,
+    "run": null,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": undefined,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {},
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "",
+    },
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "sync 1/2",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/synchronizations/sync%201%2F2/run",
+        {
+          "triggeredBy": "rerun",
+        },
+      ],
+      [
+        "error",
+        "The pull did not run again: ",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`runAgain golden > runs again as recorded when the server answers error with error 1`] = `
+[
+  {
+    "returned": null,
+    "run": null,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": undefined,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {},
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "",
+    },
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "sync 1/2",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/synchronizations/sync%201%2F2/run",
+        {
+          "triggeredBy": "rerun",
+        },
+      ],
+      [
+        "error",
+        "The pull did not run again: locked",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`runAgain golden > runs again as recorded when the server answers ok 1`] = `
+[
+  {
+    "returned": null,
+    "run": null,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": undefined,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {},
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "",
+    },
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": "run-7",
+    "run": {
+      "synchronizationId": "sync 1/2",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/synchronizations/sync%201%2F2/run",
+        {
+          "triggeredBy": "rerun",
+        },
+      ],
+      [
+        "success",
+        "The pull ran again. Select this notice to open the new run.",
+        [
+          "onClick",
+        ],
+      ],
+      [
+        "push",
+        {
+          "name": "SynchronizationRuns",
+          "query": {
+            "uuid": "run-7",
+          },
+        },
+      ],
+    ],
+  },
+]
+`;
+
+exports[`runAgain golden > runs again as recorded when the server answers ok without body 1`] = `
+[
+  {
+    "returned": null,
+    "run": null,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": undefined,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {},
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "",
+    },
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "sync 1/2",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/synchronizations/sync%201%2F2/run",
+        {
+          "triggeredBy": "rerun",
+        },
+      ],
+      [
+        "success",
+        "The pull ran again. Select this notice to open the new run.",
+        [
+          "onClick",
+        ],
+      ],
+      [
+        "push",
+        {
+          "name": "SynchronizationRuns",
+          "query": {},
+        },
+      ],
+    ],
+  },
+]
+`;
+
+exports[`runAgain golden > runs again as recorded when the server answers ok without id 1`] = `
+[
+  {
+    "returned": null,
+    "run": null,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": undefined,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {},
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "",
+    },
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "sync 1/2",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/synchronizations/sync%201%2F2/run",
+        {
+          "triggeredBy": "rerun",
+        },
+      ],
+      [
+        "success",
+        "The pull ran again. Select this notice to open the new run.",
+        [
+          "onClick",
+        ],
+      ],
+      [
+        "push",
+        {
+          "name": "SynchronizationRuns",
+          "query": {},
+        },
+      ],
+    ],
+  },
+]
+`;
+
+exports[`runAgain golden > runs again as recorded when the server answers transport error 1`] = `
+[
+  {
+    "returned": null,
+    "run": null,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": undefined,
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {},
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "",
+    },
+    "trace": [
+      [
+        "error",
+        "This run names no synchronization, so it cannot run again.",
+      ],
+    ],
+  },
+  {
+    "returned": null,
+    "run": {
+      "synchronizationId": "sync 1/2",
+    },
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/synchronizations/sync%201%2F2/run",
+        {
+          "triggeredBy": "rerun",
+        },
+      ],
+      [
+        "error",
+        "The pull did not run again: Network Error",
+      ],
+    ],
+  },
+]
+`;

@@ -18,7 +18,7 @@
  * Wired via `appinfo/info.xml` `<repair-steps><post-migration>`.
  *
  * The constructor + service wiring is registered in
- * {@see \OCA\Integriq\AppInfo\Application::registerAppHostBoilerplate()}.
+ * {@see \OCA\Integriq\Repair\RepairRegistrar}.
  *
  * @category Repair
  * @package  OCA\Integriq\Repair

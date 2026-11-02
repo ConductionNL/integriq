@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\CaseSystem;
 
-
 /**
  * Mock mode (design D4): two cases with documents from
  * lib/Settings/case-system-mock.json. What add-document and create-case

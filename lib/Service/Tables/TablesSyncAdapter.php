@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/tables-bridge/spec.md
  */
-class TablesSyncAdapter {
+class TablesSyncAdapter implements TablesSyncAdapterInterface {
 
 	/**
 	 * Tables app id, as registered in `appinfo/info.xml` of nextcloud/tables.

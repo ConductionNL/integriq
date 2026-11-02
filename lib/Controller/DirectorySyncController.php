@@ -30,8 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Directory\DirectorySource;
-use OCA\Integriq\Directory\DirectorySyncService;
+use OCA\Integriq\Directory\DirectorySourceInterface;
+use OCA\Integriq\Directory\DirectorySyncServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -55,8 +55,8 @@ class DirectorySyncController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param DirectorySource $directorySource Finds directory connections.
-	 * @param DirectorySyncService $directorySyncService Runs a connection.
+	 * @param DirectorySourceInterface $directorySource Finds directory connections.
+	 * @param DirectorySyncServiceInterface $directorySyncService Runs a connection.
 	 * @param OrObjectService $orObjectService Reads the run records back.
 	 * @param IL10N $l10n Translations.
 	 *
@@ -65,8 +65,8 @@ class DirectorySyncController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly DirectorySource $directorySource,
-		private readonly DirectorySyncService $directorySyncService,
+		private readonly DirectorySourceInterface $directorySource,
+		private readonly DirectorySyncServiceInterface $directorySyncService,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l10n,
 	) {

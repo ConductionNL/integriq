@@ -29,14 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
-use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Intake\IntakeGroups;
-use OCA\Integriq\Service\Intake\WebhookConnection;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
+use OCA\Integriq\Service\Intake\WebhookConnectionInterface;
 use OCA\Integriq\Service\Intake\WebhookProfile;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
+use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -73,25 +73,27 @@ class WebhookConnectionsSettingsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest          $request       The request.
-	 * @param WebhookConnection $webhooks      Finds and checks each webhook's consumer and account.
+	 * @param WebhookConnectionInterface $webhooks      Finds and checks each webhook's consumer and account.
 	 * @param ORObjectService   $objectService Saves a consumer as the administrator, under RBAC.
 	 * @param IGroupManager     $groupManager  Tells an administrator account apart.
-	 * @param IntakeGroups      $groups        Puts a webhook's account in the intake group its schema grants.
+	 * @param IntakeGroupsInterface      $groups        Puts a webhook's account in the intake group its schema grants.
 	 * @param IL10N             $l             Field errors and warnings.
 	 * @param LoggerInterface   $logger        Diagnostics.
+	 * @param WebhookProfilesInterface $webhookProfiles The fixed webhook profiles.
 	 *
 	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly WebhookConnection $webhooks,
+		private readonly WebhookConnectionInterface $webhooks,
 		private readonly ORObjectService $objectService,
 		private readonly IGroupManager $groupManager,
-		private readonly IntakeGroups $groups,
+		private readonly IntakeGroupsInterface $groups,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private readonly WebhookProfilesInterface $webhookProfiles,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -105,7 +107,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getConfig(): JSONResponse {
 		$connections = [];
-		foreach (WebhookProfiles::all() as $profile) {
+		foreach ($this->webhookProfiles->profiles() as $profile) {
 			$connections[] = $this->describe(profile: $profile);
 		}
 
@@ -129,7 +131,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(string $authorizationType): JSONResponse {
-		$profile = WebhookProfiles::byAuthorizationType(authorizationType: $authorizationType);
+		$profile = $this->webhookProfiles->forAuthorizationType(authorizationType: $authorizationType);
 		if ($profile === null) {
 			return new JSONResponse(['errors' => [$this->l->t('Unknown webhook %s.', [$authorizationType])]], Http::STATUS_NOT_FOUND);
 		}
@@ -167,14 +169,14 @@ class WebhookConnectionsSettingsController extends Controller {
 			'scheme' => $scheme,
 			'secret' => (string)$this->request->getParam('secret', ''),
 			'header' => $header,
-			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS)),
+			'toleranceSeconds' => max(1, (int)$this->request->getParam('toleranceSeconds', WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS)),
 		];
 
 		try {
 			$this->objectService->saveObject(
 				object: $this->consumerData(profile: $profile, consumer: $consumer, trust: $trust, userId: $userId),
-				register: DsoConnection::REGISTER,
-				schema: DsoConnection::SCHEMA_CONSUMER,
+				register: PortalConnectionInterface::REGISTER,
+				schema: PortalConnectionInterface::SCHEMA_CONSUMER,
 				uuid: $consumer?->getUuid()
 			);
 		} catch (Throwable $exception) {
@@ -227,7 +229,7 @@ class WebhookConnectionsSettingsController extends Controller {
 			'scheme' => (string)($trust['scheme'] ?? $profile->defaultScheme),
 			'secretConfigured' => ((string)($trust['secret'] ?? '') !== ''),
 			'header' => (string)($trust['header'] ?? $profile->defaultHeader),
-			'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS),
+			'toleranceSeconds' => (int)($trust['toleranceSeconds'] ?? WebhookSignatureServiceInterface::DEFAULT_TOLERANCE_SECONDS),
 			'userId' => $userId,
 			'account' => $this->describeAccount(profile: $profile, userId: $userId),
 			'handlerGroup' => $this->describeHandlerGroup(profile: $profile),
@@ -290,7 +292,7 @@ class WebhookConnectionsSettingsController extends Controller {
 	 * @return bool
 	 */
 	private function usedElsewhere(WebhookProfile $profile, string $userId): bool {
-		foreach (WebhookProfiles::all() as $other) {
+		foreach ($this->webhookProfiles->profiles() as $other) {
 			if ($other->authorizationType === $profile->authorizationType || $other->intakeGroup !== $profile->intakeGroup) {
 				continue;
 			}

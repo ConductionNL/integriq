@@ -1,0 +1,486 @@
+{
+    "ok-200/raise": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 200,
+                        "statusMessage": "OK",
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": {
+                            "a": 1
+                        },
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "ok-200/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 200,
+                        "statusMessage": "OK",
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": {
+                            "a": 1
+                        },
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "server-error/raise": {
+        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" returned status 500 (Boom), which the step does not accept.",
+        "details": {
+            "kind": "status",
+            "status": 500,
+            "statusMessage": "Boom",
+            "source": "demo-echo-api",
+            "endpoint": "/get",
+            "method": "GET",
+            "callLog": "22222222-2222-2222-2222-222222222222"
+        },
+        "previous": null
+    },
+    "server-error/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "__error": {
+                        "step": "step-echo",
+                        "node": "openconnector.source-call",
+                        "status": 500,
+                        "statusMessage": "Boom",
+                        "kind": "status",
+                        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" returned status 500 (Boom), which the step does not accept.",
+                        "source": "demo-echo-api",
+                        "endpoint": "/get",
+                        "method": "GET"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "accepted-404/raise": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 404,
+                        "statusMessage": "Not Found",
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": [],
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "accepted-404/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 404,
+                        "statusMessage": "Not Found",
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": [],
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "transport/raise": {
+        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" failed at transport level: timed out",
+        "details": {
+            "kind": "transport",
+            "status": null,
+            "source": "demo-echo-api",
+            "endpoint": "/get",
+            "method": "GET"
+        },
+        "previous": "timed out"
+    },
+    "transport/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "__error": {
+                        "step": "step-echo",
+                        "node": "openconnector.source-call",
+                        "status": null,
+                        "statusMessage": null,
+                        "kind": "transport",
+                        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" failed at transport level: timed out",
+                        "source": "demo-echo-api",
+                        "endpoint": "/get",
+                        "method": "GET"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "not-a-call-log/raise": {
+        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" did not produce a call log.",
+        "details": {
+            "kind": "transport",
+            "status": null,
+            "source": "demo-echo-api",
+            "endpoint": "/get",
+            "method": "GET"
+        },
+        "previous": null
+    },
+    "not-a-call-log/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "__error": {
+                        "step": "step-echo",
+                        "node": "openconnector.source-call",
+                        "status": null,
+                        "statusMessage": null,
+                        "kind": "transport",
+                        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" did not produce a call log.",
+                        "source": "demo-echo-api",
+                        "endpoint": "/get",
+                        "method": "GET"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "status-only-in-response/raise": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 201,
+                        "statusMessage": "Created",
+                        "headers": {
+                            "X": [
+                                "y"
+                            ]
+                        },
+                        "body": {
+                            "b": 2
+                        },
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "33333333-3333-3333-3333-333333333333"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "status-only-in-response/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 201,
+                        "statusMessage": "Created",
+                        "headers": {
+                            "X": [
+                                "y"
+                            ]
+                        },
+                        "body": {
+                            "b": 2
+                        },
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "33333333-3333-3333-3333-333333333333"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "no-status-at-all/raise": {
+        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" returned status unknown (), which the step does not accept.",
+        "details": {
+            "kind": "status",
+            "status": null,
+            "statusMessage": "",
+            "source": "demo-echo-api",
+            "endpoint": "/get",
+            "method": "GET",
+            "callLog": "33333333-3333-3333-3333-333333333333"
+        },
+        "previous": null
+    },
+    "no-status-at-all/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "__error": {
+                        "step": "step-echo",
+                        "node": "openconnector.source-call",
+                        "status": null,
+                        "statusMessage": "",
+                        "kind": "status",
+                        "message": "The call to source \"demo-echo-api\" endpoint \"/get\" returned status unknown (), which the step does not accept.",
+                        "source": "demo-echo-api",
+                        "endpoint": "/get",
+                        "method": "GET"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "top-level-message-wins/raise": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 202,
+                        "statusMessage": "Top",
+                        "headers": [],
+                        "body": [],
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "33333333-3333-3333-3333-333333333333"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "top-level-message-wins/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 202,
+                        "statusMessage": "Top",
+                        "headers": [],
+                        "body": [],
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "33333333-3333-3333-3333-333333333333"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "post-lowercase-method/raise": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 200,
+                        "statusMessage": "OK",
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": {
+                            "c": 3
+                        },
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "POST",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "post-lowercase-method/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 200,
+                        "statusMessage": "OK",
+                        "headers": {
+                            "Content-Type": [
+                                "application/json"
+                            ]
+                        },
+                        "body": {
+                            "c": 3
+                        },
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "POST",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "decode-text/raise": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 200,
+                        "statusMessage": "OK",
+                        "headers": {
+                            "Content-Type": [
+                                "text/plain"
+                            ]
+                        },
+                        "body": "plain words",
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    },
+    "decode-text/continue": {
+        "out": [
+            {
+                "json": {
+                    "n": 1,
+                    "echo": {
+                        "status": 200,
+                        "statusMessage": "OK",
+                        "headers": {
+                            "Content-Type": [
+                                "text/plain"
+                            ]
+                        },
+                        "body": "plain words",
+                        "source": "demo-echo-api",
+                        "sourceId": "11111111-1111-1111-1111-111111111111",
+                        "endpoint": "/get",
+                        "method": "GET",
+                        "callLog": "22222222-2222-2222-2222-222222222222"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ]
+    }
+}

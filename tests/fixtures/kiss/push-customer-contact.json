@@ -1,0 +1,985 @@
+{
+    "minimal": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "english-keys": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "Vraag",
+                    "kanaal": "e-mail",
+                    "tekst": "Over de aanslag",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": false,
+                    "taal": "en"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "e-mail",
+                    "onderwerp": "Vraag",
+                    "tekst": "Over de aanslag",
+                    "indicationContactSucceeded": false,
+                    "language": "en",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "wire-keys": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "Melding",
+                    "kanaal": "",
+                    "tekst": "Losse stoeptegel",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "Melding",
+                    "tekst": "Losse stoeptegel",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "english-wins-over-wire": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "A",
+                    "kanaal": "",
+                    "tekst": "C",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "A",
+                    "tekst": "C",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "case-default-type": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "Zaak",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "link": "kiss-1",
+                "caseReference": "case-1",
+                "caseObjectType": "zaak"
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "Zaak",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [
+                        {
+                            "onderwerpobjectidentificator": {
+                                "objectId": "case-1",
+                                "codeObjecttype": "zaak"
+                            }
+                        }
+                    ],
+                    "caseReference": "case-1",
+                    "caseObjectType": "zaak",
+                    "direction": "pushed",
+                    "sourceApp": "dossiq"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "case-own-type": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "link": "kiss-1",
+                "caseReference": "case-2",
+                "caseObjectType": "melding"
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [
+                        {
+                            "onderwerpobjectidentificator": {
+                                "objectId": "case-2",
+                                "codeObjecttype": "melding"
+                            }
+                        }
+                    ],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": "7"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "case-empty-reference": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "party": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl",
+                    "involvedParty": {
+                        "rol": "klant",
+                        "organisatienaam": "Bakkerij"
+                    }
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [
+                        {
+                            "rol": "klant",
+                            "organisatienaam": "Bakkerij"
+                        }
+                    ],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "party-empty": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [
+                        []
+                    ],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "party-scalar": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "",
+                    "onderwerp": "",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [
+                        "not a list"
+                    ],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "call-new": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "call_event",
+                    "callId": "call-1",
+                    "kind": "ended",
+                    "sourceId": "pbx-1"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "callId": "call-1",
+                    "callSourceId": "pbx-1"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "Gebeld",
+                    "kanaal": "telefoon",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-02T09:30:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "telefoon",
+                    "onderwerp": "Gebeld",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-02T09:30:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null,
+                    "callId": "call-1",
+                    "callSourceId": "pbx-1",
+                    "durationSeconds": 125
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "call-own-time": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "call_event",
+                    "callId": "call-1",
+                    "kind": "ended"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "callId": "call-1",
+                    "callSourceId": "pbx-1"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "Gebeld",
+                    "kanaal": "telefoon",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "telefoon",
+                    "onderwerp": "Gebeld",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "2026-10-01T10:00:00+00:00",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null,
+                    "callId": "call-1",
+                    "callSourceId": "pbx-1",
+                    "durationSeconds": 125
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "call-no-time": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "call_event",
+                    "callId": "call-2",
+                    "kind": "ended"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "callId": "call-2",
+                    "callSourceId": "pbx-1"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "Gebeld",
+                    "kanaal": "telefoon",
+                    "tekst": "",
+                    "plaatsgevondenOp": "now",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "kissId": "kiss-1"
+                }
+            },
+            {
+                "save": "kiss_klantcontact",
+                "uuid": null,
+                "object": {
+                    "kissId": "kiss-1",
+                    "number": "",
+                    "channel": "telefoon",
+                    "onderwerp": "Gebeld",
+                    "tekst": "",
+                    "indicationContactSucceeded": true,
+                    "language": "nl",
+                    "occurredOn": "now",
+                    "registratiedatum": true,
+                    "involvedParties": [],
+                    "onderwerpobjecten": [],
+                    "caseReference": null,
+                    "caseObjectType": null,
+                    "direction": "pushed",
+                    "sourceApp": null,
+                    "callId": "call-2",
+                    "callSourceId": "pbx-1",
+                    "durationSeconds": 0
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-1",
+                "localUuid": "local-1"
+            }
+        }
+    },
+    "call-recorded": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "call_event",
+                    "callId": "call-done",
+                    "kind": "ended",
+                    "sourceId": "pbx-1"
+                }
+            },
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "kiss_klantcontact",
+                    "callId": "call-done",
+                    "callSourceId": "pbx-1"
+                }
+            }
+        ],
+        "outcome": {
+            "return": {
+                "id": "kiss-old",
+                "localUuid": "local-old"
+            }
+        }
+    },
+    "call-unknown": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "call_event",
+                    "callId": "call-gone",
+                    "kind": "ended"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "OCA\\Integriq\\Exception\\CallEventNotFoundException",
+            "message": "No single ended call with this callId."
+        }
+    },
+    "provider-fails": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "fail",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            }
+        ],
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "KISS refused the contact"
+        }
+    },
+    "link-fails": {
+        "trace": [
+            {
+                "findAll": {
+                    "register": "integriq",
+                    "schema": "source",
+                    "type": "kiss",
+                    "isEnabled": true
+                }
+            },
+            {
+                "create": {
+                    "onderwerp": "",
+                    "kanaal": "",
+                    "tekst": "",
+                    "plaatsgevondenOp": "2026-10-01T10:00:00+00:00",
+                    "indicatieContactGelukt": true,
+                    "taal": "nl"
+                },
+                "configuration": {
+                    "provider": "rest",
+                    "baseUrl": "https://kiss.test"
+                }
+            },
+            {
+                "link": "kiss-1",
+                "caseReference": "fail",
+                "caseObjectType": "zaak"
+            }
+        ],
+        "outcome": {
+            "throws": "RuntimeException",
+            "message": "KISS refused the link"
+        }
+    }
+}

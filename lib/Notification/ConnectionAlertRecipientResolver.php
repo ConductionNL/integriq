@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Notification;
 
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
 use OCP\IAppConfig;
@@ -45,21 +45,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
  * @spec openspec/specs/openconnector-notifications/spec.md
  */
-class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
-
-	/**
-	 * The app setting that names the group.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_KEY = 'connection_alert_group';
-
-	/**
-	 * The group told when no other group is named.
-	 *
-	 * @var string
-	 */
-	public const DEFAULT_GROUP = 'admin';
+class ConnectionAlertRecipientResolver implements RecipientResolverInterface, AlertRecipientResolverInterface {
 
 	/**
 	 * Constructor.
@@ -116,7 +102,7 @@ class ConnectionAlertRecipientResolver implements RecipientResolverInterface {
 	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 	 */
 	public function namedGroup(): string {
-		$groupId = trim($this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, ''));
+		$groupId = trim($this->appConfig->getValueString(AppIdentity::APP_ID, self::CONFIG_KEY, ''));
 		if ($groupId === '') {
 			return self::DEFAULT_GROUP;
 		}

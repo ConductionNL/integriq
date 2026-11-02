@@ -20,7 +20,7 @@
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -34,10 +34,10 @@ class ObjectDeletedEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizationService Service that performs the synchronization.
+	 * @param SynchronizationServiceInterface $synchronizationService Service that performs the synchronization.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizationService,
+		private readonly SynchronizationServiceInterface $synchronizationService,
 	) {
 
 	}//end __construct()

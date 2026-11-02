@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MaterializeCatalogItems;
-use OCA\Integriq\Service\CatalogRegistryService;
+use OCA\Integriq\Service\CatalogRegistryServiceInterface;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -44,16 +44,16 @@ class MaterializeCatalogItemsTest extends TestCase {
 	/**
 	 * Build the repair step with a container resolving the given services.
 	 *
-	 * @param CatalogRegistryService $registryService The registry service double.
+	 * @param CatalogRegistryServiceInterface $registryService The registry service double.
 	 * @param OrObjectService $orObjectService The OR object service double.
 	 *
 	 * @return MaterializeCatalogItems
 	 */
-	private function makeStep(CatalogRegistryService $registryService, OrObjectService $orObjectService): MaterializeCatalogItems {
+	private function makeStep(CatalogRegistryServiceInterface $registryService, OrObjectService $orObjectService): MaterializeCatalogItems {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($registryService, $orObjectService) {
-				if ($id === CatalogRegistryService::class) {
+				if ($id === CatalogRegistryServiceInterface::class) {
 					return $registryService;
 				}
 
@@ -73,10 +73,10 @@ class MaterializeCatalogItemsTest extends TestCase {
 	 *
 	 * @param array<int,array<string,mixed>> $entries collect() return value.
 	 *
-	 * @return CatalogRegistryService
+	 * @return CatalogRegistryServiceInterface
 	 */
-	private function makeRegistryService(array $entries): CatalogRegistryService {
-		$service = $this->createMock(CatalogRegistryService::class);
+	private function makeRegistryService(array $entries): CatalogRegistryServiceInterface {
+		$service = $this->createMock(CatalogRegistryServiceInterface::class);
 		$service->method('collect')->willReturn($entries);
 		$service->method('resolveStatus')->willReturn('dormant');
 		return $service;

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Portal\PortalRequestParserInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class DSOParserService {
+class DSOParserService implements PortalRequestParserInterface {
 
 	/**
 	 * Required fields in a DSO-verzoek payload.

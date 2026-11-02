@@ -27,7 +27,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
 /**
  * Verifies an inbound UsernameToken, with a replay window.
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
  */
 class StufWsseInboundVerifier {
 
@@ -91,7 +91,7 @@ class StufWsseInboundVerifier {
 	 *
 	 * @return bool True when the token is valid and fresh.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function verify(SimpleXMLElement $root, array $token, array $configuration, string $sourceId): bool {
 		if ($token['username'] === '' || $token['password'] === '') {

@@ -26,7 +26,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
 
 declare(strict_types=1);
@@ -46,9 +46,9 @@ use Throwable;
  *
  * @psalm-type ConfirmationAnswer = array{statusCode:int,body:string}
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
-class StufZdsConfirmationReceiver {
+class StufZdsConfirmationReceiver implements StufZdsConfirmationReceiverInterface {
 
 	/**
 	 * The berichtcodes this receiver accepts.
@@ -101,7 +101,7 @@ class StufZdsConfirmationReceiver {
 	 *
 	 * @return array The answer (ConfirmationAnswer).
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function receive(string $rawXml): array {
 		$intake = $this->intake(rawXml: $rawXml);

@@ -35,7 +35,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
-class SubscriptionRoster {
+class SubscriptionRoster implements SubscriptionRosterInterface {
 	/**
 	 * App id for app-config reads and writes.
 	 */

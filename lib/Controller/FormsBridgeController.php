@@ -33,8 +33,8 @@ use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\FormsNotFoundException;
 use OCA\Integriq\Exception\FormsPermissionDeniedException;
 use OCA\Integriq\Exception\FormsUpstreamException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\Forms\FormsSyncAdapter;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Forms\FormsSyncAdapterInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -59,22 +59,22 @@ class FormsBridgeController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The HTTP request.
-	 * @param FormsSyncAdapter $formsSyncAdapter The Forms sync adapter (feature detection + discovery).
+	 * @param FormsSyncAdapterInterface $formsSyncAdapter The Forms sync adapter (feature detection + discovery).
 	 * @param OrObjectService $orObjectService The OR object service (Source lookups).
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger The logger.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly FormsSyncAdapter $formsSyncAdapter,
+		private readonly FormsSyncAdapterInterface $formsSyncAdapter,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

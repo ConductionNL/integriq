@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\EudiStatusListService;
+use OCA\Integriq\Service\EudiStatusListServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -56,14 +56,14 @@ class EudiStatusListRefreshJob extends TimedJob {
 	 * EudiStatusListRefreshJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param EudiStatusListService $statusListService The status-list refresh sweep.
+	 * @param EudiStatusListServiceInterface $statusListService The status-list refresh sweep.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-refresh-keeps-the-published-token-ahead-of-its-own-expiry-req-eudi-008b
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly EudiStatusListService $statusListService,
+		private readonly EudiStatusListServiceInterface $statusListService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

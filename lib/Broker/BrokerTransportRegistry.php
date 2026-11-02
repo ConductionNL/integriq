@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
  */
-class BrokerTransportRegistry {
+class BrokerTransportRegistry implements BrokerTransportRegistryInterface {
 
 	/**
 	 * The transports, keyed by broker id.

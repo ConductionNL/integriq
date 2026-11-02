@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Dso;
 
+use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
@@ -36,21 +37,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  *
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-activiteiten-to-zaaktype-mapping-req-dso-010
  */
-class DsoActivityTable {
-
-	/**
-	 * The register that holds the table.
-	 *
-	 * @var string
-	 */
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The schema of one row.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA = 'dso_activity_mapping';
+class DsoActivityTable implements ActivityMappingTableInterface {
 
 	/**
 	 * Rows read per page.

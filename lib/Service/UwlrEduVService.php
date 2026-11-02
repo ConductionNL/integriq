@@ -58,7 +58,7 @@ use Throwable;
  *
  * @spec openspec/specs/uwlr-eduv-adapter/spec.md
  */
-class UwlrEduVService {
+class UwlrEduVService implements UwlrEduVServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding UWLR/Edu-V sources and message records.

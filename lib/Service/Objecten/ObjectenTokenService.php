@@ -51,7 +51,7 @@ namespace OCA\Integriq\Service\Objecten;
  * matrix for both questions; splitting it would duplicate the matrix and let the two answers
  * drift apart.
  */
-class ObjectenTokenService {
+class ObjectenTokenService implements ObjectenTokenServiceInterface {
 
 	/**
 	 * The scheme the standard uses.
@@ -80,48 +80,6 @@ class ObjectenTokenService {
 	 * @var array<int, string>
 	 */
 	public const PERMISSIONS = [self::READ, self::READ_WRITE];
-
-	/**
-	 * No token at all.
-	 *
-	 * @var string
-	 */
-	public const NO_TOKEN = 'no-token';
-
-	/**
-	 * A token nobody issued.
-	 *
-	 * @var string
-	 */
-	public const UNKNOWN_TOKEN = 'unknown-token';
-
-	/**
-	 * An objecttype this instance does not publish.
-	 *
-	 * @var string
-	 */
-	public const UNKNOWN_OBJECTTYPE = 'unknown-objecttype';
-
-	/**
-	 * An objecttype this token does not name.
-	 *
-	 * @var string
-	 */
-	public const REFUSED_OBJECTTYPE = 'refused-objecttype';
-
-	/**
-	 * A write with a read-only permission.
-	 *
-	 * @var string
-	 */
-	public const READ_ONLY = 'read-only';
-
-	/**
-	 * Allowed.
-	 *
-	 * @var string
-	 */
-	public const ALLOWED = 'allowed';
 
 	/**
 	 * Verdict to HTTP status.

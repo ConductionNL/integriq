@@ -13,7 +13,7 @@
  * `configuration.authentication.mode=mtls`.
  *
  * Never fails open: a `GuzzleException` raised during dispatch is wrapped
- * as {@see \OCA\Integriq\Exception\MtlsHandshakeException} — there is
+ * as {@see \OCA\Integriq\Service\Mtls\MtlsHandshakeException} — there is
  * no retry-without-certificate path.
  *
  * @category Service
@@ -37,7 +37,6 @@ namespace OCA\Integriq\Service\Mtls;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\Integriq\Exception\MtlsHandshakeException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -48,7 +47,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-never-fails-open-to-plaintext-or-token-auth-req-003
  */
-class MtlsTransportService {
+class MtlsTransportService implements MtlsTransportServiceInterface {
 	/**
 	 * Constructor.
 	 *

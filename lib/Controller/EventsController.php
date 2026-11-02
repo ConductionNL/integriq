@@ -23,12 +23,11 @@ use DateTime;
 use Exception;
 use OCA\Integriq\Exception\EgressRefusedException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\EventService;
-use OCA\Integriq\Service\Security\EgressGuard;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
-use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
-use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -73,38 +72,30 @@ class EventsController extends Controller {
 	private const NC_NATIVE_DOMAINS = ['files', 'calendar', 'tables', 'forms'];
 
 	/**
-	 * Refuses a sink that points into the instance's own network (integriq#2212).
-	 *
-	 * @var EgressGuard
-	 */
-	private readonly EgressGuard $egressGuard;
-
-	/**
 	 * Constructor for the EventsController.
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param OrObjectService $orObjectService The OR object service.
-	 * @param EventService $eventService The event service.
+	 * @param EventServiceInterface $eventService The event service.
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
-	 * @param ActionAuthService $actionAuth The action authorization service.
-	 * @param WebhookSignatureService $signatureService Generates signing secrets.
-	 * @param EgressGuard|null $egressGuard Judges a subscription's sink; a guard without an allowlist when not injected.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
+	 * @param SubscriptionSigningPolicyInterface $signingPolicy Generates, decides on and reveals signing secrets.
+	 * @param EgressGuardInterface $egressGuard Refuses a sink that points into the instance's own network (integriq#2212).
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly OrObjectService $orObjectService,
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly IL10N $l,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
-		private readonly WebhookSignatureService $signatureService,
-		?EgressGuard $egressGuard = null,
+		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly SubscriptionSigningPolicyInterface $signingPolicy,
+		private readonly EgressGuardInterface $egressGuard,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
 	}//end __construct()
 
@@ -207,8 +198,7 @@ class EventsController extends Controller {
 			// REQ-SOW-001: the one reveal of a generated secret. protocolSettings is
 			// writeOnly, so the stored row is read unrendered, as delivery reads it.
 			$response = $this->redactSubscription(subscription: $subscription->getObject());
-			$policy = new SubscriptionSigningPolicy(signatures: $this->signatureService);
-			if ($policy->generatesSecret(subscription: $data) === true) {
+			if ($this->signingPolicy->generatesSecret(subscription: $data) === true) {
 				$stored = $this->orObjectService->find(
 					id: (string)$subscription->getUuid(),
 					register: 'integriq',
@@ -217,7 +207,7 @@ class EventsController extends Controller {
 					_multitenancy: false,
 					_render: false
 				);
-				$response += $policy->reveal(stored: (array)$stored?->getObject());
+				$response += $this->signingPolicy->reveal(stored: (array)$stored?->getObject());
 			}
 
 			return new JSONResponse($response);
@@ -502,7 +492,7 @@ class EventsController extends Controller {
 		$data = $subscription->getObject();
 		$protocolSettings = ($data['protocolSettings'] ?? []);
 
-		$secret = $this->signatureService->generateSecret();
+		$secret = $this->signingPolicy->generateSecret();
 		$protocolSettings['signingSecret'] = $secret;
 		// A first generate clears any rotation remnants, and generating a
 		// secret is choosing to sign: an earlier `unsigned` decision ends here
@@ -561,7 +551,7 @@ class EventsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('No signing secret to rotate; generate one first')], 400);
 		}
 
-		$newSecret = $this->signatureService->generateSecret();
+		$newSecret = $this->signingPolicy->generateSecret();
 		$protocolSettings['previousSigningSecret'] = $current;
 		$protocolSettings['signingSecret'] = $newSecret;
 		$protocolSettings['secretRotatedAt'] = (new DateTime())->format('c');
@@ -786,7 +776,7 @@ class EventsController extends Controller {
 		}
 
 		$source = (string)($messageData['payload']['source'] ?? '');
-		$messageData['nextcloudEvent'] = str_starts_with($source, EventService::NEXTCLOUD_SOURCE_PREFIX);
+		$messageData['nextcloudEvent'] = str_starts_with($source, EventServiceInterface::NEXTCLOUD_SOURCE_PREFIX);
 
 		return $messageData;
 	}//end withDeadLetterProvenance()

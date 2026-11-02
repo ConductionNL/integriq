@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
-use OCA\Integriq\Service\Exchange\ExchangeJobService;
+use OCA\Integriq\Service\Exchange\ExchangeJobServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -41,11 +41,11 @@ class ExchangeMappingRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExchangeJobService $jobs   Stores the mapping.
+	 * @param ExchangeJobServiceInterface $jobs   Stores the mapping.
 	 * @param LoggerInterface    $logger Logger.
 	 */
 	public function __construct(
-		private readonly ExchangeJobService $jobs,
+		private readonly ExchangeJobServiceInterface $jobs,
 		private readonly LoggerInterface $logger,
 	) {
 

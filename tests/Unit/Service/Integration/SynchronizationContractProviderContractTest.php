@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Integration;
 
-use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
+use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\Integration\WriteBackConflictReader;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Exception\NotImplementedException;
@@ -407,9 +407,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 		$context = $this->createMock(IBootContext::class);
 		$context->method('getServerContainer')->willReturn($container);
 
-		$application = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-		$register = new \ReflectionMethod(Application::class, 'registerIntegrationProviders');
-		$register->invoke($application, $context);
+		(new ServiceRegistrar())->boot(context: $context);
 
 	}//end testBootCarriesOnWhenTheRegistryCannotBeResolved()
 

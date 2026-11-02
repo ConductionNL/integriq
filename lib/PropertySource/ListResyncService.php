@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/registry-field-source/spec.md#requirement-a-list-shaped-source-resyncs-on-demand-req-rfs-007
  */
-class ListResyncService {
+class ListResyncService implements ListResyncServiceInterface {
 	/**
 	 * App id for app-config reads and writes.
 	 */

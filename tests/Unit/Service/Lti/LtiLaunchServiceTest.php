@@ -356,6 +356,44 @@ class LtiLaunchServiceTest extends TestCase {
 	}//end testReplayedNonceRejected()
 
 	/**
+	 * A launch without state (no cookie, no posted value, or only one of them)
+	 * is rejected 401 before the id_token is even looked at, and the nonce
+	 * stays unconsumed.
+	 *
+	 * @return void
+	 */
+	public function testLaunchWithoutStateIsRejected(): void {
+		$service = $this->makeService($this->makeResolver(), $this->makeJwksResolver());
+
+		$login = $service->initiateLogin(
+			self::DEPLOYMENT_UUID,
+			['iss' => self::PLATFORM_ISS, 'client_id' => self::CLIENT_ID, 'login_hint' => 'user-1', 'target_link_uri' => 'https://tool.example/'],
+			'https://tool.example/launch'
+		);
+		$idToken = $this->signAsPlatform($this->baseLaunchClaims($login['nonce']));
+
+		$cases = [
+			'no cookie, no posted state' => [null, null],
+			'no cookie'                  => [null, $login['state']],
+			'no posted state'            => [$login['state'], null],
+			'empty posted state'         => [$login['state'], ''],
+		];
+		foreach ($cases as $label => [$cookieState, $presentedState]) {
+			try {
+				$service->validateLaunch($idToken, self::DEPLOYMENT_UUID, $cookieState, $presentedState);
+				$this->fail('Launch without state was accepted: ' . $label);
+			} catch (LtiValidationException $exception) {
+				$this->assertSame(401, $exception->getHttpStatus(), $label);
+			}
+		}
+
+		// The nonce was never consumed, so the launch with both states still succeeds.
+		$result = $service->validateLaunch($idToken, self::DEPLOYMENT_UUID, $login['state'], $login['state']);
+		$this->assertNotEmpty($result['launchReference']);
+
+	}//end testLaunchWithoutStateIsRejected()
+
+	/**
 	 * An id_token with an unknown/unresolvable kid is rejected 401.
 	 *
 	 * @return void
@@ -537,7 +575,7 @@ class LtiLaunchServiceTest extends TestCase {
 
 		$this->expectException(LtiValidationException::class);
 		try {
-			$service->validateLaunch($idToken, self::DEPLOYMENT_UUID, null, null);
+			$service->validateLaunch($idToken, self::DEPLOYMENT_UUID, 'state-1', 'state-1');
 		} catch (LtiValidationException $exception) {
 			$this->assertSame(400, $exception->getHttpStatus());
 			throw $exception;
@@ -881,7 +919,7 @@ class LtiLaunchServiceTest extends TestCase {
 
 		$this->expectException(LtiValidationException::class);
 		try {
-			$service->validateLaunch($idToken, self::DEPLOYMENT_UUID, null, null);
+			$service->validateLaunch($idToken, self::DEPLOYMENT_UUID, 'state-1', 'state-1');
 		} catch (LtiValidationException $exception) {
 			$this->assertSame(400, $exception->getHttpStatus());
 			throw $exception;

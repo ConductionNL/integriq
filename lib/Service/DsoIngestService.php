@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use DateTime;
-use OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob;
+use OCA\Integriq\BackgroundJob\AttachmentFetchSchedulerInterface;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\DsoTranslationException;
 use OCA\Integriq\Service\Dso\DsoActivityMapper;
@@ -49,10 +49,10 @@ use OCA\Integriq\Service\Dso\DsoConnectorProviderInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Dso\DsoRequestTranslator;
 use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
+use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,7 +64,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
  */
-class DsoIngestService {
+class DsoIngestService implements PortalRequestIntakeInterface {
 
 	/**
 	 * OpenRegister register slug holding sources, verzoeken, and outbound messages.
@@ -117,7 +117,7 @@ class DsoIngestService {
 	 * @param DsoClient $restProvider The generic REST outbound provider binding.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param RawSourceResolver $rawSourceResolver Re-resolves the located source raw (ocon#242).
-	 * @param IJobList $jobList Queues the bijlage download after intake.
+	 * @param AttachmentFetchSchedulerInterface $attachmentFetches Queues the bijlage download after intake.
 	 * @param DsoActivityMapper $activityMapper Maps the activiteiten to zaaktypen (REQ-DSO-010).
 	 */
 	public function __construct(
@@ -127,7 +127,7 @@ class DsoIngestService {
 		private readonly DsoClient $restProvider,
 		private readonly LoggerInterface $logger,
 		private readonly RawSourceResolver $rawSourceResolver,
-		private readonly IJobList $jobList,
+		private readonly AttachmentFetchSchedulerInterface $attachmentFetches,
 		private readonly DsoActivityMapper $activityMapper,
 	) {
 
@@ -305,7 +305,7 @@ class DsoIngestService {
 	}//end createReceived()
 
 	/**
-	 * Queue one {@see FetchDsoAttachmentsJob} for a request that has bijlagen.
+	 * Queue one {@see \OCA\Integriq\BackgroundJob\FetchDsoAttachmentsJob} for a request that has bijlagen.
 	 *
 	 * Queued after the last intake save, so the job never races the intake
 	 * for the request object. The endpoint answers without waiting for it.
@@ -328,10 +328,7 @@ class DsoIngestService {
 		}
 
 		try {
-			$this->jobList->add(
-				FetchDsoAttachmentsJob::class,
-				['requestUuid' => $request->getUuid(), 'actingUserId' => $actingUserId]
-			);
+			$this->attachmentFetches->scheduleFetch(requestUuid: $request->getUuid(), actingUserId: $actingUserId);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'[DsoIngestService] could not queue the bijlage download for verzoek ' . $request->getUuid(),

@@ -46,7 +46,7 @@ use Psr\Container\ContainerInterface;
  *
  * @spec openspec/specs/digikoppeling-adapter/spec.md
  */
-class PkiOverheidCredentialResolver {
+class PkiOverheidCredentialResolver implements PkiOverheidCredentialResolverInterface {
 
 	/**
 	 * FQCN of the OpenRegister credential broker (resolved lazily).

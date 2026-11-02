@@ -36,7 +36,7 @@ use Throwable;
  *
  * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
  */
-class SourceDestructionService {
+class SourceDestructionService implements SourceDestructionServiceInterface {
 	/**
 	 * The outcome when the route names a synchronization that does not exist.
 	 */

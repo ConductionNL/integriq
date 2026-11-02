@@ -310,4 +310,45 @@ class SpanMapperTest extends TestCase {
 		$this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $parent->newSpanId());
 
 	}//end testTraceParentAcceptsOnlyTheW3cShape()
+	/**
+	 * Every trace shape maps as the golden file recorded before map() was
+	 * split: the root span, every child span and the resource envelope.
+	 *
+	 * Regenerate with SPAN_MAPPER_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryTraceShapeMatchesTheGoldenFile(): void {
+		$full = $this->trace();
+		$cases = [
+			'full' => $full,
+			'own-otel-trace-id' => (['otelTraceId' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'] + $full),
+			'no-parent-span' => array_diff_key($full, ['parentSpanId' => true]),
+			'bad-parent-span' => (['parentSpanId' => 'XYZ'] + $full),
+			'iso-times-only' => array_diff_key($full, ['startedAtUs' => true, 'finishedAtUs' => true]),
+			'end-before-start' => (['finishedAtUs' => 1] + $full),
+			'step-without-time' => (['steps' => [['order' => 7, 'type' => 'rule', 'name' => 'x', 'status' => 'error', 'durationMs' => -4]]] + $full),
+			'truncated-and-junk-steps' => (['steps' => ['junk', ['status' => 'truncated', 'output' => ['droppedSteps' => 9]], ['order' => 1]]] + $full),
+			'empty' => [],
+			'endpoint-entry' => (['entryPoint' => 'endpoint', 'status' => 'success'] + $full),
+			'cron-entry' => (['entryPoint' => 'cron', 'status' => 'short_circuited'] + $full),
+		];
+
+		$actual = [];
+		foreach ($cases as $name => $trace) {
+			$actual[$name] = (new SpanMapper(new TraceParent()))->map(trace: $trace, serviceName: 'svc-' . $name);
+		}
+
+		$golden = __DIR__ . '/../../../fixtures/observability/span-mapper.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION)) . "\n";
+		if (getenv('SPAN_MAPPER_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryTraceShapeMatchesTheGoldenFile()
 }//end class

@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\ConnectionLinkException;
-use OCA\Integriq\Service\ConnectionProbeService;
+use OCA\Integriq\Service\ConnectionProbeServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -51,14 +51,14 @@ class ConnectionsController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param ConnectionProbeService $probeService Links and probes.
+	 * @param ConnectionProbeServiceInterface $probeService Links and probes.
 	 * @param IL10N $l10n Translates error messages.
 	 * @param LoggerInterface $logger Logs an unexpected failure.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConnectionProbeService $probeService,
+		private readonly ConnectionProbeServiceInterface $probeService,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
 	) {

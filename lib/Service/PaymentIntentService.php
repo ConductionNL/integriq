@@ -49,7 +49,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/live-payment-providers/spec.md
  */
-class PaymentIntentService {
+class PaymentIntentService implements PaymentIntentServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding payment sources and intents.
@@ -110,7 +110,7 @@ class PaymentIntentService {
 	 * @param ORObjectService $objectService OR object service for source/payment_intent persistence.
 	 * @param LogPaymentProvider $logProvider The sandbox provider binding.
 	 * @param MolliePaymentProvider $mollieProvider The Mollie REST provider binding.
-	 * @param EventService $eventService Emits the payment-status CloudEvent.
+	 * @param CloudEventEmitterInterface $eventService Emits the payment-status CloudEvent.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 */
@@ -118,7 +118,7 @@ class PaymentIntentService {
 		private readonly ORObjectService $objectService,
 		private readonly LogPaymentProvider $logProvider,
 		private readonly MolliePaymentProvider $mollieProvider,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 	) {

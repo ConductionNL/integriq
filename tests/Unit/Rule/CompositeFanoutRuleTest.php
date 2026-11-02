@@ -242,4 +242,85 @@ class CompositeFanoutRuleTest extends TestCase {
 		$subject->apply(rule: $rule, data: ['body' => []]);
 	}//end testMissingParentConfigurationThrows()
 
+	/**
+	 * Every fan-out outcome matches the golden file recorded before apply()
+	 * was split: the writes in order, the uuids stamped into parent fields,
+	 * the rollback deletes and the result or error.
+	 *
+	 * Regenerate with COMPOSITE_FANOUT_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryFanoutOutcomeMatchesTheGoldenFile(): void {
+		$parent = ['bodyKey' => 'p', 'register' => 'reg', 'schema' => 'ticket'];
+		$cases = [
+			'no-parent' => [[], []],
+			'parent-without-schema' => [['parent' => ['register' => 'reg']], []],
+			'parent-whole-body' => [['parent' => ['register' => 'reg', 'schema' => 'ticket']], ['a' => 1]],
+			'missing-parent-body-key' => [['parent' => $parent], ['other' => 1]],
+			'child-register-defaults-to-parent' => [['parent' => $parent, 'children' => [['bodyKey' => 'c', 'schema' => 'contact', 'parentField' => 'ticket']]], ['p' => ['x' => 1], 'c' => ['y' => 2]]],
+			'child-own-register-no-parent-field' => [['parent' => $parent, 'children' => [['bodyKey' => 'c', 'register' => 'other', 'schema' => 'contact']]], ['p' => [], 'c' => ['y' => 2]]],
+			'optional-child-absent' => [['parent' => $parent, 'children' => [['bodyKey' => 'c', 'schema' => 'contact'], ['schema' => 'nokey']]], ['p' => []]],
+			'required-child-absent' => [['parent' => $parent, 'children' => [['bodyKey' => 'c', 'schema' => 'contact', 'required' => true]]], ['p' => []]],
+			'required-child-without-key' => [['parent' => $parent, 'children' => [['schema' => 'contact', 'required' => true]]], ['p' => []]],
+			'sibling-parent-ref' => [['parent' => $parent, 'children' => [['bodyKey' => 'b', 'schema' => 'betrokkene', 'parentField' => 'ticket'], ['bodyKey' => 'd', 'schema' => 'adres', 'parentField' => 'owner', 'parentRef' => 'b']]], ['p' => [], 'b' => ['n' => 1], 'd' => ['m' => 2]]],
+			'unresolved-parent-ref' => [['parent' => $parent, 'children' => [['bodyKey' => 'd', 'schema' => 'adres', 'parentField' => 'owner', 'parentRef' => 'b']]], ['p' => [], 'd' => ['m' => 2]]],
+			'child-save-fails-rollback' => [['parent' => $parent, 'children' => [['bodyKey' => 'b', 'schema' => 'betrokkene'], ['bodyKey' => 'fail', 'schema' => 'boom']]], ['p' => [], 'b' => [], 'fail' => []]],
+			'rollback-delete-fails' => [['parent' => $parent, 'children' => [['bodyKey' => 'fail', 'schema' => 'boom']]], ['p' => [], 'fail' => [], 'deletefails' => true]],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$configuration, $body]) {
+			$calls = [];
+			$counter = 0;
+			$service = $this->createMock(ORObjectService::class);
+			$service->method('saveObject')->willReturnCallback(
+				function ($object, $register = null, $schema = null) use (&$calls, &$counter): ObjectEntity {
+					$calls[] = ['save', $object, $register, $schema];
+					if ($schema === 'boom') {
+						throw new Exception('write refused');
+					}
+
+					$counter++;
+					return $this->makeObject('uuid-' . $counter, ['saved' => $schema]);
+				}
+			);
+			$service->method('deleteObject')->willReturnCallback(
+				function (...$args) use (&$calls, $body) {
+					$calls[] = ['delete', $args];
+					if (isset($body['deletefails']) === true) {
+						throw new Exception('delete refused');
+					}
+
+					return true;
+				}
+			);
+			$logger = $this->createMock(LoggerInterface::class);
+			$logger->method('error')->willReturnCallback(
+				function (string $message) use (&$calls) {
+					$calls[] = ['log', $message];
+				}
+			);
+
+			try {
+				$outcome = ['result' => (new CompositeFanoutRule($service, $logger))->apply(rule: $this->makeRule($configuration), data: ['body' => $body, 'keep' => 'me'])];
+			} catch (Exception $exception) {
+				$outcome = ['throws' => $exception->getMessage(), 'previous' => ($exception->getPrevious() === null ? null : $exception->getPrevious()->getMessage())];
+			}
+
+			$actual[$name] = ['outcome' => $outcome, 'calls' => $calls];
+		}//end foreach
+
+		$golden = __DIR__ . '/../../fixtures/rule/composite-fanout.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('COMPOSITE_FANOUT_GOLDEN') === '1') {
+			if (is_dir(dirname($golden)) === false) {
+				mkdir(dirname($golden), 0777, true);
+			}
+
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryFanoutOutcomeMatchesTheGoldenFile()
 }//end class

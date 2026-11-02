@@ -34,7 +34,7 @@ use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\RodService;
 use OCA\Integriq\Service\UwlrEduVService;
 use OCA\Integriq\Service\VerzuimloketService;
-use OCA\Integriq\Sources\Swv\SwvHandoffSourceAdapter;
+use OCA\Integriq\Sources\Swv\DossierHandoffAdapterInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -110,7 +110,7 @@ class ExchangeTargetDispatcher {
 	 * @param VerzuimloketService     $verzuimloketService DUO Verzuimloket.
 	 * @param OsoService              $osoService          OSO.
 	 * @param UwlrEduVService         $uwlrEduVService     UWLR, Edu-V, Basispoort, Entree.
-	 * @param SwvHandoffSourceAdapter $swvAdapter          SWV hand-off.
+	 * @param DossierHandoffAdapterInterface $swvAdapter          SWV hand-off.
 	 * @param IEventDispatcher        $events              Hands import records to the owning app.
 	 * @param LoggerInterface         $logger              Logger.
 	 */
@@ -119,7 +119,7 @@ class ExchangeTargetDispatcher {
 		private readonly VerzuimloketService $verzuimloketService,
 		private readonly OsoService $osoService,
 		private readonly UwlrEduVService $uwlrEduVService,
-		private readonly SwvHandoffSourceAdapter $swvAdapter,
+		private readonly DossierHandoffAdapterInterface $swvAdapter,
 		private readonly IEventDispatcher $events,
 		private readonly LoggerInterface $logger,
 	) {

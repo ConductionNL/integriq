@@ -51,7 +51,7 @@ use Twig\Sandbox\SecurityPolicy;
  * @SuppressWarnings(PHPMD.UndefinedVariable)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
-class AuthenticationService {
+class AuthenticationService implements AuthenticationServiceInterface {
 
 	public const REQUIRED_PARAMETERS_CLIENT_CREDENTIALS = [
 		'grant_type',

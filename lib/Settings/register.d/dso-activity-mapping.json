@@ -14,7 +14,7 @@
         "slug": "dso_activity_mapping",
         "title": "DSO activity mapping",
         "icon": "SitemapOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Which case types a DSO activity becomes",
         "description": "One row per DSO activity a gemeente receives. A verzoek's activiteit matches a row on its imowId, then on its activityId; the onderliggende activiteit is tried first. A matched row gives the case types and the samenloop strategy. Inactive rows are ignored. See openspec/changes/dso-activity-mapping-table/design.md.",
         "type": "object",
@@ -85,6 +85,12 @@
                   "type": "string",
                   "description": "The department (afdeling) that handles this case type",
                   "title": "Department"
+                },
+                "variant": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "description": "The route (variant) of this case type a case from this activity takes. Empty means the case type's default route",
+                  "title": "Variant"
                 }
               }
             }

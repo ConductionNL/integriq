@@ -32,7 +32,7 @@ use OCA\Integriq\Exception\DocumentGenerationException;
  *
  * @spec openspec/specs/document-generation-vendor-adapter/spec.md#requirement-one-provider-seam-with-log-smartdocuments-and-xential-bindings-req-dgv-001
  */
-class DocumentGenerationProviderRegistry {
+class DocumentGenerationProviderRegistry implements DocumentProviderRegistryInterface {
 
 	/**
 	 * Constructor.

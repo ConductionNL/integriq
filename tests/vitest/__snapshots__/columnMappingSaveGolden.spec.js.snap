@@ -1,0 +1,7897 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`column mapping editor save golden > saves as recorded when the check answers down 1`] = `
+[
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+]
+`;
+
+exports[`column mapping editor save golden > saves as recorded when the check answers empty reasons 1`] = `
+[
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be checked.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+]
+`;
+
+exports[`column mapping editor save golden > saves as recorded when the check answers ok 1`] = `
+[
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "name": "Leden",
+          "version": 1,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 1.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "name": "Leden",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "name": "Leden",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "name": "Leden",
+          "version": 1,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 1.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "name": "Leden",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "name": "Leden",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "name": "Leden",
+          "uuid": "u-1",
+          "version": 1,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 1.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "name": "Leden",
+          "uuid": "u-1",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "name": "Leden",
+          "uuid": "u-1",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "name": "Leden",
+          "uuid": "u-1",
+          "version": 1,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 1.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "name": "Leden",
+          "uuid": "u-1",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "name": "Leden",
+          "uuid": "u-1",
+          "version": 1,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "version": 4,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 4.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "version": 4,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 4.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "uuid": "u-1",
+          "version": 4,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 4.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "uuid": "u-1",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "uuid": "u-1",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "uuid": "u-1",
+          "version": 4,
+        },
+      ],
+      [
+        "success",
+        "Saved as version 4.",
+      ],
+      [
+        "close",
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "conflict",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "uuid": "u-1",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "The mapping could not be saved.",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+      [
+        "confirm",
+        {
+          "columns": {
+            "Naam": "name",
+            "Nr": "number",
+          },
+          "extra": 1,
+          "id": "m-1",
+          "identifierColumn": "Nr",
+          "kind": "csv",
+          "name": "Leden",
+          "targetSchema": "person",
+          "uuid": "u-1",
+          "version": 4,
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+]
+`;
+
+exports[`column mapping editor save golden > saves as recorded when the check answers reasons 1`] = `
+[
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+            },
+            "identifierColumn": "",
+            "kind": "",
+            "name": "Leden",
+            "version": 1,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "new",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [
+            "name",
+          ],
+          "schemaFields": [
+            "name",
+          ],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "name is missing",
+      "42",
+    ],
+    "savingAfter": false,
+    "savingDuring": true,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/migration-sources/column-mapping/validate",
+        {
+          "mapping": {
+            "columns": {
+              "Naam": "name",
+              "Nr": "number",
+            },
+            "identifierColumn": "Nr",
+            "kind": "csv",
+            "name": "Leden",
+            "version": 4,
+          },
+          "requiredFields": [],
+          "schemaFields": [],
+        },
+      ],
+    ],
+  },
+  {
+    "draftName": "stored",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": null,
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": null,
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {
+      "schema": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+        ],
+      },
+    },
+    "store": "no confirm",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "ok",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "throws bare",
+    "trace": [],
+  },
+  {
+    "draftName": "blank",
+    "item": {
+      "extra": 1,
+      "id": "m-1",
+      "identifierColumn": "old",
+      "kind": "old",
+      "targetSchema": "old",
+      "uuid": "u-1",
+    },
+    "saveErrors": [
+      "stale",
+    ],
+    "savingAfter": false,
+    "savingDuring": false,
+    "selectedSchema": {},
+    "store": "no confirm",
+    "trace": [],
+  },
+]
+`;

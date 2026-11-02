@@ -56,39 +56,7 @@ use Throwable;
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
  */
-class InlineSecretMigrationPlanner {
-
-	/**
-	 * The OpenRegister register slug holding integriq's objects.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
-	// OpenRegister matches registers by slug; renaming it orphans every stored object.
-	public const REGISTER = 'integriq';
-
-	/**
-	 * The OpenRegister schema slug for source objects.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA = 'source';
-
-	/**
-	 * The app id the broker authorises against a credential's allowedApps.
-	 *
-	 * Guard 2 of `CredentialBrokerService::resolveInjectable()` does a strict
-	 * `in_array($appId, $allowedApps, true)`, so a minted credential MUST carry
-	 * this exact string or it fails closed at call time.
-	 *
-	 * @var string
-	 */
-	// Frozen on the old id: this is NOT this app's Nextcloud app id but the identity
-	// OpenRegister's credential broker matches against a stored credential's
-	// `allowedApps` (strict in_array), so a minted credential MUST carry this exact
-	// string. Renaming it fails every brokered resolve CLOSED. Moves only with a
-	// credential re-provisioning pass.
-	public const APP_ID = 'openconnector';
+class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterface {
 
 	/**
 	 * Inline `source` secret fields, mapped to the inject-only broker provider

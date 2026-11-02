@@ -37,7 +37,7 @@ use InvalidArgumentException;
  *
  * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
  */
-class ForwardService {
+class ForwardService implements ForwardServiceInterface {
 
 	/**
 	 * Constructor.

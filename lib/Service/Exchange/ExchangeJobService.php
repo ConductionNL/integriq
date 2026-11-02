@@ -26,9 +26,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Exchange;
 
 use DateTime;
-use OCA\Integriq\Action\ExchangeJobAction;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
+use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ExchangeJobService {
+class ExchangeJobService implements ExchangeJobServiceInterface {
 
 	public const REGISTER = 'integriq';
 

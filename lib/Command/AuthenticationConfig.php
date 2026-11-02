@@ -14,7 +14,7 @@
  * {@see \OCA\Integriq\Twig\AuthenticationRuntime} from
  * `$source->getAuthenticationConfig()` to `$source->getConfiguration()` +
  * `authentication.*` without migrating the data or updating the docs. The full
- * evidence is on {@see \OCA\Integriq\Service\Security\AuthenticationConfigAuditor}.
+ * evidence is on {@see AuthenticationConfigAuditorInterface}.
  *
  * So the correct treatment is REMOVAL, not migration. This command is the operator's
  * two-step path to it:
@@ -77,8 +77,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
-use OCA\Integriq\Service\Security\AuthenticationConfigAuditor;
-use OCA\Integriq\Service\Security\AuthenticationConfigRemover;
+use OCA\Integriq\Service\Security\AuthenticationConfigAuditorInterface;
+use OCA\Integriq\Service\Security\AuthenticationConfigRemoverInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -125,13 +125,13 @@ class AuthenticationConfig extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuthenticationConfigAuditor $auditor The read-only audit.
-	 * @param AuthenticationConfigRemover $remover The gated removal.
+	 * @param AuthenticationConfigAuditorInterface $auditor The read-only audit.
+	 * @param AuthenticationConfigRemoverInterface $remover The gated removal.
 	 * @param ContainerInterface $container The DI container (lazy OpenRegister SchemaMapper).
 	 */
 	public function __construct(
-		private readonly AuthenticationConfigAuditor $auditor,
-		private readonly AuthenticationConfigRemover $remover,
+		private readonly AuthenticationConfigAuditorInterface $auditor,
+		private readonly AuthenticationConfigRemoverInterface $remover,
 		private readonly ContainerInterface $container,
 	) {
 		parent::__construct();
@@ -424,12 +424,12 @@ class AuthenticationConfig extends Command {
 				return Command::FAILURE;
 			}
 
-			if (array_key_exists(AuthenticationConfigAuditor::FIELD, $properties) === false) {
+			if (array_key_exists(AuthenticationConfigAuditorInterface::FIELD, $properties) === false) {
 				$io->success('authenticationConfig is already absent from the live source schema; nothing to do.');
 				return Command::SUCCESS;
 			}
 
-			unset($properties[AuthenticationConfigAuditor::FIELD]);
+			unset($properties[AuthenticationConfigAuditorInterface::FIELD]);
 			$schema->setProperties($properties);
 			$schemaMapper->update($schema);
 		} catch (Throwable $e) {

@@ -43,7 +43,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
  */
-class LtiPlatformLoginService {
+class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 
 	/**
 	 * The message type this launch serves. Deep linking goes through the

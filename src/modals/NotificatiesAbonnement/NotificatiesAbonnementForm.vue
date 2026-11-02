@@ -133,6 +133,18 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal, NcSelect, NcTextField } from '@nextcloud/vue'
 
+/**
+ * The error toast for a failed save, with the server's or the transport's
+ * detail when there is one.
+ *
+ * @param {object} err The rejection of the save request.
+ * @return {string} The toast text.
+ */
+function saveFailureText(err) {
+	const detail = err?.response?.data?.error || err?.message || ''
+	return t('integriq', 'Failed to save abonnement') + (detail ? `: ${detail}` : '')
+}
+
 export default {
 	name: 'NotificatiesAbonnementForm',
 
@@ -351,59 +363,79 @@ export default {
 		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 		 */
 		async save() {
-			this.errors = {}
-			if (!this.model.name) {
-				this.errors = {
-					...this.errors,
-					name: t('integriq', 'Name is required'),
-				}
-			}
-			if (this.kanaalNames.length === 0) {
-				this.errors = {
-					...this.errors,
-					kanalen: t('integriq', 'At least one kanaal is required'),
-				}
-			}
+			this.errors = this.validationErrors()
 			if (Object.keys(this.errors).length > 0) {
 				return
 			}
 
-			const payload = {
+			this.busy = true
+			try {
+				await this.submitAbonnement(this.abonnementPayload())
+				this.$emit('saved')
+			} catch (err) {
+				showError(saveFailureText(err))
+			} finally {
+				this.busy = false
+			}
+		},
+
+		/**
+		 * The client-side validation errors of the form, keyed by field.
+		 *
+		 * @return {object} The errors; empty when the form is valid.
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
+		 */
+		validationErrors() {
+			const errors = {}
+			if (!this.model.name) {
+				errors.name = t('integriq', 'Name is required')
+			}
+			if (this.kanaalNames.length === 0) {
+				errors.kanalen = t('integriq', 'At least one kanaal is required')
+			}
+			return errors
+		},
+
+		/**
+		 * The create/update request body built from the form.
+		 *
+		 * @return {object} The request body.
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
+		 */
+		abonnementPayload() {
+			return {
 				name: this.model.name,
 				sourceId: this.model.sourceId,
 				kanalen: this.kanaalNames.map((naam) => ({ naam, filters: {} })),
 				authHeaderName: this.model.authHeaderName || 'Authorization',
 				authScheme: this.model.authScheme || '',
 			}
+		},
 
-			this.busy = true
-			try {
-				if (this.isEdit) {
-					const id = this.abonnement.id || this.abonnement.uuid
-					await axios.put(
-						generateUrl(
-							`/apps/integriq/api/notificaties/abonnementen/${id}`,
-						),
-						payload,
-					)
-					showSuccess(t('integriq', 'Abonnement updated'))
-				} else {
-					await axios.post(
-						generateUrl('/apps/integriq/api/notificaties/abonnementen'),
-						payload,
-					)
-					showSuccess(t('integriq', 'Abonnement created'))
-				}
-				this.$emit('saved')
-			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				showError(
-					t('integriq', 'Failed to save abonnement')
-						+ (detail ? `: ${detail}` : ''),
+		/**
+		 * Update the edited abonnement or create a new one, and toast the result.
+		 *
+		 * @param {object} payload The request body.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
+		 */
+		async submitAbonnement(payload) {
+			if (this.isEdit) {
+				const id = this.abonnement.id || this.abonnement.uuid
+				await axios.put(
+					generateUrl(
+						`/apps/integriq/api/notificaties/abonnementen/${id}`,
+					),
+					payload,
 				)
-			} finally {
-				this.busy = false
+				showSuccess(t('integriq', 'Abonnement updated'))
+				return
 			}
+			await axios.post(
+				generateUrl('/apps/integriq/api/notificaties/abonnementen'),
+				payload,
+			)
+			showSuccess(t('integriq', 'Abonnement created'))
 		},
 	},
 }

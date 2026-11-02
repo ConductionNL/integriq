@@ -30,7 +30,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md#requirement-one-provider-seam-with-log-berichtenbox-and-postex-bindings-req-dpa-001
  */
-class DigitalPostProviderRegistry {
+class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterface {
 	/**
 	 * Bindings keyed by provider id.
 	 *

@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\EndpointCacheService;
+use OCA\Integriq\Service\EndpointCacheServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -65,7 +65,7 @@ class EndpointRoutingListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param EndpointCacheService $cache          Derives the routing fields, as the router reads them.
+	 * @param EndpointCacheServiceInterface $cache          Derives the routing fields, as the router reads them.
 	 * @param RegisterMapper       $registerMapper Resolves the object's register.
 	 * @param SchemaMapper         $schemaMapper   Resolves the object's schema.
 	 * @param LoggerInterface      $logger         Logs an unresolvable object.
@@ -73,7 +73,7 @@ class EndpointRoutingListener implements IEventListener {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	public function __construct(
-		private readonly EndpointCacheService $cache,
+		private readonly EndpointCacheServiceInterface $cache,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,

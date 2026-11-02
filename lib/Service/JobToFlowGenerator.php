@@ -81,9 +81,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\EntityNotMigratableException;
-use OCA\Integriq\Flow\SynchronizationRunNode;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\Integriq\Service\Job\MovedJobClasses;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUserManager;
@@ -93,7 +94,7 @@ use OCP\IUserManager;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
-class JobToFlowGenerator {
+class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 
 	/**
 	 * The item key the synchronization result is written under.
@@ -107,28 +108,28 @@ class JobToFlowGenerator {
 	 *
 	 * @var string
 	 */
-	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Action\SynchronizationAction';
+	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Service\Job\SynchronizationAction';
 
 	/**
 	 * The job action that runs a flow.
 	 *
 	 * @var string
 	 */
-	private const ACTION_FLOW = 'OCA\Integriq\Action\FlowAction';
+	private const ACTION_FLOW = 'OCA\Integriq\Service\Job\FlowAction';
 
 	/**
 	 * The job action that pings a source.
 	 *
 	 * @var string
 	 */
-	private const ACTION_PING = 'OCA\Integriq\Action\PingAction';
+	private const ACTION_PING = 'OCA\Integriq\Service\Job\PingAction';
 
 	/**
 	 * The job action that emits a CloudEvent.
 	 *
 	 * @var string
 	 */
-	private const ACTION_EVENT = 'OCA\Integriq\Action\EventAction';
+	private const ACTION_EVENT = 'OCA\Integriq\Service\Job\EventAction';
 
 	/**
 	 * The job arguments each supported action's node actually consumes.
@@ -186,7 +187,7 @@ class JobToFlowGenerator {
 	private function runAsUid(): string {
 		return trim(
 			$this->appConfig->getValueString(
-				app: Application::APP_ID,
+				app: AppIdentity::APP_ID,
 				key: self::RUN_AS_CONFIG_KEY,
 				default: ''
 			)
@@ -601,7 +602,7 @@ class JobToFlowGenerator {
 
 		return [
 			'id' => 'run',
-			'type' => SynchronizationRunNode::NODE_ID,
+			'type' => FlowNodeIds::SYNCHRONIZATION_RUN,
 			'config' => $config,
 		];
 
@@ -700,6 +701,10 @@ class JobToFlowGenerator {
 	/**
 	 * The job's action class, normalised to a leading-backslash-free name.
 	 *
+	 * An old name of a moved action is read as its current name: a job can
+	 * hold one until the repair step has rewritten it, or after OpenRegister
+	 * writes one back.
+	 *
 	 * @param array $job The job's serialised record.
 	 *
 	 * @return string The class name; empty when there is none.
@@ -707,7 +712,9 @@ class JobToFlowGenerator {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function jobClassOf(array $job): string {
-		return ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
+		$jobClass = ltrim(trim((string)($job['jobClass'] ?? '')), '\\');
+
+		return (MovedJobClasses::NEW_NAMES[$jobClass] ?? $jobClass);
 	}//end jobClassOf()
 
 	/**

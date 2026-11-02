@@ -1,0 +1,375 @@
+{
+    "defaults": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 3,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "limit-and-page": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 3,
+            "pages": 5,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 10,
+                "offset": 20
+            }
+        ]
+    },
+    "limit-zero": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 1,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 0,
+                "offset": 0
+            }
+        ]
+    },
+    "page-zero": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 0,
+            "pages": 10,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 5,
+                "offset": -5
+            }
+        ]
+    },
+    "plain-filters-pass": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 3,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log",
+                    "method": "POST",
+                    "sourceId": "s-1"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "special-filters-dropped": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 3,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log",
+                    "method": "GET"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "status-code-single": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 3,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "empty-special-filters-pass": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 3,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log",
+                    "date_from": "",
+                    "endpoint": "0",
+                    "status_code": null,
+                    "slow_requests": 0
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "sort-array": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 3,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "sort-not-array": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ],
+            "page": 1,
+            "pages": 3,
+            "results_count": 3,
+            "total": 47
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "list-answer": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                },
+                {
+                    "id": "c"
+                }
+            ],
+            "page": 1,
+            "pages": 2,
+            "results_count": 3,
+            "total": 3
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 2,
+                "offset": 0
+            }
+        ]
+    },
+    "empty-answer": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "page": 1,
+            "pages": 0,
+            "results_count": 0,
+            "total": 0
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    },
+    "or-fails": {
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve logs: database down"
+        },
+        "queries": [
+            {
+                "filters": {
+                    "register": "integriq",
+                    "schema": "call_log"
+                },
+                "limit": 20,
+                "offset": 0
+            }
+        ]
+    }
+}

@@ -1,0 +1,160 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`action form styles > ApprovalForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > AuthenticationForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > DownloadForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > ErrorForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__textarea[data-v-golden] { width: 100%; padding: 8px; font-family: var(--font-face, sans-serif); font-size: 14px; background: var(--color-main-background); color: var(--color-main-text); border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical }",
+]
+`;
+
+exports[`action form styles > ExtendExternalInputForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__row[data-v-golden] { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end }",
+  "@media (max-width: 720px) .action-form__row[data-v-golden] { grid-template-columns: 1fr }",
+]
+`;
+
+exports[`action form styles > ExtendInputForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__row[data-v-golden] { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end }",
+  "@media (max-width: 720px) .action-form__row[data-v-golden] { grid-template-columns: 1fr }",
+]
+`;
+
+exports[`action form styles > FetchFileForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+  ".action-form__helper--error[data-v-golden] { color: var(--color-error) }",
+  ".action-form__textarea[data-v-golden] { width: 100%; padding: 8px; font-family: var(--font-face, sans-serif); font-size: 14px; background: var(--color-main-background); color: var(--color-main-text); border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical }",
+  ".action-form__textarea--code[data-v-golden] { font-family: var(--font-face-monospace, monospace); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > FilepartUploadForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > FilepartsCreateForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+]
+`;
+
+exports[`action form styles > FlowForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > LockingForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > MappingForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > SaveObjectForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+]
+`;
+
+exports[`action form styles > SynchronizationForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+  ".action-form__row[data-v-golden] { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }",
+  "@media (max-width: 720px) .action-form__row[data-v-golden] { grid-template-columns: 1fr }",
+]
+`;
+
+exports[`action form styles > UploadForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > WebhookSignatureForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__label[data-v-golden] { font-weight: bold }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > WriteFileForm.vue applies the same rules 1`] = `
+[
+  ".action-form[data-v-golden] { display: flex; flex-direction: column; gap: 10px }",
+  ".action-form__helper[data-v-golden] { color: var(--color-text-maxcontrast); font-size: 12px }",
+]
+`;
+
+exports[`action form styles > covers every action form 1`] = `
+[
+  "ApprovalForm.vue",
+  "AuthenticationForm.vue",
+  "DownloadForm.vue",
+  "ErrorForm.vue",
+  "ExtendExternalInputForm.vue",
+  "ExtendInputForm.vue",
+  "FetchFileForm.vue",
+  "FilepartUploadForm.vue",
+  "FilepartsCreateForm.vue",
+  "FlowForm.vue",
+  "LockingForm.vue",
+  "MappingForm.vue",
+  "SaveObjectForm.vue",
+  "SynchronizationForm.vue",
+  "UploadForm.vue",
+  "WebhookSignatureForm.vue",
+  "WriteFileForm.vue",
+]
+`;

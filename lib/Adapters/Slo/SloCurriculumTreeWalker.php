@@ -35,14 +35,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-
 /**
  * Flattens SLO curriculum trees into parent-first node lists.
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-the-tree-walk-follows-the-set-profile-req-005
  */
-final class SloCurriculumTreeWalker {
+final class SloCurriculumTreeWalker implements SloCurriculumTreeWalkerInterface {
 	/**
 	 * Most nodes one run may emit.
 	 */

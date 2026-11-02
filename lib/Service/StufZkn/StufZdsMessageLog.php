@@ -32,7 +32,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * Audit rows and source reads for the ZDS case client.
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
  */
 class StufZdsMessageLog {
 
@@ -102,7 +102,7 @@ class StufZdsMessageLog {
 	 *
 	 * @throws StufZknProviderException When no such source exists or it is not a stuf-zkn source.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
 	 */
 	public function source(string $sourceId): array {
 		$found = null;
@@ -141,7 +141,7 @@ class StufZdsMessageLog {
 	 *
 	 * @return array The stored row, `id` set.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
 	 */
 	public function open(array $fields): array {
 		$row = array_merge(
@@ -174,7 +174,7 @@ class StufZdsMessageLog {
 	 *
 	 * @return array The stored row.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
 	 */
 	public function retrying(array $row, int $attempt, array $transport, ?array $fout, int $retryAfter): array {
 		$row['status']       = 'retrying';
@@ -201,7 +201,7 @@ class StufZdsMessageLog {
 	 *
 	 * @return array The stored row.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
 	 */
 	public function conclude(array $row, bool $sent, int $attempt, array $transport, ?array $fout, ?string $caseIdentification=null): array {
 		$row['status']     = 'failed';
@@ -244,7 +244,7 @@ class StufZdsMessageLog {
 	 *
 	 * @return array The stored row.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function confirm(array $row, string $berichtcode, ?array $fout, ?string $caseIdentification): array {
 		$row['confirmation'] = $berichtcode;
@@ -273,7 +273,7 @@ class StufZdsMessageLog {
 	 *
 	 * @return array|null The row, `id` set, or null.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
 	 */
 	public function findOutbound(string $referentienummer): ?array {
 		if ($referentienummer === '') {
@@ -320,7 +320,7 @@ class StufZdsMessageLog {
 	 *
 	 * @return array|null The row, `id` set, or null.
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-every-case-message-is-audited
 	 */
 	public function find(string $messageId): ?array {
 		try {

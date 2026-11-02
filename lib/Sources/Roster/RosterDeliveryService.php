@@ -36,7 +36,7 @@ use Throwable;
  *
  * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
  */
-class RosterDeliveryService {
+class RosterDeliveryService implements RosterDeliveryServiceInterface {
 	/**
 	 * Contract version of the delivery result.
 	 */

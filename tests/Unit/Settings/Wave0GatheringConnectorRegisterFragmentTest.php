@@ -150,7 +150,7 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testFragmentBundlesEnabledSourceMappingSynchronizationAndSelfSchedulingJob(
+	public function testFragmentBundlesEnabledSourceMappingSynchronizationAndDisabledJob(
 		string $filename,
 		string $syncSlug,
 		string $target,
@@ -185,6 +185,10 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 		$this->assertCount(1, $bySchema['job'], $filename . ' must declare exactly one job');
 		$job = array_values($bySchema['job'])[0];
 		$this->assertFalse($job['isEnabled'] ?? true, $filename . ' job must ship isEnabled:false (an admin opts in to external feeds)');
+		$this->assertTrue(
+			version_compare((string)($job['version'] ?? '0'), '1.0.0', '>'),
+			$filename . ' job version must be above 1.0.0, or an upgrade keeps the enabled job an install imported before'
+		);
 		$this->assertGreaterThan(0, $job['interval'] ?? 0, $filename . ' job must declare a non-zero interval (OC cron cadence)');
 		$this->assertSame(
 			$syncSlug,
@@ -192,7 +196,7 @@ class Wave0GatheringConnectorRegisterFragmentTest extends TestCase {
 			$filename . " job must target its own synchronization ('$syncSlug') to actually self-run it"
 		);
 
-	}//end testFragmentBundlesEnabledSourceMappingSynchronizationAndSelfSchedulingJob()
+	}//end testFragmentBundlesEnabledSourceMappingSynchronizationAndDisabledJob()
 
 	/**
 	 * Concatenating all ten fragments' `components.objects` lists (the real
