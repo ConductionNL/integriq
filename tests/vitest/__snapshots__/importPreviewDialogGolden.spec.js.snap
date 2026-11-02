@@ -1,0 +1,334 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ImportPreviewDialog > confirms a bare failure as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import",
+      {
+        "confirmed": true,
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "during": true,
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "Import failed",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "preview",
+    "unresolvedAcknowledged": false,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > confirms a failed import as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import",
+      {
+        "confirmed": true,
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "during": true,
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "Import failed: net",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "preview",
+    "unresolvedAcknowledged": false,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > confirms a refused import as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import",
+      {
+        "confirmed": true,
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "during": true,
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "Import failed: srv",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "preview",
+    "unresolvedAcknowledged": false,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > confirms an import as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import",
+      {
+        "confirmed": true,
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "during": true,
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [
+        {
+          "slug": "x",
+          "type": "s",
+        },
+      ],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "done",
+    "unresolvedAcknowledged": false,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > previews a bare failure as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import/preview",
+      {
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "Preview failed",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "pick",
+    "unresolvedAcknowledged": true,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > previews a document as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import/preview",
+      {
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [
+        {
+          "slug": "x",
+          "type": "s",
+        },
+      ],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "preview",
+    "unresolvedAcknowledged": false,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > previews a failed preview as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import/preview",
+      {
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "Preview failed: net",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "pick",
+    "unresolvedAcknowledged": true,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > previews a null document as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import/preview",
+      {
+        "document": null,
+      },
+    ],
+  ],
+  "state": {
+    "document": null,
+    "errorMessage": "",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "preview",
+    "unresolvedAcknowledged": false,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > previews a refused preview as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/configurations/import/preview",
+      {
+        "document": {
+          "a": 1,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "document": {
+      "a": 1,
+    },
+    "errorMessage": "Preview failed: srv",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "pick",
+    "unresolvedAcknowledged": true,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > previews invalid JSON as recorded 1`] = `
+{
+  "calls": [],
+  "state": {
+    "document": null,
+    "errorMessage": "The selected file is not valid JSON",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "pick",
+    "unresolvedAcknowledged": true,
+  },
+}
+`;
+
+exports[`ImportPreviewDialog > previews no file as recorded 1`] = `
+{
+  "calls": [],
+  "state": {
+    "document": null,
+    "errorMessage": "",
+    "importRunning": false,
+    "preview": {
+      "collisions": [],
+      "creates": [],
+      "credentialsNeedingReentry": [],
+      "unresolvedReferences": [],
+      "updates": [],
+    },
+    "step": "pick",
+    "unresolvedAcknowledged": true,
+  },
+}
+`;
