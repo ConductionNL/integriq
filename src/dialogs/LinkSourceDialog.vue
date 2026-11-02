@@ -6,7 +6,7 @@
   (connection-registry, hydra umbrella design D9). Mounted once in ModalHost.
 
   The admin picks a declared connection that has no source, then an existing
-  source or the connection's source template, and saves. The backend links the
+  source or the source template of the connection, and saves. The backend links the
   source and probes it at once; the dialog shows the probe before it closes.
   It offers no field for a new connection key: a row nothing declared has
   nothing to check.
@@ -145,6 +145,75 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 import { rowId } from '../handlers/rowId.js'
+import closableDialog from '../mixins/closableDialog.js'
+
+/**
+ * The integriq objects of one schema in OpenRegister.
+ *
+ * @param {string} schema The schema slug.
+ * @return {Promise<Array<object>>} The objects.
+ */
+async function listObjects(schema) {
+	const { data } = await axios.get(
+		generateUrl(`/apps/openregister/api/objects/integriq/${schema}`),
+		{ params: { _limit: 500 } },
+	)
+	return data?.results || []
+}
+
+/**
+ * An app connection as a select option, with its source template.
+ *
+ * @param {object} row One app_connection object.
+ * @return {object} The option.
+ */
+function connectionOption(row) {
+	return {
+		id: String(rowId(row)),
+		app: row.app,
+		label: `${row.title} (${row.app})`,
+		sourceTemplate: row.declaration?.sourceTemplate || '',
+	}
+}
+
+/**
+ * A source as a select option.
+ *
+ * @param {object} row One source object.
+ * @return {{id: string, label: string}} The option.
+ */
+function sourceOption(row) {
+	return {
+		id: String(rowId(row)),
+		label: row.name || row.title || String(rowId(row)),
+	}
+}
+
+/**
+ * Why the connections and sources could not be loaded.
+ *
+ * @param {object} err The failed request.
+ * @return {string} The translated text.
+ */
+function loadFailedText(err) {
+	return t('integriq', 'Could not load connections and sources: {error}', {
+		error: err?.response?.data?.error || err?.message || '',
+	})
+}
+
+/**
+ * Why the source could not be linked.
+ *
+ * @param {object} err The failed request.
+ * @return {string} The text to show.
+ */
+function linkFailedText(err) {
+	return (
+		err?.response?.data?.error
+		|| err?.message
+		|| t('integriq', 'The source could not be linked.')
+	)
+}
 
 export default {
 	name: 'LinkSourceDialog',
@@ -156,6 +225,8 @@ export default {
 		NcNoteCard,
 		NcSelect,
 	},
+
+	mixins: [closableDialog],
 
 	props: {
 		open: { type: Boolean, default: false },
@@ -246,6 +317,20 @@ export default {
 
 	methods: {
 		/**
+		 * Show the connections that have no source yet, and the sources.
+		 *
+		 * @param {Array<Array<object>>} lists The connections and the sources.
+		 * @return {void}
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 */
+		showLists([connections, sources]) {
+			this.connections = connections
+				.filter((row) => !row.source)
+				.map(connectionOption)
+			this.sourceOptions = sources.map(sourceOption)
+		},
+
+		/**
 		 * Load unlinked connections and every source, through OpenRegister's
 		 * object API. `_limit` is prefixed: an unprefixed parameter is a
 		 * property filter there.
@@ -256,40 +341,14 @@ export default {
 		async load() {
 			this.loading = true
 			try {
-				const [connections, sources] = await Promise.all([
-					axios.get(
-						generateUrl(
-							'/apps/openregister/api/objects/integriq/app_connection',
-						),
-						{ params: { _limit: 500 } },
-					),
-					axios.get(
-						generateUrl(
-							'/apps/openregister/api/objects/integriq/source',
-						),
-						{ params: { _limit: 500 } },
-					),
-				])
-				this.connections = (connections.data?.results || [])
-					.filter((row) => !row.source)
-					.map((row) => ({
-						id: String(rowId(row)),
-						app: row.app,
-						label: `${row.title} (${row.app})`,
-						sourceTemplate: row.declaration?.sourceTemplate || '',
-					}))
-				this.sourceOptions = (sources.data?.results || []).map((row) => ({
-					id: String(rowId(row)),
-					label: row.name || row.title || String(rowId(row)),
-				}))
-			} catch (err) {
-				this.errorMessage = t(
-					'integriq',
-					'Could not load connections and sources: {error}',
-					{
-						error: err?.response?.data?.error || err?.message || '',
-					},
+				this.showLists(
+					await Promise.all([
+						listObjects('app_connection'),
+						listObjects('source'),
+					]),
 				)
+			} catch (err) {
+				this.errorMessage = loadFailedText(err)
 			} finally {
 				this.loading = false
 			}
@@ -342,6 +401,48 @@ export default {
 		},
 
 		/**
+		 * What the link request sends: the template, or the picked source.
+		 *
+		 * @return {object} The request body.
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 */
+		linkBody() {
+			return this.mode === 'template'
+				? { fromTemplate: true }
+				: { source: this.selectedSource.id }
+		},
+
+		/**
+		 * POST the link of the chosen connection.
+		 *
+		 * @param {object} body The request body.
+		 * @return {Promise<object>} What the server answered.
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 */
+		async postLink(body) {
+			const { data } = await axios.post(
+				generateUrl(
+					`/apps/integriq/api/connections/${this.selectedConnection.id}/link`,
+				),
+				body,
+			)
+			return data
+		},
+
+		/**
+		 * Show the probe of the linked connection and tell the parent.
+		 *
+		 * @param {object|null} data What the server answered.
+		 * @return {void}
+		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
+		 */
+		showLinked(data) {
+			this.probe = data?.probe || null
+			this.linked = true
+			this.$emit('linked', data?.connection || null)
+		},
+
+		/**
 		 * Link, probe and show the result. The dialog stays open on the result.
 		 *
 		 * @return {Promise<void>}
@@ -350,51 +451,14 @@ export default {
 		async save() {
 			this.saving = true
 			this.errorMessage = ''
-			const body =
-				this.mode === 'template'
-					? { fromTemplate: true }
-					: { source: this.selectedSource.id }
+			const body = this.linkBody()
 			try {
-				const { data } = await axios.post(
-					generateUrl(
-						`/apps/integriq/api/connections/${this.selectedConnection.id}/link`,
-					),
-					body,
-				)
-				this.probe = data?.probe || null
-				this.linked = true
-				this.$emit('linked', data?.connection || null)
+				this.showLinked(await this.postLink(body))
 			} catch (err) {
-				this.errorMessage =
-					err?.response?.data?.error
-					|| err?.message
-					|| t('integriq', 'The source could not be linked.')
+				this.errorMessage = linkFailedText(err)
 			} finally {
 				this.saving = false
 			}
-		},
-
-		/**
-		 * NcDialog open-state relay.
-		 *
-		 * @param {boolean} isOpen New open state.
-		 * @return {void}
-		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
-		 */
-		onOpenChanged(isOpen) {
-			if (!isOpen) {
-				this.close()
-			}
-		},
-
-		/**
-		 * Ask ModalHost to close the dialog.
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007
-		 */
-		close() {
-			this.$emit('close')
 		},
 	},
 }
