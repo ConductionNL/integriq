@@ -22,14 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\BackgroundJob\AttachmentFetchJobScheduler;
-use OCA\Integriq\BackgroundJob\AttachmentFetchSchedulerInterface;
-use OCA\Integriq\BackgroundJob\EventFanOutSchedulerInterface;
-use OCA\Integriq\BackgroundJob\MessageRetryJobScheduler;
-use OCA\Integriq\BackgroundJob\MessageRetrySchedulerInterface;
-use OCA\Integriq\BackgroundJob\OtelExportJobScheduler;
-use OCA\Integriq\BackgroundJob\ProcessEventJobScheduler;
-use OCA\Integriq\BackgroundJob\TraceExportSchedulerInterface;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
@@ -670,8 +662,6 @@ final class ServiceBindings {
 		$context->registerServiceAlias(AgentActionStoreInterface::class, AgentActionStore::class);
 		$context->registerServiceAlias(CaseReferenceDetectorInterface::class, CaseReferenceDetector::class);
 		$context->registerServiceAlias(LocalDeleteGuardInterface::class, LocalDeleteGuard::class);
-		$context->registerServiceAlias(EventFanOutSchedulerInterface::class, ProcessEventJobScheduler::class);
-		$context->registerServiceAlias(MessageRetrySchedulerInterface::class, MessageRetryJobScheduler::class);
 		$context->registerServiceAlias(MessageParserInterface::class, MessageParser::class);
 		$context->registerServiceAlias(DeadLetterProjectionInterface::class, DeadLetterProjection::class);
 		$context->registerServiceAlias(MtlsTransportServiceInterface::class, MtlsTransportService::class);
@@ -679,8 +669,6 @@ final class ServiceBindings {
 		$context->registerServiceAlias(MessageValidationServiceInterface::class, MessageValidationService::class);
 		$context->registerServiceAlias(DigitalPostProviderRegistryInterface::class, DigitalPostProviderRegistry::class);
 		$context->registerServiceAlias(DocumentConnectionGuardInterface::class, DocumentConnectionGuard::class);
-		$context->registerServiceAlias(TraceExportSchedulerInterface::class, OtelExportJobScheduler::class);
-		$context->registerServiceAlias(AttachmentFetchSchedulerInterface::class, AttachmentFetchJobScheduler::class);
 		$context->registerServiceAlias(SubscriptionRegistryInterface::class, SubscriptionRegistry::class);
 		$context->registerServiceAlias(DocumentProviderRegistryInterface::class, DocumentGenerationProviderRegistry::class);
 		$context->registerServiceAlias(ToolPlatformDetailsInterface::class, LtiPlatformDetailsService::class);
