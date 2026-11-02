@@ -198,7 +198,6 @@
 </template>
 
 <script>
-import { showSuccess } from '@nextcloud/dialogs'
 import {
 	NcButton,
 	NcDialog,
@@ -217,6 +216,7 @@ import TestTubeIcon from 'vue-material-design-icons/TestTube.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
 import MappingRulesEditor from '../../views/wrappers/MappingRulesEditor.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
+import confirmSave from '../../mixins/confirmSave.js'
 import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import { editorSlotScopeProps } from '../editorSlotScope.js'
 
@@ -241,7 +241,7 @@ export default {
 		TestTubeIcon,
 	},
 
-	mixins: [namedEditorDialog],
+	mixins: [namedEditorDialog, confirmSave],
 
 	props: { ...editorSlotScopeProps },
 
@@ -305,6 +305,38 @@ export default {
 
 	methods: {
 		/**
+		 * The record to save.
+		 *
+		 * @return {object} The payload for the slot's `confirm` binding.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		savePayload() {
+			return { ...this.testableMapping }
+		},
+
+		/**
+		 * The toast after a save.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		savedText() {
+			return this.isCreate
+				? this.t('integriq', 'Mapping created')
+				: this.t('integriq', 'Mapping saved')
+		},
+
+		/**
+		 * The reason shown when a save fails without one.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
+		saveFailedText() {
+			return this.t('integriq', 'Failed to save mapping')
+		},
+
+		/**
 		 * A blank mapping draft. Pass-through defaults to on, matching the
 		 * `mapping` schema's own default in the OpenRegister register.
 		 *
@@ -352,44 +384,6 @@ export default {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onTest() {
 			this.$refs.result?.run()
-		},
-
-		/**
-		 * Persist the draft through CnIndexPage's `confirm` binding rather
-		 * than saving here directly.
-		 *
-		 * That is load-bearing, not stylistic: the index's list refresh runs
-		 * inside its own save handler, so a dialog that persists on its own
-		 * leaves the table stale until a reload (the `or-collection-*` live
-		 * update only covers it where server push is actually delivered).
-		 * Going through `confirm` also keeps the write in the same store the
-		 * list reads from instead of a second cache of the same objects.
-		 *
-		 * The draft is merged over `item` so fields this dialog does not edit
-		 * (slug, version, configurations, …) survive; no `id` means create.
-		 *
-		 * @return {Promise<void>} Resolves once the save has settled.
-		 *
-		 * @spec openspec/specs/mapping-editor-ui/spec.md
-		 */
-		async onSave() {
-			if (!this.canSave) return
-			this.saving = true
-			this.saveError = ''
-			try {
-				await this.confirm({ ...(this.item || {}), ...this.draft })
-				showSuccess(
-					this.isCreate
-						? this.t('integriq', 'Mapping created')
-						: this.t('integriq', 'Mapping saved'),
-				)
-				this.close?.()
-			} catch (err) {
-				this.saveError =
-					err?.message || this.t('integriq', 'Failed to save mapping')
-			} finally {
-				this.saving = false
-			}
 		},
 	},
 }

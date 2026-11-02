@@ -108,7 +108,7 @@
 					:helperText="nameError"
 					maxlength="255"
 					:disabled="saving"
-					@update:modelValue="(value) => updateDraft('name', value)"
+					@update:modelValue="updateDraft('name', $event)"
 					@blur="nameTouched = true" />
 				<NcTextArea
 					:modelValue="draft.description"
@@ -116,9 +116,7 @@
 					:disabled="saving"
 					rows="2"
 					resize="vertical"
-					@update:modelValue="
-						(value) => updateDraft('description', value)
-					" />
+					@update:modelValue="updateDraft('description', $event)" />
 			</div>
 
 			<!-- ── Allowed sources ─────────────────────────────────────── -->
@@ -146,9 +144,7 @@
 							:disabled="saving"
 							:aria-label-combobox="t('integriq', 'Allowed domains')"
 							:placeholder="domainPlaceholder"
-							@update:modelValue="
-								(value) => updateDraft('domains', value)
-							" />
+							@update:modelValue="updateDraft('domains', $event)" />
 						<span class="cn-consumer-editor__helper">
 							{{
 								t(
@@ -176,9 +172,7 @@
 							:disabled="saving"
 							:aria-label-combobox="t('integriq', 'Allowed IPs')"
 							:placeholder="ipPlaceholder"
-							@update:modelValue="
-								(value) => updateDraft('ips', value)
-							" />
+							@update:modelValue="updateDraft('ips', $event)" />
 						<span class="cn-consumer-editor__helper">
 							{{
 								t(
@@ -303,8 +297,7 @@
 							:disabled="saving"
 							placeholder="60"
 							@update:modelValue="
-								(value) =>
-									updateNumber('rateLimitRequestsPerWindow', value)
+								updateNumber('rateLimitRequestsPerWindow', $event)
 							" />
 					</div>
 					<div class="cn-consumer-editor__field">
@@ -316,8 +309,7 @@
 							:disabled="saving"
 							placeholder="60"
 							@update:modelValue="
-								(value) =>
-									updateNumber('rateLimitWindowSeconds', value)
+								updateNumber('rateLimitWindowSeconds', $event)
 							" />
 					</div>
 					<div class="cn-consumer-editor__field">
@@ -329,7 +321,7 @@
 							:disabled="saving"
 							placeholder="10000"
 							@update:modelValue="
-								(value) => updateNumber('quotaLimit', value)
+								updateNumber('quotaLimit', $event)
 							" />
 					</div>
 					<div class="cn-consumer-editor__field">
@@ -346,8 +338,7 @@
 							:disabled="saving"
 							:aria-label-combobox="t('integriq', 'Quota period')"
 							@update:modelValue="
-								(option) =>
-									updateDraft('quotaPeriod', option?.id ?? null)
+								updateDraft('quotaPeriod', $event?.id ?? null)
 							" />
 					</div>
 				</div>
@@ -381,7 +372,6 @@
 
 <script>
 import { CnJsonViewer } from '@conduction/nextcloud-vue'
-import { showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import {
 	NcButton,
@@ -398,6 +388,8 @@ import KeyOutlineIcon from 'vue-material-design-icons/KeyOutline.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import ShieldCheckOutlineIcon from 'vue-material-design-icons/ShieldCheckOutline.vue'
 import SpeedometerIcon from 'vue-material-design-icons/Speedometer.vue'
+import confirmSave from '../../mixins/confirmSave.js'
+import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import { editorSlotScopeProps } from '../editorSlotScope.js'
 import {
 	AUTHORIZATION_TYPES,
@@ -410,9 +402,6 @@ import {
 	// Aliased: the computed below keeps the bare name for the template's sake.
 	carriesCredential as typeCarriesCredential,
 } from './consumerDraft.js'
-
-/** A name has to carry at least one letter or digit — punctuation alone is not a name. */
-const NAME_PATTERN = /[\p{L}\p{N}]/u
 
 /**
  * Per-type example credential shapes, keyed by authorization type.
@@ -438,6 +427,76 @@ const AUTH_CONFIG_TEMPLATES = {
 const DOMAIN_PLACEHOLDER = 'example.com, *.example.org'
 const IP_PLACEHOLDER = '203.0.113.4, 10.0.0.0/8'
 
+/**
+ * The helper text under the authorization type select, per type.
+ *
+ * @param {string|undefined} type The chosen authorization type.
+ * @return {string} The translated helper text.
+ */
+function authorizationTypeHelp(type) {
+	if (type === 'apiKey') {
+		return t(
+			'integriq',
+			'Inbound callers present a key, matched against the key below under a constant-time comparison.',
+		)
+	}
+	if (type === 'jwt') {
+		return t(
+			'integriq',
+			"Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.",
+		)
+	}
+	return otherAuthorizationTypeHelp(type)
+}
+
+/**
+ * The helper text for the types that carry no key of their own.
+ *
+ * @param {string|undefined} type The chosen authorization type.
+ * @return {string} The translated helper text.
+ */
+function otherAuthorizationTypeHelp(type) {
+	if (type === 'none') {
+		return t(
+			'integriq',
+			'No credential is checked. Restrict access with the allowed sources above instead.',
+		)
+	}
+	return t(
+		'integriq',
+		'The credential this consumer presents is verified against the configuration below.',
+	)
+}
+
+/**
+ * Why a typed credential configuration cannot be stored, or '' when it can.
+ *
+ * @param {string} text The trimmed configuration text.
+ * @return {string} The translated problem, or ''.
+ */
+function authConfigProblem(text) {
+	try {
+		return isJsonObject(JSON.parse(text))
+			? ''
+			: t('integriq', 'The authorization configuration must be a JSON object.')
+	} catch (err) {
+		return err?.message || t('integriq', 'Invalid JSON.')
+	}
+}
+
+/**
+ * Whether a parsed JSON value is an object (not null, not a list).
+ *
+ * @param {unknown} parsed The parsed value.
+ * @return {boolean} True for a plain JSON object.
+ */
+function isJsonObject(parsed) {
+	return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+}
+
+/** A name has to carry at least one letter or digit — punctuation alone is not a name. */
+const NAME_PATTERN = /[\p{L}\p{N}]/u
+
 export default {
 	name: 'ConsumerEditorModal',
 
@@ -457,6 +516,8 @@ export default {
 		ShieldCheckOutlineIcon,
 		SpeedometerIcon,
 	},
+
+	mixins: [namedEditorDialog, confirmSave],
 
 	props: { ...editorSlotScopeProps },
 
@@ -502,11 +563,6 @@ export default {
 			return IP_PLACEHOLDER
 		},
 
-		/** @return {boolean} True when creating rather than editing. */
-		isCreate() {
-			return !this.item
-		},
-
 		/**
 		 * @return {string} Dialog heading.
 		 *
@@ -516,15 +572,6 @@ export default {
 			return this.isCreate
 				? t('integriq', 'Create consumer')
 				: t('integriq', 'Edit consumer')
-		},
-
-		/**
-		 * @return {string} Name label, marked required.
-		 *
-		 * @spec openspec/specs/consumer-management/spec.md
-		 */
-		nameLabel() {
-			return t('integriq', 'Name') + ' *'
 		},
 
 		/**
@@ -609,28 +656,7 @@ export default {
 		 * @spec openspec/specs/consumer-management/spec.md
 		 */
 		authorizationTypeHelper() {
-			if (this.draft.authorizationType === 'apiKey') {
-				return t(
-					'integriq',
-					'Inbound callers present a key, matched against the key below under a constant-time comparison.',
-				)
-			}
-			if (this.draft.authorizationType === 'jwt') {
-				return t(
-					'integriq',
-					"Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.",
-				)
-			}
-			if (this.draft.authorizationType === 'none') {
-				return t(
-					'integriq',
-					'No credential is checked. Restrict access with the allowed sources above instead.',
-				)
-			}
-			return t(
-				'integriq',
-				'The credential this consumer presents is verified against the configuration below.',
-			)
+			return authorizationTypeHelp(this.draft.authorizationType)
 		},
 
 		/**
@@ -722,25 +748,44 @@ export default {
 		},
 	},
 
-	watch: {
-		show: {
-			immediate: true,
-			/**
-			 * Re-seed the draft every time the dialog opens, so a cancelled edit
-			 * leaves nothing behind for the next one.
-			 *
-			 * @param {boolean} value Whether the dialog is now open.
-			 *
-			 * @spec openspec/specs/consumer-management/spec.md
-			 */
-			handler(value) {
-				if (value) this.seedDraft()
-			},
-		},
-	},
-
 	methods: {
 		t,
+
+		/**
+		 * The record to save.
+		 *
+		 * @return {object} The payload for the slot's `confirm` binding.
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
+		savePayload() {
+			return buildConsumerPayload(
+				this.item,
+				this.draft,
+				this.authConfigForPayload,
+			)
+		},
+
+		/**
+		 * The toast after a save.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
+		savedText() {
+			return this.isCreate
+				? t('integriq', 'Consumer created')
+				: t('integriq', 'Consumer saved')
+		},
+
+		/**
+		 * The reason shown when a save fails without one.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/consumer-management/spec.md
+		 */
+		saveFailedText() {
+			return t('integriq', 'Failed to save consumer')
+		},
 
 		/**
 		 * Copy the row being edited into the local draft. The credential is
@@ -832,24 +877,7 @@ export default {
 			this.authConfigCleared = false
 			this.saveError = ''
 			const trimmed = (value || '').trim()
-			if (!trimmed) {
-				this.authConfigError = ''
-				return
-			}
-			try {
-				const parsed = JSON.parse(trimmed)
-				this.authConfigError =
-					parsed === null
-					|| typeof parsed !== 'object'
-					|| Array.isArray(parsed)
-						? t(
-								'integriq',
-								'The authorization configuration must be a JSON object.',
-							)
-						: ''
-			} catch (err) {
-				this.authConfigError = err?.message || t('integriq', 'Invalid JSON.')
-			}
+			this.authConfigError = trimmed ? authConfigProblem(trimmed) : ''
 		},
 
 		/**
@@ -870,45 +898,6 @@ export default {
 			this.authConfigText = ''
 			this.authConfigError = ''
 			this.authConfigCleared = true
-		},
-
-		/** @spec openspec/specs/consumer-management/spec.md */
-		onCancel() {
-			if (this.saving) return
-			this.close?.()
-		},
-
-		/**
-		 * Persist through the slot's `confirm` binding.
-		 *
-		 * @return {Promise<void>} Resolves once the save has settled.
-		 *
-		 * @spec openspec/specs/consumer-management/spec.md
-		 */
-		async onSave() {
-			if (!this.canSave) return
-			this.saving = true
-			this.saveError = ''
-			try {
-				await this.confirm(
-					buildConsumerPayload(
-						this.item,
-						this.draft,
-						this.authConfigForPayload,
-					),
-				)
-				showSuccess(
-					this.isCreate
-						? t('integriq', 'Consumer created')
-						: t('integriq', 'Consumer saved'),
-				)
-				this.close?.()
-			} catch (err) {
-				this.saveError =
-					err?.message || t('integriq', 'Failed to save consumer')
-			} finally {
-				this.saving = false
-			}
 		},
 	},
 }
