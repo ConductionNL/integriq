@@ -642,8 +642,43 @@ class EndpointService
             try {
                 $serializedObject = $mapper->find($pathParams['id'], extend: $parameters['extend'] ?? $parameters['_extend'] ?? null)->jsonSerialize();
             } catch (DoesNotExistException $e) {
-                $status = 404;
-                return ['error' => 'not found', 'message' => "the object with id {$pathParams['id']} does not exist"];
+                // A schema can be declared on more than one register on purpose (e.g. a "fetch"
+                // register for objects synced in from an external system, and a separate
+                // "create" register for objects made through this API) while a GET endpoint can
+                // only be bound to one register/schema pair. An object made via the other
+                // register would otherwise 404 here forever. Before giving up, check every other
+                // register that also declares this schema and use whichever one actually has it.
+                $serializedObject = null;
+                if ($mapper instanceof \OCA\OpenRegister\Service\ObjectService === true) {
+                    $schema          = $mapper->getSchema();
+                    $register        = $mapper->getRegister();
+                    $registerMapper  = $this->containerInterface->get('OCA\OpenRegister\Db\RegisterMapper');
+                    foreach ($registerMapper->findAll() as $siblingRegister) {
+                        if ($siblingRegister->getId() === $register
+                            || in_array($schema, $siblingRegister->getSchemas(), true) === false
+                        ) {
+                            continue;
+                        }
+
+                        try {
+                            $serializedObject = $mapper->getMapper(register: $siblingRegister->getId(), schema: $schema)
+                                ->find($pathParams['id'], extend: $parameters['extend'] ?? $parameters['_extend'] ?? null)
+                                ->jsonSerialize();
+                            break;
+                        } catch (DoesNotExistException $e2) {
+                            continue;
+                        }
+                    }
+
+                    // Restore the endpoint's own register/schema context regardless of outcome.
+                    $mapper->setRegister($register);
+                    $mapper->setSchema($schema);
+                }
+
+                if ($serializedObject === null) {
+                    $status = 404;
+                    return ['error' => 'not found', 'message' => "the object with id {$pathParams['id']} does not exist"];
+                }
             }
             $result = $this->replaceInternalReferences(
 				mapper: $mapper,
@@ -1007,12 +1042,38 @@ class EndpointService
     {
         if ($register === null) {
             $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($id);
-            $register = $object->getRegister();
-            $schema   = $object->getSchema();
+            // ObjectEntity::getRegister()/getSchema() return strings; Register::getSchemas() and
+            // Register::getId() are ints, and the sibling-register lookup below compares strictly.
+            $register = (int) $object->getRegister();
+            $schema   = (int) $object->getSchema();
         }
 
         $target = "$register/$schema";
         $endpoints = $this->endpointMapper->findAll(filters: ['target_id' => $target, 'method' => 'GET']);
+
+        if (count($endpoints) === 0) {
+            // This schema may be declared on more than one register on purpose (e.g. a "fetch"
+            // register for objects synced in, and a separate "create" register for objects made
+            // through this API) while the GET endpoint is only bound to one of them. The URL path
+            // itself doesn't encode the register, so any sibling register's matching GET endpoint
+            // works just as well as a source for the path template.
+            $registerMapper = $this->containerInterface->get('OCA\OpenRegister\Db\RegisterMapper');
+            foreach ($registerMapper->findAll() as $siblingRegister) {
+                if ($siblingRegister->getId() === $register
+                    || in_array($schema, $siblingRegister->getSchemas(), true) === false
+                ) {
+                    continue;
+                }
+
+                $siblingEndpoints = $this->endpointMapper->findAll(
+                    filters: ['target_id' => $siblingRegister->getId().'/'.$schema, 'method' => 'GET']
+                );
+                if (count($siblingEndpoints) > 0) {
+                    $endpoints = $siblingEndpoints;
+                    break;
+                }
+            }
+        }
 
         if (count($endpoints) === 0) {
             return $id;
