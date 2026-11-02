@@ -58,6 +58,8 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationServiceInterface;
 use OCA\Integriq\Service\DocumentGeneration\DocumentProviderRegistryInterface;
+use OCA\Integriq\Service\Event\EventForwardingGuardInterface;
+use OCA\Integriq\Service\Event\EventLoopGuard;
 use OCA\Integriq\Service\Dso\DsoActivityTable;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoConnection;
@@ -669,5 +671,7 @@ final class ServiceBindings {
 		$context->registerServiceAlias(ApiVersionNegotiationInterface::class, ZgwVersionNegotiationService::class);
 		$context->registerServiceAlias(SubscriptionSigningPolicyInterface::class, SubscriptionSigningPolicy::class);
 		$context->registerServiceAlias(CloudEventEmitterInterface::class, EventService::class);
+		// Not shared: each listener keeps its own chain counter.
+		$context->registerService(EventForwardingGuardInterface::class, static fn (): EventLoopGuard => new EventLoopGuard(), false);
 	}//end registerInjectedHelpers()
 }

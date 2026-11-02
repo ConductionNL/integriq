@@ -54,7 +54,7 @@ namespace OCA\Integriq\Service\Event;
  *
  * @spec openspec/changes/stop-cloudevent-recursion/tasks.md#task-1
  */
-class EventLoopGuard {
+class EventLoopGuard implements EventForwardingGuardInterface {
 	/**
 	 * Payload key carrying the marker this app stamps on its own CloudEvents.
 	 *
@@ -99,13 +99,6 @@ class EventLoopGuard {
 	 * @var string
 	 */
 	public const REFUSED_SELF_SCHEMA = 'belongs-to-an-event-machinery-schema';
-
-	/**
-	 * Refused: this request has already produced MAX_CHAIN CloudEvents.
-	 *
-	 * @var string
-	 */
-	public const REFUSED_CEILING = 'chain-ceiling-reached-in-one-request';
 
 	/**
 	 * CloudEvents forwarded so far in this request.

@@ -95,7 +95,7 @@ class CloudEventListenerTest extends TestCase {
 			->method('handleObjectCreated')
 			->with($object);
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectCreatedEvent($object));
 	}//end testForwardsCreatedEventWhenSubscriptionsExist()
 
@@ -114,7 +114,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->expects($this->never())->method('handleObjectUpdated');
 		$eventService->expects($this->never())->method('handleObjectDeleted');
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectCreatedEvent($object));
 		$listener->handle(new ObjectUpdatedEvent(newObject: $object, oldObject: $object));
 		$listener->handle(new ObjectDeletedEvent($object));
@@ -140,7 +140,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
 		$eventService->expects($this->never())->method('handleObjectCreated');
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectCreatedEvent($object));
 	}//end testSkipsSelfReferenceEventSchema()
 
@@ -159,7 +159,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
 		$eventService->expects($this->never())->method('handleObjectUpdated');
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectUpdatedEvent(newObject: $object, oldObject: $object));
 	}//end testSkipsSelfReferenceEventMessageSchema()
 
@@ -176,7 +176,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->method('hasActiveSubscriptions')->willReturn(true);
 		$eventService->expects($this->once())->method('handleObjectCreated')->with($object);
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectCreatedEvent($object));
 	}//end testForwardsOpenconnectorObjectsThatAreNotSelfReferences()
 
@@ -196,7 +196,7 @@ class CloudEventListenerTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning');
 
-		$listener = new CloudEventListener($eventService, $logger);
+		$listener = new CloudEventListener($eventService, $logger, new EventLoopGuard());
 		$listener->handle(new ObjectUpdatedEvent(newObject: $object, oldObject: null));
 	}//end testSkipsUpdatedEventWithNullOldObject()
 
@@ -215,7 +215,7 @@ class CloudEventListenerTest extends TestCase {
 			->method('handleObjectUpdated')
 			->with($oldObject, $newObject);
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectUpdatedEvent(newObject: $newObject, oldObject: $oldObject));
 	}//end testForwardsUpdatedEventWithBothStates()
 
@@ -231,7 +231,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->method('hasActiveSubscriptions')->willReturn(true);
 		$eventService->expects($this->once())->method('handleObjectDeleted')->with($object);
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectDeletedEvent($object));
 	}//end testForwardsDeletedEvent()
 
@@ -252,7 +252,7 @@ class CloudEventListenerTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error');
 
-		$listener = new CloudEventListener($eventService, $logger);
+		$listener = new CloudEventListener($eventService, $logger, new EventLoopGuard());
 
 		// Must not throw.
 		$listener->handle(new ObjectCreatedEvent($object));
@@ -269,7 +269,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService = $this->createMock(EventService::class);
 		$eventService->expects($this->never())->method('hasActiveSubscriptions');
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle($this->createMock(Event::class));
 	}//end testIgnoresUnrelatedEvents()
 
@@ -295,7 +295,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
 		$eventService->expects($this->never())->method('handleObjectCreated');
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectCreatedEvent($object));
 	}//end testAMarkedEventIsSuppressedEvenOnAnUnrecognisedSchemaId()
 
@@ -316,7 +316,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
 		$eventService->expects($this->once())->method('handleObjectCreated')->with($object);
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 		$listener->handle(new ObjectCreatedEvent($object));
 	}//end testAnUnmarkedObjectOnTheSameSchemaIdIsStillForwarded()
 
@@ -338,7 +338,7 @@ class CloudEventListenerTest extends TestCase {
 		$eventService->method('getSelfSchemaIds')->willReturn([]);
 		$eventService->expects($this->exactly(EventLoopGuard::MAX_CHAIN))->method('handleObjectCreated');
 
-		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
+		$listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class), new EventLoopGuard());
 
 		for ($i = 0; $i < (EventLoopGuard::MAX_CHAIN + 10); $i++) {
 			$listener->handle(new ObjectCreatedEvent($this->entity('someapp', '19', 'obj-' . $i)));

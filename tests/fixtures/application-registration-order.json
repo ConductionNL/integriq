@@ -141,6 +141,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ApiVersionNegotiationInterface, OCA\\Integriq\\Service\\ZgwVersionNegotiationService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Subscriptions\\SubscriptionSigningPolicyInterface, OCA\\Integriq\\Service\\Subscriptions\\SubscriptionSigningPolicy)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\CloudEventEmitterInterface, OCA\\Integriq\\Service\\EventService)",
+	"context.registerService(OCA\\Integriq\\Service\\Event\\EventForwardingGuardInterface, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\SettingsService, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry, closure, bool)",
