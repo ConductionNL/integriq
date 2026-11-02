@@ -6,7 +6,7 @@
  * Registers the services of the Mcp component.
  *
  * @category Mcp
- * @package  OCA\Integriq\Mcp
+ * @package  OCA\Integriq\AppInfo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,8 +19,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Mcp;
+namespace OCA\Integriq\AppInfo;
 
+use OCA\Integriq\Mcp\IntegriqScannableServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**

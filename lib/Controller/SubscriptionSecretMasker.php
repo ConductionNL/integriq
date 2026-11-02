@@ -11,7 +11,7 @@
  * write-only contract on them (integriq#2211).
  *
  * @category Service
- * @package  OCA\Integriq\Service\Security
+ * @package  OCA\Integriq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,7 +29,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\Security;
+namespace OCA\Integriq\Controller;
+
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 
 /**
  * Masks every secret under a subscription's `protocolSettings`.
