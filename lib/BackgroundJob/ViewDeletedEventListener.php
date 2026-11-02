@@ -8,7 +8,7 @@
  * objects.
  *
  * @category EventListener
- * @package  OCA\Integriq\EventListener
+ * @package  OCA\Integriq\BackgroundJob
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -21,9 +21,8 @@
  * @todo Remove this temporary listener once it lives in the software catalog application.
  */
 
-namespace OCA\Integriq\EventListener;
+namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\BackgroundJob\DeferredViewCascadeJob;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;

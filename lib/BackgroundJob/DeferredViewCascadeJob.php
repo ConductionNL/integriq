@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Deletes the `extendview` objects that belonged to a deleted `view`.
  *
- * ADR-078: {@see \OCA\Integriq\EventListener\ViewDeletedEventListener}
+ * ADR-078: {@see \OCA\Integriq\BackgroundJob\ViewDeletedEventListener}
  * used to run this cascade inside the user's delete request — one unbounded
  * `findAll()` plus one `delete()` per matching row, all before the delete
  * response was written. Nothing about the cascade can change the outcome of the
