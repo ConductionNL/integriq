@@ -21,12 +21,12 @@
 				:label="t('integriq', 'Property (dot path)')"
 				:modelValue="row.property"
 				placeholder="a.b"
-				@update:modelValue="(next) => onPropertyInput(index, next)" />
+				@update:modelValue="onPropertyInput(index, $event)" />
 			<NcTextField
 				:label="t('integriq', 'Extends (comma-separated paths, optional)')"
 				:modelValue="(row.extends || []).join(',')"
 				placeholder="x.y,z"
-				@update:modelValue="(next) => onExtendsInput(index, next)" />
+				@update:modelValue="onExtendsInput(index, $event)" />
 			<NcButton
 				variant="tertiary-no-background"
 				:aria-label="t('integriq', 'Remove row')"
@@ -49,11 +49,29 @@
 import { NcButton, NcTextField } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import propertyRows from '../../../mixins/propertyRows.js'
 import { valueProp } from './shared.js'
+
+/**
+ * The per-property extend paths of the rows that declare any, keyed by property.
+ *
+ * @param {Array<{property: string, extends: string[]}>} rows The edited rows.
+ * @return {object} The extends map; empty when no row declares paths.
+ */
+function extendsMapOf(rows) {
+	const extendsMap = {}
+	for (const row of rows) {
+		if (row.property && row.extends && row.extends.length > 0) {
+			extendsMap[row.property] = row.extends
+		}
+	}
+	return extendsMap
+}
 
 export default {
 	name: 'ExtendInputForm',
 	components: { NcButton, NcTextField, Close, Plus },
+	mixins: [propertyRows],
 	props: { ...valueProp },
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -76,6 +94,16 @@ export default {
 
 	methods: {
 		/**
+		 * An empty row, as the add button appends it.
+		 *
+		 * @return {object} The row.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		blankRow() {
+			return { property: '', extends: [] }
+		},
+
+		/**
 		 * Split the edited rows back into the two shapes the backend expects —
 		 * a flat `properties` array of dot paths plus an optional `extends` map
 		 * keyed by property — and emit the updated config. Blank properties are
@@ -88,12 +116,7 @@ export default {
 		 */
 		emitRows(rows) {
 			const properties = rows.map((row) => row.property).filter(Boolean)
-			const extendsMap = {}
-			for (const row of rows) {
-				if (row.property && row.extends && row.extends.length > 0) {
-					extendsMap[row.property] = row.extends
-				}
-			}
+			const extendsMap = extendsMapOf(rows)
 			const next = { ...(this.value || {}), properties }
 			if (Object.keys(extendsMap).length > 0) {
 				next.extends = extendsMap
@@ -101,21 +124,6 @@ export default {
 				delete next.extends
 			}
 			this.$emit('update:value', next)
-		},
-
-		/**
-		 * Update the dot-path of one row as the user types.
-		 *
-		 * @param {number} index Zero-based position of the edited row in `rows`.
-		 * @param {string} value New dotted path on the parameters whose uuid
-		 *   value gets resolved into an OpenRegister object (e.g. `a.b`).
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		onPropertyInput(index, value) {
-			const rows = this.rows.slice()
-			rows[index] = { ...rows[index], property: value }
-			this.emitRows(rows)
 		},
 
 		/**
@@ -128,35 +136,12 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		onExtendsInput(index, value) {
-			const rows = this.rows.slice()
-			rows[index] = {
-				...rows[index],
+			this.patchRow(index, {
 				extends: value
 					.split(',')
 					.map((entry) => entry.trim())
 					.filter(Boolean),
-			}
-			this.emitRows(rows)
-		},
-
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
-		addRow() {
-			const rows = this.rows.slice()
-			rows.push({ property: '', extends: [] })
-			this.emitRows(rows)
-		},
-
-		/**
-		 * Drop one property row, discarding its extend paths with it.
-		 *
-		 * @param {number} index Zero-based position of the row to remove.
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		removeRow(index) {
-			const rows = this.rows.slice()
-			rows.splice(index, 1)
-			this.emitRows(rows)
+			})
 		},
 	},
 }

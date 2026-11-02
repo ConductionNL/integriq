@@ -22,12 +22,12 @@
 				:label="t('integriq', 'Property (dot path)')"
 				:modelValue="row.property"
 				placeholder="body.relations.contact"
-				@update:modelValue="(next) => onPropertyInput(index, next)" />
+				@update:modelValue="onPropertyInput(index, $event)" />
 			<NcTextField
 				:label="t('integriq', 'Schema ID')"
 				:modelValue="row.schema"
 				placeholder="contact"
-				@update:modelValue="(next) => onSchemaInput(index, next)" />
+				@update:modelValue="onSchemaInput(index, $event)" />
 			<NcButton
 				variant="tertiary-no-background"
 				:aria-label="t('integriq', 'Remove row')"
@@ -50,11 +50,13 @@
 import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import propertyRows from '../../../mixins/propertyRows.js'
 import { valueProp } from './shared.js'
 
 export default {
 	name: 'ExtendExternalInputForm',
 	components: { NcButton, NcCheckboxRadioSwitch, NcTextField, Close, Plus },
+	mixins: [propertyRows],
 	props: { ...valueProp },
 	computed: {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
@@ -70,6 +72,16 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * An empty row, as the add button appends it.
+		 *
+		 * @return {object} The row.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
+		blankRow() {
+			return { property: '', schema: '' }
+		},
+
 		/**
 		 * Serialise the edited rows back into the action config and emit it.
 		 * Rows without a property path are dropped, so a freshly added empty
@@ -104,20 +116,6 @@ export default {
 		},
 
 		/**
-		 * Update the dot-path of one row as the user types.
-		 *
-		 * @param {number} index Zero-based position of the edited row in `rows`.
-		 * @param {string} value New dot path on the payload (e.g. `body.relations.contact`).
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		onPropertyInput(index, value) {
-			const rows = this.rows.slice()
-			rows[index] = { ...rows[index], property: value }
-			this.emitRows(rows)
-		},
-
-		/**
 		 * Update the schema a row's fetched object is validated against.
 		 *
 		 * @param {number} index Zero-based position of the edited row in `rows`.
@@ -126,29 +124,7 @@ export default {
 		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		onSchemaInput(index, value) {
-			const rows = this.rows.slice()
-			rows[index] = { ...rows[index], schema: value }
-			this.emitRows(rows)
-		},
-
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
-		addRow() {
-			const rows = this.rows.slice()
-			rows.push({ property: '', schema: '' })
-			this.emitRows(rows)
-		},
-
-		/**
-		 * Drop one property row from the list.
-		 *
-		 * @param {number} index Zero-based position of the row to remove.
-		 *
-		 * @spec openspec/specs/rule-editor-ui/spec.md
-		 */
-		removeRow(index) {
-			const rows = this.rows.slice()
-			rows.splice(index, 1)
-			this.emitRows(rows)
+			this.patchRow(index, { schema: value })
 		},
 	},
 }
