@@ -1,0 +1,132 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ImportPreviewDialog preview step > renders empty as recorded 1`] = `
+"<div class="NcDialog">
+  <div class="oc-import-dialog">
+    <div class="oc-import-dialog__step">
+      <h4>Import preview</h4>
+      <div class="oc-import-dialog__buckets">
+        <div class="oc-import-dialog__bucket" data-testid="preview-creates">
+          <h5>Will be created (0)</h5>
+          <ul></ul>
+</div>
+        <div class="oc-import-dialog__bucket" data-testid="preview-updates">
+          <h5>Will be updated (0)</h5>
+          <ul></ul>
+</div>
+</div>
+</div>
+    <div class="oc-import-dialog__actions">
+      <div class="NcButton">Cancel
+</div>
+      <div class="NcButton">Confirm import
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`ImportPreviewDialog preview step > renders with entries as recorded 1`] = `
+"<div class="NcDialog">
+  <div class="oc-import-dialog">
+    <div class="oc-import-dialog__step">
+      <h4>Import preview</h4>
+      <div class="oc-import-dialog__buckets">
+        <div class="oc-import-dialog__bucket" data-testid="preview-creates">
+          <h5>Will be created (2)</h5>
+          <ul>
+            <li><code>source</code> a</li>
+            <li><code>mapping</code> b</li>
+</ul>
+</div>
+        <div class="oc-import-dialog__bucket" data-testid="preview-updates">
+          <h5>Will be updated (1)</h5>
+          <ul>
+            <li><code>endpoint</code> c</li>
+</ul>
+</div>
+</div>
+      <div class="NcNoteCard" data-type="warning"><strong>Slug collisions</strong>
+        <ul>
+          <li><code>rule</code> d — taken</li>
+</ul>
+</div>
+</div>
+    <div class="oc-import-dialog__actions">
+      <div class="NcButton">Cancel
+</div>
+      <div class="NcButton">Confirm import
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`PromotePreviewModal preview step > renders empty as recorded 1`] = `
+"<div class="NcModal">
+  <div class="oc-promote-modal">
+    <h2>Promote configuration</h2>
+    <div class="oc-promote-modal__step">
+      <p>Promoting Config to Env.</p>
+      <div class="oc-promote-modal__buckets">
+        <div class="oc-promote-modal__bucket" data-testid="promote-preview-creates">
+          <h5>Will be created (0)</h5>
+          <ul></ul>
+</div>
+        <div class="oc-promote-modal__bucket" data-testid="promote-preview-updates">
+          <h5>Will be updated (0)</h5>
+          <ul></ul>
+</div>
+        <div class="oc-promote-modal__bucket" data-testid="promote-preview-collisions">
+          <h5>Collisions (0)</h5>
+          <ul></ul>
+</div>
+</div>
+      <div class="oc-promote-modal__actions">
+        <div class="NcButton">Back
+</div>
+        <div class="NcButton"> Confirm promotion
+</div>
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`PromotePreviewModal preview step > renders with entries as recorded 1`] = `
+"<div class="NcModal">
+  <div class="oc-promote-modal">
+    <h2>Promote configuration</h2>
+    <div class="oc-promote-modal__step">
+      <p>Promoting Config to Env.</p>
+      <div class="oc-promote-modal__buckets">
+        <div class="oc-promote-modal__bucket" data-testid="promote-preview-creates">
+          <h5>Will be created (2)</h5>
+          <ul>
+            <li><code>source</code> a</li>
+            <li><code>mapping</code> b</li>
+</ul>
+</div>
+        <div class="oc-promote-modal__bucket" data-testid="promote-preview-updates">
+          <h5>Will be updated (1)</h5>
+          <ul>
+            <li><code>endpoint</code> c</li>
+</ul>
+</div>
+        <div class="oc-promote-modal__bucket" data-testid="promote-preview-collisions">
+          <h5>Collisions (1)</h5>
+          <ul>
+            <li><code>rule</code> d</li>
+</ul>
+</div>
+</div>
+      <div class="oc-promote-modal__actions">
+        <div class="NcButton">Back
+</div>
+        <div class="NcButton"> Confirm promotion
+</div>
+</div>
+</div>
+</div>
+</div>"
+`;

@@ -161,6 +161,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import closableDialog from '../mixins/closableDialog.js'
 import { listOf, provenanceState, valueRows } from './registryLookup.js'
 
 const API = '/apps/integriq/api/property-sources'
@@ -175,6 +176,8 @@ export default {
 		NcSelect,
 		NcTextField,
 	},
+
+	mixins: [closableDialog],
 
 	props: {
 		/** Whether the dialog is shown. */
@@ -389,22 +392,6 @@ export default {
 			} finally {
 				this.busy = false
 			}
-		},
-
-		/**
-		 * @param {boolean} isOpen The dialog's new open state.
-		 *
-		 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001
-		 */
-		onOpenChanged(isOpen) {
-			if (!isOpen) {
-				this.close()
-			}
-		},
-
-		/** @spec openspec/specs/registry-field-source/spec.md#requirement-a-property-source-is-resolved-through-one-provider-contract-req-rfs-001 */
-		close() {
-			this.$emit('close')
 		},
 	},
 }

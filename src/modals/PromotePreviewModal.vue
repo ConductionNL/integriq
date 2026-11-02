@@ -88,54 +88,24 @@
 				</p>
 
 				<div class="oc-promote-modal__buckets">
-					<div
-						class="oc-promote-modal__bucket"
-						data-testid="promote-preview-creates">
-						<h5>
-							{{ t('integriq', 'Will be created') }} ({{
-								preview.creates.length
-							}})
-						</h5>
-						<ul>
-							<li
-								v-for="entry in preview.creates"
-								:key="`c-${entry.type}-${entry.slug}`">
-								<code>{{ entry.type }}</code> {{ entry.slug }}
-							</li>
-						</ul>
-					</div>
-					<div
-						class="oc-promote-modal__bucket"
-						data-testid="promote-preview-updates">
-						<h5>
-							{{ t('integriq', 'Will be updated') }} ({{
-								preview.updates.length
-							}})
-						</h5>
-						<ul>
-							<li
-								v-for="entry in preview.updates"
-								:key="`u-${entry.type}-${entry.slug}`">
-								<code>{{ entry.type }}</code> {{ entry.slug }}
-							</li>
-						</ul>
-					</div>
-					<div
-						class="oc-promote-modal__bucket"
-						data-testid="promote-preview-collisions">
-						<h5>
-							{{ t('integriq', 'Collisions') }} ({{
-								preview.collisions.length
-							}})
-						</h5>
-						<ul>
-							<li
-								v-for="entry in preview.collisions"
-								:key="`co-${entry.type}-${entry.slug}`">
-								<code>{{ entry.type }}</code> {{ entry.slug }}
-							</li>
-						</ul>
-					</div>
+					<PreviewBucket
+						block="oc-promote-modal"
+						:title="t('integriq', 'Will be created')"
+						:entries="preview.creates"
+						keyPrefix="c"
+						data-testid="promote-preview-creates" />
+					<PreviewBucket
+						block="oc-promote-modal"
+						:title="t('integriq', 'Will be updated')"
+						:entries="preview.updates"
+						keyPrefix="u"
+						data-testid="promote-preview-updates" />
+					<PreviewBucket
+						block="oc-promote-modal"
+						:title="t('integriq', 'Collisions')"
+						:entries="preview.collisions"
+						keyPrefix="co"
+						data-testid="promote-preview-collisions" />
 				</div>
 
 				<div
@@ -215,18 +185,8 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-
-/**
- * Append the server's or the client's reason to a translated failure text.
- *
- * @param {string} message The translated failure text.
- * @param {Error} err The failed request.
- * @return {string} The message, with ": detail" when there is one.
- */
-function withDetail(message, err) {
-	const detail = err?.response?.data?.error || err?.message || ''
-	return message + (detail ? `: ${detail}` : '')
-}
+import PreviewBucket from '../components/PreviewBucket.vue'
+import { withDetail } from '../errorDetail.js'
 
 const PREVIEW_PATH = '/apps/integriq/api/promotions/preview'
 const PROMOTE_PATH = '/apps/integriq/api/promotions'
@@ -313,6 +273,7 @@ export default {
 	name: 'PromotePreviewModal',
 
 	components: {
+		PreviewBucket,
 		NcModal,
 		NcButton,
 		NcSelect,
@@ -660,7 +621,7 @@ export default {
 	gap: 12px;
 }
 
-.oc-promote-modal__bucket ul {
+.oc-promote-modal__bucket :deep(ul) {
 	max-height: 180px;
 	overflow: auto;
 	margin: 0;
