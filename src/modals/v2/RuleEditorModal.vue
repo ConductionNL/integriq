@@ -4,9 +4,8 @@
 <!--
   RuleEditorModal — the create/edit surface for a Rule on the Rules index.
 
-  It restores the field set the pre-manifest modal
-  (`src/modals/Rule/EditRule.vue`) offered, which the schema-driven
-  CnFormDialog could not express:
+  It carries the fields the schema-driven CnFormDialog could not
+  express:
 
       name │ description
 

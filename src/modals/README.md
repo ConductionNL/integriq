@@ -1,27 +1,19 @@
-# Legacy modals — extraction reference
+# Legacy modals: what replaced them
 
-The three SFCs in the *Files preserved* table below are **dead at runtime** —
 `src/modals/Modals.vue` (the dispatcher that imported all 47 pre-chain-C
 modals) was deleted along with the 30+ modal files whose UX is covered by
 nc-vue primitives (`CnFormDialog`, `CnDeleteDialog`, `CnDetailPage`,
-`CnMassDeleteDialog`).
+`CnMassDeleteDialog`). The modals the chain-C src/ audit flagged for bespoke
+extraction were rebuilt and then removed; the *Removed* table below maps each
+one to its replacement.
 
-The other SFCs still under this tree — `PromotePreviewModal.vue`,
+The SFCs still under this tree, `PromotePreviewModal.vue`,
 `Subscription/SubscriptionSigningModal.vue`,
 `Synchronization/SyncDeadLetterDetailModal.vue`,
 `EventDelivery/EventDeliveryDetailModal.vue`,
-`EventSubscription/SubscriptionActionFields.vue` and
-`NotificatiesAbonnement/NotificatiesAbonnementForm.vue` — are **live** and
-imported; they are not part of the extraction backlog.
-
-What remains here is the set of modals flagged by the chain-C src/ audit as
-needing **bespoke extraction** rather than blanket deletion. Their existing
-imports against deleted per-schema stores (`sourceStore`, `mappingStore`,
-…) and the deleted `src/entities/` tree are intentionally broken; they only
-serve as a template / UX spec for the upcoming PR series that re-implements
-each modal as a CnIndexPage `#form-dialog` slot component wired to
-`useObjectStore` (nc-vue) + the OR `/api/objects/integriq/{schema}/*`
-endpoints.
+`EventSubscription/SubscriptionActionFields.vue`,
+`NotificatiesAbonnement/NotificatiesAbonnementForm.vue` and everything under
+`v2/`, are **live** and imported.
 
 ESLint and webpack ignore this directory. Once a modal is reborn as a
 fresh bespoke component, the legacy file gets removed in the same PR —
@@ -37,18 +29,13 @@ skipped. Verifiable by appending an unused const to any v2 file and running
 surfaces ~25 JSDoc/attribute-order warnings in five of them, so it wants its
 own change rather than riding along with a feature.
 
-## Files preserved
-
-| File | LoC | Replacement plan |
-|---|---|---|
-| `Rule/EditRule.vue` | 1919 | **Partly extracted.** Its basic-field surface — name, description, conditions, timing, order, action, type and the `configuration.error.*` block — is reborn as `src/modals/v2/RuleEditorModal.vue`, wired to the Rules index through `pages[Rules].slots["form-dialog"]`. The file stays because the remaining 14 per-action-type blocks are not extracted from *here*: their bespoke forms live under `src/views/Rule/actionForms/` and are hosted by `RuleActionConfig` on the rule detail page, and only the `authentication`/API-key half still has behaviour with no v2 home — `buildAuthenticationConfiguration.js` (covered by `tests/vitest/buildAuthenticationConfiguration.spec.js`) is imported from nowhere else. Remove both once API-key authoring moves into `AuthenticationForm`. |
-| `Endpoint/AddEndpointRule.vue` | 172 | Bespoke endpoint-rule relation picker |
-| `Endpoint/EditEndpoint.vue` | 451 | Bespoke endpoint create/edit modal |
-
 ## Removed
 
 | File | Removed in | Replacement |
 |---|---|---|
+| `Rule/EditRule.vue` + `Rule/buildAuthenticationConfiguration.js` | — | `src/modals/v2/RuleEditorModal.vue` (name, description, conditions, timing, order, action, type and `configuration.error.*`, on the Rules index `form-dialog` slot) plus the per-action-type forms under `src/views/Rule/actionForms/`, hosted by `RuleActionConfig` on the rule detail page. Authentication rules are edited in `AuthenticationForm.vue`, which patches `configuration.authentication.keys` only when its field is edited, so a save that leaves the field alone omits the write-only keys and OpenRegister keeps the stored ones. |
+| `Endpoint/AddEndpointRule.vue` | — | `src/modals/v2/AddEndpointRuleModal.vue` |
+| `Endpoint/EditEndpoint.vue` | — | `src/modals/v2/EndpointFormFields.vue` (the Endpoints index `form-fields` slot) |
 | `Mapping/EditMapping.vue` | #874 | `src/views/wrappers/MappingDetailPage.vue` + `MappingRulesEditor.vue` + `EditMappingRuleDialog.vue` (3-tab transformation-rules editor on CnDetailPage) |
 | `Mapping/mappingItem/EditMappingItem.vue` | #874 | `src/dialogs/EditMappingRuleDialog.vue` |
 | `Mapping/mappingItem/DeleteMappingItem.vue` | #874 | CnDetailPage's built-in delete action on the rule row |

@@ -4,7 +4,7 @@ Rules are components that can be associated with endpoints to add additional fun
 
 ## Adding Rules to Endpoints
 
-Rules can be added to endpoints through the AddEndpointRule modal component. The process works as follows:
+Rules can be added to endpoints through the AddEndpointRuleModal component (`src/modals/v2/AddEndpointRuleModal.vue`). The process works as follows:
 
 1. Select a rule from the available rule options dropdown
 2. The rule ID is added to the endpoint's `rules` array property

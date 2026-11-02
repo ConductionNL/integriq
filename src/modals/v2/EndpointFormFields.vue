@@ -2,9 +2,8 @@
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
   EndpointFormFields — slotted override for CnFormDialog's `#form` content on
-  the Endpoints index page. Restores the field set the pre-manifest
-  EditEndpoint.vue modal offered (src/modals/Endpoint/EditEndpoint.vue), which
-  the schema-driven form could not express declaratively:
+  the Endpoints index page. Adds the fields the schema-driven form could not
+  express declaratively:
 
     • Register + Schema pickers. These are NOT schema properties — the endpoint
       schema stores a single polymorphic `targetId`, and for
@@ -267,7 +266,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 
-/** HTTP methods the original EditEndpoint modal offered, in its order. */
+/** HTTP methods the method select offers, in display order. */
 const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((id) => ({
 	id,
 	label: id,

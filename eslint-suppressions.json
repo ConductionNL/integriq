@@ -40,28 +40,6 @@
       "count": 1
     }
   },
-  "src/modals/Endpoint/AddEndpointRule.vue": {
-    "@typescript-eslint/no-use-before-define": {
-      "count": 6
-    },
-    "no-console": {
-      "count": 2
-    }
-  },
-  "src/modals/Endpoint/EditEndpoint.vue": {
-    "@typescript-eslint/no-use-before-define": {
-      "count": 8
-    },
-    "jsdoc/require-param-type": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 7
-    },
-    "vue/custom-event-name-casing": {
-      "count": 2
-    }
-  },
   "src/modals/EventDelivery/EventDeliveryDetailModal.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -75,29 +53,6 @@
   "src/modals/NotificatiesAbonnement/NotificatiesAbonnementForm.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    }
-  },
-  "src/modals/Rule/EditRule.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
-    "@typescript-eslint/no-unused-expressions": {
-      "count": 1
-    },
-    "@typescript-eslint/no-use-before-define": {
-      "count": 13
-    },
-    "jsdoc/require-param-type": {
-      "count": 6
-    },
-    "no-console": {
-      "count": 11
-    },
-    "vue/prefer-separate-static-class": {
-      "count": 3
     }
   },
   "src/modals/Synchronization/SyncDeadLetterDetailModal.vue": {
