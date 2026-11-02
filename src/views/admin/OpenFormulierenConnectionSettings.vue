@@ -109,9 +109,6 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcNoteCard,
@@ -121,6 +118,25 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import accountPicker from '../../mixins/accountPicker.js'
+import intakeConnectionEditor from '../../mixins/intakeConnectionEditor.js'
+
+/**
+ * The webhook signature schemes an administrator chooses between.
+ *
+ * @param {(app: string, text: string) => string} t the translate function
+ * @return {Array<{label: string, value: string}>} the select options
+ */
+function schemeOptionList(t) {
+	return [
+		{
+			label: t('integriq', 'Timestamped HMAC (t=…,v1=…)'),
+			value: 'openconnector',
+		},
+		{ label: t('integriq', 'Stripe style HMAC'), value: 'stripe' },
+		{ label: t('integriq', 'GitHub style HMAC (sha256=…)'), value: 'github' },
+		{ label: t('integriq', 'Microsoft Teams HMAC'), value: 'teams' },
+	]
+}
 
 /**
  * Admin editor for the Open Formulieren connection: the instance's one
@@ -141,159 +157,122 @@ export default {
 		NcTextField,
 	},
 
-	mixins: [accountPicker],
+	mixins: [accountPicker, intakeConnectionEditor],
 
 	data() {
 		return {
-			loading: true,
-			saving: false,
-			error: '',
+			settingsPath: '/apps/integriq/api/admin/open-formulieren-connection',
 			scheme: 'openconnector',
 			secret: '',
 			secretConfigured: false,
 			header: 'X-OpenFormulieren-Signature',
 			toleranceSeconds: '300',
-			account: null,
-			accountInfo: { state: 'none', displayName: '' },
-			handlerGroup: { id: '', empty: false },
-			schemeOptions: [
-				{
-					label: this.t('integriq', 'Timestamped HMAC (t=…,v1=…)'),
-					value: 'openconnector',
-				},
-				{ label: this.t('integriq', 'Stripe style HMAC'), value: 'stripe' },
-				{
-					label: this.t('integriq', 'GitHub style HMAC (sha256=…)'),
-					value: 'github',
-				},
-				{
-					label: this.t('integriq', 'Microsoft Teams HMAC'),
-					value: 'teams',
-				},
-			],
+			schemeOptions: schemeOptionList(this.t),
 		}
 	},
 
-	computed: {
+	methods: {
 		/**
-		 * The one-line state of the connection's account.
+		 * Show the stored signature trust.
 		 *
+		 * @param {object} data the stored connection
+		 * @return {void}
+		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
+		 */
+		applySettings(data) {
+			this.scheme = data.scheme || 'openconnector'
+			this.secretConfigured = data.secretConfigured === true
+			this.header = data.header || 'X-OpenFormulieren-Signature'
+			this.toleranceSeconds = String(data.toleranceSeconds || 300)
+		},
+
+		/**
+		 * The signature trust to store, besides the account.
+		 *
+		 * @return {object} the request fields
+		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
+		 */
+		settingsBody() {
+			return {
+				scheme: this.scheme,
+				secret: this.secret,
+				header: this.header,
+				toleranceSeconds: Number(this.toleranceSeconds) || 300,
+			}
+		},
+
+		/**
+		 * Forget the typed secret once it is stored.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
+		 */
+		clearSecret() {
+			this.secret = ''
+		},
+
+		/**
+		 * The text of a failed load.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
+		 */
+		loadFailedText() {
+			return this.t(
+				'integriq',
+				'Failed to load the Open Formulieren connection.',
+			)
+		},
+
+		/**
+		 * The text of a failed save.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
+		 */
+		saveFailedText() {
+			return this.t(
+				'integriq',
+				'Failed to save the Open Formulieren connection.',
+			)
+		},
+
+		/**
+		 * The text of a successful save.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4
+		 */
+		savedText() {
+			return this.t('integriq', 'Open Formulieren connection saved.')
+		},
+
+		/**
+		 * The account state when none is set.
+		 *
+		 * @return {string}
 		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#scenario-no-account-set-is-shown-plainly
 		 */
-		accountState() {
-			const name = this.accountInfo.displayName
-			if (this.accountInfo.state === 'ok') {
-				return {
-					refused: false,
-					text: this.t('integriq', 'Intake acts as {name}', { name }),
-				}
-			}
-
-			if (this.accountInfo.state === 'none') {
-				return {
-					refused: true,
-					text: this.t(
-						'integriq',
-						'No account set: Open Formulieren submissions are refused with 503',
-					),
-				}
-			}
-
-			return {
-				refused: true,
-				text: this.t(
-					'integriq',
-					'Account {name} is not usable: Open Formulieren submissions are refused with 503',
-					{ name },
-				),
-			}
-		},
-	},
-
-	/** @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4 */
-	async mounted() {
-		await this.load()
-	},
-
-	methods: {
-		/** @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4 */
-		async load() {
-			this.loading = true
-			this.error = ''
-			try {
-				const { data } = await axios.get(
-					generateUrl(
-						'/apps/integriq/api/admin/open-formulieren-connection',
-					),
-				)
-				this.scheme = data.scheme || 'openconnector'
-				this.secretConfigured = data.secretConfigured === true
-				this.header = data.header || 'X-OpenFormulieren-Signature'
-				this.toleranceSeconds = String(data.toleranceSeconds || 300)
-				this.handlerGroup = data.handlerGroup || { id: '', empty: false }
-				this.accountInfo = data.account || { state: 'none', displayName: '' }
-				this.account = data.userId
-					? {
-							id: data.userId,
-							user: data.userId,
-							displayName: this.accountInfo.displayName || data.userId,
-						}
-					: null
-			} catch {
-				this.error = this.t(
-					'integriq',
-					'Failed to load the Open Formulieren connection.',
-				)
-			} finally {
-				this.loading = false
-			}
+		noAccountText() {
+			return this.t(
+				'integriq',
+				'No account set: Open Formulieren submissions are refused with 503',
+			)
 		},
 
-		/** @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/tasks.md#task-4 */
-		async save() {
-			this.saving = true
-			this.error = ''
-			this.accountError = ''
-			try {
-				const { data } = await axios.put(
-					generateUrl(
-						'/apps/integriq/api/admin/open-formulieren-connection',
-					),
-					{
-						userId: this.account ? this.account.id : '',
-						scheme: this.scheme,
-						secret: this.secret,
-						header: this.header,
-						toleranceSeconds: Number(this.toleranceSeconds) || 300,
-					},
-				)
-				this.secret = ''
-				await this.load()
-				showSuccess(this.t('integriq', 'Open Formulieren connection saved.'))
-				for (const warning of data.warnings || []) {
-					showWarning(warning)
-				}
-			} catch (e) {
-				const fieldErrors =
-					(e.response && e.response.data && e.response.data.fieldErrors)
-					|| {}
-				this.accountError = fieldErrors.userId || ''
-				const errors =
-					e.response
-					&& e.response.data
-					&& Array.isArray(e.response.data.errors)
-						? e.response.data.errors.join(' ')
-						: null
-				this.error =
-					errors
-					|| this.t(
-						'integriq',
-						'Failed to save the Open Formulieren connection.',
-					)
-				showError(this.error)
-			} finally {
-				this.saving = false
-			}
+		/**
+		 * The account state when the set account is not usable.
+		 *
+		 * @param {string} name the account's display name
+		 * @return {string}
+		 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#scenario-no-account-set-is-shown-plainly
+		 */
+		refusalText(name) {
+			return this.t(
+				'integriq',
+				'Account {name} is not usable: Open Formulieren submissions are refused with 503',
+				{ name },
+			)
 		},
 	},
 }
