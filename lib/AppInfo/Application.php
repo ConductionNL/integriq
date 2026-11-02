@@ -621,7 +621,7 @@ class Application extends App implements IBootstrap {
 		// way; OpenRegister must load on an instance without Integriq.
 		$dispatcher->addServiceListener(
 			eventName: \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent::class,
-			className: \OCA\Integriq\Listener\MappingFunctionRegistrationListener::class
+			className: \OCA\Integriq\Twig\MappingFunctionRegistrationListener::class
 		);
 
 	}//end registerMappingFunctions()

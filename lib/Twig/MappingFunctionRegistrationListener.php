@@ -20,7 +20,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Listener
- * @package  OCA\Integriq\Listener
+ * @package  OCA\Integriq\Twig
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,9 +31,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Listener;
+namespace OCA\Integriq\Twig;
 
-use OCA\Integriq\Twig\MappingRuntime;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Twig\TwigFunction;

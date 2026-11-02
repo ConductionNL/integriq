@@ -320,7 +320,7 @@
 	"dispatcher.addServiceListener(OCA\\DAV\\Events\\CachedCalendarObjectUpdatedEvent, OCA\\Integriq\\EventListener\\NextcloudCalendarEventListener, int)",
 	"dispatcher.addServiceListener(OCA\\DAV\\Events\\CachedCalendarObjectDeletedEvent, OCA\\Integriq\\EventListener\\NextcloudCalendarEventListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent, OCA\\Integriq\\Flow\\FlowNodeListener, int)",
-	"dispatcher.addServiceListener(OCA\\OpenRegister\\Service\\RegisterMappingFunctionsEvent, OCA\\Integriq\\Listener\\MappingFunctionRegistrationListener, int)",
+	"dispatcher.addServiceListener(OCA\\OpenRegister\\Service\\RegisterMappingFunctionsEvent, OCA\\Integriq\\Twig\\MappingFunctionRegistrationListener, int)",
 	"dispatcher.addListener(OCP\\AppFramework\\Http\\Events\\BeforeTemplateRenderedEvent, closure, int)",
 	"context.registerService(OCA\\Integriq\\Controller\\HealthController, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Controller\\MetricsController, closure, bool)",
