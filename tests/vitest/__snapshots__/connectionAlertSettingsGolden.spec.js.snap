@@ -1,0 +1,88 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ConnectionAlertSettings > a failed read says why (0) 1`] = `
+"<section class="integriq-admin__section" data-testid="admin-connection-alert-group-section">
+  <h3>Who hears about connection alerts</h3>
+  <p class="integriq-admin__hint">Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.</p>
+  <div class="integriq-admin__action-error" role="alert">srv</div>
+  <div class="connection-alert-group__row">
+    <div class="NcTextField" data-label="Group id" data-value="" data-testid="admin-connection-alert-group"></div><button class="NcButton" data-testid="admin-connection-alert-group-save">Save</button>
+  </div>
+</section>"
+`;
+
+exports[`ConnectionAlertSettings > a failed read says why (1) 1`] = `
+"<section class="integriq-admin__section" data-testid="admin-connection-alert-group-section">
+  <h3>Who hears about connection alerts</h3>
+  <p class="integriq-admin__hint">Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.</p>
+  <div class="integriq-admin__action-error" role="alert">The setting could not be read.</div>
+  <div class="connection-alert-group__row">
+    <div class="NcTextField" data-label="Group id" data-value="" data-testid="admin-connection-alert-group"></div><button class="NcButton" data-testid="admin-connection-alert-group-save">Save</button>
+  </div>
+</section>"
+`;
+
+exports[`ConnectionAlertSettings > reads {"group":"ops"} 1`] = `
+[
+  "ops",
+  "ops",
+  false,
+  "",
+]
+`;
+
+exports[`ConnectionAlertSettings > reads {"group":"ops"} 2`] = `
+"<section class="integriq-admin__section" data-testid="admin-connection-alert-group-section">
+  <h3>Who hears about connection alerts</h3>
+  <p class="integriq-admin__hint">Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.</p>
+  <div class="connection-alert-group__row">
+    <div class="NcTextField" data-label="Group id" data-value="ops" data-testid="admin-connection-alert-group"></div><button class="NcButton" data-testid="admin-connection-alert-group-save">Save</button>
+  </div>
+</section>"
+`;
+
+exports[`ConnectionAlertSettings > reads {} 1`] = `
+[
+  "",
+  "",
+  false,
+  "",
+]
+`;
+
+exports[`ConnectionAlertSettings > reads {} 2`] = `
+"<section class="integriq-admin__section" data-testid="admin-connection-alert-group-section">
+  <h3>Who hears about connection alerts</h3>
+  <p class="integriq-admin__hint">Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.</p>
+  <div class="connection-alert-group__row">
+    <div class="NcTextField" data-label="Group id" data-value="" data-testid="admin-connection-alert-group"></div><button class="NcButton" data-testid="admin-connection-alert-group-save">Save</button>
+  </div>
+</section>"
+`;
+
+exports[`ConnectionAlertSettings > reads null 1`] = `
+[
+  "",
+  "",
+  false,
+  "",
+]
+`;
+
+exports[`ConnectionAlertSettings > reads null 2`] = `
+"<section class="integriq-admin__section" data-testid="admin-connection-alert-group-section">
+  <h3>Who hears about connection alerts</h3>
+  <p class="integriq-admin__hint">Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.</p>
+  <div class="connection-alert-group__row">
+    <div class="NcTextField" data-label="Group id" data-value="" data-testid="admin-connection-alert-group"></div><button class="NcButton" data-testid="admin-connection-alert-group-save">Save</button>
+  </div>
+</section>"
+`;
+
+exports[`ConnectionAlertSettings > starts loading 1`] = `
+"<section class="integriq-admin__section" data-testid="admin-connection-alert-group-section">
+  <h3>Who hears about connection alerts</h3>
+  <p class="integriq-admin__hint">Members of this group get a notification when a connection, job or delivery fails or passes an alert threshold. Leave it empty to tell the admin group.</p>
+  <p class="integriq-admin__hint">Loading the setting…</p>
+</section>"
+`;
