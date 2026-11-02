@@ -466,22 +466,17 @@ import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
+import syncKindOptions from '../../mixins/syncKindOptions.js'
 import { useObjectStore } from '../../store/objectStore.js'
-import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 // Shared with modals/v2/SynchronizationEditorModal.vue — see syncDraft.js.
 import {
 	CURSOR_COMPARATOR_OPTIONS,
 	emptyDraft,
 	emptyRootGroup,
 	fetchBridgeStatus,
-	NEXTCLOUD_FORM_OPTION,
-	NEXTCLOUD_TABLE_OPTION,
 	normaliseConditions,
 	serializeConditions,
-	SYNC_MODE_OPTIONS,
-	TYPE_OPTIONS,
 } from './syncDraft.js'
-import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'integriq'
@@ -515,7 +510,7 @@ export default {
 		SyncReferenceList,
 	},
 
-	mixins: [liveObjectSubscription],
+	mixins: [liveObjectSubscription, syncKindOptions],
 
 	props: {
 		/**
@@ -612,74 +607,6 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		errorMessage() {
 			return this.loadError || t('integriq', 'Failed to load synchronization')
-		},
-
-		/**
-		 * Kind options offered in the source/target selectors. `nextcloud-table`
-		 * is only present when the backend reports the Tables app is enabled
-		 * (tables-bridge REQ-004 / sync-editor-ui REQ-SYNCUI-006) — but an
-		 * already-configured `nextcloud-table` sync keeps the option so its
-		 * type still renders a label when Tables is later disabled.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
-		 */
-		typeOptions() {
-			const usesTable =
-				this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
-				|| this.draft?.targetType === NEXTCLOUD_TABLE_KIND
-			if (this.tablesEnabled || usesTable) {
-				return [...TYPE_OPTIONS, NEXTCLOUD_TABLE_OPTION]
-			}
-			return TYPE_OPTIONS
-		},
-
-		/**
-		 * Kind options offered in the SOURCE selector only. `nextcloud-form`
-		 * is appended here (never to the shared `typeOptions` the target
-		 * selector uses) — nextcloud-forms-connector REQ-002 is source-only,
-		 * so `nextcloud-form` must never appear as a target-kind option,
-		 * regardless of whether the Forms app is enabled (sync-editor-ui
-		 * REQ-SYNCUI-008). Mirrors `typeOptions`' "keep an already-configured
-		 * type visible even if the app is later disabled" behaviour.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
-		 */
-		sourceTypeOptions() {
-			const usesForm = this.draft?.sourceType === NEXTCLOUD_FORM_KIND
-			if (this.formsEnabled || usesForm) {
-				return [...this.typeOptions, NEXTCLOUD_FORM_OPTION]
-			}
-			return this.typeOptions
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedSourceType() {
-			return (
-				this.sourceTypeOptions.find(
-					(opt) => opt.id === this.draft?.sourceType,
-				) || TYPE_OPTIONS[0]
-			)
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedTargetType() {
-			return (
-				this.typeOptions.find((opt) => opt.id === this.draft?.targetType)
-				|| TYPE_OPTIONS[1]
-			)
-		},
-
-		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
-		syncModeOptions() {
-			return SYNC_MODE_OPTIONS
-		},
-
-		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
-		selectedSyncMode() {
-			return (
-				SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode)
-				|| SYNC_MODE_OPTIONS[0]
-			)
 		},
 
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */

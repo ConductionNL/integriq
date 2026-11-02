@@ -135,9 +135,6 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess, showWarning } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcNoteCard,
@@ -146,6 +143,28 @@ import {
 	NcSelectUsers,
 } from '@nextcloud/vue'
 import accountPicker from '../../mixins/accountPicker.js'
+import intakeConnectionEditor from '../../mixins/intakeConnectionEditor.js'
+
+/**
+ * The signature trust modes an administrator chooses between.
+ *
+ * @param {(app: string, text: string) => string} t the translate function
+ * @return {Array<{label: string, value: string}>} the select options
+ */
+function modeOptionList(t) {
+	return [
+		{
+			label: t('integriq', 'HMAC shared secret (pre-production)'),
+
+			value: 'hmac',
+		},
+		{
+			label: t('integriq', 'PKIoverheid certificate chain (production)'),
+
+			value: 'pkioverheid',
+		},
+	]
+}
 
 /**
  * Admin editor for the DSO connection: the instance's one `dso-stam`
@@ -166,161 +185,125 @@ export default {
 		NcSelectUsers,
 	},
 
-	mixins: [accountPicker],
+	mixins: [accountPicker, intakeConnectionEditor],
 
 	data() {
 		return {
-			loading: true,
-			saving: false,
-			error: '',
+			settingsPath: '/apps/integriq/api/admin/dso-pki-config',
 			mode: 'hmac',
 			hmacSecret: '',
 			hmacSecretConfigured: false,
 			signingCertificate: '',
 			intermediateChain: '',
 			rootCa: '',
-			account: null,
-			accountInfo: { state: 'none', displayName: '' },
-			handlerGroup: { id: '', empty: false },
-			modeOptions: [
-				{
-					label: this.t('integriq', 'HMAC shared secret (pre-production)'),
-
-					value: 'hmac',
-				},
-				{
-					label: this.t(
-						'integriq',
-						'PKIoverheid certificate chain (production)',
-					),
-
-					value: 'pkioverheid',
-				},
-			],
+			modeOptions: modeOptionList(this.t),
 		}
 	},
 
-	computed: {
+	methods: {
 		/**
-		 * The one-line state of the connection's account.
+		 * Show the stored signature trust.
 		 *
+		 * @param {object} data the stored connection
+		 * @return {void}
+		 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+		 */
+		applySettings(data) {
+			this.mode = data.mode === 'pkioverheid' ? 'pkioverheid' : 'hmac'
+			this.hmacSecretConfigured = data.hmacSecretConfigured === true
+			this.signingCertificate = data.signingCertificate || ''
+			this.intermediateChain = data.intermediateChain || ''
+			this.rootCa = data.rootCa || ''
+		},
+
+		/**
+		 * The signature trust to store, besides the account.
+		 *
+		 * @return {object} the request fields
+		 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+		 */
+		settingsBody() {
+			return {
+				mode: this.mode,
+				hmacSecret: this.hmacSecret,
+				signingCertificate: this.signingCertificate,
+				intermediateChain: this.intermediateChain,
+				rootCa: this.rootCa,
+			}
+		},
+
+		/**
+		 * Forget the typed secret once it is stored.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+		 */
+		clearSecret() {
+			this.hmacSecret = ''
+		},
+
+		/**
+		 * The text of a failed load.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+		 */
+		loadFailedText() {
+			return this.t(
+				'integriq',
+				'Failed to load the DSO signature configuration.',
+			)
+		},
+
+		/**
+		 * The text of a failed save.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+		 */
+		saveFailedText() {
+			return this.t(
+				'integriq',
+				'Failed to save the DSO signature configuration.',
+			)
+		},
+
+		/**
+		 * The text of a successful save.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
+		 */
+		savedText() {
+			return this.t('integriq', 'DSO signature configuration saved.')
+		},
+
+		/**
+		 * The account state when none is set.
+		 *
+		 * @return {string}
 		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
 		 */
-		accountState() {
-			const name = this.accountInfo.displayName
-			if (this.accountInfo.state === 'ok') {
-				return {
-					refused: false,
-					text: this.t('integriq', 'Intake acts as {name}', { name }),
-				}
-			}
-
-			if (this.accountInfo.state === 'none') {
-				return {
-					refused: true,
-					text: this.t(
-						'integriq',
-						'No account set: DSO-LV pushes are refused with 503',
-					),
-				}
-			}
-
-			return {
-				refused: true,
-				text: this.t(
-					'integriq',
-					'Account {name} is not usable: DSO-LV pushes are refused with 503',
-					{ name },
-				),
-			}
-		},
-	},
-
-	/** @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2 */
-	async mounted() {
-		await this.load()
-	},
-
-	methods: {
-		/** @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2 */
-		async load() {
-			this.loading = true
-			this.error = ''
-			try {
-				const { data } = await axios.get(
-					generateUrl('/apps/integriq/api/admin/dso-pki-config'),
-				)
-				this.mode = data.mode === 'pkioverheid' ? 'pkioverheid' : 'hmac'
-				this.hmacSecretConfigured = data.hmacSecretConfigured === true
-				this.signingCertificate = data.signingCertificate || ''
-				this.intermediateChain = data.intermediateChain || ''
-				this.rootCa = data.rootCa || ''
-				this.handlerGroup = data.handlerGroup || { id: '', empty: false }
-				this.accountInfo = data.account || {
-					state: 'none',
-					displayName: '',
-				}
-				this.account = data.userId
-					? {
-							id: data.userId,
-							user: data.userId,
-							displayName: this.accountInfo.displayName || data.userId,
-						}
-					: null
-			} catch {
-				this.error = this.t(
-					'integriq',
-					'Failed to load the DSO signature configuration.',
-				)
-			} finally {
-				this.loading = false
-			}
+		noAccountText() {
+			return this.t(
+				'integriq',
+				'No account set: DSO-LV pushes are refused with 503',
+			)
 		},
 
-		/** @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2 */
-		async save() {
-			this.saving = true
-			this.error = ''
-			this.accountError = ''
-			try {
-				const { data } = await axios.put(
-					generateUrl('/apps/integriq/api/admin/dso-pki-config'),
-					{
-						userId: this.account ? this.account.id : '',
-						mode: this.mode,
-						hmacSecret: this.hmacSecret,
-						signingCertificate: this.signingCertificate,
-						intermediateChain: this.intermediateChain,
-						rootCa: this.rootCa,
-					},
-				)
-				this.hmacSecret = ''
-				await this.load()
-				showSuccess(this.t('integriq', 'DSO signature configuration saved.'))
-				for (const warning of data.warnings || []) {
-					showWarning(warning)
-				}
-			} catch (e) {
-				const fieldErrors =
-					(e.response && e.response.data && e.response.data.fieldErrors)
-					|| {}
-				this.accountError = fieldErrors.userId || ''
-				const errors =
-					e.response
-					&& e.response.data
-					&& Array.isArray(e.response.data.errors)
-						? e.response.data.errors.join(' ')
-						: null
-				this.error =
-					errors
-					|| this.t(
-						'integriq',
-						'Failed to save the DSO signature configuration.',
-					)
-				showError(this.error)
-			} finally {
-				this.saving = false
-			}
+		/**
+		 * The account state when the set account is not usable.
+		 *
+		 * @param {string} name the account's display name
+		 * @return {string}
+		 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-no-account-set-is-shown-plainly
+		 */
+		refusalText(name) {
+			return this.t(
+				'integriq',
+				'Account {name} is not usable: DSO-LV pushes are refused with 503',
+				{ name },
+			)
 		},
 	},
 }

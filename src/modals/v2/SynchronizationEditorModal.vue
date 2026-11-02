@@ -503,7 +503,7 @@ import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
 import SyncWriteBackFields from '../../views/Synchronization/SyncWriteBackFields.vue'
 import namedEditorDialog from '../../mixins/namedEditorDialog.js'
-import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
+import syncKindOptions from '../../mixins/syncKindOptions.js'
 import {
 	disappearancePolicyError,
 	disappearancePolicyOptions,
@@ -515,14 +515,11 @@ import {
 	CURSOR_COMPARATOR_OPTIONS,
 	emptyDraft,
 	fetchBridgeStatus,
-	NEXTCLOUD_FORM_OPTION,
-	NEXTCLOUD_TABLE_OPTION,
 	normaliseConditions,
 	serializeConditions,
 	SYNC_MODE_OPTIONS,
 	TYPE_OPTIONS,
 } from '../../views/Synchronization/syncDraft.js'
-import { NEXTCLOUD_TABLE_KIND } from '../../views/Synchronization/tablesBridge.js'
 import { editorSlotScopeProps } from '../editorSlotScope.js'
 
 export default {
@@ -552,7 +549,7 @@ export default {
 		SwapHorizontalIcon,
 	},
 
-	mixins: [namedEditorDialog],
+	mixins: [namedEditorDialog, syncKindOptions],
 
 	props: { ...editorSlotScopeProps },
 
@@ -604,72 +601,6 @@ export default {
 				// No `confirm` means the host did not bind the slot scope, so
 				// there is nothing to save through.
 				&& typeof this.confirm === 'function'
-			)
-		},
-
-		/**
-		 * Kind options shared by both selectors. An already-configured
-		 * `nextcloud-table` stays visible even if the Tables app is later
-		 * disabled, so an existing record never silently loses its type.
-		 *
-		 * @return {Array<object>} Type options.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
-		 */
-		typeOptions() {
-			const usesTable =
-				this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
-				|| this.draft?.targetType === NEXTCLOUD_TABLE_KIND
-			if (this.tablesEnabled || usesTable) {
-				return [...TYPE_OPTIONS, NEXTCLOUD_TABLE_OPTION]
-			}
-			return TYPE_OPTIONS
-		},
-
-		/**
-		 * Kind options offered in the SOURCE selector only. `nextcloud-form` is
-		 * appended here and never to the shared list the target selector uses —
-		 * it is a source-only type (nextcloud-forms-connector REQ-002).
-		 *
-		 * @return {Array<object>} Source type options.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
-		 */
-		sourceTypeOptions() {
-			const usesForm = this.draft?.sourceType === NEXTCLOUD_FORM_KIND
-			if (this.formsEnabled || usesForm) {
-				return [...this.typeOptions, NEXTCLOUD_FORM_OPTION]
-			}
-			return this.typeOptions
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedSourceType() {
-			return (
-				this.sourceTypeOptions.find(
-					(opt) => opt.id === this.draft?.sourceType,
-				) || TYPE_OPTIONS[0]
-			)
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedTargetType() {
-			return (
-				this.typeOptions.find((opt) => opt.id === this.draft?.targetType)
-				|| TYPE_OPTIONS[1]
-			)
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		syncModeOptions() {
-			return SYNC_MODE_OPTIONS
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedSyncMode() {
-			return (
-				SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode)
-				|| SYNC_MODE_OPTIONS[0]
 			)
 		},
 
