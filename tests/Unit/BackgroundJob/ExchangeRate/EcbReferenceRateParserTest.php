@@ -4,7 +4,7 @@
  * Unit tests for EcbReferenceRateParser.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Service\ExchangeRate
+ * @package  OCA\Integriq\Tests\Unit\BackgroundJob\ExchangeRate
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,10 +15,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service\ExchangeRate;
+namespace OCA\Integriq\Tests\Unit\BackgroundJob\ExchangeRate;
 
 use InvalidArgumentException;
-use OCA\Integriq\Service\ExchangeRate\EcbReferenceRateParser;
+use OCA\Integriq\BackgroundJob\ExchangeRate\EcbReferenceRateParser;
 use PHPUnit\Framework\TestCase;
 
 /**
