@@ -107,28 +107,28 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 *
 	 * @var string
 	 */
-	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Action\SynchronizationAction';
+	private const ACTION_SYNCHRONIZATION = 'OCA\Integriq\Service\Job\SynchronizationAction';
 
 	/**
 	 * The job action that runs a flow.
 	 *
 	 * @var string
 	 */
-	private const ACTION_FLOW = 'OCA\Integriq\Action\FlowAction';
+	private const ACTION_FLOW = 'OCA\Integriq\Service\Job\FlowAction';
 
 	/**
 	 * The job action that pings a source.
 	 *
 	 * @var string
 	 */
-	private const ACTION_PING = 'OCA\Integriq\Action\PingAction';
+	private const ACTION_PING = 'OCA\Integriq\Service\Job\PingAction';
 
 	/**
 	 * The job action that emits a CloudEvent.
 	 *
 	 * @var string
 	 */
-	private const ACTION_EVENT = 'OCA\Integriq\Action\EventAction';
+	private const ACTION_EVENT = 'OCA\Integriq\Service\Job\EventAction';
 
 	/**
 	 * The job arguments each supported action's node actually consumes.

@@ -300,7 +300,7 @@ import {
  * Display labels for the Action classes the manifest offers, keyed by FQN.
  *
  * The manifest owns WHICH classes exist (`fieldOverrides.jobClass.enum`, kept
- * in step with lib/Action/ by tests/vitest/jobDraft.spec.js); this map owns the
+ * in step with lib/Service/Job/ by tests/vitest/jobDraft.spec.js); this map owns the
  * human text. The split exists for one reason: manifest values are not `t()`
  * literals, so tests/l10n/check-l10n.js cannot see them and they would be
  * permanently untranslatable. A class with no entry here falls back to its FQN,
@@ -314,14 +314,17 @@ import {
  */
 function jobClassLabel(fqn) {
 	const labels = {
-		'OCA\\Integriq\\Action\\SynchronizationAction': t(
+		'OCA\\Integriq\\Service\\Job\\SynchronizationAction': t(
 			'integriq',
 			'Run a synchronization',
 		),
-		'OCA\\Integriq\\Action\\FlowAction': t('integriq', 'Run a flow'),
-		'OCA\\Integriq\\Action\\EventAction': t('integriq', 'Dispatch an event'),
-		'OCA\\Integriq\\Action\\PingAction': t('integriq', 'Ping a source'),
-		'OCA\\Integriq\\Action\\ExchangeJobAction': t(
+		'OCA\\Integriq\\Service\\Job\\FlowAction': t('integriq', 'Run a flow'),
+		'OCA\\Integriq\\Service\\Job\\EventAction': t(
+			'integriq',
+			'Dispatch an event',
+		),
+		'OCA\\Integriq\\Service\\Job\\PingAction': t('integriq', 'Ping a source'),
+		'OCA\\Integriq\\Service\\Job\\ExchangeJobAction': t(
 			'integriq',
 			'Run a data exchange',
 		),

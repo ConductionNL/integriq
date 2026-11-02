@@ -29,7 +29,7 @@ A ready-to-run, credential-free source preset for the public
 - **Synchronizations** page: 8 synchronizations named
   `endoflife.date — <Product> cycles`, one per curated product.
 - **Jobs** page: 8 jobs named `endoflife.date — <Product> cycles sync`,
-  each running daily via `OCA\Integriq\Action\SynchronizationAction`.
+  each running daily via `OCA\Integriq\Service\Job\SynchronizationAction`.
 - **Catalog** page: an "endoflife.date" card appears automatically among
   the source-template entries (no bespoke UI code — this is a side effect
   of the seed fragment declaring a `source` object, picked up by the

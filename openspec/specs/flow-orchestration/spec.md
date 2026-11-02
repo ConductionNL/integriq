@@ -293,7 +293,7 @@ MUST catch the throwable, record `flow_run_log` for that step with
 The system MUST support triggering `FlowRunnerService::run()` from four
 surfaces, each reusing an existing trigger mechanism rather than
 introducing a new scheduler: (a) a cron-scheduled `job` OR object whose
-`jobClass` is `OCA\Integriq\Action\FlowAction`, resolved and
+`jobClass` is `OCA\Integriq\Service\Job\FlowAction`, resolved and
 `run($arguments)`-invoked by `JobService::executeJob()` exactly as any
 other job action; (b) a `flow` rule action type added to
 `EndpointService::processRules()`'s existing type dispatch, valid for
@@ -311,7 +311,7 @@ Flow detail page calling `POST /api/flows/{id}/run`, which invokes
 #### Scenario: a cron job triggers a flow
 
 - **GIVEN** an enabled `job` OR object with `jobClass:
-  'OCA\Integriq\Action\FlowAction'` and `arguments: { flowId: '<uuid>' }`
+  'OCA\Integriq\Service\Job\FlowAction'` and `arguments: { flowId: '<uuid>' }`
 - **WHEN** `JobService::run()` sweeps due jobs and calls
   `FlowAction::run($arguments)`
 - **THEN** `FlowRunnerService::run()` is invoked for the referenced flow

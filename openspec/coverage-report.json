@@ -50,9 +50,9 @@
       { "file": "lib/Service/DSOSamenwerkingService.php", "method": "buildAdviesverzoekPayload()", "spec_tag": "openspec/changes/dso-omgevingsloket/tasks.md#task-10" }
     ],
     "plumbing": [
-      { "file": "lib/Action/EventAction.php", "method": "__construct()", "reason": "empty-constructor" },
-      { "file": "lib/Action/PingAction.php", "method": "__construct()", "reason": "DI-only" },
-      { "file": "lib/Action/SynchronizationAction.php", "method": "__construct()", "reason": "DI-only" },
+      { "file": "lib/Service/Job/EventAction.php", "method": "__construct()", "reason": "empty-constructor" },
+      { "file": "lib/Service/Job/PingAction.php", "method": "__construct()", "reason": "DI-only" },
+      { "file": "lib/Service/Job/SynchronizationAction.php", "method": "__construct()", "reason": "DI-only" },
       { "file": "lib/AppInfo/Application.php", "method": "__construct()", "reason": "DI-only (parent::__construct)" },
       { "file": "lib/AppInfo/Application.php", "method": "register()", "reason": "framework boot — registers listeners + services" },
       { "file": "lib/AppInfo/Application.php", "method": "boot()", "reason": "framework boot hook" },
@@ -687,9 +687,9 @@
     ],
     "bucket_4": {
       "missing-spec-in-file-docblock": [
-        { "file": "lib/Action/EventAction.php" },
-        { "file": "lib/Action/PingAction.php" },
-        { "file": "lib/Action/SynchronizationAction.php" },
+        { "file": "lib/Service/Job/EventAction.php" },
+        { "file": "lib/Service/Job/PingAction.php" },
+        { "file": "lib/Service/Job/SynchronizationAction.php" },
         { "file": "lib/AppInfo/Application.php" },
         { "file": "lib/Connectors/PdokConnector.php" },
         { "file": "lib/Connectors/PdokUpstreamException.php" },

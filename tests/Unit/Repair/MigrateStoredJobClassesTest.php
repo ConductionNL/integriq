@@ -84,10 +84,14 @@ class MigrateStoredJobClassesTest extends TestCase {
 		$orObjectService = ObjectServiceMockBuilder::make($this);
 		$orObjectService->method('findAll')->willReturn(['results' => [$stale], 'total' => 1]);
 
+		// Recorded and asserted after run(): an assertion failing inside the
+		// callback is caught by the step's per-object catch and would pass.
+		$saved = [];
 		$orObjectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function ($object, $register = null, $schema = null, $uuid = null) {
+				function ($object, $register = null, $schema = null, $uuid = null) use (&$saved) {
+					$saved = [$object, $register, $schema, $uuid];
 					$this->assertSame(
 						'OCA\\Integriq\\Action\\SynchronizationAction',
 						$object['jobClass'],
@@ -103,6 +107,16 @@ class MigrateStoredJobClassesTest extends TestCase {
 			);
 
 		$this->makeStep($orObjectService)->run($this->makeOutput());
+
+		$this->assertSame(
+			[
+				['name' => 'Nightly sync', 'jobClass' => 'OCA\\Integriq\\Action\\SynchronizationAction'],
+				'integriq',
+				'job',
+				'job-uuid-1',
+			],
+			$saved
+		);
 	}//end testRewritesStaleJobClassInPlace()
 
 	/**

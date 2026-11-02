@@ -14,7 +14,7 @@
  * the dead-letter path treat a job-emitted event exactly like any other.
  *
  * @category Action
- * @package  OCA\Integriq\Action
+ * @package  OCA\Integriq\Service\Job
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -25,7 +25,7 @@
  * @link https://www.Integriq.nl
  */
 
-namespace OCA\Integriq\Action;
+namespace OCA\Integriq\Service\Job;
 
 use OCA\Integriq\Service\EventServiceInterface;
 use Throwable;

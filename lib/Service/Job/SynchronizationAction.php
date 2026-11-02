@@ -9,7 +9,7 @@
  * the legacy SynchronizationMapper having been removed.
  *
  * @category Action
- * @package  OCA\Integriq\Action
+ * @package  OCA\Integriq\Service\Job
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,7 +18,7 @@
  * @link https://www.Integriq.nl
  */
 
-namespace OCA\Integriq\Action;
+namespace OCA\Integriq\Service\Job;
 
 use Exception;
 use OCA\Integriq\Service\SynchronizationServiceInterface;

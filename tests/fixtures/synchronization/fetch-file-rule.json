@@ -214,7 +214,7 @@
             ],
             [
                 "jobs.add",
-                "OCA\\Integriq\\BackgroundJob\\FetchFilesJob",
+                "OCA\\Integriq\\Service\\Synchronization\\FetchFilesJob",
                 {
                     "config": {
                         "source": "src-1",
@@ -281,7 +281,7 @@
             ],
             [
                 "jobs.add",
-                "OCA\\Integriq\\BackgroundJob\\FetchFilesJob",
+                "OCA\\Integriq\\Service\\Synchronization\\FetchFilesJob",
                 {
                     "config": {
                         "source": "src-1",
@@ -348,7 +348,7 @@
             ],
             [
                 "jobs.add",
-                "OCA\\Integriq\\BackgroundJob\\FetchFilesJob",
+                "OCA\\Integriq\\Service\\Synchronization\\FetchFilesJob",
                 {
                     "config": {
                         "source": "src-1",

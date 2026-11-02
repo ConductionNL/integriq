@@ -107,7 +107,7 @@
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"method": "POST",
 						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
-						"body": { "mode": "raw", "raw": "{\n  \"name\": \"newman-job\",\n  \"jobClass\": \"OCA\\\\Integriq\\\\Action\\\\PingAction\",\n  \"isEnabled\": true,\n  \"interval\": 3600\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"newman-job\",\n  \"jobClass\": \"OCA\\\\Integriq\\\\Service\\\\Job\\\\PingAction\",\n  \"isEnabled\": true,\n  \"interval\": 3600\n}" },
 						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/job", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "{{register}}", "job" ] }
 					}
 				},
