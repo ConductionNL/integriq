@@ -123,10 +123,7 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -137,6 +134,7 @@ import {
 import DeadLetterBulkBar from '../../components/DeadLetterBulkBar.vue'
 import SyncDeadLetterDetailModal from '../../modals/Synchronization/SyncDeadLetterDetailModal.vue'
 import bulkSelection from '../../mixins/bulkSelection.js'
+import deadLetterList from '../../mixins/deadLetterList.js'
 
 export default {
 	name: 'SyncDeadLetterPage',
@@ -151,12 +149,10 @@ export default {
 		SyncDeadLetterDetailModal,
 	},
 
-	mixins: [bulkSelection],
+	mixins: [bulkSelection, deadLetterList],
 
 	data() {
 		return {
-			rows: [],
-			loading: false,
 			statusFilter: 'failed',
 			synchronizationFilter: '',
 			statusOptions: ['failed', 'replayed', 'discarded'],
@@ -164,12 +160,48 @@ export default {
 		}
 	},
 
-	mounted() {
-		this.reload()
-	},
-
 	methods: {
 		t,
+
+		/**
+		 * @return {string} The list endpoint.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
+		 */
+		listPath() {
+			return '/apps/integriq/api/sync-dead-letter'
+		},
+
+		/**
+		 * @return {string} The detail modal prop that carries the row.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
+		 */
+		detailKey() {
+			return 'entry'
+		},
+
+		/**
+		 * The query of the current filters.
+		 *
+		 * @return {object} The list parameters.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
+		 */
+		listParams() {
+			const params = { status: this.statusFilter }
+			if (this.synchronizationFilter) {
+				params.synchronizationId = this.synchronizationFilter
+			}
+			return params
+		},
+
+		/**
+		 * The toast when listing fails.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
+		 */
+		listFailedText() {
+			return t('integriq', 'Failed to load sync dead letters')
+		},
 
 		/**
 		 * The path of the bulk endpoint for a verb.
@@ -191,51 +223,6 @@ export default {
 		 */
 		bulkSuccessText(ok) {
 			return t('integriq', '{ok} items processed', { ok })
-		},
-
-		/**
-		 * Open the per-entry detail modal.
-		 *
-		 * @param {object} row Dead-letter entry row.
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
-		 */
-		openDetail(row) {
-			this.detail = { open: true, entry: row }
-		},
-
-		/**
-		 * Close the detail modal.
-		 *
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-ui-in-the-synchronizations-section-req-dlr-012
-		 */
-		closeDetail() {
-			this.detail = { open: false, entry: null }
-		},
-
-		/**
-		 * Fetch the sync dead-letter listing from the admin-only endpoint.
-		 *
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-sync-item-dead-letter-listing-with-filters-and-pagination-req-dlr-007
-		 */
-		async reload() {
-			this.loading = true
-			this.selected = []
-			try {
-				const params = { status: this.statusFilter }
-				if (this.synchronizationFilter) {
-					params.synchronizationId = this.synchronizationFilter
-				}
-				const res = await axios.get(
-					generateUrl('/apps/integriq/api/sync-dead-letter'),
-					{ params },
-				)
-				this.rows = res.data?.results || []
-			} catch (err) {
-				showError(t('integriq', 'Failed to load sync dead letters'))
-				this.rows = []
-			} finally {
-				this.loading = false
-			}
 		},
 	},
 }
