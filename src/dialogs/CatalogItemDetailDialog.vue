@@ -43,7 +43,7 @@
 				{{ catalogItem.description }}
 			</p>
 
-			<div v-if="standards.length > 0" class="oc-catalog-detail__section">
+			<div v-if="standards.length" class="oc-catalog-detail__section">
 				<h4>{{ t('integriq', 'Standards') }}</h4>
 				<div class="oc-catalog-detail__chips">
 					<span
@@ -81,7 +81,31 @@
 
 <script>
 import { NcButton, NcDialog, NcNoteCard } from '@nextcloud/vue'
+import closableDialog from '../mixins/closableDialog.js'
 import { useCatalogStore } from '../store/catalog.js'
+
+/**
+ * What the primary action did, in words.
+ *
+ * @param {object|undefined} result What the action returned.
+ * @return {string} The translated text.
+ */
+function doneText(result) {
+	return result?.type === 'source'
+		? t('integriq', 'Source instantiated — find it on the Sources page')
+		: t('integriq', 'Feature enabled')
+}
+
+/**
+ * Why the primary action failed, with the server's or the client's reason.
+ *
+ * @param {object} err The failed request.
+ * @return {string} The translated text.
+ */
+function actionFailedText(err) {
+	const detail = err?.response?.data?.error || err?.message || ''
+	return t('integriq', 'Action failed') + (detail ? `: ${detail}` : '')
+}
 
 export default {
 	name: 'CatalogItemDetailDialog',
@@ -91,6 +115,8 @@ export default {
 		NcDialog,
 		NcNoteCard,
 	},
+
+	mixins: [closableDialog],
 
 	props: {
 		open: { type: Boolean, default: false },
@@ -201,17 +227,16 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		mechanismLabel() {
-			switch (this.mechanism) {
-				case 'flag-gated':
-					return t('integriq', 'Gated behind a feature flag')
-				case 'mock-seeded':
-					return t(
-						'integriq',
-						'Seeded source (mock mode until credentials are configured)',
-					)
-				default:
-					return ''
+			if (this.mechanism === 'flag-gated') {
+				return t('integriq', 'Gated behind a feature flag')
 			}
+			if (this.mechanism === 'mock-seeded') {
+				return t(
+					'integriq',
+					'Seeded source (mock mode until credentials are configured)',
+				)
+			}
+			return ''
 		},
 
 		/**
@@ -299,6 +324,19 @@ export default {
 		},
 
 		/**
+		 * Show the status after the action and say what it did.
+		 *
+		 * @param {object|undefined} result What the action returned.
+		 * @return {void}
+		 * @spec openspec/specs/connector-catalog/spec.md#scenario-instantiate-action-creates-a-source-from-a-seeded-template
+		 */
+		showDone(result) {
+			this.liveStatus =
+				this.catalogStore.statusById[this.itemId] || this.liveStatus
+			this.successMessage = doneText(result)
+		},
+
+		/**
 		 * Dispatch the Enable/Instantiate action — one endpoint server-side,
 		 * the controller branches on the item's mechanism (REQ-002).
 		 *
@@ -313,46 +351,12 @@ export default {
 			this.errorMessage = ''
 			this.successMessage = ''
 			try {
-				const result = await this.catalogStore.instantiate(this.itemId)
-				this.liveStatus =
-					this.catalogStore.statusById[this.itemId] || this.liveStatus
-				this.successMessage =
-					result?.type === 'source'
-						? t(
-								'integriq',
-								'Source instantiated — find it on the Sources page',
-							)
-						: t('integriq', 'Feature enabled')
+				this.showDone(await this.catalogStore.instantiate(this.itemId))
 			} catch (err) {
-				const detail = err?.response?.data?.error || err?.message || ''
-				this.errorMessage =
-					t('integriq', 'Action failed') + (detail ? `: ${detail}` : '')
+				this.errorMessage = actionFailedText(err)
 			} finally {
 				this.actionRunning = false
 			}
-		},
-
-		/**
-		 * NcDialog open-state relay.
-		 *
-		 * @param {boolean} isOpen New open state from NcDialog.
-		 * @return {void}
-		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
-		 */
-		onOpenChanged(isOpen) {
-			if (!isOpen) {
-				this.close()
-			}
-		},
-
-		/**
-		 * Ask ModalHost to close the dialog.
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
-		 */
-		close() {
-			this.$emit('close')
 		},
 	},
 }

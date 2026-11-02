@@ -1,0 +1,582 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CatalogItemDetailDialog > labels mechanism always-available 1`] = `
+[
+  "always-available",
+  "",
+]
+`;
+
+exports[`CatalogItemDetailDialog > labels mechanism flag-gated 1`] = `
+[
+  "flag-gated",
+  "Gated behind a feature flag",
+]
+`;
+
+exports[`CatalogItemDetailDialog > labels mechanism mock-seeded 1`] = `
+[
+  "mock-seeded",
+  "Seeded source (mock mode until credentials are configured)",
+]
+`;
+
+exports[`CatalogItemDetailDialog > labels mechanism other 1`] = `
+[
+  "other",
+  "",
+]
+`;
+
+exports[`CatalogItemDetailDialog > labels mechanism undefined 1`] = `
+[
+  "always-available",
+  "",
+]
+`;
+
+exports[`CatalogItemDetailDialog > renders a dormant seeded item as recorded 1`] = `
+"<div class="NcDialog" data-name="Catalog item">
+  <div class="oc-catalog-detail">
+    <div class="oc-catalog-detail__status-row"><span class="oc-catalog-detail__badge oc-catalog-detail__badge--dormant" data-testid="catalog-detail-status">dormant</span><span class="oc-catalog-detail__mechanism">Seeded source (mock mode until credentials are configured)</span></div>
+    <div class="oc-catalog-detail__section">
+      <h4>Standards</h4>
+      <div class="oc-catalog-detail__chips"><span class="oc-catalog-detail__chip">ZGW</span><span class="oc-catalog-detail__chip">StUF</span></div>
+    </div>
+    <div class="oc-catalog-detail__actions">
+      <div class="NcButton">Close
+      </div>
+      <div class="NcButton">Instantiate
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`CatalogItemDetailDialog > renders a flag-gated item as recorded 1`] = `
+"<div class="NcDialog" data-name="Catalog item">
+  <div class="oc-catalog-detail">
+    <div class="oc-catalog-detail__status-row"><span class="oc-catalog-detail__badge oc-catalog-detail__badge--dormant" data-testid="catalog-detail-status">dormant</span><span class="oc-catalog-detail__mechanism">Gated behind a feature flag</span></div>
+    <div class="oc-catalog-detail__section">
+      <h4>Standards</h4>
+      <div class="oc-catalog-detail__chips"><span class="oc-catalog-detail__chip">ZGW</span><span class="oc-catalog-detail__chip">StUF</span></div>
+    </div>
+    <div class="oc-catalog-detail__actions">
+      <div class="NcButton">Close
+      </div>
+      <div class="NcButton">Enable
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`CatalogItemDetailDialog > renders an item without standards as recorded 1`] = `
+"<div class="NcDialog" data-name="Catalog item">
+  <div class="oc-catalog-detail">
+    <div class="oc-catalog-detail__status-row"><span class="oc-catalog-detail__badge oc-catalog-detail__badge--available" data-testid="catalog-detail-status">available</span><span class="oc-catalog-detail__mechanism">Seeded source (mock mode until credentials are configured)</span></div>
+    <div class="oc-catalog-detail__actions">
+      <div class="NcButton">Close
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`CatalogItemDetailDialog > runs the primary action with a bare failure as recorded 1`] = `
+{
+  "actionRunning": false,
+  "calls": [
+    [
+      "i1",
+    ],
+  ],
+  "errorMessage": "Action failed",
+  "liveStatus": null,
+  "successMessage": "",
+}
+`;
+
+exports[`CatalogItemDetailDialog > runs the primary action with a failure as recorded 1`] = `
+{
+  "actionRunning": false,
+  "calls": [
+    [
+      "i1",
+    ],
+  ],
+  "errorMessage": "Action failed: net",
+  "liveStatus": null,
+  "successMessage": "",
+}
+`;
+
+exports[`CatalogItemDetailDialog > runs the primary action with a flag as recorded 1`] = `
+{
+  "actionRunning": false,
+  "calls": [
+    [
+      "i1",
+    ],
+  ],
+  "errorMessage": "",
+  "liveStatus": {
+    "status": "available",
+  },
+  "successMessage": "Feature enabled",
+}
+`;
+
+exports[`CatalogItemDetailDialog > runs the primary action with a refusal as recorded 1`] = `
+{
+  "actionRunning": false,
+  "calls": [
+    [
+      "i1",
+    ],
+  ],
+  "errorMessage": "Action failed: srv",
+  "liveStatus": null,
+  "successMessage": "",
+}
+`;
+
+exports[`CatalogItemDetailDialog > runs the primary action with a source as recorded 1`] = `
+{
+  "actionRunning": false,
+  "calls": [
+    [
+      "i1",
+    ],
+  ],
+  "errorMessage": "",
+  "liveStatus": {
+    "status": "available",
+  },
+  "successMessage": "Source instantiated — find it on the Sources page",
+}
+`;
+
+exports[`LinkSourceDialog > filters and picks as recorded 1`] = `
+[
+  [
+    "template",
+    true,
+  ],
+  [
+    "pipelinq",
+    null,
+    0,
+  ],
+  [
+    "existing",
+    false,
+    null,
+  ],
+  [
+    null,
+    2,
+  ],
+]
+`;
+
+exports[`LinkSourceDialog > loads a bare failure as recorded 1`] = `
+{
+  "appOptions": [],
+  "connectionOptions": [],
+  "connections": [],
+  "errorMessage": "Could not load connections and sources: ",
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/app_connection",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+  ],
+  "sourceOptions": [],
+}
+`;
+
+exports[`LinkSourceDialog > loads a bare failure as recorded 2`] = `
+"<div class="NcDialog" data-name="Add integration">
+  <div class="link-source-dialog">
+    <p>Link a source to a connection an app declared. The source is tested as soon as you save.</p>
+    <div class="NcSelect">
+    </div>
+    <div class="NcSelect">
+    </div>
+    <div class="NcNoteCard" data-type="info">Every declared connection already has a source.
+    </div>
+    <div class="NcNoteCard" data-type="error">Could not load connections and sources:
+    </div>
+    <div class="link-source-dialog__actions">
+      <div class="NcButton">Cancel
+      </div>
+      <div class="NcButton">Save and test
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`LinkSourceDialog > loads a failed list as recorded 1`] = `
+{
+  "appOptions": [],
+  "connectionOptions": [],
+  "connections": [],
+  "errorMessage": "Could not load connections and sources: net",
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/app_connection",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+  ],
+  "sourceOptions": [],
+}
+`;
+
+exports[`LinkSourceDialog > loads a failed list as recorded 2`] = `
+"<div class="NcDialog" data-name="Add integration">
+  <div class="link-source-dialog">
+    <p>Link a source to a connection an app declared. The source is tested as soon as you save.</p>
+    <div class="NcSelect">
+    </div>
+    <div class="NcSelect">
+    </div>
+    <div class="NcNoteCard" data-type="info">Every declared connection already has a source.
+    </div>
+    <div class="NcNoteCard" data-type="error">Could not load connections and sources: net
+    </div>
+    <div class="link-source-dialog__actions">
+      <div class="NcButton">Cancel
+      </div>
+      <div class="NcButton">Save and test
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`LinkSourceDialog > loads a refused list as recorded 1`] = `
+{
+  "appOptions": [],
+  "connectionOptions": [],
+  "connections": [],
+  "errorMessage": "Could not load connections and sources: srv",
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/app_connection",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+  ],
+  "sourceOptions": [],
+}
+`;
+
+exports[`LinkSourceDialog > loads a refused list as recorded 2`] = `
+"<div class="NcDialog" data-name="Add integration">
+  <div class="link-source-dialog">
+    <p>Link a source to a connection an app declared. The source is tested as soon as you save.</p>
+    <div class="NcSelect">
+    </div>
+    <div class="NcSelect">
+    </div>
+    <div class="NcNoteCard" data-type="info">Every declared connection already has a source.
+    </div>
+    <div class="NcNoteCard" data-type="error">Could not load connections and sources: srv
+    </div>
+    <div class="link-source-dialog__actions">
+      <div class="NcButton">Cancel
+      </div>
+      <div class="NcButton">Save and test
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`LinkSourceDialog > loads both lists as recorded 1`] = `
+{
+  "appOptions": [
+    "dossiq",
+  ],
+  "connectionOptions": [
+    {
+      "app": "dossiq",
+      "id": "c1",
+      "label": "Cases (dossiq)",
+      "sourceTemplate": "zgw",
+    },
+    {
+      "app": "dossiq",
+      "id": "c3",
+      "label": "Docs (dossiq)",
+      "sourceTemplate": "",
+    },
+  ],
+  "connections": [
+    {
+      "app": "dossiq",
+      "id": "c1",
+      "label": "Cases (dossiq)",
+      "sourceTemplate": "zgw",
+    },
+    {
+      "app": "dossiq",
+      "id": "c3",
+      "label": "Docs (dossiq)",
+      "sourceTemplate": "",
+    },
+  ],
+  "errorMessage": "",
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/app_connection",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+  ],
+  "sourceOptions": [
+    {
+      "id": "s1",
+      "label": "One",
+    },
+    {
+      "id": "s2",
+      "label": "Two",
+    },
+    {
+      "id": "s3",
+      "label": "s3",
+    },
+    {
+      "id": "s4",
+      "label": "Named",
+    },
+  ],
+}
+`;
+
+exports[`LinkSourceDialog > loads both lists as recorded 2`] = `
+"<div class="NcDialog" data-name="Add integration">
+  <div class="link-source-dialog">
+    <p>Link a source to a connection an app declared. The source is tested as soon as you save.</p>
+    <div class="NcSelect">
+    </div>
+    <div class="NcSelect">
+    </div>
+    <div class="link-source-dialog__actions">
+      <div class="NcButton">Cancel
+      </div>
+      <div class="NcButton">Save and test
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`LinkSourceDialog > loads empty answers as recorded 1`] = `
+{
+  "appOptions": [],
+  "connectionOptions": [],
+  "connections": [],
+  "errorMessage": "",
+  "loading": false,
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/objects/integriq/app_connection",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/integriq/source",
+      {
+        "params": {
+          "_limit": 500,
+        },
+      },
+    ],
+  ],
+  "sourceOptions": [],
+}
+`;
+
+exports[`LinkSourceDialog > loads empty answers as recorded 2`] = `
+"<div class="NcDialog" data-name="Add integration">
+  <div class="link-source-dialog">
+    <p>Link a source to a connection an app declared. The source is tested as soon as you save.</p>
+    <div class="NcSelect">
+    </div>
+    <div class="NcSelect">
+    </div>
+    <div class="NcNoteCard" data-type="info">Every declared connection already has a source.
+    </div>
+    <div class="link-source-dialog__actions">
+      <div class="NcButton">Cancel
+      </div>
+      <div class="NcButton">Save and test
+      </div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`LinkSourceDialog > saves a bare failure as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/connections/c3/link",
+      {
+        "fromTemplate": true,
+      },
+    ],
+  ],
+  "during": true,
+  "emitted": null,
+  "errorMessage": "The source could not be linked.",
+  "linked": false,
+  "probe": null,
+  "saving": false,
+}
+`;
+
+exports[`LinkSourceDialog > saves a failed link as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/connections/c3/link",
+      {
+        "source": "s1",
+      },
+    ],
+  ],
+  "during": true,
+  "emitted": null,
+  "errorMessage": "net",
+  "linked": false,
+  "probe": null,
+  "saving": false,
+}
+`;
+
+exports[`LinkSourceDialog > saves a refused link as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/connections/c3/link",
+      {
+        "source": "s1",
+      },
+    ],
+  ],
+  "during": true,
+  "emitted": null,
+  "errorMessage": "srv",
+  "linked": false,
+  "probe": null,
+  "saving": false,
+}
+`;
+
+exports[`LinkSourceDialog > saves an existing source as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/connections/c3/link",
+      {
+        "source": "s1",
+      },
+    ],
+  ],
+  "during": true,
+  "emitted": [
+    [
+      {
+        "id": "c3",
+      },
+    ],
+  ],
+  "errorMessage": "",
+  "linked": true,
+  "probe": {
+    "ok": true,
+  },
+  "saving": false,
+}
+`;
+
+exports[`LinkSourceDialog > saves the template as recorded 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/integriq/api/connections/c3/link",
+      {
+        "fromTemplate": true,
+      },
+    ],
+  ],
+  "during": true,
+  "emitted": [
+    [
+      null,
+    ],
+  ],
+  "errorMessage": "",
+  "linked": true,
+  "probe": null,
+  "saving": false,
+}
+`;
