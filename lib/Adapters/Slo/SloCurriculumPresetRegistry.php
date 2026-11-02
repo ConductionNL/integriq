@@ -29,9 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
-
 /**
  * Loads the seeded SLO source template once; immutable at runtime.
  *

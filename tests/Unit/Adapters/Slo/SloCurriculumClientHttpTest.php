@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Adapters\Slo;
 
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
-use OCA\Integriq\Exception\SloCurriculumException;
+use OCA\Integriq\Adapters\Slo\SloCurriculumException;
 use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;

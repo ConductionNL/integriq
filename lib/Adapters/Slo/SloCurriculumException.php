@@ -8,7 +8,7 @@
  * request the recorded fixture has no answer for.
  *
  * @category Exception
- * @package  OCA\Integriq\Exception
+ * @package  OCA\Integriq\Adapters\Slo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Exception;
+namespace OCA\Integriq\Adapters\Slo;
 
 use RuntimeException;
 use Throwable;

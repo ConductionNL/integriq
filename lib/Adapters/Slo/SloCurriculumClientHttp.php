@@ -32,7 +32,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;

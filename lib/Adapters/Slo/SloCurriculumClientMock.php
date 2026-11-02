@@ -31,8 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-
 /**
  * Mock SLO client over the recorded fixture.
  *

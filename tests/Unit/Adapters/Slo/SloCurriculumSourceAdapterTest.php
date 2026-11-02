@@ -6,7 +6,7 @@
  * Every import runs offline against the recorded fixture of real SLO data.
  *
  * @category Test
- * @package  OCA\Integriq\Tests\Unit\Sources\Slo
+ * @package  OCA\Integriq\Tests\Unit\Adapters\Slo
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,20 +17,20 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Sources\Slo;
+namespace OCA\Integriq\Tests\Unit\Adapters\Slo;
 
 use InvalidArgumentException;
 use OCA\Integriq\Adapters\Slo\JsonTagReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
+use OCA\Integriq\Adapters\Slo\SloCurriculumException;
 use OCA\Integriq\Adapters\Slo\SloCurriculumMapper;
 use OCA\Integriq\Adapters\Slo\SloCurriculumNodeReader;
 use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistry;
+use OCA\Integriq\Adapters\Slo\SloCurriculumSourceAdapter;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
 use OCA\Integriq\Adapters\Slo\SloYearAllocator;
-use OCA\Integriq\Exception\SloCurriculumException;
-use OCA\Integriq\Exception\UnknownSloCurriculumSetException;
-use OCA\Integriq\Sources\Slo\SloCurriculumSourceAdapter;
+use OCA\Integriq\Adapters\Slo\UnknownSloCurriculumSetException;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

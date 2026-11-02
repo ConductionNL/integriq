@@ -35,8 +35,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-
 /**
  * Flattens SLO curriculum trees into parent-first node lists.
  *
