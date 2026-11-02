@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\BackgroundJob\ProcessEventJob;
+use OCA\Integriq\BackgroundJob\ProcessEventJobScheduler;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\FlowRunnerService;
@@ -158,7 +159,7 @@ class EventServiceFanOutOffRequestTest extends TestCase {
 			jobService: $this->createMock(JobService::class),
 			callService: $this->createMock(CallService::class),
 			flowRunnerService: $this->createMock(FlowRunnerService::class),
-			jobList: $jobList,
+			fanOutScheduler: new ProcessEventJobScheduler($jobList),
 		);
 	}//end setUp()
 

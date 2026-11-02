@@ -22,7 +22,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
-use OCA\Integriq\BackgroundJob\ProcessEventJob;
+use OCA\Integriq\BackgroundJob\EventFanOutSchedulerInterface;
 use OCA\Integriq\Service\Broker\BrokerCredentialResolver;
 use OCA\Integriq\Broker\BrokerPublication;
 use OCA\Integriq\Broker\BrokerTransportRegistryInterface;
@@ -47,7 +47,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
-use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -185,8 +184,8 @@ class EventService implements EventServiceInterface {
 	 *                                      null means a guard without an allowlist, never no guard.
 	 * @param BrokerCredentialResolver|null $brokerCredentials Resolves a broker subscription's credentialRef at
 	 *                                                        publish (REQ-EBSC-003). Null leaves the settings as stored.
-	 * @param IJobList|null                 $jobList           Queues the fan-out of an object write's CloudEvent
-	 *                                                        ({@see ProcessEventJob}). Null (unit tests that
+	 * @param EventFanOutSchedulerInterface|null $fanOutScheduler Queues the fan-out of an object write's CloudEvent
+	 *                                                        ({@see \OCA\Integriq\BackgroundJob\ProcessEventJob}). Null (unit tests that
 	 *                                                        predate it) fans out inline as before.
 	 * @param OutboundSendGateInterface|null         $sendGate          Asks the opt-out list before a delivery that names
 	 *                                                        a personal recipient (opt-out-before-send). Null
@@ -216,7 +215,7 @@ class EventService implements EventServiceInterface {
 		private readonly ?BrokerTransportRegistryInterface $brokerRegistry = null,
 		?EgressGuard $egressGuard = null,
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
-		private readonly ?IJobList $jobList = null,
+		private readonly ?EventFanOutSchedulerInterface $fanOutScheduler = null,
 		private readonly ?OutboundSendGateInterface $sendGate = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
@@ -394,7 +393,7 @@ class EventService implements EventServiceInterface {
 	/**
 	 * Fan out queued CloudEvents, fetching the active subscriptions once.
 	 *
-	 * Runs on the cron worker ({@see ProcessEventJob}), never in the request
+	 * Runs on the cron worker ({@see \OCA\Integriq\BackgroundJob\ProcessEventJob}), never in the request
 	 * that wrote the object. An event that is gone by now (purged, or deleted
 	 * by an admin) is skipped.
 	 *
@@ -455,11 +454,11 @@ class EventService implements EventServiceInterface {
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
 	 */
 	private function queueFanOut(ObjectEntity $event): array {
-		if ($this->jobList === null) {
+		if ($this->fanOutScheduler === null) {
 			return $this->processEvent(event: $event);
 		}
 
-		$this->jobList->add(ProcessEventJob::class, ['eventId' => (string)$event->getUuid()]);
+		$this->fanOutScheduler->scheduleFanOut(eventId: (string)$event->getUuid());
 
 		return [];
 	}//end queueFanOut()
