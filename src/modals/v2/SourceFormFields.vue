@@ -7,7 +7,7 @@
   credential authoring UX the lib cannot express declaratively:
 
     • A "Brokered credential (OpenRegister)" switch. When ON, an accessible
-      NcSelect lists the signed-in user's credentials from the OpenRegister
+      NcSelect lists the credentials of the signed-in user from the OpenRegister
       credential broker (GET /apps/openregister/api/credentials). Picking one
       writes `configuration.authentication.credentialRef = { credentialId }`
       into the Source model (see sourceCredentialRef.js — the exact path the
@@ -69,47 +69,25 @@
 					|| field.widget === 'date'
 					|| field.widget === 'datetime'
 				">
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					:type="textFieldType(field)"
-					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:modelValue="(value) => updateField(field.key, value)" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
+					@update="updateField(field.key, $event)" />
 			</template>
 
 			<template v-else-if="field.widget === 'number'">
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					type="number"
-					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:modelValue="
-						(value) =>
-							updateField(
-								field.key,
-								value !== '' ? Number(value) : null,
-							)
+					@update="
+						updateField(field.key, $event !== '' ? Number($event) : null)
 					" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
 			</template>
 
 			<div
@@ -139,7 +117,7 @@
 				:modelValue="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:modelValue="(value) => updateField(field.key, value)">
+				@update:modelValue="updateField(field.key, $event)">
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
@@ -166,21 +144,12 @@
 			</div>
 
 			<template v-else>
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
-					:disabled="field.readOnly"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					:placeholder="field.description"
-					@update:modelValue="(value) => updateField(field.key, value)" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
+					@update="updateField(field.key, $event)" />
 			</template>
 		</div>
 
@@ -190,9 +159,7 @@
 			v-if="isCaseSystem"
 			class="cn-source-form-fields__field"
 			:configuration="caseSystemConfiguration"
-			@update:configuration="
-				(configuration) => updateField('configuration', configuration)
-			" />
+			@update:configuration="updateField('configuration', $event)" />
 
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
@@ -312,8 +279,9 @@ import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
+import SchemaTextField from './SchemaTextField.vue'
 import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
 	clearCredentialRef,
@@ -343,7 +311,7 @@ export default {
 	name: 'SourceFormFields',
 
 	components: {
-		NcTextField,
+		SchemaTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,

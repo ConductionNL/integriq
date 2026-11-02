@@ -1,0 +1,1151 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EndpointFormFields > hands every listener value to updateField as recorded 1`] = `
+[
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_text",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_text",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_text",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_text",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_email",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_email",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_email",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_email",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_url",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_url",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_url",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_url",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_date",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_date",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_date",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_date",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_datetime",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_datetime",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_datetime",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_datetime",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_number",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_number",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_number",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_number",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_checkbox",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_checkbox",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_checkbox",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_checkbox",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label json *",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_json",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label json *",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_json",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label json *",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_json",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label json *",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_json",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "e_other",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "e_other",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "e_other",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "e_other",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "validation",
+        {},
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "validation",
+        {
+          "mode": "record",
+        },
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "validation",
+        {},
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "validation",
+        {},
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "validation",
+        {
+          "request": {},
+        },
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "validation",
+        {},
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "validation",
+        {
+          "request": {},
+        },
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "validation",
+        {
+          "request": {},
+        },
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "validation",
+        {
+          "response": {},
+        },
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "validation",
+        {},
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "validation",
+        {
+          "response": {},
+        },
+      ],
+    ],
+  ],
+  [
+    "NcSelect",
+    null,
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "validation",
+        {
+          "response": {},
+        },
+      ],
+    ],
+  ],
+  [
+    "textarea",
+    "cn-endpoint-form-e_textarea",
+    [
+      [
+        "e_textarea",
+        "{"a": 1}",
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`EndpointFormFields > renders every widget as recorded 1`] = `
+"<div class="cn-endpoint-form-fields">
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label text *" data-value="hello" data-placeholder=""></div>
+    <p class="CnFieldHelper" data-more="More on text"></p>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label email" data-value="" data-disabled="yes" data-placeholder=""></div>
+    <p class="CnFieldHelper" data-text="About email"></p>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label url *" data-value="" data-placeholder=""></div>
+    <p class="CnFieldHelper"></p>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label date" data-value="" data-placeholder=""></div>
+    <p class="CnFieldHelper" data-text="About date" data-more="More on date"></p>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label datetime *" data-value="" data-placeholder=""></div>
+    <p class="CnFieldHelper"></p>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label number" data-value="0" data-error="yes" data-disabled="yes" data-placeholder=""></div>
+    <p class="CnFieldHelper" data-text="About number" data-error="bad"></p>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="cn-endpoint-form-fields__textarea-wrapper"><label for="cn-endpoint-form-e_textarea" class="cn-endpoint-form-fields__label">Label textarea *</label><textarea id="cn-endpoint-form-e_textarea" class="cn-endpoint-form-fields__textarea" rows="3" value="long"></textarea>
+      <p class="CnFieldHelper" data-more="More on textarea"></p>
+    </div>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcCheckboxRadioSwitch" data-value="true" data-type="switch">Label checkbox</div>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label json *" data-value="" data-placeholder=""></div>
+    <p class="CnFieldHelper"></p>
+  </div>
+  <div class="cn-endpoint-form-fields__field">
+    <div class="NcTextField" data-label="Label other" data-value="42" data-error="yes" data-disabled="yes" data-placeholder=""></div>
+    <p class="CnFieldHelper" data-text="About other" data-more="More on other" data-error="worse"></p>
+  </div>
+  <fieldset class="cn-endpoint-form-fields__validation">
+    <legend class="cn-endpoint-form-fields__label">Message validation</legend>
+    <div class="NcSelect" data-label="Mode" data-value="[object Object]"></div>
+    <div class="NcSelect" data-label="Request schema"></div>
+    <div class="NcSelect" data-label="Answer schema"></div>
+    <p class="CnFieldHelper" data-text="Record lets the message through and logs the errors. Refuse stops it"></p>
+  </fieldset>
+</div>"
+`;
+
+exports[`SourceFormFields > hands every listener value to updateField as recorded 1`] = `
+[
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_text",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_text",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_text",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label text *",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_text",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_email",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_email",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_email",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label email",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_email",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_url",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_url",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_url",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label url *",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_url",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_date",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_date",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_date",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label date",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_date",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_datetime",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_datetime",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_datetime",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label datetime *",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_datetime",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_number",
+        null,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_number",
+        null,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_number",
+        7,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label number",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_number",
+        1,
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_checkbox",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_checkbox",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_checkbox",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_checkbox",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "s_other",
+        "typed",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "s_other",
+        "",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "s_other",
+        "7",
+      ],
+    ],
+  ],
+  [
+    "NcTextField",
+    "Label other",
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "s_other",
+        true,
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "typed",
+    [],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "configuration",
+        {},
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "7",
+    [],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    true,
+    [],
+  ],
+  [
+    "textarea",
+    "cn-source-form-s_textarea",
+    [
+      [
+        "s_textarea",
+        "{"a": 1}",
+      ],
+    ],
+  ],
+  [
+    "textarea",
+    "cn-source-form-s_json",
+    [
+      [
+        "s_json",
+        {
+          "a": 1,
+        },
+      ],
+    ],
+  ],
+]
+`;
+
+exports[`SourceFormFields > renders every widget as recorded 1`] = `
+"<div class="cn-source-form-fields">
+  <div class="cn-source-form-fields__field">
+    <div class="NcTextField" data-label="Label text *" data-value="hello" data-type="text"></div>
+    <p class="CnFieldHelper" data-more="More on text"></p>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="NcTextField" data-label="Label email" data-value="" data-disabled="yes" data-placeholder="About email" data-type="email"></div>
+    <p class="CnFieldHelper" data-text="About email"></p>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="NcTextField" data-label="Label url *" data-value="" data-type="url"></div>
+    <p class="CnFieldHelper"></p>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="NcTextField" data-label="Label date" data-value="" data-placeholder="About date" data-type="date"></div>
+    <p class="CnFieldHelper" data-text="About date" data-more="More on date"></p>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="NcTextField" data-label="Label datetime *" data-value="" data-type="datetime-local"></div>
+    <p class="CnFieldHelper"></p>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="NcTextField" data-label="Label number" data-value="0" data-error="yes" data-disabled="yes" data-placeholder="About number" data-type="number"></div>
+    <p class="CnFieldHelper" data-text="About number" data-error="bad"></p>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="cn-source-form-fields__textarea-wrapper"><label for="cn-source-form-s_textarea" class="cn-source-form-fields__label">Label textarea *</label><textarea id="cn-source-form-s_textarea" class="cn-source-form-fields__textarea" rows="3" value="long"></textarea>
+      <p class="CnFieldHelper" data-more="More on textarea"></p>
+    </div>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="NcCheckboxRadioSwitch" data-value="true" data-type="switch">Label checkbox</div>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="cn-source-form-fields__textarea-wrapper"><label for="cn-source-form-s_json" class="cn-source-form-fields__label">Label json *</label><textarea id="cn-source-form-s_json" class="cn-source-form-fields__textarea cn-source-form-fields__textarea--code" spellcheck="false" rows="5" value=""></textarea>
+      <p class="CnFieldHelper"></p>
+    </div>
+  </div>
+  <div class="cn-source-form-fields__field">
+    <div class="NcTextField" data-label="Label other" data-value="42" data-error="yes" data-disabled="yes" data-placeholder="About other"></div>
+    <p class="CnFieldHelper" data-text="About other" data-more="More on other" data-error="worse"></p>
+  </div>
+  <div class="cn-source-form-fields__field cn-source-form-fields__broker">
+    <div class="NcCheckboxRadioSwitch" data-value="false" data-type="switch">Brokered credential (OpenRegister)</div><span class="cn-source-form-fields__helper">Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters Integriq.</span>
+  </div>
+</div>"
+`;
