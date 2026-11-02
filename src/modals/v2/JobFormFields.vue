@@ -286,6 +286,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
 	coerceNumber,
 	dateValueFromStored,
@@ -343,6 +344,8 @@ export default {
 		NcTextField,
 	},
 
+	mixins: [jsonFieldDrafts],
+
 	props: {
 		/** Resolved field descriptors from CnFormDialog. */
 		fields: { type: Array, default: () => [] },
@@ -361,14 +364,6 @@ export default {
 		return {
 			synchronizationOptions: [],
 			synchronizationsLoading: false,
-			/**
-			 * Per-key json editor drafts. Stored separately from formData so the
-			 * textarea can hold invalid intermediate strings without clobbering
-			 * the parsed value on every keystroke (the pattern CnFormDialog uses
-			 * internally).
-			 */
-			jsonDrafts: {},
-			jsonErrors: {},
 		}
 	},
 
@@ -636,62 +631,6 @@ export default {
 				this.synchronizationOptions = []
 			} finally {
 				this.synchronizationsLoading = false
-			}
-		},
-
-		/**
-		 * The textarea contents for a json field — the in-progress draft when
-		 * there is one, else the pretty-printed stored value.
-		 *
-		 * @param {object} field The field descriptor.
-		 *
-		 * @return {string} The text to show.
-		 *
-		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
-		 */
-		jsonStringFor(field) {
-			if (this.jsonDrafts[field.key] !== undefined) {
-				return this.jsonDrafts[field.key]
-			}
-			const raw = this.formData[field.key]
-			if (raw === null || raw === undefined) return ''
-			if (typeof raw === 'string') return raw
-			try {
-				return JSON.stringify(raw, null, 2)
-			} catch (_e) {
-				return String(raw)
-			}
-		},
-
-		/**
-		 * Parse a json field's edited text, keeping the raw draft so a
-		 * half-typed value is not lost and does not clobber formData.
-		 *
-		 * @param {object} field The field descriptor.
-		 * @param {string} raw   The textarea contents.
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
-		 */
-		onJsonInput(field, raw) {
-			this.jsonDrafts[field.key] = raw
-			const trimmed = raw.trim()
-			if (trimmed.length === 0) {
-				this.jsonErrors[field.key] = ''
-				this.updateField(field.key, null)
-				return
-			}
-			try {
-				const parsed = JSON.parse(trimmed)
-				this.jsonErrors[field.key] = ''
-				this.updateField(field.key, parsed)
-			} catch (parseErr) {
-				this.jsonErrors[field.key] = t(
-					'integriq',
-					'Invalid JSON: {message}',
-					{ message: parseErr.message },
-				)
 			}
 		},
 	},

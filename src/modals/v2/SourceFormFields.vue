@@ -314,6 +314,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
 import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
+import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
 	clearCredentialRef,
 	EMBEDDED_SECRET_FIELDS,
@@ -349,6 +350,8 @@ export default {
 		CaseSystemSourceFields,
 	},
 
+	mixins: [jsonFieldDrafts],
+
 	props: {
 		/** Resolved field descriptors from CnFormDialog. */
 		fields: { type: Array, default: () => [] },
@@ -374,9 +377,6 @@ export default {
 			/** Digital post bindings this instance carries, from the registry. */
 			digitalPostProviders: [],
 			digitalPostLoading: false,
-			/** Per-key json editor drafts (invalid intermediate strings held here). */
-			jsonDrafts: {},
-			jsonErrors: {},
 		}
 	},
 
@@ -710,56 +710,6 @@ export default {
 				)
 			} finally {
 				this.credentialsLoading = false
-			}
-		},
-
-		/**
-		 * Render a json field's current value as a string for the textarea.
-		 *
-		 * @param {object} field The field descriptor.
-		 * @return {string} The stringified value.
-		 * @spec exclude json-editor draft rendering — presentation only
-		 */
-		jsonStringFor(field) {
-			if (this.jsonDrafts[field.key] !== undefined) {
-				return this.jsonDrafts[field.key]
-			}
-			const raw = this.formData[field.key]
-			if (raw === null || raw === undefined) return ''
-			if (typeof raw === 'string') return raw
-			try {
-				return JSON.stringify(raw, null, 2)
-			} catch (_e) {
-				return String(raw)
-			}
-		},
-
-		/**
-		 * Parse a json field's textarea input; store the parsed value (or an error).
-		 *
-		 * @param {object} field The field descriptor.
-		 * @param {string} raw The raw textarea string.
-		 * @return {void}
-		 * @spec exclude json-editor input parsing — presentation only
-		 */
-		onJsonInput(field, raw) {
-			this.jsonDrafts[field.key] = raw
-			const trimmed = raw.trim()
-			if (trimmed.length === 0) {
-				this.jsonErrors[field.key] = ''
-				this.updateField(field.key, null)
-				return
-			}
-			try {
-				const parsed = JSON.parse(trimmed)
-				this.jsonErrors[field.key] = ''
-				this.updateField(field.key, parsed)
-			} catch (parseErr) {
-				this.jsonErrors[field.key] = t(
-					'integriq',
-					'Invalid JSON: {message}',
-					{ message: parseErr.message },
-				)
 			}
 		},
 	},
