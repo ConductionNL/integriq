@@ -44,42 +44,24 @@
 			</div>
 		</div>
 
-		<div
+		<DeadLetterBulkBar
 			v-if="selected.length"
-			class="eventDeliveries__bulk"
-			data-testid="bulk-bar">
-			<span>{{
-				t('integriq', '{count} selected', { count: selected.length })
-			}}</span>
-			<template v-if="bulkConfirm">
-				<span>{{
-					bulkConfirm === 'replay'
-						? t('integriq', 'Replay {count} messages now?', {
-								count: selected.length,
-							})
-						: t('integriq', 'Discard {count} messages?', {
-								count: selected.length,
-							})
-				}}</span>
-				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
-					{{ t('integriq', 'Confirm') }}
-				</NcButton>
-				<NcButton :disabled="busy" @click="bulkConfirm = null">
-					{{ t('integriq', 'Cancel') }}
-				</NcButton>
-			</template>
-			<template v-else>
-				<NcButton
-					variant="primary"
-					:disabled="busy"
-					@click="bulkConfirm = 'replay'">
-					{{ t('integriq', 'Replay selected') }}
-				</NcButton>
-				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
-					{{ t('integriq', 'Discard selected') }}
-				</NcButton>
-			</template>
-		</div>
+			block="eventDeliveries"
+			:count="selected.length"
+			:confirming="bulkConfirm"
+			:busy="busy"
+			:replayPrompt="
+				t('integriq', 'Replay {count} messages now?', {
+					count: selected.length,
+				})
+			"
+			:discardPrompt="
+				t('integriq', 'Discard {count} messages?', {
+					count: selected.length,
+				})
+			"
+			@confirm="(verb) => (bulkConfirm = verb)"
+			@commit="commitBulk" />
 
 		<NcLoadingIcon v-if="loading" :size="32" class="eventDeliveries__loading" />
 
@@ -162,6 +144,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import DeadLetterBulkBar from '../../components/DeadLetterBulkBar.vue'
 import EventDeliveryDetailModal from '../../modals/EventDelivery/EventDeliveryDetailModal.vue'
 import bulkSelection from '../../mixins/bulkSelection.js'
 
@@ -169,6 +152,7 @@ export default {
 	name: 'EventDeliveriesPage',
 
 	components: {
+		DeadLetterBulkBar,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
