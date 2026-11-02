@@ -62,11 +62,6 @@
       "count": 2
     }
   },
-  "src/modals/EventDelivery/EventDeliveryDetailModal.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/modals/EventSubscription/SubscriptionActionFields.vue": {
     "eqeqeq": {
       "count": 2
@@ -98,11 +93,6 @@
     },
     "vue/prefer-separate-static-class": {
       "count": 3
-    }
-  },
-  "src/modals/Synchronization/SyncDeadLetterDetailModal.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "src/modals/v2/AddEndpointRuleModal.vue": {
