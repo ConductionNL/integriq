@@ -938,12 +938,6 @@ WHERE src.schema = :fromSchemaPk
   AND src.object::jsonb ? :jsonFkField
   AND (src.object::jsonb ->> :jsonFkField) ~ '^\\d+\$'
 SQL;
-				$stmt = $this->db->prepare($sql);
-				$stmt->bindValue('relField', $fk['jsonField']);
-				$stmt->bindValue('jsonFkField', $jsonFkField);
-				$stmt->bindValue('fromSchemaPk', $fromSchemaPk, \PDO::PARAM_INT);
-				$stmt->bindValue('toSchemaPk', $toSchemaPk, \PDO::PARAM_INT);
-				$count = (int)$stmt->execute();
 			} else {
 				$sql = <<<SQL
 UPDATE oc_openregister_objects src
@@ -954,13 +948,14 @@ JOIN oc_openregister_objects tgt
 SET src.object = JSON_SET(src.object, CONCAT('$.', :relField), tgt.uuid)
 WHERE src.schema = :fromSchemaPk
 SQL;
-				$stmt = $this->db->prepare($sql);
-				$stmt->bindValue('relField', $fk['jsonField']);
-				$stmt->bindValue('jsonFkField', $jsonFkField);
-				$stmt->bindValue('fromSchemaPk', $fromSchemaPk, \PDO::PARAM_INT);
-				$stmt->bindValue('toSchemaPk', $toSchemaPk, \PDO::PARAM_INT);
-				$count = (int)$stmt->execute();
 			}//end if
+
+			$stmt = $this->db->prepare($sql);
+			$stmt->bindValue('relField', $fk['jsonField']);
+			$stmt->bindValue('jsonFkField', $jsonFkField);
+			$stmt->bindValue('fromSchemaPk', $fromSchemaPk, \PDO::PARAM_INT);
+			$stmt->bindValue('toSchemaPk', $toSchemaPk, \PDO::PARAM_INT);
+			$count = $stmt->execute()->rowCount();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				sprintf(
