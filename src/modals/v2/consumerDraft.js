@@ -202,7 +202,7 @@ export function normaliseList(value) {
  * @return {number|null} A positive integer, or null.
  */
 export function positiveIntOrNull(value) {
-	if (value === null || value === undefined || value === '') return null
+	if ([null, undefined, ''].includes(value)) return null
 	const parsed = Number(value)
 	if (!Number.isFinite(parsed)) return null
 	const rounded = Math.trunc(parsed)
@@ -227,21 +227,54 @@ export function consumerDraftFromItem(item) {
 	const draft = emptyConsumerDraft()
 	if (!item || typeof item !== 'object') return draft
 
-	const rateLimit =
-		item.rateLimit && typeof item.rateLimit === 'object' ? item.rateLimit : {}
-	const quota = item.quota && typeof item.quota === 'object' ? item.quota : {}
-
 	return {
 		...draft,
-		name: String(item.name ?? ''),
-		description: String(item.description ?? ''),
+		name: textOf(item.name),
+		description: textOf(item.description),
 		domains: normaliseList(item.domains),
 		ips: normaliseList(item.ips),
 		// An empty stored type means "no authentication" to EndpointService
 		// (`$authType === 'none' || $authType === ''`), so it seeds as `none`
 		// rather than leaving the picker blank. An off-list stored value is
 		// kept verbatim so saving an unrelated field cannot silently rewrite it.
-		authorizationType: String(item.authorizationType ?? '') || 'none',
+		authorizationType: textOf(item.authorizationType) || 'none',
+		...draftLimitsFromItem(item),
+	}
+}
+
+/**
+ * A value as text, with null and undefined as the empty string.
+ *
+ * @param {unknown} value The value.
+ *
+ * @return {string} The text.
+ */
+function textOf(value) {
+	return String(value ?? '')
+}
+
+/**
+ * A value when it is an object, otherwise an empty object.
+ *
+ * @param {unknown} value The value.
+ *
+ * @return {object} The object.
+ */
+function objectOrEmpty(value) {
+	return value && typeof value === 'object' ? value : {}
+}
+
+/**
+ * The rate-limit and quota draft leaves of a persisted consumer row.
+ *
+ * @param {object} item The row being edited.
+ *
+ * @return {object} The four limit leaves of the draft.
+ */
+function draftLimitsFromItem(item) {
+	const rateLimit = objectOrEmpty(item.rateLimit)
+	const quota = objectOrEmpty(item.quota)
+	return {
 		rateLimitRequestsPerWindow: positiveIntOrNull(rateLimit.requestsPerWindow),
 		rateLimitWindowSeconds: positiveIntOrNull(rateLimit.windowSeconds),
 		quotaLimit: positiveIntOrNull(quota.limit),
@@ -339,19 +372,42 @@ export function buildConsumerPayload(item, draft, authConfig) {
 	}
 
 	// Rule 1 — omit an empty allowlist rather than sending `[]`.
-	const domains = normaliseList(draft.domains)
-	const ips = normaliseList(draft.ips)
-	if (domains.length > 0) {
-		payload.domains = domains
-	} else {
-		delete payload.domains
-	}
-	if (ips.length > 0) {
-		payload.ips = ips
-	} else {
-		delete payload.ips
-	}
+	setListsOrOmit(payload, {
+		domains: normaliseList(draft.domains),
+		ips: normaliseList(draft.ips),
+	})
 
+	applyCredential(payload, authConfig)
+	return payload
+}
+
+/**
+ * Set each list on the payload, or leave its key out when the list is empty.
+ *
+ * @param {object} payload The payload being built; changed in place.
+ * @param {object} lists   The normalised lists, keyed by payload key.
+ *
+ * @return {void}
+ */
+function setListsOrOmit(payload, lists) {
+	for (const [key, list] of Object.entries(lists)) {
+		if (list.length > 0) {
+			payload[key] = list
+		} else {
+			delete payload[key]
+		}
+	}
+}
+
+/**
+ * Apply the credential rules to the payload.
+ *
+ * @param {object}           payload    The payload being built; changed in place.
+ * @param {object|null}      authConfig Parsed credential object, `null` to clear, `undefined` to leave untouched.
+ *
+ * @return {void}
+ */
+function applyCredential(payload, authConfig) {
 	// Rule 2 — `undefined` means the operator did not touch the credential, so
 	// the key must not appear at all. An explicit `null` clears it.
 	if (authConfig === undefined) {
@@ -373,6 +429,4 @@ export function buildConsumerPayload(item, draft, authConfig) {
 	if (!carriesCredential(payload.authorizationType)) {
 		payload.authorizationConfiguration = null
 	}
-
-	return payload
 }
