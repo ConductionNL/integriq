@@ -836,7 +836,7 @@ OC.L10N.register(
         "Endpoint misconfigured: invalid targetId format. Expected \"register/schema\"": "Endpoint verkeerd geconfigureerd: ongeldig targetId-formaat. Verwacht \"register/schema\"",
         "Not Found": "Niet gevonden",
         "Dashboard": "Dashboard",
-        "Store": "Winkel",
+        "Marketplace": "Marktplaats",
         "Gateway": "Gateway",
         "API products": "API-producten",
         "Consumers": "Afnemers",
