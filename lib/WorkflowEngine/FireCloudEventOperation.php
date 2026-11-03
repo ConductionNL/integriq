@@ -28,12 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IRuleMatcher;
 use OCP\WorkflowEngine\ISpecificOperation;
 use Psr\Log\LoggerInterface;
@@ -46,6 +44,8 @@ use UnexpectedValueException;
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-fire-cloudevent-operations-onevent-must-dispatch-to-eventserviceemitcloudevent-req-004
  */
 class FireCloudEventOperation implements ISpecificOperation {
+	use AdminFileOperationDefaults;
+
 	/**
 	 * Constructor.
 	 *
@@ -68,20 +68,6 @@ class FireCloudEventOperation implements ISpecificOperation {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-all-three-operations-must-be-admin-scoped-and-file-entity-scoped-only-req-005
-	 */
-	public function getEntityId(): string {
-		// Referenced only as a compile-time ::class string — see
-		// RunSynchronizationOperation::getEntityId() docblock for the
-		// no-autoload rationale.
-		return \OCA\WorkflowEngine\Entity\File::class;
-	}//end getEntityId()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @return string
-	 *
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
 	 */
 	public function getDisplayName(): string {
@@ -98,30 +84,6 @@ class FireCloudEventOperation implements ISpecificOperation {
 	public function getDescription(): string {
 		return $this->l10n->t('Emits a configured CloudEvent when this rule matches.');
 	}//end getDescription()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app.svg');
-	}//end getIcon()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param int $scope The requested scope (`IManager::SCOPE_*`).
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-all-three-operations-must-be-admin-scoped-and-file-entity-scoped-only-req-005
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return $scope === IManager::SCOPE_ADMIN;
-	}//end isAvailableForScope()
 
 	/**
 	 * {@inheritDoc}
@@ -205,13 +167,8 @@ class FireCloudEventOperation implements ISpecificOperation {
 	 *                    the JSON is malformed or `type`/`source` is missing/empty/non-string.
 	 */
 	private function decodeSettings(string $operation): ?array {
-		try {
-			$settings = json_decode($operation, true, 512, JSON_THROW_ON_ERROR);
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		if (is_array($settings) === false) {
+		$settings = $this->decodeOperationJson(operation: $operation);
+		if ($settings === null) {
 			return null;
 		}
 

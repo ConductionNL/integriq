@@ -28,12 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\WorkflowEngine;
 
-use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IRuleMatcher;
 use OCP\WorkflowEngine\ISpecificOperation;
 use Psr\Log\LoggerInterface;
@@ -49,6 +47,8 @@ use UnexpectedValueException;
  * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-run-synchronization-operations-onevent-must-dispatch-to-synchronizationservice-req-002
  */
 class RunSynchronizationOperation implements ISpecificOperation {
+	use AdminFileOperationDefaults;
+
 	/**
 	 * Constructor.
 	 *
@@ -71,22 +71,6 @@ class RunSynchronizationOperation implements ISpecificOperation {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-all-three-operations-must-be-admin-scoped-and-file-entity-scoped-only-req-005
-	 */
-	public function getEntityId(): string {
-		// Referenced only as a compile-time ::class string — NC core's
-		// `workflowengine` app ships this class but it is never
-		// instantiated/type-hinted here, so no autoload is triggered even
-		// when the bundled `workflowengine` app is disabled (design.md
-		// Decision 1 / discovery.md finding 6).
-		return \OCA\WorkflowEngine\Entity\File::class;
-	}//end getEntityId()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @return string
-	 *
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
 	 */
 	public function getDisplayName(): string {
@@ -103,30 +87,6 @@ class RunSynchronizationOperation implements ISpecificOperation {
 	public function getDescription(): string {
 		return $this->l10n->t('Runs a configured Integriq synchronization when this rule matches.');
 	}//end getDescription()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app.svg');
-	}//end getIcon()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param int $scope The requested scope (`IManager::SCOPE_*`).
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-all-three-operations-must-be-admin-scoped-and-file-entity-scoped-only-req-005
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return $scope === IManager::SCOPE_ADMIN;
-	}//end isAvailableForScope()
 
 	/**
 	 * {@inheritDoc}
@@ -207,13 +167,8 @@ class RunSynchronizationOperation implements ISpecificOperation {
 	 *                     or `synchronizationId` is missing/empty/non-string.
 	 */
 	private function decodeSynchronizationId(string $operation): ?string {
-		try {
-			$settings = json_decode($operation, true, 512, JSON_THROW_ON_ERROR);
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		if (is_array($settings) === false) {
+		$settings = $this->decodeOperationJson(operation: $operation);
+		if ($settings === null) {
 			return null;
 		}
 

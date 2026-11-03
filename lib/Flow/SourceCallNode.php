@@ -74,7 +74,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
@@ -85,6 +84,12 @@ use UnexpectedValueException;
  * @spec openspec/changes/integriq-flow-nodes/tasks.md#task-2-sourcecallnode-source-targeting-per-item-execution-response-mapping
  */
 class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+	use FlowNodePaletteDefaults;
+
+	/**
+	 * Palette icon: app and image path.
+	 */
+	private const PALETTE_ICON = ['integriq', 'flow-source-call.svg'];
 
 	/**
 	 * The step type this node answers to.
@@ -150,20 +155,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	}//end __construct()
 
 	/**
-	 * The step type.
-	 *
-	 * App-namespaced, so two apps cannot silently claim one type: the
-	 * registry refuses a collision rather than resolving it by load order.
-	 *
-	 * @return string The type identifier.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function getId(): string {
-		return self::NODE_ID;
-	}//end getId()
-
-	/**
 	 * Palette name.
 	 *
 	 * @return string The display name.
@@ -187,17 +178,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		);
 
 	}//end getDescription()
-
-	/**
-	 * Palette icon.
-	 *
-	 * @return string The icon URL.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('integriq', 'flow-source-call.svg');
-	}//end getIcon()
 
 	/**
 	 * The links a call this node made earns in the run log.
@@ -256,23 +236,6 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		return $actions;
 	}//end logActions()
-
-	/**
-	 * Whether the node is offered in the given scope.
-	 *
-	 * Answered with Nextcloud's own constants, per OpenRegister's convention,
-	 * and false for anything else — an unrecognised scope is not a reason to
-	 * offer a node that makes outbound calls.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a source call.
