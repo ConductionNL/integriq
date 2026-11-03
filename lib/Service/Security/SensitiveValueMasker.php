@@ -75,6 +75,7 @@ final class SensitiveValueMasker {
 		'keyId',
 		'signatureAlgorithm',
 		'bodyKey',
+		'authorizationPassthroughMethod',
 	];
 
 	/**
@@ -93,6 +94,41 @@ final class SensitiveValueMasker {
 		'keyId',
 		'signatureAlgorithm',
 		'bodyKey',
+	];
+
+	/**
+	 * Strategy keys whose names are on the sensitive list: a scalar stays
+	 * readable only as a bare word (`body`, `basic_auth`, `header`).
+	 *
+	 * @var array<int, string>
+	 */
+	private const STRATEGY_KEYS = [
+		'authentication',
+		'authorizationPassthroughMethod',
+	];
+
+	/**
+	 * A bare word: no digits, spaces or punctuation that a credential would hold.
+	 *
+	 * @var string
+	 */
+	private const BARE_WORD = '/^[A-Za-z_]{1,32}$/';
+
+	/**
+	 * A header name: dash-separated letters and digits, 64 characters at most.
+	 *
+	 * @var string
+	 */
+	private const HEADER_NAME = '/^(?=.{1,64}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$/';
+
+	/**
+	 * The maps that hold a credential itself, so an `id` or `uuid` in them is not a pointer.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CREDENTIAL_MAP_KEYS = [
+		'authentication',
+		'auth',
 	];
 
 	/**
@@ -121,9 +157,11 @@ final class SensitiveValueMasker {
 	 * Constructor.
 	 *
 	 * @param SensitiveFieldRegistry $registry The registry that redacts by name.
+	 * @param string $parentKey The sensitive key the masked value sits under.
 	 */
 	public function __construct(
 		private readonly SensitiveFieldRegistry $registry,
+		private readonly string $parentKey = '',
 	) {
 	}//end __construct()
 
@@ -177,17 +215,27 @@ final class SensitiveValueMasker {
 	}//end writeOnlyLeaves()
 
 	/**
-	 * Whether a scalar under this key is a public call parameter, not a secret.
+	 * Whether this value is a public call parameter, not a secret: a scalar
+	 * under a listed key, or a bare word under a strategy key.
 	 *
-	 * @param string $key The key.
+	 * @param string $key   The key.
+	 * @param mixed  $value The value.
 	 *
 	 * @return boolean
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
-	public function namesAPublicParameter(string $key): bool {
+	public function isPublicParameter(string $key, mixed $value): bool {
+		if (is_scalar($value) === false) {
+			return false;
+		}
+
+		if (in_array($key, self::STRATEGY_KEYS, true) === true) {
+			return is_string($value) === true && preg_match(self::BARE_WORD, $value) === 1;
+		}
+
 		return in_array($key, self::PUBLIC_PARAMETER_KEYS, true);
-	}//end namesAPublicParameter()
+	}//end isPublicParameter()
 
 	/**
 	 * Mask a map: per key when every key names a setting, whole otherwise.
@@ -266,8 +314,38 @@ final class SensitiveValueMasker {
 			return is_array($value);
 		}
 
-		return in_array($key, self::NON_SECRET_SETTING_KEYS, true);
+		if (in_array($key, self::NON_SECRET_SETTING_KEYS, true) === false) {
+			return false;
+		}
+
+		return $this->fitsItsSetting(key: (string)$key, value: $value);
 	}//end keepsReadable()
+
+	/**
+	 * Whether a value has the shape its setting allows: a header name, a list of
+	 * names, and an id only outside a map that holds a credential itself.
+	 *
+	 * @param string $key   The setting key.
+	 * @param mixed  $value The value.
+	 *
+	 * @return boolean
+	 */
+	private function fitsItsSetting(string $key, mixed $value): bool {
+		if ($key === 'header') {
+			return is_string($value) === true && preg_match(self::HEADER_NAME, $value) === 1;
+		}
+
+		if ($key === 'users' || $key === 'groups') {
+			return is_array($value) === true && array_is_list($value) === true;
+		}
+
+		if ($key === 'id' || $key === 'uuid') {
+			$segments = explode('.', $this->parentKey);
+			return in_array(strtolower((string)end($segments)), self::CREDENTIAL_MAP_KEYS, true) === false;
+		}
+
+		return true;
+	}//end fitsItsSetting()
 
 	/**
 	 * A readable entry of a sensitive map, still redacted by name when it is an array.
@@ -282,7 +360,17 @@ final class SensitiveValueMasker {
 			return $value;
 		}
 
-		return $this->registry->redactArray(data: $value, extraExactNames: $extraExactNames);
+		if (array_is_list($value) === false) {
+			return $this->registry->redactArray(data: $value, extraExactNames: $extraExactNames);
+		}
+
+		foreach ($value as $index => $item) {
+			if (is_array($item) === true) {
+				$value[$index] = $this->mask(value: $item, extraExactNames: $extraExactNames);
+			}
+		}
+
+		return $value;
 	}//end redactReadable()
 
 	/**

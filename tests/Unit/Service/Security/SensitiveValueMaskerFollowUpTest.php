@@ -135,6 +135,75 @@ class SensitiveValueMaskerFollowUpTest extends TestCase {
 	}//end testPublicParametersStayReadableAtTheTop()
 
 	/**
+	 * A readable setting whose value does not fit its shape is masked under a credential map.
+	 *
+	 * @return void
+	 */
+	public function testSettingsThatDoNotFitTheirShapeAreMasked(): void {
+		$out = $this->redact(
+			[
+				'authentication' => [
+					'type' => 'bearer',
+					'id' => 'id-secret',
+					'uuid' => 'uuid-secret',
+					'header' => 'Bearer tok-secret',
+					'users' => ['alice' => 'pw-secret'],
+					'groups' => ['admin', ['nested' => 'x']],
+					'oauth' => ['id' => 'nested-secret'],
+				],
+				'auth' => ['id' => 'auth-id-secret'],
+			]
+		);
+
+		$this->assertSame(
+			[
+				'authentication' => [
+					'type' => 'bearer',
+					'id' => self::P,
+					'uuid' => self::P,
+					'header' => self::P,
+					'users' => ['alice' => self::P],
+					'groups' => ['admin', ['nested' => self::P]],
+					'oauth' => ['id' => self::P],
+				],
+				'auth' => ['id' => self::P],
+			],
+			$out
+		);
+	}//end testSettingsThatDoNotFitTheirShapeAreMasked()
+
+	/**
+	 * A setting that fits its shape stays readable, and an id outside a credential map too.
+	 *
+	 * @return void
+	 */
+	public function testSettingsThatFitTheirShapeStayReadable(): void {
+		$auth = ['type' => 'apikey', 'users' => ['alice'], 'groups' => [], 'header' => 'X-Hub-Signature-256'];
+
+		$this->assertSame($auth, $this->redact(['authentication' => $auth])['authentication']);
+		$this->assertSame(['id' => 'k-1', 'uuid' => 'u-1', 'value' => self::P], $this->redact(['apiKeys' => ['id' => 'k-1', 'uuid' => 'u-1', 'value' => 'v']])['apiKeys']);
+		$this->assertSame(['id' => 'k-2'], $this->redact(['some.dotted.apikey' => ['id' => 'k-2']])['some.dotted.apikey']);
+		$this->assertSame(['id' => self::P], $this->redact(['some.dotted.authentication' => ['id' => 'k-3']])['some.dotted.authentication']);
+	}//end testSettingsThatFitTheirShapeStayReadable()
+
+	/**
+	 * The strategy strings stay readable as a bare word, and nothing else does.
+	 *
+	 * @return void
+	 */
+	public function testStrategyStringsStayReadableOnlyAsABareWord(): void {
+		$kept = ['authentication' => 'basic_auth', 'authorizationPassthroughMethod' => 'header'];
+		$this->assertSame($kept, $this->redact($kept));
+
+		foreach (['abc123', 'Bearer tok', str_repeat('a', 33), ''] as $value) {
+			$this->assertSame(self::P, $this->redact(['authentication' => $value])['authentication'], $value);
+			$this->assertSame(self::P, $this->redact(['authorizationPassthroughMethod' => $value])['authorizationPassthroughMethod'], $value);
+		}
+
+		$this->assertSame(['authorizationPassthroughMethod' => 'query'], $this->redact(['authentication' => ['authorizationPassthroughMethod' => 'query']])['authentication']);
+	}//end testStrategyStringsStayReadableOnlyAsABareWord()
+
+	/**
 	 * Every write-only leaf of the source schema is masked under authentication and listed as readable nowhere.
 	 *
 	 * @return void
@@ -145,7 +214,7 @@ class SensitiveValueMaskerFollowUpTest extends TestCase {
 		$this->assertContains('mtls', $leaves);
 		$this->assertContains('encryptedToken', $leaves);
 
-		foreach (['NON_SECRET_SETTING_KEYS', 'PUBLIC_PARAMETER_KEYS'] as $list) {
+		foreach (['NON_SECRET_SETTING_KEYS', 'PUBLIC_PARAMETER_KEYS', 'STRATEGY_KEYS'] as $list) {
 			$readable = (new \ReflectionClassConstant(SensitiveValueMasker::class, $list))->getValue();
 			$this->assertSame([], array_values(array_intersect($leaves, $readable)), $list);
 		}

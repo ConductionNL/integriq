@@ -237,8 +237,8 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 */
 	public function redactArray(array $data, ?array $extraExactNames = null): array {
 		foreach ($data as $key => $value) {
-			$masker = new SensitiveValueMasker(registry: $this);
-			if (is_scalar($value) === true && $masker->namesAPublicParameter(key: (string)$key) === true) {
+			$masker = new SensitiveValueMasker(registry: $this, parentKey: (string)$key);
+			if ($masker->isPublicParameter(key: (string)$key, value: $value) === true) {
 				continue;
 			}
 
