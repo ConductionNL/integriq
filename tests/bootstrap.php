@@ -351,6 +351,12 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OC/AppFramework/Http.php';
 		}
 
+		// OC\AppFramework\DependencyInjection\DIContainer: the declared type of
+		// App::$container on NC 35, absent from nextcloud/ocp. Bare mode only.
+		if ($ncPresent === false && class_exists('OC\\AppFramework\\DependencyInjection\\DIContainer') === false) {
+			require_once $stubsDir . '/OC/AppFramework/DependencyInjection/DIContainer.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\OrganisationService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/OrganisationService.php';
 		}
