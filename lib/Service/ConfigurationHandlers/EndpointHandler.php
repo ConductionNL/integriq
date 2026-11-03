@@ -64,11 +64,10 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 	public function export(Entity $entity, array $mappings, array &$mappingIds = []): array {
 		$endpointArray = $this->exportedArray(entity: $entity);
 
-		// Redact secret-shaped values from the nested configuration array
-		// (secret-hygiene) — e.g. an inline per-endpoint auth-override header.
-		if (isset($endpointArray['configuration']) === true && is_array($endpointArray['configuration']) === true) {
-			$endpointArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $endpointArray['configuration']);
-		}
+		// Redact secret-shaped values from every field of the endpoint, not one
+		// block: the endpoint schema has no `configuration` property, so its
+		// own fields and `conditions` are where an inline secret would sit.
+		$endpointArray = $this->sensitiveFieldRegistry->redactConfiguration(data: $endpointArray);
 
 		if (isset($endpointArray['targetId']) === true && isset($endpointArray['targetType']) === true) {
 			$endpointArray['targetId'] = $this->exportTargetId(data: $endpointArray, mappings: $mappings);

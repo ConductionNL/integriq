@@ -61,7 +61,7 @@ class SynchronizationHandlerGoldenTest extends TestCase {
 		);
 
 		$registry = $this->createMock(SensitiveFieldRegistry::class);
-		$registry->method('redactArray')->willReturnCallback(
+		$registry->method('redactConfiguration')->willReturnCallback(
 			fn (array $data) => ['redacted' => $data]
 		);
 

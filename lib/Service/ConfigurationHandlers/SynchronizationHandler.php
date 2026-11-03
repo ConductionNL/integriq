@@ -96,7 +96,7 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 
 		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
 		if (isset($syncArray['configuration']) === true && is_array($syncArray['configuration']) === true) {
-			$syncArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $syncArray['configuration']);
+			$syncArray['configuration'] = $this->sensitiveFieldRegistry->redactConfiguration(data: $syncArray['configuration']);
 		}
 
 		$lookup    = $this->directionOf(mappings: $mappings, direction: 'idToSlug');

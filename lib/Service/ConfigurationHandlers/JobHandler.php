@@ -91,7 +91,7 @@ class JobHandler implements ConfigurationHandlerInterface {
 		// carries raw secret values, as opposed to entity id/slug references
 		// already governed by the id<->slug maps (see proposal Open Questions).
 		if (isset($jobArray['configuration']) === true && is_array($jobArray['configuration']) === true) {
-			$jobArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $jobArray['configuration']);
+			$jobArray['configuration'] = $this->sensitiveFieldRegistry->redactConfiguration(data: $jobArray['configuration']);
 		}
 
 		// Replace IDs with slugs in arguments.

@@ -139,7 +139,7 @@ class MappingHandler implements ConfigurationHandlerInterface {
 	 */
 	private function redactConfiguration(array $entityArray): array {
 		if (isset($entityArray['configuration']) === true && is_array($entityArray['configuration']) === true) {
-			$entityArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $entityArray['configuration']);
+			$entityArray['configuration'] = $this->sensitiveFieldRegistry->redactConfiguration(data: $entityArray['configuration']);
 		}
 
 		return $entityArray;
