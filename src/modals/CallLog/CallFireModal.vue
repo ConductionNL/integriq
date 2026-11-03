@@ -94,11 +94,31 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
-import { fireCall } from './callLogApi.js'
+import {
+	dryRunText,
+	fireCall,
+	fireError,
+	isDryRun,
+	listSourceOptions,
+} from './callLogApi.js'
+
+/**
+ * The sentence for a call the partner accepted.
+ *
+ * @param {object} item the outcome
+ * @return {string} the translated sentence
+ */
+function sentText(item) {
+	return t(
+		'integriq',
+		'Sent. The partner answered {status}, and the call is in the log.',
+		{
+			status: item.statusCode,
+		},
+	)
+}
 
 export default {
 	name: 'CallFireModal',
@@ -181,20 +201,11 @@ export default {
 			if (!item) {
 				return ''
 			}
-			if (item.sent === false && item.succeeded === true) {
-				return t(
-					'integriq',
-					'Dry run: this is what would be sent. Nothing was sent.',
-				)
+			if (isDryRun(item)) {
+				return dryRunText()
 			}
 			if (item.succeeded === true) {
-				return t(
-					'integriq',
-					'Sent. The partner answered {status}, and the call is in the log.',
-					{
-						status: item.statusCode,
-					},
-				)
+				return sentText(item)
 			}
 			return t('integriq', 'The call failed: {detail}', {
 				detail: item.detail || '',
@@ -234,23 +245,50 @@ export default {
 		async fetchSources() {
 			this.sourcesLoading = true
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/integriq/source'),
-					// `_limit`, not `limit`: an unprefixed param is a property filter.
-					{ params: { _limit: 500 } },
-				)
-				const list = Array.isArray(response.data?.results)
-					? response.data.results
-					: []
-				this.sourceOptions = list.map((item) => ({
-					id: String(item['@self']?.id || item.id || item.uuid),
-					label: item.name || item.title || String(item.id),
-				}))
+				this.sourceOptions = await listSourceOptions()
 			} catch {
 				this.sourceOptions = []
 				this.error = t('integriq', 'The sources could not be loaded.')
 			} finally {
 				this.sourcesLoading = false
+			}
+		},
+
+		/**
+		 * The request to send: method, trimmed endpoint and the body when set.
+		 *
+		 * @return {{method: string, endpoint: string, body?: object}} the request
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 */
+		buildRequest() {
+			const request = { method: this.method, endpoint: this.endpoint.trim() }
+			if (this.parsedBody !== undefined) {
+				request.body = this.parsedBody
+			}
+			return request
+		},
+
+		/**
+		 * Fire the request at the chosen source.
+		 *
+		 * @param {boolean} dryRun show what would be sent instead of sending it
+		 * @return {Promise<object>} what happened
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 */
+		send(dryRun) {
+			return fireCall(this.selectedSource.id, this.buildRequest(), dryRun)
+		},
+
+		/**
+		 * Tell the parent a real call went out; a dry run stays silent.
+		 *
+		 * @param {boolean} dryRun whether the call was a dry run
+		 * @return {void}
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-call-can-be-fired-by-hand-req-ocd-003
+		 */
+		announce(dryRun) {
+			if (!dryRun) {
+				this.$emit('fired', this.outcome)
 			}
 		},
 
@@ -267,23 +305,11 @@ export default {
 			}
 			this.busy = true
 			this.error = ''
-			const request = { method: this.method, endpoint: this.endpoint.trim() }
-			if (this.parsedBody !== undefined) {
-				request.body = this.parsedBody
-			}
 			try {
-				this.outcome = await fireCall(
-					this.selectedSource.id,
-					request,
-					dryRun,
-				)
-				if (!dryRun) {
-					this.$emit('fired', this.outcome)
-				}
+				this.outcome = await this.send(dryRun)
+				this.announce(dryRun)
 			} catch (e) {
-				this.error =
-					e?.response?.data?.error
-					|| t('integriq', 'The call could not be fired.')
+				this.error = fireError(e)
 			} finally {
 				this.busy = false
 			}

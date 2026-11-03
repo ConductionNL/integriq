@@ -7,7 +7,7 @@
   credential authoring UX the lib cannot express declaratively:
 
     • A "Brokered credential (OpenRegister)" switch. When ON, an accessible
-      NcSelect lists the signed-in user's credentials from the OpenRegister
+      NcSelect lists the credentials of the signed-in user from the OpenRegister
       credential broker (GET /apps/openregister/api/credentials). Picking one
       writes `configuration.authentication.credentialRef = { credentialId }`
       into the Source model (see sourceCredentialRef.js — the exact path the
@@ -69,47 +69,25 @@
 					|| field.widget === 'date'
 					|| field.widget === 'datetime'
 				">
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					:type="textFieldType(field)"
-					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:modelValue="(value) => updateField(field.key, value)" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
+					@update="updateField(field.key, $event)" />
 			</template>
 
 			<template v-else-if="field.widget === 'number'">
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					type="number"
-					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:modelValue="
-						(value) =>
-							updateField(
-								field.key,
-								value !== '' ? Number(value) : null,
-							)
+					@update="
+						updateField(field.key, $event !== '' ? Number($event) : null)
 					" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
 			</template>
 
 			<div
@@ -139,7 +117,7 @@
 				:modelValue="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:modelValue="(value) => updateField(field.key, value)">
+				@update:modelValue="updateField(field.key, $event)">
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
@@ -166,21 +144,12 @@
 			</div>
 
 			<template v-else>
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
-					:disabled="field.readOnly"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					:placeholder="field.description"
-					@update:modelValue="(value) => updateField(field.key, value)" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
+					@update="updateField(field.key, $event)" />
 			</template>
 		</div>
 
@@ -190,9 +159,7 @@
 			v-if="isCaseSystem"
 			class="cn-source-form-fields__field"
 			:configuration="caseSystemConfiguration"
-			@update:configuration="
-				(configuration) => updateField('configuration', configuration)
-			" />
+			@update:configuration="updateField('configuration', $event)" />
 
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
@@ -312,8 +279,10 @@ import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
+import SchemaTextField from './SchemaTextField.vue'
+import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
 	clearCredentialRef,
 	EMBEDDED_SECRET_FIELDS,
@@ -342,12 +311,14 @@ export default {
 	name: 'SourceFormFields',
 
 	components: {
-		NcTextField,
+		SchemaTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
 		CaseSystemSourceFields,
 	},
+
+	mixins: [jsonFieldDrafts],
 
 	props: {
 		/** Resolved field descriptors from CnFormDialog. */
@@ -374,9 +345,6 @@ export default {
 			/** Digital post bindings this instance carries, from the registry. */
 			digitalPostProviders: [],
 			digitalPostLoading: false,
-			/** Per-key json editor drafts (invalid intermediate strings held here). */
-			jsonDrafts: {},
-			jsonErrors: {},
 		}
 	},
 
@@ -710,56 +678,6 @@ export default {
 				)
 			} finally {
 				this.credentialsLoading = false
-			}
-		},
-
-		/**
-		 * Render a json field's current value as a string for the textarea.
-		 *
-		 * @param {object} field The field descriptor.
-		 * @return {string} The stringified value.
-		 * @spec exclude json-editor draft rendering — presentation only
-		 */
-		jsonStringFor(field) {
-			if (this.jsonDrafts[field.key] !== undefined) {
-				return this.jsonDrafts[field.key]
-			}
-			const raw = this.formData[field.key]
-			if (raw === null || raw === undefined) return ''
-			if (typeof raw === 'string') return raw
-			try {
-				return JSON.stringify(raw, null, 2)
-			} catch (_e) {
-				return String(raw)
-			}
-		},
-
-		/**
-		 * Parse a json field's textarea input; store the parsed value (or an error).
-		 *
-		 * @param {object} field The field descriptor.
-		 * @param {string} raw The raw textarea string.
-		 * @return {void}
-		 * @spec exclude json-editor input parsing — presentation only
-		 */
-		onJsonInput(field, raw) {
-			this.jsonDrafts[field.key] = raw
-			const trimmed = raw.trim()
-			if (trimmed.length === 0) {
-				this.jsonErrors[field.key] = ''
-				this.updateField(field.key, null)
-				return
-			}
-			try {
-				const parsed = JSON.parse(trimmed)
-				this.jsonErrors[field.key] = ''
-				this.updateField(field.key, parsed)
-			} catch (parseErr) {
-				this.jsonErrors[field.key] = t(
-					'integriq',
-					'Invalid JSON: {message}',
-					{ message: parseErr.message },
-				)
 			}
 		},
 	},

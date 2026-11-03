@@ -108,7 +108,31 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcCheckboxRadioSwitch, NcModal } from '@nextcloud/vue'
-import { previewCall, replayCalls } from './callLogApi.js'
+import {
+	dryRunText,
+	isDryRun,
+	previewCall,
+	replayCalls,
+	replayError,
+	serverError,
+} from './callLogApi.js'
+
+/**
+ * The sentence for a replay the partner accepted.
+ *
+ * @param {object} item the per-item outcome
+ * @return {string} the translated sentence
+ */
+function replayedText(item) {
+	return t(
+		'integriq',
+		'Replayed under mapping version {version}. The partner answered {status}.',
+		{
+			version: item.mappingVersion || '-',
+			status: item.statusCode,
+		},
+	)
+}
 
 export default {
 	name: 'CallReplayModal',
@@ -172,21 +196,11 @@ export default {
 			if (!item) {
 				return ''
 			}
-			if (item.sent === false && item.succeeded === true) {
-				return t(
-					'integriq',
-					'Dry run: this is what would be sent. Nothing was sent.',
-				)
+			if (isDryRun(item)) {
+				return dryRunText()
 			}
 			if (item.succeeded === true) {
-				return t(
-					'integriq',
-					'Replayed under mapping version {version}. The partner answered {status}.',
-					{
-						version: item.mappingVersion || '-',
-						status: item.statusCode,
-					},
-				)
+				return replayedText(item)
 			}
 			return t('integriq', 'The replay failed: {detail}', {
 				detail: item.detail || '',
@@ -229,13 +243,39 @@ export default {
 				this.preview = await previewCall(this.callId)
 				this.mappingVersion = this.preview?.versions?.recorded || ''
 			} catch (e) {
-				this.preview = null
-				this.error =
-					e?.response?.data?.error
-					|| t('integriq', 'This call could not be loaded.')
+				this.loadFailed(e)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Drop the preview and say why it could not be loaded.
+		 *
+		 * @param {Error} error the failed request
+		 * @return {void}
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
+		 */
+		loadFailed(error) {
+			this.preview = null
+			this.error = serverError(
+				error,
+				t('integriq', 'This call could not be loaded.'),
+			)
+		},
+
+		/**
+		 * Replay or dry run this call under the chosen mapping version.
+		 *
+		 * @param {boolean} dryRun show what would be sent instead of sending it
+		 * @return {Promise<object>} the per-item outcomes
+		 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-replay-names-the-mapping-version-it-ran-under-req-ocd-005
+		 */
+		send(dryRun) {
+			return replayCalls([this.callId], {
+				dryRun,
+				mappingVersion: this.mappingVersion,
+			})
 		},
 
 		/**
@@ -249,18 +289,13 @@ export default {
 			this.busy = true
 			this.error = ''
 			try {
-				const result = await replayCalls([this.callId], {
-					dryRun,
-					mappingVersion: this.mappingVersion,
-				})
+				const result = await this.send(dryRun)
 				this.outcome = result?.items?.[0] ?? null
 				if (!dryRun) {
 					this.$emit('replayed', result)
 				}
 			} catch (e) {
-				this.error =
-					e?.response?.data?.error
-					|| t('integriq', 'The replay could not be started.')
+				this.error = replayError(e)
 			} finally {
 				this.busy = false
 			}

@@ -21,7 +21,7 @@
     • `method` and `targetType` selects. The schema declares both as plain
       strings with no enum, so the lib renders text inputs.
 
-    • `configurations` as a multiselect over OpenRegister's configurations,
+    • `configurations` as a multiselect over the OpenRegister configurations,
       storing ids (what the original modal wrote).
 
   Wired by CnPageRenderer when the manifest declares
@@ -76,7 +76,7 @@
 					"
 					:clearable="!field.required"
 					@update:modelValue="
-						(option) => updateField(field.key, option?.id ?? null)
+						updateField(field.key, $event?.id ?? null)
 					" />
 				<CnFieldHelper
 					:text="field.description"
@@ -195,28 +195,19 @@
 				:modelValue="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:modelValue="(value) => updateField(field.key, value)">
+				@update:modelValue="updateField(field.key, $event)">
 				{{ field.label }}
 			</NcCheckboxRadioSwitch>
 
 			<!-- Everything else: plain text (name, description, endpoint,
 			     endpointRegex, slug). -->
 			<template v-else>
-				<NcTextField
-					:label="field.label + (field.required ? ' *' : '')"
-					:modelValue="
-						formData[field.key] != null
-							? String(formData[field.key])
-							: ''
-					"
-					:error="!!errors[field.key]"
-					:disabled="field.readOnly"
+				<SchemaTextField
+					:field="field"
+					:value="formData[field.key]"
+					:error="errors[field.key]"
 					:placeholder="placeholderFor(field.key)"
-					@update:modelValue="(value) => updateField(field.key, value)" />
-				<CnFieldHelper
-					:text="field.description"
-					:more="field.descriptionLong"
-					:error="errors[field.key]" />
+					@update="updateField(field.key, $event)" />
 			</template>
 		</div>
 
@@ -232,24 +223,20 @@
 				:options="validationModeOptions"
 				:clearable="false"
 				@update:modelValue="
-					(option) => setValidation('mode', option ? option.id : 'record')
+					setValidation('mode', $event ? $event.id : 'record')
 				" />
 			<NcSelect
 				:inputLabel="t('integriq', 'Request schema')"
 				:modelValue="messageSchemaOption('request')"
 				:options="messageSchemaOptions"
 				:loading="messageSchemasLoading"
-				@update:modelValue="
-					(option) => setValidationSchema('request', option)
-				" />
+				@update:modelValue="setValidationSchema('request', $event)" />
 			<NcSelect
 				:inputLabel="t('integriq', 'Answer schema')"
 				:modelValue="messageSchemaOption('response')"
 				:options="messageSchemaOptions"
 				:loading="messageSchemasLoading"
-				@update:modelValue="
-					(option) => setValidationSchema('response', option)
-				" />
+				@update:modelValue="setValidationSchema('response', $event)" />
 			<CnFieldHelper
 				:text="
 					t(
@@ -296,16 +283,21 @@ const FIELD_PLACEHOLDERS = {
 	endpoint: 'api/v1/objects/{id}',
 	endpointArray: 'api, v1, objects, {id}',
 }
+import SchemaTextField from './SchemaTextField.vue'
+import messageSchemaOptions from '../../mixins/messageSchemaOptions.js'
 
 export default {
 	name: 'EndpointFormFields',
 
 	components: {
+		SchemaTextField,
 		NcTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
 	},
+
+	mixins: [messageSchemaOptions],
 
 	props: {
 		/** Resolved field descriptors from CnFormDialog. */
@@ -332,9 +324,6 @@ export default {
 			configurationsLoading: false,
 			/** True once the OpenRegister registers endpoint has soft-failed. */
 			registerUnavailable: false,
-			/** Message schemas an endpoint can check its messages against. */
-			messageSchemaOptions: [],
-			messageSchemasLoading: false,
 		}
 	},
 
@@ -726,13 +715,8 @@ export default {
 		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		messageSchemaOption(direction) {
-			const uuid = this.formData.validation?.[direction]?.messageSchema
-			if (!uuid) return null
-			return (
-				this.messageSchemaOptions.find((option) => option.id === uuid) || {
-					id: uuid,
-					label: uuid,
-				}
+			return this.messageSchemaOptionFor(
+				this.formData.validation?.[direction]?.messageSchema,
 			)
 		},
 
@@ -769,37 +753,6 @@ export default {
 			}
 			const current = this.formData.validation?.[direction] || {}
 			this.setValidation(direction, { ...current, messageSchema: option.id })
-		},
-
-		/**
-		 * Load the message schemas. Soft-fails to an empty list.
-		 *
-		 * @return {Promise<void>} Resolves once loaded.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
-		 */
-		async fetchMessageSchemas() {
-			this.messageSchemasLoading = true
-			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/integriq/message_schema',
-					),
-				)
-				this.messageSchemaOptions = (response.data?.results || []).map(
-					(schema) => ({
-						id: schema['@self']?.id || schema.id,
-						label:
-							schema.name
-							+ (schema.version ? ' (' + schema.version + ')' : ''),
-					}),
-				)
-			} catch (err) {
-				this.messageSchemaOptions = []
-				// eslint-disable-next-line no-console
-				console.warn('[EndpointFormFields] message schema fetch failed', err)
-			} finally {
-				this.messageSchemasLoading = false
-			}
 		},
 
 		/**

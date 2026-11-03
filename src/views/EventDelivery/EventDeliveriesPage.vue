@@ -44,42 +44,24 @@
 			</div>
 		</div>
 
-		<div
+		<DeadLetterBulkBar
 			v-if="selected.length"
-			class="eventDeliveries__bulk"
-			data-testid="bulk-bar">
-			<span>{{
-				t('integriq', '{count} selected', { count: selected.length })
-			}}</span>
-			<template v-if="bulkConfirm">
-				<span>{{
-					bulkConfirm === 'replay'
-						? t('integriq', 'Replay {count} messages now?', {
-								count: selected.length,
-							})
-						: t('integriq', 'Discard {count} messages?', {
-								count: selected.length,
-							})
-				}}</span>
-				<NcButton variant="primary" :disabled="busy" @click="commitBulk">
-					{{ t('integriq', 'Confirm') }}
-				</NcButton>
-				<NcButton :disabled="busy" @click="bulkConfirm = null">
-					{{ t('integriq', 'Cancel') }}
-				</NcButton>
-			</template>
-			<template v-else>
-				<NcButton
-					variant="primary"
-					:disabled="busy"
-					@click="bulkConfirm = 'replay'">
-					{{ t('integriq', 'Replay selected') }}
-				</NcButton>
-				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
-					{{ t('integriq', 'Discard selected') }}
-				</NcButton>
-			</template>
-		</div>
+			block="eventDeliveries"
+			:count="selected.length"
+			:confirming="bulkConfirm"
+			:busy="busy"
+			:replayPrompt="
+				t('integriq', 'Replay {count} messages now?', {
+					count: selected.length,
+				})
+			"
+			:discardPrompt="
+				t('integriq', 'Discard {count} messages?', {
+					count: selected.length,
+				})
+			"
+			@confirm="(verb) => (bulkConfirm = verb)"
+			@commit="commitBulk" />
 
 		<NcLoadingIcon v-if="loading" :size="32" class="eventDeliveries__loading" />
 
@@ -151,10 +133,7 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -162,13 +141,16 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import DeadLetterBulkBar from '../../components/DeadLetterBulkBar.vue'
 import EventDeliveryDetailModal from '../../modals/EventDelivery/EventDeliveryDetailModal.vue'
 import bulkSelection from '../../mixins/bulkSelection.js'
+import deadLetterList from '../../mixins/deadLetterList.js'
 
 export default {
 	name: 'EventDeliveriesPage',
 
 	components: {
+		DeadLetterBulkBar,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
@@ -177,12 +159,10 @@ export default {
 		EventDeliveryDetailModal,
 	},
 
-	mixins: [bulkSelection],
+	mixins: [bulkSelection, deadLetterList],
 
 	data() {
 		return {
-			rows: [],
-			loading: false,
 			statusFilter: 'failed,abandoned',
 			subscriptionFilter: '',
 			statusOptions: ['failed,abandoned', 'failed', 'abandoned', 'discarded'],
@@ -211,12 +191,48 @@ export default {
 		},
 	},
 
-	mounted() {
-		this.reload()
-	},
-
 	methods: {
 		t,
+
+		/**
+		 * @return {string} The list endpoint.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
+		listPath() {
+			return '/apps/integriq/api/events/dead-letter'
+		},
+
+		/**
+		 * @return {string} The detail modal prop that carries the row.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
+		detailKey() {
+			return 'message'
+		},
+
+		/**
+		 * The query of the current filters.
+		 *
+		 * @return {object} The list parameters.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
+		listParams() {
+			const params = { status: this.statusFilter }
+			if (this.subscriptionFilter) {
+				params.subscriptionId = this.subscriptionFilter
+			}
+			return params
+		},
+
+		/**
+		 * The toast when listing fails.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
+		listFailedText() {
+			return t('integriq', 'Failed to load event deliveries')
+		},
 
 		/**
 		 * The path of the bulk endpoint for a verb.
@@ -249,51 +265,6 @@ export default {
 		 */
 		rowEventType(row) {
 			return row?.payload?.type || row?.payload?.data?.type || '—'
-		},
-
-		/**
-		 * Open the per-message detail modal.
-		 *
-		 * @param {object} row Dead-letter message row.
-		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
-		 */
-		openDetail(row) {
-			this.detail = { open: true, message: row }
-		},
-
-		/**
-		 * Close the detail modal.
-		 *
-		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
-		 */
-		closeDetail() {
-			this.detail = { open: false, message: null }
-		},
-
-		/**
-		 * Fetch the dead-letter listing from the admin-only endpoint.
-		 *
-		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
-		 */
-		async reload() {
-			this.loading = true
-			this.selected = []
-			try {
-				const params = { status: this.statusFilter }
-				if (this.subscriptionFilter) {
-					params.subscriptionId = this.subscriptionFilter
-				}
-				const res = await axios.get(
-					generateUrl('/apps/integriq/api/events/dead-letter'),
-					{ params },
-				)
-				this.rows = res.data?.results || []
-			} catch (err) {
-				showError(t('integriq', 'Failed to load event deliveries'))
-				this.rows = []
-			} finally {
-				this.loading = false
-			}
 		},
 	},
 }

@@ -62,11 +62,6 @@
       "count": 2
     }
   },
-  "src/modals/EventDelivery/EventDeliveryDetailModal.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/modals/EventSubscription/SubscriptionActionFields.vue": {
     "eqeqeq": {
       "count": 2
@@ -100,11 +95,6 @@
       "count": 3
     }
   },
-  "src/modals/Synchronization/SyncDeadLetterDetailModal.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/modals/v2/AddEndpointRuleModal.vue": {
     "jsdoc/require-param-type": {
       "count": 1
@@ -121,9 +111,6 @@
     }
   },
   "src/modals/v2/JobFormFields.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "jsdoc/require-param-type": {
       "count": 1
     }
@@ -147,11 +134,6 @@
     },
     "jsdoc/require-param-type": {
       "count": 7
-    }
-  },
-  "src/modals/v2/SourceFormFields.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "src/modals/v2/SynchronizationEditorModal.vue": {
@@ -181,11 +163,6 @@
     }
   },
   "src/views/Approvals/ApprovalsIndex.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/views/EventDelivery/EventDeliveriesPage.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
@@ -263,11 +240,6 @@
   "src/views/Synchronization/SyncConfigWidget.vue": {
     "eqeqeq": {
       "count": 3
-    }
-  },
-  "src/views/Synchronization/SyncDeadLetterPage.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "src/views/Synchronization/SyncMappingPreview.vue": {

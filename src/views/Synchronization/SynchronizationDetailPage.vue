@@ -29,7 +29,7 @@
   Mutations go through `objectStore.saveObject('synchronization', {...})`
   which writes back via PUT to OR. The page tracks a `dirty` flag and
   exposes a Save button in the header actions slot — no auto-save on
-  every keystroke, mirroring the legacy modal's two-phase flow.
+  every keystroke, mirroring the two-phase flow of the legacy modal.
 
   Closes #834. Follow-ups landed in #878:
     - Visual JsonLogic condition builder + raw-JSON toggle (reuses
@@ -112,10 +112,8 @@
 						:type="draft.sourceType"
 						:sourceId="draft.sourceId"
 						:config="draft.sourceConfig"
-						@update:sourceId="(value) => updateDraft('sourceId', value)"
-						@update:config="
-							(value) => updateDraft('sourceConfig', value)
-						" />
+						@update:sourceId="updateDraft('sourceId', $event)"
+						@update:config="updateDraft('sourceConfig', $event)" />
 
 					<!-- Incremental sync mode (REQ-016/REQ-017/REQ-019, change cdc-incremental-sync) -->
 					<div class="sync-detail__field">
@@ -146,8 +144,7 @@
 								:modelValue="draft.sourceConfig.cursorField || ''"
 								:placeholder="t('integriq', 'e.g. updatedAt')"
 								@update:modelValue="
-									(value) =>
-										updateSourceConfigField('cursorField', value)
+									updateSourceConfigField('cursorField', $event)
 								" />
 						</div>
 
@@ -218,9 +215,7 @@
 							:label="t('integriq', 'Name')"
 							:modelValue="draft.name || ''"
 							required
-							@update:modelValue="
-								(value) => updateDraft('name', value)
-							" />
+							@update:modelValue="updateDraft('name', $event)" />
 					</div>
 
 					<div class="sync-detail__field">
@@ -285,10 +280,8 @@
 						:type="draft.targetType"
 						:sourceId="draft.targetId"
 						:config="draft.targetConfig"
-						@update:sourceId="(value) => updateDraft('targetId', value)"
-						@update:config="
-							(value) => updateDraft('targetConfig', value)
-						" />
+						@update:sourceId="updateDraft('targetId', $event)"
+						@update:config="updateDraft('targetConfig', $event)" />
 				</section>
 			</div>
 
@@ -305,14 +298,10 @@
 						:value="draft.sourceTargetMapping"
 						:hashValue="draft.sourceHashMapping"
 						:targetSourceValue="draft.targetSourceMapping"
-						@update:value="
-							(value) => updateDraft('sourceTargetMapping', value)
-						"
-						@update:hashValue="
-							(value) => updateDraft('sourceHashMapping', value)
-						"
+						@update:value="updateDraft('sourceTargetMapping', $event)"
+						@update:hashValue="updateDraft('sourceHashMapping', $event)"
 						@update:targetSourceValue="
-							(value) => updateDraft('targetSourceMapping', value)
+							updateDraft('targetSourceMapping', $event)
 						" />
 				</section>
 
@@ -332,7 +321,7 @@
 						:value="draft.actions"
 						:placeholder="t('integriq', 'Pick rules to run during sync')"
 						:emptyLabel="t('integriq', 'No rules linked yet.')"
-						@input="(value) => updateDraft('actions', value)" />
+						@input="updateDraft('actions', $event)" />
 				</section>
 
 				<section class="sync-detail__card sync-detail__followups">
@@ -359,7 +348,7 @@
 							t('integriq', 'Pick follow-up synchronizations')
 						"
 						:emptyLabel="t('integriq', 'No follow-ups linked yet.')"
-						@input="(value) => updateDraft('followUps', value)" />
+						@input="updateDraft('followUps', $event)" />
 				</section>
 			</div>
 
@@ -466,25 +455,109 @@ import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
+import syncKindOptions from '../../mixins/syncKindOptions.js'
 import { useObjectStore } from '../../store/objectStore.js'
-import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 // Shared with modals/v2/SynchronizationEditorModal.vue — see syncDraft.js.
 import {
 	CURSOR_COMPARATOR_OPTIONS,
 	emptyDraft,
 	emptyRootGroup,
 	fetchBridgeStatus,
-	NEXTCLOUD_FORM_OPTION,
-	NEXTCLOUD_TABLE_OPTION,
 	normaliseConditions,
 	serializeConditions,
-	SYNC_MODE_OPTIONS,
-	TYPE_OPTIONS,
 } from './syncDraft.js'
-import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'integriq'
+
+/**
+ * The raw JSON conditions editor, closed and empty.
+ *
+ * @return {object} The toggle, the text and its error.
+ */
+function rawConditionsState() {
+	return {
+		/** Toggles the conditions editor between visual builder and raw JSON. */
+		rawConditions: false,
+		rawConditionsDraft: '',
+		rawConditionsError: '',
+	}
+}
+
+/**
+ * Copy a stored value in the shape of its empty-draft counterpart: lists stay
+ * lists, objects stay plain objects, anything else is taken as it is. Copies
+ * are independent of the stored value.
+ *
+ * @param {unknown} template The empty-draft value of the field.
+ * @param {unknown} value The stored value.
+ * @return {unknown} The value for the draft.
+ */
+function copyLike(template, value) {
+	if (Array.isArray(template)) {
+		return copyList(value)
+	}
+	if (typeof template === 'object') {
+		return copyObject(value)
+	}
+	return value
+}
+
+/**
+ * An independent copy of a stored list, or an empty list.
+ *
+ * @param {unknown} value The stored value.
+ * @return {Array} The copy.
+ */
+function copyList(value) {
+	return Array.isArray(value) ? [...value] : []
+}
+
+/**
+ * An independent copy of a stored plain object, or an empty object.
+ *
+ * @param {unknown} value The stored value.
+ * @return {object} The copy.
+ */
+function copyObject(value) {
+	return typeof value === 'object' && !Array.isArray(value) ? { ...value } : {}
+}
+
+/**
+ * Whether a stored record holds a value for a draft field.
+ *
+ * @param {object|null|undefined} obj The stored record.
+ * @param {string} key The field.
+ * @return {boolean} True when the record has a non-null value for it.
+ */
+function hasValue(obj, key) {
+	return Boolean(obj) && obj[key] !== undefined && obj[key] !== null
+}
+
+/**
+ * Why the raw conditions text is not valid JSON.
+ *
+ * @param {Error} parseErr The parse failure.
+ * @return {string} The translated message.
+ */
+function invalidJsonText(parseErr) {
+	return t('integriq', 'Invalid JSON: {message}', { message: parseErr.message })
+}
+
+/**
+ * Why resetting the cursor failed: the server's reason, the client's, or a
+ * translated fallback.
+ *
+ * @param {object} err The failed request.
+ * @return {string} The text to show.
+ */
+function cursorResetError(err) {
+	return (
+		err?.response?.data?.error
+		|| err?.message
+		|| t('integriq', 'Failed to reset cursor')
+	)
+}
 
 export default {
 	name: 'SynchronizationDetailPage',
@@ -515,7 +588,7 @@ export default {
 		SyncReferenceList,
 	},
 
-	mixins: [liveObjectSubscription],
+	mixins: [liveObjectSubscription, syncKindOptions],
 
 	props: {
 		/**
@@ -565,10 +638,7 @@ export default {
 			loadError: '',
 			draft: null,
 			original: null,
-			/** Toggles the conditions editor between visual builder and raw JSON. */
-			rawConditions: false,
-			rawConditionsDraft: '',
-			rawConditionsError: '',
+			...rawConditionsState(),
 			/** Whether the backend reports the Tables app is enabled (REQ-004). */
 			tablesEnabled: false,
 			/** Whether the backend reports the Forms app is enabled (nextcloud-forms-connector REQ-001). */
@@ -612,74 +682,6 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		errorMessage() {
 			return this.loadError || t('integriq', 'Failed to load synchronization')
-		},
-
-		/**
-		 * Kind options offered in the source/target selectors. `nextcloud-table`
-		 * is only present when the backend reports the Tables app is enabled
-		 * (tables-bridge REQ-004 / sync-editor-ui REQ-SYNCUI-006) — but an
-		 * already-configured `nextcloud-table` sync keeps the option so its
-		 * type still renders a label when Tables is later disabled.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
-		 */
-		typeOptions() {
-			const usesTable =
-				this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
-				|| this.draft?.targetType === NEXTCLOUD_TABLE_KIND
-			if (this.tablesEnabled || usesTable) {
-				return [...TYPE_OPTIONS, NEXTCLOUD_TABLE_OPTION]
-			}
-			return TYPE_OPTIONS
-		},
-
-		/**
-		 * Kind options offered in the SOURCE selector only. `nextcloud-form`
-		 * is appended here (never to the shared `typeOptions` the target
-		 * selector uses) — nextcloud-forms-connector REQ-002 is source-only,
-		 * so `nextcloud-form` must never appear as a target-kind option,
-		 * regardless of whether the Forms app is enabled (sync-editor-ui
-		 * REQ-SYNCUI-008). Mirrors `typeOptions`' "keep an already-configured
-		 * type visible even if the app is later disabled" behaviour.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
-		 */
-		sourceTypeOptions() {
-			const usesForm = this.draft?.sourceType === NEXTCLOUD_FORM_KIND
-			if (this.formsEnabled || usesForm) {
-				return [...this.typeOptions, NEXTCLOUD_FORM_OPTION]
-			}
-			return this.typeOptions
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedSourceType() {
-			return (
-				this.sourceTypeOptions.find(
-					(opt) => opt.id === this.draft?.sourceType,
-				) || TYPE_OPTIONS[0]
-			)
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedTargetType() {
-			return (
-				this.typeOptions.find((opt) => opt.id === this.draft?.targetType)
-				|| TYPE_OPTIONS[1]
-			)
-		},
-
-		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
-		syncModeOptions() {
-			return SYNC_MODE_OPTIONS
-		},
-
-		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
-		selectedSyncMode() {
-			return (
-				SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode)
-				|| SYNC_MODE_OPTIONS[0]
-			)
 		},
 
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
@@ -807,39 +809,73 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async loadObject() {
 			if (!this.objectIdString) {
-				// New-create surface — start with empty draft.
-				this.draft = emptyDraft()
-				this.original = emptyDraft()
+				this.startNew()
 				return
 			}
 			this.loading = true
 			this.loadError = ''
 			try {
-				const data = await this.objectStore.fetchObject(
-					this.schemaSlug,
-					this.objectIdString,
-				)
-				if (!data) {
-					this.loadError =
-						this.objectStore.errors?.[this.schemaSlug]
-						|| t('integriq', 'Failed to load synchronization')
-					this.draft = null
-					this.original = null
-					return
-				}
-				this.original = data
-				this.draft = this.normalizeForDiff(data)
-				// Live updates: or-object-{uuid} events refetch this sync and
-				// applyLiveObject (dirty-guarded) refreshes the working copy.
-				this.syncLiveSubscription(this.schemaSlug, this.objectIdString)
+				this.showLoaded(await this.fetchStored())
 			} catch (err) {
-				this.loadError =
-					err?.message || t('integriq', 'Failed to load synchronization')
-				this.draft = null
-				this.original = null
+				this.loadFailed(err?.message)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The new-create surface: start from an empty draft.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		startNew() {
+			this.draft = emptyDraft()
+			this.original = emptyDraft()
+		},
+
+		/**
+		 * Fetch this synchronization from the store.
+		 *
+		 * @return {Promise<object|null>} The stored synchronization, or null.
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		fetchStored() {
+			return this.objectStore.fetchObject(this.schemaSlug, this.objectIdString)
+		},
+
+		/**
+		 * Show a fetched synchronization and subscribe to its live updates,
+		 * or say it could not be loaded when the store found nothing.
+		 *
+		 * @param {object|null} data The fetched synchronization.
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		showLoaded(data) {
+			if (!data) {
+				this.loadFailed(this.objectStore.errors?.[this.schemaSlug])
+				return
+			}
+			this.original = data
+			this.draft = this.normalizeForDiff(data)
+			// Live updates: or-object-{uuid} events refetch this sync and
+			// applyLiveObject (dirty-guarded) refreshes the working copy.
+			this.syncLiveSubscription(this.schemaSlug, this.objectIdString)
+		},
+
+		/**
+		 * Drop the working copy and show why loading failed.
+		 *
+		 * @param {string|undefined} reason The error to show, if any.
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		loadFailed(reason) {
+			this.loadError =
+				reason || t('integriq', 'Failed to load synchronization')
+			this.draft = null
+			this.original = null
 		},
 
 		/**
@@ -874,23 +910,14 @@ export default {
 			const base = emptyDraft()
 			const out = { ...base }
 			for (const key of Object.keys(base)) {
-				if (obj && obj[key] !== undefined && obj[key] !== null) {
-					if (Array.isArray(base[key])) {
-						out[key] = Array.isArray(obj[key]) ? [...obj[key]] : []
-					} else if (key === 'conditions') {
-						// Conditions has three valid storage shapes (string,
-						// array, object) thanks to legacy rows — funnel them
-						// all through the JsonLogic coercer so the visual
-						// builder sees a consistent group node.
-						out[key] = normaliseConditions(obj[key])
-					} else if (typeof base[key] === 'object') {
-						out[key] =
-							typeof obj[key] === 'object' && !Array.isArray(obj[key])
-								? { ...obj[key] }
-								: {}
-					} else {
-						out[key] = obj[key]
-					}
+				if (hasValue(obj, key)) {
+					// Conditions has three valid storage shapes (string, array,
+					// object) thanks to legacy rows — funnel them all through the
+					// JsonLogic coercer so the visual builder sees a group node.
+					out[key] =
+						key === 'conditions'
+							? normaliseConditions(obj[key])
+							: copyLike(base[key], obj[key])
 				}
 			}
 			return out
@@ -930,19 +957,26 @@ export default {
 			this.rawConditionsDraft = value
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
-				this.rawConditionsError = ''
-				this.onConditionsUpdate(emptyRootGroup())
+				this.applyRawConditions(emptyRootGroup())
 				return
 			}
 			try {
-				const parsed = JSON.parse(trimmed)
-				this.rawConditionsError = ''
-				this.onConditionsUpdate(parsed)
+				this.applyRawConditions(JSON.parse(trimmed))
 			} catch (parseErr) {
-				this.rawConditionsError = t('integriq', 'Invalid JSON: {message}', {
-					message: parseErr.message,
-				})
+				this.rawConditionsError = invalidJsonText(parseErr)
 			}
+		},
+
+		/**
+		 * Accept a parsed condition tree from the raw editor.
+		 *
+		 * @param {object} node The parsed JsonLogic node.
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		applyRawConditions(node) {
+			this.rawConditionsError = ''
+			this.onConditionsUpdate(node)
 		},
 
 		/**
@@ -1063,28 +1097,44 @@ export default {
 			if (!this.objectIdString || this.resettingCursor) return
 			this.resettingCursor = true
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/integriq/api/synchronizations/${this.objectIdString}/reset-cursor`,
-					),
-				)
-				const cleared = response.data?.cursorWatermark ?? ''
-				if (this.original) this.original.cursorWatermark = cleared
-				showSuccess(
-					t(
-						'integriq',
-						'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.',
-					),
-				)
+				const response = await this.postResetCursor()
+				this.cursorCleared(response.data?.cursorWatermark ?? '')
 			} catch (err) {
-				showError(
-					err?.response?.data?.error
-						|| err?.message
-						|| t('integriq', 'Failed to reset cursor'),
-				)
+				showError(cursorResetError(err))
 			} finally {
 				this.resettingCursor = false
 			}
+		},
+
+		/**
+		 * POST the reset-cursor action for this synchronization.
+		 *
+		 * @return {Promise<object>} The response.
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019
+		 */
+		postResetCursor() {
+			return axios.post(
+				generateUrl(
+					`/apps/integriq/api/synchronizations/${this.objectIdString}/reset-cursor`,
+				),
+			)
+		},
+
+		/**
+		 * Show the cleared watermark and say what a reset does and does not do.
+		 *
+		 * @param {string} cleared The watermark the server now holds.
+		 * @return {void}
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019
+		 */
+		cursorCleared(cleared) {
+			if (this.original) this.original.cursorWatermark = cleared
+			showSuccess(
+				t(
+					'integriq',
+					'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.',
+				),
+			)
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
@@ -1093,31 +1143,56 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			try {
-				const payload = {
-					...this.original,
-					...this.draft,
-					// The register schema declares `conditions` as
-					// `array<object>` — serialise the builder's group node
-					// into a single-element array so OR validation passes.
-					conditions: serializeConditions(this.draft.conditions),
-				}
-				const saved = await this.objectStore.saveObject(
-					this.schemaSlug,
-					payload,
-				)
-				if (!saved) {
-					this.saveError =
-						this.objectStore.errors?.[this.schemaSlug]
-						|| t('integriq', 'Save failed')
-					return
-				}
-				this.original = saved
-				this.draft = this.normalizeForDiff(saved)
+				this.showSaved(await this.storeDraft())
 			} catch (err) {
 				this.saveError = err?.message || t('integriq', 'Save failed')
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * The record to save: the draft over the original, with the
+		 * builder's group node serialised to the array<object> shape the
+		 * register schema declares, so OR validation passes.
+		 *
+		 * @return {object} The payload.
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		savePayload() {
+			return {
+				...this.original,
+				...this.draft,
+				conditions: serializeConditions(this.draft.conditions),
+			}
+		},
+
+		/**
+		 * Save the payload through the store.
+		 *
+		 * @return {Promise<object|null>} The saved record, or null.
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		storeDraft() {
+			return this.objectStore.saveObject(this.schemaSlug, this.savePayload())
+		},
+
+		/**
+		 * Take the saved record as the new original, or show why nothing was saved.
+		 *
+		 * @param {object|null} saved The saved record.
+		 * @return {void}
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		showSaved(saved) {
+			if (!saved) {
+				this.saveError =
+					this.objectStore.errors?.[this.schemaSlug]
+					|| t('integriq', 'Save failed')
+				return
+			}
+			this.original = saved
+			this.draft = this.normalizeForDiff(saved)
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
