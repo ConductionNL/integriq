@@ -1,0 +1,166 @@
+{
+	"rows/omitted": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/null": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/empty": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/seedRow": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/halfKey": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/halfUser": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/userWithoutId": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/one": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			],
+			"keys": [
+				{
+					"k-1": "alice"
+				}
+			]
+		},
+		"hasKeys": true
+	},
+	"rows/mixed": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			],
+			"keys": [
+				{
+					"k-1": "alice"
+				},
+				{
+					"k-3": "carol"
+				}
+			]
+		},
+		"hasKeys": true
+	},
+	"rows/sameKey": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			],
+			"keys": [
+				{
+					"k-1": "alice"
+				},
+				{
+					"k-1": "bob"
+				}
+			]
+		},
+		"hasKeys": true
+	},
+	"rows/zeroId": {
+		"result": {
+			"type": "api-key",
+			"users": [
+				"alice"
+			],
+			"groups": [
+				"admin"
+			]
+		},
+		"hasKeys": false
+	},
+	"rows/nullRow": {
+		"threw": "TypeError"
+	},
+	"no-arguments-but-type": {
+		"result": {
+			"type": "basic",
+			"users": "__undefined__",
+			"groups": "__undefined__"
+		},
+		"hasKeys": false
+	}
+}
