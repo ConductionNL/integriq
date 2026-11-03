@@ -1,6 +1,7 @@
 OC.L10N.register(
     "integriq",
     {
+        "Marketplace": "Marketplace",
         "synchronizations": "synchronizations",
         "API key": "API Key",
         "Access point credential missing": "Access point credential missing",

@@ -200,7 +200,7 @@
     },
     {
       "id": "Store",
-      "label": "Store",
+      "label": "Marketplace",
       "icon": "StoreOutline",
       "route": "Store",
       "order": 92,
@@ -4381,7 +4381,7 @@
       "id": "Store",
       "route": "/store",
       "type": "index",
-      "title": "Store",
+      "title": "Marketplace",
       "_note": "ADR-080 store plane: renamed from 'Catalog'. A store is 'browse a registry and install into this instance'; a CATALOGUE is an outward-facing published catalogue (OpenCatalogi's concept) and TEMPLATES are runtime content blueprints. The old name claimed the wrong concept and the old ViewGridOutline glyph is the vocabulary's 'apps' icon, which OpenBuild uses for its Apps page. Card grid over catalog_item, kind-driven quick filters (ADR-080 Decision 5); Enable/Instantiate lives in CatalogItemDetailDialog. Old /catalog route redirects here.",
       "config": {
         "register": "integriq",

@@ -16,7 +16,7 @@ screens, over Microsoft Graph and the credential broker. Rows
 
 ### Requirement: An administrator sets up SharePoint to publication intake from the Store (REQ-SPPI-001)
 
-The SharePoint card in the Store MUST offer a setup that picks a brokered
+The SharePoint card in the Marketplace MUST offer a setup that picks a brokered
 credential, a site found by search, a document library, a folder and an
 OpenCatalogi catalogue, each loaded live from Graph or OpenRegister. Saving
 MUST create one source, one synchronization and one mapping from the

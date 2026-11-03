@@ -48,14 +48,14 @@ refused class and the app that offered it.
 
 ### Requirement: An administrator sees what each extension contributed (REQ-CXK-003)
 
-The Store MUST show each contributed adapter and template with the app that
+The Marketplace MUST show each contributed adapter and template with the app that
 provided it, and `occ integriq:extensions` MUST list every contributed item
 with its app, seam, id and whether it was refused.
 
 #### Scenario: an administrator checks an extension after installing it
 - GIVEN an installed extension app that contributed one channel and one template
 - WHEN an administrator runs `occ integriq:extensions`
-- THEN both items are listed with the app name, and the Store shows the template card as provided by that app
+- THEN both items are listed with the app name, and the Marketplace shows the template card as provided by that app
 - e2e: `tests/e2e/connector-extension-kit.spec.ts`
 
 ### Requirement: A developer builds an extension from a guide, a skeleton and contract tests (REQ-CXK-004)
