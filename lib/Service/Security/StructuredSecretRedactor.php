@@ -38,18 +38,26 @@ final class StructuredSecretRedactor {
 	private const HEADER_SHAPED_NAME = '/^[A-Za-z0-9]+(-[A-Za-z0-9]+)+$/';
 
 	/**
-	 * The `scheme://user:password@` start of a URL; group 1 is everything before the password.
+	 * The `scheme://user:password@` part of a URL anywhere in a text; group 1 is
+	 * everything before the password, group 2 the password.
 	 *
 	 * @var string
 	 */
-	private const URL_USERINFO = '#^([a-z][a-z0-9+.\-]*://[^/@:?\#\s]*):[^/@?\#\s]*@#i';
+	private const URL_USERINFO = '#([a-z][a-z0-9+.\-]*://[^/@:?\#\s]*):([^/@?\#\s]*)@#i';
 
 	/**
-	 * One `name=value` pair of a query string.
+	 * One `name=value` pair of a query string, separated by `&` or `;`.
 	 *
 	 * @var string
 	 */
-	private const QUERY_PAIR = '/(^|&)([^=&#]+)=([^&#]*)/';
+	private const QUERY_PAIR = '/(^|[&;])([^=&;#]+)=([^&;#]*)/';
+
+	/**
+	 * A value that is only a `{{ ... }}` template, resolved at call time and holding no secret itself.
+	 *
+	 * @var string
+	 */
+	private const PURE_TEMPLATE = '/^\{\{[^{}]*\}\}$/';
 
 	/**
 	 * Constructor.
@@ -74,7 +82,11 @@ final class StructuredSecretRedactor {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function redactUrl(string $url): string {
-		$url = (string)preg_replace(self::URL_USERINFO, '$1:' . SensitiveFieldRegistry::PLACEHOLDER . '@', $url);
+		$url = (string)preg_replace_callback(
+			self::URL_USERINFO,
+			fn (array $userinfo): string => $this->maskedUserinfo(userinfo: $userinfo),
+			$url
+		);
 		$queryStart = strpos($url, '?');
 		if ($queryStart === false) {
 			return $url;
@@ -97,12 +109,38 @@ final class StructuredSecretRedactor {
 	 * @return string The pair.
 	 */
 	private function maskedQueryPair(array $pair): string {
-		if ($this->registry->isSensitiveName(name: urldecode($pair[2])) === false) {
+		if ($this->registry->isSensitiveName(name: urldecode($pair[2])) === false || $this->isPureTemplate(value: urldecode($pair[3])) === true) {
 			return $pair[0];
 		}
 
 		return $pair[1] . $pair[2] . '=' . SensitiveFieldRegistry::PLACEHOLDER;
 	}//end maskedQueryPair()
+
+	/**
+	 * A URL's `scheme://user:password@` part with the password masked, unless it is a template.
+	 *
+	 * @param array<int, string> $userinfo The match: the part, everything before the password, and the password.
+	 *
+	 * @return string The part.
+	 */
+	private function maskedUserinfo(array $userinfo): string {
+		if ($this->isPureTemplate(value: $userinfo[2]) === true) {
+			return $userinfo[0];
+		}
+
+		return $userinfo[1] . ':' . SensitiveFieldRegistry::PLACEHOLDER . '@';
+	}//end maskedUserinfo()
+
+	/**
+	 * Whether a value is only a `{{ ... }}` template.
+	 *
+	 * @param string $value The value.
+	 *
+	 * @return boolean
+	 */
+	private function isPureTemplate(string $value): bool {
+		return preg_match(self::PURE_TEMPLATE, trim($value)) === 1;
+	}//end isPureTemplate()
 
 	/**
 	 * Walks a name-redacted array and redacts what its structure shows to be secret.

@@ -53,7 +53,7 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 
 	/**
 	 * Every scalar under a sensitive key is masked, whatever its own name;
-	 * a credentialRef pointer passes unchanged (REQ-010).
+	 * a credentialRef pointer (REQ-010) and a non-secret setting pass unchanged.
 	 *
 	 * @return void
 	 */
@@ -71,11 +71,56 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 			$result['auth']
 		);
 		$this->assertSame(
-			['type' => self::MASK, 'credentialRef' => ['credentialId' => 'c-1'], 'login' => ['name' => self::MASK]],
+			['type' => 'basic', 'credentialRef' => ['credentialId' => 'c-1'], 'login' => ['name' => self::MASK]],
 			$result['authentication']
 		);
 		$this->assertSame(5, $result['timeout']);
 	}//end testEveryLeafUnderASensitiveKeyIsMasked()
+
+	/**
+	 * Under a sensitive map, the settings that say how a credential is used stay
+	 * readable; the credential itself does not.
+	 *
+	 * @return void
+	 */
+	public function testNonSecretSettingsUnderASensitiveMapStayReadable(): void {
+		$result = $this->registry->redactArray(
+			data: [
+				'authentication' => ['type' => 'apiKey', 'users' => ['alice'], 'groups' => ['admin'], 'header' => 'X-Api-Key', 'keys' => [['k-1' => 'alice']]],
+				'webhook_signature' => ['scheme' => 'hmac-sha256', 'header' => 'X-Signature', 'toleranceSeconds' => 300, 'secret' => 's'],
+				'auth' => ['scheme' => 'oauth2', 'mode' => 'client_credentials', 'grant_type' => 'client_credentials', 'client_id' => 'cid', 'client_secret' => 'cs'],
+				'apiKeys' => ['id' => 'k-uuid', 'uuid' => 'u-1', 'value' => 'v'],
+				'authorization' => ['users' => ['bob', ['password' => 'p']]],
+				'bearerAuth' => ['credentialRef' => 'raw-ref'],
+			]
+		);
+
+		$this->assertSame(
+			['type' => 'apiKey', 'users' => ['alice'], 'groups' => ['admin'], 'header' => 'X-Api-Key', 'keys' => [[self::MASK]]],
+			$this->withoutKeyNames(result: $result['authentication'])
+		);
+		$this->assertSame(['scheme' => 'hmac-sha256', 'header' => 'X-Signature', 'toleranceSeconds' => 300, 'secret' => self::MASK], $result['webhook_signature']);
+		$this->assertSame(
+			['scheme' => 'oauth2', 'mode' => 'client_credentials', 'grant_type' => 'client_credentials', 'client_id' => 'cid', 'client_secret' => self::MASK],
+			$result['auth']
+		);
+		$this->assertSame(['id' => 'k-uuid', 'uuid' => 'u-1', 'value' => self::MASK], $result['apiKeys']);
+		$this->assertSame(['users' => ['bob', ['password' => self::MASK]]], $result['authorization']);
+		$this->assertSame(['credentialRef' => self::MASK], $result['bearerAuth']);
+	}//end testNonSecretSettingsUnderASensitiveMapStayReadable()
+
+	/**
+	 * The auth block with each `keys` entry reduced to its values, so the test
+	 * reads what the export shows for an api key map.
+	 *
+	 * @param array $result The redacted auth block.
+	 *
+	 * @return array The block.
+	 */
+	private function withoutKeyNames(array $result): array {
+		$result['keys'] = array_map('array_values', $result['keys']);
+		return $result;
+	}//end withoutKeyNames()
 
 	/**
 	 * A credentialRef keeps its pointer keys but not a secret placed inside it.
@@ -102,6 +147,7 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 				'X-Session-Id' => 'top',
 				'headers' => ['X-Session-Id' => 'h', 'Session' => 'raw', 'Accept' => 'json'],
 				'nested' => ['headers' => ['x-session' => ['s']]],
+				'upper' => ['Headers' => ['Session' => 'u', 'Accept' => 'json']],
 				'sessionTimeout' => 30,
 				'session' => 'cookie-store',
 			]
@@ -110,6 +156,7 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 		$this->assertSame(self::MASK, $result['X-Session-Id']);
 		$this->assertSame(['X-Session-Id' => self::MASK, 'Session' => self::MASK, 'Accept' => 'json'], $result['headers']);
 		$this->assertSame(['headers' => ['x-session' => [self::MASK]]], $result['nested']);
+		$this->assertSame(['Headers' => ['Session' => self::MASK, 'Accept' => 'json']], $result['upper']);
 		$this->assertSame(30, $result['sessionTimeout']);
 		$this->assertSame('cookie-store', $result['session']);
 	}//end testSessionHeadersAreMaskedWhereverAHeaderStands()
@@ -160,6 +207,11 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 				'text' => 'what? a=b',
 				'list' => ['https://a.example/?secret=s'],
 				'later' => '/x?page=1&p%61ssword=pw&q=2',
+				'templates' => 'https://host.example/p?token={{ source.token }}&api_key=%7B%7Bkey%7D%7D&secret=s',
+				'templateLogin' => 'https://user:{{pw}}@host.example/',
+				'inText' => 'call https://user:pw@host.example/a then ftp://u2:p2@files.example/',
+				'semicolons' => '/x?page=1;token=T;q=2',
+				'partialTemplate' => '/x?secret=abc{{ x }}&token=%20{{t}}%20',
 			]
 		);
 
@@ -170,6 +222,11 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 		$this->assertSame('what? a=b', $result['text']);
 		$this->assertSame(['https://a.example/?secret=' . self::MASK], $result['list']);
 		$this->assertSame('/x?page=1&p%61ssword=' . self::MASK . '&q=2', $result['later']);
+		$this->assertSame('https://host.example/p?token={{ source.token }}&api_key=%7B%7Bkey%7D%7D&secret=' . self::MASK, $result['templates']);
+		$this->assertSame('https://user:{{pw}}@host.example/', $result['templateLogin']);
+		$this->assertSame('call https://user:' . self::MASK . '@host.example/a then ftp://u2:' . self::MASK . '@files.example/', $result['inText']);
+		$this->assertSame('/x?page=1;token=' . self::MASK . ';q=2', $result['semicolons']);
+		$this->assertSame('/x?secret=' . self::MASK . '&token=%20{{t}}%20', $result['partialTemplate']);
 	}//end testSecretsInsideUrlsAreMasked()
 
 	/**
