@@ -167,11 +167,6 @@
       "count": 1
     }
   },
-  "src/views/EventDelivery/EventDeliveriesPage.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/views/ExecutionTrace/TraceDetailPage.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -245,11 +240,6 @@
   "src/views/Synchronization/SyncConfigWidget.vue": {
     "eqeqeq": {
       "count": 3
-    }
-  },
-  "src/views/Synchronization/SyncDeadLetterPage.vue": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "src/views/Synchronization/SyncMappingPreview.vue": {
