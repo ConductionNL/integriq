@@ -1014,6 +1014,73 @@
             ]
         ]
     },
+    "write-file-list-mixed": {
+        "outcome": {
+            "throws": "TypeError"
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ],
+            [
+                "files.addFile",
+                [
+                    {
+                        "entity": "stored-1",
+                        "object": {
+                            "title": "stored"
+                        }
+                    },
+                    "a.txt",
+                    "one",
+                    false,
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "or.find",
+                [
+                    "o-1",
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true,
+                    []
+                ]
+            ]
+        ]
+    },
     "write-file-no-object-id": {
         "outcome": {
             "throws": "TypeError"

@@ -202,70 +202,24 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 			throw new InvalidArgumentException(sprintf('batchSize MUST be in [100, 100000], got %d', $batchSize));
 		}
 
-		$entitiesToRun = self::ENTITY_ORDER;
-		if ($entitySlug !== null) {
-			$entitiesToRun = array_values(
-				array_filter(
-					self::ENTITY_ORDER,
-					static fn (array $e): bool => $e['slug'] === $entitySlug
-				)
-			);
-			if ($entitiesToRun === []) {
-				throw new InvalidArgumentException(
-					sprintf(
-						'entitySlug "%s" not in valid set: %s',
-						$entitySlug,
-						implode(', ', array_column(self::ENTITY_ORDER, 'slug'))
-					)
-				);
-			}
-		}
+		$entitiesToRun = $this->entitiesToRun(entitySlug: $entitySlug);
 
 		$this->resolveStartupState();
 		$this->assertPlaintextCredentialsState();
 
 		$results = [];
-		$hadSkipsOrErrors = false;
-
 		foreach ($entitiesToRun as $entity) {
-			$start = microtime(true);
-			try {
-				$perEntity = $this->migrateEntity(entity: $entity, dryRun: $dryRun, batchSize: $batchSize);
-			} catch (\Throwable $e) {
-				$this->logger->error(
-					sprintf(
-						'chain-B migration: entity %s threw %s: %s',
-						$entity['slug'],
-						get_class($e),
-						$e->getMessage()
-					)
-				);
-				$hadSkipsOrErrors = true;
-				$perEntity = [
-					'slug' => $entity['slug'],
-					'legacyCount' => 0,
-					'migratedCount' => 0,
-					'skipped' => 0,
-					'fkRewrites' => 0,
-					'error' => get_class($e) . ': ' . $e->getMessage(),
-				];
-			}//end try
+			$results[] = $this->runEntity(entity: $entity, run: ['dryRun' => $dryRun, 'batchSize' => $batchSize]);
+		}
 
-			$perEntity['elapsedMs'] = (int)((microtime(true) - $start) * 1000);
-			if (($perEntity['skipped'] ?? 0) > 0) {
-				$hadSkipsOrErrors = true;
-			}
-
-			$results[] = $perEntity;
-		}//end foreach
-
-		// FK rewrite pass — run only on full migration (single-entity runs skip).
-		if ($entitySlug === null && $dryRun === false) {
+		// FK rewrite pass and flag flip run only on a full, non-dry run.
+		$fullRun = ($entitySlug === null && $dryRun === false);
+		if ($fullRun === true) {
 			$this->runFkRewritePass(results: $results);
 		}
 
 		// Flip flag only on full, clean, non-dry-run.
-		if ($entitySlug === null && $dryRun === false && $hadSkipsOrErrors === false) {
+		if ($fullRun === true && $this->hadSkipsOrErrors(results: $results) === false) {
 			$this->appConfig->setAppValueString('storage_migrated', 'true');
 			$this->logger->info('chain-B: storage_migrated flag set to true (clean full run)');
 		}
@@ -274,6 +228,91 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 
 		return $results;
 	}//end migrateAll()
+
+	/**
+	 * The ENTITY_ORDER entries a run covers: all of them, or the one named.
+	 *
+	 * @param string|null $entitySlug Single-entity override (slug from ENTITY_ORDER).
+	 *
+	 * @return array<int, array{slug:string,legacyTable:string,hasSyncBranching?:bool}>
+	 *
+	 * @throws InvalidArgumentException When the slug is not in ENTITY_ORDER.
+	 */
+	private function entitiesToRun(?string $entitySlug): array {
+		if ($entitySlug === null) {
+			return self::ENTITY_ORDER;
+		}
+
+		$entitiesToRun = array_values(
+			array_filter(
+				self::ENTITY_ORDER,
+				static fn (array $e): bool => $e['slug'] === $entitySlug
+			)
+		);
+		if ($entitiesToRun === []) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'entitySlug "%s" not in valid set: %s',
+					$entitySlug,
+					implode(', ', array_column(self::ENTITY_ORDER, 'slug'))
+				)
+			);
+		}
+
+		return $entitiesToRun;
+	}//end entitiesToRun()
+
+	/**
+	 * Migrate one entity and time it; a throw becomes an error result.
+	 *
+	 * @param array{slug:string,legacyTable:string,hasSyncBranching?:bool} $entity Entity descriptor from ENTITY_ORDER.
+	 * @param array{dryRun:bool,batchSize:int} $run The run options.
+	 *
+	 * @return array<string, mixed> The per-entity result with its elapsedMs.
+	 */
+	private function runEntity(array $entity, array $run): array {
+		$start = microtime(true);
+		try {
+			$perEntity = $this->migrateEntity(entity: $entity, dryRun: $run['dryRun'], batchSize: $run['batchSize']);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				sprintf(
+					'chain-B migration: entity %s threw %s: %s',
+					$entity['slug'],
+					get_class($e),
+					$e->getMessage()
+				)
+			);
+			$perEntity = [
+				'slug' => $entity['slug'],
+				'legacyCount' => 0,
+				'migratedCount' => 0,
+				'skipped' => 0,
+				'fkRewrites' => 0,
+				'error' => get_class($e) . ': ' . $e->getMessage(),
+			];
+		}//end try
+
+		$perEntity['elapsedMs'] = (int)((microtime(true) - $start) * 1000);
+		return $perEntity;
+	}//end runEntity()
+
+	/**
+	 * Whether any entity of a run threw or skipped rows.
+	 *
+	 * @param array<int, array<string, mixed>> $results Per-entity results.
+	 *
+	 * @return boolean
+	 */
+	private function hadSkipsOrErrors(array $results): bool {
+		foreach ($results as $perEntity) {
+			if (isset($perEntity['error']) === true || ($perEntity['skipped'] ?? 0) > 0) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hadSkipsOrErrors()
 
 	/**
 	 * Verify post-migration row-count parity per entity (Task 17 / ADR-001 seed-data deviation).
@@ -499,11 +538,19 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 			return ['slug' => $slug, 'legacyCount' => $count, 'migratedCount' => 0, 'skipped' => 0, 'fkRewrites' => 0];
 		}
 
-		$migrated = 0;
-		$skipped = 0;
-		$offset = 0;
-		$syncBranchCounts = ['integer-pk' => 0, 'register-schema' => 0, 'uuid' => 0, 'unrecognised' => 0];
+		$run = [
+			'slug' => $slug,
+			'tableShort' => $tableShort,
+			'schemaPk' => $schemaPk,
+			'hasSyncBranching' => $hasSyncBranching,
+			'count' => $count,
+			'batchSize' => $batchSize,
+			'migrated' => 0,
+			'skipped' => 0,
+			'syncBranchCounts' => ['integer-pk' => 0, 'register-schema' => 0, 'uuid' => 0, 'unrecognised' => 0],
+		];
 
+		$offset = 0;
 		while ($offset < $count) {
 			$rows = $this->fetchLegacyBatch(tableShort: $tableShort, offset: $offset, batchSize: $batchSize);
 			if ($rows === []) {
@@ -511,72 +558,91 @@ class LegacyToRegisterMigrator implements LegacyToRegisterMigratorInterface {
 			}
 
 			foreach ($rows as $row) {
-				$jsonBody = $this->buildJsonBody(row: $row, hasSyncBranching: $hasSyncBranching, syncBranchCounts: $syncBranchCounts);
-				$uuid = (string)($row['uuid'] ?? '');
-				if ($uuid === '') {
-					$this->logger->warning(sprintf('chain-B: %s row id=%s has no uuid — skipping', $slug, (string)($row['id'] ?? '?')));
-					$skipped++;
-					continue;
-				}
-
-				try {
-					$this->insertObjectRow(
-						registerPk: (int)$this->registerPk,
-						schemaPk: $schemaPk,
-						uuid: $uuid,
-						legacyId: (int)($row['id'] ?? 0),
-						jsonBody: $jsonBody,
-						created: (string)($row['created'] ?? $row['date_created'] ?? date('Y-m-d H:i:s')),
-						updated: (string)($row['updated'] ?? $row['date_modified'] ?? date('Y-m-d H:i:s'))
-					);
-					$migrated++;
-				} catch (\Throwable $e) {
-					$this->logger->error(
-						sprintf(
-							'chain-B: %s uuid=%s INSERT failed (%s): %s',
-							$slug,
-							$uuid,
-							get_class($e),
-							$e->getMessage()
-						)
-					);
-					$skipped++;
-				}//end try
-			}//end foreach
+				$this->copyLegacyRow(row: $row, run: $run);
+			}
 
 			$offset += $batchSize;
 			$this->logger->info(sprintf('chain-B: %s — batch progress: %d / %d', $slug, min($offset, $count), $count));
-		}//end while
+		}
 
-		if ($hasSyncBranching === true) {
+		return $this->entityResult(run: $run);
+	}//end migrateEntity()
+
+	/**
+	 * Copy one legacy row into oc_openregister_objects, counting it as migrated or skipped.
+	 *
+	 * @param array<string, mixed> $row The legacy row.
+	 * @param array<string, mixed> $run The entity run state; its counters are updated.
+	 *
+	 * @return void
+	 */
+	private function copyLegacyRow(array $row, array &$run): void {
+		$slug = $run['slug'];
+		$jsonBody = $this->buildJsonBody(row: $row, hasSyncBranching: $run['hasSyncBranching'], syncBranchCounts: $run['syncBranchCounts']);
+		$uuid = (string)($row['uuid'] ?? '');
+		if ($uuid === '') {
+			$this->logger->warning(sprintf('chain-B: %s row id=%s has no uuid — skipping', $slug, (string)($row['id'] ?? '?')));
+			$run['skipped']++;
+			return;
+		}
+
+		try {
+			$this->insertObjectRow(
+				registerPk: (int)$this->registerPk,
+				schemaPk: $run['schemaPk'],
+				uuid: $uuid,
+				legacyId: (int)($row['id'] ?? 0),
+				jsonBody: $jsonBody,
+				created: (string)($row['created'] ?? $row['date_created'] ?? date('Y-m-d H:i:s')),
+				updated: (string)($row['updated'] ?? $row['date_modified'] ?? date('Y-m-d H:i:s'))
+			);
+			$run['migrated']++;
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				sprintf(
+					'chain-B: %s uuid=%s INSERT failed (%s): %s',
+					$slug,
+					$uuid,
+					get_class($e),
+					$e->getMessage()
+				)
+			);
+			$run['skipped']++;
+		}//end try
+	}//end copyLegacyRow()
+
+	/**
+	 * The per-entity result of a run that copied rows, logging the sync branching counts.
+	 *
+	 * @param array<string, mixed> $run The finished entity run state.
+	 *
+	 * @return array{slug:string,legacyCount:int,migratedCount:int,skipped:int,fkRewrites:int,branching:array<string,int>|null}
+	 */
+	private function entityResult(array $run): array {
+		$branching = null;
+		if ($run['hasSyncBranching'] === true) {
+			$branching = $run['syncBranchCounts'];
 			$this->logger->info(
 				sprintf(
 					'chain-B: synchronization sourceId/targetId branching counts — integer-PK→uuid: %d, register/schema: %d, uuid: %d, unrecognised: %d',
-					$syncBranchCounts['integer-pk'],
-					$syncBranchCounts['register-schema'],
-					$syncBranchCounts['uuid'],
-					$syncBranchCounts['unrecognised']
+					$branching['integer-pk'],
+					$branching['register-schema'],
+					$branching['uuid'],
+					$branching['unrecognised']
 				)
 			);
 		}
 
-		if ($hasSyncBranching === true) {
-			$branching = $syncBranchCounts;
-		} else {
-			$branching = null;
-		}
-
 		return [
-			'slug' => $slug,
-			'legacyCount' => $count,
-			'migratedCount' => $migrated,
-			'skipped' => $skipped,
+			'slug' => $run['slug'],
+			'legacyCount' => $run['count'],
+			'migratedCount' => $run['migrated'],
+			'skipped' => $run['skipped'],
 			// Populated by FK rewrite pass.
 			'fkRewrites' => 0,
 			'branching' => $branching,
 		];
-
-	}//end migrateEntity()
+	}//end entityResult()
 
 	/**
 	 * Probe information_schema for the presence of a legacy table.
