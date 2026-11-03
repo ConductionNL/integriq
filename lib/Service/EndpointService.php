@@ -2819,7 +2819,48 @@ class EndpointService implements EndpointServiceInterface {
 			$schema = $object->getSchema();
 		}
 
-		$target = "$register/$schema";
+		$epEntity = $this->findGetEndpointFor(target: "$register/$schema");
+		if ($epEntity === null) {
+			return $id;
+		}
+
+		$location = ($epEntity->getObject())['endpointArray'] ?? [];
+
+		// Determine schema title (lowercased).
+		$schemaTitle = strtolower($schemaMapper->find($schema)->getTitle());
+
+		// Use first parentId if available.
+		$parentId = ($parentIds[0] ?? null);
+
+		// A sub endpoint names its parent with a {{<schema title>_id}} placeholder;
+		// its {{id}} then takes the parent id when there is one.
+		$placeholders = $this->endpointPlaceholders(location: $location);
+		$idValue = $id;
+		if ($parentId !== null && in_array("{$schemaTitle}_id", $placeholders, true) === true) {
+			$idValue = $parentId;
+		}
+
+		$values = ['id' => $idValue, "{$schemaTitle}_id" => $id];
+		foreach ($placeholders as $key => $placeholder) {
+			if (array_key_exists($placeholder, $values) === true) {
+				$location[$key] = $values[$placeholder];
+			}
+		}
+
+		$path = implode(separator: '/', array: $location);
+		return $this->urlGenerator->getBaseUrl() . '/apps/integriq/api/endpoint/' . $path;
+	}//end generateEndpointUrl()
+
+	/**
+	 * The GET endpoint serving one register/schema target, preferring one whose path has an {{id}} part.
+	 *
+	 * @param string $target The "<register>/<schema>" target id.
+	 *
+	 * @return ObjectEntity|null The endpoint, or null when no GET endpoint serves the target.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function findGetEndpointFor(string $target): ?ObjectEntity {
 		$epMatches = $this->orObjectService->findAll(
 			config: [
 				'filters' => [
@@ -2833,61 +2874,37 @@ class EndpointService implements EndpointServiceInterface {
 		$endpoints = $epMatches['results'] ?? $epMatches;
 
 		if (count($endpoints) === 0) {
-			return $id;
+			return null;
 		}
 
-		$epEntity = $endpoints[0];
-		$filteredEndpoints = array_filter(
-			$endpoints,
-			function (ObjectEntity $epEntity) {
-				$epData = $epEntity->getObject();
-				return in_array(needle: '{{id}}', haystack: ($epData['endpointArray'] ?? [])) === true;
+		foreach ($endpoints as $epEntity) {
+			if (in_array(needle: '{{id}}', haystack: ($epEntity->getObject()['endpointArray'] ?? [])) === true) {
+				return $epEntity;
 			}
-		);
-
-		if (count($filteredEndpoints) > 0) {
-			$epEntity = array_shift($filteredEndpoints);
 		}
 
-		$location = ($epEntity->getObject())['endpointArray'] ?? [];
+		return $endpoints[0];
+	}//end findGetEndpointFor()
 
-		// Determine schema title (lowercased).
-		$schemaTitle = strtolower($schemaMapper->find($schema)->getTitle());
-
-		// Use first parentId if available.
-		$parentId = ($parentIds[0] ?? null);
-
-		// Make sure we are dealing with a sub endpoint.
-		$isSubEndpoint = false;
+	/**
+	 * The trimmed {{placeholder}} names in an endpoint path, keyed by their position.
+	 *
+	 * @param array $location The endpoint path parts.
+	 *
+	 * @return array<int|string, string>
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	private function endpointPlaceholders(array $location): array {
+		$placeholders = [];
 		foreach ($location as $key => $part) {
 			if (preg_match('#{{([^}]+)}}#', $part, $matches) === 1) {
-				$placeholder = trim($matches[1]);
-				if ($placeholder === "{$schemaTitle}_id") {
-					$isSubEndpoint = true;
-				}
+				$placeholders[$key] = trim($matches[1]);
 			}
 		}
 
-		foreach ($location as $key => $part) {
-			if (preg_match('#{{([^}]+)}}#', $part, $matches) === 1) {
-				$placeholder = trim($matches[1]);
-
-				if ($placeholder === 'id' && $parentId !== null && $isSubEndpoint === true) {
-					// Replace {{id}} with parent id if set.
-					$location[$key] = $parentId;
-				} elseif ($placeholder === 'id') {
-					// Otherwise, replace {{id}} with current object id.
-					$location[$key] = $id;
-				} elseif ($placeholder === "{$schemaTitle}_id") {
-					// Replace {{schematitle_id}} with object id.
-					$location[$key] = $id;
-				}
-			}
-		}
-
-		$path = implode(separator: '/', array: $location);
-		return $this->urlGenerator->getBaseUrl() . '/apps/integriq/api/endpoint/' . $path;
-	}//end generateEndpointUrl()
+		return $placeholders;
+	}//end endpointPlaceholders()
 
 	/**
 	 * Saves object to OpenRegister.
