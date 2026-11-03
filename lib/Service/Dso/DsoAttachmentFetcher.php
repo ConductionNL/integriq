@@ -43,6 +43,7 @@ namespace OCA\Integriq\Service\Dso;
 use Exception;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Service\DsoIngestService;
+use OCA\Integriq\Service\PayloadTooLargeException;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -228,7 +229,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 				$entry['fileId'] = (int)$file->getId();
 
 				return $entry;
-			} catch (DsoAttachmentTooLargeException $exception) {
+			} catch (PayloadTooLargeException $exception) {
 				$entry['status'] = 'too-large';
 				$entry['error'] = $exception->getMessage();
 

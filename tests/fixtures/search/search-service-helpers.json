@@ -1,0 +1,25 @@
+{
+    "parseQueryString": {
+        "empty": "{\"\":\"\"}",
+        "single": "{\"\":\"1\"}",
+        "two": "{\"\":\"2\"}",
+        "no-value": "{\"\":\"\"}",
+        "empty-value": "{\"\":\"\"}",
+        "encoded": "{\"\":\"va&lue\"}",
+        "list": "{\"tags\":[\"x\",\"y\"]}",
+        "keyed": "{\"filter\":{\"status\":\"open\"}}",
+        "nested": "{\"filter\":{\"a\":{\"b\":\"deep\"}}}",
+        "nested-list": "{\"filter\":{\"a\":[\"one\",\"two\"]}}",
+        "repeat-overwrites": "{\"\":\"2\"}",
+        "extra-equals": "{\"\":\"\"}",
+        "leading-bracket": "{\"\":{\"x\":\"1\"}}",
+        "trailing-amp": "{\"\":\"\"}"
+    },
+    "unsetSpecialQueryParams": {
+        "empty": "[]",
+        "plain": "{\"a\":1,\"b\":\"x\"}",
+        "special": "{\"name\":\"n\"}",
+        "only-special": "[]",
+        "inner-underscore": "{\"a_b\":1}"
+    }
+}

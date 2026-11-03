@@ -1,0 +1,205 @@
+{
+	"writeBackRows undefined": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip undefined": {
+		"result": null
+	},
+	"writeBackRows null": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip null": {
+		"result": null
+	},
+	"writeBackRows string": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip string": {
+		"result": null
+	},
+	"writeBackRows array": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip array": {
+		"result": null
+	},
+	"writeBackRows empty": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip empty": {
+		"result": null
+	},
+	"writeBackRows bothNull": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip bothNull": {
+		"result": null
+	},
+	"writeBackRows arraySide": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": [
+				{
+					"field": "status",
+					"value": "{{ status }}"
+				}
+			]
+		}
+	},
+	"round trip arraySide": {
+		"result": {
+			"onFailure": {
+				"status": "{{ status }}"
+			}
+		}
+	},
+	"writeBackRows stringSide": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip stringSide": {
+		"result": null
+	},
+	"writeBackRows full": {
+		"result": {
+			"onSuccess": [
+				{
+					"field": "status",
+					"value": "sent"
+				},
+				{
+					"field": "remoteId",
+					"value": "{{ targetId }}"
+				},
+				{
+					"field": "n",
+					"value": 0
+				},
+				{
+					"field": "z",
+					"value": null
+				}
+			],
+			"onFailure": [
+				{
+					"field": "status",
+					"value": "failed"
+				},
+				{
+					"field": "error",
+					"value": "{{ error.message }}"
+				}
+			]
+		}
+	},
+	"round trip full": {
+		"result": {
+			"onSuccess": {
+				"status": "sent",
+				"remoteId": "{{ targetId }}",
+				"n": 0,
+				"z": ""
+			},
+			"onFailure": {
+				"status": "failed",
+				"error": "{{ error.message }}"
+			}
+		}
+	},
+	"writeBackRows emptySides": {
+		"result": {
+			"onSuccess": [],
+			"onFailure": []
+		}
+	},
+	"round trip emptySides": {
+		"result": null
+	},
+	"writeBackFromRows undefined": {
+		"result": null
+	},
+	"writeBackFromRows null": {
+		"result": null
+	},
+	"writeBackFromRows empty": {
+		"result": null
+	},
+	"writeBackFromRows emptySides": {
+		"result": null
+	},
+	"writeBackFromRows nullSides": {
+		"result": null
+	},
+	"writeBackFromRows typing": {
+		"result": null
+	},
+	"writeBackFromRows full": {
+		"result": {
+			"onSuccess": {
+				"status": "sent",
+				"remoteId": "{{ targetId }}",
+				"zero": 0,
+				"blank": "",
+				"missing": "",
+				"falsy": false
+			},
+			"onFailure": {
+				"status": "failed"
+			}
+		}
+	},
+	"writeBackFromRows duplicates": {
+		"result": {
+			"onFailure": {
+				"a": 2
+			}
+		}
+	},
+	"writeBackFromRows numericField": {
+		"result": {
+			"onSuccess": {
+				"7": "seven"
+			}
+		}
+	},
+	"writeBackFromRows falseField": {
+		"result": {
+			"onSuccess": {
+				"false": "f"
+			}
+		}
+	},
+	"writeBackFromRows onlyFailure": {
+		"result": {
+			"onFailure": {
+				"x": ""
+			}
+		}
+	},
+	"writeBackFromRows nullRow": {
+		"threw": "TypeError"
+	},
+	"writeBackFromRows stringSide": {
+		"result": null
+	}
+}

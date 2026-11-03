@@ -37,6 +37,17 @@ use OCP\AppFramework\Db\Entity;
  */
 class JobHandler implements ConfigurationHandlerInterface {
 	/**
+	 * The job argument that references another entity, and that entity's type.
+	 *
+	 * @var array<string,string>
+	 */
+	private const ARGUMENT_REFERENCES = [
+		'synchronizationId' => 'synchronization',
+		'endpointId' => 'endpoint',
+		'sourceId' => 'source',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OrObjectService $orObjectService The OR object service.
@@ -94,9 +105,6 @@ class JobHandler implements ConfigurationHandlerInterface {
 	/**
 	 * Convert entity id references inside a job's arguments array to slugs.
 	 *
-	 * Extracted from export() (pure refactor, behaviour-preserving) to keep
-	 * export()'s NPath complexity within the configured threshold.
-	 *
 	 * @param array $arguments The job arguments array.
 	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
 	 *
@@ -139,41 +147,66 @@ class JobHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
-		// Convert slugs back to IDs in arguments JSON.
 		if (isset($data['arguments']) === true) {
-			if (is_array($data['arguments']) === false) {
-				$arguments = json_decode($data['arguments'], true);
-			} else {
-				$arguments = $data['arguments'];
-			}
-
+			$arguments = $this->decodeArguments(arguments: $data['arguments']);
 			if (is_array($arguments) === true) {
-				if (isset($arguments['synchronizationId']) === true
-					&& isset($mappings['synchronization']['slugToId'][$arguments['synchronizationId']]) === true
-				) {
-					$arguments['synchronizationId'] = $mappings['synchronization']['slugToId'][$arguments['synchronizationId']];
-				}
+				$data['arguments'] = $this->convertArgumentSlugsToIds(arguments: $arguments, mappings: $mappings);
+			}
+		}
 
-				if (isset($arguments['endpointId']) === true
-					&& isset($mappings['endpoint']['slugToId'][$arguments['endpointId']]) === true
-				) {
-					$arguments['endpointId'] = $mappings['endpoint']['slugToId'][$arguments['endpointId']];
-				}
+		return $this->saveJob(data: $data, mappings: $mappings);
+	}//end import()
 
-				if (isset($arguments['sourceId']) === true
-					&& isset($mappings['source']['slugToId'][$arguments['sourceId']]) === true
-				) {
-					$arguments['sourceId'] = $mappings['source']['slugToId'][$arguments['sourceId']];
-				}
+	/**
+	 * A job's arguments as an array: JSON text is decoded, an array is kept.
+	 *
+	 * @param mixed $arguments The job arguments, as an array or JSON text.
+	 *
+	 * @return mixed The decoded arguments; not an array when the text is no JSON object or list.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function decodeArguments(mixed $arguments): mixed {
+		if (is_array($arguments) === true) {
+			return $arguments;
+		}
 
-				$data['arguments'] = $arguments;
-			}//end if
-		}//end if
+		return json_decode($arguments, true);
+	}//end decodeArguments()
 
-		// Check if job with this slug already exists.
-		$slug = $data['slug'] ?? null;
+	/**
+	 * Convert entity slug references inside a job's arguments array to ids.
+	 *
+	 * @param array $arguments The job arguments array.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return array The arguments array with slugs converted to ids.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function convertArgumentSlugsToIds(array $arguments, array $mappings): array {
+		foreach (self::ARGUMENT_REFERENCES as $field => $type) {
+			if (isset($arguments[$field]) === true && isset($mappings[$type]['slugToId'][$arguments[$field]]) === true) {
+				$arguments[$field] = $mappings[$type]['slugToId'][$arguments[$field]];
+			}
+		}
+
+		return $arguments;
+	}//end convertArgumentSlugsToIds()
+
+	/**
+	 * Save an imported job: over the existing job with its slug, or as a new one.
+	 *
+	 * @param array $data The job configuration, with ids resolved.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return Entity The saved job entity.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function saveJob(array $data, array $mappings): Entity {
+		$slug = ($data['slug'] ?? null);
 		if ($slug !== null && isset($mappings['job']['slugToId'][$slug]) === true) {
-			// Update existing job.
 			return $this->orObjectService->saveObject(
 				object: $data,
 				register: 'integriq',
@@ -182,9 +215,8 @@ class JobHandler implements ConfigurationHandlerInterface {
 			);
 		}
 
-		// Create new job.
 		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'job');
-	}//end import()
+	}//end saveJob()
 
 	/**
 	 * Get the entity type this handler is responsible for.

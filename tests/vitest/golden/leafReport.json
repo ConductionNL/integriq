@@ -1,0 +1,648 @@
+{
+	"leafHeader empty": {
+		"result": {
+			"actions": [],
+			"note": ""
+		}
+	},
+	"leafSummary empty": {
+		"result": {
+			"count": 0,
+			"noun": "",
+			"rows": [],
+			"actions": [],
+			"unavailable": true
+		}
+	},
+	"shared empty": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed empty": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": "__undefined__"
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": "__undefined__",
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader loading": {
+		"result": {
+			"actions": [],
+			"note": ""
+		}
+	},
+	"leafSummary loading": {
+		"result": null
+	},
+	"shared loading": {
+		"headerActions": false,
+		"summaryActions": true,
+		"summaryRows": true
+	},
+	"computed loading": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": ""
+			}
+		},
+		"hostSummary": {
+			"result": null
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader loadingTruthy": {
+		"result": {
+			"actions": [],
+			"note": "",
+			"count": 3
+		}
+	},
+	"leafSummary loadingTruthy": {
+		"result": {
+			"count": 3,
+			"noun": "__undefined__",
+			"rows": [],
+			"actions": []
+		}
+	},
+	"shared loadingTruthy": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed loadingTruthy": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": 3
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 3,
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader loadingFalse": {
+		"result": {
+			"actions": [],
+			"note": "",
+			"count": 0,
+			"empty": {
+				"name": "None"
+			}
+		}
+	},
+	"leafSummary loadingFalse": {
+		"result": {
+			"count": 0,
+			"noun": "__undefined__",
+			"rows": [],
+			"actions": []
+		}
+	},
+	"shared loadingFalse": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed loadingFalse": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": 0,
+				"empty": {
+					"name": "None"
+				}
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 0,
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader failed": {
+		"result": {
+			"actions": [],
+			"note": ""
+		}
+	},
+	"leafSummary failed": {
+		"result": {
+			"count": 0,
+			"noun": "",
+			"rows": [],
+			"actions": [],
+			"unavailable": true
+		}
+	},
+	"shared failed": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed failed": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": ""
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 0,
+				"noun": "",
+				"rows": [],
+				"actions": [],
+				"unavailable": true
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader failedWhileLoading": {
+		"result": {
+			"actions": [],
+			"note": ""
+		}
+	},
+	"leafSummary failedWhileLoading": {
+		"result": null
+	},
+	"shared failedWhileLoading": {
+		"headerActions": false,
+		"summaryActions": true,
+		"summaryRows": true
+	},
+	"computed failedWhileLoading": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": ""
+			}
+		},
+		"hostSummary": {
+			"result": null
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader errorUndefined": {
+		"result": {
+			"actions": [],
+			"note": ""
+		}
+	},
+	"leafSummary errorUndefined": {
+		"result": {
+			"count": 0,
+			"noun": "",
+			"rows": [],
+			"actions": [],
+			"unavailable": true
+		}
+	},
+	"shared errorUndefined": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed errorUndefined": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": 0,
+				"empty": {
+					"name": "None"
+				}
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 0,
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader errorNull": {
+		"result": {
+			"actions": [],
+			"note": ""
+		}
+	},
+	"leafSummary errorNull": {
+		"result": {
+			"count": 0,
+			"noun": "",
+			"rows": [],
+			"actions": [],
+			"unavailable": true
+		}
+	},
+	"shared errorNull": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed errorNull": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": 4
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 4,
+				"noun": "n",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader zero": {
+		"result": {
+			"actions": [
+				{
+					"label": "Add",
+					"run": "[function add]"
+				}
+			],
+			"note": "A note",
+			"count": 0,
+			"empty": {
+				"name": "Nothing yet"
+			}
+		}
+	},
+	"leafSummary zero": {
+		"result": {
+			"count": 0,
+			"noun": "rules",
+			"rows": [],
+			"actions": [
+				{
+					"label": "Add",
+					"run": "[function add]"
+				}
+			]
+		}
+	},
+	"shared zero": {
+		"headerActions": true,
+		"summaryActions": true,
+		"summaryRows": false
+	},
+	"computed zero": {
+		"hostHeader": {
+			"result": {
+				"actions": [
+					{
+						"label": "Add",
+						"run": "[function add]"
+					}
+				],
+				"note": "A note",
+				"count": 0,
+				"empty": {
+					"name": "Nothing yet"
+				}
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 0,
+				"noun": "rules",
+				"rows": [],
+				"actions": [
+					{
+						"label": "Add",
+						"run": "[function add]"
+					}
+				]
+			}
+		},
+		"carded": true,
+		"summarised": false
+	},
+	"leafHeader some": {
+		"result": {
+			"actions": [
+				{
+					"label": "Add",
+					"run": "[function add]"
+				}
+			],
+			"note": "A note",
+			"count": 2
+		}
+	},
+	"leafSummary some": {
+		"result": {
+			"count": 2,
+			"noun": "rules",
+			"rows": [
+				{
+					"label": "One",
+					"href": "/one"
+				}
+			],
+			"actions": [
+				{
+					"label": "Add",
+					"run": "[function add]"
+				}
+			]
+		}
+	},
+	"shared some": {
+		"headerActions": true,
+		"summaryActions": true,
+		"summaryRows": true
+	},
+	"computed some": {
+		"hostHeader": {
+			"result": {
+				"actions": [
+					{
+						"label": "Add",
+						"run": "[function add]"
+					}
+				],
+				"note": "A note",
+				"count": 2
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 2,
+				"noun": "rules",
+				"rows": [
+					{
+						"label": "One",
+						"href": "/one"
+					}
+				],
+				"actions": [
+					{
+						"label": "Add",
+						"run": "[function add]"
+					}
+				]
+			}
+		},
+		"carded": false,
+		"summarised": true
+	},
+	"leafHeader countString": {
+		"result": {
+			"actions": [],
+			"note": "",
+			"count": "0"
+		}
+	},
+	"leafSummary countString": {
+		"result": {
+			"count": "0",
+			"noun": "__undefined__",
+			"rows": [],
+			"actions": []
+		}
+	},
+	"shared countString": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed countString": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": "0"
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": "0",
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader countNegative": {
+		"result": {
+			"actions": [],
+			"note": "",
+			"count": -1
+		}
+	},
+	"leafSummary countNegative": {
+		"result": {
+			"count": -1,
+			"noun": "__undefined__",
+			"rows": [],
+			"actions": []
+		}
+	},
+	"shared countNegative": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed countNegative": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": -1
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": -1,
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader countUndefined": {
+		"result": {
+			"actions": [],
+			"note": "",
+			"count": "__undefined__"
+		}
+	},
+	"leafSummary countUndefined": {
+		"result": {
+			"count": "__undefined__",
+			"noun": "__undefined__",
+			"rows": [],
+			"actions": []
+		}
+	},
+	"shared countUndefined": {
+		"headerActions": false,
+		"summaryActions": false,
+		"summaryRows": false
+	},
+	"computed countUndefined": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": "__undefined__"
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": "__undefined__",
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader nullDefaults": {
+		"result": {
+			"actions": null,
+			"note": null,
+			"count": 1
+		}
+	},
+	"leafSummary nullDefaults": {
+		"result": {
+			"count": 1,
+			"noun": "__undefined__",
+			"rows": null,
+			"actions": null
+		}
+	},
+	"shared nullDefaults": {
+		"headerActions": true,
+		"summaryActions": true,
+		"summaryRows": true
+	},
+	"computed nullDefaults": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": 1
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 1,
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader emptyDefaults": {
+		"result": {
+			"actions": [],
+			"note": "",
+			"count": 1
+		}
+	},
+	"leafSummary emptyDefaults": {
+		"result": {
+			"count": 1,
+			"noun": "__undefined__",
+			"rows": [],
+			"actions": []
+		}
+	},
+	"shared emptyDefaults": {
+		"headerActions": true,
+		"summaryActions": true,
+		"summaryRows": true
+	},
+	"computed emptyDefaults": {
+		"hostHeader": {
+			"result": {
+				"actions": [],
+				"note": "",
+				"count": 1
+			}
+		},
+		"hostSummary": {
+			"result": {
+				"count": 1,
+				"noun": "__undefined__",
+				"rows": [],
+				"actions": []
+			}
+		},
+		"carded": false,
+		"summarised": false
+	},
+	"leafHeader undefined": {
+		"threw": "TypeError"
+	},
+	"leafSummary null": {
+		"threw": "TypeError"
+	},
+	"watchers": [
+		[
+			"header",
+			{
+				"count": 1
+			}
+		],
+		[
+			"summary",
+			{
+				"count": 2
+			}
+		]
+	]
+}

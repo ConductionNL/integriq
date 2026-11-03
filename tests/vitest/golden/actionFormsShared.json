@@ -1,0 +1,1362 @@
+{
+	"results schemaOnly": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"results register": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"results limit": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"results undefinedDefaults": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"results nullRegister": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"bare schemaOnly": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"bare register": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"bare limit": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"bare undefinedDefaults": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"bare nullRegister": {
+		"options": [
+			{
+				"id": "a",
+				"label": "Named",
+				"raw": {
+					"id": "a",
+					"name": "Named",
+					"title": "Titled"
+				}
+			},
+			{
+				"id": "u-1",
+				"label": "Only title",
+				"raw": {
+					"uuid": "u-1",
+					"title": "Only title"
+				}
+			},
+			{
+				"id": "7",
+				"label": 7,
+				"raw": {
+					"id": 7
+				}
+			},
+			{
+				"id": "u-0",
+				"label": "(unnamed)",
+				"raw": {
+					"id": 0,
+					"uuid": "u-0"
+				}
+			},
+			{
+				"id": "u-2",
+				"label": "(unnamed)",
+				"raw": {
+					"uuid": "u-2"
+				}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {}
+			},
+			{
+				"id": "undefined",
+				"label": "(unnamed)",
+				"raw": {
+					"id": "",
+					"name": "",
+					"title": ""
+				}
+			}
+		],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"resultsNotArray schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"resultsNotArray register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"resultsNotArray limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"resultsNotArray undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"resultsNotArray nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"emptyObject schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"emptyObject register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"emptyObject limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"emptyObject undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"emptyObject nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"nullData schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"nullData register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"nullData limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"nullData undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"nullData nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"noData schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"noData register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"noData limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"noData undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"noData nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"noResponse schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch integriq/synchronization failed",
+				"Cannot read properties of undefined (reading 'data')"
+			]
+		]
+	},
+	"noResponse register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch other/mapping failed",
+				"Cannot read properties of undefined (reading 'data')"
+			]
+		]
+	},
+	"noResponse limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch integriq/rule failed",
+				"Cannot read properties of undefined (reading 'data')"
+			]
+		]
+	},
+	"noResponse undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch integriq/rule failed",
+				"Cannot read properties of undefined (reading 'data')"
+			]
+		]
+	},
+	"noResponse nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch null/rule failed",
+				"Cannot read properties of undefined (reading 'data')"
+			]
+		]
+	},
+	"string schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"string register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"string limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"string undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"string nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": []
+	},
+	"nullRow schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch integriq/synchronization failed",
+				"Cannot read properties of null (reading 'id')"
+			]
+		]
+	},
+	"nullRow register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch other/mapping failed",
+				"Cannot read properties of null (reading 'id')"
+			]
+		]
+	},
+	"nullRow limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch integriq/rule failed",
+				"Cannot read properties of null (reading 'id')"
+			]
+		]
+	},
+	"nullRow undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch integriq/rule failed",
+				"Cannot read properties of null (reading 'id')"
+			]
+		]
+	},
+	"nullRow nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": [
+			[
+				"[actionForms] fetch null/rule failed",
+				"Cannot read properties of null (reading 'id')"
+			]
+		]
+	},
+	"rejects schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch integriq/synchronization failed", "down"]]
+	},
+	"rejects register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch other/mapping failed", "down"]]
+	},
+	"rejects limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch integriq/rule failed", "down"]]
+	},
+	"rejects undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch integriq/rule failed", "down"]]
+	},
+	"rejects nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch null/rule failed", "down"]]
+	},
+	"throws schemaOnly": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/synchronization",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch integriq/synchronization failed", "sync"]]
+	},
+	"throws register": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/other/mapping",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch other/mapping failed", "sync"]]
+	},
+	"throws limit": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 20
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch integriq/rule failed", "sync"]]
+	},
+	"throws undefinedDefaults": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/integriq/rule",
+				{
+					"params": {
+						"_limit": 500
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch integriq/rule failed", "sync"]]
+	},
+	"throws nullRegister": {
+		"options": [],
+		"calls": [
+			[
+				"/index.php/apps/openregister/api/objects/null/rule",
+				{
+					"params": {
+						"_limit": null
+					}
+				}
+			]
+		],
+		"warnings": [["[actionForms] fetch null/rule failed", "sync"]]
+	}
+}

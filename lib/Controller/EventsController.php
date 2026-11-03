@@ -826,28 +826,7 @@ class EventsController extends Controller {
 	 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
 	 */
 	private function withinWindow(?string $lastAttempt, ?string $from, ?string $to): bool {
-		if (($from === null || $from === '') && ($to === null || $to === '')) {
-			return true;
-		}
-
-		if ($lastAttempt === null || $lastAttempt === '') {
-			return false;
-		}
-
-		$ts = strtotime($lastAttempt);
-		if ($ts === false) {
-			return false;
-		}
-
-		if ($from !== null && $from !== '' && $ts < strtotime($from)) {
-			return false;
-		}
-
-		if ($to !== null && $to !== '' && $ts > strtotime($to)) {
-			return false;
-		}
-
-		return true;
+		return (new TimeWindow(from: $from, to: $to))->contains(timestamp: $lastAttempt);
 	}//end withinWindow()
 
 	/**

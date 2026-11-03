@@ -46,6 +46,34 @@ export function writeBackRows(writeBack) {
 }
 
 /**
+ * The trimmed field name of an editor row.
+ *
+ * @param {{field: unknown}} row the row
+ * @return {string} the field name, '' while it is still being typed
+ */
+function fieldName(row) {
+	return String(row.field ?? '').trim()
+}
+
+/**
+ * The stored fields of one side: rows without a field name are left out and
+ * a missing value is stored as ''.
+ *
+ * @param {?Array<{field: string, value: unknown}>} sideRows the rows of the side
+ * @return {object} the fields
+ */
+function sideFields(sideRows) {
+	const fields = {}
+	for (const row of sideRows || []) {
+		const field = fieldName(row)
+		if (field !== '') {
+			fields[field] = row.value ?? ''
+		}
+	}
+	return fields
+}
+
+/**
  * Turn editor rows back into the stored shape. A row without a field name is
  * still being typed and is left out; a side without rows is left out; nothing
  * at all gives null.
@@ -58,13 +86,7 @@ export function writeBackRows(writeBack) {
 export function writeBackFromRows(rows) {
 	const writeBack = {}
 	for (const side of WRITE_BACK_SIDES) {
-		const fields = {}
-		for (const row of rows?.[side] || []) {
-			const field = String(row.field ?? '').trim()
-			if (field !== '') {
-				fields[field] = row.value ?? ''
-			}
-		}
+		const fields = sideFields(rows?.[side])
 		if (Object.keys(fields).length > 0) {
 			writeBack[side] = fields
 		}

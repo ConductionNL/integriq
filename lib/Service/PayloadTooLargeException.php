@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Integriq DSO Attachment Too Large Exception.
+ * Integriq Payload Too Large Exception.
  *
- * Raised when a DSO bijlage is larger than the source's `maxFileSize`, either
- * by its declared Content-Length or while its body is streamed. Retrying does
- * not help, so the download job records the entry as `too-large` and stops.
+ * Raised when a downloaded body is larger than the allowed maximum, either by
+ * its declared Content-Length or while it is streamed. Retrying does not help,
+ * so the caller records the entry as `too-large` and stops.
  *
  * @category Exception
- * @package  OCA\Integriq\Service\Dso
+ * @package  OCA\Integriq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,14 +24,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service\Dso;
+namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Exception\DsoProviderException;
 
 /**
- * Thrown when a bijlage exceeds the configured maximum file size.
+ * Thrown when a downloaded body exceeds the configured maximum size.
  *
  * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-oversized-bijlage-rejected
  */
-class DsoAttachmentTooLargeException extends DsoProviderException {
+class PayloadTooLargeException extends DsoProviderException {
 }//end class

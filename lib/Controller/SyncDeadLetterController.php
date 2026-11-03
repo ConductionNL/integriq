@@ -140,28 +140,7 @@ class SyncDeadLetterController extends Controller {
 	 * @return boolean
 	 */
 	private function withinWindow(?string $created, ?string $from, ?string $to): bool {
-		if (($from === null || $from === '') && ($to === null || $to === '')) {
-			return true;
-		}
-
-		if ($created === null || $created === '') {
-			return false;
-		}
-
-		$ts = strtotime($created);
-		if ($ts === false) {
-			return false;
-		}
-
-		if ($from !== null && $from !== '' && $ts < strtotime($from)) {
-			return false;
-		}
-
-		if ($to !== null && $to !== '' && $ts > strtotime($to)) {
-			return false;
-		}
-
-		return true;
+		return (new TimeWindow(from: $from, to: $to))->contains(timestamp: $created);
 	}//end withinWindow()
 
 	/**
