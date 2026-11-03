@@ -75,6 +75,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\PayloadTooLargeException;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
@@ -309,7 +310,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 *
 	 * @return resource A readable stream positioned at the start of the body.
 	 *
-	 * @throws DsoAttachmentTooLargeException When the bijlage is larger than `$maxBytes`.
+	 * @throws PayloadTooLargeException When the bijlage is larger than `$maxBytes`.
 	 * @throws DsoProviderException When the credential is unusable, the transport fails or DSO-LV answers non-2xx.
 	 *
 	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
@@ -353,7 +354,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 		$declared = $response->getHeaderLine('Content-Length');
 		if (ctype_digit($declared) === true && (int)$declared > $maxBytes) {
 			$body->close();
-			throw new DsoAttachmentTooLargeException(
+			throw new PayloadTooLargeException(
 				message: 'The bijlage is ' . $declared . ' bytes, more than the maximum of ' . $maxBytes . ' bytes.'
 			);
 		}
@@ -370,7 +371,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 *
 	 * @return resource A readable stream positioned at the start of the copy.
 	 *
-	 * @throws DsoAttachmentTooLargeException When the body is larger than `$maxBytes`.
+	 * @throws PayloadTooLargeException When the body is larger than `$maxBytes`.
 	 * @throws DsoProviderException When no temporary stream can be opened.
 	 */
 	private function copyCapped(StreamInterface $body, int $maxBytes) {
@@ -387,7 +388,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 			if ($received > $maxBytes) {
 				$body->close();
 				fclose($target);
-				throw new DsoAttachmentTooLargeException(
+				throw new PayloadTooLargeException(
 					message: 'The bijlage is more than the maximum of ' . $maxBytes . ' bytes.'
 				);
 			}
