@@ -101,23 +101,16 @@
 			<!-- Identity fields — the rule metadata itself, so they sit above the
 			     when/then sections rather than inside one, stacked and capped
 			     short of the modal width. -->
-			<div class="cn-rule-editor__identity">
-				<NcTextField
-					:modelValue="draft.name"
-					:label="nameLabel"
-					:error="!!nameError"
-					:helperText="nameError"
-					:disabled="saving"
-					@update:modelValue="updateDraft('name', $event)"
-					@blur="nameTouched = true" />
-				<NcTextArea
-					:modelValue="draft.description"
-					:label="t('integriq', 'Description')"
-					:disabled="saving"
-					rows="1"
-					resize="vertical"
-					@update:modelValue="updateDraft('description', $event)" />
-			</div>
+			<EditorIdentityFields
+				block="cn-rule-editor"
+				:name="draft.name"
+				:description="draft.description"
+				:nameLabel="nameLabel"
+				:nameError="nameError"
+				:disabled="saving"
+				@update:name="updateDraft('name', $event)"
+				@update:description="updateDraft('description', $event)"
+				@blur="nameTouched = true" />
 
 			<!-- ── When: conditions ────────────────────────────────────── -->
 			<section class="cn-rule-editor__section">
@@ -380,14 +373,11 @@
 			<NcButton :disabled="saving" @click="onCancel">
 				{{ t('integriq', 'Cancel') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<PlusIcon v-else-if="isCreate" :size="20" />
-					<ContentSaveOutlineIcon v-else :size="20" />
-				</template>
-				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
-			</NcButton>
+			<EditorSaveButton
+				:disabled="!canSave"
+				:saving="saving"
+				:isCreate="isCreate"
+				@click="onSave" />
 		</template>
 	</NcDialog>
 </template>
@@ -398,7 +388,6 @@ import {
 	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcInputField,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 	NcTextArea,
@@ -406,12 +395,12 @@ import {
 } from '@nextcloud/vue'
 import AlertCircleOutlineIcon from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CodeJsonIcon from 'vue-material-design-icons/CodeJson.vue'
-import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import FilterOutlineIcon from 'vue-material-design-icons/FilterOutline.vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
-import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import FlowForm from '../../views/Rule/actionForms/FlowForm.vue'
 import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
+import EditorIdentityFields from './EditorIdentityFields.vue'
+import EditorSaveButton from './EditorSaveButton.vue'
 import confirmSave from '../../mixins/confirmSave.js'
 import namedEditorDialog from '../../mixins/namedEditorDialog.js'
 import {
@@ -450,11 +439,12 @@ export default {
 	name: 'RuleEditorModal',
 
 	components: {
+		EditorSaveButton,
+		EditorIdentityFields,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcDialog,
 		NcInputField,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		NcTextArea,
@@ -463,10 +453,8 @@ export default {
 		FlowForm,
 		AlertCircleOutlineIcon,
 		CodeJsonIcon,
-		ContentSaveOutlineIcon,
 		FilterOutlineIcon,
 		PlayOutlineIcon,
-		PlusIcon,
 	},
 
 	mixins: [namedEditorDialog, confirmSave],
