@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Kiss;
 
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\WebhookSignatureService;
 
 /**
@@ -130,8 +131,9 @@ class WebhookCtiProvider implements CtiProviderInterface {
 			);
 		}
 
+		// A shared secret equal to the export placeholder is a public string, so it is not configured.
 		$sharedSecret = (string) ($sourceConfiguration['sharedSecret'] ?? '');
-		if ($sharedSecret !== '') {
+		if ($sharedSecret !== '' && $sharedSecret !== SensitiveFieldRegistry::PLACEHOLDER) {
 			return hash_equals($sharedSecret, (string) ($headers['x-api-key'] ?? ''));
 		}
 

@@ -39,8 +39,14 @@ final class SensitiveValueMasker {
 	/**
 	 * Keys under a sensitive map that name how a credential is used, not the
 	 * credential: the auth or signature type and scheme, the header it travels
-	 * in, who may use it, its tolerance and its public client id. They stay
-	 * readable, so an exported rule or source still works after re-import.
+	 * in, who may use it, its tolerance and its public client id, and the
+	 * non-secret call parameters the source schema documents next to its
+	 * write-only paths (99-source-nested-auth-writeonly.json: grant_type,
+	 * scope, algorithm, payload, x5t, tokenUrl, tokenLocation, passwordType,
+	 * scheme, mode, username, client_id) plus the token and signature
+	 * parameters that sit beside them. They stay readable, so an exported rule
+	 * or source still works after re-import. No write-only leaf of that schema
+	 * may be listed here (SensitiveValueMaskerFollowUpTest checks it).
 	 *
 	 * @var array<int, string>
 	 */
@@ -56,7 +62,60 @@ final class SensitiveValueMasker {
 		'client_id',
 		'id',
 		'uuid',
+		'username',
+		'scope',
+		'audience',
+		'algorithm',
+		'payload',
+		'x5t',
+		'tokenUrl',
+		'tokenLocation',
+		'passwordType',
+		'publicKey',
+		'keyId',
+		'signatureAlgorithm',
+		'bodyKey',
 	];
+
+	/**
+	 * The call parameters among NON_SECRET_SETTING_KEYS whose names look
+	 * sensitive (`tokenUrl`, `keyId`): a scalar under one of them stays
+	 * readable wherever it sits, also at the top of a configuration.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PUBLIC_PARAMETER_KEYS = [
+		'username',
+		'tokenUrl',
+		'tokenLocation',
+		'passwordType',
+		'publicKey',
+		'keyId',
+		'signatureAlgorithm',
+		'bodyKey',
+	];
+
+	/**
+	 * The source schema fragment whose write-only paths name the secret auth leaves.
+	 *
+	 * @var string
+	 */
+	private const WRITE_ONLY_FRAGMENT = __DIR__ . '/../../Settings/register.d/99-source-nested-auth-writeonly.json';
+
+	/**
+	 * A key that names a setting: letters and underscores, no digits or
+	 * punctuation, so a generated credential used as a map key never passes.
+	 *
+	 * @var string
+	 */
+	private const SETTING_NAME = '/^[A-Za-z][A-Za-z_]{0,39}$/';
+
+	/**
+	 * The write-only leaves, read once from WRITE_ONLY_FRAGMENT.
+	 *
+	 * @var array<int, string>|null
+	 */
+	private static ?array $writeOnlyLeaves = null;
 
 	/**
 	 * Constructor.
@@ -92,11 +151,83 @@ final class SensitiveValueMasker {
 		}
 
 		if (array_is_list($value) === false) {
-			return $this->maskMap(map: $value, extraExactNames: $extraExactNames);
+			return $this->maskSettingsMap(map: $value, extraExactNames: $extraExactNames);
 		}
 
 		return array_map(fn (mixed $item): mixed => $this->maskListItem(item: $item), $value);
 	}//end mask()
+
+	/**
+	 * The leaf names of the source schema's write-only auth paths
+	 * (`configuration.authentication.client_secret` gives `client_secret`).
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public static function writeOnlyLeaves(): array {
+		if (self::$writeOnlyLeaves === null) {
+			$fragment = json_decode((string)file_get_contents(self::WRITE_ONLY_FRAGMENT), true);
+			$paths    = ($fragment['components']['schemas']['source']['x-openregister-writeonly-paths'] ?? []);
+			$leaves   = array_map(static fn (string $path): string => substr(strrchr('.' . $path, '.'), 1), $paths);
+			self::$writeOnlyLeaves = array_values(array_unique($leaves));
+		}
+
+		return self::$writeOnlyLeaves;
+	}//end writeOnlyLeaves()
+
+	/**
+	 * Whether a scalar under this key is a public call parameter, not a secret.
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return boolean
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function namesAPublicParameter(string $key): bool {
+		return in_array($key, self::PUBLIC_PARAMETER_KEYS, true);
+	}//end namesAPublicParameter()
+
+	/**
+	 * Mask a map: per key when every key names a setting, whole otherwise.
+	 *
+	 * A map whose keys are not setting names is a credential table
+	 * (`keys: {"<api key>": "<user>"}`): its keys are the secret, so it becomes the placeholder.
+	 *
+	 * @param array<string, mixed>    $map             The map under a sensitive key.
+	 * @param array<int, string>|null $extraExactNames Additional exact-match names for this call.
+	 *
+	 * @return mixed The masked map, or the placeholder.
+	 */
+	private function maskSettingsMap(array $map, ?array $extraExactNames): mixed {
+		foreach (array_keys($map) as $key) {
+			if ($this->namesASetting(key: $key) === false) {
+				return SensitiveFieldRegistry::PLACEHOLDER;
+			}
+		}
+
+		return $this->maskMap(map: $map, extraExactNames: $extraExactNames);
+	}//end maskSettingsMap()
+
+	/**
+	 * Whether a map key names a setting rather than being a credential itself.
+	 *
+	 * @param int|string $key The map key.
+	 *
+	 * @return boolean
+	 */
+	private function namesASetting(int|string $key): bool {
+		if (is_string($key) === false) {
+			return false;
+		}
+
+		if ($key === self::CREDENTIAL_POINTER_KEY || in_array($key, self::NON_SECRET_SETTING_KEYS, true) === true) {
+			return true;
+		}
+
+		return preg_match(self::SETTING_NAME, $key) === 1;
+	}//end namesASetting()
 
 	/**
 	 * Masks every value of a map held under a sensitive key, keeping a credentialRef pointer.

@@ -93,11 +93,12 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	private const SECRET_HEADER_PATTERN = '/session/i';
 
 	/**
-	 * A value that is only a `{{ ... }}` template, resolved at call time and holding no secret itself.
+	 * A value that is only a bare `{{ variable.path }}` template, resolved at call time
+	 * and holding no secret itself. A template with a literal or a filter is not one.
 	 *
 	 * @var string
 	 */
-	private const PURE_TEMPLATE = '/^\{\{[^{}]*\}\}$/';
+	private const PURE_TEMPLATE = '/^\{\{\s*[A-Za-z_][A-Za-z0-9_.]*\s*\}\}$/';
 
 	/**
 	 * Keys of a JSON response body that carry tokens an upstream issued,
@@ -236,8 +237,13 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 */
 	public function redactArray(array $data, ?array $extraExactNames = null): array {
 		foreach ($data as $key => $value) {
+			$masker = new SensitiveValueMasker(registry: $this);
+			if (is_scalar($value) === true && $masker->namesAPublicParameter(key: (string)$key) === true) {
+				continue;
+			}
+
 			if ($this->isSensitiveKey(key: (string)$key, extraExactNames: $extraExactNames) === true) {
-				$data[$key] = (new SensitiveValueMasker(registry: $this))->mask(value: $value, extraExactNames: $extraExactNames);
+				$data[$key] = $masker->mask(value: $value, extraExactNames: $extraExactNames);
 				continue;
 			}
 
@@ -334,7 +340,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	}//end maskIssuedTokens()
 
 	/**
-	 * Whether a value is only a `{{ ... }}` template, resolved at call time and holding no secret itself.
+	 * Whether a value is only a bare `{{ variable.path }}` template, resolved at call time and holding no secret itself.
 	 *
 	 * @param string $value The value.
 	 *
