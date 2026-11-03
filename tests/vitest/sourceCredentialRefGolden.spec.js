@@ -108,6 +108,7 @@ const LISTS = {
 		{ id: 'h', uuid: 'i', '@self': { id: 'j', uuid: 'k', title: 'T' } },
 		{ uuid: 'l', '@self': { id: 'm', uuid: 'n' } },
 		{ '@self': { id: 'o', uuid: 'p' } },
+		{ id: 'q', name: 'Named', '@self': { title: 'Titled' } },
 		[1, 2],
 	],
 }
