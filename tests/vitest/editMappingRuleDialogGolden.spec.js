@@ -19,7 +19,18 @@ const dialog = (await import('@/dialogs/EditMappingRuleDialog.vue')).default
 
 const KINDS = ['mapping', 'cast', 'unset']
 const PROPERTIES = [null, undefined, '', 'name']
-const VALUES = ['', '  x  ', '{{ a }}', 0, 42, false, true, null, undefined, { a: 1 }]
+const VALUES = [
+	'',
+	'  x  ',
+	'{{ a }}',
+	0,
+	42,
+	false,
+	true,
+	null,
+	undefined,
+	{ a: 1 },
+]
 
 describe('EditMappingRuleDialog drafts golden', () => {
 	it('seeds the drafts as recorded', () => {
