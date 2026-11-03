@@ -156,70 +156,107 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
-		// Convert slugs back to IDs.
 		if (isset($data['targetId']) === true && isset($data['targetType']) === true) {
-			switch ($data['targetType']) {
-				case 'api':
-				case 'database':
-					// For api/database targets, use source mapping.
-					if (isset($mappings['source']['slugToId'][$data['targetId']]) === true) {
-						$data['targetId'] = $mappings['source']['slugToId'][$data['targetId']];
-					}
-					break;
-
-				case 'register/schema':
-					// For register/schema targets, split the ID and map both parts.
-					if (str_contains($data['targetId'], '/') === true) {
-						[$registerSlug, $schemaSlug] = explode('/', $data['targetId']);
-
-						// Map register slug to ID (fallback to original slug if no mapping found).
-						$registerId = $mappings['register']['slugToId'][$registerSlug] ?? $registerSlug;
-
-						// Map schema slug to ID (fallback to original slug if no mapping found).
-						$schemaId = $mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug;
-
-						// Combine the IDs.
-						$data['targetId'] = $registerId . '/' . $schemaId;
-					}
-					break;
-			}//end switch
-		}//end if
-
-		// Handle mapping IDs.
-		if (isset($data['inputMapping']) === true
-			&& isset($mappings['mapping']['slugToId'][$data['inputMapping']]) === true
-		) {
-			$data['inputMapping'] = $mappings['mapping']['slugToId'][$data['inputMapping']];
+			$data['targetId'] = $this->importTargetId(data: $data, mappings: $mappings);
 		}
 
-		if (isset($data['outputMapping']) === true
-			&& isset($mappings['mapping']['slugToId'][$data['outputMapping']]) === true
-		) {
-			$data['outputMapping'] = $mappings['mapping']['slugToId'][$data['outputMapping']];
+		foreach (['inputMapping', 'outputMapping'] as $field) {
+			if (isset($data[$field]) === true && isset($mappings['mapping']['slugToId'][$data[$field]]) === true) {
+				$data[$field] = $mappings['mapping']['slugToId'][$data[$field]];
+			}
 		}
 
-		// Ensure rules is always an array before processing.
-		if (isset($data['rules']) === false || is_array($data['rules']) === false) {
-			$data['rules'] = [];
+		$data['rules'] = $this->importRules(rules: ($data['rules'] ?? null), mappings: $mappings);
+
+		return $this->saveEndpoint(data: $data, mappings: $mappings);
+	}//end import()
+
+	/**
+	 * The id an imported endpoint's target slug resolves to, by target type.
+	 *
+	 * @param array $data The serialised endpoint configuration, with a targetId and targetType.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return mixed The target id, or the target slug when no mapping is found.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function importTargetId(array $data, array $mappings): mixed {
+		$targetId = $data['targetId'];
+		switch ($data['targetType']) {
+			case 'api':
+			case 'database':
+				return ($mappings['source']['slugToId'][$targetId] ?? $targetId);
+
+			case 'register/schema':
+				return $this->importRegisterSchemaTargetId(targetId: $targetId, mappings: $mappings);
 		}
 
-		$data['rules'] = array_filter(
+		return $targetId;
+	}//end importTargetId()
+
+	/**
+	 * The `{register}/{schema}` ids a `{register}/{schema}` slug pair resolves to.
+	 *
+	 * Each part falls back to its slug when no mapping is found; a target
+	 * without a slash is returned unchanged.
+	 *
+	 * @param mixed $targetId The register/schema slug pair.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return mixed The register/schema id pair.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function importRegisterSchemaTargetId(mixed $targetId, array $mappings): mixed {
+		if (str_contains($targetId, '/') === false) {
+			return $targetId;
+		}
+
+		[$registerSlug, $schemaSlug] = explode('/', $targetId);
+
+		$registerId = ($mappings['register']['slugToId'][$registerSlug] ?? $registerSlug);
+		$schemaId = ($mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug);
+
+		return $registerId . '/' . $schemaId;
+	}//end importRegisterSchemaTargetId()
+
+	/**
+	 * The rule ids an imported endpoint's rule slugs resolve to; unknown slugs are dropped.
+	 *
+	 * @param mixed $rules The rule slugs; anything but an array imports as no rules.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return array The rule ids, keyed as the slugs were.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function importRules(mixed $rules, array $mappings): array {
+		if (is_array($rules) === false) {
+			return [];
+		}
+
+		return array_filter(
 			array_map(
-				function (int|string $rule) use ($mappings) {
-					if (isset($mappings['rule']['slugToId'][$rule]) === true) {
-						return $mappings['rule']['slugToId'][$rule];
-					}
-
-					return null;
-				},
-				$data['rules']
+				fn (int|string $rule): mixed => ($mappings['rule']['slugToId'][$rule] ?? null),
+				$rules
 			)
 		);
+	}//end importRules()
 
-		// Check if endpoint with this slug already exists.
-		$slug = $data['slug'] ?? null;
+	/**
+	 * Save an imported endpoint: over the existing endpoint with its slug, or as a new one.
+	 *
+	 * @param array $data The endpoint configuration, with ids resolved.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return Entity The saved endpoint entity.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function saveEndpoint(array $data, array $mappings): Entity {
+		$slug = ($data['slug'] ?? null);
 		if ($slug !== null && isset($mappings['endpoint']['slugToId'][$slug]) === true) {
-			// Update existing endpoint.
 			return $this->orObjectService->saveObject(
 				object: $data,
 				register: 'integriq',
@@ -228,9 +265,8 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 			);
 		}
 
-		// Create new endpoint.
 		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'endpoint');
-	}//end import()
+	}//end saveEndpoint()
 
 	/**
 	 * Get the entity type this handler is responsible for.
