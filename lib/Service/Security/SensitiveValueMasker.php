@@ -39,14 +39,10 @@ final class SensitiveValueMasker {
 	/**
 	 * Keys under a sensitive map that name how a credential is used, not the
 	 * credential: the auth or signature type and scheme, the header it travels
-	 * in, who may use it, its tolerance and its public client id, and the
-	 * non-secret call parameters the source schema documents next to its
-	 * write-only paths (99-source-nested-auth-writeonly.json: grant_type,
-	 * scope, algorithm, payload, x5t, tokenUrl, tokenLocation, passwordType,
-	 * scheme, mode, username, client_id) plus the token and signature
-	 * parameters that sit beside them. They stay readable, so an exported rule
-	 * or source still works after re-import. No write-only leaf of that schema
-	 * may be listed here (SensitiveValueMaskerFollowUpTest checks it).
+	 * in, who may use it, its tolerance and its public client id. They stay
+	 * readable, so an exported rule or source still works after re-import. No
+	 * write-only leaf of the source schema may be listed here
+	 * (SensitiveValueMaskerFollowUpTest checks it).
 	 *
 	 * @var array<int, string>
 	 */
@@ -62,6 +58,17 @@ final class SensitiveValueMasker {
 		'client_id',
 		'id',
 		'uuid',
+	];
+
+	/**
+	 * Further keys an export keeps so a source works after re-import: the
+	 * non-secret call parameters the source schema documents next to its
+	 * write-only paths (99-source-nested-auth-writeonly.json) and the token and
+	 * signature parameters beside them. Logs and traces keep masking them.
+	 *
+	 * @var array<int, string>
+	 */
+	private const EXPORT_SETTING_KEYS = [
 		'username',
 		'scope',
 		'audience',
@@ -158,10 +165,12 @@ final class SensitiveValueMasker {
 	 *
 	 * @param SensitiveFieldRegistry $registry The registry that redacts by name.
 	 * @param string $parentKey The sensitive key the masked value sits under.
+	 * @param bool $forExport Whether the result is a configuration export, not a log or trace.
 	 */
 	public function __construct(
 		private readonly SensitiveFieldRegistry $registry,
-		private readonly string $parentKey = '',
+		private readonly string $parentKey,
+		private readonly bool $forExport,
 	) {
 	}//end __construct()
 
@@ -226,7 +235,7 @@ final class SensitiveValueMasker {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function isPublicParameter(string $key, mixed $value): bool {
-		if (is_scalar($value) === false) {
+		if ($this->forExport === false || is_scalar($value) === false) {
 			return false;
 		}
 
@@ -270,7 +279,7 @@ final class SensitiveValueMasker {
 			return false;
 		}
 
-		if ($key === self::CREDENTIAL_POINTER_KEY || in_array($key, self::NON_SECRET_SETTING_KEYS, true) === true) {
+		if ($key === self::CREDENTIAL_POINTER_KEY || in_array($key, self::EXPORT_SETTING_KEYS, true) === true) {
 			return true;
 		}
 
@@ -314,7 +323,8 @@ final class SensitiveValueMasker {
 			return is_array($value);
 		}
 
-		if (in_array($key, self::NON_SECRET_SETTING_KEYS, true) === false) {
+		$exportKept = ($this->forExport === true && in_array($key, self::EXPORT_SETTING_KEYS, true) === true);
+		if ($exportKept === false && in_array($key, self::NON_SECRET_SETTING_KEYS, true) === false) {
 			return false;
 		}
 

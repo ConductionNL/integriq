@@ -172,7 +172,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 		$redacted = $this->redactArray(data: $headers);
 		foreach ($redacted as $name => $value) {
 			if (is_string($name) === true && $this->isSensitiveHeaderName(name: $name) === true) {
-				$redacted[$name] = (new SensitiveValueMasker(registry: $this))->mask(value: $value, extraExactNames: null);
+				$redacted[$name] = (new SensitiveValueMasker(registry: $this, parentKey: $name, forExport: false))->mask(value: $value, extraExactNames: null);
 			}
 		}
 
@@ -236,8 +236,21 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function redactArray(array $data, ?array $extraExactNames = null): array {
+		return $this->redactEntries(data: $data, options: ['extraExactNames' => $extraExactNames, 'forExport' => false]);
+	}//end redactArray()
+
+	/**
+	 * Redact every entry of a map, at any depth.
+	 *
+	 * @param array<string|int, mixed>                                     $data    The data to redact.
+	 * @param array{extraExactNames: array<int, string>|null, forExport: bool} $options Extra names, and whether an export reads the result.
+	 *
+	 * @return array<string|int, mixed> The redacted copy.
+	 */
+	private function redactEntries(array $data, array $options): array {
+		$extraExactNames = $options['extraExactNames'];
 		foreach ($data as $key => $value) {
-			$masker = new SensitiveValueMasker(registry: $this, parentKey: (string)$key);
+			$masker = new SensitiveValueMasker(registry: $this, parentKey: (string)$key, forExport: $options['forExport']);
 			if ($masker->isPublicParameter(key: (string)$key, value: $value) === true) {
 				continue;
 			}
@@ -248,12 +261,12 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 			}
 
 			if (is_array($value) === true) {
-				$data[$key] = $this->redactArray(data: $value, extraExactNames: $extraExactNames);
+				$data[$key] = $this->redactEntries(data: $value, options: $options);
 			}
 		}
 
 		return $data;
-	}//end redactArray()
+	}//end redactEntries()
 
 	/**
 	 * Redacts a stored configuration by name and by structure, for export.
@@ -271,7 +284,10 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 */
 	public function redactConfiguration(array $data): array {
 		// The structure is read first, while header pairs still carry their header names.
-		return $this->redactArray(data: (new StructuredSecretRedactor(registry: $this))->redact(data: $data));
+		return $this->redactEntries(
+			data: (new StructuredSecretRedactor(registry: $this))->redact(data: $data),
+			options: ['extraExactNames' => null, 'forExport' => true]
+		);
 	}//end redactConfiguration()
 
 	/**

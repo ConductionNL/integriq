@@ -204,6 +204,27 @@ class SensitiveValueMaskerFollowUpTest extends TestCase {
 	}//end testStrategyStringsStayReadableOnlyAsABareWord()
 
 	/**
+	 * Logs and traces read redactArray(): the export-only parameters stay masked there.
+	 *
+	 * @return void
+	 */
+	public function testLogsAndTracesKeepMaskingExportParameters(): void {
+		$out = (new SensitiveFieldRegistry())->redactArray(
+			[
+				'username' => 'alice',
+				'keyId' => 'k',
+				'authentication' => 'body',
+				'auth' => ['username' => 'bob', 'scope' => 'read', 'type' => 'basic'],
+			]
+		);
+
+		$this->assertSame(
+			['username' => self::P, 'keyId' => self::P, 'authentication' => self::P, 'auth' => ['username' => self::P, 'scope' => self::P, 'type' => 'basic']],
+			$out
+		);
+	}//end testLogsAndTracesKeepMaskingExportParameters()
+
+	/**
 	 * Every write-only leaf of the source schema is masked under authentication and listed as readable nowhere.
 	 *
 	 * @return void
@@ -214,7 +235,7 @@ class SensitiveValueMaskerFollowUpTest extends TestCase {
 		$this->assertContains('mtls', $leaves);
 		$this->assertContains('encryptedToken', $leaves);
 
-		foreach (['NON_SECRET_SETTING_KEYS', 'PUBLIC_PARAMETER_KEYS', 'STRATEGY_KEYS'] as $list) {
+		foreach (['NON_SECRET_SETTING_KEYS', 'EXPORT_SETTING_KEYS', 'PUBLIC_PARAMETER_KEYS', 'STRATEGY_KEYS'] as $list) {
 			$readable = (new \ReflectionClassConstant(SensitiveValueMasker::class, $list))->getValue();
 			$this->assertSame([], array_values(array_intersect($leaves, $readable)), $list);
 		}
