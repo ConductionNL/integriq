@@ -1,0 +1,1617 @@
+{
+	"action/undefined/none/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/none/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/none/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/broker/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/broker/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/broker/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/mode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/mode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/mode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/badMode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/badMode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/badMode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/blank/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/blank/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/blank/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/undefined/other/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/undefined/other/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/undefined/other/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/null/none/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/none/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/none/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/broker/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/broker/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/broker/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/mode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/mode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/mode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/badMode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/badMode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/badMode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/blank/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/blank/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/blank/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/null/other/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/null/other/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/null/other/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/string/none/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/none/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/none/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/broker/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/broker/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/broker/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/mode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/mode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/mode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/badMode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/badMode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/badMode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/blank/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/blank/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/blank/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/string/other/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/string/other/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/string/other/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/empty/none/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/none/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/none/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/broker/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/broker/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/broker/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/mode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/mode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/mode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/badMode/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/badMode/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/badMode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/blank/undefined": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/blank/empty": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/blank/rabbit": {
+		"result": {
+			"kind": "broker",
+			"contentMode": "structured"
+		}
+	},
+	"action/empty/other/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/empty/other/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/empty/other/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/full/none/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/none/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/none/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "binary"
+		}
+	},
+	"action/full/broker/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/broker/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/broker/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "binary"
+		}
+	},
+	"action/full/mode/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/mode/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/mode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "binary"
+		}
+	},
+	"action/full/badMode/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/badMode/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/badMode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/blank/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/blank/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/full/blank/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "binary"
+		}
+	},
+	"action/full/other/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"topic": "t",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/full/other/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"topic": "t",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/full/other/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"topic": "t",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/kafka/none/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/none/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/none/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/broker/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/broker/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/broker/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"topic": "t",
+			"routingKey": "rk",
+			"contentMode": "binary"
+		}
+	},
+	"action/kafka/mode/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/mode/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/mode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/badMode/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/badMode/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/badMode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"topic": "t",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/blank/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/blank/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/blank/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "kafka",
+			"contentMode": "structured"
+		}
+	},
+	"action/kafka/other/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"topic": "t",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/kafka/other/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"topic": "t",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/kafka/other/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"topic": "t",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/log/none/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/none/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/none/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/broker/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/broker/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/broker/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "rabbitmq",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/mode/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/mode/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/mode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/badMode/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/badMode/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/badMode/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/blank/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/blank/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/blank/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "log",
+			"contentMode": "structured"
+		}
+	},
+	"action/log/other/undefined": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/log/other/empty": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"action/log/other/rabbit": {
+		"result": {
+			"kind": "broker",
+			"brokerId": "unknown",
+			"contentMode": "structured",
+			"orderingKey": "o"
+		}
+	},
+	"settings/undefined/none/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/undefined/none/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/undefined/ref/rabbitmq": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/undefined/ref/kafka": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/undefined/refEmpty/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/undefined/refEmpty/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/undefined/user/rabbitmq": {
+		"result": {
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			}
+		}
+	},
+	"settings/undefined/user/kafka": {
+		"result": {
+			"broker": {
+				"username": "admin"
+			}
+		}
+	},
+	"settings/undefined/password/rabbitmq": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/undefined/password/kafka": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/null/none/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/null/none/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/null/ref/rabbitmq": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/null/ref/kafka": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/null/refEmpty/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/null/refEmpty/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/null/user/rabbitmq": {
+		"result": {
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			}
+		}
+	},
+	"settings/null/user/kafka": {
+		"result": {
+			"broker": {
+				"username": "admin"
+			}
+		}
+	},
+	"settings/null/password/rabbitmq": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/null/password/kafka": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/string/none/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/string/none/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/string/ref/rabbitmq": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/string/ref/kafka": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/string/refEmpty/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/string/refEmpty/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/string/user/rabbitmq": {
+		"result": {
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			}
+		}
+	},
+	"settings/string/user/kafka": {
+		"result": {
+			"broker": {
+				"username": "admin"
+			}
+		}
+	},
+	"settings/string/password/rabbitmq": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/string/password/kafka": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/empty/none/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/empty/none/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/empty/ref/rabbitmq": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/empty/ref/kafka": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/empty/refEmpty/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/empty/refEmpty/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/empty/user/rabbitmq": {
+		"result": {
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			}
+		}
+	},
+	"settings/empty/user/kafka": {
+		"result": {
+			"broker": {
+				"username": "admin"
+			}
+		}
+	},
+	"settings/empty/password/rabbitmq": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/empty/password/kafka": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/noBroker/none/rabbitmq": {
+		"result": {
+			"other": 1,
+			"broker": {}
+		}
+	},
+	"settings/noBroker/none/kafka": {
+		"result": {
+			"other": 1,
+			"broker": {}
+		}
+	},
+	"settings/noBroker/ref/rabbitmq": {
+		"result": {
+			"other": 1,
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/noBroker/ref/kafka": {
+		"result": {
+			"other": 1,
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/noBroker/refEmpty/rabbitmq": {
+		"result": {
+			"other": 1,
+			"broker": {}
+		}
+	},
+	"settings/noBroker/refEmpty/kafka": {
+		"result": {
+			"other": 1,
+			"broker": {}
+		}
+	},
+	"settings/noBroker/user/rabbitmq": {
+		"result": {
+			"other": 1,
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			}
+		}
+	},
+	"settings/noBroker/user/kafka": {
+		"result": {
+			"other": 1,
+			"broker": {
+				"username": "admin"
+			}
+		}
+	},
+	"settings/noBroker/password/rabbitmq": {
+		"result": {
+			"other": 1,
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/noBroker/password/kafka": {
+		"result": {
+			"other": 1,
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/brokerString/none/rabbitmq": {
+		"result": {
+			"broker": {},
+			"other": 1
+		}
+	},
+	"settings/brokerString/none/kafka": {
+		"result": {
+			"broker": {},
+			"other": 1
+		}
+	},
+	"settings/brokerString/ref/rabbitmq": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			},
+			"other": 1
+		}
+	},
+	"settings/brokerString/ref/kafka": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			},
+			"other": 1
+		}
+	},
+	"settings/brokerString/refEmpty/rabbitmq": {
+		"result": {
+			"broker": {},
+			"other": 1
+		}
+	},
+	"settings/brokerString/refEmpty/kafka": {
+		"result": {
+			"broker": {},
+			"other": 1
+		}
+	},
+	"settings/brokerString/user/rabbitmq": {
+		"result": {
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			},
+			"other": 1
+		}
+	},
+	"settings/brokerString/user/kafka": {
+		"result": {
+			"broker": {
+				"username": "admin"
+			},
+			"other": 1
+		}
+	},
+	"settings/brokerString/password/rabbitmq": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			},
+			"other": 1
+		}
+	},
+	"settings/brokerString/password/kafka": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			},
+			"other": 1
+		}
+	},
+	"settings/full/none/rabbitmq": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"vhost": "/v",
+				"username": "u",
+				"credentialRef": {
+					"credentialId": "c-1"
+				}
+			}
+		}
+	},
+	"settings/full/none/kafka": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"username": "u",
+				"credentialRef": {
+					"credentialId": "c-1"
+				}
+			}
+		}
+	},
+	"settings/full/ref/rabbitmq": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"vhost": "/v",
+				"username": "u",
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/full/ref/kafka": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"username": "u",
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/full/refEmpty/rabbitmq": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"vhost": "/v",
+				"username": "u"
+			}
+		}
+	},
+	"settings/full/refEmpty/kafka": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"username": "u"
+			}
+		}
+	},
+	"settings/full/user/rabbitmq": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"vhost": "v2",
+				"username": "admin",
+				"credentialRef": {
+					"credentialId": "c-1"
+				}
+			}
+		}
+	},
+	"settings/full/user/kafka": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"username": "admin",
+				"credentialRef": {
+					"credentialId": "c-1"
+				}
+			}
+		}
+	},
+	"settings/full/password/rabbitmq": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"vhost": "/v",
+				"username": "u",
+				"credentialRef": {
+					"credentialId": "c-1"
+				},
+				"password": "secret"
+			}
+		}
+	},
+	"settings/full/password/kafka": {
+		"result": {
+			"other": 2,
+			"broker": {
+				"baseUrl": "https://mq.example",
+				"username": "u",
+				"credentialRef": {
+					"credentialId": "c-1"
+				},
+				"password": "secret"
+			}
+		}
+	},
+	"settings/refWithoutId/none/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refWithoutId/none/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refWithoutId/ref/rabbitmq": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/refWithoutId/ref/kafka": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/refWithoutId/refEmpty/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refWithoutId/refEmpty/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refWithoutId/user/rabbitmq": {
+		"result": {
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			}
+		}
+	},
+	"settings/refWithoutId/user/kafka": {
+		"result": {
+			"broker": {
+				"username": "admin"
+			}
+		}
+	},
+	"settings/refWithoutId/password/rabbitmq": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/refWithoutId/password/kafka": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/refNull/none/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refNull/none/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refNull/ref/rabbitmq": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/refNull/ref/kafka": {
+		"result": {
+			"broker": {
+				"credentialRef": {
+					"credentialId": "c-2"
+				}
+			}
+		}
+	},
+	"settings/refNull/refEmpty/rabbitmq": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refNull/refEmpty/kafka": {
+		"result": {
+			"broker": {}
+		}
+	},
+	"settings/refNull/user/rabbitmq": {
+		"result": {
+			"broker": {
+				"vhost": "v2",
+				"username": "admin"
+			}
+		}
+	},
+	"settings/refNull/user/kafka": {
+		"result": {
+			"broker": {
+				"username": "admin"
+			}
+		}
+	},
+	"settings/refNull/password/rabbitmq": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"settings/refNull/password/kafka": {
+		"result": {
+			"broker": {
+				"password": "secret"
+			}
+		}
+	},
+	"read/undefined": {
+		"result": {}
+	},
+	"read/empty": {
+		"result": {}
+	},
+	"read/noSettings": {
+		"result": {}
+	},
+	"read/string": {
+		"result": {}
+	},
+	"read/broker": {
+		"result": {
+			"username": "u"
+		}
+	},
+	"secret/undefined": {
+		"result": false
+	},
+	"secret/string": {
+		"result": false
+	},
+	"secret/empty": {
+		"result": false
+	},
+	"secret/password": {
+		"result": true
+	},
+	"secret/emptyPassword": {
+		"result": false
+	},
+	"secret/token": {
+		"result": true
+	},
+	"secret/zero": {
+		"result": true
+	}
+}
