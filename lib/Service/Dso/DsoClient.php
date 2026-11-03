@@ -226,6 +226,49 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header
 	 */
 	public function send(array $sourceConfiguration, string $requestId, string $type, array $payload): string {
+		$url = $this->messageUrl(sourceConfiguration: $sourceConfiguration, type: $type);
+
+		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
+		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+
+		$headers = [
+			'Content-Type' => 'application/json',
+			'Accept' => 'application/json',
+		];
+		if ($useMtls === false) {
+			// Token mode (default) — unchanged from before this change.
+			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
+		}
+
+		$response = $this->postMessage(
+			request: [
+				'useMtls' => $useMtls,
+				'authConfig' => $authConfig,
+				'url' => $url,
+				'options' => ['headers' => $headers, 'json' => $payload, 'http_errors' => false],
+			]
+		);
+
+		$status = $response->getStatusCode();
+		$body = (string)$response->getBody();
+		if ($status < 200 || $status >= 300) {
+			throw new DsoProviderException(message: 'DSO-LV endpoint responded with HTTP ' . $status . '.');
+		}
+
+		return $this->extractRef(body: $body, requestId: $requestId, type: $type);
+	}//end send()
+
+	/**
+	 * The URL an outbound message of this type is posted to.
+	 *
+	 * @param array  $sourceConfiguration The `dso` source's `configuration` object.
+	 * @param string $type                The message kind: `status` or `besluit`.
+	 *
+	 * @return string The URL.
+	 *
+	 * @throws DsoProviderException When the base URL is missing or the type is unknown.
+	 */
+	private function messageUrl(array $sourceConfiguration, string $type): string {
 		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
 		if ($baseUrl === '') {
 			throw new DsoProviderException(
@@ -240,32 +283,25 @@ class DsoClient implements DsoConnectorProviderInterface {
 			);
 		}
 
-		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
-		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+		return $baseUrl . $path;
+	}//end messageUrl()
 
-		$headers = [
-			'Content-Type' => 'application/json',
-			'Accept' => 'application/json',
-		];
-		if ($useMtls === false) {
-			// Token mode (default) — unchanged from before this change.
-			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
-		}
-
-		$requestOptions = [
-			'headers' => $headers,
-			'json' => $payload,
-			'http_errors' => false,
-		];
-
-		$url = $baseUrl . $path;
-
+	/**
+	 * Post one outbound message, turning a transport failure into a DsoProviderException.
+	 *
+	 * @param array{useMtls: bool, authConfig: array, url: string, options: array} $request The prepared request.
+	 *
+	 * @return ResponseInterface The response, whatever its status.
+	 *
+	 * @throws DsoProviderException When the mTLS or HTTP transport fails.
+	 */
+	private function postMessage(array $request): ResponseInterface {
 		try {
-			$response = $this->dispatch(
-				useMtls: $useMtls,
-				authConfig: $authConfig,
-				url: $url,
-				requestOptions: $requestOptions
+			return $this->dispatch(
+				useMtls: $request['useMtls'],
+				authConfig: $request['authConfig'],
+				url: $request['url'],
+				requestOptions: $request['options']
 			);
 		} catch (MtlsTransportException $exception) {
 			$this->logger->warning(
@@ -286,15 +322,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 				previous: $exception
 			);
 		}//end try
-
-		$status = $response->getStatusCode();
-		$body = (string)$response->getBody();
-		if ($status < 200 || $status >= 300) {
-			throw new DsoProviderException(message: 'DSO-LV endpoint responded with HTTP ' . $status . '.');
-		}
-
-		return $this->extractRef(body: $body, requestId: $requestId, type: $type);
-	}//end send()
+	}//end postMessage()
 
 	/**
 	 * Download one bijlage from DSO-LV with the source's own authentication:
