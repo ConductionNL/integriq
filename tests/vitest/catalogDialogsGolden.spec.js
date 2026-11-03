@@ -19,6 +19,7 @@ import CatalogItemDetailDialog from '@/dialogs/CatalogItemDetailDialog.vue'
 import DsoActivityMappingDialog from '@/dialogs/DsoActivityMappingDialog.vue'
 import ExportConfigurationDialog from '@/dialogs/ExportConfigurationDialog.vue'
 import GatewayCatalogueDialog from '@/dialogs/GatewayCatalogueDialog.vue'
+import ImportPreviewDialog from '@/dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '@/dialogs/LinkSourceDialog.vue'
 import RegistryLookupDialog from '@/dialogs/RegistryLookupDialog.vue'
 
@@ -113,6 +114,7 @@ describe.each([
 	['RegistryLookupDialog', RegistryLookupDialog],
 	['DsoActivityMappingDialog', DsoActivityMappingDialog],
 	['GatewayCatalogueDialog', GatewayCatalogueDialog],
+	['ImportPreviewDialog', ImportPreviewDialog],
 ])('%s closing', (_name, component) => {
 	it('closes when NcDialog closes, not when it opens', async () => {
 		const wrapper = await openDialog(component)

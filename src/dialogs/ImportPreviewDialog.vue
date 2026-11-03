@@ -200,6 +200,7 @@ import {
 import PreviewBucket from '../components/PreviewBucket.vue'
 import { withDetail } from '../errorDetail.js'
 import { getRouter } from '../handlers/routerRef.js'
+import closableDialog from '../mixins/closableDialog.js'
 
 /** What parseChosen yields for a file that is not JSON. */
 const INVALID = Symbol('invalid')
@@ -222,6 +223,8 @@ export default {
 		NcDialog,
 		NcNoteCard,
 	},
+
+	mixins: [closableDialog],
 
 	props: {
 		open: { type: Boolean, default: false },
@@ -414,29 +417,6 @@ export default {
 				router.push({ name: 'Sources' }).catch(() => {})
 			}
 			this.close()
-		},
-
-		/**
-		 * NcDialog open-state relay.
-		 *
-		 * @param {boolean} isOpen New open state from NcDialog.
-		 * @return {void}
-		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
-		 */
-		onOpenChanged(isOpen) {
-			if (!isOpen) {
-				this.close()
-			}
-		},
-
-		/**
-		 * Ask ModalHost to close the dialog.
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
-		 */
-		close() {
-			this.$emit('close')
 		},
 	},
 }
