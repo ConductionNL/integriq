@@ -4047,73 +4047,75 @@ class EndpointService implements EndpointServiceInterface {
 		if (is_array($files) === true && isset($files[0]) === true & array_keys($files[0]) !== range(0, count($files[0]) - 1)) {
 			$result = [];
 			foreach ($files as $key => $value) {
-				// Check for tags.
-				$tags = [];
-				$fileName = null;
-				if (is_array($value) === true) {
-					$content = $value['content'];
-					if (isset($value['label']) === true && isset($config['tags']) === true
-						&& in_array(needle: $value['label'], haystack: $config['tags']) === true
-					) {
-						$tags = [$value['label']];
-					}
-
-					if (isset($value['filename']) === true) {
-						$fileName = basename($value['filename']);
-					}
-				} else {
-					$content = $value;
+				$path = $this->writeObjectFile(objectId: $objectId, file: $this->fileEntry(value: $value));
+				if ($path !== null) {
+					$result[$key] = $path;
 				}
-
-				try {
-					// Write file with OpenRegister ObjectService.
-					$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-					$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-					$file = $fileService->addFile(
-						objectEntity: $objectService->find($objectId),
-						fileName: $fileName,
-						content: base64_decode($content)
-					);
-
-					$tags = array_merge($config['tags'] ?? [], ["object:$objectId"]);
-					if ($file instanceof \OCP\Files\File === true) {
-						// $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-					}
-
-					$result[$key] = $file->getPath();
-				} catch (Exception $exception) {
-					// Swallow per-file write errors so the rule can continue with the remaining files.
-				}
-			}//end foreach
+			}
 
 			$dataDot[$config['filePath']] = $result;
-		} else {
-			$content = $files;
-			$fileName = basename($dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']]);
+			return $dataDot->jsonSerialize();
+		}
 
-			try {
-				// Write file with OpenRegister ObjectService.
-				$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-				$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-				$file = $fileService->addFile(
-					objectEntity: $objectService->find($objectId),
-					fileName: $fileName,
-					content: base64_decode($content)
-				);
-
-				$tags = array_merge($config['tags'] ?? [], ["object:$objectId"]);
-				if ($file instanceof File === true) {
-					// $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
-				}
-
-				$dataDot[$config['filePath']] = $file->getPath();
-			} catch (Exception $exception) {
-				// Swallow single-file write errors so the rule can complete.
-			}
-		}//end if
+		$fileName = basename($dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']]);
+		$path = $this->writeObjectFile(objectId: $objectId, file: ['name' => $fileName, 'content' => $files]);
+		if ($path !== null) {
+			$dataDot[$config['filePath']] = $path;
+		}
 
 		return $dataDot->jsonSerialize();
 	}//end processWriteFileRule()
+
+	/**
+	 * The name and base64 content of one entry of a write_file list: an array
+	 * with `content` and an optional `filename`, or the content itself.
+	 *
+	 * @param mixed $value The list entry.
+	 *
+	 * @return array{name: string|null, content: mixed}
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function fileEntry(mixed $value): array {
+		if (is_array($value) === false) {
+			return ['name' => null, 'content' => $value];
+		}
+
+		$fileName = null;
+		if (isset($value['filename']) === true) {
+			$fileName = basename($value['filename']);
+		}
+
+		return ['name' => $fileName, 'content' => $value['content']];
+	}//end fileEntry()
+
+	/**
+	 * Write one base64 file onto an OpenRegister object; a failed write is
+	 * swallowed so the rule continues with the other files.
+	 *
+	 * @param int|string                            $objectId The object the file belongs to.
+	 * @param array{name: string|null, content: mixed} $file     The file name and its base64 content.
+	 *
+	 * @return string|null The stored file's path, or null when the write failed.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function writeObjectFile(int|string $objectId, array $file): ?string {
+		try {
+			// Write file with OpenRegister ObjectService.
+			$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+			$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+			$stored = $fileService->addFile(
+				objectEntity: $objectService->find($objectId),
+				fileName: $file['name'],
+				content: base64_decode($file['content'])
+			);
+
+			return $stored->getPath();
+		} catch (Exception $exception) {
+			return null;
+		}
+	}//end writeObjectFile()
 
 	/**
 	 * Processes a synchronization rule.

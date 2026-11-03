@@ -3530,78 +3530,18 @@ class CallService implements CallServiceInterface {
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) 105 lines against a threshold of
-	 *   100. The body is one flat sequence reading the several rate-limit header
-	 *   dialects servers actually send (`X-RateLimit-*`, `RateLimit-*`, `Retry-After`)
-	 *   and folding them onto the source. Every branch is a header spelling, not a
-	 *   decision, so extracting them would produce private helpers that are each read
-	 *   once and hide which dialects are covered — the one thing a reader comes here
-	 *   for. Worth revisiting if a fourth dialect pushes this well past the threshold.
 	 */
 	private function sourceRateLimit(ObjectEntity $source, array $sourceData, array $headers): array {
-		$changed = false;
+		$run = ['data' => $sourceData, 'changed' => false];
+		$this->applyRateLimitReset(run: $run, headers: $headers);
+		$this->applyRateLimitCounters(run: $run, headers: $headers);
 
-		// #1012(c): clamp/validate the rate-limit response headers BEFORE
-		// persisting them. A malicious upstream that returned
-		// `X-RateLimit-Reset: 99999999999` could otherwise wedge this source
-		// into a permanent 429 (the engine's checkRateLimit guard would refuse
-		// every subsequent call until the year 5138).
-		if (isset($headers['X-RateLimit-Reset']) === true) {
-			$clampedReset = $this->clampRateLimitHeader(rawValue: $headers['X-RateLimit-Reset'], kind: 'reset');
-			if ($clampedReset !== null) {
-				$sourceData['rateLimitReset'] = $clampedReset;
-				$changed = true;
-			}
-		}
-
+		$sourceData = $run['data'];
+		$changed = $run['changed'];
 		$rateLimitReset = ($sourceData['rateLimitReset'] ?? null);
 		$rateLimitWindow = ($sourceData['rateLimitWindow'] ?? null);
 		$rateLimitLimit = ($sourceData['rateLimitLimit'] ?? null);
 		$rateLimitRemaining = ($sourceData['rateLimitRemaining'] ?? null);
-
-		// If RateLimit-Reset not in headers and source->RateLimit-Reset === null. But source->RateLimit-Window is set.
-		if (isset($headers['X-RateLimit-Reset']) === false
-			&& $rateLimitReset === null
-			&& $rateLimitWindow !== null
-		) {
-			// Set new RateLimit-Reset time on the source.
-			$sourceData['rateLimitReset'] = (time() + $rateLimitWindow);
-			$rateLimitReset = $sourceData['rateLimitReset'];
-			$changed = true;
-		}
-
-		// Check if RateLimit-Limit is present in response headers. If so, save it in the source.
-		if (isset($headers['X-RateLimit-Limit']) === true) {
-			$clampedLimit = $this->clampRateLimitHeader(rawValue: $headers['X-RateLimit-Limit'], kind: 'limit');
-			if ($clampedLimit !== null) {
-				$sourceData['rateLimitLimit'] = $clampedLimit;
-				$rateLimitLimit = $clampedLimit;
-				$changed = true;
-			}
-		}
-
-		// Check if RateLimit-Remaining is present in response headers. If so, save it in the source.
-		if (isset($headers['X-RateLimit-Remaining']) === true) {
-			$clampedRemaining = $this->clampRateLimitHeader(rawValue: $headers['X-RateLimit-Remaining'], kind: 'remaining');
-			if ($clampedRemaining !== null) {
-				$sourceData['rateLimitRemaining'] = $clampedRemaining;
-				$rateLimitRemaining = $clampedRemaining;
-				$changed = true;
-			}
-		}
-
-		// If RateLimit-Remaining not in headers and source->RateLimit-Limit is set, update source->RateLimit-Remaining.
-		if (isset($headers['X-RateLimit-Remaining']) === false && $rateLimitLimit !== null) {
-			if ($rateLimitRemaining === null) {
-				// Re-set the RateLimit-Remaining on the source.
-				$rateLimitRemaining = $rateLimitLimit;
-			}
-
-			$sourceData['rateLimitRemaining'] = ($rateLimitRemaining - 1);
-			$rateLimitRemaining = $sourceData['rateLimitRemaining'];
-			$changed = true;
-		}
 
 		if ($changed === true) {
 			// System context (ocon#147) — see checkAndResetRateLimit(): the engine writes
@@ -3644,6 +3584,72 @@ class CallService implements CallServiceInterface {
 
 		return $headers;
 	}//end sourceRateLimit()
+
+	/**
+	 * Set a source's rate-limit reset: from a valid `X-RateLimit-Reset` header,
+	 * or, without that header, from the window when no reset is stored yet.
+	 *
+	 * #1012(c): the header is clamped before it is stored, so a malicious upstream
+	 * answering `X-RateLimit-Reset: 99999999999` cannot wedge the source into a
+	 * permanent 429.
+	 *
+	 * @param array{data: array, changed: bool} $run     The source data and whether it changed; updated in place.
+	 * @param array                             $headers The response headers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function applyRateLimitReset(array &$run, array $headers): void {
+		if (isset($headers['X-RateLimit-Reset']) === true) {
+			$clampedReset = $this->clampRateLimitHeader(rawValue: $headers['X-RateLimit-Reset'], kind: 'reset');
+			if ($clampedReset !== null) {
+				$run['data']['rateLimitReset'] = $clampedReset;
+				$run['changed'] = true;
+			}
+
+			return;
+		}
+
+		$rateLimitWindow = ($run['data']['rateLimitWindow'] ?? null);
+		if (($run['data']['rateLimitReset'] ?? null) === null && $rateLimitWindow !== null) {
+			$run['data']['rateLimitReset'] = (time() + $rateLimitWindow);
+			$run['changed'] = true;
+		}
+	}//end applyRateLimitReset()
+
+	/**
+	 * Set a source's rate-limit limit and remaining count from valid headers, and
+	 * count this call down from the stored limit when the upstream sends no remaining count.
+	 *
+	 * @param array{data: array, changed: bool} $run     The source data and whether it changed; updated in place.
+	 * @param array                             $headers The response headers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function applyRateLimitCounters(array &$run, array $headers): void {
+		foreach (['X-RateLimit-Limit' => 'limit', 'X-RateLimit-Remaining' => 'remaining'] as $header => $kind) {
+			if (isset($headers[$header]) === false) {
+				continue;
+			}
+
+			$clamped = $this->clampRateLimitHeader(rawValue: $headers[$header], kind: $kind);
+			if ($clamped !== null) {
+				$run['data']['rateLimit' . ucfirst($kind)] = $clamped;
+				$run['changed'] = true;
+			}
+		}
+
+		$rateLimitLimit = ($run['data']['rateLimitLimit'] ?? null);
+		if (isset($headers['X-RateLimit-Remaining']) === true || $rateLimitLimit === null) {
+			return;
+		}
+
+		$run['data']['rateLimitRemaining'] = (($run['data']['rateLimitRemaining'] ?? $rateLimitLimit) - 1);
+		$run['changed'] = true;
+	}//end applyRateLimitCounters()
 
 	/**
 	 * Uses Adbar Dot to place the values of keys with a dot in it in the $config array
