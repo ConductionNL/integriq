@@ -1,0 +1,341 @@
+{
+	"normaliseQuestion undefined": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": ""
+	},
+	"isArrayValued undefined": false,
+	"normaliseQuestion null": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": ""
+	},
+	"isArrayValued null": false,
+	"normaliseQuestion zero": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": ""
+	},
+	"isArrayValued zero": false,
+	"normaliseQuestion empty": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": ""
+	},
+	"isArrayValued empty": false,
+	"normaliseQuestion full": {
+		"id": 3,
+		"text": "Name",
+		"name": "name",
+		"type": "short"
+	},
+	"isArrayValued full": false,
+	"normaliseQuestion nullFields": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": ""
+	},
+	"isArrayValued nullFields": false,
+	"normaliseQuestion numbers": {
+		"id": 4,
+		"text": "5",
+		"name": "6",
+		"type": "7"
+	},
+	"isArrayValued numbers": false,
+	"normaliseQuestion falsy": {
+		"id": 0,
+		"text": "",
+		"name": "false",
+		"type": "0"
+	},
+	"isArrayValued falsy": false,
+	"normaliseQuestion idText": {
+		"id": "__NaN__",
+		"text": "",
+		"name": "",
+		"type": ""
+	},
+	"isArrayValued idText": false,
+	"normaliseQuestion multiple": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": "multiple"
+	},
+	"isArrayValued multiple": true,
+	"normaliseQuestion multipleUnique": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": "multiple_unique"
+	},
+	"isArrayValued multipleUnique": true,
+	"normaliseQuestion upperMultiple": {
+		"id": 0,
+		"text": "",
+		"name": "",
+		"type": "MULTIPLE"
+	},
+	"isArrayValued upperMultiple": false,
+	"ambiguous undefined": [],
+	"descriptors undefined": [],
+	"results undefined": [],
+	"ambiguous null": [],
+	"descriptors null": [],
+	"results null": [],
+	"ambiguous string": [],
+	"descriptors string": [],
+	"results string": [],
+	"ambiguous set": [],
+	"descriptors set": [],
+	"results set": [],
+	"ambiguous empty": [],
+	"descriptors empty": [],
+	"results empty": [],
+	"ambiguous unique": [],
+	"descriptors unique": [
+		{
+			"id": 0,
+			"text": "A",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "B",
+			"name": "",
+			"type": ""
+		}
+	],
+	"results unique": [
+		{
+			"text": "A"
+		},
+		{
+			"text": "B"
+		}
+	],
+	"ambiguous shared": ["A"],
+	"descriptors shared": [
+		{
+			"id": 0,
+			"text": "A",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "B",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "A",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "A",
+			"name": "",
+			"type": ""
+		}
+	],
+	"results shared": [
+		{
+			"text": "A"
+		},
+		{
+			"text": "B"
+		},
+		{
+			"text": "A"
+		},
+		{
+			"text": "A"
+		}
+	],
+	"ambiguous blanks": [],
+	"descriptors blanks": [
+		{
+			"id": 0,
+			"text": "",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "",
+			"name": "",
+			"type": ""
+		}
+	],
+	"results blanks": [
+		{
+			"text": ""
+		},
+		{
+			"text": ""
+		},
+		{},
+		null
+	],
+	"ambiguous numbers": ["1"],
+	"descriptors numbers": [
+		{
+			"id": 0,
+			"text": "1",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "1",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "2",
+			"name": "",
+			"type": ""
+		}
+	],
+	"results numbers": [
+		{
+			"text": 1
+		},
+		{
+			"text": "1"
+		},
+		{
+			"text": 2
+		}
+	],
+	"ambiguous spaces": [" "],
+	"descriptors spaces": [
+		{
+			"id": 0,
+			"text": "A ",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "A",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": " ",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": " ",
+			"name": "",
+			"type": ""
+		}
+	],
+	"results spaces": [
+		{
+			"text": "A "
+		},
+		{
+			"text": "A"
+		},
+		{
+			"text": " "
+		},
+		{
+			"text": " "
+		}
+	],
+	"ambiguous two": ["X", "Y"],
+	"descriptors two": [
+		{
+			"id": 0,
+			"text": "X",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "Y",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "Y",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "X",
+			"name": "",
+			"type": ""
+		},
+		{
+			"id": 0,
+			"text": "Z",
+			"name": "",
+			"type": ""
+		}
+	],
+	"results two": [
+		{
+			"text": "X"
+		},
+		{
+			"text": "Y"
+		},
+		{
+			"text": "Y"
+		},
+		{
+			"text": "X"
+		},
+		{
+			"text": "Z"
+		}
+	],
+	"mapFormOptions": [
+		{
+			"id": 0,
+			"label": "0"
+		},
+		{
+			"id": 4,
+			"label": "Survey"
+		},
+		{
+			"id": 5,
+			"label": "5"
+		}
+	],
+	"mapFormOptions object": [],
+	"extractResults results": [1]
+}

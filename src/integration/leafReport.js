@@ -8,6 +8,17 @@
 // apart from the mixin so the node test runner covers them.
 
 /**
+ * A value, or the fallback when it is undefined.
+ *
+ * @param {unknown} value The value.
+ * @param {unknown} fallback The fallback.
+ * @return {unknown} The value or the fallback.
+ */
+function orDefault(value, fallback) {
+	return value === undefined ? fallback : value
+}
+
+/**
  * The header for a host that draws the leaf's card: the count beside the
  * title, a note, the title-row actions and the empty state. The count and
  * the empty state wait until the read has settled and stay away after a
@@ -23,21 +34,17 @@
  *
  * @return {{actions: Array, note: string, count?: number, empty?: {name: string}}} The header.
  */
-export function leafHeader({
-	loading,
-	error,
-	count,
-	emptyLabel,
-	note = '',
-	actions = [],
-}) {
-	const header = { actions, note }
-	if (loading === true || error !== '') {
+export function leafHeader(state) {
+	const header = {
+		actions: orDefault(state.actions, []),
+		note: orDefault(state.note, ''),
+	}
+	if (state.loading === true || state.error !== '') {
 		return header
 	}
-	header.count = count
-	if (count === 0) {
-		header.empty = { name: emptyLabel }
+	header.count = state.count
+	if (state.count === 0) {
+		header.empty = { name: state.emptyLabel }
 	}
 	return header
 }
@@ -60,21 +67,16 @@ export function leafHeader({
  *
  * @return {{count: number, noun: string, rows: Array, actions: Array, unavailable?: boolean}|null} The summary, or null while loading.
  */
-export function leafSummary({
-	loading,
-	error,
-	count,
-	noun,
-	rows = [],
-	actions = [],
-}) {
-	if (loading === true) {
+export function leafSummary(state) {
+	if (state.loading === true) {
 		return null
 	}
-	if (error !== '') {
+	if (state.error !== '') {
 		return { count: 0, noun: '', rows: [], actions: [], unavailable: true }
 	}
-	return { count, noun, rows: count > 0 ? rows : [], actions }
+	const { count, noun } = state
+	const rows = count > 0 ? orDefault(state.rows, []) : []
+	return { count, noun, rows, actions: orDefault(state.actions, []) }
 }
 
 /**

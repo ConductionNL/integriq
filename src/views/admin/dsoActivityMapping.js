@@ -37,6 +37,63 @@ export function emptyCaseType() {
 }
 
 /**
+ * The value when it is a list, otherwise an empty list.
+ *
+ * @param {unknown} value The value.
+ * @return {Array} The list.
+ */
+function listOf(value) {
+	return Array.isArray(value) ? value : []
+}
+
+/**
+ * A samenloop strategy: `gecombineerd` when stored so, `deelzaken` otherwise.
+ *
+ * @param {unknown} value The stored strategy.
+ * @return {string} The strategy.
+ */
+function strategyOf(value) {
+	return value === 'gecombineerd' ? 'gecombineerd' : 'deelzaken'
+}
+
+/**
+ * The id of a stored row, from whichever field carries it.
+ *
+ * @param {object} row The stored row.
+ * @return {string|null} The id.
+ */
+function rowId(row) {
+	return row.id || row['@self']?.id || row.uuid || null
+}
+
+/**
+ * A draft line from a stored case type.
+ *
+ * @param {object} caseType The stored case type.
+ * @return {{reference: string, title: string, department: string}} The line.
+ */
+function caseTypeDraft(caseType) {
+	return {
+		reference: text(caseType?.reference),
+		title: text(caseType?.title),
+		department: text(caseType?.department),
+	}
+}
+
+/**
+ * A draft samenloop rule from a stored one.
+ *
+ * @param {object} rule The stored rule.
+ * @return {{withImowId: string, strategy: string}} The rule.
+ */
+function ruleDraft(rule) {
+	return {
+		withImowId: text(rule?.withImowId),
+		strategy: strategyOf(rule?.strategy),
+	}
+}
+
+/**
  * A draft from a stored row, or an empty draft.
  *
  * @param {object} [row] The stored row.
@@ -44,29 +101,15 @@ export function emptyCaseType() {
  * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-4.1
  */
 export function draftFromRow(row = {}) {
-	const caseTypes = (Array.isArray(row.caseTypes) ? row.caseTypes : []).map(
-		(caseType) => ({
-			reference: text(caseType?.reference),
-			title: text(caseType?.title),
-			department: text(caseType?.department),
-		}),
-	)
+	const caseTypes = listOf(row.caseTypes).map(caseTypeDraft)
 	return {
-		id: row.id || row['@self']?.id || row.uuid || null,
+		id: rowId(row),
 		imowId: text(row.imowId),
 		activityId: text(row.activityId),
 		activityName: text(row.activityName),
 		caseTypes: caseTypes.length > 0 ? caseTypes : [emptyCaseType()],
-		samenloopStrategy:
-			row.samenloopStrategy === 'gecombineerd' ? 'gecombineerd' : 'deelzaken',
-		samenloopRules: (Array.isArray(row.samenloopRules)
-			? row.samenloopRules
-			: []
-		).map((rule) => ({
-			withImowId: text(rule?.withImowId),
-			strategy:
-				rule?.strategy === 'gecombineerd' ? 'gecombineerd' : 'deelzaken',
-		})),
+		samenloopStrategy: strategyOf(row.samenloopStrategy),
+		samenloopRules: listOf(row.samenloopRules).map(ruleDraft),
 		isActive: row.isActive !== false,
 		note: text(row.note),
 	}
@@ -88,6 +131,75 @@ export function draftFromUnmapped(activity) {
 }
 
 /**
+ * The checks on the ids of a draft, as [failed, problem] pairs.
+ *
+ * @param {object} draft The draft.
+ * @return {Array<[boolean, string]>} The checks.
+ */
+function idChecks(draft) {
+	const imowId = text(draft.imowId)
+	const missing = imowId === '' && text(draft.activityId) === ''
+	const malformed = imowId !== '' && !IMOW_PATTERN.test(imowId)
+	return [
+		[missing, t('integriq', 'Fill in the imow-id or the activity id.')],
+		[
+			malformed,
+			t(
+				'integriq',
+				'The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen.',
+			),
+		],
+	]
+}
+
+/**
+ * The check that a draft has an activity name, as a [failed, problem] pair.
+ *
+ * @param {object} draft The draft.
+ * @return {[boolean, string]} The check.
+ */
+function nameCheck(draft) {
+	return [
+		text(draft.activityName) === '',
+		t('integriq', 'Fill in the activity name.'),
+	]
+}
+
+/**
+ * The check that a case type line of a draft has a reference, as a
+ * [failed, problem] pair.
+ *
+ * @param {object} draft The draft.
+ * @return {[boolean, string]} The check.
+ */
+function referenceCheck(draft) {
+	const lacking = !draft.caseTypes.some(
+		(caseType) => text(caseType.reference) !== '',
+	)
+	return [lacking, t('integriq', 'Add at least one case type with a reference.')]
+}
+
+/**
+ * The check that every samenloop rule of a draft has a valid imow-id, as a
+ * [failed, problem] pair.
+ *
+ * @param {object} draft The draft.
+ * @return {[boolean, string]} The check.
+ */
+function ruleCheck(draft) {
+	const bad = draft.samenloopRules.some(
+		(rule) => !IMOW_PATTERN.test(text(rule.withImowId)),
+	)
+	return [
+		bad,
+		t(
+			'integriq',
+			'Every samenloop rule needs the imow-id of the other activity.',
+		),
+	]
+}
+
+/**
  * What is wrong with a draft, as sentences for the administrator.
  *
  * @param {object} draft The draft.
@@ -95,36 +207,11 @@ export function draftFromUnmapped(activity) {
  * @spec openspec/changes/dso-activity-mapping-table/tasks.md#task-2.1
  */
 export function draftProblems(draft) {
-	const imowId = text(draft.imowId)
 	const checks = [
-		[
-			imowId === '' && text(draft.activityId) === '',
-			t('integriq', 'Fill in the imow-id or the activity id.'),
-		],
-		[
-			imowId !== '' && !IMOW_PATTERN.test(imowId),
-			t(
-				'integriq',
-				'The imow-id does not have the STAM form, for example nl.imow-gm0000.activiteit.Bouwen.',
-			),
-		],
-		[
-			text(draft.activityName) === '',
-			t('integriq', 'Fill in the activity name.'),
-		],
-		[
-			!draft.caseTypes.some((caseType) => text(caseType.reference) !== ''),
-			t('integriq', 'Add at least one case type with a reference.'),
-		],
-		[
-			draft.samenloopRules.some(
-				(rule) => !IMOW_PATTERN.test(text(rule.withImowId)),
-			),
-			t(
-				'integriq',
-				'Every samenloop rule needs the imow-id of the other activity.',
-			),
-		],
+		...idChecks(draft),
+		nameCheck(draft),
+		referenceCheck(draft),
+		ruleCheck(draft),
 	]
 	return checks.filter(([failed]) => failed).map(([, problem]) => problem)
 }

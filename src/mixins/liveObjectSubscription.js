@@ -29,6 +29,24 @@
  */
 import { useObjectStore } from '../store/objectStore.js'
 
+/**
+ * The store, type, uuid and key of a subscription, or null when the store
+ * cannot subscribe or the object is not identified.
+ *
+ * @param {string} type Registered object type slug
+ * @param {string} uuid The object identifier used by fetchObject
+ * @return {object|null} The scope, with epoch 0
+ *
+ * @spec openspec/specs/realtime-updates/spec.md
+ */
+function liveScope(type, uuid) {
+	const store = useObjectStore()
+	if (typeof store.subscribe !== 'function' || !type || !uuid) {
+		return null
+	}
+	return { store, type, uuid, key: `${type}::${uuid}`, epoch: 0 }
+}
+
 export default {
 	data() {
 		return {
@@ -64,12 +82,8 @@ export default {
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 */
 		async syncLiveSubscription(type, uuid) {
-			const store = useObjectStore()
-			if (typeof store.subscribe !== 'function' || !type || !uuid) {
-				return
-			}
-			const scope = { store, type, uuid, key: `${type}::${uuid}`, epoch: 0 }
-			if (this.isLiveScopeCurrent(scope.key)) {
+			const scope = liveScope(type, uuid)
+			if (scope === null || this.isLiveScopeCurrent(scope.key)) {
 				return
 			}
 			this.releaseLiveSubscription()
@@ -77,7 +91,7 @@ export default {
 				scope.epoch = this.liveEpoch
 				this.livePendingKey = scope.key
 				this.liveKey = scope.key
-				this.adoptLiveHandle(scope, await store.subscribe(type, uuid))
+				this.adoptLiveHandle(scope, await scope.store.subscribe(type, uuid))
 			} catch (e) {
 				this.dropFailedLiveSubscription(scope.key, e)
 			}
