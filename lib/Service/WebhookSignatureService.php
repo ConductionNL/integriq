@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -126,7 +127,9 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 		$secret = (string)($config['secret'] ?? '');
 		$tolerance = (int)($config['toleranceSeconds'] ?? self::DEFAULT_TOLERANCE_SECONDS);
 
-		if ($secret === '' || $headerValue === '') {
+		// A secret equal to the export placeholder is a public string: a
+		// signature over it proves nothing, so it never verifies.
+		if ($secret === '' || $secret === SensitiveFieldRegistry::PLACEHOLDER || $headerValue === '') {
 			return false;
 		}
 

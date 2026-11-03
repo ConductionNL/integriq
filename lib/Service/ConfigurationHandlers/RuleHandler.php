@@ -82,14 +82,12 @@ class RuleHandler implements ConfigurationHandlerInterface {
 				mappings: $mappings,
 				mappingIds: $mappingIds
 			);
-
-			// Redact secret-shaped values from the (now slug-translated)
-			// nested configuration array (secret-hygiene). This is an
-			// INDEPENDENT pass from convertIdsToSlugs() above — id/slug
-			// reference keys (e.g. `sourceId`) never match the sensitive-name
-			// pattern, so the two passes never overlap or interfere.
-			$ruleArray['configuration'] = $this->sensitiveFieldRegistry->redactConfiguration(data: $ruleArray['configuration']);
 		}
+
+		// Redact every field of the (now slug-translated) rule, not one block:
+		// `action` and `conditions` can hold secrets too. id/slug reference keys
+		// (e.g. `sourceId`) never match the sensitive-name pattern.
+		$ruleArray = $this->sensitiveFieldRegistry->redactConfiguration(data: $ruleArray);
 
 		return $ruleArray;
 	}//end export()
@@ -153,6 +151,8 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
+		$data = $this->sensitiveFieldRegistry->withoutRedactedValues(data: $data);
+
 		// Convert slugs back to IDs.
 		if (isset($data['source_id']) === true
 			&& isset($mappings['source']['slugToId'][$data['source_id']]) === true

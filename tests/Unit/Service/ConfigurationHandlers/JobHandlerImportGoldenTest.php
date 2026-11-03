@@ -30,6 +30,9 @@ use PHPUnit\Framework\TestCase;
  * JOB_IMPORT_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\JobHandler
+ * @uses   \OCA\Integriq\Service\Security\SensitiveFieldRegistry
+ * @uses   \OCA\Integriq\Service\Security\RedactedValueFilter
+ * @uses   \OCA\Integriq\Service\Security\SensitiveValueMasker
  */
 class JobHandlerImportGoldenTest extends TestCase {
 
@@ -56,7 +59,7 @@ class JobHandlerImportGoldenTest extends TestCase {
 			}
 		);
 
-		return new JobHandler($or, $this->createMock(SensitiveFieldRegistry::class));
+		return new JobHandler($or, new SensitiveFieldRegistry());
 	}//end handler()
 
 	/**

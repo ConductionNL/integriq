@@ -282,4 +282,18 @@ class WebhookSignatureServiceTest extends TestCase {
 			)
 		);
 	}//end testTeamsSchemeIgnoresToleranceWithAWarning()
+
+	/**
+	 * A secret equal to the export placeholder never verifies, even with a matching signature.
+	 *
+	 * @return void
+	 */
+	public function testThePlaceholderSecretNeverVerifies(): void {
+		$placeholder = '***REDACTED***';
+		$body = '{"a":1}';
+		$header = $this->service->sign(rawBody: $body, secret: $placeholder, timestamp: time());
+
+		$this->assertFalse($this->service->verify(rawBody: $body, headerValue: $header, config: ['secret' => $placeholder]));
+		$this->assertTrue($this->service->verify(rawBody: $body, headerValue: $this->service->sign(rawBody: $body, secret: 'whsec_x', timestamp: time()), config: ['secret' => 'whsec_x']));
+	}//end testThePlaceholderSecretNeverVerifies()
 }//end class

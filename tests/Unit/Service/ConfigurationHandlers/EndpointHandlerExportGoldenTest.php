@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler
  * @uses   \OCA\Integriq\Service\Security\SensitiveFieldRegistry
  * @uses   \OCA\Integriq\Service\Security\StructuredSecretRedactor
+ * @uses   \OCA\Integriq\Service\Security\SensitiveValueMasker
  */
 class EndpointHandlerExportGoldenTest extends TestCase {
 
