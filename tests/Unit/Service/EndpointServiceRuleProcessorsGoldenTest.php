@@ -453,6 +453,7 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 			'write-file-single-fails' => ['rule' => $write, 'data' => ['body' => ['file' => base64_encode('fail'), 'name' => 'h.txt']]],
 			'write-file-list' => ['rule' => $write, 'data' => ['body' => ['file' => [['content' => base64_encode('one'), 'label' => 'bijlage', 'filename' => 'x/one.txt'], ['content' => base64_encode('two'), 'label' => 'other', 'filename' => 'two.txt'], ['content' => base64_encode('fail'), 'filename' => 'f.txt']]]]],
 			'write-file-list-unnamed' => ['rule' => $write, 'data' => ['body' => ['file' => [['content' => base64_encode('one')]]]]],
+			'write-file-list-mixed' => ['rule' => $write, 'data' => ['body' => ['file' => [['content' => base64_encode('one'), 'filename' => 'a.txt'], base64_encode('raw')]]]],
 			'write-file-no-object-id' => ['rule' => $write, 'data' => $body, 'objectId' => null],
 			'write-file-no-flow-token' => ['rule' => $write, 'data' => $body, 'flowToken' => false],
 			'fileparts-no-object-id' => ['rule' => $parts, 'data' => ['size' => 10, 'name' => 'big.bin'], 'objectId' => null],

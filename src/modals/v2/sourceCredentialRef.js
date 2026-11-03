@@ -51,13 +51,29 @@ export const CALLING_APP_ID = 'openconnector'
  * @return {object|null} The credentialRef object (`{ credentialId }` / `{ credentialName }`), or null.
  */
 export function readCredentialRef(formData) {
-	if (!formData || typeof formData !== 'object') return null
-	const configuration = formData.configuration
-	if (!configuration || typeof configuration !== 'object') return null
-	const authentication = configuration.authentication
-	if (!authentication || typeof authentication !== 'object') return null
-	const ref = authentication.credentialRef
-	return ref && typeof ref === 'object' ? ref : null
+	const configuration = objectOrNull(objectOrNull(formData)?.configuration)
+	const authentication = objectOrNull(configuration?.authentication)
+	return objectOrNull(authentication?.credentialRef)
+}
+
+/**
+ * A value when it is an object (arrays included), otherwise null.
+ *
+ * @param {unknown} value The value.
+ * @return {object|null} The object, or null.
+ */
+function objectOrNull(value) {
+	return value && typeof value === 'object' ? value : null
+}
+
+/**
+ * Whether a value is an object that is not an array.
+ *
+ * @param {unknown} value The value.
+ * @return {boolean} True for a plain object.
+ */
+function isRecord(value) {
+	return objectOrNull(value) !== null && !Array.isArray(value)
 }
 
 /**
@@ -94,12 +110,7 @@ export function readCredentialId(formData) {
  * @return {object} The next `configuration` object.
  */
 export function writeCredentialRef(configuration, credentialId) {
-	const base =
-		configuration
-		&& typeof configuration === 'object'
-		&& !Array.isArray(configuration)
-			? { ...configuration }
-			: {}
+	const base = isRecord(configuration) ? { ...configuration } : {}
 	base.authentication = { credentialRef: { credentialId } }
 	return base
 }
@@ -113,26 +124,30 @@ export function writeCredentialRef(configuration, credentialId) {
  * @return {object} The next `configuration` object.
  */
 export function clearCredentialRef(configuration) {
-	if (
-		!configuration
-		|| typeof configuration !== 'object'
-		|| Array.isArray(configuration)
-	) {
-		return {}
-	}
+	if (!isRecord(configuration)) return {}
 	const base = { ...configuration }
-	const authentication = base.authentication
-	if (!authentication || typeof authentication !== 'object') {
-		return base
-	}
-	const nextAuth = { ...authentication }
-	delete nextAuth.credentialRef
-	if (Object.keys(nextAuth).length === 0) {
+	const authentication = objectOrNull(base.authentication)
+	if (!authentication) return base
+	const nextAuth = authenticationWithoutRef(authentication)
+	if (nextAuth === null) {
 		delete base.authentication
 	} else {
 		base.authentication = nextAuth
 	}
 	return base
+}
+
+/**
+ * A copy of an `authentication` object without its credentialRef, or null
+ * when nothing else is left in it.
+ *
+ * @param {object} authentication The current `authentication` object.
+ * @return {object|null} The remaining keys, or null.
+ */
+function authenticationWithoutRef(authentication) {
+	const nextAuth = { ...authentication }
+	delete nextAuth.credentialRef
+	return Object.keys(nextAuth).length === 0 ? null : nextAuth
 }
 
 /**
@@ -158,22 +173,58 @@ export function extractCredentialResults(data) {
  */
 export function mapCredentialOptions(results) {
 	if (!Array.isArray(results)) return []
-	return results
-		.map((row) => {
-			if (!row || typeof row !== 'object') return null
-			const self =
-				row['@self'] && typeof row['@self'] === 'object' ? row['@self'] : {}
-			const id = row.id || row.uuid || self.id || self.uuid || null
-			if (!id) return null
-			const name = row.name || self.title || String(id)
-			const provider = row.provider || ''
-			const label = provider ? `${name} (${provider})` : String(name)
-			return {
-				id: String(id),
-				label,
-				name: String(name),
-				provider: String(provider),
-			}
-		})
-		.filter((option) => option !== null)
+	return results.map(credentialOption).filter((option) => option !== null)
+}
+
+/**
+ * One NcSelect option for a raw OR credential object, or null when the row
+ * has no resolvable id.
+ *
+ * @param {unknown} row The credential object.
+ * @return {object|null} The option, or null.
+ */
+function credentialOption(row) {
+	if (!objectOrNull(row)) return null
+	const self = credentialSelf(row)
+	const id = firstTruthy([row.id, row.uuid, self.id, self.uuid])
+	if (!id) return null
+	const name = firstTruthy([row.name, self.title]) || String(id)
+	const provider = row.provider || ''
+	return {
+		id: String(id),
+		label: credentialLabel(name, provider),
+		name: String(name),
+		provider: String(provider),
+	}
+}
+
+/**
+ * The `@self` metadata of a credential object, or an empty object.
+ *
+ * @param {object} row The credential object.
+ * @return {object} The metadata.
+ */
+function credentialSelf(row) {
+	return objectOrNull(row['@self']) || {}
+}
+
+/**
+ * The first truthy value of a list, or undefined.
+ *
+ * @param {Array} values The candidates, in order of preference.
+ * @return {unknown} The first truthy value.
+ */
+function firstTruthy(values) {
+	return values.find(Boolean)
+}
+
+/**
+ * The picker label of a credential: its name, with the provider in brackets.
+ *
+ * @param {unknown} name     The credential name.
+ * @param {unknown} provider The provider, or an empty string.
+ * @return {string} The label.
+ */
+function credentialLabel(name, provider) {
+	return provider ? `${name} (${provider})` : String(name)
 }
