@@ -1,0 +1,1762 @@
+{
+    "full": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": "alpha"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "source": "beta"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.12
+                    },
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.48
+                    },
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.48
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "orders"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "soap"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 1
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "500"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "502"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "404"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "503"
+                        },
+                        "value": 1
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 2
+                    },
+                    {
+                        "labels": {
+                            "status": "error"
+                        },
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 13
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "warnings": []
+    },
+    "no-schemas": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.5"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.95"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.99"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 0
+                    }
+                ]
+            }
+        ],
+        "calls": [],
+        "warnings": []
+    },
+    "schema-without-id": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "orders"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 0
+                    }
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "warnings": []
+    },
+    "no-registers": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.5"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.95"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.99"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 0
+                    }
+                ]
+            }
+        ],
+        "calls": [],
+        "warnings": []
+    },
+    "not-an-array": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.5"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.95"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.99"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "404"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "503"
+                        },
+                        "value": 1
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 2
+                    },
+                    {
+                        "labels": {
+                            "status": "error"
+                        },
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 13
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "warnings": []
+    },
+    "search-fails": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": "alpha"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "source": "beta"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.5"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.95"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.99"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "soap"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 1
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 2
+                    },
+                    {
+                        "labels": {
+                            "status": "error"
+                        },
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 13
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "warnings": [
+            "integriq: api_product_latency_seconds query failed: search failed for 2/12",
+            "integriq: api_product_errors_total query failed: search failed for 2/12",
+            "[integriq\\Metrics] \"calls_total\" could not read CallLog objects: search failed for 2/12"
+        ]
+    },
+    "search-fails-sources": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.12
+                    },
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.48
+                    },
+                    {
+                        "labels": {
+                            "product": "orders",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.48
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.5"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.95"
+                        },
+                        "value": 0.0
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet",
+                            "quantile": "0.99"
+                        },
+                        "value": 0.0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "orders"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "product": "p-2"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "product": "quiet"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "500"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "502"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "404"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "503"
+                        },
+                        "value": 1
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 2
+                    },
+                    {
+                        "labels": {
+                            "status": "error"
+                        },
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 13
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "warnings": [
+            "[integriq\\Metrics] \"sources_total\" could not read Source objects: search failed for 1/11"
+        ]
+    },
+    "search-fails-products": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": "alpha"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "source": "beta"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.5"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.95"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.99"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "soap"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 1
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "500"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "502"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "404"
+                        },
+                        "value": 1
+                    },
+                    {
+                        "labels": {
+                            "status": "503"
+                        },
+                        "value": 1
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 2
+                    },
+                    {
+                        "labels": {
+                            "status": "error"
+                        },
+                        "value": 1
+                    }
+                ]
+            }
+        ],
+        "calls": [
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 14
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 11
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 12
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "query": {
+                    "@self": {
+                        "register": 2,
+                        "schema": 13
+                    }
+                },
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "warnings": [
+            "integriq: api_product_latency_seconds query failed: search failed for 1/14",
+            "integriq: api_product_errors_total query failed: search failed for 1/14"
+        ]
+    },
+    "no-object-service": {
+        "samples": [
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed)",
+                "samples": [
+                    {
+                        "labels": {
+                            "source": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99), from bounded per-product call_log windows",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.5"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.95"
+                        },
+                        "value": 0
+                    },
+                    {
+                        "labels": {
+                            "product": "",
+                            "quantile": "0.99"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product",
+                "samples": [
+                    {
+                        "labels": {
+                            "product": ""
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "samples": [
+                    {
+                        "labels": {
+                            "type": "rest"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "200"
+                        },
+                        "value": 0
+                    }
+                ]
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "samples": [
+                    {
+                        "labels": {
+                            "status": "success"
+                        },
+                        "value": 0
+                    }
+                ]
+            }
+        ],
+        "calls": [],
+        "warnings": []
+    }
+}
