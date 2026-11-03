@@ -62,6 +62,42 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function export(Entity $entity, array $mappings, array &$mappingIds = []): array {
+		$endpointArray = $this->exportedArray(entity: $entity);
+
+		// Redact secret-shaped values from the nested configuration array
+		// (secret-hygiene) — e.g. an inline per-endpoint auth-override header.
+		if (isset($endpointArray['configuration']) === true && is_array($endpointArray['configuration']) === true) {
+			$endpointArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $endpointArray['configuration']);
+		}
+
+		if (isset($endpointArray['targetId']) === true && isset($endpointArray['targetType']) === true) {
+			$endpointArray['targetId'] = $this->exportTargetId(data: $endpointArray, mappings: $mappings);
+		}
+
+		foreach (['inputMapping', 'outputMapping'] as $field) {
+			if (isset($endpointArray[$field]) === true && isset($mappings['mapping']['idToSlug'][$endpointArray[$field]]) === true) {
+				$endpointArray[$field] = $mappings['mapping']['idToSlug'][$endpointArray[$field]];
+			}
+		}
+
+		if (isset($endpointArray['rules']) === true) {
+			$endpointArray['rules'] = $this->exportRules(rules: $endpointArray['rules'], mappings: $mappings);
+		}
+
+		return $endpointArray;
+	}//end export()
+
+	/**
+	 * An endpoint's stored fields without its id and uuid, with its uuid as
+	 * slug when an OpenRegister object carries no slug.
+	 *
+	 * @param Entity $entity The endpoint entity.
+	 *
+	 * @return array The endpoint fields.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md
+	 */
+	private function exportedArray(Entity $entity): array {
 		if ($entity instanceof ObjectEntity) {
 			$endpointArray = $entity->getObject();
 		} else {
@@ -70,80 +106,87 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 
 		unset($endpointArray['id'], $endpointArray['uuid']);
 
-		// Redact secret-shaped values from the nested configuration array
-		// (secret-hygiene) — e.g. an inline per-endpoint auth-override header.
-		if (isset($endpointArray['configuration']) === true && is_array($endpointArray['configuration']) === true) {
-			$endpointArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $endpointArray['configuration']);
-		}
-
-		// Ensure slug is set.
 		if (empty($endpointArray['slug']) === true && $entity instanceof ObjectEntity) {
 			$endpointArray['slug'] = $entity->getUuid();
 		}
 
-		// Handle targetId based on targetType.
-		if (isset($endpointArray['targetId']) === true && isset($endpointArray['targetType']) === true) {
-			switch ($endpointArray['targetType']) {
-				case 'api':
-				case 'database':
-					// For api/database targets, use source mapping.
-					if (isset($mappings['source']['idToSlug'][$endpointArray['targetId']]) === true) {
-						$endpointArray['targetId'] = $mappings['source']['idToSlug'][$endpointArray['targetId']];
-					}
-					break;
-
-				case 'register/schema':
-					// For register/schema targets, split the ID and map both parts.
-					if (str_contains($endpointArray['targetId'], '/') === true) {
-						[$registerId, $schemaId] = explode('/', $endpointArray['targetId']);
-
-						// Map register ID to slug (fallback to original ID if no mapping found).
-						$registerSlug = $mappings['register']['idToSlug'][$registerId] ?? $registerId;
-
-						// Map schema ID to slug (fallback to original ID if no mapping found).
-						$schemaSlug = $mappings['schema']['idToSlug'][$schemaId] ?? $schemaId;
-
-						// Combine the slugs.
-						$endpointArray['targetId'] = $registerSlug . '/' . $schemaSlug;
-					}
-					break;
-			}//end switch
-		}//end if
-
-		// Handle mapping IDs.
-		if (isset($endpointArray['inputMapping']) === true
-			&& isset($mappings['mapping']['idToSlug'][$endpointArray['inputMapping']]) === true
-		) {
-			$endpointArray['inputMapping'] = $mappings['mapping']['idToSlug'][$endpointArray['inputMapping']];
-		}
-
-		if (isset($endpointArray['outputMapping']) === true
-			&& isset($mappings['mapping']['idToSlug'][$endpointArray['outputMapping']]) === true
-		) {
-			$endpointArray['outputMapping'] = $mappings['mapping']['idToSlug'][$endpointArray['outputMapping']];
-		}
-
-		if (isset($endpointArray['rules']) === true) {
-			$endpointArray['rules'] = array_filter(
-				array_map(
-					function (int|string $rule) use ($mappings) {
-						if (is_numeric($rule) === true) {
-							$rule = (int)$rule;
-						}
-
-						if (isset($mappings['rule']['idToSlug'][$rule]) === true) {
-							return $mappings['rule']['idToSlug'][$rule];
-						}
-
-						return null;
-					},
-					$endpointArray['rules']
-				)
-			);
-		}
-
 		return $endpointArray;
-	}//end export()
+	}//end exportedArray()
+
+	/**
+	 * The slug an exported endpoint's target id resolves to, by target type.
+	 *
+	 * @param array $data The endpoint configuration, with a targetId and targetType.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return mixed The target slug, or the target id when no mapping is found.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function exportTargetId(array $data, array $mappings): mixed {
+		$targetId = $data['targetId'];
+		switch ($data['targetType']) {
+			case 'api':
+			case 'database':
+				return ($mappings['source']['idToSlug'][$targetId] ?? $targetId);
+
+			case 'register/schema':
+				return $this->exportRegisterSchemaTargetId(targetId: $targetId, mappings: $mappings);
+		}
+
+		return $targetId;
+	}//end exportTargetId()
+
+	/**
+	 * The `{register}/{schema}` slugs a `{register}/{schema}` id pair resolves to.
+	 *
+	 * Each part falls back to its id when no mapping is found; a target
+	 * without a slash is returned unchanged.
+	 *
+	 * @param mixed $targetId The register/schema id pair.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return mixed The register/schema slug pair.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function exportRegisterSchemaTargetId(mixed $targetId, array $mappings): mixed {
+		if (str_contains($targetId, '/') === false) {
+			return $targetId;
+		}
+
+		[$registerId, $schemaId] = explode('/', $targetId);
+
+		$registerSlug = ($mappings['register']['idToSlug'][$registerId] ?? $registerId);
+		$schemaSlug = ($mappings['schema']['idToSlug'][$schemaId] ?? $schemaId);
+
+		return $registerSlug . '/' . $schemaSlug;
+	}//end exportRegisterSchemaTargetId()
+
+	/**
+	 * The rule slugs an exported endpoint's rule ids resolve to; unknown ids are dropped.
+	 *
+	 * @param array $rules The rule ids; numeric strings are read as integers.
+	 * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+	 *
+	 * @return array The rule slugs, keyed as the ids were.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+	 */
+	private function exportRules(array $rules, array $mappings): array {
+		return array_filter(
+			array_map(
+				function (int|string $rule) use ($mappings): mixed {
+					if (is_numeric($rule) === true) {
+						$rule = (int)$rule;
+					}
+
+					return ($mappings['rule']['idToSlug'][$rule] ?? null);
+				},
+				$rules
+			)
+		);
+	}//end exportRules()
 
 	/**
 	 * Import an endpoint configuration into an endpoint entity.
