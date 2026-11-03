@@ -1,0 +1,1215 @@
+{
+    "import:no-components": {
+        "throws": "InvalidArgumentException",
+        "message": "OAS must contain a components property",
+        "calls": []
+    },
+    "import:null-components": {
+        "throws": "InvalidArgumentException",
+        "message": "OAS must contain a components property",
+        "calls": []
+    },
+    "import:empty-components": {
+        "result": {
+            "sources": [],
+            "mappings": [],
+            "rules": [],
+            "endpoints": [],
+            "synchronizations": [],
+            "jobs": []
+        },
+        "calls": []
+    },
+    "import:string-components": {
+        "result": {
+            "sources": [],
+            "mappings": [],
+            "rules": [],
+            "endpoints": [],
+            "synchronizations": [],
+            "jobs": []
+        },
+        "calls": []
+    },
+    "import:every-kind": {
+        "result": {
+            "sources": {
+                "src-a": "source:src-a",
+                "src-b": "source:none"
+            },
+            "mappings": {
+                "m1": "mapping:m1"
+            },
+            "rules": {
+                "r1": "rule:r1"
+            },
+            "endpoints": {
+                "e1": "endpoint:e1",
+                "7": "endpoint:e7"
+            },
+            "synchronizations": {
+                "s1": "synchronization:s1"
+            },
+            "jobs": {
+                "j1": "job:j1",
+                "j2": "job:j2"
+            }
+        },
+        "calls": [
+            {
+                "kind": "source",
+                "data": {
+                    "slug": "src-a"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "source",
+                "data": {
+                    "name": "b"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "mapping",
+                "data": {
+                    "slug": "m1"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "rule",
+                "data": {
+                    "slug": "r1"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "endpoint",
+                "data": {
+                    "slug": "e1"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "endpoint",
+                "data": {
+                    "slug": "e7"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "synchronization",
+                "data": {
+                    "slug": "s1"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "job",
+                "data": {
+                    "slug": "j1"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "job",
+                "data": {
+                    "slug": "j2"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            }
+        ]
+    },
+    "import:sources-only": {
+        "result": {
+            "sources": {
+                "only": "source:only"
+            },
+            "mappings": [],
+            "rules": [],
+            "endpoints": [],
+            "synchronizations": [],
+            "jobs": []
+        },
+        "calls": [
+            {
+                "kind": "source",
+                "data": {
+                    "slug": "only"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            }
+        ]
+    },
+    "import:null-kinds": {
+        "result": {
+            "sources": [],
+            "mappings": [],
+            "rules": [],
+            "endpoints": [],
+            "synchronizations": [],
+            "jobs": {
+                "j": "job:j"
+            }
+        },
+        "calls": [
+            {
+                "kind": "job",
+                "data": {
+                    "slug": "j"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            }
+        ]
+    },
+    "import:endpoints-and-jobs": {
+        "result": {
+            "sources": [],
+            "mappings": [],
+            "rules": [],
+            "endpoints": {
+                "e": "endpoint:e"
+            },
+            "synchronizations": [],
+            "jobs": {
+                "j": "job:j"
+            }
+        },
+        "calls": [
+            {
+                "kind": "endpoint",
+                "data": {
+                    "slug": "e"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "job",
+                "data": {
+                    "slug": "j"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            }
+        ]
+    },
+    "import:mappings-and-synchronizations": {
+        "result": {
+            "sources": [],
+            "mappings": {
+                "m": "mapping:m"
+            },
+            "rules": [],
+            "endpoints": [],
+            "synchronizations": {
+                "s": "synchronization:s"
+            },
+            "jobs": []
+        },
+        "calls": [
+            {
+                "kind": "mapping",
+                "data": {
+                    "slug": "m"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "synchronization",
+                "data": {
+                    "slug": "s"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            }
+        ]
+    },
+    "import:rules-only": {
+        "result": {
+            "sources": [],
+            "mappings": [],
+            "rules": {
+                "r": "rule:r",
+                "r2": "rule:r2"
+            },
+            "endpoints": [],
+            "synchronizations": [],
+            "jobs": []
+        },
+        "calls": [
+            {
+                "kind": "rule",
+                "data": {
+                    "slug": "r"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "rule",
+                "data": {
+                    "slug": "r2"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            }
+        ]
+    },
+    "import:handler-throws": {
+        "throws": "RuntimeException",
+        "message": "boom",
+        "calls": [
+            {
+                "kind": "source",
+                "data": {
+                    "slug": "s"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            },
+            {
+                "kind": "mapping",
+                "data": {
+                    "slug": "boom"
+                },
+                "sourceSlugs": {
+                    "src-one": "src-uuid-1",
+                    "source-shape": "shape-source-shape",
+                    "source-int-type": "shape-source-int-type",
+                    "source-null-header": "shape-source-null-header",
+                    "source-and-target": "shape-source-and-target",
+                    "endpoint-shape": "shape-endpoint-shape",
+                    "target-and-mapping": "shape-target-and-mapping",
+                    "null-target": "shape-null-target",
+                    "null-target-and-mapping": "shape-null-target-and-mapping",
+                    "mapping-shape": "shape-mapping-shape",
+                    "null-mapping": "shape-null-mapping",
+                    "mapping-and-job": "shape-mapping-and-job",
+                    "rule-shape": "shape-rule-shape",
+                    "null-type-rule": "shape-null-type-rule",
+                    "type-without-more": "shape-type-without-more",
+                    "rule-and-job": "shape-rule-and-job",
+                    "job-shape": "shape-job-shape",
+                    "null-job": "shape-null-job",
+                    "source-type-only": "shape-source-type-only",
+                    "null-source-type": "shape-null-source-type",
+                    "nothing": "shape-nothing",
+                    "shape-no-slug": "shape-no-slug"
+                },
+                "mappingKinds": [
+                    "endpoint",
+                    "synchronization",
+                    "mapping",
+                    "rule",
+                    "source",
+                    "register",
+                    "schema",
+                    "job"
+                ]
+            }
+        ]
+    },
+    "export-configuration": {
+        "components": {
+            "sources": {
+                "api": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "source-shape",
+                        "type": "api",
+                        "authorizationHeader": "h"
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "source-and-target",
+                        "type": "api",
+                        "authorizationHeader": "h",
+                        "targetType": "register/schema"
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "target-and-mapping",
+                        "targetType": "api",
+                        "mapping": []
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "type": "api",
+                        "authorizationHeader": "h"
+                    }
+                ],
+                "5": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "source-int-type",
+                        "type": 5,
+                        "authorizationHeader": ""
+                    }
+                ],
+                "default": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "source-null-header",
+                        "type": "soap",
+                        "authorizationHeader": null
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "null-mapping",
+                        "mapping": null
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "null-type-rule",
+                        "type": null,
+                        "configuration": []
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "type-without-more",
+                        "type": "lonely"
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "null-job",
+                        "jobClass": null
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "nothing",
+                        "name": "plain"
+                    }
+                ],
+                "zgw": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "endpoint-shape",
+                        "targetType": "zgw"
+                    }
+                ],
+                "sync": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "null-target",
+                        "targetType": null
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "source-type-only",
+                        "sourceType": "api"
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "null-source-type",
+                        "sourceType": null
+                    }
+                ],
+                "mapping": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "null-target-and-mapping",
+                        "targetType": null,
+                        "mapping": {
+                            "a": "b"
+                        }
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "mapping-shape",
+                        "mapping": {
+                            "a": "b"
+                        }
+                    },
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "mapping-and-job",
+                        "mapping": "m",
+                        "jobClass": "X"
+                    }
+                ],
+                "fetch_file": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "rule-shape",
+                        "type": "fetch_file",
+                        "configuration": []
+                    }
+                ],
+                "error": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "rule-and-job",
+                        "type": "error",
+                        "configuration": "x",
+                        "jobClass": "X"
+                    }
+                ],
+                "job": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "job-shape",
+                        "jobClass": "OCA\\Job"
+                    }
+                ]
+            },
+            "endpoints": {
+                "register/schema": [
+                    {
+                        "configurations": [
+                            "cfg-1"
+                        ],
+                        "slug": "ep-one",
+                        "targetType": "register/schema",
+                        "targetId": "7/1"
+                    }
+                ]
+            },
+            "mappings": [],
+            "rules": [],
+            "jobs": [],
+            "synchronizations": []
+        }
+    },
+    "export-configuration-unknown": {
+        "components": {
+            "sources": [],
+            "endpoints": [],
+            "mappings": [],
+            "rules": [],
+            "jobs": [],
+            "synchronizations": []
+        }
+    },
+    "export-register:all": {
+        "mappings": [],
+        "sources": [
+            "src-one"
+        ],
+        "rules": [],
+        "endpoints": [
+            "ep-one"
+        ],
+        "synchronizations": [
+            "sync-one",
+            "sync-int-source",
+            "sync-five"
+        ],
+        "jobs": [
+            "job-sync",
+            "job-sync-int",
+            "job-endpoint",
+            "job-endpoint-json",
+            "job-source",
+            "job-source-json",
+            "job-source-int",
+            "job-source-numeric-text",
+            "uuid-job-unslugged"
+        ]
+    },
+    "export-register:no-endpoints": {
+        "mappings": [],
+        "sources": [
+            "src-one"
+        ],
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": [
+            "sync-one",
+            "sync-int-source",
+            "sync-five"
+        ],
+        "jobs": [
+            "job-sync",
+            "job-sync-int",
+            "job-source",
+            "job-source-json",
+            "job-source-int",
+            "job-source-numeric-text"
+        ]
+    },
+    "export-register:no-synchronizations": {
+        "mappings": [],
+        "sources": [],
+        "rules": [],
+        "endpoints": [
+            "ep-one"
+        ],
+        "synchronizations": [],
+        "jobs": [
+            "job-endpoint",
+            "job-endpoint-json",
+            "uuid-job-unslugged"
+        ]
+    },
+    "export-register:nothing": {
+        "mappings": [],
+        "sources": [],
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": [],
+        "jobs": []
+    },
+    "export-register:sync-targets-only": {
+        "mappings": [],
+        "sources": [],
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": [
+            "sync-five"
+        ],
+        "jobs": [
+            "job-sync-int"
+        ]
+    },
+    "export-register:sync-sources-only": {
+        "mappings": [],
+        "sources": [
+            "src-one"
+        ],
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": [
+            "sync-one",
+            "sync-int-source"
+        ],
+        "jobs": [
+            "job-sync",
+            "job-source",
+            "job-source-json",
+            "job-source-int",
+            "job-source-numeric-text"
+        ]
+    }
+}

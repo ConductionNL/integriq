@@ -1,0 +1,295 @@
+{
+    "ep-api-missing": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "targetId",
+            "value": "src-gone"
+        }
+    ],
+    "ep-api-known": [],
+    "ep-no-type-missing": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "targetId",
+            "value": "src-gone"
+        }
+    ],
+    "ep-register-schema": [],
+    "ep-slash": [],
+    "ep-empty-target": [],
+    "ep-int-target": [],
+    "ep-null-type": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "targetId",
+            "value": "x"
+        }
+    ],
+    "ep-int-type": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "targetId",
+            "value": "x"
+        }
+    ],
+    "ep-mappings": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "outputMapping",
+            "value": "map-gone"
+        }
+    ],
+    "ep-mappings-both-missing": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "inputMapping",
+            "value": "in-gone"
+        },
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "outputMapping",
+            "value": "out-gone"
+        }
+    ],
+    "ep-mappings-odd": [],
+    "ep-mapping-is-source": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "inputMapping",
+            "value": "src-a"
+        }
+    ],
+    "ep-rules": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "rules[]",
+            "value": "rule-gone"
+        },
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "rules[]",
+            "value": "map-a"
+        },
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "rules[]",
+            "value": "rule-gone"
+        }
+    ],
+    "ep-rules-keyed": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "rules[]",
+            "value": "rule-gone"
+        }
+    ],
+    "ep-rules-string": [],
+    "ep-rules-null": [],
+    "ep-everything": [
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "source_id",
+            "value": "src-x"
+        },
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "targetId",
+            "value": "src-gone"
+        },
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "inputMapping",
+            "value": "map-gone"
+        },
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "rules[]",
+            "value": "rule-gone"
+        },
+        {
+            "type": "endpoint",
+            "slug": "subject",
+            "field": "configuration.job",
+            "value": "job-gone"
+        }
+    ],
+    "rule-like-endpoint": [],
+    "cfg-type-keys": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.source",
+            "value": "src-gone"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.endpoint",
+            "value": "ep-gone"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.mapping",
+            "value": "map-gone"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.synchronization",
+            "value": "sync-gone"
+        }
+    ],
+    "cfg-id-suffixes": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.sourceId",
+            "value": "x1"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.SourceId",
+            "value": "x2"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.mySourceId",
+            "value": "x3"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.mysourceId",
+            "value": "x4"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.endpointId",
+            "value": "x6"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.synchronizationId",
+            "value": "x7"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.mappingId",
+            "value": "x8"
+        }
+    ],
+    "cfg-first-type-wins": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.sourceJobId",
+            "value": "src-a"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.jobSourceId",
+            "value": "job-a"
+        }
+    ],
+    "cfg-odd-values": [],
+    "cfg-nested": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.a.b.jobId",
+            "value": "job-gone"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.mapping",
+            "value": "map-gone"
+        }
+    ],
+    "cfg-lists": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.list.0.mapping",
+            "value": "m1"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.7.source",
+            "value": "s7"
+        }
+    ],
+    "cfg-empty-root-key": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.source",
+            "value": "src-gone"
+        },
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.job",
+            "value": "job-gone"
+        }
+    ],
+    "cfg-empty-inner-key": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.a..source",
+            "value": "src-gone"
+        }
+    ],
+    "cfg-int-root-key": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.0.source",
+            "value": "src-gone"
+        }
+    ],
+    "cfg-empty-array": [],
+    "cfg-not-array": [],
+    "cfg-numeric-slug": [
+        {
+            "type": "rule",
+            "slug": "subject",
+            "field": "configuration.job",
+            "value": "7"
+        }
+    ],
+    "top-level-ids": [
+        {
+            "type": "mapping",
+            "slug": "subject",
+            "field": "source_id",
+            "value": "src-gone"
+        }
+    ],
+    "top-level-odd": []
+}
