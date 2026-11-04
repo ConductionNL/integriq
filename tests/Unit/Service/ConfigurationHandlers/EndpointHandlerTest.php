@@ -75,4 +75,35 @@ class EndpointHandlerTest extends TestCase {
 		$this->assertSame('application/json', $export['configuration']['headers']['Accept']);
 		$this->assertStringNotContainsString('live_endpoint_key_123', json_encode($export));
 	}//end testExportRedactsInlineAuthOverrideHeader()
+
+	/**
+	 * A schema-shaped endpoint has no `configuration` block: its own fields are
+	 * redacted by structure, while its profile slugs and paths stay readable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function testExportRedactsTheEndpointsOwnFields(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'slug' => 'my-endpoint',
+				'endpoint' => '/api/x?api_key=live_path_key&page=2',
+				'apiKey' => 'live_top_key',
+				'conditions' => ['token' => 'live_condition_token'],
+				'configurations' => ['profile-a'],
+			],
+			'endpoint-uuid-2'
+		);
+
+		$export = $this->handler->export($endpoint, []);
+
+		$this->assertSame('***REDACTED***', $export['apiKey']);
+		$this->assertSame('***REDACTED***', $export['conditions']['token']);
+		$this->assertSame('/api/x?api_key=***REDACTED***&page=2', $export['endpoint']);
+		$this->assertSame(['profile-a'], $export['configurations']);
+		$this->assertSame('my-endpoint', $export['slug']);
+		$this->assertStringNotContainsString('live_', json_encode($export));
+	}//end testExportRedactsTheEndpointsOwnFields()
 }//end class

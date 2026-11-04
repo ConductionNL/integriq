@@ -90,9 +90,8 @@ class JobHandler implements ConfigurationHandlerInterface {
 		// walked here — no evidence was found that `arguments` structurally
 		// carries raw secret values, as opposed to entity id/slug references
 		// already governed by the id<->slug maps (see proposal Open Questions).
-		if (isset($jobArray['configuration']) === true && is_array($jobArray['configuration']) === true) {
-			$jobArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $jobArray['configuration']);
-		}
+		// Redact every field, not one block: the schema may hold secrets outside `configuration`.
+		$jobArray = $this->sensitiveFieldRegistry->redactConfiguration(data: $jobArray);
 
 		// Replace IDs with slugs in arguments.
 		if (isset($jobArray['arguments']) === true && is_array($jobArray['arguments']) === true) {
@@ -147,6 +146,8 @@ class JobHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
+		$data = $this->sensitiveFieldRegistry->withoutRedactedValues(data: $data);
+
 		if (isset($data['arguments']) === true) {
 			$arguments = $this->decodeArguments(arguments: $data['arguments']);
 			if (is_array($arguments) === true) {

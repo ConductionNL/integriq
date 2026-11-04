@@ -95,9 +95,8 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 		}
 
 		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
-		if (isset($syncArray['configuration']) === true && is_array($syncArray['configuration']) === true) {
-			$syncArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $syncArray['configuration']);
-		}
+		// Redact every field, not one block: the schema may hold secrets outside `configuration`.
+		$syncArray = $this->sensitiveFieldRegistry->redactConfiguration(data: $syncArray);
 
 		$lookup    = $this->directionOf(mappings: $mappings, direction: 'idToSlug');
 		$syncArray = $this->translateEndpoints(data: $syncArray, lookup: $lookup);
@@ -125,6 +124,8 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
+		$data = $this->sensitiveFieldRegistry->withoutRedactedValues(data: $data);
+
 		$lookup = $this->directionOf(mappings: $mappings, direction: 'slugToId');
 		$data   = $this->translateEndpoints(data: $data, lookup: $lookup);
 
