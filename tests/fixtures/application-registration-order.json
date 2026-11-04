@@ -124,6 +124,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\InlineSecretMigrationPlannerInterface, OCA\\Integriq\\Service\\Security\\InlineSecretMigrationPlanner)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\InlineSecretMigrationExecutorInterface, OCA\\Integriq\\Service\\Security\\InlineSecretMigrationExecutor)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\InlineSecretMigrationFactoryInterface, OCA\\Integriq\\Service\\Security\\InlineSecretMigrationFactory)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\Security\\PlaceholderSecretRepairInterface, OCA\\Integriq\\Service\\Security\\PlaceholderSecretRepair)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Registry\\RegistryUpdateClientInterface, OCA\\Integriq\\Service\\Registry\\RegistryUpdateClient)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\AgentTools\\AgentActionStoreInterface, OCA\\Integriq\\Service\\AgentTools\\AgentActionStore)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Mail\\CaseReferenceDetectorInterface, OCA\\Integriq\\Service\\Mail\\CaseReferenceDetector)",
