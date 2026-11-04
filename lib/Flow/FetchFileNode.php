@@ -77,7 +77,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
@@ -88,6 +87,7 @@ use UnexpectedValueException;
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
 class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, FetchFileNodeInterface {
+	use FlowNodePaletteDefaults;
 
 	use SynchronizationLogActions;
 
@@ -119,17 +119,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	) {
 
 	}//end __construct()
-
-	/**
-	 * The step type.
-	 *
-	 * @return string The type identifier.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getId(): string {
-		return self::NODE_ID;
-	}//end getId()
 
 	/**
 	 * The palette name.
@@ -167,23 +156,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	public function getIcon(): string {
 		return 'paperclip';
 	}//end getIcon()
-
-	/**
-	 * Whether the node is offered in the given scope.
-	 *
-	 * Answered with Nextcloud's own constants and false for anything else — an
-	 * unrecognised scope is not a reason to offer a node that makes outbound
-	 * calls and writes files.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a fetch-file step.

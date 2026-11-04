@@ -83,7 +83,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -95,6 +94,12 @@ use UnexpectedValueException;
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
 class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, ContractCommitNodeInterface {
+	use FlowNodePaletteDefaults;
+
+	/**
+	 * Palette icon: app and image path.
+	 */
+	private const PALETTE_ICON = ['integriq', 'flow-synchronization-run.svg'];
 
 	use SynchronizationLogActions;
 
@@ -148,17 +153,6 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	}//end __construct()
 
 	/**
-	 * The step type.
-	 *
-	 * @return string The type identifier.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getId(): string {
-		return self::NODE_ID;
-	}//end getId()
-
-	/**
 	 * Palette name.
 	 *
 	 * @return string The display name.
@@ -182,30 +176,6 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		);
 
 	}//end getDescription()
-
-	/**
-	 * Palette icon.
-	 *
-	 * @return string The icon URL.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
-	}//end getIcon()
-
-	/**
-	 * Whether the node is offered in the given scope.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The node's whole config vocabulary.

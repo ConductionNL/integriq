@@ -1,0 +1,559 @@
+{
+    "OCA\\Integriq\\Flow\\ApplyMappingNode": {
+        "getId": "openconnector.apply-mapping",
+        "getDisplayName": "t(Apply a mapping)",
+        "getDescription": "t(Apply a configured mapping to every item in the page, in one step execution.)",
+        "getIcon": "integriq/flow-synchronization-run.svg",
+        "configKeys": [
+            "mapping",
+            "input",
+            "output",
+            "onError",
+            "ownership",
+            "exists"
+        ],
+        "configForm": [
+            {
+                "key": "mapping",
+                "label": "t(Mapping)",
+                "type": "select",
+                "help": "t(The configured mapping applied to every item in the page.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/mapping"
+            },
+            {
+                "key": "input",
+                "label": "t(Input path)",
+                "type": "text",
+                "help": "t(Dot-path within the item to feed the mapping. Leave empty to map the whole item.)"
+            },
+            {
+                "key": "output",
+                "label": "t(Output key)",
+                "type": "text",
+                "help": "t(Item key the mapped result is written under. Leave empty to replace the item with the result.)"
+            },
+            {
+                "key": "onError",
+                "label": "t(On error)",
+                "type": "text",
+                "help": "t(What a failed item does to the run: stop, continue or dead_letter.)"
+            },
+            {
+                "key": "ownership",
+                "label": "t(Field ownership)",
+                "type": "text",
+                "help": "t(inbound or outbound: on an update, keep only the fields the sending side owns. Leave empty to keep every field.)"
+            },
+            {
+                "key": "exists",
+                "label": "t(Existing record path)",
+                "type": "text",
+                "help": "t(Dot-path within the item that holds the record id on the writing side. Empty there means a create, which keeps every field.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\ApprovalRequestNode": {
+        "getId": "openconnector.approval-request",
+        "getDisplayName": "t(Ask for approval)",
+        "getDescription": "t(Pause the flow until someone in the approver group approves or rejects. An expired request fails the run.)",
+        "getIcon": "core/actions/confirm.svg",
+        "configKeys": [
+            "question",
+            "approverGroup",
+            "ttlSeconds",
+            "failOnReject",
+            "signalKey",
+            "heartbeatMinutes",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "question",
+                "label": "t(What is being asked)",
+                "type": "text",
+                "help": "t(Shown to the approvers and written on the request, so a paused flow explains itself.)",
+                "required": true
+            },
+            {
+                "key": "approverGroup",
+                "label": "t(Approver group)",
+                "type": "text",
+                "help": "t(Members of this group (and admins) may answer. Required: a request nobody owns is a request nobody answers.)",
+                "required": true
+            },
+            {
+                "key": "ttlSeconds",
+                "label": "t(Expires after (seconds))",
+                "type": "number",
+                "help": "t(An unanswered request expires and fails the run. Defaults to 24 hours.)"
+            },
+            {
+                "key": "failOnReject",
+                "label": "t(Treat a rejection as a failure)",
+                "type": "boolean",
+                "help": "t(Off by default: a \"no\" continues the flow with the decision on the items, so a later step can route on it.)"
+            },
+            {
+                "key": "signalKey",
+                "label": "t(Field to store the decision in)",
+                "type": "text",
+                "help": "t(The decision is written onto every item under this field. Defaults to \"approval\".)"
+            },
+            {
+                "key": "heartbeatMinutes",
+                "label": "t(Re-check every (minutes))",
+                "type": "number",
+                "help": "t(Safety net for a lost answer. Lower is not faster: a decision wakes the run immediately either way.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\ContractCommitNode": {
+        "getId": "openconnector.contract-commit",
+        "getDisplayName": "t(Commit contracts)",
+        "getDescription": "t(Upsert the page's synchronization contracts in one bulk call, after the objects are written.)",
+        "getIcon": "integriq/flow-synchronization-run.svg",
+        "configKeys": [
+            "synchronization",
+            "contractPosition",
+            "targetIdPosition",
+            "targetHashPosition",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "synchronization",
+                "label": "t(Synchronization)",
+                "type": "select",
+                "help": "t(The synchronization the committed contracts belong to.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/synchronization"
+            },
+            {
+                "key": "contractPosition",
+                "label": "t(Decision path)",
+                "type": "text",
+                "help": "t(Dot-path to the decision block the contract step wrote. Defaults to \"contract\".)"
+            },
+            {
+                "key": "targetIdPosition",
+                "label": "t(Target id path)",
+                "type": "text",
+                "help": "t(Dot-path to the written object's uuid on each item. Defaults to \"uuid\".)"
+            },
+            {
+                "key": "targetHashPosition",
+                "label": "t(Target hash path)",
+                "type": "text",
+                "help": "t(Dot-path to the MAPPED object on each item \u2014 the mapping's output, not the written object. Its hash is stored on the contract as \"targetHash\", which is what lets a later run decide \"skip\" for an unchanged object instead of rewriting it. Leave empty to store no target hash, in which case every run rewrites every object. Never point it at the written object: that carries a server-assigned \"@self.updated\", so its hash changes on every pass and nothing is ever skipped.)"
+            },
+            {
+                "key": "onError",
+                "label": "t(On error)",
+                "type": "text",
+                "help": "t(What a failed item does to the run: stop, continue or dead_letter.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\ContractMatchNode": {
+        "getId": "openconnector.contract",
+        "getDisplayName": "t(Match contracts)",
+        "getDescription": "t(Look up the page's synchronization contracts in one query and stamp every item create, update or skip.)",
+        "getIcon": "integriq/flow-synchronization-run.svg",
+        "configKeys": [
+            "synchronization",
+            "idPosition",
+            "hashPosition",
+            "output",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "synchronization",
+                "label": "t(Synchronization)",
+                "type": "select",
+                "help": "t(The synchronization whose contracts scope this page.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/synchronization"
+            },
+            {
+                "key": "idPosition",
+                "label": "t(Origin id path)",
+                "type": "text",
+                "help": "t(Dot-path to the origin id on each item. Defaults to \"id\".)"
+            },
+            {
+                "key": "hashPosition",
+                "label": "t(Hash path)",
+                "type": "text",
+                "help": "t(Dot-path to the value the change hash is computed over. Leave empty to hash the whole item.)"
+            },
+            {
+                "key": "output",
+                "label": "t(Output key)",
+                "type": "text",
+                "help": "t(Item key the decision block is written under. Defaults to \"contract\".)"
+            },
+            {
+                "key": "onError",
+                "label": "t(On error)",
+                "type": "text",
+                "help": "t(What a failed item does to the run: stop, continue or dead_letter.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\ContractSweepNode": {
+        "getId": "openconnector.contract-sweep",
+        "getDisplayName": "t(Sweep stale objects)",
+        "getDescription": "t(After a complete pass, remove objects the source no longer has \u2014 through the guarded deletion, never around it.)",
+        "getIcon": "integriq/flow-synchronization-run.svg",
+        "configKeys": [
+            "synchronization",
+            "targetIdsPosition",
+            "fetchComplete",
+            "force",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "synchronization",
+                "label": "t(Synchronization)",
+                "type": "select",
+                "help": "t(The synchronization whose stale objects this step sweeps.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/synchronization"
+            },
+            {
+                "key": "targetIdsPosition",
+                "label": "t(Target id path)",
+                "type": "text",
+                "help": "t(Dot-path to the synced target uuid on each item. Defaults to \"uuid\".)"
+            },
+            {
+                "key": "fetchComplete",
+                "label": "t(Fetch complete)",
+                "type": "text",
+                "help": "t(Only sweep after a complete pass; a partial run must never delete what it did not reach. A literal true/false, or a dot-path read from the first item.)"
+            },
+            {
+                "key": "force",
+                "label": "t(Force deletion)",
+                "type": "boolean",
+                "help": "t(Overrides the deletion-ratio guard that stops a sweep from deleting an implausible share of the synchronization's objects. It never bypasses the fetch-completeness gate. Leave off unless a large legitimate cleanup was refused and you have verified the source really dropped those objects.)"
+            },
+            {
+                "key": "onError",
+                "label": "t(On error)",
+                "type": "text",
+                "help": "t(What a failed item does to the run: stop, continue or dead_letter.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\EventEmitNode": {
+        "getId": "openconnector.event-emit",
+        "getDisplayName": "t(Emit an event)",
+        "getDescription": "t(Emit a CloudEvent for every item, delivered through the configured event subscriptions.)",
+        "getIcon": "core/actions/share.svg",
+        "configKeys": [
+            "type",
+            "source",
+            "subject",
+            "output",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "type",
+                "label": "t(Event type)",
+                "type": "text",
+                "help": "t(The CloudEvent \"type\", e.g. \"nl.example.object.updated\". Subscriptions match on it.)",
+                "required": true
+            },
+            {
+                "key": "source",
+                "label": "t(Event source)",
+                "type": "text",
+                "help": "t(The CloudEvent \"source\" URI identifying the emitter.)",
+                "required": true
+            },
+            {
+                "key": "subject",
+                "label": "t(Subject)",
+                "type": "text",
+                "help": "t(Optional CloudEvent \"subject\". Supports {{dotted.path}} placeholders resolved from each item.)"
+            },
+            {
+                "key": "output",
+                "label": "t(Output key)",
+                "type": "text",
+                "help": "t(Item key the emit summary is written under. Defaults to \"eventResult\".)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\FetchFileNode": {
+        "getId": "openconnector.fetch-file",
+        "getDisplayName": "t(Fetch files)",
+        "getDescription": "t(Runs a configured fetch-file rule against every record in the page, attaching its files to the object that was just written. The fetch is started, not awaited.)",
+        "getIcon": "paperclip",
+        "configKeys": [
+            "rule",
+            "objectIdPath",
+            "synchronization",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "rule",
+                "label": "t(Fetch-file rule)",
+                "type": "select",
+                "help": "t(The configured rule describing which files to fetch, and from where.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/rule"
+            },
+            {
+                "key": "objectIdPath",
+                "label": "t(Object id path)",
+                "type": "text",
+                "help": "t(Dot-path to the written object's id on each record. Defaults to \"syncedId\", which the step after the write sets.)"
+            },
+            {
+                "key": "synchronization",
+                "label": "t(Synchronization)",
+                "type": "select",
+                "help": "t(Recorded so the run log can link back. It does not change what is fetched.)",
+                "optionsFrom": "/apps/openregister/api/objects/integriq/synchronization"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\SourceCallNode": {
+        "getId": "openconnector.source-call",
+        "getDisplayName": "t(Call a source)",
+        "getDescription": "t(Make one governed API call per item through a configured source, and put the response on the item.)",
+        "getIcon": "integriq/flow-source-call.svg",
+        "configKeys": [
+            "source",
+            "endpoint",
+            "method",
+            "query",
+            "headers",
+            "body",
+            "bodyFrom",
+            "output",
+            "concurrency",
+            "decode",
+            "onError",
+            "acceptStatuses",
+            "responseMapping"
+        ],
+        "configForm": [
+            {
+                "key": "source",
+                "label": "t(Source)",
+                "type": "select",
+                "help": "t(The configured source this step calls. The call inherits its base URL, authentication and rate limits.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/source"
+            },
+            {
+                "key": "endpoint",
+                "label": "t(Endpoint)",
+                "type": "text",
+                "help": "t(Path appended to the source's base URL. It must stay within the source \u2014 a path that escapes it is refused.)"
+            },
+            {
+                "key": "method",
+                "label": "t(Method)",
+                "type": "text",
+                "help": "t(The HTTP verb: GET, POST, PUT, PATCH or DELETE. GET when empty.)"
+            },
+            {
+                "key": "output",
+                "label": "t(Field to store the response in)",
+                "type": "text",
+                "help": "t(With a field name, the incoming item is preserved and the response is added under it. Empty means the response replaces the item.)"
+            },
+            {
+                "key": "decode",
+                "label": "t(Read the response as)",
+                "type": "text",
+                "help": "t(How the response body is read: auto, json, yaml, base64+yaml, base64+json or text. Auto reads JSON, and YAML when the server says it is YAML. Use yaml for a raw YAML file, and base64+yaml for a file API that returns the file base64-encoded in \"content\".)"
+            },
+            {
+                "key": "onError",
+                "label": "t(On error)",
+                "type": "text",
+                "help": "t(What a failed call does to the run: stop, continue or dead_letter. With continue, the failed item carries the error and the other items go on.)"
+            },
+            {
+                "key": "concurrency",
+                "label": "t(Concurrent calls)",
+                "type": "number",
+                "help": "t(How many items are called at once, between 1 and 20. The default of 5 suits most sources; raising it multiplies load on the other side.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\SourcePaginateNode": {
+        "getId": "openconnector.source-paginate",
+        "getDisplayName": "t(Fetch pages from a source)",
+        "getDescription": "t(Fetch a synchronization's source and emit one item per page, each carrying that page's objects.)",
+        "getIcon": "integriq/flow-synchronization-run.svg",
+        "configKeys": [
+            "synchronization",
+            "pageSize",
+            "maxPages",
+            "output",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "synchronization",
+                "label": "t(Synchronization)",
+                "type": "select",
+                "help": "t(The synchronization whose source this step fetches.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/synchronization"
+            },
+            {
+                "key": "pageSize",
+                "label": "t(Page size)",
+                "type": "number",
+                "help": "t(How many objects one emitted page carries. This is the batching knob for every downstream step. Defaults to %1$s. [\"100\"])"
+            },
+            {
+                "key": "maxPages",
+                "label": "t(Maximum pages)",
+                "type": "number",
+                "help": "t(Ceiling on the number of page items this step may emit. A fetch above it fails rather than returning a shortened list. Defaults to %1$s. [\"1000\"])"
+            },
+            {
+                "key": "output",
+                "label": "t(Output key)",
+                "type": "text",
+                "help": "t(Item key the page is written under. Leave empty to make the page the item itself.)"
+            },
+            {
+                "key": "onError",
+                "label": "t(On error)",
+                "type": "text",
+                "help": "t(What a failed fetch does to the run: stop, continue or dead_letter.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\Flow\\SynchronizationRunNode": {
+        "getId": "openconnector.synchronization-run",
+        "getDisplayName": "t(Run a synchronization)",
+        "getDescription": "t(Run a configured synchronization and emit one item per synchronised object, with the run totals on each.)",
+        "getIcon": "integriq/flow-synchronization-run.svg",
+        "configKeys": [
+            "synchronization",
+            "force",
+            "output",
+            "maxItems",
+            "onError"
+        ],
+        "configForm": [
+            {
+                "key": "synchronization",
+                "label": "t(Synchronization)",
+                "type": "select",
+                "help": "t(The configured synchronization this step runs, with its own source, mapping and target.)",
+                "required": true,
+                "optionsFrom": "/apps/openregister/api/objects/integriq/synchronization"
+            },
+            {
+                "key": "force",
+                "label": "t(Force a full pass)",
+                "type": "boolean",
+                "help": "t(Ignores the unchanged-object skip and re-processes everything the source returns. Slower; use it after changing a mapping.)"
+            },
+            {
+                "key": "output",
+                "label": "t(Field to store the summary in)",
+                "type": "text",
+                "help": "t(With a field name, the incoming item is preserved and the run summary is added under it. Empty means the summary replaces the item.)"
+            },
+            {
+                "key": "maxItems",
+                "label": "t(Item ceiling)",
+                "type": "number",
+                "help": "t(The most synchronised objects this step may emit as items. The summary always reports the full run.)"
+            },
+            {
+                "key": "onError",
+                "label": "t(When the run fails)",
+                "type": "text",
+                "help": "t(\"stop\" (default) fails the step; \"continue\" records the error on the item and carries on; \"dead_letter\" routes the item to the flow's dead-letter handling.)"
+            }
+        ],
+        "scope0": true,
+        "scope1": true,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\WorkflowEngine\\CallEndpointOperation": {
+        "getEntityId": "OCA\\WorkflowEngine\\Entity\\File",
+        "getDisplayName": "t(Call endpoint)",
+        "getDescription": "t(Calls a configured Integriq endpoint when this rule matches.)",
+        "getIcon": "integriq/app.svg",
+        "scope0": true,
+        "scope1": false,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\WorkflowEngine\\FireCloudEventOperation": {
+        "getEntityId": "OCA\\WorkflowEngine\\Entity\\File",
+        "getDisplayName": "t(Fire CloudEvent)",
+        "getDescription": "t(Emits a configured CloudEvent when this rule matches.)",
+        "getIcon": "integriq/app.svg",
+        "scope0": true,
+        "scope1": false,
+        "scope2": false,
+        "scope3": false
+    },
+    "OCA\\Integriq\\WorkflowEngine\\RunSynchronizationOperation": {
+        "getEntityId": "OCA\\WorkflowEngine\\Entity\\File",
+        "getDisplayName": "t(Run synchronization)",
+        "getDescription": "t(Runs a configured Integriq synchronization when this rule matches.)",
+        "getIcon": "integriq/app.svg",
+        "scope0": true,
+        "scope1": false,
+        "scope2": false,
+        "scope3": false
+    }
+}
