@@ -1,0 +1,449 @@
+{
+    "status-json-ref": {
+        "ref": "R-1",
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Bearer plain-cipher"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": []
+    },
+    "besluit-empty-body": {
+        "ref": "req-1-besluit-T",
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/api/v1/besluiten",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Bearer plain-cipher"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": []
+    },
+    "ref-not-string": {
+        "ref": "req-1-status-T",
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Bearer plain-cipher"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": []
+    },
+    "scheme": {
+        "ref": "R-2",
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/statussen",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Token plain-c"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": []
+    },
+    "http-500": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "DSO-LV endpoint responded with HTTP 500.",
+            null
+        ],
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Bearer plain-cipher"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": []
+    },
+    "http-199": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "DSO-LV endpoint responded with HTTP 199.",
+            null
+        ],
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Bearer plain-cipher"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": []
+    },
+    "http-300": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "DSO-LV endpoint responded with HTTP 300.",
+            null
+        ],
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Bearer plain-cipher"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": []
+    },
+    "transport": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "The DSO-LV request failed unexpectedly: refused",
+            "GuzzleHttp\\Exception\\ConnectException"
+        ],
+        "requests": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "Content-Length": [
+                        "20"
+                    ],
+                    "User-Agent": [
+                        "GuzzleHttp/7"
+                    ],
+                    "Host": [
+                        "dso.example"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Authorization": [
+                        "Bearer plain-cipher"
+                    ]
+                },
+                "{\"status\":\"x\",\"n\":1}"
+            ]
+        ],
+        "mtls": [],
+        "warnings": [
+            [
+                "[DsoClient] unexpected transport failure",
+                [
+                    "exception"
+                ],
+                null
+            ]
+        ]
+    },
+    "no-base": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "t(DSO base URL missing): `configuration.baseUrl` is required.",
+            null
+        ],
+        "requests": [],
+        "mtls": [],
+        "warnings": []
+    },
+    "base-slash-only": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "t(DSO base URL missing): `configuration.baseUrl` is required.",
+            null
+        ],
+        "requests": [],
+        "mtls": [],
+        "warnings": []
+    },
+    "unknown-type": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "Unknown DSO outbound message type \"other\" (must be `status` or `besluit`).",
+            null
+        ],
+        "requests": [],
+        "mtls": [],
+        "warnings": []
+    },
+    "no-token": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "t(DSO credential missing): `configuration.authentication.encryptedToken` is required. No plaintext-token fallback is permitted.",
+            null
+        ],
+        "requests": [],
+        "mtls": [],
+        "warnings": []
+    },
+    "decrypt-fails": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "The stored DSO API token could not be decrypted: bad cipher",
+            null
+        ],
+        "requests": [],
+        "mtls": [],
+        "warnings": []
+    },
+    "mtls-ok": {
+        "ref": "M-1",
+        "requests": [],
+        "mtls": [
+            [
+                "POST",
+                "https://dso.example/api/v1/besluiten",
+                {
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    "json": {
+                        "status": "x",
+                        "n": 1
+                    },
+                    "http_errors": false
+                }
+            ]
+        ],
+        "warnings": []
+    },
+    "mtls-fails": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "The DSO-LV mTLS request failed (MTLS_HANDSHAKE): handshake",
+            "OCA\\Integriq\\Exception\\MtlsTransportException"
+        ],
+        "requests": [],
+        "mtls": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    "json": {
+                        "status": "x",
+                        "n": 1
+                    },
+                    "http_errors": false
+                }
+            ]
+        ],
+        "warnings": [
+            [
+                "[DsoClient] mTLS request failed",
+                [
+                    "exception",
+                    "errorCode"
+                ],
+                "MTLS_HANDSHAKE"
+            ]
+        ]
+    },
+    "mtls-guzzle": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "The DSO-LV request failed unexpectedly: down",
+            "GuzzleHttp\\Exception\\ConnectException"
+        ],
+        "requests": [],
+        "mtls": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    "json": {
+                        "status": "x",
+                        "n": 1
+                    },
+                    "http_errors": false
+                }
+            ]
+        ],
+        "warnings": [
+            [
+                "[DsoClient] unexpected transport failure",
+                [
+                    "exception"
+                ],
+                null
+            ]
+        ]
+    },
+    "mtls-404": {
+        "thrown": [
+            "OCA\\Integriq\\Exception\\DsoProviderException",
+            "DSO-LV endpoint responded with HTTP 404.",
+            null
+        ],
+        "requests": [],
+        "mtls": [
+            [
+                "POST",
+                "https://dso.example/api/v1/statussen",
+                {
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    "json": {
+                        "status": "x",
+                        "n": 1
+                    },
+                    "http_errors": false
+                }
+            ]
+        ],
+        "warnings": []
+    }
+}

@@ -184,21 +184,18 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 		array $sourceConfiguration,
 		FileService $fileService
 	): array {
-		$url = (string)($entry['url'] ?? '');
-		if ($url === '') {
-			return $this->failed(entry: $entry, error: 'The bijlage has no URL.', terminal: true);
+		$refusal = $this->refuseUrl(entry: $entry);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// The URL comes from the inbound payload and the request carries the
-		// source's credential, so only https is fetched (no file://, no plain http).
-		if (strtolower((string)parse_url($url, PHP_URL_SCHEME)) !== 'https') {
-			return $this->failed(entry: $entry, error: 'Only https bijlage URLs are downloaded.', terminal: true);
-		}
-
-		$maxBytes = (int)($sourceConfiguration['maxFileSize'] ?? self::DEFAULT_MAX_FILE_SIZE);
-		if ($maxBytes <= 0) {
-			$maxBytes = self::DEFAULT_MAX_FILE_SIZE;
-		}
+		$job = [
+			'request' => $request,
+			'sourceConfiguration' => $sourceConfiguration,
+			'fileService' => $fileService,
+			'url' => (string)$entry['url'],
+			'maxBytes' => $this->maxBytes(sourceConfiguration: $sourceConfiguration),
+		];
 
 		$attempts = (int)($entry['attempts'] ?? 0);
 		$lastError = '';
@@ -206,29 +203,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 			$attempts++;
 			$entry['attempts'] = $attempts;
 			try {
-				$stream = $this->client->download(
-					sourceConfiguration: $sourceConfiguration,
-					url: $url,
-					maxBytes: $maxBytes
-				);
-				try {
-					$file = $fileService->addFile(
-						objectEntity: $request,
-						fileName: (string)($entry['name'] ?? ''),
-						content: $stream,
-						tags: [self::TAG]
-					);
-				} finally {
-					if (is_resource($stream) === true) {
-						fclose($stream);
-					}
-				}
-
-				unset($entry['error']);
-				$entry['status'] = 'stored';
-				$entry['fileId'] = (int)$file->getId();
-
-				return $entry;
+				return $this->storeOnce(job: $job, entry: $entry);
 			} catch (PayloadTooLargeException $exception) {
 				$entry['status'] = 'too-large';
 				$entry['error'] = $exception->getMessage();
@@ -251,6 +226,81 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 
 		return $this->failed(entry: $entry, error: $lastError, terminal: false);
 	}//end fetchOne()
+
+	/**
+	 * The failed entry when the bijlage URL may not be fetched, or null when it may.
+	 *
+	 * The URL comes from the inbound payload and the request carries the
+	 * source's credential, so only https is fetched (no file://, no plain http).
+	 *
+	 * @param array $entry The attachment entry.
+	 *
+	 * @return array|null The terminally failed entry, or null.
+	 */
+	private function refuseUrl(array $entry): ?array {
+		$url = (string)($entry['url'] ?? '');
+		if ($url === '') {
+			return $this->failed(entry: $entry, error: 'The bijlage has no URL.', terminal: true);
+		}
+
+		if (strtolower((string)parse_url($url, PHP_URL_SCHEME)) !== 'https') {
+			return $this->failed(entry: $entry, error: 'Only https bijlage URLs are downloaded.', terminal: true);
+		}
+
+		return null;
+	}//end refuseUrl()
+
+	/**
+	 * The download size cap: the source's maxFileSize, or the default when unset or not positive.
+	 *
+	 * @param array $sourceConfiguration The `dso` source's configuration.
+	 *
+	 * @return integer Bytes.
+	 */
+	private function maxBytes(array $sourceConfiguration): int {
+		$maxBytes = (int)($sourceConfiguration['maxFileSize'] ?? self::DEFAULT_MAX_FILE_SIZE);
+		if ($maxBytes <= 0) {
+			return self::DEFAULT_MAX_FILE_SIZE;
+		}
+
+		return $maxBytes;
+	}//end maxBytes()
+
+	/**
+	 * One attempt: download the bijlage with the source's credential and store it on the request.
+	 *
+	 * @param array{request: ObjectEntity, sourceConfiguration: array, fileService: FileService, url: string, maxBytes: int} $job   The download.
+	 * @param array                                                                                                         $entry The attachment entry.
+	 *
+	 * @return array The stored entry.
+	 *
+	 * @throws Exception When the download or the store fails.
+	 */
+	private function storeOnce(array $job, array $entry): array {
+		$stream = $this->client->download(
+			sourceConfiguration: $job['sourceConfiguration'],
+			url: $job['url'],
+			maxBytes: $job['maxBytes']
+		);
+		try {
+			$file = $job['fileService']->addFile(
+				objectEntity: $job['request'],
+				fileName: (string)($entry['name'] ?? ''),
+				content: $stream,
+				tags: [self::TAG]
+			);
+		} finally {
+			if (is_resource($stream) === true) {
+				fclose($stream);
+			}
+		}
+
+		unset($entry['error']);
+		$entry['status'] = 'stored';
+		$entry['fileId'] = (int)$file->getId();
+
+		return $entry;
+	}//end storeOnce()
 
 	/**
 	 * Whether an entry still needs a download: `pending`, or `failed` with attempts left.

@@ -1,0 +1,509 @@
+{
+    "stored": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [],
+        "warnings": [],
+        "closed": [
+            true
+        ],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "stored",
+            "attempts": 1,
+            "fileId": 77
+        }
+    },
+    "no-url": {
+        "downloads": [],
+        "addFile": [],
+        "pauses": [],
+        "warnings": [],
+        "closed": [],
+        "result": {
+            "name": "a.pdf",
+            "status": "failed",
+            "error": "The bijlage has no URL.",
+            "attempts": 3
+        }
+    },
+    "http-url": {
+        "downloads": [],
+        "addFile": [],
+        "pauses": [],
+        "warnings": [],
+        "closed": [],
+        "result": {
+            "url": "http://dso.example/a",
+            "name": "a.pdf",
+            "status": "failed",
+            "attempts": 3,
+            "error": "Only https bijlage URLs are downloaded."
+        }
+    },
+    "upper-https": {
+        "downloads": [
+            [
+                "HTTPS://dso.example/a",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [],
+        "warnings": [],
+        "closed": [
+            true
+        ],
+        "result": {
+            "url": "HTTPS://dso.example/a",
+            "name": "a.pdf",
+            "status": "stored",
+            "attempts": 1,
+            "fileId": 77
+        }
+    },
+    "file-url": {
+        "downloads": [],
+        "addFile": [],
+        "pauses": [],
+        "warnings": [],
+        "closed": [],
+        "result": {
+            "url": "file:///etc/passwd",
+            "name": "a.pdf",
+            "status": "failed",
+            "attempts": 3,
+            "error": "Only https bijlage URLs are downloaded."
+        }
+    },
+    "max-size": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                10,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [],
+        "warnings": [],
+        "closed": [
+            true
+        ],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "stored",
+            "attempts": 1,
+            "fileId": 77
+        }
+    },
+    "max-size-zero": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [],
+        "warnings": [],
+        "closed": [
+            true
+        ],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "stored",
+            "attempts": 1,
+            "fileId": 77
+        }
+    },
+    "max-size-negative": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [],
+        "warnings": [],
+        "closed": [
+            true
+        ],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "stored",
+            "attempts": 1,
+            "fileId": 77
+        }
+    },
+    "too-large": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [],
+        "pauses": [],
+        "warnings": [],
+        "closed": [],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "too-large",
+            "attempts": 1,
+            "error": "too big"
+        }
+    },
+    "retry-then-ok": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ],
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ],
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [
+            1,
+            2
+        ],
+        "warnings": [
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 1 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "network down"
+                }
+            ],
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 2 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "network down"
+                }
+            ]
+        ],
+        "closed": [
+            true
+        ],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "stored",
+            "attempts": 3,
+            "fileId": 77
+        }
+    },
+    "all-fail": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ],
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ],
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [],
+        "pauses": [
+            1,
+            2
+        ],
+        "warnings": [
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 1 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "network down"
+                }
+            ],
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 2 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "network down"
+                }
+            ],
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 3 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "network down"
+                }
+            ]
+        ],
+        "closed": [],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "failed",
+            "attempts": 3,
+            "error": "network down"
+        }
+    },
+    "resumed-attempts": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [],
+        "pauses": [],
+        "warnings": [
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 3 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "network down"
+                }
+            ]
+        ],
+        "closed": [],
+        "result": {
+            "attempts": 3,
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "failed",
+            "error": "network down"
+        }
+    },
+    "exhausted": {
+        "downloads": [],
+        "addFile": [],
+        "pauses": [],
+        "warnings": [],
+        "closed": [],
+        "result": {
+            "attempts": 3,
+            "error": "",
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "failed"
+        }
+    },
+    "add-file-fails": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ],
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ],
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ],
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ],
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [
+            1,
+            2
+        ],
+        "warnings": [
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 1 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "disk full"
+                }
+            ],
+            [
+                "[DsoAttachmentFetcher] bijlage download attempt 2 failed",
+                {
+                    "name": "a.pdf",
+                    "exception": "disk full"
+                }
+            ]
+        ],
+        "closed": [
+            true,
+            true,
+            true
+        ],
+        "result": {
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "status": "stored",
+            "attempts": 3,
+            "fileId": 77
+        }
+    },
+    "error-propagates": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [],
+        "pauses": [],
+        "warnings": [],
+        "closed": [],
+        "thrown": [
+            "Error",
+            "defect"
+        ]
+    },
+    "old-error-cleared": {
+        "downloads": [
+            [
+                "https://dso.example/docs/a.pdf",
+                104857600,
+                true
+            ]
+        ],
+        "addFile": [
+            [
+                "verzoek-1",
+                "a.pdf",
+                "PDF",
+                false,
+                [
+                    "dso-bijlage"
+                ]
+            ]
+        ],
+        "pauses": [],
+        "warnings": [],
+        "closed": [
+            true
+        ],
+        "result": {
+            "status": "stored",
+            "attempts": 2,
+            "name": "a.pdf",
+            "url": "https://dso.example/docs/a.pdf",
+            "fileId": 77
+        }
+    }
+}
