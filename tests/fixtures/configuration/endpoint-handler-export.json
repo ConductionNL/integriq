@@ -23,5 +23,12 @@
     "rules-keyed": "{\"rules\":{\"a\":\"rule-three\"},\"slug\":\"entity-uuid\"}",
     "config-secret": "{\"configuration\":{\"headers\":{\"Authorization\":\"***REDACTED***\",\"Accept\":\"json\"},\"apiKey\":\"***REDACTED***\",\"password\":\"***REDACTED***\",\"plain\":1},\"slug\":\"entity-uuid\"}",
     "config-not-array": "{\"configuration\":\"text\",\"slug\":\"entity-uuid\"}",
-    "config-empty": "{\"configuration\":[],\"slug\":\"entity-uuid\"}"
+    "config-empty": "{\"configuration\":[],\"slug\":\"entity-uuid\"}",
+    "config-session-header": "{\"configuration\":{\"X-Session-Id\":\"***REDACTED***\",\"headers\":{\"X-Session-Id\":\"***REDACTED***\",\"Accept\":\"json\"}},\"slug\":\"entity-uuid\"}",
+    "top-level-secret": "{\"name\":\"n\",\"apiKey\":\"***REDACTED***\",\"clientSecret\":\"***REDACTED***\",\"slug\":\"entity-uuid\"}",
+    "configurations-list": "{\"configurations\":[\"profile-a\"],\"conditions\":{\"token\":\"***REDACTED***\",\"==\":[1,1]},\"slug\":\"entity-uuid\"}",
+    "nested-under-sensitive": "{\"configuration\":{\"auth\":{\"user\":\"***REDACTED***\",\"pass\":\"***REDACTED***\",\"value\":\"***REDACTED***\"},\"timeout\":5},\"slug\":\"entity-uuid\"}",
+    "header-list": "{\"configuration\":{\"headers\":[{\"name\":\"Authorization\",\"value\":\"***REDACTED***\"},{\"name\":\"X-Session-Token\",\"value\":\"***REDACTED***\"},{\"name\":\"Accept\",\"value\":\"json\"}]},\"slug\":\"entity-uuid\"}",
+    "url-secrets": "{\"endpoint\":\"\\/api\\/x?api_key=***REDACTED***&page=2\",\"configuration\":{\"url\":\"https:\\/\\/user:***REDACTED***@host.example\\/p?token=***REDACTED***&q={{ id }}\",\"plainUrl\":\"https:\\/\\/host.example\\/p?q=1\"},\"slug\":\"entity-uuid\"}",
+    "session-field-kept": "{\"configuration\":{\"sessionTimeout\":30,\"session\":\"cookie-store\"},\"slug\":\"entity-uuid\"}"
 }

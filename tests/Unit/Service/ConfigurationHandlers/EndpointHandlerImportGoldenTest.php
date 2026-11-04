@@ -30,6 +30,9 @@ use PHPUnit\Framework\TestCase;
  * ENDPOINT_IMPORT_GOLDEN=1.
  *
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler
+ * @uses   \OCA\Integriq\Service\Security\SensitiveFieldRegistry
+ * @uses   \OCA\Integriq\Service\Security\RedactedValueFilter
+ * @uses   \OCA\Integriq\Service\Security\SensitiveValueMasker
  */
 class EndpointHandlerImportGoldenTest extends TestCase {
 
@@ -56,7 +59,7 @@ class EndpointHandlerImportGoldenTest extends TestCase {
 			}
 		);
 
-		return new EndpointHandler($or, $this->createMock(SensitiveFieldRegistry::class));
+		return new EndpointHandler($or, new SensitiveFieldRegistry());
 	}//end handler()
 
 	/**

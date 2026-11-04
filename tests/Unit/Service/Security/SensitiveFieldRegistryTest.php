@@ -244,7 +244,8 @@ class SensitiveFieldRegistryTest extends TestCase {
 			]
 		);
 
-		$this->assertSame(['***REDACTED***', '***REDACTED***', [['k' => '***REDACTED***'], '***REDACTED***', '***REDACTED***']], $result['auth']);
+		// A map inside a list under a sensitive key is a credential entry whose own keys can be the secret, so it is masked whole.
+		$this->assertSame(['***REDACTED***', '***REDACTED***', ['***REDACTED***', '***REDACTED***', '***REDACTED***']], $result['auth']);
 		$this->assertSame(
 			['credentialRef' => ['credentialId' => 'c-1'], 'password' => '***REDACTED***', 'headers' => ['Cookie' => ['***REDACTED***']]],
 			$result['authentication']

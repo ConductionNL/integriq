@@ -380,9 +380,7 @@
     "configuration": {
         "export": {
             "configuration": {
-                "redacted": {
-                    "token": "s3cret"
-                }
+                "token": "***REDACTED***"
             },
             "name": "n",
             "slug": "entity-configuration"
