@@ -38,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
  */
-class PlaceholderSecretRepair {
+class PlaceholderSecretRepair implements PlaceholderSecretRepairInterface {
 
 	/**
 	 * The schemas whose objects can hold an imported credential.

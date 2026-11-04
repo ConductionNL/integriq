@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command;
 
-use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -41,10 +41,10 @@ class BlankPlaceholderSecrets extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param PlaceholderSecretRepair $repair The repair.
+	 * @param PlaceholderSecretRepairInterface $repair The repair.
 	 */
 	public function __construct(
-		private readonly PlaceholderSecretRepair $repair,
+		private readonly PlaceholderSecretRepairInterface $repair,
 	) {
 		parent::__construct();
 	}//end __construct()

@@ -20,9 +20,12 @@ namespace OCA\Integriq\Tests\Unit\Service\Security;
 use OCA\Integriq\Command\BlankPlaceholderSecrets;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\ServiceBindings;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -33,6 +36,7 @@ use Symfony\Component\Console\Tester\CommandTester;
  *
  * @covers \OCA\Integriq\Service\Security\PlaceholderSecretRepair
  * @covers \OCA\Integriq\Command\BlankPlaceholderSecrets
+ * @covers \OCA\Integriq\Service\ServiceBindings
  */
 class PlaceholderSecretRepairTest extends TestCase {
 
@@ -172,4 +176,23 @@ class PlaceholderSecretRepairTest extends TestCase {
 		$this->assertSame(1, $tester->execute(['--apply' => true]));
 		$this->assertSame(1, $tester->execute(['--apply' => true, '--json' => true]));
 	}//end testAFailedApplyExitsNonZero()
+
+	/**
+	 * The command's contract resolves to the repair in the container.
+	 *
+	 * @return void
+	 */
+	public function testTheCommandContractIsBoundToTheRepair(): void {
+		$aliases = [];
+		$context = $this->createMock(IRegistrationContext::class);
+		$context->method('registerServiceAlias')->willReturnCallback(
+			static function (string $alias, string $target) use (&$aliases): void {
+				$aliases[$alias] = $target;
+			}
+		);
+
+		(new ServiceBindings())->register(context: $context);
+
+		$this->assertSame(PlaceholderSecretRepair::class, $aliases[PlaceholderSecretRepairInterface::class] ?? null);
+	}//end testTheCommandContractIsBoundToTheRepair()
 }//end class
