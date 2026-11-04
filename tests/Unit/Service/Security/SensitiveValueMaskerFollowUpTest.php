@@ -62,6 +62,28 @@ class SensitiveValueMaskerFollowUpTest extends TestCase {
 	}//end testAnApiKeyMapIsMaskedWhole()
 
 	/**
+	 * An API-key map whose keys are letters only is masked whole too, in exports and in logs.
+	 *
+	 * @return void
+	 */
+	public function testALettersOnlyApiKeyMapIsMaskedWhole(): void {
+		$config = [
+			'authentication' => ['type' => 'apikey', 'keys' => ['municipalityPartnerKey' => 'alice'], 'apiKeys' => ['Zaak_Koppeling' => 'bob']],
+			'keys' => ['TopLevelPartnerKey' => 'carol'],
+			'settings' => ['keys' => ['NestedPartnerKey' => 'dave']],
+		];
+		$registry = new SensitiveFieldRegistry();
+		foreach ([$registry->redactConfiguration(data: $config), $registry->redactArray(data: $config, extraExactNames: null)] as $out) {
+			$this->assertSame(self::P, $out['authentication']['keys']);
+			$this->assertSame(self::P, $out['authentication']['apiKeys']);
+			$this->assertSame(self::P, $out['keys']);
+			$this->assertSame(self::P, $out['settings']['keys']);
+			$this->assertStringNotContainsString('PartnerKey', json_encode($out));
+			$this->assertStringNotContainsString('Koppeling', json_encode($out));
+		}
+	}//end testALettersOnlyApiKeyMapIsMaskedWhole()
+
+	/**
 	 * A nested settings map made of named settings keeps its structure.
 	 *
 	 * @return void

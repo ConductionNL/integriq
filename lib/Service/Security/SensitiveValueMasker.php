@@ -198,6 +198,10 @@ final class SensitiveValueMasker {
 		}
 
 		if (array_is_list($value) === false) {
+			if ($this->registry->isCredentialTable(key: $this->parentKey, value: $value) === true) {
+				return SensitiveFieldRegistry::PLACEHOLDER;
+			}
+
 			return $this->maskSettingsMap(map: $value, extraExactNames: $extraExactNames);
 		}
 
@@ -300,6 +304,11 @@ final class SensitiveValueMasker {
 		foreach ($map as $key => $value) {
 			if ($this->keepsReadable(key: $key, value: $value) === true) {
 				$map[$key] = $this->redactReadable(value: $value, extraExactNames: $extraExactNames);
+				continue;
+			}
+
+			if ($this->registry->isCredentialTable(key: $key, value: $value) === true) {
+				$map[$key] = SensitiveFieldRegistry::PLACEHOLDER;
 				continue;
 			}
 

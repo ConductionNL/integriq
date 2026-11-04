@@ -38,6 +38,22 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	public const PLACEHOLDER = '***REDACTED***';
 
 	/**
+	 * Keys whose map is an API-key table (`keys: {"<api key>": "<user>"}`):
+	 * its own keys are the secret, whatever their shape.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CREDENTIAL_TABLE_KEYS = ['keys', 'apiKeys'];
+
+	/**
+	 * The only keys a map under a CREDENTIAL_TABLE_KEYS key may hold and still be
+	 * read per key: a reference to a stored key (`apiKeys: {"id": "<uuid>"}`).
+	 *
+	 * @var array<int, string>
+	 */
+	private const KEY_REFERENCE_KEYS = ['id', 'uuid', 'value', 'credentialRef'];
+
+	/**
 	 * Header names that always carry credentials, matched case-insensitively
 	 * as an exact match on the (last dot-segment of the) key name. Lifted
 	 * verbatim from CallService::redactSecretsFromConfig().
@@ -385,4 +401,22 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	public function withoutRedactedValues(array $data): array {
 		return (new RedactedValueFilter())->filter(data: $data);
 	}//end withoutRedactedValues()
+
+	/**
+	 * Whether a value is a map under an API-key table key that is not a key reference.
+	 *
+	 * @param int|string $key   The key the value sits under.
+	 * @param mixed      $value The value.
+	 *
+	 * @return boolean
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function isCredentialTable(int|string $key, mixed $value): bool {
+		if (is_array($value) === false || array_is_list($value) === true || in_array($key, self::CREDENTIAL_TABLE_KEYS, true) === false) {
+			return false;
+		}
+
+		return array_diff(array_map('strval', array_keys($value)), self::KEY_REFERENCE_KEYS) !== [];
+	}//end isCredentialTable()
 }//end class
