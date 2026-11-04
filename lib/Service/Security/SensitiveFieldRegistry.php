@@ -38,6 +38,22 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	public const PLACEHOLDER = '***REDACTED***';
 
 	/**
+	 * Keys whose map is an API-key table (`keys: {"<api key>": "<user>"}`):
+	 * its own keys are the secret, whatever their shape.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CREDENTIAL_TABLE_KEYS = ['keys', 'apiKeys'];
+
+	/**
+	 * The only keys a map under a CREDENTIAL_TABLE_KEYS key may hold and still be
+	 * read per key: a reference to a stored key (`apiKeys: {"id": "<uuid>"}`).
+	 *
+	 * @var array<int, string>
+	 */
+	private const KEY_REFERENCE_KEYS = ['id', 'uuid', 'value', 'credentialRef'];
+
+	/**
 	 * Header names that always carry credentials, matched case-insensitively
 	 * as an exact match on the (last dot-segment of the) key name. Lifted
 	 * verbatim from CallService::redactSecretsFromConfig().
@@ -93,11 +109,12 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	private const SECRET_HEADER_PATTERN = '/session/i';
 
 	/**
-	 * A value that is only a `{{ ... }}` template, resolved at call time and holding no secret itself.
+	 * A value that is only a bare `{{ variable.path }}` template, resolved at call time
+	 * and holding no secret itself. A template with a literal or a filter is not one.
 	 *
 	 * @var string
 	 */
-	private const PURE_TEMPLATE = '/^\{\{[^{}]*\}\}$/';
+	private const PURE_TEMPLATE = '/^\{\{\s*[A-Za-z_][A-Za-z0-9_.]*\s*\}\}$/';
 
 	/**
 	 * Keys of a JSON response body that carry tokens an upstream issued,
@@ -171,7 +188,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 		$redacted = $this->redactArray(data: $headers);
 		foreach ($redacted as $name => $value) {
 			if (is_string($name) === true && $this->isSensitiveHeaderName(name: $name) === true) {
-				$redacted[$name] = (new SensitiveValueMasker(registry: $this))->mask(value: $value, extraExactNames: null);
+				$redacted[$name] = (new SensitiveValueMasker(registry: $this, parentKey: $name, forExport: false))->mask(value: $value, extraExactNames: null);
 			}
 		}
 
@@ -235,19 +252,37 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function redactArray(array $data, ?array $extraExactNames = null): array {
+		return $this->redactEntries(data: $data, options: ['extraExactNames' => $extraExactNames, 'forExport' => false]);
+	}//end redactArray()
+
+	/**
+	 * Redact every entry of a map, at any depth.
+	 *
+	 * @param array<string|int, mixed>                                     $data    The data to redact.
+	 * @param array{extraExactNames: array<int, string>|null, forExport: bool} $options Extra names, and whether an export reads the result.
+	 *
+	 * @return array<string|int, mixed> The redacted copy.
+	 */
+	private function redactEntries(array $data, array $options): array {
+		$extraExactNames = $options['extraExactNames'];
 		foreach ($data as $key => $value) {
+			$masker = new SensitiveValueMasker(registry: $this, parentKey: (string)$key, forExport: $options['forExport']);
+			if ($masker->isPublicParameter(key: (string)$key, value: $value) === true) {
+				continue;
+			}
+
 			if ($this->isSensitiveKey(key: (string)$key, extraExactNames: $extraExactNames) === true) {
-				$data[$key] = (new SensitiveValueMasker(registry: $this))->mask(value: $value, extraExactNames: $extraExactNames);
+				$data[$key] = $masker->mask(value: $value, extraExactNames: $extraExactNames);
 				continue;
 			}
 
 			if (is_array($value) === true) {
-				$data[$key] = $this->redactArray(data: $value, extraExactNames: $extraExactNames);
+				$data[$key] = $this->redactEntries(data: $value, options: $options);
 			}
 		}
 
 		return $data;
-	}//end redactArray()
+	}//end redactEntries()
 
 	/**
 	 * Redacts a stored configuration by name and by structure, for export.
@@ -265,7 +300,10 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 */
 	public function redactConfiguration(array $data): array {
 		// The structure is read first, while header pairs still carry their header names.
-		return $this->redactArray(data: (new StructuredSecretRedactor(registry: $this))->redact(data: $data));
+		return $this->redactEntries(
+			data: (new StructuredSecretRedactor(registry: $this))->redact(data: $data),
+			options: ['extraExactNames' => null, 'forExport' => true]
+		);
 	}//end redactConfiguration()
 
 	/**
@@ -334,7 +372,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	}//end maskIssuedTokens()
 
 	/**
-	 * Whether a value is only a `{{ ... }}` template, resolved at call time and holding no secret itself.
+	 * Whether a value is only a bare `{{ variable.path }}` template, resolved at call time and holding no secret itself.
 	 *
 	 * @param string $value The value.
 	 *
@@ -363,4 +401,22 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	public function withoutRedactedValues(array $data): array {
 		return (new RedactedValueFilter())->filter(data: $data);
 	}//end withoutRedactedValues()
+
+	/**
+	 * Whether a value is a map under an API-key table key that is not a key reference.
+	 *
+	 * @param int|string $key   The key the value sits under.
+	 * @param mixed      $value The value.
+	 *
+	 * @return boolean
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function isCredentialTable(int|string $key, mixed $value): bool {
+		if (is_array($value) === false || array_is_list($value) === true || in_array($key, self::CREDENTIAL_TABLE_KEYS, true) === false) {
+			return false;
+		}
+
+		return array_diff(array_map('strval', array_keys($value)), self::KEY_REFERENCE_KEYS) !== [];
+	}//end isCredentialTable()
 }//end class

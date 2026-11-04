@@ -252,6 +252,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutorInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Service\ServiceRegistrar;
@@ -443,6 +445,7 @@ class ServiceRegistrarTest extends TestCase {
 		InlineSecretMigrationPlannerInterface::class => InlineSecretMigrationPlanner::class,
 		InlineSecretMigrationExecutorInterface::class => InlineSecretMigrationExecutor::class,
 		InlineSecretMigrationFactoryInterface::class => InlineSecretMigrationFactory::class,
+		PlaceholderSecretRepairInterface::class => PlaceholderSecretRepair::class,
 		RegistryUpdateClientInterface::class => RegistryUpdateClient::class,
 		AgentActionStoreInterface::class => AgentActionStore::class,
 		CaseReferenceDetectorInterface::class => CaseReferenceDetector::class,

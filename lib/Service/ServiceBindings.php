@@ -171,6 +171,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Service\Security\InlineSecretMigrationFactoryInterface;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
+use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
@@ -658,6 +660,7 @@ final class ServiceBindings {
 		$context->registerServiceAlias(InlineSecretMigrationPlannerInterface::class, InlineSecretMigrationPlanner::class);
 		$context->registerServiceAlias(InlineSecretMigrationExecutorInterface::class, InlineSecretMigrationExecutor::class);
 		$context->registerServiceAlias(InlineSecretMigrationFactoryInterface::class, InlineSecretMigrationFactory::class);
+		$context->registerServiceAlias(PlaceholderSecretRepairInterface::class, PlaceholderSecretRepair::class);
 		$context->registerServiceAlias(RegistryUpdateClientInterface::class, RegistryUpdateClient::class);
 		$context->registerServiceAlias(AgentActionStoreInterface::class, AgentActionStore::class);
 		$context->registerServiceAlias(CaseReferenceDetectorInterface::class, CaseReferenceDetector::class);
