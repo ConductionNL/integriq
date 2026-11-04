@@ -98,6 +98,8 @@ class JobToFlow extends Command {
 	 * @return array<string, mixed> The flow document.
 	 *
 	 * @throws EntityNotMigratableException When the entity cannot be migrated.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	protected function generateFlow(InputInterface $input): array {
 		return $this->generator->generateFor(reference: (string)$input->getArgument('job'));

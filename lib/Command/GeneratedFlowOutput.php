@@ -56,6 +56,8 @@ trait GeneratedFlowOutput {
 	 * @param OutputInterface $output The console output.
 	 *
 	 * @return integer The exit code.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io = new SymfonyStyle($input, $output);
