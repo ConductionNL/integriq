@@ -53,6 +53,8 @@ class BlankPlaceholderSecrets extends Command {
 	 * Name, description and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'integriq:secrets:blank-placeholders')
@@ -82,6 +84,8 @@ class BlankPlaceholderSecrets extends Command {
 	 * @param OutputInterface $output The console output.
 	 *
 	 * @return integer The exit code.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io    = new SymfonyStyle($input, $output);
