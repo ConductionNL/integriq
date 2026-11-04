@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 /**
- * Walks an array that SensitiveFieldRegistry already redacted by name, and
+ * Walks a configuration before SensitiveFieldRegistry redacts it by name, and
  * masks session headers in header maps, header-shaped keys and name/value
  * header lists, and the password and secret query values of URLs in any text.
  *
@@ -51,13 +51,6 @@ final class StructuredSecretRedactor {
 	 * @var string
 	 */
 	private const QUERY_PAIR = '/(^|[&;])([^=&;#]+)=([^&;#]*)/';
-
-	/**
-	 * A value that is only a `{{ ... }}` template, resolved at call time and holding no secret itself.
-	 *
-	 * @var string
-	 */
-	private const PURE_TEMPLATE = '/^\{\{[^{}]*\}\}$/';
 
 	/**
 	 * Constructor.
@@ -109,7 +102,7 @@ final class StructuredSecretRedactor {
 	 * @return string The pair.
 	 */
 	private function maskedQueryPair(array $pair): string {
-		if ($this->registry->isSensitiveName(name: urldecode($pair[2])) === false || $this->isPureTemplate(value: urldecode($pair[3])) === true) {
+		if ($this->registry->isSensitiveName(name: urldecode($pair[2])) === false || $this->registry->isPureTemplate(value: urldecode($pair[3])) === true) {
 			return $pair[0];
 		}
 
@@ -124,7 +117,7 @@ final class StructuredSecretRedactor {
 	 * @return string The part.
 	 */
 	private function maskedUserinfo(array $userinfo): string {
-		if ($this->isPureTemplate(value: $userinfo[2]) === true) {
+		if ($this->registry->isPureTemplate(value: $userinfo[2]) === true) {
 			return $userinfo[0];
 		}
 
@@ -132,18 +125,7 @@ final class StructuredSecretRedactor {
 	}//end maskedUserinfo()
 
 	/**
-	 * Whether a value is only a `{{ ... }}` template.
-	 *
-	 * @param string $value The value.
-	 *
-	 * @return boolean
-	 */
-	private function isPureTemplate(string $value): bool {
-		return preg_match(self::PURE_TEMPLATE, trim($value)) === 1;
-	}//end isPureTemplate()
-
-	/**
-	 * Walks a name-redacted array and redacts what its structure shows to be secret.
+	 * Walks an array and redacts what its structure shows to be secret.
 	 *
 	 * @param array $data The array.
 	 *
@@ -168,8 +150,9 @@ final class StructuredSecretRedactor {
 	 * @return mixed The redacted value.
 	 */
 	private function redactEntry(int|string $key, mixed $value): mixed {
-		if (is_string($key) === true && $this->isSensitiveHeaderShapedName(name: $key) === true) {
-			return $this->registry->redactHeaders(headers: [$key => $value])[$key];
+		if (is_string($key) === true && $this->namesASecretHeader(key: $key) === true) {
+			$leaf = substr((string)strrchr('.' . $key, '.'), 1);
+			return $this->registry->redactHeaders(headers: [$leaf => $value])[$leaf];
 		}
 
 		if (is_string($value) === true) {
@@ -180,12 +163,33 @@ final class StructuredSecretRedactor {
 			return $value;
 		}
 
-		if (strtolower((string)$key) === 'headers') {
+		if (str_ends_with(strtolower((string)$key), 'headers') === true) {
 			$value = $this->redactHeaderSet(headers: $value);
 		}
 
 		return $this->redact(data: $value);
 	}//end redactEntry()
+
+	/**
+	 * Whether a key names a secret header: written as a header name
+	 * (`X-Session-Id`), or as a dotted path whose earlier part is a header set
+	 * (`headers.X-Session-Id`, `headers.Session`).
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return boolean
+	 */
+	private function namesASecretHeader(string $key): bool {
+		$segments = explode('.', $key);
+		$leaf = (string)array_pop($segments);
+		foreach ($segments as $segment) {
+			if (str_ends_with(strtolower($segment), 'headers') === true) {
+				return $this->registry->isSensitiveHeaderName(name: $leaf);
+			}
+		}
+
+		return $this->isSensitiveHeaderShapedName(name: $leaf);
+	}//end namesASecretHeader()
 
 	/**
 	 * Whether a name is written as an HTTP header name and names a secret header.
@@ -214,18 +218,47 @@ final class StructuredSecretRedactor {
 	}//end redactHeaderSet()
 
 	/**
-	 * One `{name, value}` header pair, its value masked when the name is a secret header.
+	 * One header pair (`{name, value}`, `{Name, Value}`, `{key, value}`), its value
+	 * masked when the name is a secret header.
 	 *
 	 * @param mixed $item The list item.
 	 *
 	 * @return mixed The item.
 	 */
 	private function redactHeaderPair(mixed $item): mixed {
-		if (is_array($item) === false || is_string($item['name'] ?? null) === false || array_key_exists('value', $item) === false) {
+		if (is_array($item) === false) {
 			return $item;
 		}
 
-		$item['value'] = $this->registry->redactHeaders(headers: [$item['name'] => $item['value']])[$item['name']];
+		$fields = $this->pairFields(item: $item);
+		if ($fields === null) {
+			return $item;
+		}
+
+		[$nameKey, $valueKey] = $fields;
+		$item[$valueKey] = $this->registry->redactHeaders(headers: [$item[$nameKey] => $item[$valueKey]])[$item[$nameKey]];
 		return $item;
 	}//end redactHeaderPair()
+
+	/**
+	 * The keys of a header pair's name and value, whatever their case, or null
+	 * when the item is not a pair with a text name.
+	 *
+	 * @param array $item The list item.
+	 *
+	 * @return array{0: int|string, 1: int|string}|null
+	 */
+	private function pairFields(array $item): ?array {
+		$fields = [];
+		foreach (array_keys($item) as $field) {
+			$fields[strtolower((string)$field)] = $field;
+		}
+
+		$nameKey = ($fields['name'] ?? $fields['key'] ?? null);
+		if ($nameKey === null || isset($fields['value']) === false || is_string($item[$nameKey]) === false) {
+			return null;
+		}
+
+		return [$nameKey, $fields['value']];
+	}//end pairFields()
 }//end class

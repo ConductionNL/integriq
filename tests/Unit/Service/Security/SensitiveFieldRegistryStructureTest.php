@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Integriq\Service\Security\SensitiveFieldRegistry
  * @covers \OCA\Integriq\Service\Security\StructuredSecretRedactor
+ * @covers \OCA\Integriq\Service\Security\SensitiveValueMasker
  */
 class SensitiveFieldRegistryStructureTest extends TestCase {
 
@@ -96,8 +97,8 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 		);
 
 		$this->assertSame(
-			['type' => 'apiKey', 'users' => ['alice'], 'groups' => ['admin'], 'header' => 'X-Api-Key', 'keys' => [[self::MASK]]],
-			$this->withoutKeyNames(result: $result['authentication'])
+			['type' => 'apiKey', 'users' => ['alice'], 'groups' => ['admin'], 'header' => 'X-Api-Key', 'keys' => [self::MASK]],
+			$result['authentication']
 		);
 		$this->assertSame(['scheme' => 'hmac-sha256', 'header' => 'X-Signature', 'toleranceSeconds' => 300, 'secret' => self::MASK], $result['webhook_signature']);
 		$this->assertSame(
@@ -108,19 +109,6 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 		$this->assertSame(['users' => ['bob', ['password' => self::MASK]]], $result['authorization']);
 		$this->assertSame(['credentialRef' => self::MASK], $result['bearerAuth']);
 	}//end testNonSecretSettingsUnderASensitiveMapStayReadable()
-
-	/**
-	 * The auth block with each `keys` entry reduced to its values, so the test
-	 * reads what the export shows for an api key map.
-	 *
-	 * @param array $result The redacted auth block.
-	 *
-	 * @return array The block.
-	 */
-	private function withoutKeyNames(array $result): array {
-		$result['keys'] = array_map('array_values', $result['keys']);
-		return $result;
-	}//end withoutKeyNames()
 
 	/**
 	 * A credentialRef keeps its pointer keys but not a secret placed inside it.
@@ -239,4 +227,54 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 
 		$this->assertSame($data, $this->registry->redactConfiguration(data: $data));
 	}//end testNonTextValuesAreLeftAlone()
+
+	/**
+	 * Header sets under any key that ends in `headers`, dotted header paths and
+	 * header pairs in any casing are masked by header name.
+	 *
+	 * @return void
+	 */
+	public function testHeaderSetsAreFoundByShapeNotByOneKey(): void {
+		$result = $this->registry->redactConfiguration(
+			data: [
+				'headers.X-Session-Id' => 'dotted',
+				'headers.Session' => 'dotted-dashless',
+				'cfg.headers.Accept' => 'json',
+				'session.timeout' => 30,
+				'extraHeaders' => [['Name' => 'Authorization', 'Value' => 'Bearer z'], ['key' => 'X-Session', 'value' => 's'], ['NAME' => 'Accept', 'VALUE' => 'json']],
+				'defaultHeaders' => ['Session' => 'd', 'XSessionId' => 'x', 'Accept' => 'json'],
+			]
+		);
+
+		$this->assertSame(self::MASK, $result['headers.X-Session-Id']);
+		$this->assertSame(self::MASK, $result['headers.Session']);
+		$this->assertSame('json', $result['cfg.headers.Accept']);
+		$this->assertSame(30, $result['session.timeout']);
+		$this->assertSame(
+			// A field called `key` is masked by its own name as well.
+			[['Name' => 'Authorization', 'Value' => self::MASK], ['key' => self::MASK, 'value' => self::MASK], ['NAME' => 'Accept', 'VALUE' => 'json']],
+			$result['extraHeaders']
+		);
+		$this->assertSame(['Session' => self::MASK, 'XSessionId' => self::MASK, 'Accept' => 'json'], $result['defaultHeaders']);
+	}//end testHeaderSetsAreFoundByShapeNotByOneKey()
+
+	/**
+	 * A credential entry in a list is masked whole, its key included; a pure
+	 * template under a sensitive key is kept.
+	 *
+	 * @return void
+	 */
+	public function testCredentialEntriesAreMaskedWholeAndTemplatesKept(): void {
+		$result = $this->registry->redactArray(
+			data: [
+				'keys' => [['live-api-key' => 'alice'], 'raw', ['nested', ['x' => 1]]],
+				'token' => '{{ source.token }}',
+				'password' => 'Bearer {{ x }}',
+			]
+		);
+
+		$this->assertSame([self::MASK, self::MASK, [self::MASK, self::MASK]], $result['keys']);
+		$this->assertSame('{{ source.token }}', $result['token']);
+		$this->assertSame(self::MASK, $result['password']);
+	}//end testCredentialEntriesAreMaskedWholeAndTemplatesKept()
 }//end class

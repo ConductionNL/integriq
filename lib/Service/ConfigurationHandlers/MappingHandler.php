@@ -138,8 +138,11 @@ class MappingHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	private function redactConfiguration(array $entityArray): array {
-		if (isset($entityArray['configuration']) === true && is_array($entityArray['configuration']) === true) {
-			$entityArray['configuration'] = $this->sensitiveFieldRegistry->redactConfiguration(data: $entityArray['configuration']);
+		// `cast` names a type per field (`password: string`), never a value, so it is kept as is.
+		$cast = ($entityArray['cast'] ?? null);
+		$entityArray = $this->sensitiveFieldRegistry->redactConfiguration(data: $entityArray);
+		if ($cast !== null) {
+			$entityArray['cast'] = $cast;
 		}
 
 		return $entityArray;
@@ -156,6 +159,8 @@ class MappingHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
+		$data = $this->sensitiveFieldRegistry->withoutRedactedValues(data: $data);
+
 		// Convert slugs back to IDs.
 		if (isset($data['source_id']) === true
 			&& isset($mappings['source']['slugToId'][$data['source_id']]) === true

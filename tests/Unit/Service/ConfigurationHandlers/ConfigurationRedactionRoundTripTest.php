@@ -25,6 +25,7 @@ use OCA\Integriq\Service\ConfigurationHandlers\JobHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\MappingHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\RuleHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
+use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -32,7 +33,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * An exported rule, source or endpoint, imported again, keeps every setting
- * its authorisation and signature checks read; only the credentials are masked.
+ * its authorisation and signature checks read. The masked credentials are left
+ * out of the import, never stored as the public placeholder.
  * Each handler masks session headers and URL secrets in its configuration.
  *
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\RuleHandler
@@ -40,8 +42,11 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\JobHandler
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\MappingHandler
+ * @covers \OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler
  * @uses   \OCA\Integriq\Service\Security\SensitiveFieldRegistry
  * @uses   \OCA\Integriq\Service\Security\StructuredSecretRedactor
+ * @uses   \OCA\Integriq\Service\Security\RedactedValueFilter
+ * @uses   \OCA\Integriq\Service\Security\SensitiveValueMasker
  */
 class ConfigurationRedactionRoundTripTest extends TestCase {
 
@@ -100,7 +105,8 @@ class ConfigurationRedactionRoundTripTest extends TestCase {
 	}//end roundTrip()
 
 	/**
-	 * An authentication rule keeps its type, users, groups and header; its api keys are masked.
+	 * An authentication rule keeps its type, users, groups and header; its api
+	 * keys are left out, so OpenRegister keeps the stored write-only keys.
 	 *
 	 * @return void
 	 */
@@ -117,11 +123,13 @@ class ConfigurationRedactionRoundTripTest extends TestCase {
 		}
 
 		$this->assertSame('authentication', $saved['type']);
-		$this->assertStringNotContainsString('alice"', json_encode($restored['keys']));
+		$this->assertArrayNotHasKey('keys', $restored);
+		$this->assertStringNotContainsString('live-key', json_encode($saved));
 	}//end testAnAuthenticationRuleStillAuthorisesAfterARoundTrip()
 
 	/**
-	 * A webhook signature rule keeps its scheme, header and tolerance; its secret is masked.
+	 * A webhook signature rule keeps its scheme, header and tolerance; its
+	 * secret is left out rather than stored as the public placeholder.
 	 *
 	 * @return void
 	 */
@@ -133,13 +141,13 @@ class ConfigurationRedactionRoundTripTest extends TestCase {
 		);
 
 		$this->assertSame(
-			['scheme' => 'hmac-sha256', 'header' => 'X-Signature', 'toleranceSeconds' => 300, 'secret' => self::MASK],
+			['scheme' => 'hmac-sha256', 'header' => 'X-Signature', 'toleranceSeconds' => 300],
 			$saved['configuration']['webhook_signature']
 		);
 	}//end testAWebhookSignatureRuleKeepsItsSchemeAfterARoundTrip()
 
 	/**
-	 * A source keeps how it authenticates and its URL templates; its secrets are masked.
+	 * A source keeps how it authenticates and its URL templates; its secrets are left out.
 	 *
 	 * @return void
 	 */
@@ -157,15 +165,16 @@ class ConfigurationRedactionRoundTripTest extends TestCase {
 		);
 
 		$this->assertSame(
-			['scheme' => 'oauth2', 'mode' => 'client_credentials', 'grant_type' => 'client_credentials', 'client_id' => 'cid', 'client_secret' => self::MASK],
+			['scheme' => 'oauth2', 'mode' => 'client_credentials', 'grant_type' => 'client_credentials', 'client_id' => 'cid'],
 			$saved['configuration']['authentication']
 		);
 		$this->assertSame('https://api.example/v1?token={{ source.token }}&key=' . self::MASK, $saved['configuration']['url']);
-		$this->assertSame(['X-Session-Id' => self::MASK], $saved['configuration']['headers']);
+		$this->assertArrayNotHasKey('headers', $saved['configuration']);
+		$this->assertStringNotContainsString('live-', json_encode($saved));
 	}//end testASourceKeepsItsAuthenticationSettingsAfterARoundTrip()
 
 	/**
-	 * An endpoint keeps its path template and an api key id map; its inline secrets are masked.
+	 * An endpoint keeps its path template and an api key id map; its inline secrets are left out.
 	 *
 	 * @return void
 	 */
@@ -182,7 +191,7 @@ class ConfigurationRedactionRoundTripTest extends TestCase {
 
 		$this->assertSame('/api/x?token={{ request.token }}', $saved['endpoint']);
 		$this->assertSame(['id' => 'key-uuid'], $saved['apiKeys']);
-		$this->assertSame(self::MASK, $saved['apiKey']);
+		$this->assertArrayNotHasKey('apiKey', $saved);
 	}//end testAnEndpointKeepsItsTemplatesAfterARoundTrip()
 
 	/**
@@ -208,4 +217,68 @@ class ConfigurationRedactionRoundTripTest extends TestCase {
 			$this->assertSame('https://user:' . self::MASK . '@host.example/p?token=' . self::MASK . '&q=1', $export['configuration']['url'], $name);
 		}
 	}//end testEveryHandlerMasksSessionHeadersAndUrlSecrets()
+
+	/**
+	 * Fields outside `configuration` are redacted too, on every handler whose
+	 * schema keeps secrets there; a mapping's cast types stay readable.
+	 *
+	 * @return void
+	 */
+	public function testFieldsOutsideConfigurationAreRedacted(): void {
+		$registry = new SensitiveFieldRegistry();
+		$source = (new SourceHandler($this->objects(), $registry))->export(
+			$this->entity(fields: ['slug' => 's', 'headers' => ['X-Session-Id' => 'live-1'], 'location' => 'https://u:live-2@api.example/?api_key=live-3', 'test' => ['token' => 'live-4']]),
+			[]
+		);
+		$sync = (new SynchronizationHandler($this->objects(), $registry))->export(
+			$this->entity(fields: ['slug' => 'y', 'sourceConfig' => ['headers' => ['Authorization' => 'live-5']], 'targetConfig' => ['url' => 'https://h.example/?token=live-6']]),
+			[]
+		);
+		$job = (new JobHandler($this->objects(), $registry))->export(
+			$this->entity(fields: ['slug' => 'j', 'arguments' => ['apiKey' => 'live-7', 'synchronizationId' => 'sync-1']]),
+			[]
+		);
+		$mapping = (new MappingHandler($this->objects(), $registry))->export(
+			$this->entity(fields: ['slug' => 'm', 'mapping' => ['apiKey' => 'live-8', 'token' => '{{ input.token }}', 'name' => '{{ input.name }}'], 'cast' => ['password' => 'string']]),
+			[]
+		);
+		$rule = (new RuleHandler($this->objects(), $registry))->export(
+			$this->entity(fields: ['slug' => 'r', 'action' => 'post', 'conditions' => ['token' => 'live-9'], 'secret' => 'live-10']),
+			[]
+		);
+
+		foreach (['source' => $source, 'sync' => $sync, 'job' => $job, 'mapping' => $mapping, 'rule' => $rule] as $name => $export) {
+			$this->assertStringNotContainsString('live-', json_encode($export), $name);
+		}
+
+		$this->assertSame('https://u:' . self::MASK . '@api.example/?api_key=' . self::MASK, $source['location']);
+		$this->assertSame('sync-1', $job['arguments']['synchronizationId']);
+		$this->assertSame(['apiKey' => self::MASK, 'token' => '{{ input.token }}', 'name' => '{{ input.name }}'], $mapping['mapping']);
+		$this->assertSame(['password' => 'string'], $mapping['cast']);
+		$this->assertSame('post', $rule['action']);
+	}//end testFieldsOutsideConfigurationAreRedacted()
+
+	/**
+	 * Import leaves every masked value out, so the public placeholder is never stored.
+	 *
+	 * @return void
+	 */
+	public function testImportNeverStoresThePlaceholder(): void {
+		$registry = new SensitiveFieldRegistry();
+		$handlers = [
+			new RuleHandler($this->objects(), $registry),
+			new SourceHandler($this->objects(), $registry),
+			new EndpointHandler($this->objects(), $registry),
+			new JobHandler($this->objects(), $registry),
+			new MappingHandler($this->objects(), $registry),
+			new SynchronizationHandler($this->objects(), $registry),
+		];
+
+		foreach ($handlers as $handler) {
+			$this->saved = [];
+			$handler->import(['slug' => 'x', 'secret' => self::MASK, 'configuration' => ['webhook_signature' => ['scheme' => 'hmac-sha256', 'secret' => self::MASK]]], []);
+			$this->assertStringNotContainsString(self::MASK, json_encode($this->saved), get_class($handler));
+			$this->assertSame(['webhook_signature' => ['scheme' => 'hmac-sha256']], $this->saved[0]['configuration'], get_class($handler));
+		}
+	}//end testImportNeverStoresThePlaceholder()
 }//end class

@@ -198,6 +198,8 @@ class EndpointHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	public function import(array $data, array $mappings): Entity {
+		$data = $this->sensitiveFieldRegistry->withoutRedactedValues(data: $data);
+
 		if (isset($data['targetId']) === true && isset($data['targetType']) === true) {
 			$data['targetId'] = $this->importTargetId(data: $data, mappings: $mappings);
 		}
