@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Integriq\Service\ConfigurationHandlers\EndpointHandler
  * @uses   \OCA\Integriq\Service\Security\SensitiveFieldRegistry
+ * @uses   \OCA\Integriq\Service\Security\StructuredSecretRedactor
  */
 class EndpointHandlerExportGoldenTest extends TestCase {
 
@@ -90,6 +91,13 @@ class EndpointHandlerExportGoldenTest extends TestCase {
 			'config-secret' => ['configuration' => ['headers' => ['Authorization' => 'Bearer x', 'Accept' => 'json'], 'apiKey' => 'k', 'password' => 'p', 'plain' => 1]],
 			'config-not-array' => ['configuration' => 'text'],
 			'config-empty' => ['configuration' => []],
+			'config-session-header' => ['configuration' => ['X-Session-Id' => 'sess-top', 'headers' => ['X-Session-Id' => 'sess-h', 'Accept' => 'json']]],
+			'top-level-secret' => ['name' => 'n', 'apiKey' => 'k-top', 'clientSecret' => 'cs-top'],
+			'configurations-list' => ['configurations' => ['profile-a'], 'conditions' => ['token' => 'cond-t', '==' => [1, 1]]],
+			'nested-under-sensitive' => ['configuration' => ['auth' => ['user' => 'u', 'pass' => 'p', 'value' => 'v'], 'timeout' => 5]],
+			'header-list' => ['configuration' => ['headers' => [['name' => 'Authorization', 'value' => 'Bearer z'], ['name' => 'X-Session-Token', 'value' => 'st'], ['name' => 'Accept', 'value' => 'json']]]],
+			'url-secrets' => ['endpoint' => '/api/x?api_key=AK&page=2', 'configuration' => ['url' => 'https://user:pw@host.example/p?token=T&q={{ id }}', 'plainUrl' => 'https://host.example/p?q=1']],
+			'session-field-kept' => ['configuration' => ['sessionTimeout' => 30, 'session' => 'cookie-store']],
 		];
 	}//end cases()
 

@@ -96,7 +96,7 @@ class SourceHandler implements ConfigurationHandlerInterface {
 		// (`***REDACTED***`), not omitted, so an operator re-importing this
 		// export sees the signal that a credential lived here and must be re-entered.
 		if (isset($sourceArray['configuration']) === true && is_array($sourceArray['configuration']) === true) {
-			$sourceArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $sourceArray['configuration']);
+			$sourceArray['configuration'] = $this->sensitiveFieldRegistry->redactConfiguration(data: $sourceArray['configuration']);
 		}
 
 		return $sourceArray;

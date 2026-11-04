@@ -88,7 +88,7 @@ class RuleHandler implements ConfigurationHandlerInterface {
 			// INDEPENDENT pass from convertIdsToSlugs() above — id/slug
 			// reference keys (e.g. `sourceId`) never match the sensitive-name
 			// pattern, so the two passes never overlap or interfere.
-			$ruleArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $ruleArray['configuration']);
+			$ruleArray['configuration'] = $this->sensitiveFieldRegistry->redactConfiguration(data: $ruleArray['configuration']);
 		}
 
 		return $ruleArray;
