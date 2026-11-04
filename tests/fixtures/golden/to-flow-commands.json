@@ -1,0 +1,173 @@
+{
+    "job:definition": {
+        "name": "integriq:job-to-flow",
+        "description": "Render a job as a generated (disabled) trigger-schedule flow document, or explain why it cannot be",
+        "arguments": [
+            [
+                "job",
+                true,
+                "The job to render: its uuid, slug or reference"
+            ]
+        ],
+        "options": [
+            [
+                "json",
+                null,
+                false,
+                "Emit the flow document as JSON and nothing else"
+            ]
+        ]
+    },
+    "job:text": {
+        "code": 0,
+        "display": "\n [OK] Generated a DISABLED flow \"Generated flow\" — nothing was created.         \n\n{\n    \"name\": \"Generated flow\",\n    \"enabled\": false,\n    \"nodes\": [\n        {\n            \"type\": \"x\",\n            \"url\": \"a/b\"\n        }\n    ]\n}\n",
+        "calls": [
+            [
+                "job-1"
+            ]
+        ]
+    },
+    "job:json": {
+        "code": 0,
+        "display": "{\n    \"name\": \"Generated flow\",\n    \"enabled\": false,\n    \"nodes\": [\n        {\n            \"type\": \"x\",\n            \"url\": \"a/b\"\n        }\n    ]\n}\n",
+        "calls": [
+            [
+                "job-1"
+            ]
+        ]
+    },
+    "job:refusal": {
+        "code": 1,
+        "display": "\n [ERROR] cannot migrate                                                         \n\n * a reason\n * another\n\n",
+        "calls": [
+            [
+                "job-1"
+            ]
+        ]
+    },
+    "job:other": {
+        "thrown": "OCA\\Integriq\\Exception\\SynchronizationNotMigratableException",
+        "calls": [
+            [
+                "job-1"
+            ]
+        ]
+    },
+    "rule:definition": {
+        "name": "integriq:rule-to-flow",
+        "description": "Render a rule as a generated (disabled) trigger-object flow document, or explain why it cannot be",
+        "arguments": [
+            [
+                "rule",
+                true,
+                "The rule to render: its uuid, slug or reference"
+            ],
+            [
+                "endpoint",
+                true,
+                "The endpoint the rule runs on, whose register, schema and method scope the object trigger"
+            ]
+        ],
+        "options": [
+            [
+                "json",
+                null,
+                false,
+                "Emit the flow document as JSON and nothing else"
+            ]
+        ]
+    },
+    "rule:text": {
+        "code": 0,
+        "display": "\n [OK] Generated a DISABLED flow \"Generated flow\" — nothing was created.         \n\n{\n    \"name\": \"Generated flow\",\n    \"enabled\": false,\n    \"nodes\": [\n        {\n            \"type\": \"x\",\n            \"url\": \"a/b\"\n        }\n    ]\n}\n",
+        "calls": [
+            [
+                "rule-1",
+                "ep-1"
+            ]
+        ]
+    },
+    "rule:json": {
+        "code": 0,
+        "display": "{\n    \"name\": \"Generated flow\",\n    \"enabled\": false,\n    \"nodes\": [\n        {\n            \"type\": \"x\",\n            \"url\": \"a/b\"\n        }\n    ]\n}\n",
+        "calls": [
+            [
+                "rule-1",
+                "ep-1"
+            ]
+        ]
+    },
+    "rule:refusal": {
+        "code": 1,
+        "display": "\n [ERROR] cannot migrate                                                         \n\n * a reason\n * another\n\n",
+        "calls": [
+            [
+                "rule-1",
+                "ep-1"
+            ]
+        ]
+    },
+    "rule:other": {
+        "thrown": "OCA\\Integriq\\Exception\\SynchronizationNotMigratableException",
+        "calls": [
+            [
+                "rule-1",
+                "ep-1"
+            ]
+        ]
+    },
+    "synchronization:definition": {
+        "name": "integriq:synchronization-to-flow",
+        "description": "Render a synchronization as a generated (disabled) flow document, or explain why it cannot be",
+        "arguments": [
+            [
+                "synchronization",
+                true,
+                "The synchronization to render: its uuid, slug or reference"
+            ]
+        ],
+        "options": [
+            [
+                "json",
+                null,
+                false,
+                "Emit the flow document as JSON and nothing else"
+            ]
+        ]
+    },
+    "synchronization:text": {
+        "code": 0,
+        "display": "\n [OK] Generated a DISABLED flow \"Generated flow\" — nothing was created.         \n\n{\n    \"name\": \"Generated flow\",\n    \"enabled\": false,\n    \"nodes\": [\n        {\n            \"type\": \"x\",\n            \"url\": \"a/b\"\n        }\n    ]\n}\n",
+        "calls": [
+            [
+                "sync-1"
+            ]
+        ]
+    },
+    "synchronization:json": {
+        "code": 0,
+        "display": "{\n    \"name\": \"Generated flow\",\n    \"enabled\": false,\n    \"nodes\": [\n        {\n            \"type\": \"x\",\n            \"url\": \"a/b\"\n        }\n    ]\n}\n",
+        "calls": [
+            [
+                "sync-1"
+            ]
+        ]
+    },
+    "synchronization:refusal": {
+        "code": 1,
+        "display": "\n [ERROR] cannot migrate                                                         \n\n * a reason\n * another\n\n",
+        "calls": [
+            [
+                "sync-1"
+            ]
+        ]
+    },
+    "synchronization:other": {
+        "thrown": "OCA\\Integriq\\Exception\\EntityNotMigratableException",
+        "calls": [
+            [
+                "sync-1"
+            ]
+        ]
+    }
+}

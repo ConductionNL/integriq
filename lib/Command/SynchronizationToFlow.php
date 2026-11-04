@@ -42,9 +42,6 @@ use OCA\Integriq\Service\SynchronizationFlowGeneratorInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Renders a Synchronization as a disabled, reviewable flow document.
@@ -52,6 +49,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * @spec openspec/changes/flow-native-synchronization/tasks.md#3-migration--deprecation
  */
 class SynchronizationToFlow extends Command {
+	use GeneratedFlowOutput;
+
+	/**
+	 * The exception the generator refuses with.
+	 */
+	private const REFUSAL = SynchronizationNotMigratableException::class;
 
 	/**
 	 * Constructor.
@@ -81,50 +84,24 @@ class SynchronizationToFlow extends Command {
 				'synchronization',
 				InputArgument::REQUIRED,
 				'The synchronization to render: its uuid, slug or reference'
-			)
-			->addOption(
-				'json',
-				null,
-				InputOption::VALUE_NONE,
-				'Emit the flow document as JSON and nothing else'
 			);
+
+		$this->addJsonOption();
 
 	}//end configure()
 
 	/**
-	 * Render the document, or report the refusal.
+	 * Generate the flow document for the referenced entity.
 	 *
-	 * @param InputInterface $input Console input.
-	 * @param OutputInterface $output Console output.
+	 * @param InputInterface $input The console input.
 	 *
-	 * @return integer 0 when a document was rendered; 1 when the synchronization was refused.
+	 * @return array<string, mixed> The flow document.
+	 *
+	 * @throws SynchronizationNotMigratableException When the entity cannot be migrated.
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$io = new SymfonyStyle($input, $output);
-		$reference = (string)$input->getArgument('synchronization');
-
-		try {
-			$flow = $this->generator->generateFor(reference: $reference);
-		} catch (SynchronizationNotMigratableException $refusal) {
-			$io->error($refusal->getMessage());
-			$io->listing($refusal->getReasons());
-
-			return Command::FAILURE;
-		}
-
-		$encoded = (string)json_encode($flow, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-
-		if ($input->getOption('json') === true) {
-			$output->writeln($encoded);
-
-			return Command::SUCCESS;
-		}
-
-		$io->success(sprintf('Generated a DISABLED flow "%s" — nothing was created.', (string)$flow['name']));
-		$output->writeln($encoded);
-
-		return Command::SUCCESS;
-	}//end execute()
+	protected function generateFlow(InputInterface $input): array {
+		return $this->generator->generateFor(reference: (string)$input->getArgument('synchronization'));
+	}//end generateFlow()
 }//end class
