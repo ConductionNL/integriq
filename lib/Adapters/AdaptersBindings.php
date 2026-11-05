@@ -32,6 +32,11 @@ use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolver;
 use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolverInterface;
 use OCA\Integriq\Adapters\Digikoppeling\SignedSoapProfileInterface;
 use OCA\Integriq\Adapters\Digikoppeling\WusProfileService;
+use OCA\Integriq\Adapters\LearningMaterial\EdurepHttpTransport;
+use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceHttp;
+use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceMock;
+use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialSource;
+use OCA\Integriq\Adapters\LearningMaterial\SruTransport;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
@@ -89,6 +94,7 @@ final class AdaptersBindings {
 		$this->registerSwvHandoffClient(context: $context);
 		$this->registerPdokHttpClients(context: $context);
 		$this->registerBerichtenboxClient(context: $context);
+		$this->registerLearningMaterialSource(context: $context);
 	}
 	/**
 	 * Registers the PDOK client bindings, live or mock by feature flag.
@@ -249,4 +255,29 @@ final class AdaptersBindings {
 			}
 		);
 	}//end registerBerichtenboxClient()
+
+	/**
+	 * Binds the learning material source to Edurep, live unless `edurep.feature_flag` is `0` or `false`.
+	 *
+	 * Edurep is a free, keyless public search, so live is the default; the
+	 * flag switches an instance to the recorded responses.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/edurep-source/spec.md#requirement-a-learning-material-source-interface-with-one-normalised-record
+	 */
+	private function registerLearningMaterialSource(IRegistrationContext $context): void {
+		$context->registerServiceAlias(SruTransport::class, EdurepHttpTransport::class);
+		$context->registerService(
+			LearningMaterialSource::class,
+			static function ($c) {
+				$raw = strtolower($c->get('OCP\IAppConfig')->getValueString('integriq', 'edurep.feature_flag', '1'));
+				$mock = ['0' => EdurepSourceMock::class, 'false' => EdurepSourceMock::class];
+
+				return $c->get($mock[$raw] ?? EdurepSourceHttp::class);
+			}
+		);
+	}//end registerLearningMaterialSource()
 }
