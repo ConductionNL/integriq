@@ -438,6 +438,27 @@ class SynchronizationService
 
 
 		if ($synchronization->getConditions() !== [] && !JsonLogic::apply($synchronization->getConditions(), $serializedObject)) {
+			// The object no longer satisfies the publish conditions (e.g. publicatiedatum was
+			// cleared after a prior publish). If an earlier revision was already pushed to the
+			// target under a contract, retract it - otherwise this branch used to just return
+			// null, leaving an orphaned document in the target that nothing else ever cleans up.
+			$conditionOriginId = null;
+			if ($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true && $object->getUuid()) {
+				$conditionOriginId = $object->getUuid();
+			} elseif (is_array($serializedObject) === true && isset($serializedObject['@self']['id']) === true) {
+				$conditionOriginId = $serializedObject['@self']['id'];
+			} elseif (is_array($serializedObject) === true && isset($serializedObject['id']) === true) {
+				$conditionOriginId = $serializedObject['id'];
+			}
+
+			if ($conditionOriginId !== null && $isTest === false) {
+				$existingContract = $this->synchronizationContractMapper->findSyncContractByOriginId(synchronizationId: $synchronization->id, originId: $conditionOriginId);
+				if ($existingContract instanceof SynchronizationContract === true && $existingContract->getTargetId() !== null) {
+					$existingContract = $this->updateTarget(synchronizationContract: $existingContract, mutationType: 'delete');
+					$this->synchronizationContractMapper->update(entity: $existingContract);
+				}
+			}
+
 			return null;
 		}
 
