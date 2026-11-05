@@ -103,5 +103,21 @@
             "Objecttypen API 2"
         ],
         "icon": "Api"
+    },
+    {
+        "slug": "adapter:edurep",
+        "name": "Edurep open lesmateriaal (Kennisnet)",
+        "description": "Searches open learning material in Edurep, the free and keyless SRU search of Kennisnet over about 495,000 Dutch records from every sector (Wikiwijs, Schooltv, SURFsharekit and more). Each record is mapped to one shape with its makers, licence and access rights. learniq calls it through the LearningMaterialRequestedEvent. Live by default; set `edurep.feature_flag` to 0 to serve recorded responses.",
+        "category": "Education data",
+        "kind": "adapter",
+        "mechanism": "always-available",
+        "flagKey": "",
+        "sourceTemplateSlug": "",
+        "standards": [
+            "SRU 1.2",
+            "IMS LOM 1.2",
+            "NL-LOM"
+        ],
+        "icon": "BookOpenPageVariantOutline"
     }
 ]

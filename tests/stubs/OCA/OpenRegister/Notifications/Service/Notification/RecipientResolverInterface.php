@@ -2,7 +2,7 @@
 
 /**
  * OpenRegister RecipientResolverInterface
- * Test stub: a copy of openregister's lib/Service/Notification/RecipientResolverInterface.php (development, 28 Sep 2026).
+ * Test stub: a copy of openregister's lib/Notifications/Service/Notification/RecipientResolverInterface.php (development, 28 Sep 2026).
  *
  * Public contract apps implement to provide dynamic recipient resolution
  * for the `expression` notification recipient kind. Apps register their
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Notification;
+namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 

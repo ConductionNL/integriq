@@ -30,7 +30,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Notification;
+namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 /**
  * Constants describing the filter grammar shared by the parser, the evaluator
