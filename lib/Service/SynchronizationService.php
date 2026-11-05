@@ -535,6 +535,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private int $fileFetchFailed = 0;
 
+	/**
+	 * Files refused before any request since the last tally reset: their
+	 * endpoint carries an empty path segment, i.e. an empty document id.
+	 *
+	 * @var int
+	 */
+	private int $fileFetchSkipped = 0;
+
 	// Contracts are now read/written directly through the OpenRegister
 	// ObjectService — the legacy SynchronizationContractMapper container
 	// lookup is dropped in W5. See findContract*() / persistContract() /
@@ -11014,30 +11022,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				// Update data with rule result.
 				$data = $result;
 
-				// A fetch_file rule reports WHAT IT DID, not merely that it ran.
-				// `processFetchFileRule()` catches its own per-file failures so
-				// one bad attachment cannot abort the object, which meant this
-				// line said "Successfully applied" for a rule that wrote ZERO
-				// files — and nothing downstream could tell that from 40. The
-				// tally is the only thing that discriminates.
-				$outcome = '';
-				if (($rule['type'] ?? null) === 'fetch_file') {
-					$tally = $this->takeFileFetchTally();
-					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed'];
-
-					if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
-						$this->logger->warning(
-							'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
-							. $tally['failed'] . ' failed) for synchronization '
-							. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
-						);
-					}
-				}
-
 				$this->logger->info(
 					'Successfully applied rule for synchronization ' . ($synchronization['name'] ?? '')
 					. ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? '')
-					. $outcome
+					. $this->fetchFileRuleOutcome(rule: $rule, synchronization: $synchronization)
 				);
 			}//end foreach
 
@@ -11049,6 +11037,40 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return new JSONResponse(['error' => 'Rule processing failed: ' . $e->getMessage()], 500);
 		}//end try
 	}//end processRules()
+
+
+	/**
+	 * The outcome suffix of a rule's "Successfully applied" log line.
+	 *
+	 * A fetch_file rule reports WHAT IT DID, not merely that it ran.
+	 * `processFetchFileRule()` catches its own per-file failures so one bad
+	 * attachment cannot abort the object, which meant that line said
+	 * "Successfully applied" for a rule that wrote ZERO files — and nothing
+	 * downstream could tell that from 40. The tally is the only thing that
+	 * discriminates. Any other rule type gets an empty suffix.
+	 *
+	 * @param array $rule            The rule that just ran.
+	 * @param array $synchronization The synchronization it ran for, for the log line.
+	 *
+	 * @return string The suffix, empty for every rule type but fetch_file.
+	 */
+	private function fetchFileRuleOutcome(array $rule, array $synchronization): string {
+		if (($rule['type'] ?? null) !== 'fetch_file') {
+			return '';
+		}
+
+		$tally = $this->takeFileFetchTally();
+		if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
+			$this->logger->warning(
+				'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
+				. $tally['failed'] . ' failed) for synchronization '
+				. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
+			);
+		}
+
+		return ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed']
+			. ', skipped: ' . $tally['skipped'];
+	}//end fetchFileRuleOutcome()
 
 	/**
 	 * Resolve one rule by id, for callers outside this service.
@@ -12545,6 +12567,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function fetchFileSafely(FileFetchRequest $request, FileFetchItem $item): void {
+		if ($this->skipEmptyPathSegment(endpoint: $item->endpoint, objectId: $item->objectId) === true) {
+			return;
+		}
+
 		try {
 			// Execute the file fetching operation.
 			$this->fetchFile(request: $request, item: $item);
@@ -12562,18 +12588,75 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	}//end fetchFileSafely()
 
 	/**
+	 * Refuse an endpoint with an empty path segment before the source is called.
+	 *
+	 * `/api/v1/case/<zaak>/document//download` is what a source emits when the
+	 * document id of an attachment is empty. That request cannot succeed — the
+	 * source answers 500 `Document UUID "" invalid` on every run — so it is not
+	 * made. Counted as SKIPPED, not failed: nothing was tried, and the operator
+	 * needs to read "the source sent an attachment without an id", not "the
+	 * download failed". The object and its contract are unaffected either way
+	 * (REQ-021: the contract is persisted before the after-rules run).
+	 *
+	 * @param string $endpoint The endpoint as resolved for one file.
+	 * @param string|null $objectId The object the file would be attached to, for the log line.
+	 *
+	 * @return bool True when the endpoint was refused and the file must be skipped.
+	 *
+	 * @spec openspec/changes/fetch-file-skip-empty-document-id/specs/synchronization-files/spec.md#requirement-an-endpoint-with-an-empty-path-segment-shall-be-skipped-before-the-source-is-called
+	 */
+	private function skipEmptyPathSegment(string $endpoint, ?string $objectId): bool {
+		if ($this->hasEmptyPathSegment(endpoint: $endpoint) === false) {
+			return false;
+		}
+
+		$this->fileFetchSkipped++;
+		$this->logger->warning(
+			'[SynchronizationService] fetch_file: skipped endpoint ' . $endpoint . ' for object '
+			. ($objectId ?? '(none)') . ': its path has an empty segment (an empty document id); the source is not called.'
+		);
+
+		return true;
+	}//end skipEmptyPathSegment()
+
+	/**
+	 * Whether the PATH of an endpoint contains an empty segment (`//`).
+	 *
+	 * The scheme separator (`https://`), a protocol-relative authority (`//host`
+	 * at the very start), the query string and the fragment are not part of the
+	 * path and never count. Every other `//` does, deliberately: a key with an
+	 * empty segment (`bucket//key.pdf`) is refused as well — the trade-off the
+	 * spec states.
+	 *
+	 * @param string $endpoint The endpoint, relative to the source or absolute.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/fetch-file-skip-empty-document-id/specs/synchronization-files/spec.md#requirement-an-endpoint-with-an-empty-path-segment-shall-be-skipped-before-the-source-is-called
+	 */
+	private function hasEmptyPathSegment(string $endpoint): bool {
+		$withoutScheme = (string)preg_replace('~^([a-z][a-z0-9+.\-]*:)?//[^/?#]*~i', '', $endpoint);
+		$path = explode('?', $withoutScheme, 2)[0];
+		$path = explode('#', $path, 2)[0];
+
+		return str_contains($path, '//');
+	}//end hasEmptyPathSegment()
+
+	/**
 	 * Reset and read the per-rule file tally.
 	 *
-	 * @return array{succeeded: int, failed: int} The tally since the last reset.
+	 * @return array{succeeded: int, failed: int, skipped: int} The tally since the last reset.
 	 */
 	private function takeFileFetchTally(): array {
 		$tally = [
 			'succeeded' => $this->fileFetchSucceeded,
 			'failed' => $this->fileFetchFailed,
+			'skipped' => $this->fileFetchSkipped,
 		];
 
 		$this->fileFetchSucceeded = 0;
 		$this->fileFetchFailed = 0;
+		$this->fileFetchSkipped = 0;
 
 		return $tally;
 	}//end takeFileFetchTally()
@@ -13506,6 +13589,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$newFileNames = $this->fetchFilesConcurrently(request: $request, items: $items);
 
+		// A refused item keeps its slot, exactly like a failed download does
+		// (the reject leg of fetchFileAsync() tracks its name): the source still
+		// lists the attachment, it only sent no usable id this run. Without this
+		// the cleanup below deletes the file stored for that slot on an earlier
+		// run — and every file of the object when every item was refused.
+		foreach ($resolved['skipped'] as $skippedItem) {
+			$trackingFilename = $this->trackingFilenameFor(item: $skippedItem);
+			if ($trackingFilename !== null) {
+				$newFileNames[] = $trackingFilename;
+			}
+		}
+
 		// Always run cleanup, even if newFileNames is empty.
 		// This handles the case where all files should be removed from an object.
 		$this->cleanupOrphanedFiles(objectId: $targetObjectId, newFileNames: $newFileNames);
@@ -13522,12 +13617,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @param FileFetchRequest $request The fetch_file request whose endpoint is a list of endpoints or file objects.
 	 *
 	 * @return array{items: array<int, array{endpoint: string, objectId: string|null, filename: string|null,
-	 *               tags: array, published: mixed, registerId: mixed}>, lastObjectId: string|null}
+	 *               tags: array, published: mixed, registerId: mixed}>,
+	 *               skipped: array<int, array{endpoint: string, filename: string|null}>, lastObjectId: string|null}
 	 *
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-not-depend-on-source-ordering-or-split-source-load
 	 */
 	private function resolveMultiFileWorkItems(FileFetchRequest $request): array {
 		$items = [];
+		$skipped = [];
 		$objectId = $request->objectId;
 		$lastObjectId = $objectId;
 
@@ -13562,6 +13659,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				continue;
 			}
 
+			// Refused here, not in the concurrent fetcher: that path never goes
+			// through fetchFileSafely(), and an item that is not in the list is
+			// neither requested nor counted against the byte budget. It is kept
+			// aside so the cleanup still counts its slot as present.
+			if (is_string($actualEndpoint) === true
+				&& $this->skipEmptyPathSegment(endpoint: $actualEndpoint, objectId: $lastObjectId) === true
+			) {
+				$skipped[] = ['endpoint' => $actualEndpoint, 'filename' => $filename];
+				continue;
+			}
+
 			$items[] = [
 				'endpoint' => $actualEndpoint,
 				'objectId' => $lastObjectId,
@@ -13574,6 +13682,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return [
 			'items' => $items,
+			'skipped' => $skipped,
 			'lastObjectId' => $lastObjectId,
 		];
 	}//end resolveMultiFileWorkItems()
@@ -14090,23 +14199,45 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function trackFetchedFilename(array $item, FileFetchRun $run): void {
-		$trackingFilename = $item['filename'];
+		$trackingFilename = $this->trackingFilenameFor(item: $item);
+		if ($trackingFilename !== null) {
+			$run->fileNames[] = $trackingFilename;
+		}
+	}//end trackFetchedFilename()
+
+	/**
+	 * The name the cleanup knows one file item by.
+	 *
+	 * Prefer the filename the item resolved, fall back to the last endpoint path
+	 * segment, and fall back again to a hash when that segment is empty or
+	 * query-string-bearing — the rules of the sequential path, unchanged.
+	 *
+	 * @param array $item The work item: `endpoint` and `filename` (nullable).
+	 *
+	 * @return string|null The tracking filename, or null when none can be formed.
+	 *
+	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+	 */
+	private function trackingFilenameFor(array $item): ?string {
+		$trackingFilename = ($item['filename'] ?? null);
 
 		if ($trackingFilename === null) {
 			// Try to extract filename from endpoint URL.
-			$pathParts = explode('/', $item['endpoint']);
+			$pathParts = explode('/', (string)$item['endpoint']);
 			$trackingFilename = end($pathParts);
 
 			// If still no clear filename, generate a fallback.
 			if (empty($trackingFilename) === true || strpos($trackingFilename, '?') !== false) {
-				$trackingFilename = 'file_' . md5($item['endpoint']);
+				$trackingFilename = 'file_' . md5((string)$item['endpoint']);
 			}
 		}
 
-		if (empty($trackingFilename) === false) {
-			$run->fileNames[] = $trackingFilename;
+		if (empty($trackingFilename) === true) {
+			return null;
 		}
-	}//end trackFetchedFilename()
+
+		return (string)$trackingFilename;
+	}//end trackingFilenameFor()
 
 	/**
 	 * Cleans up files for an object based on the current attachments array.
