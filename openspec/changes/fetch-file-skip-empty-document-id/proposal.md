@@ -15,18 +15,25 @@ is down.
 ## What changes
 
 - Before any request is made, an endpoint whose PATH contains an empty segment (`//`
-  outside the scheme separator, query string and fragment) is refused. No call reaches the
-  source.
+  outside the scheme separator, a protocol-relative `//host` start, the query string and
+  the fragment) is refused. No call reaches the source. This also refuses a key with an
+  empty segment of its own (`bucket//key.pdf`), which cannot be told apart from a missing
+  id; the spec states that trade-off.
 - The refusal is logged as a warning naming the endpoint and the object, and counted in a
   new `skipped` bucket of the per-rule file tally, next to `succeeded` and `failed`. The
-  rule's outcome line reports it (`files saved: N, failed: M, skipped: K`).
+  rule engine's outcome line reports it (`files saved: N, failed: M, skipped: K`); the Flow
+  engine's fetch-file step keeps no tally, so there the warning is the record.
 - Applies on every path: a single endpoint, an attachment object, a list of endpoints or
   objects (the concurrent fetcher) and the queued `async` job, because they all resolve
   the endpoint through `fetchFileSafely()` or `resolveMultiFileWorkItems()`.
-- The object and its contract are unaffected: the file is simply absent, as REQ-021
-  already guarantees for a failed download.
+- A refused attachment in a list keeps its slot for the file cleanup, as a failed
+  download already does, so a file stored for it on an earlier run is not deleted — and
+  an object whose attachments are all refused keeps all its files.
+- The contract is unaffected: REQ-021 of `synchronization-engine` already persists it
+  before the after-rules run.
 
 ## Impact
 
-No route, schema or version change. The golden characterization of the fetch_file rule
-gains seven cases and a `skipped` tally field. Tracked as WOO-583.
+No route, schema or version change. The rule engine's outcome line gains `, skipped: K`;
+nothing in the app or its docs parses that line. The golden characterization of the
+fetch_file rule gains ten cases and a `skipped` tally field. Tracked as WOO-583.

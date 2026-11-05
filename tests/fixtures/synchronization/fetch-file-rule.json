@@ -4383,6 +4383,264 @@
             ]
         ]
     },
+    "multi-empty-id-keeps-stored-file": {
+        "outcome": {
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0,
+            "skipped": 1
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "logger.warning",
+                "[SynchronizationService] fetch_file: skipped endpoint /case/c-2/document//download for object c8b5d4e3-2222-4333-8444-a55566667777: its path has an empty segment (an empty document id); the source is not called."
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.callAsync",
+                "src-1",
+                "/x.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "x.pdf",
+                "BYTES:/x.pdf",
+                false,
+                []
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.deleteFile",
+                "old.pdf",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "multi-all-empty-ids-keep-files": {
+        "outcome": {
+            "return": "{\"files\":[\"file://fetching-async\",\"file://fetching-async\"]}"
+        },
+        "tally": {
+            "succeeded": 0,
+            "failed": 0,
+            "skipped": 2
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "logger.warning",
+                "[SynchronizationService] fetch_file: skipped endpoint /case/c-2/document//download for object c8b5d4e3-2222-4333-8444-a55566667777: its path has an empty segment (an empty document id); the source is not called."
+            ],
+            [
+                "logger.warning",
+                "[SynchronizationService] fetch_file: skipped endpoint /case/c-3/document//download for object c8b5d4e3-2222-4333-8444-a55566667777: its path has an empty segment (an empty document id); the source is not called."
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "file.getFiles",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ]
+        ]
+    },
+    "single-protocol-relative": {
+        "outcome": {
+            "return": "{\"id\":\"item\",\"\":\"file://fetching-async\"}"
+        },
+        "tally": {
+            "succeeded": 1,
+            "failed": 0,
+            "skipped": 0
+        },
+        "log": [
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractLogService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationContractService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SyncItemDeadLetterService"
+            ],
+            [
+                "container.get",
+                "OCP\\EventDispatcher\\IEventDispatcher"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\SynchronizationRunProgressService"
+            ],
+            [
+                "container.get",
+                "OCA\\Integriq\\Service\\Synchronization\\RunPrerequisiteGuard"
+            ],
+            [
+                "container.get",
+                "OCP\\App\\IAppManager"
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "source.find",
+                "src-1",
+                null
+            ],
+            [
+                "call.call",
+                "src-1",
+                "//files.invalid/docs/a.pdf",
+                "GET",
+                {
+                    "headers": {
+                        "X": "1"
+                    }
+                },
+                true
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            [
+                "or.find",
+                "c8b5d4e3-2222-4333-8444-a55566667777"
+            ],
+            [
+                "file.saveFile",
+                "c8b5d4e3-2222-4333-8444-a55566667777",
+                "a.pdf",
+                "BYTES://files.invalid/docs/a.pdf",
+                false,
+                []
+            ]
+        ]
+    },
     "job-entry-single": {
         "outcome": {
             "return": null
