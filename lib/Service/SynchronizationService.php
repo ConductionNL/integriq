@@ -11022,31 +11022,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				// Update data with rule result.
 				$data = $result;
 
-				// A fetch_file rule reports WHAT IT DID, not merely that it ran.
-				// `processFetchFileRule()` catches its own per-file failures so
-				// one bad attachment cannot abort the object, which meant this
-				// line said "Successfully applied" for a rule that wrote ZERO
-				// files — and nothing downstream could tell that from 40. The
-				// tally is the only thing that discriminates.
-				$outcome = '';
-				if (($rule['type'] ?? null) === 'fetch_file') {
-					$tally = $this->takeFileFetchTally();
-					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed']
-						. ', skipped: ' . $tally['skipped'];
-
-					if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
-						$this->logger->warning(
-							'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
-							. $tally['failed'] . ' failed) for synchronization '
-							. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
-						);
-					}
-				}
-
 				$this->logger->info(
 					'Successfully applied rule for synchronization ' . ($synchronization['name'] ?? '')
 					. ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? '')
-					. $outcome
+					. $this->fetchFileRuleOutcome(rule: $rule, synchronization: $synchronization)
 				);
 			}//end foreach
 
@@ -11058,6 +11037,40 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return new JSONResponse(['error' => 'Rule processing failed: ' . $e->getMessage()], 500);
 		}//end try
 	}//end processRules()
+
+
+	/**
+	 * The outcome suffix of a rule's "Successfully applied" log line.
+	 *
+	 * A fetch_file rule reports WHAT IT DID, not merely that it ran.
+	 * `processFetchFileRule()` catches its own per-file failures so one bad
+	 * attachment cannot abort the object, which meant that line said
+	 * "Successfully applied" for a rule that wrote ZERO files — and nothing
+	 * downstream could tell that from 40. The tally is the only thing that
+	 * discriminates. Any other rule type gets an empty suffix.
+	 *
+	 * @param array $rule            The rule that just ran.
+	 * @param array $synchronization The synchronization it ran for, for the log line.
+	 *
+	 * @return string The suffix, empty for every rule type but fetch_file.
+	 */
+	private function fetchFileRuleOutcome(array $rule, array $synchronization): string {
+		if (($rule['type'] ?? null) !== 'fetch_file') {
+			return '';
+		}
+
+		$tally = $this->takeFileFetchTally();
+		if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
+			$this->logger->warning(
+				'Rule ' . ($rule['name'] ?? '') . ' of type fetch_file saved NO files ('
+				. $tally['failed'] . ' failed) for synchronization '
+				. ($synchronization['name'] ?? '') . '. The rule ran; its files did not arrive.'
+			);
+		}
+
+		return ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed']
+			. ', skipped: ' . $tally['skipped'];
+	}//end fetchFileRuleOutcome()
 
 	/**
 	 * Resolve one rule by id, for callers outside this service.
