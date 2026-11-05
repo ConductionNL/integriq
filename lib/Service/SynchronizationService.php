@@ -535,6 +535,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private int $fileFetchFailed = 0;
 
+	/**
+	 * Files refused before any request since the last tally reset: their
+	 * endpoint carries an empty path segment, i.e. an empty document id.
+	 *
+	 * @var int
+	 */
+	private int $fileFetchSkipped = 0;
+
 	// Contracts are now read/written directly through the OpenRegister
 	// ObjectService — the legacy SynchronizationContractMapper container
 	// lookup is dropped in W5. See findContract*() / persistContract() /
@@ -11023,7 +11031,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				$outcome = '';
 				if (($rule['type'] ?? null) === 'fetch_file') {
 					$tally = $this->takeFileFetchTally();
-					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed'];
+					$outcome = ' — files saved: ' . $tally['succeeded'] . ', failed: ' . $tally['failed']
+						. ', skipped: ' . $tally['skipped'];
 
 					if ($tally['succeeded'] === 0 && $tally['failed'] > 0) {
 						$this->logger->warning(
@@ -12545,6 +12554,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
 	 */
 	private function fetchFileSafely(FileFetchRequest $request, FileFetchItem $item): void {
+		if ($this->skipEmptyPathSegment(endpoint: $item->endpoint, objectId: $item->objectId) === true) {
+			return;
+		}
+
 		try {
 			// Execute the file fetching operation.
 			$this->fetchFile(request: $request, item: $item);
@@ -12562,18 +12575,72 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	}//end fetchFileSafely()
 
 	/**
+	 * Refuse an endpoint with an empty path segment before the source is called.
+	 *
+	 * `/api/v1/case/<zaak>/document//download` is what a source emits when the
+	 * document id of an attachment is empty. That request cannot succeed — the
+	 * source answers 500 `Document UUID "" invalid` on every run — so it is not
+	 * made. Counted as SKIPPED, not failed: nothing was tried, and the operator
+	 * needs to read "the source sent an attachment without an id", not "the
+	 * download failed". The object and its contract are unaffected either way
+	 * (REQ-021: the contract is persisted before the after-rules run).
+	 *
+	 * @param string $endpoint The endpoint as resolved for one file.
+	 * @param string|null $objectId The object the file would be attached to, for the log line.
+	 *
+	 * @return bool True when the endpoint was refused and the file must be skipped.
+	 *
+	 * @spec openspec/changes/fetch-file-skip-empty-document-id/specs/synchronization-files/spec.md#requirement-an-endpoint-with-an-empty-path-segment-shall-be-skipped-before-the-source-is-called
+	 */
+	private function skipEmptyPathSegment(string $endpoint, ?string $objectId): bool {
+		if ($this->hasEmptyPathSegment(endpoint: $endpoint) === false) {
+			return false;
+		}
+
+		$this->fileFetchSkipped++;
+		$this->logger->warning(
+			'[SynchronizationService] fetch_file: skipped endpoint ' . $endpoint . ' for object '
+			. ($objectId ?? '(none)') . ': its path has an empty segment (an empty document id); the source is not called.'
+		);
+
+		return true;
+	}//end skipEmptyPathSegment()
+
+	/**
+	 * Whether the PATH of an endpoint contains an empty segment (`//`).
+	 *
+	 * The scheme separator (`https://`), the query string and the fragment are
+	 * not part of the path and never count.
+	 *
+	 * @param string $endpoint The endpoint, relative to the source or absolute.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/fetch-file-skip-empty-document-id/specs/synchronization-files/spec.md#requirement-an-endpoint-with-an-empty-path-segment-shall-be-skipped-before-the-source-is-called
+	 */
+	private function hasEmptyPathSegment(string $endpoint): bool {
+		$withoutScheme = (string)preg_replace('#^[a-z][a-z0-9+.\-]*://#i', '', $endpoint);
+		$path = explode('?', $withoutScheme, 2)[0];
+		$path = explode('#', $path, 2)[0];
+
+		return str_contains($path, '//');
+	}//end hasEmptyPathSegment()
+
+	/**
 	 * Reset and read the per-rule file tally.
 	 *
-	 * @return array{succeeded: int, failed: int} The tally since the last reset.
+	 * @return array{succeeded: int, failed: int, skipped: int} The tally since the last reset.
 	 */
 	private function takeFileFetchTally(): array {
 		$tally = [
 			'succeeded' => $this->fileFetchSucceeded,
 			'failed' => $this->fileFetchFailed,
+			'skipped' => $this->fileFetchSkipped,
 		];
 
 		$this->fileFetchSucceeded = 0;
 		$this->fileFetchFailed = 0;
+		$this->fileFetchSkipped = 0;
 
 		return $tally;
 	}//end takeFileFetchTally()
@@ -13559,6 +13626,15 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$lastObjectId = ($contextObjectId ?? $objectId);
 
 			if ($actualEndpoint === null) {
+				continue;
+			}
+
+			// Refused here, not in the concurrent fetcher: that path never goes
+			// through fetchFileSafely(), and an item that is not in the list is
+			// neither requested nor counted against the byte budget.
+			if (is_string($actualEndpoint) === true
+				&& $this->skipEmptyPathSegment(endpoint: $actualEndpoint, objectId: $lastObjectId) === true
+			) {
 				continue;
 			}
 
