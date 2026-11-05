@@ -36,6 +36,7 @@ use OCA\Integriq\Event\DocumentSearchRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
+use OCA\Integriq\Event\LearningMaterialRequestedEvent;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\OptOutChangeRequestedEvent;
@@ -241,6 +242,13 @@ final class EventListenerBindings {
 		$context->registerEventListener(
 			LtiLaunchRequestedEvent::class,
 			LtiLaunchRequestedListener::class
+		);
+		// Open learning material (edurep-source): learniq searches Edurep,
+		// finds one record or reads the connection status, and reads the
+		// answer or the named refusal off the same instance.
+		$context->registerEventListener(
+			LearningMaterialRequestedEvent::class,
+			LearningMaterialRequestedListener::class
 		);
 	}//end registerRosterAndLaunchListeners()
 
