@@ -19,7 +19,7 @@ namespace OCA\Integriq\Tests\Unit\Notification;
 
 use OCA\Integriq\Notification\ConnectionAlertRecipientResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
 use OCP\IAppConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;

@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Notification;
+namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use DateTimeZone;
 

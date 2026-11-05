@@ -22,9 +22,9 @@ namespace OCA\Integriq\Tests\Unit\Settings;
 
 use DateTimeImmutable;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterParser;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser;
 use PHPUnit\Framework\TestCase;
 
 /**
