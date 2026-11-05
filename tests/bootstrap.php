@@ -466,8 +466,8 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletingEvent.php';
 		}
 
-		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\RecipientResolverInterface') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/RecipientResolverInterface.php';
+		if (interface_exists('OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/RecipientResolverInterface.php';
 		}
 
 		// OpenRegister's scheduled-notification grammar, copied verbatim from
@@ -475,7 +475,7 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// rules are parsed and matched by the code that runs them live.
 		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
 			if (class_exists('OCA\\OpenRegister\\Service\\Notification\\'.$notificationClass) === false) {
-				require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/'.$notificationClass.'.php';
+				require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/'.$notificationClass.'.php';
 			}
 		}
 

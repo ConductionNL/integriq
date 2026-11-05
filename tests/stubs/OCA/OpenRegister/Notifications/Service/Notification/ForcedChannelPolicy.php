@@ -44,7 +44,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Notification;
+namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 /**
  * Applies an administrator's forced channels and internal-only rule.
