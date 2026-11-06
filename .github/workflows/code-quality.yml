@@ -371,6 +371,15 @@ jobs:
       # project over spec-coverage/ + regression/ + workflows/.
       enable-playwright: true
       playwright-test-path: tests/e2e
+      # TWO SHARDS, because one runner no longer fits the suite in the
+      # shared Playwright job's 45-minute cap. Measured 2026-11-06 on #3031:
+      # test 286 had passed (each ~18 s) when the job was cancelled at 47
+      # minutes, so the run ended with no tally, no axe report (gate-33 then
+      # fails as SKIPPED-structural) and a red Quality Report on a suite that
+      # was passing. The config declares one project with no `dependencies`,
+      # so Playwright splits it cleanly; each leg gets its own Nextcloud and
+      # database, and globalTimeout (38 min) is per process, so per leg.
+      e2e-shards: 2
       # integriq's sources/mappings/synchronizations/jobs are OpenRegister
       # OBJECTS — there is no `oc_openconnector_*` table for them — so with no
       # `openconnector` register the SPA has nothing to resolve and the suite
