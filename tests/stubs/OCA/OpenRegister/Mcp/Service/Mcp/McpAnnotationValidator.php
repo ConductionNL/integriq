@@ -33,7 +33,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Mcp;
+namespace OCA\OpenRegister\Mcp\Service\Mcp;
 
 /**
  * Validate the `x-openregister-mcp` annotation on a schema.
