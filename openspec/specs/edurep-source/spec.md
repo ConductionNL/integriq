@@ -58,8 +58,11 @@ DI container and in the integration registry per ADR-019). `MaterialRecord` MUST
 with the user's words as a free-text term and these filter indexes: `lom.educational.context` for levels,
 `lom.rights.copyrightandotherrestrictions` for licence codes, `lom.technical.format` for file types,
 `meta.repository.id` for collections and `lom.general.language` (default `nl`). It MUST request facets with
-`x-term-drilldown` on those four indexes (`lom.rights.copyrightandotherrestrictions:10`,
-`meta.repository.id:12`, `lom.educational.context:8`, `lom.technical.format:8`). Pages MUST stay small:
+`x-term-drilldown` on those four indexes (`lom.rights.copyrightandotherrestrictions:20`,
+`meta.repository.id:20`, `lom.educational.context:12`, `lom.technical.format:12`), each counted as the next
+requirement says. `excludeFormats` and `excludeCollections` MUST become `NOT` clauses. `excludeLicenses` MUST
+match every other known rights value instead, because Edurep answers a `NOT` on its licence index with zero
+results. Pages MUST stay small:
 `maximumRecords` at most 50 (1000 returns nothing), `startRecord` from the page number. Query values MUST be
 escaped so a user cannot inject CQL. Timeout 10 seconds; on timeout or a non-200 answer the adapter MUST
 throw a typed source-unavailable exception that the consumer renders as "Edurep antwoordt niet".
@@ -83,6 +86,33 @@ throw a typed source-unavailable exception that the consumer renders as "Edurep 
 - WHEN `search` runs
 - THEN a source-unavailable exception is thrown with the source name and the last successful time
 - AND nothing is cached as a result
+
+### Requirement: A filter group's counts leave out its own filter
+A facet whose filter group has a filter set MUST be counted by a separate call with every other filter
+applied and its own filter left out, so an option stays visible and can be ticked again. The groups are
+levels (`levels`), licences (`licenses`, `excludeLicenses`), file types (`formats`, `excludeFormats`) and
+collections (`collection`, `excludeCollections`). Each such call MUST ask for `maximumRecords=0` and one
+drilldown. The main call MUST ask only for the facets of the groups without a filter, so a search costs one
+call plus one per group with a filter set. A search with the filter `facets` set to false MUST make one call
+without a drilldown; a consumer turning a page uses it, because the filters and so the counts have not
+changed. The answer keeps its shape: `facets` is a map of facet name to a list of `value` and `count`.
+
+#### Scenario: Other levels and a collection that is off keep their rows
+- GIVEN the recorded responses for `betoog` with level VO and KlasCement left out
+- WHEN `search('betoog', ['levels' => ['VO'], 'excludeCollections' => ['KlasCement']], 1)` runs
+- THEN `total` is 13 and three calls are made, two of them with `maximumRecords=0`
+- AND `facets['lom.educational.context']` is `WO` 15, `HO` 14, `VO` 13, `HBO` 1
+- AND `facets['meta.repository.id']` contains `KlasCement` 25
+
+#### Scenario: Unticking one licence leaves out only that licence
+- GIVEN 210 results for `betoog` with KlasCement left out, 9 of them `cc-by-nc-nd-30`
+- WHEN `search('betoog', ['excludeLicenses' => ['CC-BY-NC-ND-3.0'], 'excludeCollections' => ['KlasCement']], 1)` runs
+- THEN `total` is 201 and `cc-by-nc-nd-30` still has its count of 9 in the licence facet
+
+#### Scenario: Turning a page asks for no counts
+- GIVEN filters with `facets` set to false
+- WHEN `search` runs for page 2
+- THEN one call is made and it has no `x-term-drilldown`
 
 ### Requirement: find returns one record by its identifier
 `find(id)` MUST query the quoted record identifier (the full `catalogentry` value, or its last path segment
