@@ -64,6 +64,50 @@ class EdurepCqlBuilderTest extends TestCase {
 	/**
 	 * @return void
 	 */
+	public function testExcludedFormatsAndCollectionsBecomeNotClauses(): void {
+		$cql = (new EdurepCqlBuilder())->search(
+			query: 'betoog',
+			filters: ['excludeFormats' => ['application/msword', 'application/pdf'], 'excludeCollections' => ['KlasCement']]
+		);
+
+		$this->assertSame(
+			'betoog AND lom.general.language=nl NOT lom.technical.format="application/msword"'
+			. ' NOT lom.technical.format="application/pdf" NOT meta.repository.id=KlasCement',
+			$cql
+		);
+	}//end testExcludedFormatsAndCollectionsBecomeNotClauses()
+
+	/**
+	 * Edurep answers a NOT on the licence index with zero results, so it may never appear.
+	 *
+	 * @return void
+	 */
+	public function testAnExcludedLicenceMatchesEveryOtherRightsValue(): void {
+		$cql = (new EdurepCqlBuilder())->search(query: 'betoog', filters: ['excludeLicenses' => ['CC-BY-NC-ND-3.0']]);
+
+		$this->assertStringNotContainsString(' NOT ', $cql);
+		$this->assertStringNotContainsString('=cc-by-nc-nd-30', $cql);
+		$this->assertStringContainsString('lom.rights.copyrightandotherrestrictions=yes OR', $cql);
+		$this->assertStringContainsString('lom.rights.copyrightandotherrestrictions=no OR', $cql);
+		$this->assertStringContainsString('lom.rights.copyrightandotherrestrictions=cc-by-nd)', $cql);
+		$this->assertStringContainsString('lom.rights.copyrightandotherrestrictions=cc0-10 OR', $cql);
+	}//end testAnExcludedLicenceMatchesEveryOtherRightsValue()
+
+	/**
+	 * @return void
+	 */
+	public function testAnExcludedLicenceNarrowsTheChosenOnes(): void {
+		$cql = (new EdurepCqlBuilder())->search(
+			query: '',
+			filters: ['licenses' => ['CC-BY-4.0', 'CC-BY-SA-4.0'], 'excludeLicenses' => ['CC-BY-SA-4.0']]
+		);
+
+		$this->assertSame('lom.rights.copyrightandotherrestrictions=cc-by-40 AND lom.general.language=nl', $cql);
+	}//end testAnExcludedLicenceNarrowsTheChosenOnes()
+
+	/**
+	 * @return void
+	 */
 	public function testAnUnknownLicenceCodeIsDropped(): void {
 		$cql = (new EdurepCqlBuilder())->search(query: 'x', filters: ['licenses' => ['GPL']]);
 

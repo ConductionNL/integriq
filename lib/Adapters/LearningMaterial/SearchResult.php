@@ -77,6 +77,21 @@ final class SearchResult {
 	}//end __construct()
 
 	/**
+	 * This result with some facets set; the others stay.
+	 *
+	 * @param array<string,list<array{value: string, count: int}>> $facets Facet name to its values with counts.
+	 *
+	 * @return self The result.
+	 *
+	 * @spec openspec/specs/edurep-source/spec.md#requirement-a-filter-groups-counts-leave-out-its-own-filter
+	 */
+	public function withFacets(array $facets): self {
+		$summary = ['total' => $this->total, 'page' => $this->page, 'pageSize' => $this->pageSize, 'facets' => ($facets + $this->facets)];
+
+		return new self(summary: $summary, records: $this->records);
+	}//end withFacets()
+
+	/**
 	 * The result as a plain array.
 	 *
 	 * @return array<string,mixed> `total`, `page`, `pageSize`, `records` and `facets`.

@@ -17,9 +17,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Adapters\LearningMaterial;
 
+use OCA\Integriq\Adapters\LearningMaterial\EdurepFixtureTransport;
+use OCA\Integriq\Adapters\LearningMaterial\EdurepSource;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceMock;
 use OCA\Integriq\Adapters\LearningMaterial\MaterialRecord;
 use OCA\Integriq\Adapters\LearningMaterial\SourceUnavailableException;
+use OCA\Integriq\Adapters\LearningMaterial\SruTransport;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -69,6 +72,144 @@ class EdurepSourceMockTest extends TestCase {
 		$licences = array_column($result->facets['lom.rights.copyrightandotherrestrictions'], 'count', 'value');
 		$this->assertSame(['yes' => 138, 'cc-by-40' => 36, 'cc-by-30' => 30, 'cc-by-sa-40' => 25, 'cc-by-nc-nd-30' => 9], array_slice($licences, 0, 5, true));
 	}//end testFacetCountsComeBackWithTheResults()
+
+	/**
+	 * The recorded source, writing every request it sends to the given list.
+	 *
+	 * @param array<int,array<string,string>> $requests The requests sent, filled by the source.
+	 *
+	 * @return EdurepSource
+	 */
+	private function recordingSource(array &$requests): EdurepSource {
+		$transport = new class($requests) implements SruTransport {
+			/**
+			 * @var array<int,array<string,string>>
+			 */
+			private array $requests;
+
+			/**
+			 * @param array<int,array<string,string>> $requests The requests sent.
+			 */
+			public function __construct(array &$requests) {
+				$this->requests = &$requests;
+			}//end __construct()
+
+			/**
+			 * @param array<string,string> $parameters The SRU parameters.
+			 *
+			 * @return string
+			 */
+			public function fetch(array $parameters): string {
+				$this->requests[] = $parameters;
+
+				return (new EdurepFixtureTransport())->fetch(parameters: $parameters);
+			}//end fetch()
+
+			/**
+			 * @return string|null
+			 */
+			public function lastSuccess(): ?string {
+				return null;
+			}//end lastSuccess()
+		};
+
+		return new EdurepSource(transport: $transport, logger: $this->createMock(LoggerInterface::class));
+	}//end recordingSource()
+
+	/**
+	 * @return void
+	 */
+	public function testASearchWithoutFiltersIsOneCall(): void {
+		$requests = [];
+		$this->recordingSource(requests: $requests)->search(query: 'betoog', filters: [], page: 1);
+
+		$this->assertCount(1, $requests);
+	}//end testASearchWithoutFiltersIsOneCall()
+
+	/**
+	 * The live pass: with VO on the other levels stayed, and KlasCement off still had a row.
+	 *
+	 * @return void
+	 */
+	public function testAFilteredGroupCountsWithoutItsOwnFilter(): void {
+		$requests = [];
+		$source = $this->recordingSource(requests: $requests);
+		$result = $source->search(query: 'betoog', filters: ['levels' => ['VO'], 'excludeCollections' => ['KlasCement']], page: 1);
+
+		$this->assertSame(13, $result->total);
+		$this->assertCount(10, $result->records);
+		$levels = array_column($result->facets['lom.educational.context'], 'count', 'value');
+		$this->assertSame(['WO' => 15, 'HO' => 14, 'VO' => 13, 'HBO' => 1], $levels);
+		$collections = array_column($result->facets['meta.repository.id'], 'count', 'value');
+		$this->assertSame(25, $collections['KlasCement']);
+		$licences = array_column($result->facets['lom.rights.copyrightandotherrestrictions'], 'count', 'value');
+		$this->assertSame(['cc-by-nc-nd-30' => 9, 'yes' => 4], $licences);
+
+		$this->assertCount(3, $requests);
+		$this->assertSame('lom.rights.copyrightandotherrestrictions:20,lom.technical.format:12', $requests[0]['x-term-drilldown']);
+		$this->assertSame(['10', '0', '0'], array_column($requests, 'maximumRecords'));
+		$this->assertSame('meta.repository.id:20', $requests[1]['x-term-drilldown']);
+		$this->assertSame('lom.educational.context:12', $requests[2]['x-term-drilldown']);
+		$this->assertStringNotContainsString('KlasCement', $requests[1]['query']);
+		$this->assertStringContainsString('lom.educational.context=VO', $requests[1]['query']);
+		$this->assertStringNotContainsString('lom.educational.context', $requests[2]['query']);
+		$this->assertStringContainsString('KlasCement', $requests[2]['query']);
+	}//end testAFilteredGroupCountsWithoutItsOwnFilter()
+
+	/**
+	 * The live pass: unticking one licence took 210 results to 93.
+	 *
+	 * @return void
+	 */
+	public function testUntickingOneLicenceLeavesOutOnlyThatLicence(): void {
+		$requests = [];
+		$source = $this->recordingSource(requests: $requests);
+		$result = $source->search(query: 'betoog', filters: ['excludeLicenses' => ['CC-BY-NC-ND-3.0'], 'excludeCollections' => ['KlasCement']], page: 1);
+
+		$this->assertSame(201, $result->total);
+		$licences = array_column($result->facets['lom.rights.copyrightandotherrestrictions'], 'count', 'value');
+		$this->assertSame(9, $licences['cc-by-nc-nd-30']);
+		$collections = array_column($result->facets['meta.repository.id'], 'count', 'value');
+		$this->assertSame(32, $collections['KlasCement']);
+		$this->assertCount(3, $requests);
+	}//end testUntickingOneLicenceLeavesOutOnlyThatLicence()
+
+	/**
+	 * Turning a page keeps the filters, so its counts have not changed.
+	 *
+	 * @return void
+	 */
+	public function testAPageWithoutFacetsIsOneCallWithoutADrilldown(): void {
+		$requests = [];
+		$source = $this->recordingSource(requests: $requests);
+		$result = $source->search(query: 'betoog', filters: ['excludeCollections' => ['KlasCement'], 'facets' => false], page: 2);
+
+		$this->assertCount(1, $requests);
+		$this->assertArrayNotHasKey('x-term-drilldown', $requests[0]);
+		$this->assertSame('11', $requests[0]['startRecord']);
+		$this->assertSame(210, $result->total);
+	}//end testAPageWithoutFacetsIsOneCallWithoutADrilldown()
+
+	/**
+	 * @return void
+	 */
+	public function testAFailedDrilldownCallIsASourceFailure(): void {
+		$recorded = new EdurepFixtureTransport();
+		$transport = $this->createMock(SruTransport::class);
+		$transport->expects($this->exactly(2))
+			->method('fetch')
+			->willReturnCallback(static function (array $parameters) use ($recorded): string {
+				if ($parameters['maximumRecords'] === '0') {
+					throw new SourceUnavailableException(source: 'edurep', lastSuccess: null);
+				}
+
+				return $recorded->fetch(parameters: $parameters);
+			});
+
+		$this->expectException(SourceUnavailableException::class);
+		(new EdurepSource(transport: $transport, logger: $this->createMock(LoggerInterface::class)))
+			->search(query: 'betoog', filters: ['levels' => ['VO']], page: 1);
+	}//end testAFailedDrilldownCallIsASourceFailure()
 
 	/**
 	 * @return void
