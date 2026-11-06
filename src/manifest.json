@@ -3158,10 +3158,11 @@
       "route": "/flows",
       "type": "index",
       "title": "Flows",
-      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this was type:custom over FlowsIndex.vue. config.entitySource names the collection and the index loads it. No columns are stated: the source's defaults are exactly the five this app rendered, and they arrive already translated. config.app stays \"openconnector\" — see FlowDetail.",
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this was type:custom over FlowsIndex.vue. config.entitySource names the collection and the index loads it. No columns are stated: the source's defaults are exactly the five this app rendered, and they arrive already translated. config.app stays \"openconnector\" — see FlowDetail. rowRoute names the FlowDetail page (a route name, not a path): a named-source page has no register and schema, so without it a row click opens nothing and Edit falls back to the source's own /flows path.",
       "config": {
         "entitySource": "flows",
-        "app": "openconnector"
+        "app": "openconnector",
+        "rowRoute": "FlowDetail"
       }
     },
     {
