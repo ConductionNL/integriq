@@ -296,6 +296,7 @@
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectDeletedEvent, OCA\\Integriq\\BackgroundJob\\ViewDeletedEventListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectDeletedEvent, OCA\\Integriq\\EventListener\\ObjectDeletedEventListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectDeletingEvent, OCA\\Integriq\\EventListener\\SourceOwnedDeleteGuardListener, int)",
+	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectLeavingEvent, OCA\\Integriq\\EventListener\\SourceOwnedDeleteGuardListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatingEvent, OCA\\Integriq\\EventListener\\DsoActivityMappingGuardListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatingEvent, OCA\\Integriq\\EventListener\\DsoActivityMappingGuardListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatingEvent, OCA\\Integriq\\EventListener\\SubscriptionSigningDefaultListener, int)",

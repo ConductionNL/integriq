@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -98,6 +99,24 @@ class SourceOwnedDeleteGuardListenerTest extends TestCase {
 		$this->assertStringContainsString('BRP personen', $event->getErrors()['message']);
 
 	}//end testAnOrdinaryDeleteOfASourceOwnedRecordIsStopped()
+
+	/**
+	 * A source-owned record cannot be moved out of its register or schema either.
+	 *
+	 * @return void
+	 */
+	public function testAMoveOfASourceOwnedRecordIsStopped(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-2222-4333-8444-555555555555');
+		$entity->setObject(['naam' => 'Jansen']);
+		$event = new ObjectLeavingEvent($entity);
+
+		$this->listener($this->owned())->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('source_owned', $event->getErrors()['code']);
+
+	}//end testAMoveOfASourceOwnedRecordIsStopped()
 
 	/**
 	 * A local record is deleted as before.
