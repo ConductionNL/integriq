@@ -84,11 +84,9 @@ class EndpointServiceNcSessionRuleTest extends TestCase {
 	 * Skip when the harness has no `OC\AppFramework\Http`.
 	 *
 	 * `EndpointService` imports the INTERNAL `OC\AppFramework\Http` for its
-	 * status constants, and the unit bootstrap stubs only `OCP\*` plus a
-	 * handful of `OC\Hooks` classes — so every pre-existing branch that
-	 * returns one of those constants is unreachable in this suite. That is a
-	 * harness gap, not a defect in the code under test, and it predates
-	 * #1068: the `nc-session` branch itself uses no such constant, which is
+	 * status constants. `tests/bootstrap.php` loads a stub of it whenever
+	 * Nextcloud is absent, so this guard only fires in a harness that has
+	 * neither. The `nc-session` branch itself uses no such constant, which is
 	 * why the tests that cover it run unconditionally.
 	 *
 	 * @return void
@@ -96,7 +94,7 @@ class EndpointServiceNcSessionRuleTest extends TestCase {
 	private function requireInternalHttpClass(): void {
 		if (class_exists('OC\AppFramework\Http') === false) {
 			$this->markTestSkipped(
-				'Requires the internal OC\AppFramework\Http class, which the unit bootstrap does not stub.'
+				'Requires OC\AppFramework\Http (stubbed by tests/bootstrap.php when Nextcloud is absent).'
 			);
 		}
 
