@@ -277,6 +277,9 @@ final class EventListenerBindings {
 		// OpenRegister's stoppable ObjectDeletingEvent, so the refusal of a
 		// source-owned record holds whichever page or app deletes it.
 		$dispatcher->addServiceListener(eventName: ObjectDeletingEvent::class, className: SourceOwnedDeleteGuardListener::class);
+		// A move out of a register or schema is asked like a delete. The event is
+		// named as a string, so an OpenRegister without moves never dispatches it.
+		$dispatcher->addServiceListener(eventName: 'OCA\\OpenRegister\\Event\\ObjectLeavingEvent', className: SourceOwnedDeleteGuardListener::class);
 	}//end registerObjectWriteListeners()
 
 	/**
