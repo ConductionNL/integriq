@@ -973,7 +973,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			register: 'integriq',
 			schema: 'synchronization',
 			uuid: $uuidValue,
-			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
+			_rbac: false, // rbac-bypass: engine cursor/status of the stored sync, no caller input; also via webhook/event/cron (99-engine-config-lockdown).
 		);
 	}//end persistSynchronization()
 
@@ -1534,7 +1534,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			register: 'integriq',
 			schema: 'synchronization_contract',
 			uuid: $uuidValue,
-			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
+			_rbac: false, // rbac-bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -1570,7 +1570,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			register: 'integriq',
 			schema: 'synchronization_contract',
 			uuid: $uuid,
-			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
+			_rbac: false, // rbac-bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -1619,7 +1619,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			register: 'integriq',
 			schema: 'synchronization_contract',
 			uuid: $uuidValue,
-			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
+			_rbac: false, // rbac-bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();

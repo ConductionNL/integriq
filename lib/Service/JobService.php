@@ -239,7 +239,7 @@ class JobService implements JobServiceInterface {
 				register: 'integriq',
 				schema: 'job',
 				uuid: $job->getUuid(),
-				_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
+				_rbac: false, // rbac-bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 			);
 		}
 
@@ -266,7 +266,7 @@ class JobService implements JobServiceInterface {
 			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid(),
-			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
+			_rbac: false, // rbac-bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 		);
 
 	}//end scheduleJob()
@@ -617,7 +617,7 @@ class JobService implements JobServiceInterface {
 			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid(),
-			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
+			_rbac: false, // rbac-bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 		);
 
 		return $logEntry;
