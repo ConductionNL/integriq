@@ -95,6 +95,7 @@ class JobService implements JobServiceInterface {
 	 * @param IUserSession $userSession User session manager.
 	 * @param IUserManager $userManager User manager for user operations.
 	 * @param IAppConfig $appConfig App config used to read global retention overrides.
+	 * @param IGroupManager|null $groupManager Decides whether a job's owner is an administrator (iq-b-f3).
 	 *
 	 * @psalm-param IJobList $jobList
 	 * @psalm-param ORObjectService $objectService
@@ -102,7 +103,6 @@ class JobService implements JobServiceInterface {
 	 * @psalm-param ContainerInterface $containerInterface
 	 * @psalm-param IUserSession $userSession
 	 * @psalm-param IUserManager $userManager
-	 * @param IGroupManager|null $groupManager Decides whether a job's owner is an administrator (iq-b-f3).
 	 */
 	public function __construct(
 		private readonly IJobList $jobList,
