@@ -24,8 +24,11 @@ use OCA\Integriq\Controller\UserController;
 use OCA\Integriq\Service\SecurityService;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Http\Response;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -168,7 +171,21 @@ class UserControllerLoginGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		return new UserController('integriq', $request, $userManager, $session, new SecurityService($cacheFactory, $logger), $logger, $userService, $l10n);
+		$registry = $this->createMock(IRegistry::class);
+		$registry->method('getProviderStates')->willReturn(($this->case['twoFactor'] ?? []));
+
+		$config = $this->createMock(IConfig::class);
+		$config->method('getAppValue')->willReturn('https://app.example');
+		$config->method('getSystemValue')->willReturnCallback(
+			fn (string $key, $default = '') => ($this->case['system'][$key] ?? $default)
+		);
+
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isInGroup')->willReturnCallback(
+			fn (string $uid, string $group) => in_array($group, ($this->case['groups'] ?? []), true)
+		);
+
+		return new UserController('integriq', $request, $userManager, $session, new SecurityService($cacheFactory, $logger), $logger, $userService, $l10n, $registry, $config, $groupManager);
 	}//end controller()
 
 	/**
@@ -182,6 +199,12 @@ class UserControllerLoginGoldenTest extends TestCase {
 		return [
 			'success' => ['params' => $valid],
 			'success-with-origin' => ['params' => $valid, 'headers' => ['Origin' => 'https://app.example']],
+			'unlisted-origin' => ['params' => $valid, 'headers' => ['Origin' => 'https://evil.example']],
+			'two-factor-enabled' => ['params' => $valid, 'twoFactor' => ['totp' => true]],
+			'two-factor-disabled-provider' => ['params' => $valid, 'twoFactor' => ['totp' => false]],
+			'two-factor-enforced' => ['params' => $valid, 'system' => ['twofactor_enforced' => 'true']],
+			'two-factor-enforced-other-group' => ['params' => $valid, 'system' => ['twofactor_enforced' => 'true', 'twofactor_enforced_groups' => ['beheer']]],
+			'two-factor-enforced-excluded' => ['params' => $valid, 'groups' => ['vrij'], 'system' => ['twofactor_enforced' => 'true', 'twofactor_enforced_excluded_groups' => ['vrij']]],
 			'missing-password' => ['params' => ['username' => 'jan']],
 			'short-username' => ['params' => ['username' => 'j', 'password' => 'x']],
 			'bad-username' => ['params' => ['username' => 'jan<', 'password' => 'x']],

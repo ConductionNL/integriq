@@ -24,11 +24,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": [],
@@ -84,9 +80,280 @@
                 "Pragma": "no-cache",
                 "Expires": "0",
                 "Access-Control-Allow-Origin": "https://app.example",
+                "Vary": "Origin",
                 "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
                 "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
                 "Access-Control-Allow-Credentials": "true"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "unlisted-origin": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "two-factor-enabled": {
+        "outcome": {
+            "status": 403,
+            "data": {
+                "error": "Login via this endpoint is not available for this account"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ]
+        ]
+    },
+    "two-factor-disabled-provider": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "two-factor-enforced": {
+        "outcome": {
+            "status": 403,
+            "data": {
+                "error": "Login via this endpoint is not available for this account"
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ]
+        ]
+    },
+    "two-factor-enforced-other-group": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        },
+        "cache": [],
+        "log": [
+            [
+                "userManager.checkPassword",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.setUser",
+                "jan"
+            ],
+            [
+                "session.createSessionToken",
+                "jan",
+                "jan",
+                "geheim"
+            ],
+            [
+                "session.getUser"
+            ],
+            [
+                "userService.buildUserDataArray",
+                "jan"
+            ]
+        ]
+    },
+    "two-factor-enforced-excluded": {
+        "outcome": {
+            "status": 200,
+            "data": {
+                "message": "Login successful",
+                "user": {
+                    "uid": "jan",
+                    "displayName": "Jan"
+                },
+                "session_created": true,
+                "session": {
+                    "id": "empty",
+                    "name": "present",
+                    "cookie_instructions": "Use the returned session cookies for subsequent authenticated requests"
+                }
+            },
+            "headers": {
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Frame-Options": "DENY",
+                "X-Content-Type-Options": "nosniff",
+                "X-XSS-Protection": "1; mode=block",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+                "Cache-Control": "no-store, no-cache, must-revalidate, private",
+                "Pragma": "no-cache",
+                "Expires": "0"
             }
         },
         "cache": [],
@@ -182,11 +449,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": [],
@@ -302,11 +565,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": {
@@ -468,11 +727,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": [],
@@ -512,11 +767,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": [],
@@ -556,11 +807,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": [],
@@ -598,11 +845,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": [],
@@ -688,11 +931,7 @@
                 "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
                 "Cache-Control": "no-store, no-cache, must-revalidate, private",
                 "Pragma": "no-cache",
-                "Expires": "0",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
-                "Access-Control-Allow-Methods": "PUT, POST, GET, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
-                "Access-Control-Allow-Credentials": "true"
+                "Expires": "0"
             }
         },
         "cache": {

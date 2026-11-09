@@ -23,8 +23,11 @@ use OCA\Integriq\Service\SecurityService;
 use OCA\Integriq\Service\UserService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -109,7 +112,10 @@ class UserControllerTest extends TestCase {
 			new SecurityService(cacheFactory: $this->cacheFactory, logger: $this->logger),
 			$this->logger,
 			$this->userService,
-			$this->l10n
+			$this->l10n,
+			$this->createMock(IRegistry::class),
+			$this->createMock(IConfig::class),
+			$this->createMock(IGroupManager::class)
 		);
 	}
 
@@ -433,13 +439,16 @@ class UserControllerTest extends TestCase {
 	 *
 	 * @return UserController
 	 */
-	private function controllerWithOrigin(string $origin): UserController {
+	private function controllerWithOrigin(string $origin, string $allowedOrigins = 'https://client.example.org'): UserController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->willReturnCallback(
 			static function (string $name) use ($origin): string {
 				return $name === 'Origin' ? $origin : '';
 			}
 		);
+
+		$config = $this->createMock(IConfig::class);
+		$config->method('getAppValue')->willReturn($allowedOrigins);
 
 		return new UserController(
 			'integriq',
@@ -449,7 +458,10 @@ class UserControllerTest extends TestCase {
 			new SecurityService(cacheFactory: $this->cacheFactory, logger: $this->logger),
 			$this->logger,
 			$this->userService,
-			$this->l10n
+			$this->l10n,
+			$this->createMock(IRegistry::class),
+			$config,
+			$this->createMock(IGroupManager::class)
 		);
 	}
 
@@ -505,17 +517,14 @@ class UserControllerTest extends TestCase {
 	}
 
 	/**
-	 * `Allow-Credentials: true` and `Allow-Origin: *` are mutually exclusive.
+	 * A request without an Origin header gets no CORS headers at all.
 	 *
-	 * A browser rejects the pair outright, so a preflight that emitted both
-	 * would break every credentialed cross-origin client while every "returns
-	 * a Response with CORS headers" assertion still passed. The interesting
-	 * case is the one with no Origin header at all, which is where the
-	 * wildcard could leak in — the handler must resolve a concrete origin.
+	 * It is not a cross-origin browser call, so there is nothing to grant;
+	 * in particular no wildcard can ever be paired with Allow-Credentials.
 	 *
 	 * @return void
 	 */
-	public function testPreflightWithNoOriginNeverPairsWildcardWithCredentials(): void {
+	public function testPreflightWithNoOriginGrantsNothing(): void {
 		// Both entry points share buildCorsPreflightResponse() today; each is
 		// still driven literally so a future divergence is caught.
 		$me = $this->controllerWithOrigin('')->preflightedCorsMe();
@@ -523,12 +532,28 @@ class UserControllerTest extends TestCase {
 
 		foreach (['me' => $me, 'login' => $login] as $label => $response) {
 			$headers = $this->rawHeaders($response);
-			$this->assertSame('true', $headers['Access-Control-Allow-Credentials'], $label);
-			$this->assertNotSame(
-				'*',
-				$headers['Access-Control-Allow-Origin'],
-				$label . ': a wildcard origin with Allow-Credentials:true is rejected by every browser'
-			);
+			$this->assertArrayNotHasKey('Access-Control-Allow-Origin', $headers, $label);
+			$this->assertArrayNotHasKey('Access-Control-Allow-Credentials', $headers, $label);
 		}
+	}
+
+	/**
+	 * An Origin that is not on the configured allow-list gets no CORS grant (iq-a-f7).
+	 *
+	 * Reflecting any Origin together with Allow-Credentials let every site read
+	 * the signed-in user's profile and drive the login with their cookies.
+	 *
+	 * @return void
+	 */
+	public function testUnlistedOriginGetsNoCorsGrant(): void {
+		foreach (['https://evil.example', 'https://client.example.org.evil.example'] as $origin) {
+			$response = $this->controllerWithOrigin($origin)->preflightedCorsMe();
+			$headers = $this->rawHeaders($response);
+			$this->assertArrayNotHasKey('Access-Control-Allow-Origin', $headers, $origin);
+			$this->assertArrayNotHasKey('Access-Control-Allow-Credentials', $headers, $origin);
+		}
+
+		$none = $this->rawHeaders($this->controllerWithOrigin('https://client.example.org', '')->preflightedCorsLogin());
+		$this->assertArrayNotHasKey('Access-Control-Allow-Origin', $none, 'an empty allow-list grants no origin');
 	}
 }

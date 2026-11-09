@@ -32,6 +32,9 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -104,6 +107,24 @@ class UserController extends Controller {
 	private readonly IL10N $l;
 
 	/**
+	 * Two-factor provider registry, to see whether an account has a second factor
+	 * @var IRegistry
+	 */
+	private readonly IRegistry $twoFactorRegistry;
+
+	/**
+	 * System configuration, for the two-factor enforcement settings
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * Group manager, for the two-factor enforcement groups
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * CORS allowed methods
 	 *
 	 * @var string
@@ -138,6 +159,9 @@ class UserController extends Controller {
 	 * @param LoggerInterface $logger The logger for security events
 	 * @param UserServiceInterface $userService The user service for user-related operations
 	 * @param IL10N $l The localization service
+	 * @param IRegistry $twoFactorRegistry The two-factor provider registry
+	 * @param IConfig $config The system configuration
+	 * @param IGroupManager $groupManager The group manager
 	 * @param string $corsMethods Allowed CORS methods
 	 * @param string $corsAllowedHeaders Allowed CORS headers
 	 * @param int $corsMaxAge CORS max age
@@ -174,6 +198,9 @@ class UserController extends Controller {
 		LoggerInterface $logger,
 		UserServiceInterface $userService,
 		IL10N $l,
+		IRegistry $twoFactorRegistry,
+		IConfig $config,
+		IGroupManager $groupManager,
 		string $corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		string $corsAllowedHeaders = 'Authorization, Content-Type, Accept',
 		int $corsMaxAge = 1728000,
@@ -185,6 +212,9 @@ class UserController extends Controller {
 		$this->userService = $userService;
 		$this->logger = $logger;
 		$this->l = $l;
+		$this->twoFactorRegistry = $twoFactorRegistry;
+		$this->config = $config;
+		$this->groupManager = $groupManager;
 
 		$this->corsMethods = $corsMethods;
 		$this->corsAllowedHeaders = $corsAllowedHeaders;
@@ -237,21 +267,16 @@ class UserController extends Controller {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function buildCorsPreflightResponse(): Response {
-		$originHeader = $this->request->getHeader('Origin');
-		if ($originHeader !== '') {
-			$origin = $originHeader;
-		} else {
-			$origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');
-		}
-
-		// Credentials require a non-wildcard origin; fall back to the dev origin only when the
-		// request truly has no Origin header (server-side test tooling).
-		if ($origin === '*' && $this->request->getHeader('Origin') === '') {
-			$origin = 'http://localhost:3000';
-		}
-
 		$response = new Response();
+		$origin = $this->allowedCorsOrigin();
+		if ($origin === null) {
+			// Not an allow-listed origin: no CORS grant, so the browser refuses
+			// the cross-origin call. Same-origin callers do not need one.
+			return $response;
+		}
+
 		$response->addHeader('Access-Control-Allow-Origin', $origin);
+		$response->addHeader('Vary', 'Origin');
 		$response->addHeader('Access-Control-Allow-Methods', $this->corsMethods);
 		$response->addHeader('Access-Control-Max-Age', (string)$this->corsMaxAge);
 		$response->addHeader('Access-Control-Allow-Headers', $this->corsAllowedHeaders);
@@ -259,6 +284,41 @@ class UserController extends Controller {
 
 		return $response;
 	}//end buildCorsPreflightResponse()
+
+	/**
+	 * The request's Origin when the administrator allow-listed it, null otherwise.
+	 *
+	 * These responses carry `Access-Control-Allow-Credentials: true`, so the
+	 * origin they grant can read the signed-in user's profile and drive the
+	 * login with the browser's cookies. Reflecting whatever Origin arrived gave
+	 * that to every site. Only origins listed (comma or whitespace separated, as
+	 * `scheme://host[:port]`) in the app setting `user_api_allowed_origins` are
+	 * granted; the list is empty by default, which grants none.
+	 *
+	 * @return string|null The origin to grant, or null for no CORS grant.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function allowedCorsOrigin(): ?string {
+		$origin = trim($this->request->getHeader('Origin'));
+		if ($origin === '') {
+			return null;
+		}
+
+		$configured = $this->config->getAppValue('integriq', 'user_api_allowed_origins', '');
+		$allowed = preg_split('/[\s,]+/', $configured, -1, PREG_SPLIT_NO_EMPTY);
+		if ($allowed === false) {
+			return null;
+		}
+
+		foreach ($allowed as $candidate) {
+			if (strcasecmp(rtrim($candidate, '/'), $origin) === 0) {
+				return $origin;
+			}
+		}
+
+		return null;
+	}//end allowedCorsOrigin()
 
 	/**
 	 * Add CORS headers to a JSON response so browser clients receive cookies.
@@ -270,18 +330,13 @@ class UserController extends Controller {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function addCorsHeaders(JSONResponse $response): JSONResponse {
-		$originHeader = $this->request->getHeader('Origin');
-		if ($originHeader !== '') {
-			$origin = $originHeader;
-		} else {
-			$origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');
-		}
-
-		if ($origin === '*' && $this->request->getHeader('Origin') === '') {
-			$origin = 'http://localhost:3000';
+		$origin = $this->allowedCorsOrigin();
+		if ($origin === null) {
+			return $response;
 		}
 
 		$response->addHeader('Access-Control-Allow-Origin', $origin);
+		$response->addHeader('Vary', 'Origin');
 		$response->addHeader('Access-Control-Allow-Methods', $this->corsMethods);
 		$response->addHeader('Access-Control-Allow-Headers', $this->corsAllowedHeaders);
 		$response->addHeader('Access-Control-Allow-Credentials', 'true');
@@ -499,6 +554,23 @@ class UserController extends Controller {
 				return $user;
 			}
 
+			// This endpoint creates a session without core's login chain, so it cannot
+			// ask for a second factor. An account that has one (or must have one)
+			// is refused here and logs in through Nextcloud's own login flow.
+			if ($this->requiresSecondFactor(user: $user) === true) {
+				$this->logger->info(
+					'Integriq API login refused: account requires two-factor authentication',
+					['user' => $user->getUID(), 'ip' => $clientIp]
+				);
+				$response = new JSONResponse(
+					data: ['error' => $this->l->t('Login via this endpoint is not available for this account')],
+					statusCode: Http::STATUS_FORBIDDEN
+				);
+				$response->throttle(['action' => 'integriq_api_login_2fa']);
+				$response = $this->securityService->addSecurityHeaders($response);
+				return $this->addCorsHeaders(response: $response);
+			}
+
 			// Authentication successful - record success and clear rate limits.
 			$this->securityService->recordSuccessfulLogin($credentials['username'], $clientIp);
 
@@ -592,6 +664,80 @@ class UserController extends Controller {
 
 		return $user;
 	}//end authenticateLogin()
+
+	/**
+	 * Whether the account has, or must have, a second factor.
+	 *
+	 * /api/user/login sets the session directly and never runs core's
+	 * two-factor preparation, so a session it created would count as
+	 * two-factor-complete. Refusing every account that has an enabled provider
+	 * (backup codes included), or that falls under the instance's two-factor
+	 * enforcement, keeps the endpoint from bypassing the second factor. Fails
+	 * closed: when the registry cannot be read the account is treated as
+	 * requiring a second factor.
+	 *
+	 * @param IUser $user The authenticated user.
+	 *
+	 * @return bool True when the login must be refused.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function requiresSecondFactor(IUser $user): bool {
+		try {
+			$states = $this->twoFactorRegistry->getProviderStates($user);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Integriq API login: two-factor provider states unreadable, refusing',
+				['exception' => $e->getMessage()]
+			);
+			return true;
+		}
+
+		if (in_array(needle: true, haystack: $states, strict: true) === true) {
+			return true;
+		}
+
+		return $this->isTwoFactorEnforcedFor(user: $user);
+	}//end requiresSecondFactor()
+
+	/**
+	 * Whether the instance's two-factor enforcement applies to this account.
+	 *
+	 * Mirrors core's enforcement settings: `twofactor_enforced` switches it on,
+	 * `twofactor_enforced_groups` narrows it to those groups (empty means every
+	 * account), and `twofactor_enforced_excluded_groups` exempts groups unless
+	 * the account is also in an enforced group.
+	 *
+	 * @param IUser $user The authenticated user.
+	 *
+	 * @return bool True when enforcement applies.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function isTwoFactorEnforcedFor(IUser $user): bool {
+		$enforced = $this->config->getSystemValue('twofactor_enforced', 'false');
+		if ($enforced !== true && $enforced !== 'true') {
+			return false;
+		}
+
+		// Same order as core's MandatoryTwoFactor: an enforced group wins over an
+		// excluded one, and naming enforced groups limits enforcement to them.
+		$uid = $user->getUID();
+		$enforcedGroups = (array)$this->config->getSystemValue('twofactor_enforced_groups', []);
+		foreach ($enforcedGroups as $group) {
+			if ($this->groupManager->isInGroup($uid, (string)$group) === true) {
+				return true;
+			}
+		}
+
+		foreach ((array)$this->config->getSystemValue('twofactor_enforced_excluded_groups', []) as $group) {
+			if ($this->groupManager->isInGroup($uid, (string)$group) === true) {
+				return false;
+			}
+		}
+
+		return $enforcedGroups === [];
+	}//end isTwoFactorEnforcedFor()
 
 	/**
 	 * Put the user in the session and create a session token, so later requests
