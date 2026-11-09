@@ -39,6 +39,20 @@ use UnexpectedValueException;
  */
 interface CallServiceInterface {
 	/**
+	 * Call-config key for input that came from an outside caller (iq-a-f2).
+	 *
+	 * Holds `query`, `headers` and `body` exactly as the caller sent them. The
+	 * call config is a Twig template rendered with the credential-hydrated
+	 * source in its context, so a caller string such as
+	 * `{{ source.configuration.authentication.password }}` used to be rendered
+	 * into the outbound request. Values under this key are never rendered: they
+	 * are merged in after rendering, beneath the source's own query and headers.
+	 *
+	 * @var string
+	 */
+	public const CALLER_INPUT = 'callerInput';
+
+	/**
 	 * Render a Source-relative upstream path from an inbound request context,
 	 * then refuse it if the RESULT escapes the Source (ocon#1069).
 	 *

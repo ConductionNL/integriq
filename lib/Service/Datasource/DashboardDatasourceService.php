@@ -182,7 +182,8 @@ class DashboardDatasourceService implements DashboardDatasourceServiceInterface 
 
 		$requestConfig = [];
 		if (empty($params) === false) {
-			$requestConfig = ['query' => $params];
+			// The caller's params are data, never a template (iq-a-f2).
+			$requestConfig = [CallService::CALLER_INPUT => ['query' => $params]];
 		}
 
 		try {

@@ -2506,6 +2506,73 @@ class EndpointService implements EndpointServiceInterface {
 	}//end getHeaders()
 
 	/**
+	 * Inbound headers that are never forwarded to the upstream of a proxy endpoint.
+	 *
+	 * Credentials (the caller's Nextcloud session cookies, the Basic password or
+	 * consumer key a rule authenticated, a CSRF token) belong to this hop, and
+	 * the hop-by-hop and routing headers describe this connection, not the
+	 * upstream one.
+	 *
+	 * @var array<int, string>
+	 */
+	private const NON_FORWARDED_HEADERS = [
+		'authorization',
+		'proxy_authorization',
+		'cookie',
+		'requesttoken',
+		'host',
+		'connection',
+		'keep_alive',
+		'proxy_connection',
+		'te',
+		'trailer',
+		'transfer_encoding',
+		'upgrade',
+		'content_length',
+		'expect',
+		'forwarded',
+		'x_real_ip',
+		'x_original_uri',
+		'origin',
+		'referer',
+	];
+
+	/**
+	 * Drop credential, session and hop-by-hop headers before proxying (iq-a-f4).
+	 *
+	 * The upstream (often a third party) used to receive every inbound header,
+	 * including Nextcloud session cookies and the caller's Authorization header,
+	 * which for a Basic-authenticated rule is the user's Nextcloud password.
+	 * A deny-list rather than an allow-list, because sources legitimately need
+	 * arbitrary protocol headers from the caller (Haal Centraal's
+	 * x-doelbinding/x-verwerking, Accept-Crs, If-Match, ...); any header whose
+	 * name looks like a credential is dropped as well. The source's own
+	 * configured headers and credentials are added later by CallService.
+	 *
+	 * @param array<string, mixed> $headers Inbound headers, keys lower-case with underscores as getHeaders() returns them.
+	 *
+	 * @return array<string, mixed> The headers that may be forwarded.
+	 *
+	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 */
+	public static function forwardableHeaders(array $headers): array {
+		return array_filter(
+			$headers,
+			static function (mixed $name): bool {
+				$name = strtolower(str_replace('-', '_', (string)$name));
+				if (in_array($name, self::NON_FORWARDED_HEADERS, true) === true
+					|| str_starts_with($name, 'x_forwarded') === true
+				) {
+					return false;
+				}
+
+				return preg_match('/(auth|token|secret|password|passwd|api_?key|session|cookie|csrf)/', $name) !== 1;
+			},
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end forwardableHeaders()
+
+	/**
 	 * Check conditions for using an endpoint.
 	 *
 	 * @param ObjectEntity $endpoint The endpoint for which the checks should be done.
@@ -2556,7 +2623,7 @@ class EndpointService implements EndpointServiceInterface {
 		array $validationFindings = [],
 	): JSONResponse {
 		$endpointData = $endpoint->getObject();
-		$headers = $this->getHeaders(server: $_SERVER);
+		$headers = self::forwardableHeaders(headers: $this->getHeaders(server: $_SERVER));
 		$rawBody = $this->getRawContent();
 
 		// Fetch the source entity by targetId.
@@ -2609,9 +2676,13 @@ class EndpointService implements EndpointServiceInterface {
 			endpoint: $upstreamPath,
 			method: $request->getMethod(),
 			config: [
-				'query' => $request->getParams(),
-				'headers' => $headers,
-				'body' => $rawBody,
+				// Caller input travels unrendered (iq-a-f2): the call config is
+				// a Twig template rendered with the source's secrets in context.
+				CallServiceInterface::CALLER_INPUT => [
+					'query' => $request->getParams(),
+					'headers' => $headers,
+					'body' => $rawBody,
+				],
 			],
 			trace: $trace
 		);

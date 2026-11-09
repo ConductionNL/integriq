@@ -1043,6 +1043,11 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md
 	 */
 	private function normaliseRequestConfig(array $config, array $sourceData): array {
+		// Caller input is data, not a template: take it out before rendering and
+		// merge it back afterwards (iq-a-f2).
+		$callerInput = ($config[self::CALLER_INPUT] ?? []);
+		unset($config[self::CALLER_INPUT]);
+
 		// #1011: a source can disable TLS certificate verification by setting
 		// `verify: false` in its configuration. Without a guardrail, Guzzle
 		// honours it silently and the connection is exposed to MITM — which
@@ -1110,6 +1115,9 @@ class CallService implements CallServiceInterface {
 		}
 
 		$config = $this->renderConfiguration(configuration: $config, sourceData: $sourceData);
+		if (is_array($callerInput) === true && $callerInput !== []) {
+			$config = $this->mergeCallerInput(config: $config, callerInput: $callerInput);
+		}
 
 		// Set authentication if needed.
 		$this->getCertificate(config: $config);
@@ -1131,6 +1139,46 @@ class CallService implements CallServiceInterface {
 
 		return ['config' => $config, 'logBody' => $logBody];
 	}//end normaliseRequestConfig()
+
+	/**
+	 * Merge unrendered caller input into an already rendered call config (iq-a-f2).
+	 *
+	 * The source's own (rendered) query parameters and headers win over the
+	 * caller's, compared case-insensitively for headers, so a caller can neither
+	 * override nor duplicate what the source authored. The caller's body is
+	 * the request payload of a proxied call and is used when it is not empty.
+	 *
+	 * @param array $config      The rendered call configuration.
+	 * @param array $callerInput The caller's `query`, `headers` and `body`.
+	 *
+	 * @return array The configuration with the caller input merged in.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function mergeCallerInput(array $config, array $callerInput): array {
+		$callerQuery = ($callerInput['query'] ?? []);
+		if (is_array($callerQuery) === true && $callerQuery !== []) {
+			$config['query'] = array_replace($callerQuery, (array)($config['query'] ?? []));
+		}
+
+		$callerHeaders = ($callerInput['headers'] ?? []);
+		if (is_array($callerHeaders) === true && $callerHeaders !== []) {
+			$authored = array_change_key_case((array)($config['headers'] ?? []), CASE_LOWER);
+			$kept = array_filter(
+				$callerHeaders,
+				static fn (mixed $name): bool => array_key_exists(strtolower((string)$name), $authored) === false,
+				ARRAY_FILTER_USE_KEY
+			);
+			$config['headers'] = array_merge($kept, (array)($config['headers'] ?? []));
+		}
+
+		$callerBody = ($callerInput['body'] ?? null);
+		if ($callerBody !== null && $callerBody !== '' && $callerBody !== []) {
+			$config['body'] = $callerBody;
+		}
+
+		return $config;
+	}//end mergeCallerInput()
 
 	/**
 	 * Substitutes the current pagination page value into the JSON request
