@@ -283,4 +283,43 @@ class UserControllerLoginGoldenTest extends TestCase {
 
 		$this->assertSame(json_decode((string)file_get_contents(self::GOLDEN), true), json_decode($encoded, true));
 	}//end testEveryCaseMatchesTheGoldenFile()
+
+	/**
+	 * Api-f2: a right password on a two-factor account answers exactly like a
+	 * wrong password, also with an allowed Origin, and both are throttled and
+	 * counted as a failed attempt.
+	 *
+	 * @return void
+	 */
+	public function testSecondFactorRefusalIsIndistinguishableFromWrongPassword(): void {
+		$valid = ['username' => 'jan', 'password' => 'geheim'];
+		$origin = ['Origin' => 'https://app.example'];
+		$outcomes = [];
+		foreach (['wrong' => ['check' => 'false'], 'twoFactor' => ['twoFactor' => ['totp' => true]]] as $name => $extra) {
+			$this->case = array_merge(['params' => $valid, 'headers' => $origin], $extra);
+			$this->cache = [];
+			$this->log = [];
+			$response = $this->controller()->login();
+			$this->assertTrue($response->isThrottled(), $name . ' must be throttled');
+			$this->assertSame(['action' => 'integriq_api_login'], $response->getThrottleMetadata());
+			$this->assertSame(1, ($this->cache['integriq_login_attempts_jan'] ?? null), $name . ' must count as a failed attempt');
+			$outcomes[$name] = $this->describe($response);
+		}
+
+		$this->assertSame(401, $outcomes['twoFactor']['status']);
+		$this->assertSame($outcomes['wrong'], $outcomes['twoFactor']);
+	}//end testSecondFactorRefusalIsIndistinguishableFromWrongPassword()
+
+	/**
+	 * Api-f2: core only registers throttle() when the method carries the attribute.
+	 *
+	 * @return void
+	 */
+	public function testLoginCarriesBruteForceProtection(): void {
+		$attributes = (new \ReflectionMethod(UserController::class, 'login'))
+			->getAttributes(\OCP\AppFramework\Http\Attribute\BruteForceProtection::class);
+
+		$this->assertCount(1, $attributes);
+		$this->assertSame('integriq_api_login', $attributes[0]->getArguments()['action']);
+	}//end testLoginCarriesBruteForceProtection()
 }//end class

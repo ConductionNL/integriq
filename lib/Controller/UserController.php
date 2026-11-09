@@ -27,6 +27,7 @@ use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -63,6 +64,13 @@ use Psr\Log\LoggerInterface;
  *   helpers' signatures adds no dependency the class did not have.
  */
 class UserController extends Controller {
+
+	/**
+	 * Core brute-force throttler action for a refused login (api-f2).
+	 *
+	 * @var string
+	 */
+	private const LOGIN_THROTTLE_ACTION = 'integriq_api_login';
 
 	/**
 	 * User manager for user operations
@@ -497,14 +505,17 @@ class UserController extends Controller {
 	 * anything else in this app: this is the one public surface here where the
 	 * caller presents a credential a stranger could guess.
 	 *
-	 * Brute-force protection is ALREADY COMPLETE here, and deliberately not via
-	 * NC's IThrottler: SecurityService::checkLoginRateLimit() gates entry (with
-	 * a lockout and a delay), recordFailedLoginAttempt() feeds it on both
-	 * failure paths, and recordSuccessfulLogin() clears it. That is the
-	 * two-halves shape ADR-082 asks for, keyed on USERNAME + IP rather than IP
-	 * alone — finer-grained than the framework throttler, so adding
-	 * BruteForceProtection on top would be a second, coarser counter for the
-	 * same event.
+	 * Brute-force protection has two layers. SecurityService::checkLoginRateLimit()
+	 * gates entry (with a lockout and a delay), recordFailedLoginAttempt() feeds
+	 * it on every failure path, and recordSuccessfulLogin() clears it, keyed on
+	 * USERNAME + IP. BruteForceProtection adds core's per-IP throttler on top:
+	 * every refused password guess calls throttle(), which core only registers
+	 * when the method carries the attribute.
+	 *
+	 * An account that needs a second factor is refused with exactly the answer a
+	 * wrong password gets (same status, message and headers) and counts as a
+	 * failed attempt, so the refusal does not confirm a guessed password; the
+	 * real reason is only logged.
 	 *
 	 * The AnonRateLimit ceiling below is the volume half, which app-local logic
 	 * did not cover.
@@ -519,6 +530,7 @@ class UserController extends Controller {
 	#[NoCSRFRequired]
 	#[PublicPage]
 	#[AnonRateLimit(limit: 20, period: 60)]
+	#[BruteForceProtection(action: self::LOGIN_THROTTLE_ACTION)]
 	public function login(): JSONResponse {
 		try {
 			// MEMORY MONITORING: Check initial memory usage to prevent OOM.
@@ -557,18 +569,15 @@ class UserController extends Controller {
 			// This endpoint creates a session without core's login chain, so it cannot
 			// ask for a second factor. An account that has one (or must have one)
 			// is refused here and logs in through Nextcloud's own login flow.
+			// It gets the wrong-password answer, so the refusal does not tell an
+			// unauthenticated caller that the guessed password was right.
 			if ($this->requiresSecondFactor(user: $user) === true) {
 				$this->logger->info(
 					'Integriq API login refused: account requires two-factor authentication',
 					['user' => $user->getUID(), 'ip' => $clientIp]
 				);
-				$response = new JSONResponse(
-					data: ['error' => $this->l->t('Login via this endpoint is not available for this account')],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
-				$response->throttle(['action' => 'integriq_api_login_2fa']);
-				$response = $this->securityService->addSecurityHeaders($response);
-				return $this->addCorsHeaders(response: $response);
+				$this->securityService->recordFailedLoginAttempt($credentials['username'], $clientIp, 'second_factor_required');
+				return $this->invalidCredentialsResponse();
 			}
 
 			// Authentication successful - record success and clear rate limits.
@@ -645,11 +654,7 @@ class UserController extends Controller {
 		if ($user === false) {
 			$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'invalid_credentials');
 
-			$response = new JSONResponse(
-				data: ['error' => $this->l->t('Invalid username or password')],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
-			return $this->securityService->addSecurityHeaders($response);
+			return $this->invalidCredentialsResponse();
 		}
 
 		if ($user->isEnabled() === false) {
@@ -664,6 +669,26 @@ class UserController extends Controller {
 
 		return $user;
 	}//end authenticateLogin()
+
+	/**
+	 * The answer to a refused password: 401 with a generic message, throttled.
+	 *
+	 * Used for a wrong password and for an account that needs a second factor,
+	 * so the two cannot be told apart by an unauthenticated caller.
+	 *
+	 * @return JSONResponse The 401 response.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function invalidCredentialsResponse(): JSONResponse {
+		$response = new JSONResponse(
+			data: ['error' => $this->l->t('Invalid username or password')],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+		$response->throttle(['action' => self::LOGIN_THROTTLE_ACTION]);
+
+		return $this->securityService->addSecurityHeaders($response);
+	}//end invalidCredentialsResponse()
 
 	/**
 	 * Whether the account has, or must have, a second factor.

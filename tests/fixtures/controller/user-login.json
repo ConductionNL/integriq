@@ -168,9 +168,9 @@
     },
     "two-factor-enabled": {
         "outcome": {
-            "status": 403,
+            "status": 401,
             "data": {
-                "error": "Login via this endpoint is not available for this account"
+                "error": "Invalid username or password"
             },
             "headers": {
                 "Content-Type": "application/json; charset=utf-8",
@@ -184,7 +184,10 @@
                 "Expires": "0"
             }
         },
-        "cache": [],
+        "cache": {
+            "integriq_ip_attempts_203.0.113.7": 1,
+            "integriq_login_attempts_jan": 1
+        },
         "log": [
             [
                 "userManager.checkPassword",
@@ -249,9 +252,9 @@
     },
     "two-factor-enforced": {
         "outcome": {
-            "status": 403,
+            "status": 401,
             "data": {
-                "error": "Login via this endpoint is not available for this account"
+                "error": "Invalid username or password"
             },
             "headers": {
                 "Content-Type": "application/json; charset=utf-8",
@@ -265,7 +268,10 @@
                 "Expires": "0"
             }
         },
-        "cache": [],
+        "cache": {
+            "integriq_ip_attempts_203.0.113.7": 1,
+            "integriq_login_attempts_jan": 1
+        },
         "log": [
             [
                 "userManager.checkPassword",
