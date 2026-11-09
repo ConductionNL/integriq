@@ -804,7 +804,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function findAllSynchronizationObjects(array $filters = []): array {
 		$config = ['filters' => array_merge(['register' => 'integriq', 'schema' => 'synchronization'], $filters)];
 		try {
-			$matches = $this->orObjectService->findAll(config: $config);
+			$matches = $this->orObjectService->findAll(
+				config: $config,
+				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			);
 		} catch (DoesNotExistException $e) {
 			// The `openconnector` register/schema has not been provisioned on this
 			// instance yet (InitializeRegister repair step never ran, or it was
@@ -994,7 +997,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		$config = ['filters' => array_merge(['register' => 'integriq', 'schema' => 'synchronization_contract'], $filters)];
-		$matches = $this->orObjectService->findAll(config: $config);
+		$matches = $this->orObjectService->findAll(
+			config: $config,
+			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+		);
 
 		return array_values(($matches['results'] ?? $matches));
 	}//end findAllContractObjects()
