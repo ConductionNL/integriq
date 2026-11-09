@@ -25,7 +25,11 @@ failure it MUST persist a synthetic `call_log` (status 409) and return that enti
 without an outbound HTTP call. When the source's rate-limit window is exhausted
 (`rateLimitRemaining <= 0`), the method MUST persist a synthetic 429 `call_log` and
 return. The method MUST flatten dotted config keys via `applyConfigDot`, render every
-templated config value via `renderConfiguration` (Twig over `{{ ... }}`), invoke
+templated value the source itself authored via `renderConfiguration` (Twig over
+`{{ ... }}`), and MUST NOT render request data passed with the call (`query`,
+`headers`, `json`, `body`, `form_params`, `multipart`, the `callerInput` key, and
+the pagination page value): that data is merged into the rendered config
+unrendered, the per-call value winning over the source's for the same key. It MUST invoke
 `getCertificate` to materialise any inline cert/ssl_key/verify blobs to temp files,
 strip every config key whose name (case-insensitively) contains `authentication`
 before dispatch, and resolve the effective HTTP method via `decideMethod` from

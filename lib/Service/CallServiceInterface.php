@@ -41,12 +41,15 @@ interface CallServiceInterface {
 	/**
 	 * Call-config key for input that came from an outside caller (iq-a-f2).
 	 *
-	 * Holds `query`, `headers` and `body` exactly as the caller sent them. The
-	 * call config is a Twig template rendered with the credential-hydrated
-	 * source in its context, so a caller string such as
-	 * `{{ source.configuration.authentication.password }}` used to be rendered
-	 * into the outbound request. Values under this key are never rendered: they
-	 * are merged in after rendering, beneath the source's own query and headers.
+	 * Holds `query`, `headers`, `body`, `json`, `form_params` and `multipart`
+	 * exactly as the caller sent them. The source's configuration is a Twig
+	 * template rendered with the credential-hydrated source in its context, so
+	 * a caller string such as `{{ source.configuration.authentication.password }}`
+	 * used to be rendered into the outbound request. Values under this key are
+	 * never rendered: they are merged in after rendering, beneath the source's
+	 * own query and headers. Request data passed directly under those keys of
+	 * the call config is not rendered either (api-f1), but wins over the
+	 * source's value for the same key; use this key when the source must win.
 	 *
 	 * @var string
 	 */

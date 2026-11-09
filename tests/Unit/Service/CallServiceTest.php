@@ -953,6 +953,126 @@ class CallServiceTest extends TestCase {
 	}//end testCredentialWithAmpersandReachesRequestUnescaped()
 
 	/**
+	 * Api-f1: per-call request data is sent as data, never rendered as Twig.
+	 *
+	 * A Forms answer, an object payload or a third-party cursor reaches call()
+	 * under `json`, `body`, `query` or `headers`. Rendering it with the
+	 * credential-hydrated source in context let an anonymous form answer
+	 * `{{ source.apikey }}` copy the source's key into the outbound request.
+	 * The source's own authored configuration is still rendered.
+	 *
+	 * @return void
+	 */
+	public function testPerCallDataIsSentLiterallyAndSourceConfigIsRendered(): void {
+		$double = new RenderBoundarySimulatingObjectService();
+		$double->stored['src-uuid-data'] = [
+			'name' => 'data-source',
+			'isEnabled' => true,
+			'location' => 'https://api.example.invalid',
+			'apikey' => 'live-secret-key',
+			'configuration' => [
+				'headers' => ['X-Api-Key' => '{{ source.apikey }}', 'X-Shared' => 'source'],
+				'query' => ['tenant' => '{{ source.name }}'],
+			],
+		];
+
+		$capturedConfig = null;
+		$service = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+		$source = new ObjectEntity();
+		$source->setUuid('src-uuid-data');
+		$source->setObject($double->stored['src-uuid-data']);
+
+		$service->call(
+			source: $source,
+			endpoint: '/v1/items',
+			method: 'POST',
+			config: [
+				'json' => ['x' => '{{ source.location }}', 'k' => '{{ source.apikey }}'],
+				'query' => ['q' => '{{ source.apikey }}'],
+				'headers' => ['x-shared' => '{{ source.apikey }}'],
+			]
+		);
+
+		$this->assertNotNull($capturedConfig, 'The outbound Guzzle request must have been dispatched.');
+		$this->assertSame(['x' => '{{ source.location }}', 'k' => '{{ source.apikey }}'], $capturedConfig['json']);
+		$this->assertSame('{{ source.apikey }}', $capturedConfig['query']['q']);
+		$this->assertSame('data-source', $capturedConfig['query']['tenant'], 'source-authored query is still rendered');
+		$this->assertSame('live-secret-key', $capturedConfig['headers']['X-Api-Key'], 'source-authored header is still rendered');
+		$this->assertSame('{{ source.apikey }}', $capturedConfig['headers']['x-shared'], 'the per-call header wins, unrendered');
+		$this->assertArrayNotHasKey('X-Shared', $capturedConfig['headers']);
+	}//end testPerCallDataIsSentLiterallyAndSourceConfigIsRendered()
+
+	/**
+	 * Api-f1: a string body passed per call is sent byte-for-byte.
+	 *
+	 * @return void
+	 */
+	public function testPerCallBodyIsNotRendered(): void {
+		$double = new RenderBoundarySimulatingObjectService();
+		$double->stored['src-uuid-body'] = [
+			'name' => 'body-source',
+			'isEnabled' => true,
+			'location' => 'https://api.example.invalid',
+			'apikey' => 'live-secret-key',
+		];
+
+		$capturedConfig = null;
+		$service = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+		$source = new ObjectEntity();
+		$source->setUuid('src-uuid-body');
+		$source->setObject($double->stored['src-uuid-body']);
+
+		$body = '{"text": "{{ source.apikey }}", "loop": "{% for i in 1..3 %}x{% endfor %}"}';
+		$service->call(source: $source, endpoint: '/translate', method: 'POST', config: ['body' => $body]);
+
+		$this->assertNotNull($capturedConfig, 'The outbound Guzzle request must have been dispatched.');
+		$this->assertSame($body, $capturedConfig['body']);
+	}//end testPerCallBodyIsNotRendered()
+
+	/**
+	 * Api-f1: the page lands in a per-call body and a cursor page is never rendered.
+	 *
+	 * @return void
+	 */
+	public function testPaginationPageIsAppliedAfterRendering(): void {
+		$double = new RenderBoundarySimulatingObjectService();
+		$double->stored['src-uuid-page'] = [
+			'name' => 'page-source',
+			'isEnabled' => true,
+			'location' => 'https://api.example.invalid',
+			'apikey' => 'live-secret-key',
+		];
+
+		$capturedConfig = null;
+		$service = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+		$source = new ObjectEntity();
+		$source->setUuid('src-uuid-page');
+		$source->setObject($double->stored['src-uuid-page']);
+
+		$service->call(
+			source: $source,
+			endpoint: '/search',
+			method: 'POST',
+			config: [
+				'body' => '{"query":"x"}',
+				'pagination' => ['paginationIn' => 'body', 'paginationQuery' => 'page', 'page' => 3],
+			]
+		);
+		$this->assertSame(['query' => 'x', 'page' => 3], json_decode($capturedConfig['body'], true));
+
+		$cursor = '{{ source.apikey }}';
+		$service->call(
+			source: $source,
+			endpoint: '/list',
+			config: ['pagination' => ['paginationQuery' => 'cursor', 'page' => $cursor]]
+		);
+		$this->assertSame($cursor, $capturedConfig['query']['cursor']);
+	}//end testPaginationPageIsAppliedAfterRendering()
+
+	/**
 	 * ocon#215 — an unpersisted / in-memory source (no uuid) falls back to the
 	 * passed entity and NEVER throws or dispatches an empty source.
 	 *

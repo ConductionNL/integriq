@@ -85,6 +85,19 @@ class CallService implements CallServiceInterface {
 
 	private const BASE_FILENAME_LOCATION = '%s-%s';
 
+	/**
+	 * Per-call config keys that carry request data, never a template (api-f1).
+	 *
+	 * The engine renders Twig with the credential-hydrated source in context.
+	 * Only what the source itself authored (its `configuration` and `headers`)
+	 * is a template. What a caller passes per call under these keys is data:
+	 * a Forms answer, an object payload, a third-party cursor, a BSN. It is
+	 * taken out before rendering and merged back afterwards, unrendered.
+	 *
+	 * @var string[]
+	 */
+	private const CALL_DATA_KEYS = ['query', 'headers', 'json', 'body', 'form_params', 'multipart'];
+
 	// Retention defaults moved to job_log / call_log x-openregister-archival annotations (adr-004).
 
 	/**
@@ -1037,12 +1050,13 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @param array $config Raw Guzzle config array to normalise.
 	 * @param array $sourceData Source configuration data.
+	 * @param array $callData The per-call request data (see CALL_DATA_KEYS), merged in unrendered.
 	 *
 	 * @return array The normalised config with TLS and secret guards applied.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md
 	 */
-	private function normaliseRequestConfig(array $config, array $sourceData): array {
+	private function normaliseRequestConfig(array $config, array $sourceData, array $callData = []): array {
 		// Caller input is data, not a template: take it out before rendering and
 		// merge it back afterwards (iq-a-f2).
 		$callerInput = ($config[self::CALLER_INPUT] ?? []);
@@ -1088,35 +1102,44 @@ class CallService implements CallServiceInterface {
 			$overwriteContentType = $config['headers']['content-type'];
 		}
 
-		// Make sure we do not have an array of accept headers but just one value.
-		if (isset($config['headers']['accept']) === true && is_array($config['headers']['accept']) === true) {
-			$config['headers']['accept'] = $config['headers']['accept'][0];
-		}
-
 		// Check if the config has a headers array and create it if it doesn't.
 		if (isset($config['headers']) === false) {
 			$config['headers'] = [];
 		}
 
-		if (isset($config['pagination']) === true) {
+		// The page is the engine's runtime value (a number, or a cursor a
+		// third-party source handed back), so it is applied after rendering,
+		// over the source's rendered config and the per-call data (api-f1).
+		$pagination = ($config['pagination'] ?? null);
+		unset($config['pagination']);
+
+		$config = $this->renderConfiguration(configuration: $config, sourceData: $sourceData);
+		if ($callData !== []) {
+			$config = $this->mergeCallData(config: $config, callData: $callData);
+		}
+
+		if (is_array($pagination) === true) {
 			// Body-based pagination (oc#94): POST-body sources like TED's v3
 			// search take page/query as a static JSON body rather than query
 			// parameters, so this substitutes the page value into the body at
 			// the configured dot-path instead. Defaults to the pre-existing
 			// query-string substitution when `paginationIn` is absent/`query`
 			// — byte-for-byte unchanged for every source that doesn't opt in.
-			if (($config['pagination']['paginationIn'] ?? 'query') === 'body') {
-				$config = $this->applyBodyPagination(config: $config);
+			if (($pagination['paginationIn'] ?? 'query') === 'body') {
+				$config = $this->applyBodyPagination(config: array_merge($config, ['pagination' => $pagination]));
+				unset($config['pagination']);
 			} else {
-				$config['query'][$config['pagination']['paginationQuery']] = $config['pagination']['page'];
+				$config['query'][$pagination['paginationQuery']] = $pagination['page'];
 			}
-
-			unset($config['pagination']);
 		}
 
-		$config = $this->renderConfiguration(configuration: $config, sourceData: $sourceData);
 		if (is_array($callerInput) === true && $callerInput !== []) {
 			$config = $this->mergeCallerInput(config: $config, callerInput: $callerInput);
+		}
+
+		// Make sure we do not have an array of accept headers but just one value.
+		if (isset($config['headers']['accept']) === true && is_array($config['headers']['accept']) === true) {
+			$config['headers']['accept'] = $config['headers']['accept'][0];
 		}
 
 		// Set authentication if needed.
@@ -1149,7 +1172,7 @@ class CallService implements CallServiceInterface {
 	 * the request payload of a proxied call and is used when it is not empty.
 	 *
 	 * @param array $config      The rendered call configuration.
-	 * @param array $callerInput The caller's `query`, `headers` and `body`.
+	 * @param array $callerInput The caller's `query`, `headers`, `body`, `json`, `form_params` and `multipart`.
 	 *
 	 * @return array The configuration with the caller input merged in.
 	 *
@@ -1172,13 +1195,90 @@ class CallService implements CallServiceInterface {
 			$config['headers'] = array_merge($kept, (array)($config['headers'] ?? []));
 		}
 
-		$callerBody = ($callerInput['body'] ?? null);
-		if ($callerBody !== null && $callerBody !== '' && $callerBody !== []) {
-			$config['body'] = $callerBody;
+		foreach (['body', 'json', 'form_params', 'multipart'] as $payloadKey) {
+			$callerPayload = ($callerInput[$payloadKey] ?? null);
+			if ($callerPayload !== null && $callerPayload !== '' && $callerPayload !== []) {
+				$config[$payloadKey] = $callerPayload;
+			}
 		}
 
 		return $config;
 	}//end mergeCallerInput()
+
+	/**
+	 * Take the per-call request data out of a call config before rendering (api-f1).
+	 *
+	 * @param array $config The per-call configuration as the caller passed it.
+	 *
+	 * @return array{config: array, callData: array} The config without its data
+	 *               keys, and those data keys.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function separateCallData(array $config): array {
+		$callData = [];
+		foreach (self::CALL_DATA_KEYS as $key) {
+			if (array_key_exists($key, $config) === true) {
+				$callData[$key] = $config[$key];
+				unset($config[$key]);
+			}
+		}
+
+		return ['config' => $config, 'callData' => $callData];
+	}//end separateCallData()
+
+	/**
+	 * Merge the unrendered per-call request data into the rendered config (api-f1).
+	 *
+	 * The per-call value is the more specific statement and wins over what the
+	 * source configuration authored for the same key, the same precedence the
+	 * source-level merge gave it: query and JSON keys are replaced key by key,
+	 * headers case-insensitively, and a body or multipart payload as a whole.
+	 *
+	 * @param array $config   The rendered call configuration.
+	 * @param array $callData The per-call request data, unrendered.
+	 *
+	 * @return array The configuration with the call data merged in.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function mergeCallData(array $config, array $callData): array {
+		foreach (['query', 'json', 'form_params'] as $key) {
+			if (array_key_exists($key, $callData) === false) {
+				continue;
+			}
+
+			if (is_array($callData[$key]) === true && is_array($config[$key] ?? null) === true) {
+				$config[$key] = array_replace_recursive($config[$key], $callData[$key]);
+				continue;
+			}
+
+			$config[$key] = $callData[$key];
+		}
+
+		$callHeaders = ($callData['headers'] ?? null);
+		if (is_array($callHeaders) === true && $callHeaders !== []) {
+			$given = array_change_key_case($callHeaders, CASE_LOWER);
+			$authored = array_filter(
+				(array)($config['headers'] ?? []),
+				static fn (mixed $name): bool => array_key_exists(strtolower((string)$name), $given) === false,
+				ARRAY_FILTER_USE_KEY
+			);
+			$config['headers'] = array_merge($callHeaders, $authored);
+		}
+
+		foreach (['body', 'multipart'] as $key) {
+			if (array_key_exists($key, $callData) === true && $callData[$key] !== null) {
+				$config[$key] = $callData[$key];
+			}
+		}
+
+		// Keep the per-call keys first, in the caller's order, as the
+		// source-level merge always did, so the dispatched request is unchanged.
+		$ordered = array_intersect_key(array_replace($callData, $config), $callData);
+
+		return array_replace($ordered, $config);
+	}//end mergeCallData()
 
 	/**
 	 * Substitutes the current pagination page value into the JSON request
@@ -1186,14 +1286,16 @@ class CallService implements CallServiceInterface {
 	 *
 	 * `$config['body']` at this point is the fresh per-call render of the
 	 * source's static `configuration.body` template (re-merged every call by
-	 * `mergeSourceConfiguration()` — never accumulated across pages), so
+	 * `mergeSourceConfiguration()` — never accumulated across pages), or the
+	 * body passed with the call, which wins over it; it runs after rendering,
+	 * so the page value is never rendered as a template (api-f1). So
 	 * decoding, bumping one path, and re-encoding here cannot compound across
 	 * pages. When the body is missing or not valid JSON, substitution starts
 	 * from an empty object rather than silently dropping the page value.
 	 *
 	 * @param array $config The call configuration, carrying `pagination`
 	 *                      (`paginationQuery` dot-path + `page` value) and,
-	 *                      usually, a `body` JSON string template.
+	 *                      usually, a rendered `body` JSON string.
 	 *
 	 * @return array The config with `body` rewritten to carry the new page value.
 	 *
@@ -2929,6 +3031,17 @@ class CallService implements CallServiceInterface {
 			return $prepared;
 		}
 
+		// Phase 6c: per-call request data is data, not a template (api-f1). Take
+		// it out before the source configuration is merged in, so only what the
+		// source authored is rendered. A pre/postRequest support call carries the
+		// source's own hook config and stays a template.
+		$callData = [];
+		if ($request->runningSupportRequest === false) {
+			$separated = $this->separateCallData(config: $config);
+			$config = $separated['config'];
+			$callData = $separated['callData'];
+		}
+
 		// Phase 7: Merge source-level configuration.
 		$config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
 
@@ -2992,7 +3105,7 @@ class CallService implements CallServiceInterface {
 		);
 
 		// Phase 9: Normalise headers, pagination, render Twig, filter auth keys, write certs, extract logBody.
-		$normalised = $this->normaliseRequestConfig(config: $config, sourceData: $sourceData);
+		$normalised = $this->normaliseRequestConfig(config: $config, sourceData: $sourceData, callData: $callData);
 		$prepared['config'] = $normalised['config'];
 		$prepared['logBody'] = $normalised['logBody'];
 
