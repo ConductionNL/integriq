@@ -39,10 +39,12 @@ declare(strict_types=1);
 namespace OCA\Integriq\Directory;
 
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
+use OCP\Group\ISubAdmin;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Security\ISecureRandom;
+use OCP\Settings\IManager as ISettingsManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -159,6 +161,8 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 	 * @param LoggerInterface $logger Logger for provisioning outcomes.
 	 * @param DirectorySource $directorySource Supplies the configured directory connections.
 	 * @param GroupMappingResolver $mappingResolver Supplies the groups a connection declares it manages.
+	 * @param ISubAdmin $subAdmin Tells whether an account is a group sub-admin.
+	 * @param ISettingsManager $settingsManager Tells whether an account holds delegated admin settings.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
@@ -170,6 +174,8 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly DirectorySource $directorySource,
 		private readonly GroupMappingResolver $mappingResolver,
+		private readonly ISubAdmin $subAdmin,
+		private readonly ISettingsManager $settingsManager,
 	) {
 
 	}//end __construct()
@@ -233,8 +239,9 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 			return;
 		}
 
+		$privileged = $this->holdsDelegatedAdminRights(user: $user);
 		foreach (self::PRIVILEGED_GROUPS as $privilegedGroup) {
-			if ($this->groupManager->isInGroup($userId, $privilegedGroup) !== true) {
+			if ($privileged === false && $this->groupManager->isInGroup($userId, $privilegedGroup) !== true) {
 				continue;
 			}
 
@@ -254,6 +261,37 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 		}
 
 	}//end assertWritableUser()
+
+	/**
+	 * Whether the account administers others without being in `admin` (iq-a-f5).
+	 *
+	 * A group sub-admin manages the accounts of their groups, and an account
+	 * with delegated admin settings can configure the instance; rewriting the
+	 * e-mail address of either hands over its password reset. Both are as
+	 * privileged as `admin` for SCIM. Fails closed: when the question cannot be
+	 * answered the account is treated as privileged.
+	 *
+	 * @param IUser $user The account the caller named.
+	 *
+	 * @return bool True when the account must not be written over SCIM.
+	 *
+	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
+	 */
+	private function holdsDelegatedAdminRights(IUser $user): bool {
+		try {
+			if ($this->subAdmin->isSubAdmin($user) === true) {
+				return true;
+			}
+
+			return $this->settingsManager->getAllAllowedAdminSettings($user) !== [];
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[Scim] could not decide whether an account holds delegated admin rights; treating it as privileged',
+				['exception' => $e->getMessage()]
+			);
+			return true;
+		}
+	}//end holdsDelegatedAdminRights()
 
 	/**
 	 * Refuse the write unless this group is one SCIM may manage.

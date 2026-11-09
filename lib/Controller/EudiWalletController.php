@@ -31,6 +31,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EudiIssuanceException;
+use OCA\Integriq\Service\Consumer\ConsumerPrivilegeGate;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EudiCredentialOfferServiceInterface;
 use OCA\Integriq\Service\EudiIssuerKeyServiceInterface;
@@ -89,6 +90,7 @@ class EudiWalletController extends Controller {
 	 * @param OpenRegisterCredentialBridgeInterface $authorizationService Reused consumer JWT bearer verification (REQ-001).
 	 * @param IThrottler $throttler Brute-force throttler for rejected credential presentations.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
+	 * @param ConsumerPrivilegeGate $privilegeGate Requires the `eudi.issue` scope or an admin-acting consumer.
 	 */
 	public function __construct(
 		string $appName,
@@ -99,6 +101,7 @@ class EudiWalletController extends Controller {
 		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
+		private readonly ConsumerPrivilegeGate $privilegeGate,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -239,6 +242,16 @@ class EudiWalletController extends Controller {
 			return new JSONResponse(
 				data: ['error' => 'invalid_token', 'message' => 'No consumer could be resolved for this token'],
 				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
+
+		// Finding iq-a-f5: an offer is signed with the municipality's issuer key, so any
+		// consumer JWT is not enough: the consumer must be inside its own source
+		// allow-list and hold the `eudi.issue` scope or act as an admin.
+		if ($this->privilegeGate->mayUse(consumer: $consumer, scope: ConsumerPrivilegeGate::SCOPE_EUDI_ISSUE, request: $this->request) === false) {
+			return new JSONResponse(
+				data: ['error' => 'insufficient_scope', 'message' => 'This consumer may not issue credentials'],
+				statusCode: Http::STATUS_FORBIDDEN
 			);
 		}
 

@@ -38,6 +38,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Directory\ScimProvisioningServiceInterface;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
+use OCA\Integriq\Service\Consumer\ConsumerPrivilegeGate;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -96,6 +97,7 @@ class ScimController extends Controller {
 	 * @param ScimProvisioningServiceInterface $provisioningService Applies the SCIM call.
 	 * @param OpenRegisterCredentialBridgeInterface $authorizationService The existing inbound credential check.
 	 * @param LoggerInterface $logger Logger for rejections.
+	 * @param ConsumerPrivilegeGate $privilegeGate Requires the `scim` scope or an admin-acting consumer.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
@@ -105,6 +107,7 @@ class ScimController extends Controller {
 		private readonly ScimProvisioningServiceInterface $provisioningService,
 		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly LoggerInterface $logger,
+		private readonly ConsumerPrivilegeGate $privilegeGate,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -398,6 +401,13 @@ class ScimController extends Controller {
 			$this->logger->warning('[Scim] rejected a call that authenticated without naming a consumer');
 
 			return $this->scimError(status: Http::STATUS_UNAUTHORIZED, detail: 'Unauthorized');
+		}
+
+		// Finding iq-a-f5: any consumer key used to be enough. SCIM creates, lists,
+		// disables and re-addresses accounts, so the consumer must be inside its
+		// own source allow-list and hold the `scim` scope or act as an admin.
+		if ($this->privilegeGate->mayUse(consumer: $consumer, scope: ConsumerPrivilegeGate::SCOPE_SCIM, request: $this->request) === false) {
+			return $this->scimError(status: Http::STATUS_FORBIDDEN, detail: 'Forbidden');
 		}
 
 		$this->callingConsumer = $consumer;
