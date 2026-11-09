@@ -285,7 +285,9 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			object: $row,
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
-			uuid: $uuid
+			uuid: $uuid,
+			_rbac: false, // rbac-bypass: service-built row; consumer passed JWT + ConsumerPrivilegeGate (eudi.issue or admin) (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		// Hold the plaintext code for exactly one dereference at resolution
@@ -368,7 +370,9 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			object: $data,
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
-			uuid: $uuid
+			uuid: $uuid,
+			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		$grant = ['pre-authorized_code' => $code];
@@ -477,7 +481,9 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 					object: $offerData,
 					register: 'integriq',
 					schema: 'eudi_credential_offer',
-					uuid: $entity->getUuid()
+					uuid: $entity->getUuid(),
+					_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+					_multitenancy: false,
 				);
 
 				throw new EudiIssuanceException(message: 'Incorrect tx_code', httpStatus: 400, errorCode: 'invalid_grant');
@@ -498,7 +504,9 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			object: $offerData,
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
-			uuid: $entity->getUuid()
+			uuid: $entity->getUuid(),
+			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		$accessToken = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
@@ -521,7 +529,9 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			],
 			register: 'integriq',
 			schema: 'eudi_issuance_session',
-			uuid: $sessionUuid
+			uuid: $sessionUuid,
+			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		return [
@@ -700,7 +710,9 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			object: $sessionData,
 			register: 'integriq',
 			schema: 'eudi_issuance_session',
-			uuid: $session->getUuid()
+			uuid: $session->getUuid(),
+			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		return ['format' => $format, 'credential' => $credential];
@@ -818,7 +830,9 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			object: $data,
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
-			uuid: $entity->getUuid()
+			uuid: $entity->getUuid(),
+			_rbac: false, // rbac-bypass: service-built row; consumer passed JWT + ConsumerPrivilegeGate (eudi.issue or admin) (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		if ($bitFlipped === true) {

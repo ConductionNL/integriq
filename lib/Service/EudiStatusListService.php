@@ -116,7 +116,9 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			object: $data,
 			register: 'integriq',
 			schema: 'eudi_status_list',
-			uuid: $uuid
+			uuid: $uuid,
+			_rbac: false, // rbac-bypass: engine status-list bookkeeping, no caller fields; issue gate, cron or status fetch (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 	}//end findOrCreateStatusList()
@@ -164,7 +166,9 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			object: $data,
 			register: 'integriq',
 			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			uuid: $entity->getUuid(),
+			_rbac: false, // rbac-bypass: engine status-list bookkeeping, no caller fields; issue gate, cron or status fetch (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		return ['statusListId' => $entity->getUuid(), 'index' => $index];
@@ -208,7 +212,9 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			object: $data,
 			register: 'integriq',
 			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			uuid: $entity->getUuid(),
+			_rbac: false, // rbac-bypass: engine status-list bookkeeping, no caller fields; issue gate, cron or status fetch (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		// Re-sign immediately so a verifier fetching the endpoint right
@@ -340,7 +346,9 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			object: $data,
 			register: 'integriq',
 			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			uuid: $entity->getUuid(),
+			_rbac: false, // rbac-bypass: engine status-list bookkeeping, no caller fields; issue gate, cron or status fetch (99-engine-config-lockdown).
+			_multitenancy: false,
 		);
 
 		return $token;

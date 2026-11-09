@@ -83,8 +83,16 @@ class EudiStatusListServiceTest extends TestCase {
 			}
 		);
 
+		// The eudi_* schemas are admin-only for writes (99-engine-config-lockdown),
+		// and the callers here are a non-admin consumer holding the eudi.issue
+		// scope, an anonymous wallet, or cron. The fake refuses like OpenRegister's
+		// RBAC does for them unless the engine write bypasses RBAC.
 		$objectService->method('saveObject')->willReturnCallback(
-			function ($object = [], $register = null, $schema = null, $uuid = null) {
+			function ($object = [], $register = null, $schema = null, $uuid = null, $_rbac = true) {
+				if ($_rbac !== false) {
+					throw new \RuntimeException('RBAC: not allowed to write ' . $schema);
+				}
+
 				if ($uuid === null) {
 					$uuid = bin2hex(random_bytes(8));
 				}
