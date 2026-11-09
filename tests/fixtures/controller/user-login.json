@@ -690,9 +690,9 @@
     },
     "disabled": {
         "outcome": {
-            "status": 400,
+            "status": 401,
             "data": {
-                "error": "Account is disabled"
+                "error": "Invalid username or password"
             },
             "headers": {
                 "Content-Type": "application/json; charset=utf-8",

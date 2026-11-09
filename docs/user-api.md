@@ -521,12 +521,7 @@ Content-Type: application/json
 }
 ```
 
-**Response (Account Disabled - 401):**
-```json
-{
-  'error': 'Account is disabled'
-}
-```
+A disabled account, and an account that has or must have two-factor authentication, get this same 401 response even when the password is correct, so the response never confirms a guessed password. The real reason is written to the Nextcloud log. A two-factor account signs in through the Nextcloud login page instead.
 
 **Response (System Error - 500):**
 ```json

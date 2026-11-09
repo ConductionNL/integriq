@@ -617,13 +617,15 @@ class UserController extends Controller {
 	 * Both failures are recorded for the rate limit. A wrong password answers 401,
 	 * not 400: the request is well formed, the authentication failed. The spec
 	 * ("Failed login is rate-limited and anti-enumeration") reserves 400 for
-	 * validateLoginCredentials() and for a disabled account. The message is
-	 * generic, so it does not reveal whether the username exists.
+	 * validateLoginCredentials(). A disabled account answers exactly like a wrong
+	 * password, because checkPassword() succeeds for it and a distinct answer
+	 * would confirm the guessed password (pp-f2); the real reason is logged. The
+	 * message is generic, so it does not reveal whether the username exists.
 	 *
 	 * @param array  $credentials The sanitized `username` and `password`.
 	 * @param string $clientIp    The client IP address.
 	 *
-	 * @return IUser|JSONResponse The user, or the 429, 401 or 400 response.
+	 * @return IUser|JSONResponse The user, or the 429 or 401 response.
 	 *
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
@@ -658,13 +660,13 @@ class UserController extends Controller {
 		}
 
 		if ($user->isEnabled() === false) {
+			$this->logger->info(
+				'Integriq API login refused: account is disabled',
+				['user' => $user->getUID(), 'ip' => $clientIp]
+			);
 			$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'account_disabled');
 
-			$response = new JSONResponse(
-				data: ['error' => $this->l->t('Account is disabled')],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-			return $this->securityService->addSecurityHeaders($response);
+			return $this->invalidCredentialsResponse();
 		}
 
 		return $user;
@@ -673,8 +675,8 @@ class UserController extends Controller {
 	/**
 	 * The answer to a refused password: 401 with a generic message, throttled.
 	 *
-	 * Used for a wrong password and for an account that needs a second factor,
-	 * so the two cannot be told apart by an unauthenticated caller.
+	 * Used for a wrong password, a disabled account and an account that needs a
+	 * second factor, so they cannot be told apart by an unauthenticated caller.
 	 *
 	 * @return JSONResponse The 401 response.
 	 *

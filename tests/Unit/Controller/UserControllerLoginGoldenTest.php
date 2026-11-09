@@ -285,9 +285,9 @@ class UserControllerLoginGoldenTest extends TestCase {
 	}//end testEveryCaseMatchesTheGoldenFile()
 
 	/**
-	 * Api-f2: a right password on a two-factor account answers exactly like a
-	 * wrong password, also with an allowed Origin, and both are throttled and
-	 * counted as a failed attempt.
+	 * Api-f2 and pp-f2: a right password on a two-factor or disabled account
+	 * answers exactly like a wrong password, also with an allowed Origin, and
+	 * all three are throttled and counted as a failed attempt.
 	 *
 	 * @return void
 	 */
@@ -295,7 +295,12 @@ class UserControllerLoginGoldenTest extends TestCase {
 		$valid = ['username' => 'jan', 'password' => 'geheim'];
 		$origin = ['Origin' => 'https://app.example'];
 		$outcomes = [];
-		foreach (['wrong' => ['check' => 'false'], 'twoFactor' => ['twoFactor' => ['totp' => true]]] as $name => $extra) {
+		$refusals = [
+			'wrong' => ['check' => 'false'],
+			'twoFactor' => ['twoFactor' => ['totp' => true]],
+			'disabled' => ['enabled' => false],
+		];
+		foreach ($refusals as $name => $extra) {
 			$this->case = array_merge(['params' => $valid, 'headers' => $origin], $extra);
 			$this->cache = [];
 			$this->log = [];
@@ -308,6 +313,7 @@ class UserControllerLoginGoldenTest extends TestCase {
 
 		$this->assertSame(401, $outcomes['twoFactor']['status']);
 		$this->assertSame($outcomes['wrong'], $outcomes['twoFactor']);
+		$this->assertSame($outcomes['wrong'], $outcomes['disabled'], 'pp-f2: a disabled account answers like a wrong password');
 	}//end testSecondFactorRefusalIsIndistinguishableFromWrongPassword()
 
 	/**
