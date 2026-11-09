@@ -90,7 +90,8 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			id: (string)$id,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			_audit: false
+			_audit: false,
+			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 	}//end findObject()
@@ -109,7 +110,10 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 				$filters
 			),
 		];
-		$matches = $this->orObjectService->findAll(config: $config);
+		$matches = $this->orObjectService->findAll(
+			config: $config,
+			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+		);
 
 		return array_values(($matches['results'] ?? $matches));
 	}//end findAllObjects()
@@ -418,7 +422,8 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			object: $object,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			uuid: $uuid
+			uuid: $uuid,
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -462,7 +467,8 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			object: $merged,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			uuid: $uuidParam
+			uuid: $uuidParam,
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();

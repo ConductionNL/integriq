@@ -1,0 +1,119 @@
+{
+	"_comment": "ADR-037 register fragment — engine-config-lockdown (WOO-487 beta security review, findings iq-a-f1 / iq-b-f2). SECURITY FIX. These schemas shipped with NO `authorization` block. In OpenRegister an absent block is default-OPEN for create/update/delete unless the operator sets `openregister.enforce_default_closed` (default false), so every authenticated account could write them through the generic `/api/objects/integriq/<schema>` API and bypass the admin-only integriq screens and the ActionAuth gates. What that bought an ordinary account: an `endpoint` that anonymously proxies any admin-configured source with its stored credentials; a `mapping` (Twig) rendered by public endpoints and synchronizations; a `job` with any container class run by cron, optionally as another user; a `synchronization` / `synchronization_contract` that overwrites or deletes objects in any register, WOO publications included; a `flow` chaining all of these; an `event_subscription` that pushes every matching object event to a sink of the author's choosing; a `notificaties_abonnement` that the public ZGW callback trusts; an `lti_deployment` / `lti_identity_link` that maps an LTI subject onto any Nextcloud account; EUDI offers, sessions and status lists issued under the municipality's key; and the promotion `environment` list. All of it is ADMIN-OWNED CONFIGURATION or engine state, so create/update/delete are admin-only. READ IS DECIDED PER SCHEMA AND LISTED EXPLICITLY, because a non-empty block denies every unlisted action (PermissionHandler fail-closed): the engine-config schemas keep `read: [\"authenticated\"]`, which is what every signed-in account had before, and lose only the anonymous read the empty block granted through OpenRegister's public objects API. The identity, credential and token schemas (`lti_identity_link`, `eudi_*`) are admin-only for read as well; their engine readers already read with `_rbac: false`. TWO BYPASSES REMAIN AND ARE INTENDED: the `admin` group, and the OWNER of an existing object (objects a non-admin created before this fragment stay editable by that account; review them). The engine itself keeps working because its own reads of these schemas (public endpoint dispatch, cron and webcron, the public ZGW and LTI callbacks) and its bookkeeping writes after an ActionAuth/admin check now pass `_rbac: false` with an `rbac-bypass:` reason in the same change. `destroy` is deliberately NOT listed, as in 99-mail-schemas-lockdown.json: OpenRegister 2.1.33 and older reject a schema that declares it, newer OpenRegister fails closed for an undeclared `destroy` (administrators bypass).",
+	"components": {
+		"schemas": {
+			"endpoint": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"mapping": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"job": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"synchronization": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"synchronization_contract": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"flow": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"event_subscription": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"notificaties_abonnement": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"environment": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"lti_deployment": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["authenticated"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"lti_identity_link": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"eudi_credential_offer": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"eudi_issuance_session": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			},
+			"eudi_status_list": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			}
+		}
+	}
+}

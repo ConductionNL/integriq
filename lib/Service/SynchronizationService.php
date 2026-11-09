@@ -770,7 +770,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$object = $this->orObjectService->find(
 			id: (string)$id,
 			register: 'integriq',
-			schema: 'synchronization'
+			schema: 'synchronization',
+			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 		if ($object === null) {
@@ -971,7 +972,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			object: $object,
 			register: 'integriq',
 			schema: 'synchronization',
-			uuid: $uuidValue
+			uuid: $uuidValue,
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 	}//end persistSynchronization()
 
@@ -1069,7 +1071,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		return $this->orObjectService->find(
 			id: (string)$id,
 			register: 'integriq',
-			schema: 'synchronization_contract'
+			schema: 'synchronization_contract',
+			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 	}//end findContractObject()
 
@@ -1530,7 +1533,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			object: $object,
 			register: 'integriq',
 			schema: 'synchronization_contract',
-			uuid: $uuidValue
+			uuid: $uuidValue,
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -1565,7 +1569,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			object: $object,
 			register: 'integriq',
 			schema: 'synchronization_contract',
-			uuid: $uuid
+			uuid: $uuid,
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -1613,7 +1618,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			object: $merged,
 			register: 'integriq',
 			schema: 'synchronization_contract',
-			uuid: $uuidValue
+			uuid: $uuidValue,
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -3575,7 +3581,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$mapping = $this->orObjectService->find(
 				id: (string)$synchronization['sourceTargetMapping'],
 				register: 'integriq',
-				schema: 'mapping'
+				schema: 'mapping',
+				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		}
 
@@ -4547,7 +4554,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				$sourceHashMapping = $this->orObjectService->find(
 					id: (string)$synchronization['sourceHashMapping'],
 					register: 'integriq',
-					schema: 'mapping'
+					schema: 'mapping',
+					_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 				);
 			} catch (DoesNotExistException $exception) {
 				return new Exception($exception->getMessage());
@@ -5485,7 +5493,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return $this->orObjectService->find(
 				id: (string)$synchronization['sourceTargetMapping'],
 				register: 'integriq',
-				schema: 'mapping'
+				schema: 'mapping',
+				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (DoesNotExistException $exception) {
 			return new Exception($exception->getMessage());

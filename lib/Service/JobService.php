@@ -235,7 +235,8 @@ class JobService implements JobServiceInterface {
 				object: $jobData,
 				register: 'integriq',
 				schema: 'job',
-				uuid: $job->getUuid()
+				uuid: $job->getUuid(),
+				_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 			);
 		}
 
@@ -261,7 +262,8 @@ class JobService implements JobServiceInterface {
 			object: $jobData,
 			register: 'integriq',
 			schema: 'job',
-			uuid: $job->getUuid()
+			uuid: $job->getUuid(),
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 
 	}//end scheduleJob()
@@ -564,7 +566,8 @@ class JobService implements JobServiceInterface {
 			object: $jobData,
 			register: 'integriq',
 			schema: 'job',
-			uuid: $job->getUuid()
+			uuid: $job->getUuid(),
+			_rbac: false, // rbac-bypass: engine bookkeeping on admin-owned config; caller already authorised (admin/ActionAuth) (99-engine-config-lockdown).
 		);
 
 		return $logEntry;
@@ -897,7 +900,8 @@ class JobService implements JobServiceInterface {
 					'schema' => 'job',
 					'isEnabled' => true,
 				],
-			]
+			],
+			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$jobs = ($matches['results'] ?? $matches);
 		$results = [];

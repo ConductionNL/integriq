@@ -313,7 +313,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 			$sync = $this->objectService->find(
 				id: $synchronizationId,
 				register: self::REGISTER_SLUG,
-				schema: 'synchronization'
+				schema: 'synchronization',
+				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 			if (is_object($sync) === true && method_exists($sync, 'getObject') === true) {
 				$syncBody = $sync->getObject();
