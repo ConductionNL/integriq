@@ -165,9 +165,15 @@ class EndpointsController extends Controller {
 				);
 			}
 		} catch (\Exception $e) {
-			// Multiple endpoints found (handled by cache service).
+			// Multiple endpoints found (handled by cache service). The message
+			// names internal endpoint configuration: log it, never return it to
+			// the (often anonymous) caller (ADR-050).
+			$this->logger->warning(
+				'Endpoint resolution failed',
+				['path' => $_path, 'method' => $this->request->getMethod(), 'error' => $e->getMessage()]
+			);
 			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
+				data: ['error' => $this->l->t('The endpoint for this path could not be resolved uniquely')],
 				statusCode: 409
 			);
 		}//end try
@@ -458,7 +464,7 @@ class EndpointsController extends Controller {
 						'error' => $e->getMessage(),
 					]
 				);
-				return new JSONResponse(['error' => $this->l->t('Schema or register not found: %s', [$e->getMessage()])], 404);
+				return new JSONResponse(['error' => $this->l->t('Schema or register not found')], 404);
 			}
 
 			// Only GET is handled here.  isSimpleEndpoint() guarantees this but
@@ -511,7 +517,11 @@ class EndpointsController extends Controller {
 
 			return new JSONResponse($returnArray);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $this->l->t('Simple endpoint error: %s', [$e->getMessage()])], 500);
+			$this->logger->error(
+				'Simple endpoint request failed',
+				['path' => $path, 'error' => $e->getMessage()]
+			);
+			return new JSONResponse(['error' => $this->l->t('Simple endpoint error')], 500);
 		}//end try
 
 	}//end dispatchSimpleSchemaRequest()

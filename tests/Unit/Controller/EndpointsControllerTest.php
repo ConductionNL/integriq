@@ -380,4 +380,40 @@ class EndpointsControllerTest extends TestCase {
 
 	}//end testAnEndpointWithFixedFiltersNeverTakesTheFastPath()
 
+
+	/**
+	 * An endpoint-resolution failure never hands its exception message to the caller (iq-a-f6, ADR-050).
+	 *
+	 * @return void
+	 */
+	public function testAResolutionFailureDoesNotLeakTheExceptionMessage(): void {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getMethod')->willReturn('GET');
+
+		$cache = $this->createMock(EndpointCacheService::class);
+		$cache->method('findByPathRegex')->willThrowException(
+			new \Exception('Multiple endpoints match: internal-endpoint-a, internal-endpoint-b (oc_openregister_table_12_34)')
+		);
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+
+		$controller = new EndpointsController(
+			'integriq',
+			$request,
+			$this->createMock(EndpointService::class),
+			$this->createMock(OpenRegisterCredentialBridge::class),
+			$this->createMock(ObjectService::class),
+			$cache,
+			$this->createMock(LoggerInterface::class),
+			$l10n,
+			new EndpointCorsPolicy($this->createMock(IConfig::class))
+		);
+
+		$response = $controller->handlePath('some/path');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertStringNotContainsString('internal-endpoint', (string)json_encode($response->getData()));
+		$this->assertStringNotContainsString('oc_openregister', (string)json_encode($response->getData()));
+	}//end testAResolutionFailureDoesNotLeakTheExceptionMessage()
 }//end class
