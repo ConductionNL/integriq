@@ -3088,7 +3088,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				object: $object
 			);
 		} catch (\Throwable $itemException) {
-			$this->recordExternItemFailure(run: $run, object: $object, exception: $itemException);
+			$this->recordExternItemFailure(run: $run, object: $object, exception: $itemException, contractIndex: $contractIndex);
 			$run->objectTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
 			return;
 		}
@@ -3154,12 +3154,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @param ExternSyncRun $run The run.
 	 * @param array $object The item.
 	 * @param \Throwable $exception What the item threw.
+	 * @param array|null $contractIndex The run's contracts indexed by origin id.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
 	 */
-	private function recordExternItemFailure(ExternSyncRun $run, array $object, \Throwable $exception): void {
+	private function recordExternItemFailure(ExternSyncRun $run, array $object, \Throwable $exception, ?array $contractIndex = null): void {
 		$run->result['objects']['invalid']++;
 
 		$this->logger->warning(
@@ -3174,7 +3175,52 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$this->captureSyncItemFailure(synchronization: $run->synchronization, object: $object, exception: $exception);
 		$run->result = $this->takeValidationFindings(result: $run->result);
+		$this->keepTargetOfFailedItem(run: $run, object: $object, contractIndex: $contractIndex);
 	}//end recordExternItemFailure()
+
+	/**
+	 * Keep the existing target of an item that failed out of the deletion pass (iq-b-f4).
+	 *
+	 * An item that threw (a mapping error, a validation failure after a schema
+	 * change, a transient sub-fetch error) is still in the source, so its
+	 * published target must not be read as disappeared. Its contract is looked
+	 * up by origin id and the target kept. When that cannot be decided (no
+	 * origin id, no contract index), the failure is counted as unattributed and
+	 * the run deletes nothing.
+	 *
+	 * @param ExternSyncRun $run           The run.
+	 * @param array         $object        The failed item.
+	 * @param array|null    $contractIndex The run's contracts indexed by origin id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 */
+	private function keepTargetOfFailedItem(ExternSyncRun $run, array $object, ?array $contractIndex): void {
+		if ($contractIndex === null) {
+			$run->unattributedFailures++;
+			return;
+		}
+
+		try {
+			$originId = $this->getOriginId(synchronization: $run->synchronization, object: $object);
+		} catch (\Throwable) {
+			$run->unattributedFailures++;
+			return;
+		}
+
+		if (is_scalar($originId) === false) {
+			$run->unattributedFailures++;
+			return;
+		}
+
+		foreach (($contractIndex[(string)$originId] ?? []) as $contract) {
+			$targetId = ($contract['targetId'] ?? null);
+			if (is_string($targetId) === true && $targetId !== '') {
+				$run->targetIds[] = $targetId;
+			}
+		}
+	}//end keepTargetOfFailedItem()
 
 	/**
 	 * Resolves the run's contracts once, in one query, into `_embed.contracts`.
@@ -3323,7 +3369,20 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$guardInfo = null;
 		if ($run->isTest === false) {
 			$fetchComplete = ($run->rateLimitException === null && ($run->fetchInfo['complete'] ?? true));
-			$deletedCount = $this->deleteMissingObjects(run: $run, fetchComplete: $fetchComplete, guardInfo: $guardInfo);
+			// A failed item whose target could not be identified makes the set of
+			// kept targets incomplete, exactly like an incomplete fetch (iq-b-f4).
+			$deletionBasisComplete = ($fetchComplete === true && $run->unattributedFailures === 0);
+			if ($fetchComplete === true && $deletionBasisComplete === false) {
+				$this->logger->warning(
+					'Synchronization deletion pass skipped: failed items could not be matched to their targets',
+					[
+						'synchronization' => ($run->synchronization['name'] ?? ($run->synchronization['uuid'] ?? null)),
+						'unattributedFailures' => $run->unattributedFailures,
+					]
+				);
+			}
+
+			$deletedCount = $this->deleteMissingObjects(run: $run, fetchComplete: $deletionBasisComplete, guardInfo: $guardInfo);
 			$this->advanceCursorWatermark(run: $run, fetchComplete: $fetchComplete);
 		}
 
@@ -4863,9 +4922,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	/**
 	 * Apply the deletion-ratio guard to a bulk deletion pass.
 	 *
-	 * The guard is skipped for a restricted (single-object) delete and below
-	 * MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD contracts. It trips when the share of
-	 * candidates exceeds the threshold, unless deletion is forced.
+	 * The guard is skipped for a restricted (single-object) delete. It trips when
+	 * the share of candidates exceeds the threshold or, below
+	 * MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD contracts, when every target would
+	 * go; forced deletion overrides it.
 	 *
 	 * @param DeletionRun $run    The deletion pass; its guard outcome is updated.
 	 * @param array       $counts `candidates`, the number of targets to delete, and `total`, the contracts with a target.
@@ -4878,13 +4938,22 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$candidateCount = $counts['candidates'];
 		$totalContracts = $counts['total'];
 		$run->guardInfo = ['guarded' => false, 'reason' => null, 'ratio' => null, 'threshold' => null];
-		if ($run->deleteRestriction === true || $totalContracts < self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
+		if ($run->deleteRestriction === true || $totalContracts === 0) {
 			return false;
 		}
 
 		$ratio = ($candidateCount / $totalContracts);
 		$threshold = ($run->sourceConfig['deletionRatioThreshold'] ?? self::DEFAULT_DELETION_RATIO_THRESHOLD);
-		if ($ratio > $threshold && $run->forceDeletion === false) {
+		// Below MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD one deletion is already a
+		// large share, so the ratio itself cannot be the test there; the guard
+		// still refuses to remove every target of a small synchronization in one
+		// pass without forceDeletion (iq-b-f4).
+		$tripped = ($ratio > $threshold);
+		if ($totalContracts < self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
+			$tripped = ($candidateCount >= $totalContracts);
+		}
+
+		if ($tripped === true && $run->forceDeletion === false) {
 			$run->guardInfo = [
 				'guarded' => true,
 				'reason' => 'ratio_threshold_exceeded',

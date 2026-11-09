@@ -250,7 +250,10 @@ class SynchronizationServicePurgeTest extends TestCase {
 				'targetType' => 'register/schema',
 				'targetId' => '1/2',
 				'sourceConfig' => ['endpoint' => '/documenten', 'resultsPosition' => 'items', 'disappearancePolicy' => 'purge'],
-			]
+			],
+			// The source answers an empty list, so every target goes: the
+			// deletion guard requires the operator's explicit force for that.
+			forceDeletion: true
 		);
 
 		$this->assertSame(['pub-a', 'pub-b'], array_column($this->deletes, 'uuid'));

@@ -203,7 +203,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 			->method('updateTarget')
 			->willReturn($contract->jsonSerialize());
 
-		$deleted = $this->service->deleteInvalidObjects($sync, []);
+		$deleted = $this->service->deleteInvalidObjects($sync, [], forceDeletion: true);
 
 		$this->assertSame(1, $deleted, 'In-scope orphan should be deleted');
 	}//end testInScopeOrphanIsDeleted()
@@ -228,7 +228,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 
 		$this->service->expects($this->never())->method('updateTarget');
 
-		$deleted = $this->service->deleteInvalidObjects($sync, []);
+		$deleted = $this->service->deleteInvalidObjects($sync, [], forceDeletion: true);
 
 		$this->assertSame(0, $deleted, 'Out-of-scope contract must not trigger deletion');
 	}//end testCrossScopeContractIsSkipped()
@@ -250,7 +250,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 
 		$this->service->expects($this->never())->method('updateTarget');
 
-		$deleted = $this->service->deleteInvalidObjects($sync, []);
+		$deleted = $this->service->deleteInvalidObjects($sync, [], forceDeletion: true);
 
 		$this->assertSame(0, $deleted);
 	}//end testDoesNotExistExceptionIsSwallowed()
@@ -285,7 +285,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 
 		$this->service->expects($this->never())->method('updateTarget');
 
-		$deleted = $this->service->deleteInvalidObjects($sync, []);
+		$deleted = $this->service->deleteInvalidObjects($sync, [], forceDeletion: true);
 
 		$this->assertSame(0, $deleted);
 	}//end testUnexpectedThrowableLogsWarningAndContinues()
@@ -313,7 +313,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 			->method('warning')
 			->with($this->stringContains('targetId not in register/schema format'));
 
-		$deleted = $this->service->deleteInvalidObjects($sync, []);
+		$deleted = $this->service->deleteInvalidObjects($sync, [], forceDeletion: true);
 
 		$this->assertSame(0, $deleted);
 	}//end testMalformedTargetIdLogsWarningAndBails()
@@ -348,7 +348,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 			->method('updateTarget')
 			->willReturn($inScope->jsonSerialize());
 
-		$deleted = $this->service->deleteInvalidObjects($sync, []);
+		$deleted = $this->service->deleteInvalidObjects($sync, [], forceDeletion: true);
 
 		$this->assertSame(1, $deleted, 'Only in-scope orphan should be deleted in mixed batch');
 	}//end testInScopeAndOutOfScopeMixedBatch()
