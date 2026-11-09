@@ -158,9 +158,12 @@ class MappingService implements MappingServiceInterface {
 	 * environment. Without a sandbox Twig still accepts a plain PHP callable as
 	 * the arrow of `map`/`filter`/`reduce`/`sort`, so `{{ ['id']|map('system') }}`
 	 * ran a shell command. Sandbox mode makes Twig refuse any arrow that is not a
-	 * Closure, and this allow-list holds exactly the tags, filters and functions
-	 * the shipped mappings, connector fragments and documented examples use plus
-	 * this environment's own MappingExtension. No method or property of a PHP
+	 * Closure, so the arrow filters themselves are allowed: `|map(x => x * 2)`
+	 * renders, `|map('system')` throws. The allow-list holds exactly the tags,
+	 * filters and functions the shipped mappings, connector fragments and
+	 * documented examples use (the mapping guide documents `map`; mappings
+	 * stored in a register can use any of the arrow filters) plus this
+	 * environment's own MappingExtension. No method or property of a PHP
 	 * object may be reached: mapping input is plain arrays.
 	 *
 	 * @return SecurityPolicy The allow-list policy.
@@ -180,6 +183,7 @@ class MappingService implements MappingServiceInterface {
 				'default',
 				'e',
 				'escape',
+				'filter',
 				'first',
 				'format',
 				'join',
@@ -188,14 +192,17 @@ class MappingService implements MappingServiceInterface {
 				'last',
 				'length',
 				'lower',
+				'map',
 				'merge',
 				'nl2br',
 				'number_format',
 				'raw',
+				'reduce',
 				'replace',
 				'reverse',
 				'round',
 				'slice',
+				'sort',
 				'split',
 				'striptags',
 				'title',

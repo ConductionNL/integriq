@@ -126,6 +126,38 @@ final class MappingServiceSandboxTest extends TestCase {
 	}//end testOrdinaryTemplatesStillRender()
 
 	/**
+	 * Api-f3: the arrow filters are allowed, and the sandbox still refuses a
+	 * string callable as their arrow (`map('system')` is in hostileTemplates).
+	 *
+	 * @return void
+	 */
+	public function testClosureArrowFiltersRender(): void {
+		$output = $this->service()->executeMapping(
+			mapping: [
+				'name' => 'arrows',
+				'mapping' => [
+					'map' => "{{ [1, 2]|map(x => x * 2)|join(',') }}",
+					'filter' => "{{ [1, 2, 3]|filter(x => x > 1)|join(',') }}",
+					'reduce' => '{{ [1, 2, 3]|reduce((carry, x) => carry + x) }}',
+					'sort' => "{{ [3, 1, 2]|sort((a, b) => a <=> b)|join(',') }}",
+				],
+				'passThrough' => false,
+				'unset' => [],
+				'cast' => [],
+			],
+			input: []
+		);
+
+		$this->assertSame(
+			expected: ['map' => '2,4', 'filter' => '2,3', 'reduce' => '6', 'sort' => '1,2,3'],
+			actual: $output
+		);
+
+		$this->expectException(exception: \Twig\Error\RuntimeError::class);
+		$this->service()->renderTemplateString(template: "{{ ['id']|map('system')|join }}", context: []);
+	}//end testClosureArrowFiltersRender()
+
+	/**
 	 * Every shipped mapping template that compiles without the sandbox also compiles with it.
 	 *
 	 * @return void
