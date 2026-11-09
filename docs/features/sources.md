@@ -266,6 +266,17 @@ For connections to Dutch government services requiring client certificate authen
 | `isEnabled` | Whether the source is active |
 | `logging` | Whether to log all calls to this source |
 
+## Where Twig templates belong
+
+Integriq renders Twig templates (`{{ source.… }}`, `{{ oauthToken(source) }}`, date expressions) only in what the source itself holds: its `configuration` and its `headers`. The request data a call carries is sent exactly as written and is never rendered. That covers the `query`, `headers`, `json`, `body`, `form_params` and `multipart` passed with the call, which includes:
+
+- a synchronization's `sourceConfig` and `targetConfig` headers, query and body (the synchronization itself still renders its `sourceConfig.endpoint`, and in incremental mode its `sourceConfig.query`, with `cursor` and `data` in context, but never with `source`)
+- a flow `call` step's `requestConfig`
+- the headers, query and body typed in the source test dialog
+- object payloads, form submissions and paging cursors
+
+Earlier versions rendered those values too. That let a form answer or an object field such as `{{ source.configuration.authentication.password }}` copy the source's credentials into an outgoing request. If a synchronization or flow still holds a template in one of those places, move it into the source's `configuration` (for example `configuration.headers.Authorization`). Until you move it, the call sends the literal text and Integriq logs a warning that names the source and the key ("per-call request data is not rendered as Twig"), without the value.
+
 ## Call Logging
 
 When `logging` is enabled on a source, every HTTP request and response is stored in a `CallLog` entry. Logs include:

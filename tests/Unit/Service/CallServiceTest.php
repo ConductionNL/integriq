@@ -750,6 +750,7 @@ class CallServiceTest extends TestCase {
 		RenderBoundarySimulatingObjectService $double,
 		?array &$capturedConfig,
 		?Response $response = null,
+		?LoggerInterface $logger = null,
 	): CallService {
 		$brokered = $this->createMock(BrokeredCallService::class);
 		$brokered->method('hasCredentialRef')->willReturn(false);
@@ -762,7 +763,7 @@ class CallServiceTest extends TestCase {
 			new ArrayLoader([]),
 			$this->createMock(AuthenticationService::class),
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
+			($logger ?? $this->createMock(LoggerInterface::class)),
 			$brokered,
 			new SensitiveFieldRegistry(),
 			new BodyCapturePolicy(appConfig: $appConfig),
@@ -1071,6 +1072,58 @@ class CallServiceTest extends TestCase {
 		);
 		$this->assertSame($cursor, $capturedConfig['query']['cursor']);
 	}//end testPaginationPageIsAppliedAfterRendering()
+
+	/**
+	 * Pp-f1: a template left in per-call data is sent literally and logged once,
+	 * naming the source and the keys but never the values.
+	 *
+	 * @return void
+	 */
+	public function testUnrenderedPerCallTemplateIsLoggedOnce(): void {
+		$double = new RenderBoundarySimulatingObjectService();
+		$double->stored['src-uuid-warn'] = [
+			'name' => 'warn-source',
+			'isEnabled' => true,
+			'location' => 'https://api.example.invalid',
+			'apikey' => 'live-secret-key',
+		];
+
+		$warnings = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$warnings): void {
+				if (str_contains($message, 'not rendered as Twig') === true) {
+					$warnings[] = $context;
+				}
+			}
+		);
+
+		$capturedConfig = null;
+		$service = $this->buildRenderBoundaryService($double, $capturedConfig, null, $logger);
+
+		$source = new ObjectEntity();
+		$source->setUuid('src-uuid-warn');
+		$source->setObject($double->stored['src-uuid-warn']);
+
+		$service->call(
+			source: $source,
+			endpoint: '/items',
+			config: [
+				'headers' => ['Authorization' => 'Bearer {{ source.apikey }}'],
+				'query' => ['since' => "{{ 'now'|date('Y-m-d') }}", 'plain' => 'x'],
+			]
+		);
+
+		$this->assertSame('Bearer {{ source.apikey }}', $capturedConfig['headers']['Authorization']);
+		$this->assertCount(1, $warnings);
+		$this->assertSame('src-uuid-warn', $warnings[0]['source']);
+		$this->assertSame(['query.since', 'headers.Authorization'], $warnings[0]['keys']);
+		$this->assertStringNotContainsString('source.apikey', (string)json_encode($warnings));
+
+		$warnings = [];
+		$service->call(source: $source, endpoint: '/items', config: ['query' => ['plain' => 'x']]);
+		$this->assertSame([], $warnings, 'no template, no warning');
+	}//end testUnrenderedPerCallTemplateIsLoggedOnce()
 
 	/**
 	 * ocon#215 — an unpersisted / in-memory source (no uuid) falls back to the

@@ -1228,6 +1228,56 @@ class CallService implements CallServiceInterface {
 	}//end separateCallData()
 
 	/**
+	 * Warn once per call when per-call request data looks like a Twig template (pp-f1).
+	 *
+	 * Before api-f1 a template in per-call config (a synchronization's
+	 * `sourceConfig` headers or query, a flow step's `requestConfig`, the
+	 * source test dialog) was rendered with the source in context. It is now
+	 * sent literally, which an admin would otherwise only notice as a 401 or an
+	 * unfiltered result. The warning names the source and the keys, never the
+	 * values: they can be credentials or personal data.
+	 *
+	 * @param ObjectEntity $source   The source being called.
+	 * @param array        $callData The per-call request data, unrendered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function warnAboutUnrenderedTemplates(ObjectEntity $source, array $callData): void {
+		$keys = [];
+		$walk = static function (mixed $value, string $path) use (&$walk, &$keys): void {
+			if (is_array($value) === true) {
+				foreach ($value as $key => $item) {
+					$walk($item, $path . '.' . $key);
+				}
+
+				return;
+			}
+
+			if (is_string($value) === true && str_contains($value, '{{') === true && str_contains($value, '}}') === true) {
+				$keys[] = $path;
+			}
+		};
+		foreach ($callData as $key => $value) {
+			$walk($value, (string)$key);
+		}
+
+		if ($keys === []) {
+			return;
+		}
+
+		$this->logger->warning(
+			'CallService: per-call request data is not rendered as Twig since api-f1; move the template into the source configuration',
+			[
+				'source' => (string)($source->getUuid() ?? ''),
+				'sourceName' => (string)($source->getObject()['name'] ?? ''),
+				'keys' => $keys,
+			]
+		);
+	}//end warnAboutUnrenderedTemplates()
+
+	/**
 	 * Merge the unrendered per-call request data into the rendered config (api-f1).
 	 *
 	 * The per-call value is the more specific statement and wins over what the
@@ -3040,6 +3090,7 @@ class CallService implements CallServiceInterface {
 			$separated = $this->separateCallData(config: $config);
 			$config = $separated['config'];
 			$callData = $separated['callData'];
+			$this->warnAboutUnrenderedTemplates(source: $source, callData: $callData);
 		}
 
 		// Phase 7: Merge source-level configuration.
