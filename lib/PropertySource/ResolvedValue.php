@@ -80,25 +80,26 @@ final class ResolvedValue {
 	/**
 	 * A value served from cache, reporting its age.
 	 *
-	 * @param array<string,mixed> $value The value.
-	 * @param string $providerId Provider id.
-	 * @param string $identifier Identifier at the source.
-	 * @param int $readAt Unix timestamp of the original read.
-	 * @param int $ageSeconds Age of the cache entry in seconds.
-	 * @param bool $unreachable Whether the source was tried and did not answer.
+	 * @param self $read       The value as the source answered it when it was cached.
+	 * @param int  $ageSeconds Age of the cache entry in seconds.
 	 *
 	 * @return self Resolved value with cache provenance.
 	 */
-	public static function fromCache(
-		array $value,
-		string $providerId,
-		string $identifier,
-		int $readAt,
-		int $ageSeconds,
-		bool $unreachable = false,
-	): self {
-		return new self($value, $providerId, $identifier, $readAt, self::ORIGIN_CACHE, $ageSeconds, $unreachable);
+	public static function fromCache(self $read, int $ageSeconds): self {
+		return new self($read->value, $read->providerId, $read->sourceIdentifier, $read->readAt, self::ORIGIN_CACHE, $ageSeconds);
 	}//end fromCache()
+
+	/**
+	 * A cached value served because the source was tried and did not answer.
+	 *
+	 * @param self $read       The value as the source answered it when it was cached.
+	 * @param int  $ageSeconds Age of the cache entry in seconds.
+	 *
+	 * @return self Resolved value with cache provenance and an unreachable state.
+	 */
+	public static function fromCacheWhileUnreachable(self $read, int $ageSeconds): self {
+		return new self($read->value, $read->providerId, $read->sourceIdentifier, $read->readAt, self::ORIGIN_CACHE, $ageSeconds, true);
+	}//end fromCacheWhileUnreachable()
 
 	/**
 	 * A value a person typed. It carries `manual` and no provider id.
