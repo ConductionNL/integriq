@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use UnexpectedValueException;
 
 /**
@@ -119,9 +120,7 @@ interface ContractSweepNodeInterface {
 	/**
 	 * Sweep the synchronization's stale objects and emit ONE summary item.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array Exactly one summary item, or none for an empty input.
 	 *
@@ -129,5 +128,5 @@ interface ContractSweepNodeInterface {
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array;
+	public function execute(FlowNodeCall $call): array;
 }
