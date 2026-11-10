@@ -57,7 +57,7 @@ class CatalogRegistryServiceTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->registry = new IntegrationRegistry();
+		$this->registry = new IntegrationRegistry(new NullLogger());
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 	}//end setUp()

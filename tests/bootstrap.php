@@ -477,7 +477,7 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// OpenRegister's scheduled-notification grammar, copied verbatim from
 		// openregister development (a5832f2498) so the register's scheduled
 		// rules are parsed and matched by the code that runs them live.
-		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
+		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterTarget', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
 			if (class_exists('OCA\\OpenRegister\\Service\\Notification\\'.$notificationClass) === false) {
 				require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/'.$notificationClass.'.php';
 			}

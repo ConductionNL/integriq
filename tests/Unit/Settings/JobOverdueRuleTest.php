@@ -25,6 +25,7 @@ use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -129,9 +130,9 @@ final class JobOverdueRuleTest extends TestCase {
 		$evaluator = new ScheduledFilterEvaluator();
 		$now       = new DateTimeImmutable(self::NOW);
 
-		$this->assertTrue($evaluator->matches($this->job(true, '2026-09-29T10:00:00+00:00'), $filter, $now), 'overdue');
-		$this->assertFalse($evaluator->matches($this->job(true, '2026-09-29T14:00:00+00:00'), $filter, $now), 'not yet due');
-		$this->assertFalse($evaluator->matches($this->job(false, '2026-09-29T10:00:00+00:00'), $filter, $now), 'disabled');
+		$this->assertTrue($evaluator->matchesTarget($filter, new ScheduledFilterTarget($this->job(true, '2026-09-29T10:00:00+00:00'), $now)), 'overdue');
+		$this->assertFalse($evaluator->matchesTarget($filter, new ScheduledFilterTarget($this->job(true, '2026-09-29T14:00:00+00:00'), $now)), 'not yet due');
+		$this->assertFalse($evaluator->matchesTarget($filter, new ScheduledFilterTarget($this->job(false, '2026-09-29T10:00:00+00:00'), $now)), 'disabled');
 	}//end testOnlyAnEnabledJobPastItsNextRunMatches()
 
 	/**

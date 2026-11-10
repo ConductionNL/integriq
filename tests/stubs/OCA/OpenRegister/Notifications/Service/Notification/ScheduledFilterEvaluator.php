@@ -98,14 +98,26 @@ final class ScheduledFilterEvaluator {
 	/**
 	 * Evaluate the filter against the given object data.
 	 *
-	 * @param array<string, mixed> $objectData Flat field map (typically `$object->getObject()`).
 	 * @param array<string, mixed> $filter Filter map per the class docblock.
-	 * @param DateTimeImmutable $now Logical "now" for the entire scan pass.
+	 * @param ScheduledFilterTarget $target The object's flat field map and the scan's logical "now".
 	 *
 	 * @return bool True when every entry matches, false otherwise.
 	 *
 	 */
-	public function matches(array $objectData, array $filter, DateTimeImmutable $now): bool {
+	public function matchesTarget(array $filter, ScheduledFilterTarget $target): bool {
+		return $this->matches(objectData: $target->objectData, filter: $filter, now: $target->now);
+	}
+
+	/**
+	 * Evaluate the filter against one object's data at one moment (the shape before matchesTarget()).
+	 *
+	 * @param array<string, mixed> $objectData Flat field map.
+	 * @param array<string, mixed> $filter Filter map per the class docblock.
+	 * @param DateTimeImmutable $now Logical "now" for the entire scan pass.
+	 *
+	 * @return bool True when every entry matches, false otherwise.
+	 */
+	private function matches(array $objectData, array $filter, DateTimeImmutable $now): bool {
 		if (count($filter) === 0) {
 			return true;
 		}

@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -49,6 +50,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Tests for the flow node registration listener.
@@ -181,7 +183,7 @@ class FlowNodeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testEveryNodeAppearsInThePalette(): void {
-		$registry = new FlowNodeRegistry();
+		$registry = new FlowNodeRegistry($this->createMock(IEventDispatcher::class), new NullLogger());
 
 		$this->listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
@@ -213,7 +215,7 @@ class FlowNodeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testCollidingNodeIdIsRefused(): void {
-		$registry = new FlowNodeRegistry();
+		$registry = new FlowNodeRegistry($this->createMock(IEventDispatcher::class), new NullLogger());
 		$registry->register(node: $this->sourceCallNode);
 
 		$this->listener->handle(new RegisterFlowNodesEvent(registry: $registry));

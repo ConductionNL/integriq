@@ -87,7 +87,7 @@ class CatalogControllerTest extends TestCase {
 		$actionAuth = new ActionAuthService($authConfig, $groupManager);
 
 		$registryService = new CatalogRegistryService(
-			new \OCA\OpenRegister\Service\Integration\IntegrationRegistry(),
+			new \OCA\OpenRegister\Service\Integration\IntegrationRegistry(new NullLogger()),
 			$this->orObjectService,
 			$this->appConfig,
 			new NullLogger()

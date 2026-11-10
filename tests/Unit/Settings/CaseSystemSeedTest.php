@@ -37,7 +37,7 @@ class CaseSystemSeedTest extends TestCase {
 	 */
 	private function seed(): ?array {
 		$service = new CatalogRegistryService(
-			new IntegrationRegistry(),
+			new IntegrationRegistry(new NullLogger()),
 			ObjectServiceMockBuilder::make($this),
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
