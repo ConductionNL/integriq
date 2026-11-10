@@ -179,6 +179,14 @@ class StufProviderReceiverTest extends TestCase {
 				'type' => 'stuf-zkn',
 				'configuration' => ['organisatie' => '0363', 'acceptsProviderRequests' => true, 'authentication' => ['mode' => 'token']],
 			],
+			'blankpass' => [
+				'type' => 'stuf-zkn',
+				'configuration' => [
+					'organisatie' => '0363',
+					'acceptsProviderRequests' => true,
+					'authentication' => ['mode' => 'wsse', 'wsse' => ['username' => 'zsh', 'encryptedPassword' => 'blank']],
+				],
+			],
 			'rest' => [
 				'type' => 'rest',
 				'configuration' => ['acceptsProviderRequests' => true, 'authentication' => $wsse],
@@ -962,7 +970,7 @@ class StufProviderReceiverTest extends TestCase {
 	 */
 	private function receiver(): StufProviderReceiver {
 		$crypto = $this->createMock(ICrypto::class);
-		$crypto->method('decrypt')->willReturn('secret');
+		$crypto->method('decrypt')->willReturnCallback(static fn (string $cipher): string => ($cipher === 'blank' ? '' : 'secret'));
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objects->method('find')->willReturnCallback(
@@ -1227,6 +1235,7 @@ class StufProviderReceiverTest extends TestCase {
 			['answer', 'tokenless', 'cases', self::zakLv01(), false],
 			['answer', 'missing', 'cases', self::zakLv01(), false],
 			['answer', 'rest', 'cases', self::zakLv01(), false],
+			['answer', 'blankpass', 'cases', self::zakLv01(password: ''), false],
 			['answer', 'zsh', 'cases', self::npsLv01(), false],
 			['answer', 'zsh', 'persons', self::zakLv01(), false],
 			['answer', 'zsh', 'cases', self::envelope(body: '<ZKN:adrLv01/>'), false],
