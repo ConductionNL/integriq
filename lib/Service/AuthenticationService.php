@@ -241,17 +241,7 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
 	private function createClientCredentialConfig(array $configuration): array {
-		$diff = array_diff(self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, array_keys(array: $configuration));
-		if ($diff !== []) {
-			throw new BadRequestException(message: 'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']');
-		}
-
-		$callConfig = [
-			'form_params' => [
-				'grant_type' => $configuration['grant_type'],
-				'scope' => $configuration['scope'],
-			],
-		];
+		$callConfig = $this->grantForm(configuration: $configuration, required: self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS);
 
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['client_id'] = $configuration['client_id'];
@@ -283,6 +273,32 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	}//end createClientCredentialConfig()
 
 	/**
+	 * The grant form every OAuth call starts from, once the required parameters are present.
+	 *
+	 * @param array<string,mixed> $configuration Configuration array for authentication.
+	 * @param list<string>        $required      The parameters the grant needs.
+	 *
+	 * @return array{form_params: array{grant_type: mixed, scope: mixed}} The call options so far.
+	 *
+	 * @throws BadRequestException When a required parameter is missing.
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
+	 */
+	private function grantForm(array $configuration, array $required): array {
+		$diff = array_diff($required, array_keys(array: $configuration));
+		if ($diff !== []) {
+			throw new BadRequestException(message: 'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']');
+		}
+
+		return [
+			'form_params' => [
+				'grant_type' => $configuration['grant_type'],
+				'scope' => $configuration['scope'],
+			],
+		];
+	}//end grantForm()
+
+	/**
 	 * Create call options for OAuth with Password Credentials
 	 *
 	 * @param array $configuration Configuration array for authentication.
@@ -292,17 +308,7 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
 	private function createPasswordConfig(array $configuration): array {
-		$diff = array_diff(self::REQUIRED_PARAMETERS_PASSWORD, array_keys(array: $configuration));
-		if ($diff !== []) {
-			throw new BadRequestException(message: 'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']');
-		}
-
-		$callConfig = [
-			'form_params' => [
-				'grant_type' => $configuration['grant_type'],
-				'scope' => $configuration['scope'],
-			],
-		];
+		$callConfig = $this->grantForm(configuration: $configuration, required: self::REQUIRED_PARAMETERS_PASSWORD);
 
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['username'] = $configuration['username'];
