@@ -218,7 +218,7 @@ class StufZknClient implements StufZknProviderInterface {
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-rest-provider-sends-the-expected-content-type-and-mtls-routing
 	 */
 	public function send(array $sourceConfiguration, string $referenceNumber, string $envelopeXml): string {
-		$response = $this->post(sourceConfiguration: $sourceConfiguration, soapAction: '""', envelopeXml: $envelopeXml, url: '');
+		$response = $this->post(call: new SoapCall(sourceConfiguration: $sourceConfiguration, soapAction: '""', envelopeXml: $envelopeXml));
 
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
@@ -249,7 +249,8 @@ class StufZknClient implements StufZknProviderInterface {
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
 	public function exchange(array $sourceConfiguration, string $soapAction, string $envelopeXml, string $url=''): string {
-		$response = $this->post(sourceConfiguration: $sourceConfiguration, soapAction: $soapAction, envelopeXml: $envelopeXml, url: $url);
+		$call = new SoapCall(sourceConfiguration: $sourceConfiguration, soapAction: $soapAction, envelopeXml: $envelopeXml, url: $url);
+		$response = $this->post(call: $call);
 
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
@@ -334,12 +335,46 @@ class StufZknClient implements StufZknProviderInterface {
 		string $url='',
 		int $timeoutSeconds=self::ZDS_TIMEOUT_SECONDS,
 	): array {
+		$address = $this->transmitAddress(sourceConfiguration: $sourceConfiguration, url: $url);
+
+		$call = new SoapCall(
+			sourceConfiguration: $sourceConfiguration,
+			soapAction: $soapAction,
+			envelopeXml: $envelopeXml,
+			url: $address,
+			timeoutSeconds: $timeoutSeconds
+		);
+
+		return $this->transmitCall(call: $call);
+	}//end transmit()
+
+	/**
+	 * The address an attempt goes to: the explicit one, else `configuration.baseUrl`.
+	 *
+	 * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
+	 * @param string $url                 The explicit address, or ''.
+	 *
+	 * @return string The trimmed address.
+	 */
+	private function transmitAddress(array $sourceConfiguration, string $url): string {
 		$address = trim($url);
 		if ($address === '') {
 			$address = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
 		}
 
-		if (str_starts_with($address, 'https://') === false) {
+		return $address;
+
+	}//end transmitAddress()
+
+	/**
+	 * Send one attempt to its resolved address and report what happened, without throwing.
+	 *
+	 * @param SoapCall $call The attempt, its address resolved.
+	 *
+	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>|null}
+	 */
+	private function transmitCall(SoapCall $call): array {
+		if (str_starts_with($call->url, 'https://') === false) {
 			return $this->transmitFailure(
 				code: 'TRANSPORT_NON_HTTPS',
 				omschrijving: 'Endpoint URL is not HTTPS',
@@ -351,48 +386,81 @@ class StufZknClient implements StufZknProviderInterface {
 
 		$started = microtime(true);
 		try {
-			$response = $this->post(
-				sourceConfiguration: $sourceConfiguration,
-				soapAction: $soapAction,
-				envelopeXml: $envelopeXml,
-				url: $address,
-				timeoutSeconds: $timeoutSeconds
-			);
+			return $this->answered(response: $this->post(call: $call), started: $started);
 		} catch (StufZknProviderException $exception) {
-			$message  = $exception->getMessage();
-			$previous = $exception->getPrevious();
-			if ($previous === null) {
-				// Refused before sending: no address or no usable credential.
-				return $this->transmitFailure(
-					code: 'TRANSPORT_CONFIGURATION',
-					omschrijving: 'The source cannot send',
-					details: $message,
-					kind: 'permanent',
-					durationMs: 0
-				);
-			}
+			return $this->unsentFailure(exception: $exception, started: $started);
+		}
 
-			$code = 'NETWORK';
-			if (str_contains(strtolower($message), 'timed out') === true || str_contains(strtolower($message), 'timeout') === true) {
-				$code = 'TIMEOUT';
-			}
+	}//end transmitCall()
 
-			return $this->transmitFailure(
-				code: $code,
-				omschrijving: 'Transport error',
-				details: $message,
-				kind: 'transient',
-				durationMs: (int)round((microtime(true) - $started) * 1000)
-			);
-		}//end try
-
+	/**
+	 * The result of an attempt that got an answer, whatever its status.
+	 *
+	 * @param ResponseInterface $response The answer.
+	 * @param float             $started  microtime(true) when the attempt started.
+	 *
+	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:null}
+	 */
+	private function answered(ResponseInterface $response, float $started): array {
 		return [
 			'httpStatus' => $response->getStatusCode(),
 			'responseXml' => (string)$response->getBody(),
 			'durationMs' => (int)round((microtime(true) - $started) * 1000),
 			'fout' => null,
 		];
-	}//end transmit()
+
+	}//end answered()
+
+	/**
+	 * The result of an attempt post() refused or that failed in transport.
+	 *
+	 * A refusal without a previous exception came before sending (no address
+	 * or no usable credential) and is permanent; a transport failure is a
+	 * transient TIMEOUT or NETWORK fout with the time it took.
+	 *
+	 * @param StufZknProviderException $exception What post() threw.
+	 * @param float                    $started   microtime(true) when the attempt started.
+	 *
+	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>}
+	 */
+	private function unsentFailure(StufZknProviderException $exception, float $started): array {
+		$message = $exception->getMessage();
+		if ($exception->getPrevious() === null) {
+			// Refused before sending: no address or no usable credential.
+			return $this->transmitFailure(
+				code: 'TRANSPORT_CONFIGURATION',
+				omschrijving: 'The source cannot send',
+				details: $message,
+				kind: 'permanent',
+				durationMs: 0
+			);
+		}
+
+		return $this->transmitFailure(
+			code: $this->transportFoutCode(message: $message),
+			omschrijving: 'Transport error',
+			details: $message,
+			kind: 'transient',
+			durationMs: (int)round((microtime(true) - $started) * 1000)
+		);
+
+	}//end unsentFailure()
+
+	/**
+	 * TIMEOUT when the transport message says the request timed out, else NETWORK.
+	 *
+	 * @param string $message The transport failure message.
+	 *
+	 * @return string The fout code.
+	 */
+	private function transportFoutCode(string $message): string {
+		if (str_contains(strtolower($message), 'timed out') === true || str_contains(strtolower($message), 'timeout') === true) {
+			return 'TIMEOUT';
+		}
+
+		return 'NETWORK';
+
+	}//end transportFoutCode()
 
 	/**
 	 * The result of an attempt that got no answer from the case system.
@@ -417,78 +485,121 @@ class StufZknClient implements StufZknProviderInterface {
 	/**
 	 * POST an envelope with the SOAP headers, over mTLS when configured.
 	 *
-	 * @param array  $sourceConfiguration The `stuf-zkn` source's `configuration` object.
-	 * @param string $soapAction          The SOAPAction header value.
-	 * @param string $envelopeXml         The rendered envelope.
-	 * @param string $url                 The address; '' for `configuration.baseUrl`.
-	 * @param int    $timeoutSeconds      The read timeout; 0 for the client default.
+	 * @param SoapCall $call The envelope and where and how to send it.
 	 *
 	 * @return ResponseInterface The answer, whatever its status.
 	 *
 	 * @throws StufZknProviderException When no address is configured or the transport fails.
 	 */
-	private function post(array $sourceConfiguration, string $soapAction, string $envelopeXml, string $url, int $timeoutSeconds=0): ResponseInterface {
-		$baseUrl = trim((string)($sourceConfiguration['baseUrl'] ?? ''));
+	private function post(SoapCall $call): ResponseInterface {
+		$url = $this->postUrl(call: $call);
+		$authConfig = (array)($call->sourceConfiguration['authentication'] ?? []);
+		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+		$requestOptions = $this->soapRequestOptions(call: $call, useMtls: $useMtls);
+
+		try {
+			return $this->dispatch(useMtls: $useMtls, authConfig: $authConfig, url: $url, requestOptions: $requestOptions);
+		} catch (MtlsTransportException $exception) {
+			throw $this->mtlsFailure(exception: $exception);
+		} catch (GuzzleException $exception) {
+			throw $this->unexpectedFailure(exception: $exception);
+		}//end try
+
+	}//end post()
+
+	/**
+	 * The address to post to: the call's own, else `configuration.baseUrl`, which must be set either way.
+	 *
+	 * @param SoapCall $call The call.
+	 *
+	 * @return string The address.
+	 *
+	 * @throws StufZknProviderException When no base URL is configured.
+	 */
+	private function postUrl(SoapCall $call): string {
+		$baseUrl = trim((string)($call->sourceConfiguration['baseUrl'] ?? ''));
 		if ($baseUrl === '') {
 			throw new StufZknProviderException(
 				message: $this->l->t('StUF-ZKN consumer base URL missing') . ': `configuration.baseUrl` is required.'
 			);
 		}
 
-		if (trim($url) === '') {
-			$url = $baseUrl;
+		if (trim($call->url) === '') {
+			return $baseUrl;
 		}
 
-		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
-		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+		return $call->url;
 
+	}//end postUrl()
+
+	/**
+	 * The Guzzle options: SOAP headers, a token Authorization header unless mTLS or WS-Security, the body and timeout.
+	 *
+	 * @param SoapCall $call    The call.
+	 * @param bool     $useMtls Whether the request goes over mTLS.
+	 *
+	 * @return array The request options.
+	 *
+	 * @throws StufZknProviderException When token mode has no usable token.
+	 */
+	private function soapRequestOptions(SoapCall $call, bool $useMtls): array {
 		$headers = [
 			'Content-Type' => 'text/xml; charset=utf-8',
-			'SOAPAction' => $soapAction,
+			'SOAPAction' => $call->soapAction,
 			'Accept' => 'text/xml, application/soap+xml',
 		];
-		if ($useMtls === false && ($authConfig['mode'] ?? 'token') !== 'wsse') {
-			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
+		if ($useMtls === false && ($call->sourceConfiguration['authentication']['mode'] ?? 'token') !== 'wsse') {
+			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $call->sourceConfiguration);
 		}
 
-		$requestOptions = [
-			'headers' => $headers,
-			'body' => $envelopeXml,
-			'http_errors' => false,
-		];
-		if ($timeoutSeconds > 0) {
-			$requestOptions['timeout'] = $timeoutSeconds;
+		$requestOptions = ['headers' => $headers, 'body' => $call->envelopeXml, 'http_errors' => false];
+		if ($call->timeoutSeconds > 0) {
+			$requestOptions['timeout'] = $call->timeoutSeconds;
 		}
 
-		try {
-			$response = $this->dispatch(
-				useMtls: $useMtls,
-				authConfig: $authConfig,
-				url: $url,
-				requestOptions: $requestOptions
-			);
-		} catch (MtlsTransportException $exception) {
-			$this->logger->warning(
-				'[StufZknClient] mTLS request failed',
-				['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
-			);
-			throw new StufZknProviderException(
-				message: 'The StUF-ZKN mTLS request failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
-				previous: $exception
-			);
-		} catch (GuzzleException $exception) {
-			$this->logger->warning(
-				'[StufZknClient] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new StufZknProviderException(
-				message: 'The StUF-ZKN request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+		return $requestOptions;
 
-		return $response;
-	}//end post()
+	}//end soapRequestOptions()
+
+	/**
+	 * Log a failed mTLS request and wrap it.
+	 *
+	 * @param MtlsTransportException $exception The failure.
+	 *
+	 * @return StufZknProviderException The exception to throw.
+	 */
+	private function mtlsFailure(MtlsTransportException $exception): StufZknProviderException {
+		$this->logger->warning(
+			'[StufZknClient] mTLS request failed',
+			['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
+		);
+
+		return new StufZknProviderException(
+			message: 'The StUF-ZKN mTLS request failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
+			previous: $exception
+		);
+
+	}//end mtlsFailure()
+
+	/**
+	 * Log an unexpected transport failure and wrap it.
+	 *
+	 * @param GuzzleException $exception The failure.
+	 *
+	 * @return StufZknProviderException The exception to throw.
+	 */
+	private function unexpectedFailure(GuzzleException $exception): StufZknProviderException {
+		$this->logger->warning(
+			'[StufZknClient] unexpected transport failure',
+			['exception' => $exception->getMessage()]
+		);
+
+		return new StufZknProviderException(
+			message: 'The StUF-ZKN request failed unexpectedly: ' . $exception->getMessage(),
+			previous: $exception
+		);
+
+	}//end unexpectedFailure()
 
 	/**
 	 * Dispatch the request over mTLS when configured, else over the existing token-mode path.
