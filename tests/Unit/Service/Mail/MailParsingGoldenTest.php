@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Mail;
 
+use OCA\Integriq\Service\Mail\CompoundFileReader;
 use OCA\Integriq\Service\Mail\EmlParser;
 use OCA\Integriq\Service\Mail\MsgParser;
 use OCA\Integriq\Tests\Helpers\CompoundFileBuilder;
@@ -106,4 +107,55 @@ class MailParsingGoldenTest extends TestCase {
 		$this->assertNull($receivedAt);
 
 	}//end testMsgTransportHeaders()
+	/**
+	 * A FAT spread over two sectors reads the same whether the second FAT sector is listed in
+	 * the header or reached through a DIFAT sector.
+	 *
+	 * @return void
+	 */
+	public function testFatReadFromHeaderAndFromDifatChain(): void {
+		$content = '';
+		for ($index = 0; $index < 9000; $index++) {
+			$content .= sprintf('%08d', $index);
+		}
+
+		$bytes = (new CompoundFileBuilder())->addStream('big', $content)->build();
+		$this->assertSame($content, $this->readNamed(bytes: $bytes, name: 'big'));
+
+		$fatSectors = unpack('V2', substr($bytes, 76, 8));
+		$this->assertSame(2, (int)unpack('V', substr($bytes, 44, 4))[1], 'the fixture needs two FAT sectors');
+		$this->assertNotSame(0xFFFFFFFF, $fatSectors[2]);
+
+		$difatId = (intdiv(strlen($bytes), 512) - 1);
+		$difat = pack('V', $fatSectors[2]) . str_repeat(pack('V', 0xFFFFFFFF), 126) . pack('V', 0xFFFFFFFE);
+		$moved = substr_replace($bytes, pack('V', $difatId), 68, 4);
+		$moved = substr_replace($moved, pack('V', 1), 72, 4);
+		$moved = substr_replace($moved, pack('V', 0xFFFFFFFF), 80, 4) . $difat;
+
+		$this->assertSame($content, $this->readNamed(bytes: $moved, name: 'big'));
+
+		$broken = substr_replace($moved, pack('V', 0xFFFFFFFE), 68, 4);
+		$this->assertNotSame($content, $this->readNamed(bytes: $broken, name: 'big'));
+
+	}//end testFatReadFromHeaderAndFromDifatChain()
+
+	/**
+	 * Read one named stream from a compound file.
+	 *
+	 * @param string $bytes The compound file.
+	 * @param string $name  The stream name.
+	 *
+	 * @return string The stream bytes.
+	 */
+	private function readNamed(string $bytes, string $name): string {
+		$reader = new CompoundFileReader($bytes);
+		foreach ($reader->getEntries() as $id => $entry) {
+			if ($entry['name'] === $name) {
+				return $reader->readStream($id);
+			}
+		}
+
+		return '';
+
+	}//end readNamed()
 }//end class
