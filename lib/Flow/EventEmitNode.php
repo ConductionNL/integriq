@@ -40,6 +40,7 @@ namespace OCA\Integriq\Flow;
 use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -216,9 +217,7 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * Emit one CloudEvent per item through the existing pipeline.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The items, each carrying the emit summary under the output key.
 	 *
@@ -226,7 +225,11 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		// An empty page emits nothing and produces no items — the filter
 		// contract, not a failure.
 		if ($items === []) {
