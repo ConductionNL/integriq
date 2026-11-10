@@ -544,39 +544,99 @@ class PdokConnector implements PdokConnectorInterface {
 	 */
 	private function orLookup(string $endpoint, array $params): ?array {
 		$objectService = $this->getOpenRegisterObjectService();
-		if ($objectService === null) {
+		$query = $this->storedQuery(endpoint: $endpoint, params: $params);
+		if ($objectService === null || $query === null) {
 			return null;
 		}
 
 		try {
-			if ($endpoint === 'lookup' && isset($params['id']) === true) {
-				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
-					[
-						'limit' => 1,
-						'filter' => ['pdokId' => $params['id']],
-					]
-				);
-			} elseif ($endpoint === 'reverse' && isset($params['lat'], $params['lon']) === true) {
-				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
-					[
-						'limit' => 1,
-						'geo' => [
-							'near' => [(float)$params['lat'], (float)$params['lon']],
-							'radius' => 10,
-						],
-					]
-				);
-			} else {
-				return null;
-			}
+			$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll($query);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'PdokConnector: OR lookup failed',
-				['endpoint' => $endpoint, 'exception' => $e->getMessage()]
-			);
+			$this->storedLookupFailed(endpoint: $endpoint, exception: $e);
 			return null;
-		}//end try
+		}
 
+		return $this->freshStored(docs: $docs);
+	}//end orLookup()
+
+	/**
+	 * The stored-address query for a lookup by id or a reverse lookup by coordinates.
+	 *
+	 * @param string $endpoint The PDOK endpoint.
+	 * @param array  $params   The call parameters.
+	 *
+	 * @return array|null The query, or null when the endpoint has no stored lookup or lacks its parameters.
+	 */
+	private function storedQuery(string $endpoint, array $params): ?array {
+		return match ($endpoint) {
+			'lookup' => $this->idQuery(params: $params),
+			'reverse' => $this->nearQuery(params: $params),
+			default => null,
+		};
+	}//end storedQuery()
+
+	/**
+	 * The stored-address query for a lookup by PDOK id.
+	 *
+	 * @param array $params The call parameters.
+	 *
+	 * @return array|null The query, or null without an id.
+	 */
+	private function idQuery(array $params): ?array {
+		if (isset($params['id']) === false) {
+			return null;
+		}
+
+		return [
+			'limit' => 1,
+			'filter' => ['pdokId' => $params['id']],
+		];
+	}//end idQuery()
+
+	/**
+	 * The stored-address query for a reverse lookup: the nearest address within 10 m.
+	 *
+	 * @param array $params The call parameters.
+	 *
+	 * @return array|null The query, or null without both coordinates.
+	 */
+	private function nearQuery(array $params): ?array {
+		if (isset($params['lat'], $params['lon']) === false) {
+			return null;
+		}
+
+		return [
+			'limit' => 1,
+			'geo' => [
+				'near' => [(float)$params['lat'], (float)$params['lon']],
+				'radius' => 10,
+			],
+		];
+	}//end nearQuery()
+
+	/**
+	 * Log a stored-address query that failed; the call falls through to PDOK.
+	 *
+	 * @param string    $endpoint  The PDOK endpoint.
+	 * @param Throwable $exception Why the query failed.
+	 *
+	 * @return void
+	 */
+	private function storedLookupFailed(string $endpoint, Throwable $exception): void {
+		$this->logger->warning(
+			'PdokConnector: OR lookup failed',
+			['endpoint' => $endpoint, 'exception' => $exception->getMessage()]
+		);
+	}//end storedLookupFailed()
+
+	/**
+	 * The first stored address as an answer, when it is still fresh.
+	 *
+	 * @param array $docs The stored addresses found.
+	 *
+	 * @return array|null `{docs: [first], numFound: 1}`, or null when none was found or it is stale.
+	 */
+	private function freshStored(array $docs): ?array {
 		if (empty($docs) === true) {
 			return null;
 		}
@@ -586,7 +646,7 @@ class PdokConnector implements PdokConnectorInterface {
 		}
 
 		return ['docs' => [$docs[0]], 'numFound' => 1];
-	}//end orLookup()
+	}//end freshStored()
 
 	/**
 	 * Whether a stored address was fetched within the resolved TTL.
