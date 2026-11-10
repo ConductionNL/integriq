@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\LogsController;
 use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -180,7 +181,7 @@ class LogsControllerNotFoundTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('deleteObject')
-			->with('uuid-1');
+			->with(...DeleteCallShape::args('uuid-1'));
 
 		$response = $this->controller()->destroy('log-1');
 

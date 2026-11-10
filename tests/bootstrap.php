@@ -230,6 +230,14 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/ObjectFindTarget.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\Object\\ObjectDeletion') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/ObjectDeletion.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}

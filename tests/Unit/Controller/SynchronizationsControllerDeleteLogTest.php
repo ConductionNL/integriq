@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\SynchronizationsController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -111,12 +112,12 @@ class SynchronizationsControllerDeleteLogTest extends TestCase {
 		$deleted = null;
 		$this->orObjectService->expects($this->once())
 			->method('deleteObject')
-			->willReturnCallback(
+			->willReturnCallback(DeleteCallShape::callback(
 				function (string $uuid) use (&$deleted): bool {
 					$deleted = $uuid;
 					return true;
 				}
-			);
+			));
 
 		$response = $this->controller->deleteLog(42);
 

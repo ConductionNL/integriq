@@ -24,6 +24,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -337,7 +338,7 @@ class LogsController extends Controller {
 				return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
 			}
 
-			$this->orObjectService->deleteObject(uuid: $log->getUuid());
+			$this->orObjectService->deleteObject(deletion: new ObjectDeletion(uuid: $log->getUuid()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
 		}

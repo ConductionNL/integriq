@@ -29,6 +29,7 @@ use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -676,7 +677,7 @@ class SynchronizationsController extends Controller {
 		}
 
 		try {
-			$this->orObjectService->deleteObject(uuid: $log->getUuid());
+			$this->orObjectService->deleteObject(deletion: new ObjectDeletion(uuid: $log->getUuid()));
 			return new JSONResponse(['message' => $this->l->t('Log deleted successfully')], 200);
 		} catch (\Exception $exception) {
 			return new JSONResponse(['error' => $this->l->t('Failed to delete log: %s', [$exception->getMessage()])], 500);

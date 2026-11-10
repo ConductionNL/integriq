@@ -26,6 +26,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -106,7 +107,7 @@ class SynchronizationUpdateTargetTest extends TestCase {
 				return ['rendered' => $entity->getUuid(), 'sub' => ['naam' => 'kind']];
 			}
 		);
-		$openRegisters->method('deleteObject')->willReturnCallback(
+		$openRegisters->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function (?string $uuid = null, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, mixed $currentUser = null, bool $permanent = false) {
 				$this->log[] = ['or.deleteObject', $uuid, $permanent];
 				if (($this->case['delete'] ?? '') === 'throws') {
@@ -115,7 +116,7 @@ class SynchronizationUpdateTargetTest extends TestCase {
 
 				return true;
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);

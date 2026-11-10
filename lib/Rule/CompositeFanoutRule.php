@@ -25,6 +25,8 @@ namespace OCA\Integriq\Rule;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -205,7 +207,12 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 	private function rollback(array $created): void {
 		foreach (array_reverse($created) as $entry) {
 			try {
-				$this->orObjectService->deleteObject($entry['uuid'], $entry['register'], $entry['schema']);
+				$this->orObjectService->deleteObject(
+					deletion: new ObjectDeletion(
+						uuid: $entry['uuid'],
+						target: new ObjectFindTarget(register: $entry['register'], schema: $entry['schema'])
+					)
+				);
 			} catch (Exception $exception) {
 				$reference = $entry['register'] . '/' . $entry['schema'] . '/' . $entry['uuid'];
 				$this->logger->error(

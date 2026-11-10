@@ -26,6 +26,7 @@ use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -341,7 +342,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 		$callLog = ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200], 'call-log-5');
 		$this->callService->method('call')->willReturn($callLog);
-		$this->objectService->expects($this->once())->method('deleteObject')->with($this->equalTo('consumer-1'));
+		$this->objectService->expects($this->once())->method('deleteObject')->with(...DeleteCallShape::args($this->equalTo('consumer-1')));
 
 		$result = $this->service->deleteAbonnement('abon-2');
 		$data = $result->getObject();

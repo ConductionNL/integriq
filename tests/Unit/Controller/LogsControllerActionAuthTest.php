@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\LogsController;
 use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
@@ -170,7 +171,7 @@ class LogsControllerActionAuthTest extends TestCase {
 	 */
 	public function testDestroyStillDeletesForAnAuthorizedCaller(): void {
 		$this->orObjectService->method('find')->willReturn($this->someoneElsesLog());
-		$this->orObjectService->expects($this->once())->method('deleteObject')->with('uuid-1');
+		$this->orObjectService->expects($this->once())->method('deleteObject')->with(...DeleteCallShape::args('uuid-1'));
 
 		$response = $this->controller(isAdmin: true)->destroy('log-1');
 
