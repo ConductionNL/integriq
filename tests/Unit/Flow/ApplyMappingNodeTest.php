@@ -25,6 +25,7 @@ use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\MappingService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -211,11 +212,11 @@ class ApplyMappingNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/did not resolve/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['name' => 'no payload key here']]],
 			['mapping' => 'demo-mapping', 'input' => 'payload.data'],
 			$this->context()
-		);
+		));
 
 	}//end testUnresolvableInputPathRaises()
 
@@ -230,11 +231,11 @@ class ApplyMappingNodeTest extends TestCase {
 		$this->mappingService->method('executeMapping')
 			->willThrowException(new RuntimeException('unmappable'));
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['name' => 'bad']]],
 			['mapping' => 'demo-mapping', 'onError' => 'continue'],
 			['triggeredBy' => 'alice']
-		);
+		));
 
 		$this->assertSame('openconnector.apply-mapping', $out[0]['json'][FlowNodeSupport::ERROR_KEY]['step']);
 
@@ -259,14 +260,14 @@ class ApplyMappingNodeTest extends TestCase {
 				}
 			);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				['json' => ['name' => 'first', 'extra' => true]],
 				['json' => ['name' => 'second']],
 			],
 			['mapping' => 'demo-mapping'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertSame(['mapped' => 'first'], $out[0]['json']);
@@ -296,11 +297,11 @@ class ApplyMappingNodeTest extends TestCase {
 				}
 			);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['raw' => ['a' => 1], 'keep' => 'me']]],
 			['mapping' => 'demo-mapping', 'input' => 'raw', 'output' => 'mapped'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertSame(['b' => 2], $out[0]['json']['mapped']);
@@ -327,14 +328,14 @@ class ApplyMappingNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				['json' => ['name' => 'bad']],
 				['json' => ['name' => 'good']],
 			],
 			['mapping' => 'demo-mapping', 'onError' => 'continue'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertSame('mapping', $out[0]['json'][FlowNodeSupport::ERROR_KEY]['kind']);
@@ -358,11 +359,11 @@ class ApplyMappingNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/unmappable/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['name' => 'bad']]],
 			['mapping' => 'demo-mapping'],
 			$this->context()
-		);
+		));
 
 	}//end testStopPolicyRaises()
 
@@ -374,7 +375,7 @@ class ApplyMappingNodeTest extends TestCase {
 	public function testEmptyInputMapsNothing(): void {
 		$this->mappingService->expects($this->never())->method('executeMapping');
 
-		$this->assertSame([], $this->node->execute([], ['mapping' => 'demo-mapping'], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall([], ['mapping' => 'demo-mapping'], $this->context())));
 
 	}//end testEmptyInputMapsNothing()
 

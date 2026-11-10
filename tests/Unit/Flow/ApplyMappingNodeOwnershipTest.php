@@ -29,6 +29,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -181,11 +182,11 @@ class ApplyMappingNodeOwnershipTest extends TestCase {
 	public function testWithoutOwnershipNothingIsNarrowed(): void {
 		$this->givenMapping(definition: $this->preset(slug: 'itsm-topdesk-licence-inbound'));
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['source' => $this->deskRecord]]],
 			['mapping' => 'itsm-topdesk-licence-inbound', 'input' => 'source', 'output' => 'record'],
 			['triggeredBy' => 'admin', 'stepId' => 'map']
-		);
+		));
 
 		$this->assertSame(999, $out[0]['json']['record']['licencesBought']);
 
@@ -223,7 +224,7 @@ class ApplyMappingNodeOwnershipTest extends TestCase {
 	 * @return array The output items.
 	 */
 	private function runInbound(array $json): array {
-		return $this->node->execute(
+		return $this->node->execute(new FlowNodeCall(
 			[['json' => $json]],
 			[
 				'mapping' => 'itsm-topdesk-licence-inbound',
@@ -233,7 +234,7 @@ class ApplyMappingNodeOwnershipTest extends TestCase {
 				'exists' => 'target.uuid',
 			],
 			['triggeredBy' => 'admin', 'stepId' => 'map']
-		);
+		));
 
 	}//end runInbound()
 
