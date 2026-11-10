@@ -11619,7 +11619,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$file->objectEntity = $objectService->find(id: $file->objectId);
 		$stored = $file->fileService->saveFile(
 			objectEntity: $file->objectEntity,
-			upload: new FileUpload(fileName: $file->filename, content: $saveContent, share: $shouldShare, tags: $file->tags)
+			upload: new FileUpload(fileName: $file->filename, content: $saveContent, share: $shouldShare, tags: ($file->tags ?? []))
 		);
 
 		if ($stored !== null) {
@@ -11651,7 +11651,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				fileName: $file->filename,
 				content: $addContent,
 				share: ($file->config['autoShare'] ?? false),
-				tags: $file->tags
+				tags: ($file->tags ?? [])
 			)
 		);
 
