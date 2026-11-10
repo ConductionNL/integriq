@@ -90,23 +90,12 @@ class VerzuimloketEdukoppelingClient implements VerzuimloketProviderInterface, S
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function getConfigSchema(): array {
-		return [
-			'type' => 'object',
-			'required' => ['endpoint', 'certificateRef'],
-			'properties' => [
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'description' => 'DUO Verzuimloket Edukoppeling endpoint URL (WUS transport profile).',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'description' => 'Broker credentialRef for the PKIoverheid / DUO software-vendor certificate. '
-						. 'Never stored here (ADR-007). Activation is gated on the DUO certificate holder decision '
-						. '(M3(c), open in decisions.md).',
-				],
-			],
-		];
+		return SignedEnvelopeDelivery::configSchema(
+			endpointDescription: 'DUO Verzuimloket Edukoppeling endpoint URL (WUS transport profile).',
+			certificateDescription: 'Broker credentialRef for the PKIoverheid / DUO software-vendor certificate. '
+				. 'Never stored here (ADR-007). Activation is gated on the DUO certificate holder decision '
+				. '(M3(c), open in decisions.md).'
+		);
 
 	}//end getConfigSchema()
 
@@ -133,24 +122,15 @@ class VerzuimloketEdukoppelingClient implements VerzuimloketProviderInterface, S
 			headers: ['X-Melding-Type' => $meldingType]
 		);
 
-		return $this->delivery()->deliver(request: $request);
-	}//end send()
-
-	/**
-	 * The delivery that signs and sends this client's envelopes.
-	 *
-	 * @return SignedEnvelopeDelivery The delivery.
-	 *
-	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
-	 */
-	private function delivery(): SignedEnvelopeDelivery {
-		return new SignedEnvelopeDelivery(
+		$delivery = new SignedEnvelopeDelivery(
 			httpClient: $this->httpClient,
 			credentialResolver: $this->credentialResolver,
 			profile: $this->wusProfileService,
 			refusals: $this
 		);
-	}//end delivery()
+
+		return $delivery->deliver(request: $request);
+	}//end send()
 
 	/**
 	 * {@inheritDoc}

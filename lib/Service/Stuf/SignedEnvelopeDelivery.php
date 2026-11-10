@@ -72,6 +72,32 @@ final class SignedEnvelopeDelivery {
 	}//end __construct()
 
 	/**
+	 * The configuration schema of a signed-envelope source: an endpoint URL and a certificate reference.
+	 *
+	 * @param string $endpointDescription    What the endpoint is.
+	 * @param string $certificateDescription What the certificate reference is.
+	 *
+	 * @return array The JSON schema.
+	 */
+	public static function configSchema(string $endpointDescription, string $certificateDescription): array {
+		return [
+			'type' => 'object',
+			'required' => ['endpoint', 'certificateRef'],
+			'properties' => [
+				'endpoint' => [
+					'type' => 'string',
+					'format' => 'uri',
+					'description' => $endpointDescription,
+				],
+				'certificateRef' => [
+					'type' => 'string',
+					'description' => $certificateDescription,
+				],
+			],
+		];
+	}//end configSchema()
+
+	/**
 	 * Deliver the envelope and return the reference the endpoint answered.
 	 *
 	 * @param SignedEnvelopeRequest $request The envelope to deliver.

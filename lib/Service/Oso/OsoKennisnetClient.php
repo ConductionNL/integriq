@@ -92,22 +92,11 @@ class OsoKennisnetClient implements OsoProviderInterface, SignedEnvelopeRefusals
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getConfigSchema(): array {
-		return [
-			'type' => 'object',
-			'required' => ['endpoint', 'certificateRef'],
-			'properties' => [
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'description' => 'Kennisnet OSO export endpoint URL.',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'description' => 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
-						. '(ADR-007). Required when provider=kennisnet.',
-				],
-			],
-		];
+		return SignedEnvelopeDelivery::configSchema(
+			endpointDescription: 'Kennisnet OSO export endpoint URL.',
+			certificateDescription: 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
+				. '(ADR-007). Required when provider=kennisnet.'
+		);
 
 	}//end getConfigSchema()
 
@@ -132,24 +121,15 @@ class OsoKennisnetClient implements OsoProviderInterface, SignedEnvelopeRefusals
 			envelopeXml: $envelopeXml
 		);
 
-		return $this->delivery()->deliver(request: $request);
-	}//end sendExport()
-
-	/**
-	 * The delivery that signs and sends this client's envelopes.
-	 *
-	 * @return SignedEnvelopeDelivery The delivery.
-	 *
-	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
-	 */
-	private function delivery(): SignedEnvelopeDelivery {
-		return new SignedEnvelopeDelivery(
+		$delivery = new SignedEnvelopeDelivery(
 			httpClient: $this->httpClient,
 			credentialResolver: $this->credentialResolver,
 			profile: $this->wusProfileService,
 			refusals: $this
 		);
-	}//end delivery()
+
+		return $delivery->deliver(request: $request);
+	}//end sendExport()
 
 	/**
 	 * {@inheritDoc}

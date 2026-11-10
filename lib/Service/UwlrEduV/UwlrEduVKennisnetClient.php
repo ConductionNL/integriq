@@ -93,22 +93,11 @@ class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface, SignedEnvelo
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getConfigSchema(): array {
-		return [
-			'type' => 'object',
-			'required' => ['endpoint', 'certificateRef'],
-			'properties' => [
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'description' => 'UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL.',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'description' => 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
-						. '(ADR-007). Required when provider=uwlr-eduv.',
-				],
-			],
-		];
+		return SignedEnvelopeDelivery::configSchema(
+			endpointDescription: 'UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL.',
+			certificateDescription: 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
+				. '(ADR-007). Required when provider=uwlr-eduv.'
+		);
 
 	}//end getConfigSchema()
 
@@ -135,24 +124,15 @@ class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface, SignedEnvelo
 			pathSuffix: '/' . $target
 		);
 
-		return $this->delivery()->deliver(request: $request);
-	}//end send()
-
-	/**
-	 * The delivery that signs and sends this client's envelopes.
-	 *
-	 * @return SignedEnvelopeDelivery The delivery.
-	 *
-	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
-	 */
-	private function delivery(): SignedEnvelopeDelivery {
-		return new SignedEnvelopeDelivery(
+		$delivery = new SignedEnvelopeDelivery(
 			httpClient: $this->httpClient,
 			credentialResolver: $this->credentialResolver,
 			profile: $this->wusProfileService,
 			refusals: $this
 		);
-	}//end delivery()
+
+		return $delivery->deliver(request: $request);
+	}//end send()
 
 	/**
 	 * {@inheritDoc}
