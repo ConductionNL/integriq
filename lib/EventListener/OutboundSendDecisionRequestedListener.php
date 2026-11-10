@@ -77,8 +77,27 @@ class OutboundSendDecisionRequestedListener implements IEventListener {
 			return;
 		}
 
+		$decisions = $this->decisionsFor(event: $event);
+		if ($decisions === null) {
+			return;
+		}
+
+		$this->answer(event: $event, decisions: $decisions);
+
+	}//end handle()
+
+	/**
+	 * Ask the registry for every recipient; a failure leaves the event unhandled and is logged.
+	 *
+	 * @param OutboundSendDecisionRequestedEvent $event The question.
+	 *
+	 * @return array<string,array<string,mixed>>|null The decisions by address, or null when there is no answer.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
+	 */
+	private function decisionsFor(OutboundSendDecisionRequestedEvent $event): ?array {
 		try {
-			$decisions = $this->registry->decideMany(
+			return $this->registry->decideMany(
 				channel: $event->getChannel(),
 				category: $event->getCategory(),
 				requiresConsent: $event->requiresConsent(),
@@ -95,9 +114,23 @@ class OutboundSendDecisionRequestedListener implements IEventListener {
 				'[OutboundSendDecisionRequestedListener] no answer, the event stays unhandled: ' . $exception->getMessage(),
 				['sourceApp' => $event->getSourceApp(), 'correlationId' => $event->getCorrelationId(), 'exception' => $exception]
 			);
-			return;
+			return null;
 		}
 
+	}//end decisionsFor()
+
+	/**
+	 * Set every recipient's decision on the event and mark it handled; a
+	 * recipient without a decision leaves the event unhandled.
+	 *
+	 * @param OutboundSendDecisionRequestedEvent $event     The question.
+	 * @param array<string,array<string,mixed>>  $decisions The decisions by address.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
+	 */
+	private function answer(OutboundSendDecisionRequestedEvent $event, array $decisions): void {
 		foreach ($event->getRecipients() as $recipient) {
 			$address = (string)($recipient['address'] ?? '');
 			if (isset($decisions[$address]) === false) {
@@ -120,6 +153,6 @@ class OutboundSendDecisionRequestedListener implements IEventListener {
 
 		$event->setHandled(true);
 
-	}//end handle()
+	}//end answer()
 
 }//end class
