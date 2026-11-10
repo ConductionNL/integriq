@@ -23,9 +23,7 @@ use OCA\Integriq\Service\StufZkn\InboundMessageTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins every inbound bericht shape and every refusal against a golden file,
- * including the type error a bericht without its zaaktype or isRelevantVoor
- * block raises today.
+ * Pins every inbound bericht shape and every refusal against a golden file.
  */
 class InboundMessageGoldenTest extends TestCase {
 
@@ -77,9 +75,9 @@ class InboundMessageGoldenTest extends TestCase {
 			'zaak-V-unwrapped' => '<Bericht xmlns:StUF="http://www.egem.nl/StUF/StUF0301" xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
 				.substr(self::bericht('zakLk01', $stuur, $object('ZAK', 'V', $zaak)), strlen('<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:StUF="http://www.egem.nl/StUF/StUF0301" xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soap:Body>'), -strlen('</soap:Body></soap:Envelope>'))
 				.'</Bericht>',
-			'zaak-minimal' => self::bericht('zakLk01', '<StUF:referentienummer>R</StUF:referentienummer>', $object('ZAK', 'T', '<zkn:identificatie>Z</zkn:identificatie>')),
+			'zaak-minimal' => self::bericht('zakLk01', '<StUF:referentienummer>R</StUF:referentienummer>', $object('ZAK', 'T', '<zkn:identificatie>Z</zkn:identificatie><zkn:zaaktype/>')),
 			'document' => self::bericht('edcLk01', $stuur, $object('EDC', 'T', $doc)),
-			'document-minimal' => self::bericht('edcLk01', $stuur, $object('EDC', 'W', '<zkn:identificatie>D</zkn:identificatie>')),
+			'document-minimal' => self::bericht('edcLk01', $stuur, $object('EDC', 'W', '<zkn:identificatie>D</zkn:identificatie><zkn:isRelevantVoor><zkn:gerelateerde/></zkn:isRelevantVoor>')),
 			'no-reference' => self::bericht('zakLk01', '<StUF:referentienummer> </StUF:referentienummer>', $object('ZAK', 'T', $zaak)),
 			'no-object' => self::bericht('zakLk01', $stuur, ''),
 			'bad-kind' => self::bericht('zakLk01', $stuur, $object('ZAK', 'X', $zaak)),
@@ -107,8 +105,6 @@ class InboundMessageGoldenTest extends TestCase {
 				$actual[$name] = $translator->translate($xml);
 			} catch (StufZknTranslationException $exception) {
 				$actual[$name] = 'refused: '.$exception->getMessage();
-			} catch (\TypeError $error) {
-				$actual[$name] = 'type error';
 			}
 		}
 

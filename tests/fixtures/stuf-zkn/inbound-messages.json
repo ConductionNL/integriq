@@ -84,7 +84,27 @@
             "betalingsIndicatie": "N.v.t."
         }
     },
-    "zaak-minimal": "type error",
+    "zaak-minimal": {
+        "kind": "zaak",
+        "berichttype": "zakLk01",
+        "referentienummer": "R",
+        "senderOrganisatie": "",
+        "verwerkingssoort": "T",
+        "entiteittype": "ZAK",
+        "fields": {
+            "identificatie": "Z",
+            "omschrijving": "",
+            "toelichting": null,
+            "zaaktypeCode": "",
+            "zaaktypeOmschrijving": null,
+            "registratiedatum": null,
+            "startdatum": null,
+            "einddatumGepland": null,
+            "einddatum": null,
+            "archiefnominatie": null,
+            "betalingsIndicatie": null
+        }
+    },
     "document": {
         "kind": "document",
         "berichttype": "edcLk01",
@@ -106,7 +126,27 @@
             "zaakIdentificatie": "ZAAK-1"
         }
     },
-    "document-minimal": "type error",
+    "document-minimal": {
+        "kind": "document",
+        "berichttype": "edcLk01",
+        "referentienummer": "REF-1",
+        "senderOrganisatie": "Gemeente X",
+        "verwerkingssoort": "W",
+        "entiteittype": "EDC",
+        "fields": {
+            "identificatie": "D",
+            "titel": "",
+            "formaat": null,
+            "language": null,
+            "creatiedatum": null,
+            "ontvangstdatum": null,
+            "vertrouwelijkAanduiding": null,
+            "auteur": null,
+            "versie": null,
+            "bestandsnaam": null,
+            "zaakIdentificatie": null
+        }
+    },
     "no-reference": "refused: StUF-ZKN envelope is missing stuurgegevens.referentienummer — refusing to process an unacknowledgeable, uncorrelatable message.",
     "no-object": "refused: StUF-ZKN envelope is missing the `object` element.",
     "bad-kind": "refused: StUF-ZKN object carries an unrecognised verwerkingssoort \"X\" (expected one of T/W/I/V).",
