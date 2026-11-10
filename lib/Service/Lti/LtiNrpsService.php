@@ -27,6 +27,7 @@ namespace OCA\Integriq\Service\Lti;
 
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\MappingService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -86,30 +87,9 @@ class LtiNrpsService implements LtiNrpsServiceInterface {
 			requiredScope: LtiAgsService::SCOPE_NRPS
 		);
 
-		$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
-		if ($deployment === null) {
-			throw new LtiValidationException(message: 'Unknown lti_deployment', details: [], httpStatus: 400);
-		}
-
+		$deployment = $this->knownDeployment(deploymentUuid: $deploymentUuid);
 		$deploymentData = $deployment->getObject();
-		$rosterSource = ($deploymentData['rosterSource'] ?? null);
-		if (is_array($rosterSource) === false
-			|| ($rosterSource['targetType'] ?? '') !== 'register/schema'
-			|| empty($rosterSource['targetId'] ?? '') === true
-		) {
-			throw new LtiValidationException(message: 'Deployment has no rosterSource configured', details: [], httpStatus: 400);
-		}
-
-		$target = explode('/', (string)$rosterSource['targetId']);
-		if (count($target) !== 2) {
-			throw new LtiValidationException(
-				message: 'rosterSource.targetId is malformed',
-				details: ['targetId' => $rosterSource['targetId']],
-				httpStatus: 400
-			);
-		}
-
-		[$registerId, $schemaId] = $target;
+		[$registerId, $schemaId] = self::rosterTarget(deploymentData: $deploymentData);
 
 		// Same ADR-008 `register/schema` mapper path as
 		// EndpointService::handleSchemaRequest() (lib/Service/EndpointService.php:1063).
@@ -130,6 +110,56 @@ class LtiNrpsService implements LtiNrpsServiceInterface {
 		];
 
 	}//end readRoster()
+
+	/**
+	 * The deployment, refused when it is unknown.
+	 *
+	 * @param string $deploymentUuid The `lti_deployment` uuid.
+	 *
+	 * @return ObjectEntity The deployment.
+	 *
+	 * @throws LtiValidationException When no deployment has this uuid.
+	 */
+	private function knownDeployment(string $deploymentUuid): ObjectEntity {
+		$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
+		if ($deployment === null) {
+			throw new LtiValidationException(message: 'Unknown lti_deployment', details: [], httpStatus: 400);
+		}
+
+		return $deployment;
+
+	}//end knownDeployment()
+
+	/**
+	 * The register and schema the deployment's roster lives in.
+	 *
+	 * @param array $deploymentData The deployment.
+	 *
+	 * @return array{0: string, 1: string} The register id and the schema id.
+	 *
+	 * @throws LtiValidationException When no register/schema roster source is configured or its target is malformed.
+	 */
+	private static function rosterTarget(array $deploymentData): array {
+		$rosterSource = ($deploymentData['rosterSource'] ?? null);
+		if (is_array($rosterSource) === false
+			|| ($rosterSource['targetType'] ?? '') !== 'register/schema'
+			|| empty($rosterSource['targetId'] ?? '') === true
+		) {
+			throw new LtiValidationException(message: 'Deployment has no rosterSource configured', details: [], httpStatus: 400);
+		}
+
+		$target = explode('/', (string)$rosterSource['targetId']);
+		if (count($target) !== 2) {
+			throw new LtiValidationException(
+				message: 'rosterSource.targetId is malformed',
+				details: ['targetId' => $rosterSource['targetId']],
+				httpStatus: 400
+			);
+		}
+
+		return $target;
+
+	}//end rosterTarget()
 
 	/**
 	 * Transform one register/schema object into the IMS Names/Roles member shape.
