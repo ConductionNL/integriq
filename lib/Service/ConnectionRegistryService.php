@@ -284,21 +284,19 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 			return $summary;
 		}
 
-		$version = $this->appManager->getAppVersion($app);
+		$run = new ConnectionSyncRun(app: $app, version: $this->appManager->getAppVersion($app));
+		$run->existing = $existing;
+		$run->summary = $summary;
+
 		$declaredKeys = [];
 		foreach ($entries as $entry) {
-			$key = (string)$entry['key'];
-			$declaredKeys[$key] = true;
-			$summary = $this->upsert(app: $app, entry: $entry, version: $version, existing: $existing[$key] ?? null, summary: $summary);
+			$declaredKeys[(string)$entry['key']] = true;
+			$this->upsert(run: $run, entry: $entry);
 		}
 
-		foreach ($existing as $key => $row) {
-			if (isset($declaredKeys[$key]) === false) {
-				$summary = $this->retire(app: $app, row: $row, summary: $summary);
-			}
-		}
+		$this->retireUndeclared(run: $run, declaredKeys: $declaredKeys);
 
-		return $summary;
+		return $run->summary;
 	}//end syncApp()
 
 	/**
@@ -367,47 +365,68 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 	/**
 	 * Create or update one declared row.
 	 *
-	 * @param string $app The app id.
+	 * @param ConnectionSyncRun   $run   The app's sync.
 	 * @param array<string,mixed> $entry The declaration entry.
-	 * @param string $version The app's installed version.
-	 * @param array{uuid:string,data:array<string,mixed>}|null $existing The stored row, if any.
-	 * @param array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]} $summary The running summary.
 	 *
-	 * @return array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]}
+	 * @return void
 	 */
-	private function upsert(string $app, array $entry, string $version, ?array $existing, array $summary): array {
+	private function upsert(ConnectionSyncRun $run, array $entry): void {
+		$existing = ($run->existing[(string)$entry['key']] ?? null);
 		$stored = $existing['data'] ?? [];
-		$data = array_merge(
-			$stored,
-			[
-				'slug' => 'connection-' . $app . '-' . $entry['key'],
-				'app' => $app,
-				'key' => $entry['key'],
-				'title' => $entry['title'],
-				'description' => (string)($entry['description'] ?? ''),
-				'order' => (int)($entry['order'] ?? self::DEFAULT_ORDER),
-				'settingsUrl' => (string)($entry['settingsUrl'] ?? ''),
-				'declaration' => $entry,
-				'declaredVersion' => $version,
-			]
-		);
-		$data = $this->resolveRow(data: $data);
+		$data = $this->resolveRow(data: array_merge($stored, $this->declaredFields(run: $run, entry: $entry)));
 
 		if ($existing === null) {
 			$this->store->save(data: $data);
-			$summary['created']++;
-			return $summary;
+			$run->summary['created']++;
+			return;
 		}
 
 		if ($this->isSame(stored: $stored, next: $data) === true) {
-			$summary['unchanged']++;
-			return $summary;
+			$run->summary['unchanged']++;
+			return;
 		}
 
 		$this->store->save(data: $data, uuid: $existing['uuid']);
-		$summary['updated']++;
-		return $summary;
+		$run->summary['updated']++;
 	}//end upsert()
+
+	/**
+	 * The fields a declaration entry sets on its row.
+	 *
+	 * @param ConnectionSyncRun   $run   The app's sync.
+	 * @param array<string,mixed> $entry The declaration entry.
+	 *
+	 * @return array<string,mixed> The declared fields.
+	 */
+	private function declaredFields(ConnectionSyncRun $run, array $entry): array {
+		return [
+			'slug' => 'connection-' . $run->app . '-' . $entry['key'],
+			'app' => $run->app,
+			'key' => $entry['key'],
+			'title' => $entry['title'],
+			'description' => (string)($entry['description'] ?? ''),
+			'order' => (int)($entry['order'] ?? self::DEFAULT_ORDER),
+			'settingsUrl' => (string)($entry['settingsUrl'] ?? ''),
+			'declaration' => $entry,
+			'declaredVersion' => $run->version,
+		];
+	}//end declaredFields()
+
+	/**
+	 * Retire every stored row whose key left the declaration.
+	 *
+	 * @param ConnectionSyncRun  $run          The app's sync.
+	 * @param array<string,bool> $declaredKeys The keys the declaration still lists.
+	 *
+	 * @return void
+	 */
+	private function retireUndeclared(ConnectionSyncRun $run, array $declaredKeys): void {
+		foreach ($run->existing as $key => $row) {
+			if (isset($declaredKeys[$key]) === false) {
+				$this->retire(run: $run, row: $row);
+			}
+		}
+	}//end retireUndeclared()
 
 	/**
 	 * Handle a stored row whose key left the declaration.
@@ -417,17 +436,16 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 	 * The mark lives in the stored declaration, so D4 rule 2 keeps giving the
 	 * same answer after a later probe or report.
 	 *
-	 * @param string $app The app id.
+	 * @param ConnectionSyncRun                            $run The app's sync.
 	 * @param array{uuid:string,data:array<string,mixed>} $row The stored row.
-	 * @param array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]} $summary The running summary.
 	 *
-	 * @return array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]}
+	 * @return void
 	 */
-	private function retire(string $app, array $row, array $summary): array {
+	private function retire(ConnectionSyncRun $run, array $row): void {
 		if ((string)($row['data']['source'] ?? '') === '') {
 			$this->store->delete(uuid: $row['uuid']);
-			$summary['deleted']++;
-			return $summary;
+			$run->summary['deleted']++;
+			return;
 		}
 
 		$data = $row['data'];
@@ -437,18 +455,17 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 		}
 
 		$declaration['available'] = false;
-		$declaration['unavailableMessage'] = 'No longer declared by ' . $app . '.';
+		$declaration['unavailableMessage'] = 'No longer declared by ' . $run->app . '.';
 		$data['declaration'] = $declaration;
 		$data = $this->resolveRow(data: $data);
 
 		if ($this->isSame(stored: $row['data'], next: $data) === true) {
-			$summary['unchanged']++;
-			return $summary;
+			$run->summary['unchanged']++;
+			return;
 		}
 
 		$this->store->save(data: $data, uuid: $row['uuid']);
-		$summary['updated']++;
-		return $summary;
+		$run->summary['updated']++;
 	}//end retire()
 
 	/**
