@@ -68,6 +68,8 @@ final class SendDecisionRun {
 	 * The batch as a log row reads it.
 	 *
 	 * @return array{channel:string,category:string,sourceApp:string,correlationId:string,probe:bool}
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
 	 */
 	public function logContext(): array {
 		return [
