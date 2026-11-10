@@ -46,6 +46,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -114,6 +116,14 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 
 		if ($value instanceof FlowToken) {
 			return ['flowToken' => $value->getRequestOriginal()];
+		}
+
+		if ($value instanceof LockRequest) {
+			return ['lock' => $this->d([$value->identifier, $value->process, $value->duration])];
+		}
+
+		if ($value instanceof UnlockRequest) {
+			return ['unlock' => $value->identifier];
 		}
 
 		if ($value instanceof ExecutionTraceContext) {
@@ -277,7 +287,7 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 					$entity->setSchema(9);
 					return $entity;
 				},
-				'lockObject' => fn (string $identifier, ?string $process = null, ?int $duration = null) => ['locked' => $identifier, 'processIsUuid' => (strlen((string)$process) === 36), 'duration' => $duration],
+				'lockObject' => fn (LockRequest $request) => ['locked' => $request->identifier, 'processIsUuid' => (strlen((string)$request->process) === 36), 'duration' => $request->duration],
 				'unlockObject' => fn () => true,
 				'getLogs' => fn (string $uuid, array $filters = []) => ($this->case['logs'] ?? [['log' => $uuid, 'filters' => $filters]]),
 				'setRegister' => fn () => self::class,

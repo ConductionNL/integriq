@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -344,22 +346,21 @@ class ObjectService {
 	/**
 	 * Lock an object by identifier.
 	 *
-	 * @param string $identifier Object identifier.
-	 * @param string|null $process Lock process identifier.
-	 * @param int|null $duration Lock duration in seconds.
+	 * @param LockRequest $request The object, process and duration (signature as OpenRegister #9095).
+	 * @param bool $advisory Whether this is an advisory flow lock.
 	 * @return array<string, mixed>
 	 */
-	public function lockObject(string $identifier, ?string $process = null, ?int $duration = null): array {
-		return ['id' => $identifier, 'process' => $process, 'duration' => $duration];
+	public function lockObject(LockRequest $request, bool $advisory = false): array {
+		return ['id' => $request->identifier, 'process' => $request->process, 'duration' => $request->duration];
 	}
 
 	/**
 	 * Unlock an object by identifier.
 	 *
-	 * @param string|int $identifier Object identifier.
+	 * @param UnlockRequest $request The lock to release (signature as OpenRegister #9095).
 	 * @return bool
 	 */
-	public function unlockObject(string|int $identifier): bool {
+	public function unlockObject(UnlockRequest $request): bool {
 		return true;
 	}
 

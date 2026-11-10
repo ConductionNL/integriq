@@ -70,9 +70,14 @@
             [
                 "or.lockObject",
                 [
-                    "o-1",
-                    "a fresh uuid",
-                    60
+                    {
+                        "lock": [
+                            "o-1",
+                            "a fresh uuid",
+                            60
+                        ]
+                    },
+                    false
                 ]
             ]
         ]
@@ -91,9 +96,14 @@
             [
                 "or.lockObject",
                 [
-                    "o-1",
-                    "a fresh uuid",
-                    3600
+                    {
+                        "lock": [
+                            "o-1",
+                            "a fresh uuid",
+                            3600
+                        ]
+                    },
+                    false
                 ]
             ]
         ]
@@ -110,7 +120,9 @@
             [
                 "or.unlockObject",
                 [
-                    "o-1"
+                    {
+                        "unlock": "o-1"
+                    }
                 ]
             ]
         ]

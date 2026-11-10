@@ -26,6 +26,9 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
@@ -3851,12 +3854,17 @@ class EndpointService implements EndpointServiceInterface {
 		if ($config['locking']['action'] === 'lock') {
 			$process = (Uuid::v4())->jsonSerialize();
 			$object = $this->objectService->getOpenRegisters()->lockObject(
-				identifier: $objectId,
-				process: $process,
-				duration: ($config['locking']['duration'] ?? 3600)
+				request: new LockRequest(
+					identifier: (string)$objectId,
+					process: $process,
+					duration: ($config['locking']['duration'] ?? 3600),
+					runStep: new LockRunStep(runUuid: null, nodeId: null)
+				)
 			);
 		} elseif ($config['locking']['action'] === 'unlock') {
-			$object = $this->objectService->getOpenRegisters()->unlockObject(identifier: $objectId);
+			$object = $this->objectService->getOpenRegisters()->unlockObject(
+				request: new UnlockRequest(identifier: (string)$objectId, advisory: false, runUuid: null, break: false)
+			);
 		} else {
 			// Unknown locking action — leave $data untouched.
 			return $data;
