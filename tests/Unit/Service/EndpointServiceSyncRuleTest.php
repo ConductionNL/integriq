@@ -38,6 +38,7 @@ use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -121,12 +122,12 @@ class EndpointServiceSyncRuleTest extends TestCase {
 				$this->log[] = ['openRegisters.clearCurrents'];
 			}
 		);
-		$openRegisters->method('find')->willReturnCallback(
+		$openRegisters->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				$this->log[] = ['openRegisters.find', $id];
 				return ObjectServiceMockBuilder::objectEntity($this, ['id' => $id, 'title' => 'fetched'], 'fetched-' . $id);
 			}
-		);
+		));
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('getOpenRegisters')->willReturn($openRegisters);
 

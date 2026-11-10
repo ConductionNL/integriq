@@ -21,6 +21,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
@@ -384,12 +385,12 @@ class EventServiceTest extends TestCase {
 		// about which flags are false, and that is what is checked; a parameter
 		// appended to the far end of the signature is not this test's business.
 		$capturedArgs = null;
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) use (&$capturedArgs, $subscription) {
 				$capturedArgs = $args;
 				return $subscription;
 			}
-		);
+		));
 
 		$this->service->deliverMessage($message);
 
@@ -874,7 +875,7 @@ class EventServiceTest extends TestCase {
 		// find() is called: (1) replayMessage load, then deliverMessage->find
 		// subscription, then final re-load. Return the abandoned message first,
 		// subscription on the style lookup, then the (reset) message.
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($abandoned, $subscription) {
 				if ($schema === 'event_subscription') {
 					return $subscription;
@@ -882,7 +883,7 @@ class EventServiceTest extends TestCase {
 
 				return $abandoned;
 			}
-		);
+		));
 
 		$this->stubHttpResponse(200, 'ok');
 		$this->objectService->method('saveObject')->willReturnCallback(

@@ -42,6 +42,7 @@ use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -140,7 +141,7 @@ class OriPublicEndpointsTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$orObjectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) {
 				$id = (string)($args['id'] ?? $args[0]);
 				$schema = (string)($args['schema'] ?? $args[2] ?? '');
@@ -152,7 +153,7 @@ class OriPublicEndpointsTest extends TestCase {
 				unset($object['@self']);
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $id);
 			}
-		);
+		));
 
 		$mappingService = new MappingService(
 			new ArrayLoader([]),

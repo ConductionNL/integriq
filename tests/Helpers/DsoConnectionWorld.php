@@ -32,6 +32,7 @@ use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -330,7 +331,7 @@ trait DsoConnectionWorld {
 			}
 		);
 
-		$service->method('find')->willReturnCallback(
+		$service->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null, bool $_rbac = true): ?ObjectEntity {
 				$this->worldReads[] = ['schema' => $schema, 'rbac' => $_rbac, 'uid' => $this->worldSession->getUser()?->getUID()];
 				foreach ($this->worldFind(schema: $schema, filters: [], rbac: $_rbac) as $entity) {
@@ -341,7 +342,7 @@ trait DsoConnectionWorld {
 
 				return null;
 			}
-		);
+		));
 
 		$service->method('saveObject')->willReturnCallback(
 			function ($object, $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true): ObjectEntity {

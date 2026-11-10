@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -60,11 +61,11 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(
+			->with(...FindCallShape::args(
 				$this->equalTo('c-1'),
 				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract')
-			)
+			))
 			->willReturn($entity);
 
 		$result = $this->service->findObject('c-1');

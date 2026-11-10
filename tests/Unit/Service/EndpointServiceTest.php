@@ -28,6 +28,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -789,7 +790,7 @@ class EndpointServiceTest extends TestCase {
 			'rule-custom'
 		);
 
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			static function (string $id, ...$rest) use ($skippedRule, $customRule) {
 				unset($rest);
 				return match ($id) {
@@ -798,7 +799,7 @@ class EndpointServiceTest extends TestCase {
 					default => null,
 				};
 			}
-		);
+		));
 
 		$flowToken = new \OCA\Integriq\Service\Helper\FlowToken();
 		$trace = new \OCA\Integriq\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-1');
@@ -1142,9 +1143,9 @@ class EndpointServiceTest extends TestCase {
 	private function runRulePipeline(array $rules, RuleService $ruleService, array $options = []): mixed {
 		$service = $this->buildServiceForTraceTests($ruleService, $this->createMock(ContainerInterface::class));
 		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => array_keys($rules)], 'endpoint-pipeline');
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			fn (...$args) => ObjectServiceMockBuilder::objectEntity($this, $rules[($args['id'] ?? $args[0])], ($args['id'] ?? $args[0]))
-		);
+		));
 
 		$method = new \ReflectionMethod(EndpointService::class, 'processRules');
 		$method->setAccessible(true);

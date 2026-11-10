@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -54,7 +55,7 @@ class LtiKeyServiceTest extends TestCase {
 		// registration schemas (register.d/99-lti-*-secrets-writeonly.json), so
 		// only a `_render: false` read sees the keys. Parameter order follows the
 		// stub (tests/stubs/OCA/OpenRegister/Service/ObjectService.php).
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null, $_rbac = true, $_multitenancy = true, $_render = true) {
 				if (isset($this->registrations[$id]) === false) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
@@ -70,7 +71,7 @@ class LtiKeyServiceTest extends TestCase {
 				$entity->setObject($data);
 				return $entity;
 			}
-		);
+		));
 
 		$objectService->method('findAll')->willReturnCallback(
 			function ($config = []) {

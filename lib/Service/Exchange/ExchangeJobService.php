@@ -30,6 +30,7 @@ use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -291,8 +292,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 		try {
 			return $this->objectService->find(
 				id: $jobId,
-				register: self::REGISTER,
-				schema: self::SCHEMA_JOB,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_JOB),
 				_rbac: false,
 				_multitenancy: false
 			);

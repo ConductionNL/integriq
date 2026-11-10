@@ -28,6 +28,7 @@ namespace OCA\Integriq\Service\Lti;
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -188,8 +189,7 @@ class LtiIdentityLinkService {
 		try {
 			$platform = $this->orObjectService->find(
 				id: $ltiPlatformId,
-				register: 'integriq',
-				schema: 'lti_platform',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'lti_platform'),
 				_rbac: false,
 				_multitenancy: false
 			);

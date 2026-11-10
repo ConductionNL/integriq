@@ -24,6 +24,7 @@ use OCA\Integriq\Service\Exchange\ExchangeErrorCodeCatalogue;
 use OCA\Integriq\Service\Exchange\ExchangeReadModel;
 use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
 use OCA\Integriq\Service\Exchange\ExchangeTargetDispatcher;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
@@ -86,7 +87,7 @@ class ExchangeReadModelTest extends TestCase {
 				return $matches;
 			}
 		);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ...$rest): ObjectEntity {
 				foreach ($this->rows['job'] ?? [] as $row) {
 					if ($row->getUuid() === $id) {
@@ -96,7 +97,7 @@ class ExchangeReadModelTest extends TestCase {
 
 				throw new \RuntimeException('not found');
 			}
-		);
+		));
 
 		$dispatcher = $this->createMock(ExchangeTargetDispatcher::class);
 		$dispatcher->method('handledDirections')->willReturnCallback(

@@ -30,6 +30,7 @@ use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -70,7 +71,7 @@ class SynchronizationServiceRetireValuesTest extends TestCase {
 
 		$orObjectService = $this->getMockBuilder(OrObjectService::class)->disableOriginalConstructor()->getMock();
 		$orObjectService->method('findAll')->willReturn(['results' => $contracts, 'total' => count($contracts)]);
-		$orObjectService->method('find')->willReturnCallback(fn (...$args) => $objects[(string)$args[0]]);
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(fn (...$args) => $objects[(string)$args[0]]));
 		$orObjectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
 				$this->saved[] = ['object' => $object];

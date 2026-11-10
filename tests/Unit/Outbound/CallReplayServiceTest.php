@@ -32,6 +32,7 @@ use OCA\Integriq\Outbound\Call\MappingVersionService;
 use OCA\Integriq\Outbound\Call\PreCheckService;
 use OCA\Integriq\Outbound\Call\VerdictService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -170,11 +171,11 @@ class CallReplayServiceTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id) {
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->records[$id] ?? []), $id);
 			}
-		);
+		));
 		$this->objectService->method('findAll')->willReturnCallback(
 			function (): array {
 				$rows = [];

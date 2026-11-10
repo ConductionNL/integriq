@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\RecordProvenanceService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -45,7 +46,7 @@ final class RecordProvenanceServiceTest extends TestCase {
 	 */
 	private function makeService(): RecordProvenanceService {
 		$objects = $this->createMock(OrObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string|int $id, $register = null, $schema = null): ?ObjectEntity {
 				foreach (($this->store[$schema] ?? []) as $entity) {
 					if ($entity->getUuid() === $id) {
@@ -55,7 +56,7 @@ final class RecordProvenanceServiceTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 		$objects->method('findAll')->willReturnCallback(
 			function (array $config): array {
 				$filters = $config['filters'];

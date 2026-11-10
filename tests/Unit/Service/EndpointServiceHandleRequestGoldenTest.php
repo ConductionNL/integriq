@@ -43,6 +43,7 @@ use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -159,7 +160,7 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 		}
 
 		$objects = ObjectServiceMockBuilder::make($this);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity {
 				$this->trace[] = ['find' => $schema, 'id' => $id];
 				return match ($schema) {
@@ -169,7 +170,7 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 					default => null,
 				};
 			}
-		);
+		));
 		$objects->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
 				$this->trace[] = ['save' => $schema, 'uuid' => $uuid, 'object' => $object];

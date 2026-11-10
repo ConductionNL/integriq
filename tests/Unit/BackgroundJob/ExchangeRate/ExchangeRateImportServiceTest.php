@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\BackgroundJob\ExchangeRate;
 use OCA\Integriq\BackgroundJob\ExchangeRate\EcbReferenceRateParser;
 use OCA\Integriq\BackgroundJob\ExchangeRate\ExchangeRateImportService;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -117,7 +118,7 @@ class ExchangeRateImportServiceTest extends TestCase {
 	 */
 	private function makeService(int $status = 200): ExchangeRateImportService {
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				if ($this->source === null || $id !== ExchangeRateImportService::SOURCE_SLUG) {
 					throw new DoesNotExistException('not found');
@@ -127,7 +128,7 @@ class ExchangeRateImportServiceTest extends TestCase {
 				$entity->setObject($this->source);
 				return $entity;
 			}
-		);
+		));
 		$objectService->method('findAll')->willReturnCallback(
 			function (array $config = []) {
 				$filters = ($config['filters'] ?? []);

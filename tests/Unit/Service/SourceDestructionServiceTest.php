@@ -33,6 +33,7 @@ use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -140,7 +141,7 @@ class SourceDestructionServiceTest extends TestCase {
 				return ['results' => $contracts];
 			}
 		);
-		$orObjectService->method('find')->willReturnCallback(fn (...$args) => ($objects[(string)$args[0]] ?? null));
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(fn (...$args) => ($objects[(string)$args[0]] ?? null)));
 		$orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
 				if (in_array('synchronization_contract', $args, true) === true) {

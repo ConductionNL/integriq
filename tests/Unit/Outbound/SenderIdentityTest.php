@@ -28,6 +28,7 @@ use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
 use OCA\Integriq\Outbound\Identity\SignatureStripper;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
@@ -140,7 +141,7 @@ class SenderIdentityTest extends TestCase {
 
 		$this->identities = [];
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id): ObjectEntity {
 				if (isset($this->identities[$id]) === false) {
 					throw new DoesNotExistException('no such identity');
@@ -148,7 +149,7 @@ class SenderIdentityTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $this->identities[$id], $id);
 			}
-		);
+		));
 		$this->objectService->method('findAll')->willReturnCallback(
 			function (): array {
 				$rows = [];

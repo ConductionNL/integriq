@@ -27,6 +27,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -73,7 +74,7 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 	 */
 	private function service(): SynchronizationService {
 		$or = $this->createMock(ORObjectService::class);
-		$or->method('find')->willReturnCallback(
+		$or->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register = null, ?string $schema = null) {
 				$this->log[] = ['or.find', (string)$id, $register, $schema];
 				$entity = new ObjectEntity();
@@ -86,7 +87,7 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 				$entity->setObject(['naam' => 'origin ' . $id]);
 				return $entity;
 			}
-		);
+		));
 		$or->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid];
@@ -107,7 +108,7 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 				return $openRegisters;
 			}
 		);
-		$openRegisters->method('find')->willReturnCallback(
+		$openRegisters->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				$this->log[] = ['openRegisters.find', (string)$id];
 				$entity = new ObjectEntity();
@@ -115,7 +116,7 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 				$entity->setObject(['titel' => 'stored ' . $id, 'zaak' => ['id' => 'z-9']]);
 				return $entity;
 			}
-		);
+		));
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('getOpenRegisters')->willReturn($openRegisters);
 

@@ -27,6 +27,7 @@ use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
@@ -392,7 +393,7 @@ class EventsControllerTest extends TestCase {
 		$this->orObjectService->method('findAll')->willReturn(['results' => $rows, 'total' => 2]);
 		$this->request->method('getParam')->willReturnCallback(static fn ($key, $default = null) => $default);
 
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, ...$rest) {
 				if ($id === 'sub-webhook') {
 					return ObjectServiceMockBuilder::objectEntity($this, [], 'sub-webhook');
@@ -404,7 +405,7 @@ class EventsControllerTest extends TestCase {
 
 				throw new \OCP\AppFramework\Db\DoesNotExistException('missing');
 			}
-		);
+		));
 
 		$response = $this->controller->deadLetterIndex();
 		$rowsOut = $response->getData()['results'];

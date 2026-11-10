@@ -42,6 +42,7 @@ use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\MappingServiceInterface;
 use OCA\Integriq\Service\SourceMappingServiceInterface;
 use OCA\Integriq\Service\SynchronizationContractServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -154,8 +155,7 @@ class MappingRuntime implements RuntimeExtensionInterface {
 		$orObjectService = $this->objectService->getOpenRegisters();
 		$source = $orObjectService->find(
 			id: $sourceId,
-			register: 'integriq',
-			schema: 'source',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 			_rbac: false,
 			_multitenancy: false
 		);

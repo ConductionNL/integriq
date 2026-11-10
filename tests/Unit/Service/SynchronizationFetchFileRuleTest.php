@@ -30,6 +30,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\App\IAppManager;
@@ -445,7 +446,7 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 	private function service(): SynchronizationService {
 		$sourceConfiguration = ($this->case['sourceConfiguration'] ?? []);
 		$orObjects = $this->createMock(ORObjectService::class);
-		$orObjects->method('find')->willReturnCallback(
+		$orObjects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ...$rest) use ($sourceConfiguration) {
 				$this->record('source.find', [$id, ($rest['schema'] ?? null)]);
 				if ($this->answer('source.find') === 'missing') {
@@ -457,7 +458,7 @@ class SynchronizationFetchFileRuleTest extends TestCase {
 				$source->setObject(['uuid' => 'src-1', 'location' => 'https://files.invalid', 'configuration' => $sourceConfiguration]);
 				return $source;
 			}
-		);
+		));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['error', 'warning', 'info', 'critical', 'debug'] as $level) {

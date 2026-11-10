@@ -31,6 +31,7 @@ namespace OCA\Integriq\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -150,8 +151,7 @@ class EnvironmentService implements EnvironmentServiceInterface {
 		try {
 			$entity = $this->orObjectService->find(
 				id: $sourceRef,
-				register: self::REGISTER,
-				schema: self::SOURCE_SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SOURCE_SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);

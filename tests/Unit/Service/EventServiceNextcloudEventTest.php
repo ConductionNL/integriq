@@ -29,6 +29,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -192,7 +193,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($synchronization) {
 				if ($schema === 'synchronization') {
 					return $synchronization;
@@ -200,7 +201,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -287,7 +288,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($synchronization) {
 				if ($schema === 'synchronization') {
 					return $synchronization;
@@ -295,7 +296,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -336,7 +337,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($job) {
 				if ($schema === 'job') {
 					return $job;
@@ -344,7 +345,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 
 		$captured = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -577,7 +578,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 			'msg-uuid'
 		);
 
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($subscription, $synchronization, $abandoned) {
 				if ($schema === 'event_subscription') {
 					return $subscription;
@@ -589,7 +590,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 				return $abandoned;
 			}
-		);
+		));
 
 		$this->synchronizationService->expects($this->once())
 			->method('synchronize')

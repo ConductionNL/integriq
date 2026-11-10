@@ -23,6 +23,7 @@ use OCA\Integriq\Service\Lti\LtiPlatformHint;
 use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -212,7 +213,7 @@ class LtiPlatformDetailsServiceTest extends TestCase {
 	 */
 	private function makeService(): LtiPlatformDetailsService {
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null): ObjectEntity {
 				$this->assertSame('lti_tool', $schema, 'only a tool registration is read');
 				if (isset($this->tools[(string)$id]) === false) {
@@ -221,7 +222,7 @@ class LtiPlatformDetailsServiceTest extends TestCase {
 
 				return $this->entity(uuid: (string)$id, data: $this->tools[(string)$id]);
 			}
-		);
+		));
 		$objectService->method('findAll')->willReturnCallback(
 			function (array $config = []): array {
 				$filters = ($config['filters'] ?? []);

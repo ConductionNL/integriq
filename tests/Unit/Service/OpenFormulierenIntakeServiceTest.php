@@ -27,6 +27,7 @@ use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\FileService;
@@ -92,7 +93,7 @@ class OpenFormulierenIntakeServiceTest extends TestCase {
 			}
 		);
 
-		$mock->method('find')->willReturnCallback(
+		$mock->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register = null, ?string $schema = null) {
 				if ($schema === OpenFormulierenIntakeService::SCHEMA_SUBMISSION) {
 					return ($this->submissionStore[(string)$id] ?? null);
@@ -102,7 +103,7 @@ class OpenFormulierenIntakeServiceTest extends TestCase {
 				// non-submission find() returns a synthetic target entity.
 				return $this->buildEntity(['title' => 'Case'], (string)$id);
 			}
-		);
+		));
 
 		$mock->method('findAll')->willReturnCallback(
 			function (array $config = []) {

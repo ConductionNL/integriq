@@ -21,6 +21,7 @@ use DateTimeImmutable;
 use OCA\Integriq\Service\ConnectionCertificateReader;
 use OCA\Integriq\Service\ConnectionMonitorService;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -56,9 +57,9 @@ final class ConnectionMonitorServiceTest extends TestCase {
 	 */
 	private function makeService(?int $inlineNotAfter = null): ConnectionMonitorService {
 		$objects = $this->createMock(OrObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			fn (string|int $id): ?ObjectEntity => (($this->store['source'][0] ?? null)?->getUuid() === $id ? $this->store['source'][0] : null)
-		);
+		));
 		$objects->method('findAll')->willReturnCallback(
 			function (array $config): array {
 				$filters = $config['filters'];

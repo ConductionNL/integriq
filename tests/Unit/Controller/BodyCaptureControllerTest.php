@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use DateTimeImmutable;
 use OCA\Integriq\Controller\BodyCaptureController;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -91,14 +92,14 @@ class BodyCaptureControllerTest extends TestCase {
 		$groups->method('isAdmin')->with('beheerder')->willReturn($admin);
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$id);
 				$entity->setObject($this->source);
 				return $entity;
 			}
-		);
+		));
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true, $_multitenancy = true, $silent = false) {
 				if ($this->failSave === true) {

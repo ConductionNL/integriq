@@ -26,6 +26,7 @@ namespace OCA\Integriq\BackgroundJob\ExchangeRate;
 
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -211,8 +212,7 @@ class ExchangeRateImportService {
 		try {
 			$entity = $this->objectService->find(
 				id: self::SOURCE_SLUG,
-				register: self::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);

@@ -36,6 +36,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -137,9 +138,9 @@ class EventServiceFanOutOffRequestTest extends TestCase {
 				return ['results' => []];
 			}
 		);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			fn ($id) => ($this->events[(string)$id] ?? null)
-		);
+		));
 
 		$jobList = $this->createMock(IJobList::class);
 		$jobList->method('add')->willReturnCallback(

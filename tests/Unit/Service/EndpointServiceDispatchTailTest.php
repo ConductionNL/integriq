@@ -39,6 +39,7 @@ use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -98,11 +99,11 @@ class EndpointServiceDispatchTailTest extends TestCase {
 
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->method('findAll')->willReturn(['results' => []]);
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->case['rules'][$id] ?? []), (string)$id);
 			}
-		);
+		));
 
 		$bridge = $this->createMock(OpenRegisterCredentialBridge::class);
 		$bridge->method('getResolvedConsumer')->willReturnCallback(

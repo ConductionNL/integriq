@@ -28,6 +28,7 @@ use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
 use OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException;
 use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
@@ -127,7 +128,7 @@ class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 				return ['results' => $entities];
 			}
 		);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args): ObjectEntity {
 				$id = (string)($args['id'] ?? $args[0]);
 				$sources = [
@@ -137,7 +138,7 @@ class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 				];
 				return ObjectServiceMockBuilder::objectEntity($this, $sources[$id], 'source-' . $id);
 			}
-		);
+		));
 		$batches = 0;
 		$objects->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$batches): ObjectEntity {

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -28,97 +29,30 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 class ObjectService {
 	/**
-	 * Find a single object by id/uuid.
+	 * Find one object (signature as OpenRegister #9116).
 	 *
-	 * The real OpenRegister ObjectService throws DoesNotExistException when the
-	 * object is not found. PHPUnit mocks may stub ->willReturn(null) for tests
-	 * that verify the "not found" path; the nullable return type preserves that
-	 * compatibility. PHPStan sees the @throws annotation and treats any catch
-	 * of DoesNotExistException as live.
+	 * Register, schema, extend, files, render and audit travel in one
+	 * ObjectFindOptions. `render: false` is the only read that still carries a
+	 * `writeOnly` secret: OpenRegister's render boundary strips those for every
+	 * caller, `_rbac: false` included (openregister#389/#429).
 	 *
-	 * ─────────────────────────────────────────────────────────────────────────
-	 * `$_render` PARITY (ocon#215 / ADR-060 test-reality) — READ BEFORE EDITING
-	 * ─────────────────────────────────────────────────────────────────────────
-	 * `$_render` was ABSENT from this stub until ocon#151 phase C. That absence
-	 * was not cosmetic: it made it structurally IMPOSSIBLE for any unit test to
-	 * express — or to catch the loss of — the `_render: false` raw-read
-	 * contract. That blind spot is exactly how ocon#215 shipped.
+	 * A double of this method receives the call as `($id, $options, $_rbac,
+	 * $_multitenancy)`; tests/Helpers/FindCallShape flattens it for the
+	 * recordings that predate the options object.
 	 *
-	 * Why it matters: a `source`'s credential fields are `writeOnly: true`, and
-	 * OpenRegister's render boundary strips `writeOnly` UNCONDITIONALLY — admins
-	 * included, `_rbac: false` included, and the `@self.relations` mirror
-	 * included (openregister#389/#429). `_render: false` is the ONLY read that
-	 * still carries a secret. Code that needs a raw secret and forgets it gets a
-	 * credential-free object and dispatches unauthenticated, silently.
-	 *
-	 * KNOWN, DELIBERATE REMAINING DRIFT from the real OpenRegister signature
-	 * (`origin/development` lib/Service/ObjectService.php::find()), which is:
-	 *
-	 *     find($id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render)
-	 *
-	 * This stub omits `$_extend` and `$files` and therefore orders its
-	 * parameters differently. That is TOLERATED, not endorsed: every
-	 * integriq caller invokes find() with NAMED arguments, so parameter
-	 * ORDER is not load-bearing for them, whereas a dozen existing tests use
-	 * POSITIONAL `willReturnCallback(function ($id, $register, $schema) {...})`
-	 * closures written against this shape. Restoring true parity would break
-	 * those 38 assertions and is a separate, mechanical change — filed rather
-	 * than smuggled into a credential-migration PR. `$_render` is appended LAST
-	 * so it is reachable by name without disturbing any existing positional
-	 * callback.
-	 *
-	 * ─────────────────────────────────────────────────────────────────────────
-	 * WHY THIS DRIFT IS NOT FREE — IT BROKE 20 TESTS ON 2026-08-13
-	 * ─────────────────────────────────────────────────────────────────────────
-	 * The note above tolerates the missing `$_extend` and `$files` on the
-	 * grounds that ORDER is not load-bearing for named callers. True — but it
-	 * reads the risk one step short. A named argument does not need the right
-	 * POSITION; it needs the parameter to EXIST. So the moment openregister
-	 * added `$_audit` and integriq started passing `_audit: false`, PHP
-	 * raised `Error: Unknown named parameter $_audit` at the call site and 20
-	 * tests across five suites went red at once — every one of them reporting a
-	 * type or exception mismatch that named nothing about a stub.
-	 *
-	 * 🔑 THE FAILURE DOES NOT LOOK LIKE A STUB PROBLEM. It surfaces as
-	 * `Failed asserting that exception of type "Error" matches expected
-	 * exception "DoesNotExistException"` — a message about the test's subject,
-	 * pointing at production line numbers, with the actual cause four frames
-	 * down in a file under tests/stubs/. That is why it sat red across at least
-	 * three CI runs while being read as "the sync tests are flaky".
-	 *
-	 * So parameters are APPENDED LAST as they are needed — the same technique
-	 * `$_render` used — which keeps every positional `willReturnCallback`
-	 * closure working while making the name resolvable. What is added is driven
-	 * by what integriq's lib/ actually passes BY NAME, not by mirroring the
-	 * whole signature: `_audit` (3 call sites), `_extend` (2), and on
-	 * saveObject() `silent` (2) and `_validation` (2).
-	 *
-	 * ⚠️ This will happen again on the next parameter openregister adds, and
-	 * nothing here will warn anyone. A stub of a peer app's API is a copy that
-	 * drifts silently, and the only thing that would catch it is a check that
-	 * compares this file against the real signature. Filed as ocon#1241.
-	 *
-	 * @param string|int $id
-	 * @param string|null $register
-	 * @param string|null $schema
+	 * @param string|int $id The object id, uuid or slug.
+	 * @param ObjectFindOptions|null $options Register, schema, extend, files, render and audit.
 	 * @param bool $_rbac Apply RBAC filters when true.
 	 * @param bool $_multitenancy Apply multitenancy filters when true.
-	 * @param bool $_render Render before returning; false yields the RAW entity (secrets intact).
-	 * @param bool $_audit Record an audit-trail row for the read; false for machine-to-machine reads.
-	 * @param array|null $_extend Properties to expand on the returned object.
 	 * @return ObjectEntity|null
 	 *
 	 * @throws DoesNotExistException When the object is not found.
 	 */
 	public function find(
-		$id,
-		?string $register = null,
-		?string $schema = null,
+		int|string $id,
+		?ObjectFindOptions $options = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
 	): ?ObjectEntity {
 		return new ObjectEntity();
 	}

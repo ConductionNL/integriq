@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FileService as ORFileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
@@ -2607,8 +2608,7 @@ class EndpointService implements EndpointServiceInterface {
 		// needs the source; the caller must not be able to read it.
 		$source = $this->orObjectService->find(
 			id: ($endpointData['targetId'] ?? ''),
-			register: 'integriq',
-			schema: 'source',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3436,11 +3436,9 @@ class EndpointService implements EndpointServiceInterface {
 			// This mirrors CallService::resolveSourceForDispatch()'s raw source re-resolve (ocon#215/#236).
 			return $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'rule',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'rule', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Exception $e) {
 			$this->logger->error('Error fetching rule: ' . $e->getMessage());
@@ -3461,7 +3459,12 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	public function getEndpointById(string $id): ?ObjectEntity {
 		try {
-			return $this->orObjectService->find(id: $id, register: 'integriq', schema: 'endpoint', _rbac: false, _multitenancy: false);
+			return $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'endpoint'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Exception $e) {
 			$this->logger->error('Error fetching endpoint: ' . $e->getMessage());
 			return null;
@@ -3768,7 +3771,7 @@ class EndpointService implements EndpointServiceInterface {
 			}
 
 			try {
-				$object = $this->objectService->getOpenRegisters()->find(id: $value, _extend: $extends);
+				$object = $this->objectService->getOpenRegisters()->find(id: $value, options: new ObjectFindOptions(extend: $extends));
 				$this->objectService->getOpenRegisters()->clearCurrents();
 			} catch (DoesNotExistException $exception) {
 				$this->objectService->getOpenRegisters()->clearCurrents();

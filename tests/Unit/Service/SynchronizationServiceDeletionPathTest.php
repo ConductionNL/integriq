@@ -37,6 +37,7 @@ use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -138,7 +139,7 @@ class SynchronizationServiceDeletionPathTest extends TestCase {
 		$this->orObjectService->method('findAll')->willReturn(['results' => $contracts, 'total' => count($contracts)]);
 
 		$resolvable = ($inScope ?? $targetIds);
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) use ($resolvable) {
 				$id = (string)$args[0];
 				if (in_array($id, $resolvable, true) === false) {
@@ -149,7 +150,7 @@ class SynchronizationServiceDeletionPathTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, [], $id);
 			}
-		);
+		));
 	}
 
 	/**

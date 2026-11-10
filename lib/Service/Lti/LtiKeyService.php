@@ -27,6 +27,7 @@ use DateTime;
 use Jose\Component\KeyManagement\JWKFactory;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Security\ICrypto;
@@ -152,16 +153,14 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$this->assertValidRegistrationType(registrationType: $registrationType);
 
 		try {
+			// `signingKeys` is writeOnly (register.d/99-lti-*-secrets-writeonly.json)
+			// and the rendered read strips writeOnly unconditionally, also under
+			// `_rbac: false` (openregister#460). Unrendered, the keys are there.
 			return $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'integriq',
-				schema: $registrationType,
+				options: new ObjectFindOptions(register: 'integriq', schema: $registrationType, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				// `signingKeys` is writeOnly (register.d/99-lti-*-secrets-writeonly.json)
-				// and the rendered read strips writeOnly unconditionally, also under
-				// `_rbac: false` (openregister#460). Unrendered, the keys are there.
-				_render: false
+				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new LtiValidationException(

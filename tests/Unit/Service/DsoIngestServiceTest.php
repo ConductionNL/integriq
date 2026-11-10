@@ -33,6 +33,7 @@ use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -137,7 +138,7 @@ class DsoIngestServiceTest extends TestCase {
 			}
 		);
 
-		$mock->method('find')->willReturnCallback(
+		$mock->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register = null, ?string $schema = null) {
 				if ($schema === DsoIngestService::SCHEMA_VERZOEK) {
 					return ($this->requestStore[(string)$id] ?? null);
@@ -160,7 +161,7 @@ class DsoIngestServiceTest extends TestCase {
 				// Handoff-target lookups: any non-verzoek find() returns a synthetic target entity.
 				return $this->buildEntity(['title' => 'Case'], (string)$id);
 			}
-		);
+		));
 
 		$mock->method('findAll')->willReturnCallback(
 			function (array $config = [], bool $_rbac = true) {

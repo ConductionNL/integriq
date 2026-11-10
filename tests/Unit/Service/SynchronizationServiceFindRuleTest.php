@@ -45,6 +45,7 @@ use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -136,7 +137,7 @@ class SynchronizationServiceFindRuleTest extends TestCase {
 		$seen = [];
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->willReturnCallback(
+			->willReturnCallback(FindCallShape::callback(
 				function (
 					$id,
 					$register = null,
@@ -149,7 +150,7 @@ class SynchronizationServiceFindRuleTest extends TestCase {
 
 					return $entity;
 				}
-			);
+			));
 
 		$rule = $this->service->findRule(id: 'xxllnc-fetch-files');
 

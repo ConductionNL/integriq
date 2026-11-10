@@ -16,6 +16,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Zgw;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -93,7 +94,7 @@ class ZgwNotificationPullListenerTest extends TestCase {
 
 	private function listener(): ZgwNotificationPullListener {
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register=null, ?string $schema=null) {
 				if ($register !== 'integriq' || isset($this->seeds[$schema][$id]) === false) {
 					return null;
@@ -104,7 +105,7 @@ class ZgwNotificationPullListenerTest extends TestCase {
 				$entity->setObject($this->seeds[$schema][$id]);
 				return $entity;
 			}
-		);
+		));
 
 		$engine = $this->createMock(SynchronizationService::class);
 		$engine->method('getObjectFromSource')->willReturnCallback(

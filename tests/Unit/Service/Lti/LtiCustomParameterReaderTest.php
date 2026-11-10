@@ -19,6 +19,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use OCA\Integriq\Service\Lti\LtiCustomParameterReader;
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -119,7 +120,7 @@ class LtiCustomParameterReaderTest extends TestCase {
 				];
 			}
 		);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) use ($synchronizations): ?ObjectEntity {
 				if ($id === 'throws') {
 					throw new \RuntimeException('store unavailable');
@@ -131,7 +132,7 @@ class LtiCustomParameterReaderTest extends TestCase {
 
 				return $this->entity(uuid: (string)$id, data: $synchronizations[$id]);
 			}
-		);
+		));
 
 		return $objectService;
 

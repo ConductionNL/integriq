@@ -24,6 +24,7 @@ use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\ChannelReportingCapabilities;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Outbound\RecipientState;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -74,11 +75,11 @@ class MessageRecorderTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'message-uuid');
 			}
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function () {
 				return ObjectServiceMockBuilder::objectEntity($this, $this->stored, 'message-uuid');
 			}
-		);
+		));
 
 		$this->recorder = new MessageRecorder(
 			$this->objectService,

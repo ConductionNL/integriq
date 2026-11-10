@@ -29,6 +29,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use OCA\Integriq\Repair\InitializeRegister;
 use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -107,7 +108,7 @@ class LtiSigningKeySchemaTest extends TestCase {
 	private function makeService(): LtiKeyService {
 		$objectService = $this->createMock(ObjectService::class);
 
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				if (isset($this->registrations[$id]) === false) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
@@ -118,7 +119,7 @@ class LtiSigningKeySchemaTest extends TestCase {
 				$entity->setObject($this->registrations[$id]);
 				return $entity;
 			}
-		);
+		));
 
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {

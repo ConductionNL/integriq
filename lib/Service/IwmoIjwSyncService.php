@@ -41,6 +41,7 @@ use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -379,8 +380,7 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 		// class, not the stub.
 		$existing = $this->objectService->find(
 			id: $caseReference,
-			register: $caseRegister,
-			schema: $caseSchema
+			options: new ObjectFindOptions(register: $caseRegister, schema: $caseSchema)
 		);
 		if ($existing === null) {
 			$this->logger->warning(

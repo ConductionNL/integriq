@@ -26,6 +26,7 @@ use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -117,7 +118,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 	 */
 	private function stubSourceFound(string $location = 'https://notificaties.example'): void {
 		$source = ObjectServiceMockBuilder::objectEntity($this, ['location' => $location], 'source-1');
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($source) {
 				if ($schema === 'source') {
 					return $source;
@@ -125,7 +126,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 				throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 			}
-		);
+		));
 
 	}//end stubSourceFound()
 
@@ -286,7 +287,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			['status' => 'active', 'sourceId' => 'source-1', 'url' => 'https://notificaties.example/abonnement/uuid-1', 'consumerId' => 'consumer-1'],
 			'abon-1'
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($abonnement) {
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
@@ -298,7 +299,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 				throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 			}
-		);
+		));
 
 		$callLog = ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 500], 'call-log-4');
 		$this->callService->method('call')->willReturn($callLog);
@@ -325,7 +326,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			['status' => 'active', 'sourceId' => 'source-1', 'url' => 'https://notificaties.example/abonnement/uuid-1', 'consumerId' => 'consumer-1'],
 			'abon-2'
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($abonnement) {
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
@@ -337,7 +338,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 				throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 			}
-		);
+		));
 
 		$callLog = ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200], 'call-log-5');
 		$this->callService->method('call')->willReturn($callLog);
@@ -363,7 +364,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			['status' => 'active', 'sourceId' => 'source-1', 'url' => 'https://notificaties.example/abonnement/uuid-1', 'consumerId' => 'consumer-2'],
 			'abon-3'
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($abonnement) {
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
@@ -375,7 +376,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 
 				throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 			}
-		);
+		));
 
 		$callLog = ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 200], 'call-log-6');
 		$this->callService->method('call')->willReturn($callLog);
@@ -485,7 +486,7 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 		$sync = ObjectServiceMockBuilder::objectEntity($this, ['sourceId' => 'source-uuid-dms', 'targetType' => 'register/schema'], 'sync-1');
 
 		$objects = $this->getMockBuilder(\OCA\OpenRegister\Service\ObjectService::class)->disableOriginalConstructor()->getMock();
-		$objects->method('find')->willReturnCallback(fn (...$args) => ((string)$args[0] === 'abon-1') ? $abonnement : null);
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(fn (...$args) => ((string)$args[0] === 'abon-1') ? $abonnement : null));
 		$objects->method('findAll')->willReturn(['results' => [$sync]]);
 
 		$logger = $this->createMock(LoggerInterface::class);

@@ -61,6 +61,7 @@ use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -2752,11 +2753,9 @@ class CallService implements CallServiceInterface {
 		try {
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
 			// A raw re-read failure must never break an outbound call that

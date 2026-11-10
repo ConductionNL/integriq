@@ -42,6 +42,7 @@ use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -260,13 +261,9 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 			}
 		);
 
-		$findPos = [];
-		$rm = new ReflectionMethod(ORObjectService::class, 'find');
-		foreach ($rm->getParameters() as $i => $p) {
-			$findPos[$p->getName()] = $i;
-		}
+		$findPos = FindCallShape::POSITIONS;
 
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) use ($findPos, $syncPayload, $mappingPayload) {
 				$id = ($args[$findPos['id']] ?? null);
 				$schema = ($args[$findPos['schema']] ?? null);
@@ -293,7 +290,7 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 
 		$callPos = [];
 		$rmCall = new ReflectionMethod(CallService::class, 'call');

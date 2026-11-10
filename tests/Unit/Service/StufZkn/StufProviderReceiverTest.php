@@ -37,6 +37,7 @@ use OCA\Integriq\Service\StufZkn\StufWsseInboundVerifier;
 use OCA\Integriq\Service\StufZkn\StufZdsCredentialResolver;
 use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
@@ -965,13 +966,13 @@ class StufProviderReceiverTest extends TestCase {
 		$crypto->method('decrypt')->willReturn('secret');
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register=null, ?string $schema=null) {
 				$this->assertSame('integriq', $register);
 				$this->assertSame('source', $schema);
 				return isset($this->sources[$id]) === true ? ObjectServiceMockBuilder::objectEntity($this, $this->sources[$id], $id) : null;
 			}
-		);
+		));
 		$objects->expects($this->never())->method('saveObject');
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);

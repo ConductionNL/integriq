@@ -33,6 +33,7 @@ namespace OCA\Integriq\Outbound;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use RuntimeException;
@@ -427,8 +428,7 @@ class MessageRecorder {
 	public function read(string $uuid): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
 		);
 
 		if (($entity instanceof ObjectEntity) === false) {

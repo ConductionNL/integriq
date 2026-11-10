@@ -26,6 +26,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiIdentityLinkService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -78,7 +79,7 @@ class LtiIdentityLinkServiceTest extends TestCase {
 	private function makeService(): LtiIdentityLinkService {
 		$orObjectService = $this->createMock(ObjectService::class);
 
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $_extend = [], $files = false, $register = null, $schema = null, $_rbac = true, $_multitenancy = true) {
 				if (isset($this->platforms[$id]) === false) {
 					throw new DoesNotExistException('not found');
@@ -89,7 +90,7 @@ class LtiIdentityLinkServiceTest extends TestCase {
 				$entity->setObject($this->platforms[$id]);
 				return $entity;
 			}
-		);
+		));
 
 		$orObjectService->method('findAll')->willReturnCallback(
 			function ($config = [], $_rbac = true, $_multitenancy = true) {

@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -262,11 +263,9 @@ class ConnectionStore implements ConnectionStoreInterface {
 		try {
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable) {
 			return $source;
@@ -350,8 +349,7 @@ class ConnectionStore implements ConnectionStoreInterface {
 			return $this->asSystem(
 			operation: 				fn () => $this->objectService->find(
 					id: $uuid,
-					register: self::REGISTER,
-					schema: $schema,
+					options: new ObjectFindOptions(register: self::REGISTER, schema: $schema),
 					_rbac: false,
 					_multitenancy: false
 				)

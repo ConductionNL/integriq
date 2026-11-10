@@ -30,6 +30,7 @@ use OCA\Integriq\Outbound\Identity\NoReplyHandler;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\InMemoryOptOutMapper;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
@@ -129,11 +130,11 @@ class OptOutAndHoldTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id) {
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->records[$id] ?? []), $id);
 			}
-		);
+		));
 		$this->objectService->method('findAll')->willReturnCallback(
 			function (): array {
 				$rows = [];

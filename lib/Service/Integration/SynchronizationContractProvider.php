@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Services\IAppConfig;
@@ -312,8 +313,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 		try {
 			$sync = $this->objectService->find(
 				id: $synchronizationId,
-				register: self::REGISTER_SLUG,
-				schema: 'synchronization'
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'synchronization')
 			);
 			if (is_object($sync) === true && method_exists($sync, 'getObject') === true) {
 				$syncBody = $sync->getObject();

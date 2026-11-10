@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service\Datasource;
 use DateTime;
 use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -148,8 +149,7 @@ class DashboardDatasourceService implements DashboardDatasourceServiceInterface 
 		// exist — the controller maps both to a clean HTTP status.
 		$source = $this->orObjectService->find(
 			id: $sourceId,
-			register: 'integriq',
-			schema: 'source',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 			_rbac: true,
 			_multitenancy: true
 		);

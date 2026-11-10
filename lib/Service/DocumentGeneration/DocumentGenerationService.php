@@ -29,6 +29,7 @@ use DateTime;
 use OCA\Integriq\Event\DocumentRenderedEvent;
 use OCA\Integriq\Exception\DocumentGenerationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -379,8 +380,7 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 
 		$source = $this->objectService->find(
 			id: $sourceId,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SOURCE
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SOURCE)
 		);
 
 		if ($source === null) {

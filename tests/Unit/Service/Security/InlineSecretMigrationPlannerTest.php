@@ -38,6 +38,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Security;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -180,7 +181,7 @@ class InlineSecretMigrationPlannerTest extends TestCase {
 	public function testRenderedReadLosesTheSecretProvingTheDoubleIsHonest(): void {
 		$this->objectService->stored['src-1'] = ['name' => 'x', 'apikey' => self::SECRET];
 
-		$rendered = $this->objectService->find(id: 'src-1', register: 'integriq', schema: 'source');
+		$rendered = $this->objectService->find(id: 'src-1', options: new ObjectFindOptions(register: 'integriq', schema: 'source'));
 
 		$this->assertNotNull($rendered);
 		$this->assertArrayNotHasKey(
@@ -386,29 +387,23 @@ class InlineSecretMigrationPlannerTest extends TestCase {
 			 * Throw for the 'bad' uuid only.
 			 *
 			 * @param string|int $id The uuid.
-			 * @param string|null $register Unused.
-			 * @param string|null $schema Unused.
+			 * @param ObjectFindOptions|null $options Register, schema, extend, files, render and audit.
 			 * @param bool $_rbac Unused.
 			 * @param bool $_multitenancy Unused.
-			 * @param bool $_render Unused.
 			 *
 			 * @return ObjectEntity|null
 			 */
 			public function find(
-				$id,
-				?string $register = null,
-				?string $schema = null,
+				int|string $id,
+				?ObjectFindOptions $options = null,
 				bool $_rbac = true,
 				bool $_multitenancy = true,
-				bool $_render = true,
-				bool $_audit = true,
-				?array $_extend = [],
 			): ?ObjectEntity {
 				if ((string)$id === 'bad') {
 					throw new \RuntimeException('boom');
 				}
 
-				return parent::find($id, $register, $schema, $_rbac, $_multitenancy, $_render);
+				return parent::find($id, $options, $_rbac, $_multitenancy);
 			}
 		};
 

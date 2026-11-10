@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTime;
 use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +51,7 @@ class EudiStatusListServiceTest extends TestCase {
 	private function makeService(): EudiStatusListService {
 		$objectService = $this->createMock(ObjectService::class);
 
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ...$rest) {
 				if (isset($this->rows[$id]) === false) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
@@ -61,7 +62,7 @@ class EudiStatusListServiceTest extends TestCase {
 				$entity->setObject($this->rows[$id]);
 				return $entity;
 			}
-		);
+		));
 
 		$objectService->method('findAll')->willReturnCallback(
 			function ($config = []) {

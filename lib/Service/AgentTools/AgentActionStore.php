@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\AgentTools;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -83,8 +84,7 @@ class AgentActionStore implements AgentActionStoreInterface {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: 'integriq', schema: self::SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);

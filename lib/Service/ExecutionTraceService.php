@@ -33,6 +33,7 @@ use DateTime;
 use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -183,8 +184,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 		try {
 			$trace = $this->orObjectService->find(
 				id: $traceId,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -229,8 +229,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 		try {
 			return $this->orObjectService->find(
 				id: $traceId,
-				register: self::REGISTER,
-				schema: self::SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA)
 			);
 		} catch (DoesNotExistException $exception) {
 			// A miss is null. Everything else — an OpenRegister outage, a
@@ -414,8 +413,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 		try {
 			$job = $this->orObjectService->find(
 				id: $entryPointId,
-				register: 'integriq',
-				schema: 'job',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'job'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -462,8 +460,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 			$message = $this->orObjectService->find(
 				id: $entryPointId,
-				register: 'integriq',
-				schema: 'event_message',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_message'),
 				_rbac: false,
 				_multitenancy: false
 			);

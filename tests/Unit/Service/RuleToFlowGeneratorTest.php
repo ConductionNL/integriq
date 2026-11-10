@@ -39,6 +39,7 @@ use OCA\Integriq\Service\RuleConditionTranslator;
 use OCA\Integriq\Service\RuleEndpointScope;
 use OCA\Integriq\Service\RuleToFlowGenerator;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -838,7 +839,7 @@ class RuleToFlowGeneratorTest extends TestCase {
 		$endpoint->setUuid('endpoint-uuid');
 		$endpoint->setObject($this->endpoint(['uuid' => null, 'rules' => ['publish-tender']]));
 
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			static function (string $id) use ($rule, $endpoint): ObjectEntity {
 				if ($id === 'publish-tender') {
 					return $rule;
@@ -846,7 +847,7 @@ class RuleToFlowGeneratorTest extends TestCase {
 
 				return $endpoint;
 			}
-		);
+		));
 
 		$flow = $this->generator->generateFor(
 			ruleReference: ' publish-tender ',

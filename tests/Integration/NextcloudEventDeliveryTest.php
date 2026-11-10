@@ -40,6 +40,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Node;
@@ -110,7 +111,7 @@ class NextcloudEventDeliveryTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $id);
 			}
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) {
 				if ($schema === 'event_message' && isset($this->messages[$id]) === true) {
 					return ObjectServiceMockBuilder::objectEntity($this, $this->messages[$id], $id);
@@ -130,7 +131,7 @@ class NextcloudEventDeliveryTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 		$this->objectService->method('findAll')->willReturnCallback(
 			function (array $config) {
 				$filters = ($config['filters'] ?? []);

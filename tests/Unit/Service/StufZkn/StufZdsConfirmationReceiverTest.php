@@ -34,6 +34,7 @@ use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
 use OCA\Integriq\Service\StufZkn\StufWsseInboundVerifier;
 use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -463,7 +464,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 		);
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register=null, ?string $schema=null) {
 				$this->assertSame('integriq', $register);
 				if ($schema === 'source') {
@@ -472,7 +473,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 
 				return isset($this->rows[$id]) === true ? ObjectServiceMockBuilder::objectEntity($this, $this->rows[$id], $id) : null;
 			}
-		);
+		));
 		$objects->method('findAll')->willReturnCallback(
 			function (array $config): array {
 				$filters = $config['filters'];

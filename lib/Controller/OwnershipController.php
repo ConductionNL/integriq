@@ -24,6 +24,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -220,7 +221,7 @@ class OwnershipController extends Controller {
 	 */
 	private function readObject(string $id, string $register, string $schema): array {
 		try {
-			$entity = $this->objectService->find(id: $id, register: $register, schema: $schema);
+			$entity = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: $register, schema: $schema));
 		} catch (Throwable $e) {
 			return [];
 		}

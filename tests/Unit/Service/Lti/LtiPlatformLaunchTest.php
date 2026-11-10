@@ -34,6 +34,7 @@ use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ArrayCache;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -625,7 +626,7 @@ class LtiPlatformLaunchTest extends TestCase {
 				return ['results' => $results];
 			}
 		);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null): ?ObjectEntity {
 				$this->assertSame('synchronization', $schema, 'a contract names a synchronization');
 				if (isset($this->synchronizations[(string)$id]) === false) {
@@ -634,7 +635,7 @@ class LtiPlatformLaunchTest extends TestCase {
 
 				return $this->entity(uuid: (string)$id, data: $this->synchronizations[(string)$id]);
 			}
-		);
+		));
 
 		return new LtiCustomParameterReader(
 			new SynchronizationContractService($objectService),
@@ -757,9 +758,9 @@ class LtiPlatformLaunchTest extends TestCase {
 	 */
 	private function makeLaunchService(): LtiLaunchService {
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			fn ($id): ObjectEntity => $this->entity(uuid: (string)$id, data: $this->registrations[$id])
-		);
+		));
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$this->registrations[$uuid] = $object;

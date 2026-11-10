@@ -25,6 +25,7 @@ namespace OCA\Integriq\Service;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
 use Throwable;
@@ -261,8 +262,7 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 		try {
 			$found = $this->objectService->find(
 				id: $sourceRef,
-				register: self::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);

@@ -29,6 +29,7 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -94,7 +95,7 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'saved-' . count($this->saved));
 			}
 		);
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) {
 				$id = ($args['id'] ?? $args[0]);
 				$schema = ($args['schema'] ?? $args[2] ?? null);
@@ -127,7 +128,7 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 
 				throw new DoesNotExistException('no ' . $schema . ' ' . $id);
 			}
-		);
+		));
 
 		$this->contractLogService = $this->createMock(SynchronizationContractLogService::class);
 		$this->contractLogService->method('createFromArray')->willReturnCallback(

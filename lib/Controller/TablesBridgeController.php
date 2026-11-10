@@ -35,6 +35,7 @@ use OCA\Integriq\Exception\TablesUpstreamException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Tables\TablesSyncAdapterInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -193,8 +194,7 @@ class TablesBridgeController extends Controller {
 		try {
 			return $this->orObjectService->find(
 				id: $sourceId,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);

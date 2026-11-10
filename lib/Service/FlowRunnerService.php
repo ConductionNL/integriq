@@ -42,6 +42,7 @@ use OCA\Integriq\Exception\FlowRunException;
 use OCA\Integriq\Service\Helper\FlowExecution;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -434,8 +435,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 		$config = (array)($step['config'] ?? []);
 		$source = $this->orObjectService->find(
 			id: (string)($step['configRef'] ?? ''),
-			register: self::REGISTER,
-			schema: 'source',
+			options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -808,7 +808,12 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
 	 */
 	private function findFlowRun(string $id): ObjectEntity {
-		return $this->orObjectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN, _rbac: false, _multitenancy: false);
+		return $this->orObjectService->find(
+			id: $id,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN),
+			_rbac: false,
+			_multitenancy: false
+		);
 	}//end findFlowRun()
 
 	/**
@@ -823,6 +828,11 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
 	 */
 	public function findFlow(string $id): ObjectEntity {
-		return $this->orObjectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA_FLOW, _rbac: false, _multitenancy: false);
+		return $this->orObjectService->find(
+			id: $id,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_FLOW),
+			_rbac: false,
+			_multitenancy: false
+		);
 	}//end findFlow()
 }//end class

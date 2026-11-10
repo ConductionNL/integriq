@@ -34,6 +34,7 @@ use Adbar\Dot;
 use InvalidArgumentException;
 use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -182,7 +183,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 	 */
 	public function updateAbonnement(string $id, array $config): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'notificaties_abonnement'));
 		$data = $this->mergeAbonnementConfig(current: $abonnement->getObject(), config: $config);
 
 		$source = $this->resolveSource(sourceId: (string)($data['sourceId'] ?? ''));
@@ -415,7 +416,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-deletion-cascades-its-companion-consumer-req-004
 	 */
 	public function deleteAbonnement(string $id): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'notificaties_abonnement'));
 		$data = $abonnement->getObject();
 
 		if (($data['status'] ?? '') === self::STATUS_DELETED) {
@@ -490,7 +491,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	 */
 	public function findAbonnement(string $abonnementId): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $abonnementId, register: 'integriq', schema: 'notificaties_abonnement');
+			return $this->objectService->find(id: $abonnementId, options: new ObjectFindOptions(register: 'integriq', schema: 'notificaties_abonnement'));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -716,7 +717,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 		}
 
 		try {
-			return $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source');
+			return $this->objectService->find(id: $sourceId, options: new ObjectFindOptions(register: 'integriq', schema: 'source'));
 		} catch (Throwable $e) {
 			return null;
 		}

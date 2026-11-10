@@ -39,6 +39,7 @@ use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -164,6 +165,10 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 		foreach ($answers as $name => $answer) {
 			$mock->method($name)->willReturnCallback(
 				function (...$args) use ($name, $answer, $label, &$mock) {
+					if ($name === 'find' && is_a($mock, ORObjectService::class) === true) {
+						$args = FindCallShape::find(args: $args);
+					}
+
 					$this->log[] = [$label . '.' . $name, $this->d($args)];
 					$result = $answer(...$args);
 					return ($result === self::class ? $mock : $result);

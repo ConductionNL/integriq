@@ -36,6 +36,7 @@ use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -113,11 +114,11 @@ class FlowRunnerIntegrationTest extends TestCase {
 			}
 		);
 
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, ?string $register = null, ?string $schema = null) {
 				return ObjectServiceMockBuilder::objectEntity($this, ['name' => $id], $id);
 			}
-		);
+		));
 
 		$service = new FlowRunnerService(
 			$callService,

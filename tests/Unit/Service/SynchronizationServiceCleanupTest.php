@@ -26,6 +26,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -35,7 +36,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 
 /**
  * Tests the scope-checked cleanup behaviour in deleteInvalidObjects.
@@ -159,13 +159,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 	 * @return array<string, int>
 	 */
 	private function findParamPositions(): array {
-		$rm = new ReflectionMethod(ORObjectService::class, 'find');
-		$positions = [];
-		foreach ($rm->getParameters() as $i => $p) {
-			$positions[$p->getName()] = $i;
-		}
-
-		return $positions;
+		return FindCallShape::POSITIONS;
 	}//end findParamPositions()
 
 	/**
@@ -186,7 +180,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 		// find() is the scope-check call — assert it carries the correct scope flags.
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->willReturnCallback(
+			->willReturnCallback(FindCallShape::callback(
 				function (...$args) use ($pos, $targetEntity) {
 					$this->assertSame(self::TARGET_IN_SCOPE, $args[$pos['id']]);
 					$this->assertSame(self::REGISTER_ID, $args[$pos['register']]);
@@ -195,7 +189,7 @@ class SynchronizationServiceCleanupTest extends TestCase {
 					$this->assertFalse($args[$pos['_multitenancy']], '_multitenancy must be false to match prior unscoped-JOIN behaviour');
 					return $targetEntity;
 				}
-			);
+			));
 
 		// updateTarget returns the contract payload array the engine then
 		// persists; build one from the contract OR-object stub.
@@ -338,11 +332,11 @@ class SynchronizationServiceCleanupTest extends TestCase {
 			);
 
 		$this->orObjectService->method('find')
-			->willReturnCallback(
+			->willReturnCallback(FindCallShape::callback(
 				function (...$args) use ($pos, $targetEntity) {
 					return $args[$pos['id']] === self::TARGET_IN_SCOPE ? $targetEntity : null;
 				}
-			);
+			));
 
 		$this->service->expects($this->once())
 			->method('updateTarget')
