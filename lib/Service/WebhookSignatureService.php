@@ -123,40 +123,47 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
 	 */
 	public function verify(string $rawBody, string $headerValue, array $config): bool {
-		$scheme = ($config['scheme'] ?? 'openconnector');
-		$secret = (string)($config['secret'] ?? '');
-		$tolerance = (int)($config['toleranceSeconds'] ?? self::DEFAULT_TOLERANCE_SECONDS);
+		$check = new SignatureCheck(rawBody: $rawBody, headerValue: $headerValue);
+		$check->scheme = (string)($config['scheme'] ?? 'openconnector');
+		$check->secret = (string)($config['secret'] ?? '');
+		$check->tolerance = (int)($config['toleranceSeconds'] ?? self::DEFAULT_TOLERANCE_SECONDS);
 
 		// A secret equal to the export placeholder is a public string: a
 		// signature over it proves nothing, so it never verifies.
-		if ($secret === '' || $secret === SensitiveFieldRegistry::PLACEHOLDER || $headerValue === '') {
+		if ($check->secret === '' || $check->secret === SensitiveFieldRegistry::PLACEHOLDER || $headerValue === '') {
 			return false;
 		}
 
-		$untimestamped = $this->verifyUntimestamped(
-			scheme: (string)$scheme,
-			rawBody: $rawBody,
-			headerValue: $headerValue,
-			secret: $secret,
-			tolerance: $tolerance
-		);
+		$untimestamped = $this->verifyUntimestamped(check: $check);
 		if ($untimestamped !== null) {
 			return $untimestamped;
 		}
 
-		// Timestamped schemes: openconnector / stripe (t=<unix>,v1=<hex>).
-		$parsed = $this->parseTimestampedHeader(headerValue: $headerValue);
+		return $this->verifyTimestamped(check: $check);
+	}//end verify()
+
+	/**
+	 * Verify the timestamped schemes: openconnector / stripe (t=<unix>,v1=<hex>).
+	 *
+	 * @param SignatureCheck $check The verification.
+	 *
+	 * @return boolean True when a fresh timestamp carries a matching digest.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
+	 */
+	private function verifyTimestamped(SignatureCheck $check): bool {
+		$parsed = $this->parseTimestampedHeader(headerValue: $check->headerValue);
 		if ($parsed === null) {
 			return false;
 		}
 
 		[$timestamp, $signatures] = $parsed;
 
-		if (abs(time() - $timestamp) > $tolerance) {
+		if (abs(time() - $timestamp) > $check->tolerance) {
 			return false;
 		}
 
-		$expected = hash_hmac('sha256', $timestamp . '.' . $rawBody, $secret);
+		$expected = hash_hmac('sha256', $timestamp . '.' . $check->rawBody, $check->secret);
 		foreach ($signatures as $candidate) {
 			if (hash_equals($expected, $candidate) === true) {
 				return true;
@@ -164,7 +171,7 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 		}
 
 		return false;
-	}//end verify()
+	}//end verifyTimestamped()
 
 	/**
 	 * Verify the schemes that carry no timestamp.
@@ -174,28 +181,19 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 	 * refusing the rule, because a rule refused for a setting that does not
 	 * apply is a rule an administrator cannot fix by reading the error.
 	 *
-	 * @param string $scheme The configured scheme.
-	 * @param string $rawBody The raw request body bytes.
-	 * @param string $headerValue The received signature header value.
-	 * @param string $secret The shared secret.
-	 * @param integer $tolerance The configured tolerance, which these schemes ignore.
+	 * @param SignatureCheck $check The verification.
 	 *
 	 * @return boolean|null The verdict, or null when the scheme is not one of these.
 	 *
 	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
-	private function verifyUntimestamped(
-		string $scheme,
-		string $rawBody,
-		string $headerValue,
-		string $secret,
-		int $tolerance,
-	): ?bool {
+	private function verifyUntimestamped(SignatureCheck $check): ?bool {
+		$scheme = $check->scheme;
 		if ($scheme !== 'github' && $scheme !== 'teams') {
 			return null;
 		}
 
-		if ($tolerance !== self::DEFAULT_TOLERANCE_SECONDS) {
+		if ($check->tolerance !== self::DEFAULT_TOLERANCE_SECONDS) {
 			$this->logger->warning(
 				'webhook_signature: toleranceSeconds is ignored for scheme "' . $scheme
 				. '" (the scheme carries no timestamp).'
@@ -205,31 +203,29 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 		if ($scheme === 'teams') {
 			// Microsoft Teams: Authorization: HMAC <base64 over the raw body>,
 			// keyed with the base64-DECODED shared secret.
-			return $this->verifyTeams(rawBody: $rawBody, headerValue: $headerValue, secret: $secret);
+			return $this->verifyTeams(check: $check);
 		}
 
 		// GitHub: X-Hub-Signature-256: sha256=<hex over body>.
-		return $this->verifyGithub(rawBody: $rawBody, headerValue: $headerValue, secret: $secret);
+		return $this->verifyGithub(check: $check);
 	}//end verifyUntimestamped()
 
 	/**
 	 * Verify a GitHub `sha256=<hex>` style signature over the raw body.
 	 *
-	 * @param string $rawBody The raw request body bytes.
-	 * @param string $headerValue The received header value.
-	 * @param string $secret The shared secret.
+	 * @param SignatureCheck $check The verification.
 	 *
 	 * @return boolean
 	 *
 	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
 	 */
-	private function verifyGithub(string $rawBody, string $headerValue, string $secret): bool {
-		$value = $headerValue;
+	private function verifyGithub(SignatureCheck $check): bool {
+		$value = $check->headerValue;
 		if (str_starts_with($value, 'sha256=') === true) {
 			$value = substr($value, strlen('sha256='));
 		}
 
-		$expected = hash_hmac('sha256', $rawBody, $secret);
+		$expected = hash_hmac('sha256', $check->rawBody, $check->secret);
 		return hash_equals($expected, $value);
 	}//end verifyGithub()
 
@@ -241,16 +237,14 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 	 * string produces a different digest, so a sender that gets this wrong
 	 * fails verification rather than being quietly accepted.
 	 *
-	 * @param string $rawBody The raw request body bytes.
-	 * @param string $headerValue The received `Authorization` header value.
-	 * @param string $secret The shared secret, base64 as Teams issues it.
+	 * @param SignatureCheck $check The verification; its secret is base64 as Teams issues it.
 	 *
 	 * @return boolean True when the signature verifies.
 	 *
 	 * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
 	 */
-	private function verifyTeams(string $rawBody, string $headerValue, string $secret): bool {
-		$value = trim($headerValue);
+	private function verifyTeams(SignatureCheck $check): bool {
+		$value = trim($check->headerValue);
 		if (str_starts_with($value, 'HMAC ') === false) {
 			return false;
 		}
@@ -260,12 +254,12 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 			return false;
 		}
 
-		$key = base64_decode($secret, true);
+		$key = base64_decode($check->secret, true);
 		if ($key === false || $key === '') {
 			return false;
 		}
 
-		$expected = base64_encode(hash_hmac('sha256', $rawBody, $key, true));
+		$expected = base64_encode(hash_hmac('sha256', $check->rawBody, $key, true));
 		return hash_equals($expected, $value);
 	}//end verifyTeams()
 
