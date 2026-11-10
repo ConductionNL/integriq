@@ -268,4 +268,42 @@ class DsoOutboundPostGoldenTest extends TestCase {
 		);
 
 	}//end testAdviesverzoekFailed()
+	/**
+	 * The first missing or empty required field refuses the advies, logged once.
+	 *
+	 * @return void
+	 */
+	public function testAdviesWithAMissingFieldIsRefused(): void {
+		$service = new DSOSamenwerkingService(logger: $this->logger(), clientService: $this->clientService([]));
+
+		$result = $service->receiveAdvies(['adviesId' => 'a-1', 'organisatieOin' => ''], 'zaak-4');
+
+		$this->assertSame(
+			['stored' => false, 'adviesId' => null, 'caseId' => 'zaak-4', 'error' => 'required_field_missing: organisatieOin'],
+			$result
+		);
+		$this->assertSame(
+			[['warning', 'DSO-SWF: received advies missing required field', ['caseId' => 'zaak-4', 'field' => 'organisatieOin']]],
+			$this->logs
+		);
+
+	}//end testAdviesWithAMissingFieldIsRefused()
+
+	/**
+	 * A complete advies is stored and logged with its organisation.
+	 *
+	 * @return void
+	 */
+	public function testCompleteAdviesIsStored(): void {
+		$service = new DSOSamenwerkingService(logger: $this->logger(), clientService: $this->clientService([]));
+
+		$result = $service->receiveAdvies(['adviesId' => 'a-2', 'organisatieOin' => 'OIN-3', 'advies' => 'positief'], 'zaak-5');
+
+		$this->assertSame(['stored' => true, 'adviesId' => 'a-2', 'caseId' => 'zaak-5'], $result);
+		$this->assertSame(
+			[['info', 'DSO-SWF: advies received and stored', ['adviesId' => 'a-2', 'organisatieOin' => 'OIN-3', 'caseId' => 'zaak-5']]],
+			$this->logs
+		);
+
+	}//end testCompleteAdviesIsStored()
 }//end class
