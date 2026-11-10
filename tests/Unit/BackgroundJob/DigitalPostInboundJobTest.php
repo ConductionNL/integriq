@@ -108,4 +108,45 @@ class DigitalPostInboundJobTest extends TestCase {
 		$this->assertSame([0, [], [], []], $this->poll([], $items));
 		$this->assertSame([0, [], [], [['providerId' => 'berichtenbox']]], $this->poll(['configuration' => ['providerId' => 'berichtenbox']], []));
 	}
+
+	/**
+	 * Only enabled sources naming a known digital post provider are polled; an
+	 * unreadable register answers none, with a warning.
+	 *
+	 * @return void
+	 */
+	public function testActiveSourcesKeepsOnlyEnabledProviderSources(): void {
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$entity = new \OCA\OpenRegister\Db\ObjectEntity();
+		$entity->setObject(['slug' => 'a', 'isEnabled' => true, 'configuration' => ['providerId' => 'berichtenbox']]);
+		$rows = [
+			$entity,
+			['slug' => 'b', 'isEnabled' => true, 'configuration' => '{"providerId":"berichtenbox"}'],
+			['slug' => 'c', 'isEnabled' => false, 'configuration' => ['providerId' => 'berichtenbox']],
+			['slug' => 'd', 'isEnabled' => true, 'configuration' => ['providerId' => 'other']],
+			['slug' => 'e', 'isEnabled' => true, 'configuration' => 'nope'],
+			['slug' => 'f', 'isEnabled' => 'yes', 'configuration' => ['providerId' => 'berichtenbox']],
+			'junk',
+		];
+		$objects = $this->createMock(OrObjectService::class);
+		$objects->method('findAll')->willReturnOnConsecutiveCalls(['results' => $rows], $rows);
+		$job = new DigitalPostInboundJob($this->createMock(ITimeFactory::class), new DigitalPostProviderRegistry([$provider]), $this->createMock(IntakeDocumentDispatcherInterface::class), $objects, $this->createMock(LoggerInterface::class));
+
+		$this->assertSame(['a', 'b'], array_map(static fn (array $source): string => $source['slug'], $job->activeSources()));
+		$this->assertSame(['a', 'b'], array_map(static fn (array $source): string => $source['slug'], $job->activeSources()));
+
+		$failing = $this->createMock(OrObjectService::class);
+		$failing->method('findAll')->willThrowException(new RuntimeException('register down'));
+		$warnings = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [$message, $context];
+			}
+		);
+		$job = new DigitalPostInboundJob($this->createMock(ITimeFactory::class), new DigitalPostProviderRegistry([$provider]), $this->createMock(IntakeDocumentDispatcherInterface::class), $failing, $logger);
+		$this->assertSame([], $job->activeSources());
+		$this->assertSame([['digital-post.inbound.sources-unreadable', ['error' => 'register down']]], $warnings);
+	}
 }
