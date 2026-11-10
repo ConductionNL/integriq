@@ -30,6 +30,8 @@ use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IRequestId;
@@ -331,7 +333,9 @@ class EndpointServiceTest extends TestCase {
 	 */
 	public function testProcessLockingRuleReturnsLockPayloadArray(): void {
 		$openRegisters = ObjectServiceMockBuilder::make($this);
-		$openRegisters->method('lockObject')->willReturn(['locked' => true, 'process' => 'test-process']);
+		$openRegisters->expects($this->once())->method('lockObject')
+			->with($this->callback(fn (LockRequest $request): bool => $request->identifier === 'object-uuid' && $request->duration === 60))
+			->willReturn(['locked' => true, 'process' => 'test-process']);
 		$this->objectService->method('getOpenRegisters')->willReturn($openRegisters);
 
 		$rule = ObjectServiceMockBuilder::objectEntity(
@@ -355,7 +359,9 @@ class EndpointServiceTest extends TestCase {
 	 */
 	public function testProcessLockingRuleNormalisesUnlockBoolean(): void {
 		$openRegisters = ObjectServiceMockBuilder::make($this);
-		$openRegisters->method('unlockObject')->willReturn(true);
+		$openRegisters->expects($this->once())->method('unlockObject')
+			->with($this->callback(fn (UnlockRequest $request): bool => $request->identifier === 'object-uuid' && $request->break === false))
+			->willReturn(true);
 		$this->objectService->method('getOpenRegisters')->willReturn($openRegisters);
 
 		$rule = ObjectServiceMockBuilder::objectEntity(
