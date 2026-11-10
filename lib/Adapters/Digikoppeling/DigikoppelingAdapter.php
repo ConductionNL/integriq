@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Digikoppeling;
 
+use OCA\Integriq\Adapters\CatalogueAdapter;
+
 /**
  * Catalogue descriptor for the Digikoppeling transport adapter (ADR-017 Rule 1).
  *
@@ -37,7 +39,7 @@ namespace OCA\Integriq\Adapters\Digikoppeling;
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
-final class DigikoppelingAdapter {
+final class DigikoppelingAdapter extends CatalogueAdapter {
 
 	/**
 	 * Stable adapter id.
@@ -81,39 +83,6 @@ final class DigikoppelingAdapter {
 	public function label(): string {
 		return 'Digikoppeling';
 	}//end label()
-
-	/**
-	 * Adapters catalogue category (Dutch government M2M transport).
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/digikoppeling-adapter/spec.md
-	 */
-	public function category(): string {
-		return 'government';
-	}//end category()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO top-level menu.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/digikoppeling-adapter/spec.md
-	 */
-	public function addsTopLevelMenu(): bool {
-		return false;
-	}//end addsTopLevelMenu()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO per-adapter /beheer route.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/digikoppeling-adapter/spec.md
-	 */
-	public function addsManagementRoute(): bool {
-		return false;
-	}//end addsManagementRoute()
 
 	/**
 	 * The transport profiles this adapter offers.
