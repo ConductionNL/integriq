@@ -799,4 +799,89 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertSame('sent', $this->rows[$first['messageId']]['status']);
 		$this->assertCount(1, $this->events);
 	}//end testARetryWhoseBreakerCannotBeReadIsSentAnyway()
+	/**
+	 * Golden transcript: the result, the stored row, the conclusion events and the scheduled
+	 * retries of each outcome path, with generated references and times masked, against a fixture.
+	 *
+	 * @return void
+	 */
+	public function testGoldenTranscriptOfOutcomes(): void {
+		$scenarios = [
+			'confirmed' => fn () => $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', ['omschrijving' => 'M'], 'M', ['sourceApp' => 'dossiq', 'correlationId' => 'c-1']),
+			'transient then retry ok' => function () {
+				$first = $this->client([new Response(503, [], ''), self::bevestiging('0363-Z-2')])->actualiseerZaak('zsh', 'Z-1', ['einddatum' => '20261231'], ['sourceApp' => 'dossiq', 'correlationId' => 'c-2']);
+				$this->outbound->retry($first['messageId']);
+				return $first;
+			},
+			'permanent fout' => fn () => $this->client([self::fout(500, 'StUF055')])->creeerZaak('zsh', [], 'M'),
+			'retries exhausted' => function () {
+				$first = $this->client(array_fill(0, 5, new Response(502, [], '')))->creeerZaak('zsh', [], 'M', ['correlationId' => 'c-3']);
+				for ($i = 0; $i < 4; $i++) {
+					$this->outbound->retry($first['messageId']);
+				}
+
+				return $first;
+			},
+			'question answered' => fn () => $this->client([self::bevestiging('0363-Z-9')])->genereerZaakIdentificatie('zsh', ['sourceApp' => 'dossiq']),
+			'question failed' => fn () => $this->client([new Response(500, [], 'oops')])->genereerZaakIdentificatie('zsh', []),
+			'retry not scheduled' => function () {
+				$this->failSchedule = true;
+				return $this->client([new Response(503, [], '')])->creeerZaak('zsh', [], 'M');
+			},
+			'row not saved' => function () {
+				$this->failSaveOfStatus = 'sent';
+				return $this->client([self::bevestiging('0363-Z-5')])->creeerZaak('zsh', [], 'M', ['caseIdentification' => 'Z-known']);
+			},
+		];
+
+		$mask = function ($value) use (&$mask) {
+			if (is_array($value) === true) {
+				$masked = array_map($mask, $value);
+				if (array_key_exists('durationMs', $masked) === true) {
+					$masked['durationMs'] = 'MS';
+				}
+
+				return $masked;
+			}
+
+			if (is_string($value) === true && preg_match('/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d/', $value) === 1) {
+				return 'TIME';
+			}
+
+			if (is_string($value) === true && preg_match('/^[0-9A-Z]{26}$/', $value) === 1) {
+				return 'REF';
+			}
+
+			return $value;
+		};
+		$transcript = [];
+		foreach ($scenarios as $name => $scenario) {
+			$this->setUp();
+			try {
+				$result = $scenario();
+			} catch (\Throwable $exception) {
+				$result = ['threw' => $exception::class, 'message' => $exception->getMessage()];
+			}
+
+			$rows = $this->rows;
+			foreach ($rows as $id => $row) {
+				unset($rows[$id]['envelope']);
+			}
+
+			$transcript[$name] = $mask(
+				[
+					'result' => $result,
+					'rows' => array_values($rows),
+					'events' => array_map(static fn ($event): array => [$event->getSourceApp(), $event->getCorrelationId(), $event->getOperation(), $event->getAttempts(), $event->getResult()], $this->events),
+					'scheduled' => array_map(static fn (array $job): array => [$job[0], $job[2]], $this->scheduled),
+				]
+			);
+		}
+
+		$this->assertSame(
+			(string)file_get_contents(__DIR__ . '/../../../fixtures/stuf-zds/outbound-transcript.json'),
+			json_encode($transcript, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n"
+		);
+
+	}//end testGoldenTranscriptOfOutcomes()
 }//end class
