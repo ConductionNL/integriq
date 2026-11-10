@@ -282,6 +282,21 @@ class SignedEnvelopeClientsGoldenTest extends TestCase {
 	}//end testNonSuccessStatusIsRefused()
 
 	/**
+	 * The configuration schema matches the golden file.
+	 *
+	 * @param string $class The client class.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('clients')]
+	public function testConfigSchemaMatchesTheGoldenFile(string $class): void {
+		$golden = json_decode((string) file_get_contents(__DIR__.'/../../../fixtures/stuf/signed-envelope-schemas.json'), true);
+
+		$this->assertSame($golden[$class], $this->buildClient($class, [])->getConfigSchema());
+
+	}//end testConfigSchemaMatchesTheGoldenFile()
+
+	/**
 	 * A transport failure is logged and rethrown with the Guzzle exception as previous.
 	 *
 	 * @param string $class     The client class.
