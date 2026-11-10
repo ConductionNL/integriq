@@ -74,6 +74,8 @@ use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -6447,11 +6449,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// dispatch — a layer below the flag — checks nothing else.
 		$writeBatch = fn (): array => $this->orObjectService->saveObjects(
 			objects: $rows,
-			register: $group['register'],
-			schema: $group['schema'],
-			validation: $group['validation'],
-			events: $group['events'],
-			_audit: $group['audit']
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $group['register'], schema: $group['schema']),
+				validation: $group['validation'],
+				events: $group['events'],
+				audit: $group['audit']
+			)
 		);
 
 		if ($group['events'] === false) {

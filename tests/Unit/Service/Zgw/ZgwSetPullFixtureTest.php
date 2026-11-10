@@ -24,6 +24,7 @@ use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveObjectsCallShape;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -160,7 +161,7 @@ class ZgwSetPullFixtureTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) ? $object : [], $key);
 			}
 		);
-		$or->method('saveObjects')->willReturnCallback(
+		$or->method('saveObjects')->willReturnCallback(SaveObjectsCallShape::callback(
 			function (array $objects, $register=null, $schema=null, ...$rest): array {
 				$saved = [];
 				foreach ($objects as $object) {
@@ -171,7 +172,7 @@ class ZgwSetPullFixtureTest extends TestCase {
 
 				return ['saved' => $saved, 'errors' => [], 'statistics' => ['saved' => count($saved)]];
 			}
-		);
+		));
 		$or->method('findAll')->willReturnCallback(
 			function (array $config=[], ...$rest) {
 				$filters = ($config['filters'] ?? []);
