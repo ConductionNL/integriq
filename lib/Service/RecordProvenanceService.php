@@ -129,7 +129,12 @@ class RecordProvenanceService implements RecordProvenanceServiceInterface {
 		}
 
 		try {
-			return $this->objectService->find(id: $id, options: new ObjectFindOptions(register: self::REGISTER, schema: $schema), _rbac: false, _multitenancy: false);
+			return $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: $schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (\Throwable) {
 			return null;
 		}

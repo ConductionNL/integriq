@@ -32,7 +32,6 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\ListenerSchemaResolver;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
 use OCA\Integriq\Service\PeppolTransmissionService;
-use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -118,8 +117,8 @@ class PeppolOutboundConsumerTest extends TestCase {
 			$registerMapper->method('find')->willThrowException(new RuntimeException('OpenRegister unavailable'));
 			$schemaMapper->method('find')->willThrowException(new RuntimeException('OpenRegister unavailable'));
 		} else {
-			$registerMapper->method('find')->willReturnCallback(FindCallShape::callback(fn (string|int $id): object => $this->slugEntity(map: self::REGISTERS, id: (string)$id)));
-			$schemaMapper->method('find')->willReturnCallback(FindCallShape::callback(fn (string|int $id): object => $this->slugEntity(map: self::SCHEMAS, id: (string)$id)));
+			$registerMapper->method('find')->willReturnCallback(fn (string|int $id): object => $this->slugEntity(map: self::REGISTERS, id: (string)$id));
+			$schemaMapper->method('find')->willReturnCallback(fn (string|int $id): object => $this->slugEntity(map: self::SCHEMAS, id: (string)$id));
 		}
 
 		$container = $this->createMock(ContainerInterface::class);

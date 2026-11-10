@@ -123,7 +123,12 @@ class EventsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
 		try {
-			$event = $this->orObjectService->find(id: (string)$id, options: new ObjectFindOptions(register: 'integriq', schema: 'event'), _rbac: false, _multitenancy: false);
+			$event = $this->orObjectService->find(
+				id: (string)$id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
 		}
@@ -835,7 +840,12 @@ class EventsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function deadLetterShow(string $id): JSONResponse {
 		try {
-			$message = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'event_message'), _rbac: false, _multitenancy: false);
+			$message = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_message'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
 		}

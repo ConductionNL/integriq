@@ -252,7 +252,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 			['status' => 'approved', 'synchronizationId' => self::SYNC_ID],
 			'approval-valid'
 		);
-		$this->approvals->method('find')->willReturnCallback(FindCallShape::callback(
+		$this->approvals->method('find')->willReturnCallback(
 			function (string $id) use ($valid) {
 				if ($id === 'approval-valid') {
 					return $valid;
@@ -268,7 +268,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 				}
 				throw new \Exception('not found');
 			}
-		));
+		);
 
 		$this->assertSame('approval-valid', $this->approvalService->resolve(self::SYNC_ID, 'approval-valid')?->getUuid());
 		$this->assertNull($this->approvalService->resolve(self::SYNC_ID, 'approval-consumed'));

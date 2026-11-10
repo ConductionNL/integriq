@@ -28,7 +28,6 @@ use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
 use OCA\Integriq\Service\ConfigurationService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
-use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -157,9 +156,9 @@ class ConfigurationServiceExportConfigurationGoldenTest extends TestCase {
 		);
 
 		$registers = $this->createMock(RegisterMapper::class);
-		$registers->method('find')->willReturnCallback(FindCallShape::callback(fn ($id): object => $this->found(kind: 'register', id: $id)));
+		$registers->method('find')->willReturnCallback(fn ($id): object => $this->found(kind: 'register', id: $id));
 		$schemas = $this->createMock(SchemaMapper::class);
-		$schemas->method('find')->willReturnCallback(FindCallShape::callback(fn ($id): object => $this->found(kind: 'schema', id: $id)));
+		$schemas->method('find')->willReturnCallback(fn ($id): object => $this->found(kind: 'schema', id: $id));
 
 		$registry = new SensitiveFieldRegistry();
 		$service = new ConfigurationService(

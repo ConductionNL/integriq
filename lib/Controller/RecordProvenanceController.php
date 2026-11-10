@@ -81,7 +81,12 @@ class RecordProvenanceController extends Controller {
 		}
 
 		try {
-			$record = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: $register, schema: $schema), _rbac: true, _multitenancy: true);
+			$record = $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: $register, schema: $schema),
+				_rbac: true,
+				_multitenancy: true
+			);
 		} catch (DoesNotExistException | NotAuthorizedException) {
 			// A miss and a refused read look the same to the caller: the record does not exist for them.
 			$record = null;

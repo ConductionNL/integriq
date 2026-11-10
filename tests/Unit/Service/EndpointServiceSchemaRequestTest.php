@@ -38,7 +38,6 @@ use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
-use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\SchemaMapperAdapterDouble;
 use OCA\Integriq\Tests\Helpers\UriObjectEntity;
@@ -116,7 +115,7 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 		$openRegisters = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->onlyMethods(['getMapper'])->addMethods(['clearCurrents'])->getMock();
 		$this->objectService->method('getOpenRegisters')->willReturn($openRegisters);
 		$objectEntities = $this->createMock(SchemaMapperAdapterDouble::class);
-		$objectEntities->method('find')->willReturnCallback(FindCallShape::callback(fn ($id) => $this->entity(['id' => (string)$id])));
+		$objectEntities->method('find')->willReturnCallback(fn ($id) => $this->entity(['id' => (string)$id]));
 		$openRegisters->method('getMapper')->willReturn($objectEntities);
 
 		$schema = $this->getMockBuilder(\stdClass::class)->addMethods(['getProperties', 'getTitle', 'getRequired'])->getMock();
@@ -127,7 +126,7 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 
 		$this->mapper = $this->createMock(SchemaMapperAdapterDouble::class);
 		$this->mapper->method('getSchema')->willReturn(2);
-		$this->mapper->method('find')->willReturnCallback(FindCallShape::callback(
+		$this->mapper->method('find')->willReturnCallback(
 			function ($id) {
 				if ($id === 'missing') {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('gone');
@@ -135,7 +134,7 @@ class EndpointServiceSchemaRequestTest extends TestCase {
 
 				return $this->entity(['id' => (string)$id, 'name' => 'n']);
 			}
-		));
+		);
 		$this->objectService->method('getMapper')->willReturn($this->mapper);
 
 		$this->service = new EndpointService(

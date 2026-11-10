@@ -528,7 +528,12 @@ class ApprovalService implements ApprovalServiceInterface {
 	 */
 	public function find(string $id): ObjectEntity {
 		try {
-			return $this->objectService->find(id: $id, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA), _rbac: false, _multitenancy: false);
+			return $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
+				_rbac: false,
+				_multitenancy: false
+			);
 			// Throwable alone: DoesNotExistException is a Throwable, so naming it
 			// separately caught nothing extra.
 		} catch (Throwable $e) {

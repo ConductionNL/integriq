@@ -118,7 +118,12 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.run');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'job'), _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'job'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}
@@ -187,7 +192,12 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.test');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'job'), _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'job'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}

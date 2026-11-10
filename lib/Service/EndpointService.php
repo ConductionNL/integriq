@@ -3459,7 +3459,12 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	public function getEndpointById(string $id): ?ObjectEntity {
 		try {
-			return $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'endpoint'), _rbac: false, _multitenancy: false);
+			return $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'endpoint'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Exception $e) {
 			$this->logger->error('Error fetching endpoint: ' . $e->getMessage());
 			return null;

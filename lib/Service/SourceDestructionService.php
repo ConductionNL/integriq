@@ -207,7 +207,12 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 		}
 
 		try {
-			$object = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: $schema), _rbac: false, _multitenancy: false);
+			$object = $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: $schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $exception) {
 			return null;
 		}

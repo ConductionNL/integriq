@@ -178,7 +178,12 @@ class SourcesController extends Controller {
 		// ObjectService::find() throws DoesNotExistException on a missing
 		// UUID — catch it so the response is a clean 404 instead of 500.
 		try {
-			$source = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}
@@ -275,7 +280,12 @@ class SourcesController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function tripCircuitBreaker(CallServiceInterface $callService, string $id): JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}
@@ -308,7 +318,12 @@ class SourcesController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function resetCircuitBreaker(CallServiceInterface $callService, string $id): JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false, _multitenancy: false);
+			$source = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}

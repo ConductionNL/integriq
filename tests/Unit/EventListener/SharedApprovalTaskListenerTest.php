@@ -28,7 +28,6 @@ use OCA\Integriq\EventListener\SharedApprovalTaskListener;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\ApprovalDecisionService;
 use OCA\Integriq\Service\ApprovalService;
-use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
@@ -92,7 +91,7 @@ class SharedApprovalTaskListenerTest extends TestCase {
 		$this->record = new ObjectEntity();
 		$this->record->setUuid('approval-1');
 		$this->record->setObject(['status' => 'pending', 'approverGroup' => 'woo-approvers', 'taskUuid' => 'task-1']);
-		$this->approvals->method('find')->willReturnCallback(FindCallShape::callback(fn (string $id) => $this->record));
+		$this->approvals->method('find')->willReturnCallback(fn (string $id) => $this->record);
 
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);

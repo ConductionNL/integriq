@@ -316,7 +316,12 @@ class IntegriqAgentTools {
 	public function testSource(string $sourceId, ?string $agentId=null): array {
 		$tool   = 'testSource';
 		$user   = $this->authorize(tool: $tool, agentId: $agentId, ids: [$sourceId]);
-		$source = $this->objectService->find(id: $sourceId, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false, _multitenancy: false);
+		$source = $this->objectService->find(
+			id: $sourceId,
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
+			_rbac: false,
+			_multitenancy: false
+		);
 		if ($source === null) {
 			throw new InvalidArgumentException('Not found: ' . $sourceId);
 		}
@@ -624,7 +629,12 @@ class IntegriqAgentTools {
 	 */
 	private function findObject(string $schema, string $id): \OCA\OpenRegister\Db\ObjectEntity {
 		try {
-			$found = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: $schema), _rbac: false, _multitenancy: false);
+			$found = $this->objectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: 'integriq', schema: $schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $e) {
 			$found = null;
 		}

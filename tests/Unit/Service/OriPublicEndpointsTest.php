@@ -490,7 +490,7 @@ class OriPublicEndpointsTest extends TestCase {
 			}
 		};
 		$registerMapper = $this->createMock(RegisterMapper::class);
-		$registerMapper->method('find')->willReturnCallback(FindCallShape::callback(
+		$registerMapper->method('find')->willReturnCallback(
 			function (...$args) use ($register) {
 				if (($args['id'] ?? $args[0]) === 'decidiq') {
 					return $register;
@@ -498,10 +498,10 @@ class OriPublicEndpointsTest extends TestCase {
 
 				throw new DoesNotExistException('no register');
 			}
-		));
+		);
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->method('find')->willReturnCallback(FindCallShape::callback(
+		$schemaMapper->method('find')->willReturnCallback(
 			function (...$args) {
 				$id = (int)($args['id'] ?? $args[0]);
 				$slug = [5 => 'person', 7 => 'meeting', 99 => 'meeting'][$id];
@@ -534,7 +534,7 @@ class OriPublicEndpointsTest extends TestCase {
 					}
 				};
 			}
-		));
+		);
 
 		return new EndpointTargetResolver($registerMapper, $schemaMapper);
 	}//end decidiqResolver()

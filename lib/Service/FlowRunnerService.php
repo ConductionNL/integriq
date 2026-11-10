@@ -808,7 +808,12 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
 	 */
 	private function findFlowRun(string $id): ObjectEntity {
-		return $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN), _rbac: false, _multitenancy: false);
+		return $this->orObjectService->find(
+			id: $id,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_FLOW_RUN),
+			_rbac: false,
+			_multitenancy: false
+		);
 	}//end findFlowRun()
 
 	/**
@@ -823,6 +828,11 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
 	 */
 	public function findFlow(string $id): ObjectEntity {
-		return $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_FLOW), _rbac: false, _multitenancy: false);
+		return $this->orObjectService->find(
+			id: $id,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_FLOW),
+			_rbac: false,
+			_multitenancy: false
+		);
 	}//end findFlow()
 }//end class
