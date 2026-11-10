@@ -195,6 +195,8 @@ class IntakeAdaptersGoldenTest extends TestCase {
 			'teams-untrusted-http' => [['accessToken' => 'tok', 'serviceUrl' => 'http://smba.trafficmanager.net/'], ''],
 			'teams-untrusted-host' => [['accessToken' => 'tok', 'serviceUrl' => 'https://evil.example/'], ''],
 			'teams-lookalike-host' => [['accessToken' => 'tok', 'serviceUrl' => 'https://eviltrafficmanager.net/'], ''],
+			'teams-lookalike-default-host' => [['accessToken' => 'tok', 'serviceUrl' => 'https://evilbotframework.com/'], ''],
+			'teams-subdomain-of-default-host' => [['accessToken' => 'tok', 'serviceUrl' => 'https://Europe.BotFramework.com/x'], '{"id":"e"}'],
 			'teams-unparseable' => [['accessToken' => 'tok', 'serviceUrl' => 'https:///'], ''],
 			'teams-configured-hosts' => [['accessToken' => 'tok', 'serviceUrl' => 'https://bot.sovereign.example/', 'trustedServiceHosts' => ['', 'Sovereign.Example']], '{"id":"s"}'],
 			'teams-configured-hosts-replace-default' => [['accessToken' => 'tok', 'trustedServiceHosts' => ['sovereign.example']], ''],

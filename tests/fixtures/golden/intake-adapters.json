@@ -728,6 +728,40 @@
         },
         "posted": []
     },
+    "teams-lookalike-default-host": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "The serviceUrl is not a trusted connector host, so no reply is sent."
+        },
+        "posted": []
+    },
+    "teams-subdomain-of-default-host": {
+        "result": {
+            "status": "sent",
+            "channelId": "teams",
+            "reference": "e",
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://Europe.BotFramework.com/x/v3/conversations/19%3Athread%40thread.tacv2/activities",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "type": "message",
+                        "text": "Uw zaak is in behandeling",
+                        "replyToId": "1485983408511"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
     "teams-unparseable": {
         "result": {
             "status": "failed",
