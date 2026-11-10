@@ -26,6 +26,7 @@ use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SynchronizationRunNode;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -246,11 +247,11 @@ class SynchronizationRunNodeTest extends TestCase {
 			)
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['trigger' => 'manual']]],
 			['synchronization' => 'demo-sync', 'output' => 'syncResult'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(3, $out);
 
@@ -282,11 +283,11 @@ class SynchronizationRunNodeTest extends TestCase {
 			$this->runLog(contracts: [], counts: [])
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			['synchronization' => 'demo-sync', 'output' => 'syncResult'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertTrue($out[0]['json']['syncResult']['summaryOnly']);
@@ -310,11 +311,11 @@ class SynchronizationRunNodeTest extends TestCase {
 
 		$caught = null;
 		try {
-			$this->node->execute(
+			$this->node->execute(new FlowNodeCall(
 				[['json' => []]],
 				['synchronization' => 'demo-sync', 'output' => 'syncResult'],
 				$this->context()
-			);
+			));
 		} catch (FlowNodeException $exception) {
 			$caught = $exception;
 		}
@@ -351,11 +352,11 @@ class SynchronizationRunNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			['synchronization' => 'demo-sync', 'output' => 'syncResult', 'maxItems' => 20000],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(300, $out);
 		$this->assertCount(1, $warnings);
@@ -380,7 +381,7 @@ class SynchronizationRunNodeTest extends TestCase {
 
 		$this->logger->expects($this->never())->method('warning');
 
-		$out = $this->node->execute([['json' => []]], ['synchronization' => 'demo-sync'], $this->context());
+		$out = $this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'demo-sync'], $this->context()));
 
 		$this->assertCount(10, $out);
 
@@ -401,7 +402,7 @@ class SynchronizationRunNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/source unreachable/');
 
-		$this->node->execute([['json' => []]], ['synchronization' => 'demo-sync'], $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'demo-sync'], $this->context()));
 
 	}//end testFailedSynchronizationRaises()
 
@@ -417,11 +418,11 @@ class SynchronizationRunNodeTest extends TestCase {
 		$this->synchronizationService->method('synchronize')
 			->willThrowException(new RuntimeException('source unreachable'));
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			['synchronization' => 'demo-sync', 'output' => 'syncResult', 'onError' => 'continue'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertArrayNotHasKey('syncResult', $out[0]['json']);
@@ -442,7 +443,7 @@ class SynchronizationRunNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/unattributed/');
 
-		$this->node->execute([['json' => []]], ['synchronization' => 'demo-sync'], []);
+		$this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'demo-sync'], []));
 
 	}//end testUnattributedRunStartsNoSynchronization()
 
@@ -460,7 +461,7 @@ class SynchronizationRunNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/no-such-sync/');
 
-		$this->node->execute([['json' => []]], ['synchronization' => 'no-such-sync'], $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'no-such-sync'], $this->context()));
 
 	}//end testUnknownSynchronizationRaises()
 
@@ -472,7 +473,7 @@ class SynchronizationRunNodeTest extends TestCase {
 	public function testEmptyInputRunsNothing(): void {
 		$this->synchronizationService->expects($this->never())->method('synchronize');
 
-		$this->assertSame([], $this->node->execute([], ['synchronization' => 'demo-sync'], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall([], ['synchronization' => 'demo-sync'], $this->context())));
 
 	}//end testEmptyInputRunsNothing()
 

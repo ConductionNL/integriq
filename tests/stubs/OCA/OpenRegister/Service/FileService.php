@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileTransfer;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCP\Files\File;
 
 /**
@@ -31,58 +34,27 @@ use OCP\Files\File;
  */
 class FileService {
 	/**
-	 * Add a new file to an object's folder.
+	 * Add a new file to an object's folder (signature as OpenRegister #9067).
 	 *
-	 * @param ObjectEntity|string $objectEntity
-	 * @param string $fileName
-	 * @param string|resource|null $content
-	 * @param bool $share
-	 * @param array $tags
-	 * @param mixed $_schema
-	 * @param mixed $_register
-	 * @param int|string|null $registerId
+	 * @param FileTarget $target The object (or its id) and its register.
+	 * @param FileUpload $upload The file name, content, share toggle and tags.
 	 * @return File
 	 */
-	public function addFile(
-		$objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-		$_schema = null,
-		$_register = null,
-		$registerId = null,
-	): File {
-		throw new \RuntimeException('FileService stub: addFile() has no default implementation — use createMock()->method(\'addFile\')->willReturn(...).');
+	public function addFile(FileTarget $target, FileUpload $upload): File {
+		throw new \RuntimeException('FileService stub: addFile() has no default implementation, use createMock()->method(\'addFile\')->willReturn(...).');
 	}
 
 	/**
-	 * Save (create or update) a file in an object's folder.
+	 * Save (create or update) a file in an object's folder (signature as OpenRegister #9067).
 	 *
-	 * The `$content` type is `mixed`, mirroring the real OpenRegister signature
-	 * rather than narrowing it: `stream-file-content` (#110) widened this
-	 * parameter to accept a stream RESOURCE as well as a string, so a binary
-	 * download can be handed straight to the write side without being buffered
-	 * into a PHP string. A stub declaring `string` here would reject exactly the
-	 * value production accepts, failing any streamed-save test for the wrong
-	 * reason. PHP has no `resource` type keyword, so the contract lives in the
-	 * docblock — same as in `OCA\OpenRegister\Service\FileService`.
+	 * The upload's content may be a string or a readable stream resource.
 	 *
-	 * @param ObjectEntity $objectEntity
-	 * @param string $fileName
-	 * @param string|resource|null $content
-	 * @param bool $share
-	 * @param array $tags
+	 * @param ObjectEntity $objectEntity The object.
+	 * @param FileUpload $upload The file name, content, share toggle and tags.
 	 * @return File
 	 */
-	public function saveFile(
-		ObjectEntity $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-	): File {
-		throw new \RuntimeException('FileService stub: saveFile() has no default implementation — use createMock()->method(\'saveFile\')->willReturn(...).');
+	public function saveFile(ObjectEntity $objectEntity, FileUpload $upload): File {
+		throw new \RuntimeException('FileService stub: saveFile() has no default implementation, use createMock()->method(\'saveFile\')->willReturn(...).');
 	}
 
 	/**
@@ -97,15 +69,13 @@ class FileService {
 	}
 
 	/**
-	 * Copy a file to another object.
+	 * Copy a file to another object (signature as OpenRegister FileService::copyAttachedFile()).
 	 *
-	 * @param ObjectEntity $sourceObject
-	 * @param int $fileId
-	 * @param ObjectEntity $targetObject
+	 * @param FileTransfer $transfer The source object, file id and target object.
 	 * @return File
 	 */
-	public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File {
-		throw new \RuntimeException('FileService stub: copyFile() has no default implementation — use createMock()->method(\'copyFile\')->willReturn(...).');
+	public function copyAttachedFile(FileTransfer $transfer): File {
+		throw new \RuntimeException('FileService stub: copyAttachedFile() has no default implementation, stub it with createMock().');
 	}
 
 	/**
