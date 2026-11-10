@@ -38,6 +38,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
@@ -90,35 +91,17 @@ class PromotionController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function preview(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		$promoter = $this->promoter();
+		if ($promoter instanceof JSONResponse) {
+			return $promoter;
 		}
 
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'environment.promote');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$promotion = $this->promotionRequest();
+		if (is_string($promotion) === true) {
+			return new JSONResponse(['error' => $promotion], Http::STATUS_BAD_REQUEST);
 		}
 
-		[$configurationId, $targetEnvironmentSlug, $credentialBindings, $missing] = $this->extractPromotionParams();
-		if ($missing !== null) {
-			return new JSONResponse(['error' => $missing], Http::STATUS_BAD_REQUEST);
-		}
-
-		try {
-			$preview = $this->promotionService->preview(
-				configurationId: $configurationId,
-				targetEnvironmentSlug: $targetEnvironmentSlug,
-				credentialBindings: $credentialBindings
-			);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (Throwable $e) {
-			return new JSONResponse(['error' => $this->l->t('Promotion preview failed: %s', [$e->getMessage()])], Http::STATUS_BAD_GATEWAY);
-		}
-
-		return new JSONResponse($preview);
+		return $this->runPreview(promotion: $promotion);
 	}//end preview()
 
 	/**
@@ -137,6 +120,30 @@ class PromotionController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function confirm(): JSONResponse {
+		$promoter = $this->promoter();
+		if ($promoter instanceof JSONResponse) {
+			return $promoter;
+		}
+
+		$unconfirmed = $this->unconfirmed();
+		if ($unconfirmed !== null) {
+			return $unconfirmed;
+		}
+
+		$promotion = $this->promotionRequest();
+		if (is_string($promotion) === true) {
+			return new JSONResponse(['error' => $promotion], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->runPromotion(promotion: $promotion, promoter: $promoter);
+	}//end confirm()
+
+	/**
+	 * The signed-in user, once they may run the `environment.promote` action.
+	 *
+	 * @return IUser|JSONResponse The promoter, or 401 without a session, or 403 when the action is refused.
+	 */
+	private function promoter(): IUser|JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
@@ -148,6 +155,60 @@ class PromotionController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		}
 
+		return $user;
+	}//end promoter()
+
+	/**
+	 * Run the non-mutating preview of a checked request.
+	 *
+	 * @param PromotionRequest $promotion The configuration, target and bindings.
+	 *
+	 * @return JSONResponse The merged preview classification, or a 400/502 error.
+	 */
+	private function runPreview(PromotionRequest $promotion): JSONResponse {
+		try {
+			$preview = $this->promotionService->preview(
+				configurationId: $promotion->configurationId,
+				targetEnvironmentSlug: $promotion->targetEnvironmentSlug,
+				credentialBindings: $promotion->credentialBindings
+			);
+		} catch (Throwable $e) {
+			return $this->previewFailure(exception: $e);
+		}
+
+		return new JSONResponse($preview);
+	}//end runPreview()
+
+	/**
+	 * Run a confirmed promotion of a checked request.
+	 *
+	 * @param PromotionRequest $promotion The configuration, target and bindings.
+	 * @param IUser            $promoter  The user the audit entry records.
+	 *
+	 * @return JSONResponse The target's post-import summary plus auditId/callLogId, or a 400/502 error.
+	 */
+	private function runPromotion(PromotionRequest $promotion, IUser $promoter): JSONResponse {
+		try {
+			$result = $this->promotionService->promote(
+				configurationId: $promotion->configurationId,
+				targetEnvironmentSlug: $promotion->targetEnvironmentSlug,
+				credentialBindings: $promotion->credentialBindings,
+				actorUid: $promoter->getUID(),
+				fromEnvironmentSlug: $this->resolveFromEnvironmentSlug()
+			);
+		} catch (Throwable $e) {
+			return $this->promotionFailure(exception: $e);
+		}
+
+		return new JSONResponse($result);
+	}//end runPromotion()
+
+	/**
+	 * The answer for a promotion request without an explicit confirmation.
+	 *
+	 * @return JSONResponse|null 400 unless `confirmed` is true (or "true"), else null.
+	 */
+	private function unconfirmed(): JSONResponse|null {
 		$confirmed = $this->request->getParam('confirmed');
 		if ($confirmed !== true && $confirmed !== 'true') {
 			return new JSONResponse(
@@ -156,27 +217,38 @@ class PromotionController extends Controller {
 			);
 		}
 
-		[$configurationId, $targetEnvironmentSlug, $credentialBindings, $missing] = $this->extractPromotionParams();
-		if ($missing !== null) {
-			return new JSONResponse(['error' => $missing], Http::STATUS_BAD_REQUEST);
+		return null;
+	}//end unconfirmed()
+
+	/**
+	 * Answer a preview that failed: 400 for a request the service refused, else 502.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return JSONResponse The error envelope.
+	 */
+	private function previewFailure(Throwable $exception): JSONResponse {
+		if ($exception instanceof InvalidArgumentException) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		try {
-			$result = $this->promotionService->promote(
-				configurationId: $configurationId,
-				targetEnvironmentSlug: $targetEnvironmentSlug,
-				credentialBindings: $credentialBindings,
-				actorUid: $user->getUID(),
-				fromEnvironmentSlug: $this->resolveFromEnvironmentSlug()
-			);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (Throwable $e) {
-			return new JSONResponse(['error' => $this->l->t('Promotion failed: %s', [$e->getMessage()])], Http::STATUS_BAD_GATEWAY);
+		return new JSONResponse(['error' => $this->l->t('Promotion preview failed: %s', [$exception->getMessage()])], Http::STATUS_BAD_GATEWAY);
+	}//end previewFailure()
+
+	/**
+	 * Answer a promotion that failed: 400 for a request the service refused, else 502.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return JSONResponse The error envelope.
+	 */
+	private function promotionFailure(Throwable $exception): JSONResponse {
+		if ($exception instanceof InvalidArgumentException) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		return new JSONResponse($result);
-	}//end confirm()
+		return new JSONResponse(['error' => $this->l->t('Promotion failed: %s', [$exception->getMessage()])], Http::STATUS_BAD_GATEWAY);
+	}//end promotionFailure()
 
 	/**
 	 * Read the optional `fromEnvironmentSlug` request param, defaulting to
@@ -194,31 +266,38 @@ class PromotionController extends Controller {
 	}//end resolveFromEnvironmentSlug()
 
 	/**
-	 * Extract and validate the shared `configurationId`/`targetEnvironmentSlug`/
-	 * `credentialBindings` request params.
+	 * The shared `configurationId`/`targetEnvironmentSlug`/`credentialBindings`
+	 * request params, checked.
 	 *
-	 * Returns `[configurationId, targetEnvironmentSlug, credentialBindings,
-	 * missingParamError]` — the description lives here rather than beside the
-	 * `@return` tag because php-cs-fixer aligns a continuation line under a
-	 * type this wide and phpcs then rejects the result as over-long.
-	 *
-	 * @return array{0: string, 1: string, 2: array<int,array<string,mixed>>, 3: string|null}
+	 * @return PromotionRequest|string The request, or the missing-param error.
 	 */
-	private function extractPromotionParams(): array {
+	private function promotionRequest(): PromotionRequest|string {
 		$configurationId = $this->request->getParam('configurationId');
 		$targetEnvironmentSlug = $this->request->getParam('targetEnvironmentSlug');
+		if ($this->isFilled(value: $configurationId) === false || $this->isFilled(value: $targetEnvironmentSlug) === false) {
+			return $this->l->t('Request must carry "configurationId" and "targetEnvironmentSlug"');
+		}
+
+		$promotion = new PromotionRequest(configurationId: $configurationId, targetEnvironmentSlug: $targetEnvironmentSlug);
 		$credentialBindings = $this->request->getParam('credentialBindings', []);
-
-		if (is_string($configurationId) === false || $configurationId === ''
-			|| is_string($targetEnvironmentSlug) === false || $targetEnvironmentSlug === ''
-		) {
-			return ['', '', [], $this->l->t('Request must carry "configurationId" and "targetEnvironmentSlug"')];
+		if (is_array($credentialBindings) === true) {
+			$promotion->credentialBindings = $credentialBindings;
 		}
 
-		if (is_array($credentialBindings) === false) {
-			$credentialBindings = [];
-		}
+		return $promotion;
+	}//end promotionRequest()
 
-		return [$configurationId, $targetEnvironmentSlug, $credentialBindings, null];
-	}//end extractPromotionParams()
+	/**
+	 * Whether a request param is a non-empty string.
+	 *
+	 * @param mixed $value The param.
+	 *
+	 * @return bool True for a non-empty string.
+	 *
+	 * @psalm-assert-if-true non-empty-string $value
+	 * @phpstan-assert-if-true non-empty-string $value
+	 */
+	private function isFilled(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isFilled()
 }//end class
