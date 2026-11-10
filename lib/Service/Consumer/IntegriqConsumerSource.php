@@ -22,6 +22,8 @@ namespace OCA\Integriq\Service\Consumer;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
+use OCA\OpenRegister\Service\Consumer\ConsumerAuthorization;
+use OCA\OpenRegister\Service\Consumer\ConsumerIdentity;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
 
@@ -158,12 +160,12 @@ class IntegriqConsumerSource implements ConsumerSource {
 		}
 
 		return new ResolvedConsumer(
-			source: self::SOURCE,
-			uuid: $uuid,
-			name: (string)($data['name'] ?? ''),
-			userId: $userId,
-			authorizationType: $authorizationType,
-			configuration: $configuration,
+			identity: new ConsumerIdentity(source: self::SOURCE, uuid: $uuid, name: (string)($data['name'] ?? '')),
+			authorization: new ConsumerAuthorization(
+				userId: $userId,
+				authorizationType: $authorizationType,
+				configuration: $configuration
+			),
 			record: $consumer,
 		);
 	}//end resolve()
