@@ -1,0 +1,669 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`approval decision golden > approves as recorded 1`] = `
+[
+  {
+    "answer": "ok",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "",
+        },
+      ],
+      [
+        "success",
+        "Approved",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/approvals/r-1",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "",
+        },
+      ],
+      [
+        "warning",
+        "The source changed after this preview. Nothing was written. A new request shows the new changes.",
+      ],
+      [
+        "route",
+        "/approvals/r-2",
+      ],
+    ],
+  },
+  {
+    "answer": "409 without successor",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: conflict",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded but 500",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "",
+        },
+      ],
+      [
+        "error",
+        "Approve failed",
+      ],
+    ],
+  },
+  {
+    "answer": "server error text",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: boom",
+      ],
+    ],
+  },
+  {
+    "answer": "network message",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: Network Error",
+      ],
+    ],
+  },
+  {
+    "answer": "bare",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "",
+        },
+      ],
+      [
+        "error",
+        "Approve failed",
+      ],
+    ],
+  },
+  {
+    "answer": "ok",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "  ",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "  ",
+        },
+      ],
+      [
+        "success",
+        "Approved",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/approvals/r-1",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "  ",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "  ",
+        },
+      ],
+      [
+        "warning",
+        "The source changed after this preview. Nothing was written. A new request shows the new changes.",
+      ],
+      [
+        "route",
+        "/approvals/r-2",
+      ],
+    ],
+  },
+  {
+    "answer": "409 without successor",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "  ",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "  ",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: conflict",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded but 500",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "  ",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "  ",
+        },
+      ],
+      [
+        "error",
+        "Approve failed",
+      ],
+    ],
+  },
+  {
+    "answer": "server error text",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "  ",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "  ",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: boom",
+      ],
+    ],
+  },
+  {
+    "answer": "network message",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "  ",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "  ",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: Network Error",
+      ],
+    ],
+  },
+  {
+    "answer": "bare",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "  ",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "  ",
+        },
+      ],
+      [
+        "error",
+        "Approve failed",
+      ],
+    ],
+  },
+  {
+    "answer": "ok",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "success",
+        "Approved",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/approvals/r-1",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "warning",
+        "The source changed after this preview. Nothing was written. A new request shows the new changes.",
+      ],
+      [
+        "route",
+        "/approvals/r-2",
+      ],
+    ],
+  },
+  {
+    "answer": "409 without successor",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: conflict",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded but 500",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Approve failed",
+      ],
+    ],
+  },
+  {
+    "answer": "server error text",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: boom",
+      ],
+    ],
+  },
+  {
+    "answer": "network message",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Approve failed: Network Error",
+      ],
+    ],
+  },
+  {
+    "answer": "bare",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/approve",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Approve failed",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`approval decision golden > rejects as recorded 1`] = `
+[
+  {
+    "answer": "ok",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "",
+    "trace": [],
+  },
+  {
+    "answer": "superseded",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "",
+    "trace": [],
+  },
+  {
+    "answer": "409 without successor",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "",
+    "trace": [],
+  },
+  {
+    "answer": "superseded but 500",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "",
+    "trace": [],
+  },
+  {
+    "answer": "server error text",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "",
+    "trace": [],
+  },
+  {
+    "answer": "network message",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "",
+    "trace": [],
+  },
+  {
+    "answer": "bare",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "",
+    "trace": [],
+  },
+  {
+    "answer": "ok",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "  ",
+    "trace": [],
+  },
+  {
+    "answer": "superseded",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "  ",
+    "trace": [],
+  },
+  {
+    "answer": "409 without successor",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "  ",
+    "trace": [],
+  },
+  {
+    "answer": "superseded but 500",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "  ",
+    "trace": [],
+  },
+  {
+    "answer": "server error text",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "  ",
+    "trace": [],
+  },
+  {
+    "answer": "network message",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "  ",
+    "trace": [],
+  },
+  {
+    "answer": "bare",
+    "busyAfter": false,
+    "busyDuring": false,
+    "comment": "  ",
+    "trace": [],
+  },
+  {
+    "answer": "ok",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/reject",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "success",
+        "Rejected",
+      ],
+      [
+        "get",
+        "/index.php/apps/integriq/api/approvals/r-1",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/reject",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Reject failed",
+      ],
+    ],
+  },
+  {
+    "answer": "409 without successor",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/reject",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Reject failed: conflict",
+      ],
+    ],
+  },
+  {
+    "answer": "superseded but 500",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/reject",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Reject failed",
+      ],
+    ],
+  },
+  {
+    "answer": "server error text",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/reject",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Reject failed: boom",
+      ],
+    ],
+  },
+  {
+    "answer": "network message",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/reject",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Reject failed: Network Error",
+      ],
+    ],
+  },
+  {
+    "answer": "bare",
+    "busyAfter": false,
+    "busyDuring": true,
+    "comment": "looks good",
+    "trace": [
+      [
+        "post",
+        "/index.php/apps/integriq/api/approvals/r-1/reject",
+        {
+          "comment": "looks good",
+        },
+      ],
+      [
+        "error",
+        "Reject failed",
+      ],
+    ],
+  },
+]
+`;
