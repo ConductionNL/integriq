@@ -458,15 +458,23 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 		$failures = [];
 
 		foreach ($plan['additions'] as $item) {
-			if ($this->write(item: $item, add: true, failures: $failures) === true) {
+			$failure = $this->write(item: $item, add: true);
+			if ($failure === null) {
 				$added++;
+				continue;
 			}
+
+			$failures[] = $failure;
 		}
 
 		foreach ($plan['removals'] as $item) {
-			if ($this->write(item: $item, add: false, failures: $failures) === true) {
+			$failure = $this->write(item: $item, add: false);
+			if ($failure === null) {
 				$removed++;
+				continue;
 			}
+
+			$failures[] = $failure;
 		}
 
 		return ['added' => $added, 'removed' => $removed, 'failures' => $failures];
@@ -477,52 +485,66 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 	 * Write one membership, capturing its failure rather than raising it.
 	 *
 	 * @param array<string,mixed> $item The membership to write.
-	 * @param boolean $add Whether to add (true) or remove (false).
-	 * @param array<int,array<string,mixed>> $failures The failure list, appended to in place.
+	 * @param boolean             $add  Whether to add (true) or remove (false).
 	 *
-	 * @return boolean True when the membership was written.
+	 * @return array<string,mixed>|null The failure, or null when the membership was written.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-every-run-says-what-it-changed-req-ds-006
 	 */
-	private function write(array $item, bool $add, array &$failures): bool {
+	private function write(array $item, bool $add): ?array {
 		$userId = (string)$item['userId'];
 		$groupId = (string)$item['group'];
 
 		try {
-			$group = $this->groupManager->get($groupId);
-			$user = $this->userManager->get($userId);
-
-			if ($group === null || $user === null) {
-				$failures[] = [
-					'userId' => $userId,
-					'group' => $groupId,
-					'reason' => $this->l10n->t('The Nextcloud account or group named on this membership does not exist.'),
-				];
-
-				return false;
-			}
-
-			if ($add === true) {
-				$group->addUser($user);
-
-				return true;
-			}
-
-			$group->removeUser($user);
-
-			return true;
+			return $this->writeMembership(item: $item, add: $add);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'[DirectorySyncService] membership write failed for ' . $userId . ' in ' . $groupId . ': ' . $exception->getMessage(),
 				['exception' => $exception]
 			);
 
-			$failures[] = ['userId' => $userId, 'group' => $groupId, 'reason' => $exception->getMessage()];
-
-			return false;
-		}//end try
+			return ['userId' => $userId, 'group' => $groupId, 'reason' => $exception->getMessage()];
+		}
 
 	}//end write()
+
+	/**
+	 * Add or remove one membership; a missing account or group is a failure.
+	 *
+	 * @param array<string,mixed> $item The membership to write.
+	 * @param boolean             $add  Whether to add (true) or remove (false).
+	 *
+	 * @return array<string,mixed>|null The failure, or null when the membership was written.
+	 *
+	 * @throws Throwable When Nextcloud refuses the write.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-every-run-says-what-it-changed-req-ds-006
+	 */
+	private function writeMembership(array $item, bool $add): ?array {
+		$userId = (string)$item['userId'];
+		$groupId = (string)$item['group'];
+		$group = $this->groupManager->get($groupId);
+		$user = $this->userManager->get($userId);
+
+		if ($group === null || $user === null) {
+			return [
+				'userId' => $userId,
+				'group' => $groupId,
+				'reason' => $this->l10n->t('The Nextcloud account or group named on this membership does not exist.'),
+			];
+		}
+
+		if ($add === true) {
+			$group->addUser($user);
+
+			return null;
+		}
+
+		$group->removeUser($user);
+
+		return null;
+
+	}//end writeMembership()
 
 	/**
 	 * What the accounts losing their last managed membership still hold.
