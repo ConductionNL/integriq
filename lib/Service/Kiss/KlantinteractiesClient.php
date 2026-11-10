@@ -285,7 +285,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 		$nextCursor = null;
 		foreach ($results as $item) {
 			$registrationDate = (string)($item['registratiedatum'] ?? '');
-			if ($registrationDate !== '' && ($nextCursor === null || $registrationDate > $nextCursor)) {
+			if ($this->isLaterDate(date: $registrationDate, cursor: $nextCursor) === true) {
 				$nextCursor = $registrationDate;
 			}
 		}
@@ -293,6 +293,19 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 		return $nextCursor;
 
 	}//end latestRegistrationDate()
+
+	/**
+	 * Whether a registration date moves the cursor: it is set and later than the cursor so far.
+	 *
+	 * @param string      $date   The item's `registratiedatum`, '' when absent.
+	 * @param string|null $cursor The latest date so far, null for none.
+	 *
+	 * @return bool True when the date is the new cursor.
+	 */
+	private function isLaterDate(string $date, ?string $cursor): bool {
+		return ($date !== '' && ($cursor === null || $date > $cursor));
+
+	}//end isLaterDate()
 
 	/**
 	 * {@inheritDoc}
