@@ -1,0 +1,223 @@
+[
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "find": [
+            "dso_verzoek",
+            [],
+            false,
+            false
+        ]
+    },
+    {
+        "hasPermission": [
+            "dso_verzoek",
+            "read",
+            "svc-dso"
+        ]
+    },
+    {
+        "hasPermission": [
+            "dso_verzoek",
+            "create",
+            "svc-dso"
+        ]
+    },
+    {
+        "all held": []
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "find": [
+            "openformulieren_submission",
+            [],
+            false,
+            false
+        ]
+    },
+    {
+        "hasPermission": [
+            "openformulieren_submission",
+            "read",
+            "svc-dso"
+        ]
+    },
+    {
+        "hasPermission": [
+            "openformulieren_submission",
+            "create",
+            "svc-dso"
+        ]
+    },
+    {
+        "hasPermission": [
+            "openformulieren_submission",
+            "update",
+            "svc-dso"
+        ]
+    },
+    {
+        "hasPermission": [
+            "openformulieren_submission",
+            "delete",
+            "svc-dso"
+        ]
+    },
+    {
+        "some missing": [
+            "update",
+            "delete"
+        ]
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "find": [
+            "dso_verzoek",
+            [],
+            false,
+            false
+        ]
+    },
+    {
+        "no actions": []
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "find": [
+            "dso_verzoek",
+            [],
+            false,
+            false
+        ]
+    },
+    {
+        "hasPermission": [
+            "dso_verzoek",
+            "read",
+            "svc-dso"
+        ]
+    },
+    {
+        "hasPermission": [
+            "dso_verzoek",
+            "create",
+            "svc-dso"
+        ]
+    },
+    {
+        "hasPermission": [
+            "dso_verzoek",
+            "update",
+            "svc-dso"
+        ]
+    },
+    {
+        "log": [
+            "error",
+            "[DsoAccountRights] the rights check raised an exception; treating the rights as unverifiable",
+            {
+                "action": "update",
+                "exception": "rbac down"
+            }
+        ]
+    },
+    {
+        "check throws": null
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "find": [
+            "dso_verzoek",
+            [],
+            false,
+            false
+        ]
+    },
+    {
+        "schema null": null
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "find": [
+            "dso_verzoek",
+            [],
+            false,
+            false
+        ]
+    },
+    {
+        "log": [
+            "error",
+            "[DsoAccountRights] the schema could not be resolved for the rights check",
+            {
+                "schema": "dso_verzoek",
+                "exception": "no such schema"
+            }
+        ]
+    },
+    {
+        "schema throws": null
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "log": [
+            "error",
+            "[DsoAccountRights] OpenRegister PermissionHandler has no hasPermission(); the rights check cannot run",
+            []
+        ]
+    },
+    {
+        "handler without method": null
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "log": [
+            "error",
+            "[DsoAccountRights] OpenRegister PermissionHandler unavailable; the rights check cannot run",
+            {
+                "exception": "not registered"
+            }
+        ]
+    },
+    {
+        "handler absent": null
+    },
+    {
+        "container": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler"
+    },
+    {
+        "find": [
+            "dso_verzoek",
+            [],
+            false,
+            false
+        ]
+    },
+    {
+        "hasPermission": [
+            "dso_verzoek",
+            "update",
+            "svc-dso"
+        ]
+    },
+    {
+        "default schema": [
+            "update"
+        ]
+    }
+]
