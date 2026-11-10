@@ -49,6 +49,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 	 * @var array<int,string>
 	 */
 	private const CLOSED = [
+		'addresses',
 		'agent_action',
 		'app_connection',
 		'call_log',
