@@ -110,10 +110,7 @@ class CloudEventListener implements IEventListener {
 	 * @spec openspec/changes/outbound-webhooks-activation/tasks.md#task-4
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatedEvent === false
-			&& $event instanceof ObjectUpdatedEvent === false
-			&& $event instanceof ObjectDeletedEvent === false
-		) {
+		if ($this->isObjectEvent(event: $event) === false) {
 			return;
 		}
 
@@ -125,47 +122,7 @@ class CloudEventListener implements IEventListener {
 				return;
 			}
 
-			if ($event instanceof ObjectCreatedEvent) {
-				if ($this->isSelfReference(object: $event->getObject()) === true) {
-					return;
-				}
-
-				$this->eventService->handleObjectCreated($event->getObject());
-			}//end if
-
-			if ($event instanceof ObjectUpdatedEvent) {
-				$newObject = $event->getNewObject();
-				$oldObject = $event->getOldObject();
-
-				if ($this->isSelfReference(object: $newObject) === true) {
-					return;
-				}
-
-				// OR's own event class declares getOldObject() nullable
-				// ("null if not available"); EventService::handleObjectUpdated()
-				// requires a non-null old state. Every current OR call site
-				// populates it, but this listener runs synchronously inside
-				// an arbitrary host app's save — a null here must degrade to
-				// a skipped CloudEvent, never an uncaught TypeError that
-				// would 500 that unrelated save.
-				if ($oldObject === null) {
-					$this->logger->warning(
-						'Skipped CloudEvent forwarding: ObjectUpdatedEvent carried no previous object state.',
-						['uuid' => $newObject->getUuid()]
-					);
-					return;
-				}//end if
-
-				$this->eventService->handleObjectUpdated($oldObject, $newObject);
-			}//end if
-
-			if ($event instanceof ObjectDeletedEvent) {
-				if ($this->isSelfReference(object: $event->getObject()) === true) {
-					return;
-				}
-
-				$this->eventService->handleObjectDeleted($event->getObject());
-			}//end if
+			$this->forward(event: $event);
 		} catch (\Throwable $e) {
 			// Broad catch is deliberate: this listener runs synchronously
 			// inside whatever host app's save triggered the OR event. A
@@ -181,6 +138,108 @@ class CloudEventListener implements IEventListener {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Whether the event is an OpenRegister object create, update or delete.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return bool
+	 */
+	private function isObjectEvent(Event $event): bool {
+		return $event instanceof ObjectCreatedEvent
+			|| $event instanceof ObjectUpdatedEvent
+			|| $event instanceof ObjectDeletedEvent;
+
+	}//end isObjectEvent()
+
+	/**
+	 * Forward the object event to the EventService method of its kind.
+	 *
+	 * @param Event $event An object create, update or delete.
+	 *
+	 * @return void
+	 */
+	private function forward(Event $event): void {
+		if ($event instanceof ObjectCreatedEvent) {
+			$this->forwardCreated(event: $event);
+		}
+
+		if ($event instanceof ObjectUpdatedEvent) {
+			$this->forwardUpdated(event: $event);
+		}
+
+		if ($event instanceof ObjectDeletedEvent) {
+			$this->forwardDeleted(event: $event);
+		}
+
+	}//end forward()
+
+	/**
+	 * Forward a create, unless the object is the machinery's own.
+	 *
+	 * @param ObjectCreatedEvent $event The create.
+	 *
+	 * @return void
+	 */
+	private function forwardCreated(ObjectCreatedEvent $event): void {
+		if ($this->isSelfReference(object: $event->getObject()) === true) {
+			return;
+		}
+
+		$this->eventService->handleObjectCreated($event->getObject());
+
+	}//end forwardCreated()
+
+	/**
+	 * Forward an update with both states, unless the object is the machinery's own.
+	 *
+	 * @param ObjectUpdatedEvent $event The update.
+	 *
+	 * @return void
+	 */
+	private function forwardUpdated(ObjectUpdatedEvent $event): void {
+		$newObject = $event->getNewObject();
+		$oldObject = $event->getOldObject();
+
+		if ($this->isSelfReference(object: $newObject) === true) {
+			return;
+		}
+
+		// OR's own event class declares getOldObject() nullable
+		// ("null if not available"); EventService::handleObjectUpdated()
+		// requires a non-null old state. Every current OR call site
+		// populates it, but this listener runs synchronously inside
+		// an arbitrary host app's save — a null here must degrade to
+		// a skipped CloudEvent, never an uncaught TypeError that
+		// would 500 that unrelated save.
+		if ($oldObject === null) {
+			$this->logger->warning(
+				'Skipped CloudEvent forwarding: ObjectUpdatedEvent carried no previous object state.',
+				['uuid' => $newObject->getUuid()]
+			);
+			return;
+		}
+
+		$this->eventService->handleObjectUpdated($oldObject, $newObject);
+
+	}//end forwardUpdated()
+
+	/**
+	 * Forward a delete, unless the object is the machinery's own.
+	 *
+	 * @param ObjectDeletedEvent $event The delete.
+	 *
+	 * @return void
+	 */
+	private function forwardDeleted(ObjectDeletedEvent $event): void {
+		if ($this->isSelfReference(object: $event->getObject()) === true) {
+			return;
+		}
+
+		$this->eventService->handleObjectDeleted($event->getObject());
+
+	}//end forwardDeleted()
 
 	/**
 	 * Whether the given object is CloudEvent-machinery's own storage
