@@ -128,6 +128,8 @@ class OpenRegisterCredentialBridgeHmacGoldenTest extends TestCase {
 		}
 
 		$record['RS256 short key'] = $this->outcome('RS256', 'short', 'zaaksysteem');
+		$record['RS256 empty key'] = $this->outcome('RS256', '', 'zaaksysteem');
+		$record['HS256 secret padded to 32'] = $this->outcome('HS256', ' ' . str_repeat('k', 30) . ' ', 'zaaksysteem');
 		$record['unknown issuer'] = $this->outcome('HS256', 'short', 'someone-else');
 		$record['numeric issuer'] = $this->outcome('HS256', 'short', 12345, '12345');
 		$record['float issuer'] = $this->outcome('HS256', 'short', 1.5, '1.5');
