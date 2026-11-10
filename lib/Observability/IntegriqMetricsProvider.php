@@ -63,15 +63,15 @@ use Throwable;
  */
 class IntegriqMetricsProvider implements IMetricsProvider {
 	/**
-	 * The single-label grouped counters and gauges, in emission order.
+	 * The single-label grouped counters and gauges, keyed by metric name
+	 * (unprefixed), in emission order: the Prometheus type, the HELP text,
+	 * the OR schema title to read objects from, the object property to group
+	 * by, the label key to emit and the label value of the zero placeholder.
 	 *
-	 * Each entry holds the named fields of one GroupedCountMetric.
-	 *
-	 * @var array<int, array<string, string>>
+	 * @var array<string, array{type: string, help: string, schemaTitle: string, field: string, label: string, placeholder: string}>
 	 */
 	private const GROUPED_COUNT_METRICS = [
-		[
-			'name' => 'sources_total',
+		'sources_total' => [
 			'type' => 'gauge',
 			'help' => 'Total sources by type',
 			'schemaTitle' => 'Source',
@@ -79,8 +79,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 			'label' => 'type',
 			'placeholder' => 'rest',
 		],
-		[
-			'name' => 'calls_total',
+		'calls_total' => [
 			'type' => 'counter',
 			'help' => 'Total API calls by status',
 			'schemaTitle' => 'CallLog',
@@ -88,8 +87,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 			'label' => 'status',
 			'placeholder' => '200',
 		],
-		[
-			'name' => 'synchronization_runs_total',
+		'synchronization_runs_total' => [
 			'type' => 'counter',
 			'help' => 'Total synchronization log entries by result',
 			'schemaTitle' => 'SynchronizationLog',
@@ -698,18 +696,19 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	 * Read the objects a grouped metric counts, logging a failed read and
 	 * treating it as no objects.
 	 *
-	 * @param GroupedCountMetric $metric The metric whose schema's objects are read.
+	 * @param string $name The metric name, a key of GROUPED_COUNT_METRICS.
 	 *
 	 * @return array<int, array<string, mixed>> The objects' own fields.
 	 *
 	 * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-004-sources-gauge-by-type
 	 */
-	private function readGroupedRows(GroupedCountMetric $metric): array {
+	private function readGroupedRows(string $name): array {
+		$schemaTitle = self::GROUPED_COUNT_METRICS[$name]['schemaTitle'];
 		try {
-			return $this->fetchObjectsBySchemaTitle(title: $metric->schemaTitle);
+			return $this->fetchObjectsBySchemaTitle(title: $schemaTitle);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				message: sprintf('[integriq\\Metrics] "%s" could not read %s objects: %s', $metric->name, $metric->schemaTitle, $e->getMessage()),
+				message: sprintf('[integriq\\Metrics] "%s" could not read %s objects: %s', $name, $schemaTitle, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return [];
@@ -768,30 +767,31 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	 * differently against a series that is missing versus one that is present
 	 * and zero, which is exactly why the spec calls for it.
 	 *
-	 * @param GroupedCountMetric $metric The metric to build and where its objects come from.
+	 * @param string $name The metric name, a key of GROUPED_COUNT_METRICS.
 	 *
 	 * @return MetricSample The grouped sample set (never empty).
 	 *
 	 * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-004-sources-gauge-by-type
 	 */
-	private function groupedCountSample(GroupedCountMetric $metric): MetricSample {
-		$counts = $this->countByField(rows: $this->readGroupedRows(metric: $metric), field: $metric->field);
+	private function groupedCountSample(string $name): MetricSample {
+		$metric = self::GROUPED_COUNT_METRICS[$name];
+		$counts = $this->countByField(rows: $this->readGroupedRows(name: $name), field: $metric['field']);
 
 		// Spec: with no rows the family MUST still expose one zero-valued
 		// series rather than disappear entirely.
 		if ($counts === []) {
-			$counts[$metric->placeholder] = 0;
+			$counts[$metric['placeholder']] = 0;
 		}
 
 		$points = [];
 		foreach ($counts as $value => $count) {
 			$points[] = [
-				'labels' => [$metric->label => (string)$value],
+				'labels' => [$metric['label'] => (string)$value],
 				'value' => $count,
 			];
 		}
 
-		return new MetricSample(name: $metric->name, type: $metric->type, help: $metric->help, samples: $points);
+		return new MetricSample(name: $name, type: $metric['type'], help: $metric['help'], samples: $points);
 	}//end groupedCountSample()
 
 	/**
@@ -807,8 +807,8 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 			$this->apiProductLatencySample(),
 			$this->apiProductErrorsSample(),
 		];
-		foreach (self::GROUPED_COUNT_METRICS as $definition) {
-			$samples[] = $this->groupedCountSample(metric: new GroupedCountMetric(...$definition));
+		foreach (array_keys(self::GROUPED_COUNT_METRICS) as $name) {
+			$samples[] = $this->groupedCountSample(name: $name);
 		}
 
 		return $samples;
