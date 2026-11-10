@@ -82,21 +82,43 @@ abstract class AbstractSourceSubscriptionProvider implements SubscriptionProvide
 				config: $config
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'registry-subscription.call.failed',
-				[
-					'registry' => $this->registryId(),
-					'endpoint' => $endpoint,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $this->callFailed(endpoint: $endpoint, exception: $e);
+		}
 
-			return ['status' => 0, 'body' => [], 'error' => $e->getMessage()];
-		}//end try
+		return self::outcome(data: $callLog->getObject());
+	}//end callSource()
 
-		$data = $callLog->getObject();
+	/**
+	 * Log a failed call and report it as an outcome.
+	 *
+	 * @param string    $endpoint  Endpoint on the source.
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return array{status:int,body:array<string,mixed>,error:string} The outcome.
+	 */
+	private function callFailed(string $endpoint, Throwable $exception): array {
+		$this->logger->warning(
+			'registry-subscription.call.failed',
+			[
+				'registry' => $this->registryId(),
+				'endpoint' => $endpoint,
+				'error' => $exception->getMessage(),
+			]
+		);
+
+		return ['status' => 0, 'body' => [], 'error' => $exception->getMessage()];
+	}//end callFailed()
+
+	/**
+	 * The outcome a call log records: its status, its decoded body, and the error of a non-2xx answer.
+	 *
+	 * @param array<string,mixed> $data The call log's object.
+	 *
+	 * @return array{status:int,body:array<string,mixed>,error:string} The outcome.
+	 */
+	private static function outcome(array $data): array {
 		$status = (int)($data['statusCode'] ?? 0);
-		$body = ($data['response']['body'] ?? null);
+		$body   = ($data['response']['body'] ?? null);
 		if (is_string($body) === true) {
 			$body = json_decode($body, true);
 		}
@@ -111,5 +133,5 @@ abstract class AbstractSourceSubscriptionProvider implements SubscriptionProvide
 		}
 
 		return ['status' => $status, 'body' => $body, 'error' => $error];
-	}//end callSource()
+	}//end outcome()
 }//end class
