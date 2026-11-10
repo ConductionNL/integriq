@@ -110,40 +110,68 @@ class XsdChecker {
 		libxml_clear_errors();
 
 		try {
-			$schemaDom = new DOMDocument();
-			if (SafeXmlParser::loadDom(dom: $schemaDom, data: $xsd) === false) {
-				return ValidationOutcome::failure(message: 'The XSD document does not parse: ' . self::libxmlMessages());
-			}
-
-			$remote = self::remoteLocations(schema: $schemaDom);
-			if ($remote !== []) {
-				return ValidationOutcome::failed(
-					errors: array_map(
-						static fn (string $location): array => [
-							'path' => '/',
-							'message' => 'The XSD refers to ' . $location . ', which is not fetched: store that schema as its own message schema',
-						],
-						$remote
-					)
-				);
-			}
-
-			$message = new DOMDocument();
-			if (SafeXmlParser::loadDom(dom: $message, data: $payload) === false) {
-				return ValidationOutcome::failure(message: 'The XML message does not parse: ' . self::libxmlMessages());
-			}
-
-			libxml_clear_errors();
-			if (self::validateOffline(message: $message, xsd: $xsd) === true) {
-				return ValidationOutcome::valid();
-			}
-
-			return ValidationOutcome::failed(errors: self::libxmlErrors());
+			return self::checkXml(xsd: $xsd, payload: $payload);
 		} finally {
 			libxml_clear_errors();
 			libxml_use_internal_errors($previousErrors);
 		}//end try
 	}//end check()
+
+	/**
+	 * Check XML text against an XSD, with libxml's internal errors on.
+	 *
+	 * @param string $xsd     The XSD document.
+	 * @param string $payload The XML message.
+	 *
+	 * @return ValidationOutcome
+	 */
+	private static function checkXml(string $xsd, string $payload): ValidationOutcome {
+		$schemaRefusal = self::schemaRefusal(xsd: $xsd);
+		if ($schemaRefusal !== null) {
+			return $schemaRefusal;
+		}
+
+		$message = new DOMDocument();
+		if (SafeXmlParser::loadDom(dom: $message, data: $payload) === false) {
+			return ValidationOutcome::failure(message: 'The XML message does not parse: ' . self::libxmlMessages());
+		}
+
+		libxml_clear_errors();
+		if (self::validateOffline(message: $message, xsd: $xsd) === true) {
+			return ValidationOutcome::valid();
+		}
+
+		return ValidationOutcome::failed(errors: self::libxmlErrors());
+	}//end checkXml()
+
+	/**
+	 * Refuse an XSD that does not parse or that refers to a remote schema.
+	 *
+	 * @param string $xsd The XSD document.
+	 *
+	 * @return ValidationOutcome|null The refusal, or null when the XSD can be used.
+	 */
+	private static function schemaRefusal(string $xsd): ?ValidationOutcome {
+		$schemaDom = new DOMDocument();
+		if (SafeXmlParser::loadDom(dom: $schemaDom, data: $xsd) === false) {
+			return ValidationOutcome::failure(message: 'The XSD document does not parse: ' . self::libxmlMessages());
+		}
+
+		$remote = self::remoteLocations(schema: $schemaDom);
+		if ($remote === []) {
+			return null;
+		}
+
+		return ValidationOutcome::failed(
+			errors: array_map(
+				static fn (string $location): array => [
+					'path' => '/',
+					'message' => 'The XSD refers to ' . $location . ', which is not fetched: store that schema as its own message schema',
+				],
+				$remote
+			)
+		);
+	}//end schemaRefusal()
 
 	/**
 	 * Validate with libxml's entity loader pinned to one that loads nothing.
