@@ -128,6 +128,19 @@ class DSOStatusService {
 			}
 		}
 
+		return $this->giveUp(run: $run);
+	}//end pushWithRetries()
+
+	/**
+	 * Log a push that failed every attempt.
+	 *
+	 * @param StatusPushRun $run The push.
+	 *
+	 * @return bool Always false.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
+	 */
+	private function giveUp(StatusPushRun $run): bool {
 		$this->logger->error(
 			'DSO: status push failed after all retries',
 			[
@@ -137,7 +150,7 @@ class DSOStatusService {
 		);
 
 		return false;
-	}//end pushWithRetries()
+	}//end giveUp()
 
 	/**
 	 * One attempt: POST the payload and log how it went.
@@ -162,7 +175,7 @@ class DSOStatusService {
 					'error' => $e->getMessage(),
 				]
 			);
-		}//end try
+		}
 
 		return false;
 	}//end attempt()
@@ -179,16 +192,7 @@ class DSOStatusService {
 	 */
 	private function answered(StatusPushRun $run, int $statusCode): bool {
 		if ($statusCode >= 200 && $statusCode < 300) {
-			$this->logger->info(
-				'DSO: status pushed successfully',
-				[
-					'verzoekId' => $run->requestId(),
-					'dsoStatus' => $run->dsoStatus(),
-					'attempt' => $run->attempt,
-				]
-			);
-
-			return true;
+			return $this->pushed(run: $run);
 		}
 
 		$this->logger->warning(
@@ -202,6 +206,28 @@ class DSOStatusService {
 
 		return false;
 	}//end answered()
+
+	/**
+	 * Log an accepted push.
+	 *
+	 * @param StatusPushRun $run The push, with the attempt number.
+	 *
+	 * @return bool Always true.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
+	 */
+	private function pushed(StatusPushRun $run): bool {
+		$this->logger->info(
+			'DSO: status pushed successfully',
+			[
+				'verzoekId' => $run->requestId(),
+				'dsoStatus' => $run->dsoStatus(),
+				'attempt' => $run->attempt,
+			]
+		);
+
+		return true;
+	}//end pushed()
 
 	/**
 	 * Map an internal zaak status to its DSO-LV equivalent.
