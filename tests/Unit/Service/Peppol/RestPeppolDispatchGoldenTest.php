@@ -232,4 +232,22 @@ class RestPeppolDispatchGoldenTest extends TestCase {
 		}
 
 	}//end testAnswerRefusals()
+
+	/**
+	 * A submission answer without a usable transmissionId is refused.
+	 *
+	 * @return void
+	 */
+	public function testSubmissionWithoutTransmissionIdIsRefused(): void {
+		foreach (['not json', '{}', '{"transmissionId":""}', '{"transmissionId":42}'] as $answer) {
+			$provider = $this->provider(true, null, new Response(202, [], $answer));
+			try {
+				$provider->submitDocument($this->configuration(), '0106:123', 'invoice', '<Invoice/>');
+				$this->fail('Not refused.');
+			} catch (PeppolProviderException $exception) {
+				$this->assertSame('The Peppol Access Point accepted the request but returned no usable transmissionId.', $exception->getMessage());
+			}
+		}
+
+	}//end testSubmissionWithoutTransmissionIdIsRefused()
 }//end class
