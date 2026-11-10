@@ -37,6 +37,7 @@ namespace OCA\Integriq\Tests\Helpers;
 
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -101,24 +102,21 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 * Reproduce ObjectService::find() including the render boundary + entity columns.
 	 *
 	 * @param string|int $id The object uuid.
-	 * @param string|null $register Unused.
-	 * @param string|null $schema Unused.
+	 * @param ObjectFindOptions|null $options Register, schema, extend, files, render and audit.
 	 * @param bool $_rbac Recorded for the contract assertion.
 	 * @param bool $_multitenancy Unused.
-	 * @param bool $_render When true, strip writeOnly secrets (mirrors openregister#389).
 	 *
 	 * @return ObjectEntity|null
 	 */
 	public function find(
-		$id,
-		?string $register = null,
-		?string $schema = null,
+		int|string $id,
+		?ObjectFindOptions $options = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
 	): ?ObjectEntity {
+		$options ??= new ObjectFindOptions();
+		$_render = $options->render;
+
 		$this->reads[] = ['uuid' => (string)$id, '_render' => $_render, '_rbac' => $_rbac];
 
 		$entry = ($this->stored[(string)$id] ?? null);

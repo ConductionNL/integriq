@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Helpers;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -82,24 +83,23 @@ class NestedWriteOnlyRenderBoundaryObjectService extends OrObjectService {
 	 * Reproduce ObjectService::find(), including the nested render boundary.
 	 *
 	 * @param string|int $id The object uuid.
-	 * @param string|null $register The register slug.
-	 * @param string|null $schema The schema slug.
+	 * @param ObjectFindOptions|null $options Register, schema, extend, files, render and audit.
 	 * @param bool $_rbac Recorded; deliberately does NOT affect the strip.
 	 * @param bool $_multitenancy Recorded; deliberately does NOT affect the strip.
-	 * @param bool $_render When true, strip the declared dot-paths.
 	 *
 	 * @return ObjectEntity|null The entity, or null when unknown.
 	 */
 	public function find(
-		$id,
-		?string $register = null,
-		?string $schema = null,
+		int|string $id,
+		?ObjectFindOptions $options = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $_render = true,
-		bool $_audit = true,
-		?array $_extend = [],
 	): ?ObjectEntity {
+		$options ??= new ObjectFindOptions();
+		$register = $options->register;
+		$schema = $options->schema;
+		$_render = $options->render;
+
 		$this->reads[] = [
 			'uuid' => (string)$id,
 			'register' => $register,

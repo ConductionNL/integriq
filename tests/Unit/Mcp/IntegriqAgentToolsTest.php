@@ -43,6 +43,7 @@ use OCA\Integriq\Service\SyncItemDeadLetterService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -72,7 +73,15 @@ class InMemoryObjects extends ObjectService {
 		$this->objects[$schema][$uuid] = $data;
 	}
 
-	public function find($id, ?string $register=null, ?string $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_render=true, bool $_audit=true, ?array $_extend=[]): ?ObjectEntity {
+	public function find(
+		int|string $id,
+		?ObjectFindOptions $options = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+	): ?ObjectEntity {
+		$options ??= new ObjectFindOptions();
+		$schema = $options->schema;
+
 		if (isset($this->objects[$schema][$id]) === false) {
 			throw new DoesNotExistException('missing');
 		}

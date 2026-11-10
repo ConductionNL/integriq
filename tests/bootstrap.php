@@ -230,6 +230,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectFindOptions') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectFindOptions.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}
