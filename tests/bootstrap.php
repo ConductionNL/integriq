@@ -270,6 +270,8 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 				'Exception/AuthenticationException',
 				'Db/ConsumerMapper',
 				'Service/Consumer/ConsumerSource',
+				'Service/Consumer/ConsumerIdentity',
+				'Service/Consumer/ConsumerAuthorization',
 				'Service/Consumer/ResolvedConsumer',
 				'Service/Consumer/RsaJwsVerifier',
 				'Service/Consumer/JwtValidator',
