@@ -23,6 +23,8 @@ namespace OCA\Integriq\Settings;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Settings\IntegriqAdmin as IntegriqAdminSettings;
+use OCA\OpenRegister\AppHost\Settings\AdminFormServices;
+use OCA\OpenRegister\AppHost\Settings\SettingsPlacement;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -75,12 +77,12 @@ final class SettingsBindings {
 			 */
 			static function (ContainerInterface $c) {
 				return new IntegriqAdminSettings(
-					appId: AppIdentity::APP_ID,
-					sectionId: 'integriq',
-					priority: 10,
-					appManager: $c->get(\OCP\App\IAppManager::class),
-					initialState: $c->get(\OCP\AppFramework\Services\IInitialState::class),
-					appConfig: $c->get(\OCP\IAppConfig::class)
+					placement: new SettingsPlacement(appId: AppIdentity::APP_ID, sectionId: 'integriq', priority: 10),
+					services: new AdminFormServices(
+						appManager: $c->get(\OCP\App\IAppManager::class),
+						initialState: $c->get(\OCP\AppFramework\Services\IInitialState::class),
+						appConfig: $c->get(\OCP\IAppConfig::class)
+					)
 				);
 			}
 		);
