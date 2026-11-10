@@ -1,0 +1,294 @@
+{
+    "fleet": {
+        "field": "authenticationConfig",
+        "totalSources": 7,
+        "holdValue": 2,
+        "clear": 4,
+        "unreadable": 1,
+        "referenced": 3,
+        "schemaPropertyRemovable": false,
+        "sources": [
+            {
+                "uuid": "u-1",
+                "name": "holds",
+                "state": "holds-value",
+                "keys": [
+                    "user",
+                    "password",
+                    "port",
+                    "ratio",
+                    "on",
+                    "none",
+                    "list",
+                    "map"
+                ],
+                "shapes": {
+                    "user": {
+                        "shape": "string(3)",
+                        "fingerprint": "348c6586"
+                    },
+                    "password": {
+                        "shape": "string(7)",
+                        "fingerprint": "f52fbd32"
+                    },
+                    "port": {
+                        "shape": "integer",
+                        "fingerprint": "6d05621a"
+                    },
+                    "ratio": {
+                        "shape": "float",
+                        "fingerprint": "d2cbad71"
+                    },
+                    "on": {
+                        "shape": "boolean",
+                        "fingerprint": null
+                    },
+                    "none": {
+                        "shape": "null",
+                        "fingerprint": null
+                    },
+                    "list": {
+                        "shape": "array(2 items)",
+                        "fingerprint": null
+                    },
+                    "map": {
+                        "shape": "object(1 keys)",
+                        "fingerprint": null
+                    }
+                },
+                "referenced": false,
+                "references": []
+            },
+            {
+                "uuid": "u-2",
+                "name": "scalar",
+                "state": "holds-value",
+                "keys": [],
+                "shapes": {
+                    "(scalar)": {
+                        "shape": "string(9)",
+                        "fingerprint": "096157b3"
+                    }
+                },
+                "referenced": true,
+                "references": [
+                    "headers.Authorization"
+                ]
+            },
+            {
+                "uuid": "u-3",
+                "name": "clear empty",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": true,
+                "references": [
+                    "(root)"
+                ]
+            },
+            {
+                "uuid": "u-4",
+                "name": "clear absent",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": true,
+                "references": [
+                    "a.b"
+                ]
+            },
+            {
+                "uuid": "u-5",
+                "name": "clear blank",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": false,
+                "references": []
+            },
+            {
+                "uuid": "u-6",
+                "name": "unreadable",
+                "state": "unreadable",
+                "keys": [],
+                "shapes": [],
+                "referenced": false,
+                "references": []
+            },
+            {
+                "uuid": "7",
+                "name": "numeric uuid",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": false,
+                "references": []
+            }
+        ]
+    },
+    "limited": {
+        "field": "authenticationConfig",
+        "totalSources": 1,
+        "holdValue": 1,
+        "clear": 0,
+        "unreadable": 0,
+        "referenced": 0,
+        "schemaPropertyRemovable": false,
+        "sources": [
+            {
+                "uuid": "u-1",
+                "name": "holds",
+                "state": "holds-value",
+                "keys": [
+                    "user",
+                    "password",
+                    "port",
+                    "ratio",
+                    "on",
+                    "none",
+                    "list",
+                    "map"
+                ],
+                "shapes": {
+                    "user": {
+                        "shape": "string(3)",
+                        "fingerprint": "348c6586"
+                    },
+                    "password": {
+                        "shape": "string(7)",
+                        "fingerprint": "f52fbd32"
+                    },
+                    "port": {
+                        "shape": "integer",
+                        "fingerprint": "6d05621a"
+                    },
+                    "ratio": {
+                        "shape": "float",
+                        "fingerprint": "d2cbad71"
+                    },
+                    "on": {
+                        "shape": "boolean",
+                        "fingerprint": null
+                    },
+                    "none": {
+                        "shape": "null",
+                        "fingerprint": null
+                    },
+                    "list": {
+                        "shape": "array(2 items)",
+                        "fingerprint": null
+                    },
+                    "map": {
+                        "shape": "object(1 keys)",
+                        "fingerprint": null
+                    }
+                },
+                "referenced": false,
+                "references": []
+            }
+        ]
+    },
+    "all clear": {
+        "field": "authenticationConfig",
+        "totalSources": 2,
+        "holdValue": 0,
+        "clear": 2,
+        "unreadable": 0,
+        "referenced": 1,
+        "schemaPropertyRemovable": false,
+        "sources": [
+            {
+                "uuid": "c",
+                "name": "clear blank",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": false,
+                "references": []
+            },
+            {
+                "uuid": "d",
+                "name": "clear empty",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": true,
+                "references": [
+                    "(root)"
+                ]
+            }
+        ]
+    },
+    "clear but referenced": {
+        "field": "authenticationConfig",
+        "totalSources": 1,
+        "holdValue": 0,
+        "clear": 1,
+        "unreadable": 0,
+        "referenced": 1,
+        "schemaPropertyRemovable": false,
+        "sources": [
+            {
+                "uuid": "d",
+                "name": "clear empty",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": true,
+                "references": [
+                    "(root)"
+                ]
+            }
+        ]
+    },
+    "clear and unreferenced": {
+        "field": "authenticationConfig",
+        "totalSources": 1,
+        "holdValue": 0,
+        "clear": 1,
+        "unreadable": 0,
+        "referenced": 0,
+        "schemaPropertyRemovable": true,
+        "sources": [
+            {
+                "uuid": "c",
+                "name": "clear blank",
+                "state": "clear",
+                "keys": [],
+                "shapes": [],
+                "referenced": false,
+                "references": []
+            }
+        ]
+    },
+    "unreadable only": {
+        "field": "authenticationConfig",
+        "totalSources": 1,
+        "holdValue": 0,
+        "clear": 0,
+        "unreadable": 1,
+        "referenced": 0,
+        "schemaPropertyRemovable": false,
+        "sources": [
+            {
+                "uuid": "e",
+                "name": "unreadable",
+                "state": "unreadable",
+                "keys": [],
+                "shapes": [],
+                "referenced": false,
+                "references": []
+            }
+        ]
+    },
+    "empty fleet": {
+        "field": "authenticationConfig",
+        "totalSources": 0,
+        "holdValue": 0,
+        "clear": 0,
+        "unreadable": 0,
+        "referenced": 0,
+        "schemaPropertyRemovable": true,
+        "sources": []
+    }
+}
