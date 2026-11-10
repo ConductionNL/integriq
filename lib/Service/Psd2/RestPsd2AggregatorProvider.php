@@ -38,6 +38,7 @@ use OCA\Integriq\Exception\Psd2ProviderException;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCP\IL10N;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -90,12 +91,14 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 
 		$decoded = $this->dispatchJson(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'POST',
-			url: $url,
-			json: [
-				'redirect' => $redirectUrl,
-				'institution_id' => $institutionId,
-			]
+			call: new AggregatorCall(
+				method: 'POST',
+				url: $url,
+				json: [
+					'redirect' => $redirectUrl,
+					'institution_id' => $institutionId,
+				]
+			)
 		);
 
 		$reference = ($decoded['id'] ?? null);
@@ -193,9 +196,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 
 		$decoded = $this->dispatchJson(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'GET',
-			url: $url,
-			consentScoped: true
+			call: new AggregatorCall(method: 'GET', url: $url, consentScoped: true)
 		);
 
 		return array_values((array)($decoded['transactions']['booked'] ?? []));
@@ -217,9 +218,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 
 		return $this->dispatchJson(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'GET',
-			url: $url,
-			consentScoped: true
+			call: new AggregatorCall(method: 'GET', url: $url, consentScoped: true)
 		);
 
 	}//end fetchRequisition()
@@ -242,9 +241,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 
 			$decoded = $this->dispatchJson(
 				sourceConfiguration: $sourceConfiguration,
-				method: 'GET',
-				url: $url,
-				consentScoped: true
+				call: new AggregatorCall(method: 'GET', url: $url, consentScoped: true)
 			);
 
 			$detail = (array)($decoded['account'] ?? []);
@@ -277,28 +274,40 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 	 * mapped to {@see Psd2ConsentRevokedException} so the sync machinery can
 	 * move the connection to `revoked` (REQ-005).
 	 *
-	 * @param array $sourceConfiguration The PSD2 source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $url The composed URL (only its path+query is forwarded, per BrokeredCallService).
-	 * @param array|null $json Optional JSON request body.
-	 * @param boolean $consentScoped Whether a 401/403 means a dead consent (vs a bad API key).
+	 * @param array          $sourceConfiguration The PSD2 source's `configuration` object.
+	 * @param AggregatorCall $call                The method, URL, optional JSON body and consent scope.
 	 *
 	 * @return array<string, mixed> The decoded response body.
 	 *
 	 * @throws Psd2ProviderException On any configuration, brokering, transport, or upstream error.
 	 */
-	private function dispatchJson(
-		array $sourceConfiguration,
-		string $method,
-		string $url,
-		?array $json = null,
-		bool $consentScoped = false,
-	): array {
+	private function dispatchJson(array $sourceConfiguration, AggregatorCall $call): array {
 		$config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])];
-		if ($json !== null) {
-			$config['json'] = $json;
+		if ($call->json !== null) {
+			$config['json'] = $call->json;
 		}
 
+		$this->assertCredentialConfigured(config: $config);
+		$response = $this->brokeredDispatch(config: $config, call: $call);
+
+		return $this->decodeResponse(
+			status: $response->getStatusCode(),
+			body: (string)$response->getBody(),
+			consentScoped: $call->consentScoped
+		);
+
+	}//end dispatchJson()
+
+	/**
+	 * Refuse closed when the source names no broker credentialRef (ADR-007).
+	 *
+	 * @param array $config The brokered call configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws Psd2ProviderException When no credentialRef is configured.
+	 */
+	private function assertCredentialConfigured(array $config): void {
 		if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
 			throw new Psd2ProviderException(
 				message: $this->l->t('Aggregator credential missing') . ': the `rest` PSD2 provider requires '
@@ -307,6 +316,19 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 			);
 		}
 
+	}//end assertCredentialConfigured()
+
+	/**
+	 * Prepare and dispatch the call through the credential broker.
+	 *
+	 * @param array          $config The brokered call configuration.
+	 * @param AggregatorCall $call   The method and URL.
+	 *
+	 * @return ResponseInterface The aggregator's answer.
+	 *
+	 * @throws Psd2ProviderException When the broker refuses the configuration or the transport fails.
+	 */
+	private function brokeredDispatch(array $config, AggregatorCall $call): ResponseInterface {
 		try {
 			$dispatch = $this->brokeredCallService->prepare(
 				config: $config,
@@ -314,11 +336,11 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 				asynchronous: false
 			);
 
-			$response = $this->brokeredCallService->dispatch(
+			return $this->brokeredCallService->dispatch(
 				credentialId: $dispatch['credentialId'],
 				actingUserId: $dispatch['actingUserId'],
-				method: $method,
-				url: $url,
+				method: $call->method,
+				url: $call->url,
 				config: $config
 			);
 		} catch (BrokeredCallConfigurationException $exception) {
@@ -334,13 +356,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 			);
 		}//end try
 
-		return $this->decodeResponse(
-			status: $response->getStatusCode(),
-			body: (string)$response->getBody(),
-			consentScoped: $consentScoped
-		);
-
-	}//end dispatchJson()
+	}//end brokeredDispatch()
 
 	/**
 	 * Map one aggregator response to decoded JSON or a domain exception.
