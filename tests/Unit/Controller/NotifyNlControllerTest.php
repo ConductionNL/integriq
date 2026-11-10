@@ -226,6 +226,116 @@ class NotifyNlControllerTest extends TestCase {
 	}//end testSendMapsProviderExceptionToBadGateway()
 
 	/**
+	 * Every refusal code answers 409 with that code and the refusal's own
+	 * message, and no other code does.
+	 *
+	 * @return array<string,array{0:string,1:int}>
+	 */
+	public static function refusalCodes(): array {
+		return [
+			'opted-out'             => ['opted-out', Http::STATUS_CONFLICT],
+			'no-consent'            => ['no-consent', Http::STATUS_CONFLICT],
+			'invalid-address'       => ['invalid-address', Http::STATUS_CONFLICT],
+			'authority-unavailable' => ['authority-unavailable', Http::STATUS_CONFLICT],
+			'another code'          => ['rate-limited', Http::STATUS_BAD_GATEWAY],
+		];
+
+	}//end refusalCodes()
+
+	/**
+	 * A refusal code answers 409, any other provider failure 502.
+	 *
+	 * @param string $code   The provider error code.
+	 * @param int    $status The expected status.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider refusalCodes
+	 */
+	public function testSendAnswersEachDecisionCode(string $code, int $status): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678']);
+		$this->dispatchService->method('sendMessage')
+			->willThrowException(new SmsProviderException(message: 'refused here', errorCode: $code));
+
+		$response = $this->controller->send();
+
+		$this->assertSame($status, $response->getStatus());
+		$expected = ['error' => 'sms_send_failed', 'message' => 'refused here'];
+		if ($status === Http::STATUS_CONFLICT) {
+			$expected['error'] = $code;
+		}
+
+		$this->assertSame($expected, $response->getData());
+
+	}//end testSendAnswersEachDecisionCode()
+
+	/**
+	 * send() asks for the `sms.send` action, and a caller refused it never
+	 * reaches the dispatch service.
+	 *
+	 * @return void
+	 */
+	public function testSendStopsACallerRefusedTheSendAction(): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678', 'body' => 'hello']);
+		$this->actionAuth->expects($this->once())->method('requireAction')
+			->with($this->anything(), 'sms.send')
+			->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException('no'));
+		$this->dispatchService->expects($this->never())->method('sendMessage');
+
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->send();
+
+	}//end testSendStopsACallerRefusedTheSendAction()
+
+	/**
+	 * The options carry a trimmed category (blank falls back to `service`),
+	 * a string case reference only, and personalisation only when it is a list;
+	 * the object uri reaches the service as a string.
+	 *
+	 * @return void
+	 */
+	public function testSendPassesTheRequestOptions(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'to' => '0612345678',
+				'templateId' => 7,
+				'personalisation' => 'not a list',
+				'category' => '  reminder ',
+				'caseRef' => 'ZAAK-1',
+				'objectUri' => 42,
+			]
+		);
+		$message = new ObjectEntity();
+		$message->setObject(['status' => 'queued']);
+		$message->setUuid('sms-uuid-2');
+		$this->dispatchService->expects($this->once())->method('sendMessage')
+			->with('0612345678', '', ['templateId' => 7, 'category' => 'reminder', 'caseRef' => 'ZAAK-1'], null, '42')
+			->willReturn($message);
+
+		$this->assertSame(['status' => 'queued', 'id' => 'sms-uuid-2'], $this->controller->send()->getData());
+
+	}//end testSendPassesTheRequestOptions()
+
+	/**
+	 * A blank category and a non-string case reference fall back to `service`
+	 * and leave the case reference out.
+	 *
+	 * @return void
+	 */
+	public function testSendFallsBackToTheServiceCategory(): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678', 'category' => '   ', 'caseRef' => 5]);
+		$message = new ObjectEntity();
+		$message->setObject([]);
+		$message->setUuid('sms-uuid-3');
+		$this->dispatchService->expects($this->once())->method('sendMessage')
+			->with('0612345678', '', ['category' => 'service'], null, null)
+			->willReturn($message);
+
+		$this->controller->send();
+
+	}//end testSendFallsBackToTheServiceCategory()
+
+	/**
 	 * status() rejects an empty id with 400, never reaching the dispatch service.
 	 *
 	 * @return void
