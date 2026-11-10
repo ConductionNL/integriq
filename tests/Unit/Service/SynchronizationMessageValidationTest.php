@@ -29,6 +29,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\SyncItemDeadLetterService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
@@ -139,7 +140,7 @@ class SynchronizationMessageValidationTest extends TestCase {
 		$schemas = $this->seededMessageSchemas();
 
 		$orObjects = ObjectServiceMockBuilder::make($this);
-		$orObjects->method('find')->willReturnCallback(
+		$orObjects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null) use ($schemas): ?ObjectEntity {
 				if ($schema === 'message_schema') {
 					$this->schemaReads++;
@@ -156,7 +157,7 @@ class SynchronizationMessageValidationTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 		$orObjects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$orObjects->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ...$rest): ObjectEntity {

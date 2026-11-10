@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\Synchronization;
 
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -58,7 +59,7 @@ class RunPrerequisiteGuardTest extends TestCase {
 	 */
 	private function guard(): RunPrerequisiteGuard {
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null) {
 				if (isset($this->seeds[$schema][$id]) === false) {
 					throw new \RuntimeException('Object not found');
@@ -66,7 +67,7 @@ class RunPrerequisiteGuardTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $this->seeds[$schema][$id], 'uuid-' . $id);
 			}
-		);
+		));
 
 		return new RunPrerequisiteGuard(objectService: $objects);
 	}//end guard()

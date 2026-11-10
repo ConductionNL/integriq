@@ -13,6 +13,7 @@ use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -222,7 +223,7 @@ final class ExecutionTraceServiceTest extends TestCase {
 		);
 
 		$orObjectService = $this->createMock(ORObjectService::class);
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, ...$rest) use ($originalTrace) {
 				unset($rest);
 				if ($id === 'orig-3') {
@@ -231,7 +232,7 @@ final class ExecutionTraceServiceTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, [], $id);
 			}
-		);
+		));
 		$orObjectService->method('saveObject')->willReturnCallback(
 			fn (array $payload) => ObjectServiceMockBuilder::objectEntity($this, $payload, ($payload['traceId'] ?? 'new-trace'))
 		);

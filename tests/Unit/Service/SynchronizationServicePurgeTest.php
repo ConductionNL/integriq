@@ -34,6 +34,7 @@ use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
@@ -99,7 +100,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 		$orObjectService = $this->getMockBuilder(OrObjectService::class)->disableOriginalConstructor()->getMock();
 		$orObjectService->method('findAll')->willReturn(['results' => $contracts, 'total' => count($contracts)]);
 		$objects['source-uuid-woo'] = ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://dms.example.nl', 'enabled' => true], 'source-uuid-woo');
-		$orObjectService->method('find')->willReturnCallback(fn (...$args) => ($objects[(string)$args[0]] ?? null));
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(fn (...$args) => ($objects[(string)$args[0]] ?? null)));
 		$orObjectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
 				// A mock callback receives its arguments by position; the

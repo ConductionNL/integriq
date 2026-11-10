@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -78,7 +79,7 @@ class LtiRegistrationResolverServiceTest extends TestCase {
 			}
 		);
 
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $_extend = [], $files = false, $register = null, $schema = null, $_rbac = true, $_multitenancy = true) {
 				if (isset($this->registrations[$id]) === false) {
 					throw new DoesNotExistException('not found');
@@ -89,7 +90,7 @@ class LtiRegistrationResolverServiceTest extends TestCase {
 				$entity->setObject($this->registrations[$id]);
 				return $entity;
 			}
-		);
+		));
 
 		return new LtiRegistrationResolverService($objectService, new NullLogger());
 	}//end makeService()

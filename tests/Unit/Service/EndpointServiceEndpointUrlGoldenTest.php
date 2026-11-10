@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -91,12 +92,12 @@ class EndpointServiceEndpointUrlGoldenTest extends TestCase {
 		$stored->setRegister('7');
 		$stored->setSchema('8');
 		$mapper = $this->getMockBuilder(\stdClass::class)->addMethods(['find'])->getMock();
-		$mapper->method('find')->willReturnCallback(
+		$mapper->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) use ($stored) {
 				$this->log[] = ['objectEntity.find', $id];
 				return $stored;
 			}
-		);
+		));
 		$openRegisters = $this->createMock(ORObjectService::class);
 		$openRegisters->method('getMapper')->willReturn($mapper);
 		$objectService = $this->createMock(ObjectService::class);
@@ -159,12 +160,12 @@ class EndpointServiceEndpointUrlGoldenTest extends TestCase {
 			}
 		};
 		$mapper = $this->createMock(SchemaMapper::class);
-		$mapper->method('find')->willReturnCallback(
+		$mapper->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) use ($schema) {
 				$this->log[] = ['schema.find', $id];
 				return $schema;
 			}
-		);
+		));
 		return $mapper;
 	}//end schemaMapper()
 

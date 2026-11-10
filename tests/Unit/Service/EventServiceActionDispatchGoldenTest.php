@@ -32,6 +32,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -119,7 +120,7 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 	 */
 	private function service(): EventService {
 		$objects = $this->createMock(ORObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null) {
 				$this->log[] = ['or.find', $id, $schema];
 				$answer = $this->answer('find.' . $schema);
@@ -133,7 +134,7 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, ['name' => $schema . '-' . $id, 'location' => 'https://x.invalid'], $schema . '-' . $id);
 			}
-		);
+		));
 		$objects->method('saveObject')->willReturnCallback(
 			function ($object, $register = null, $schema = null, $uuid = null) {
 				$this->log[] = ['or.saveObject', $this->mask(value: $object), $schema, $uuid];

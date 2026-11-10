@@ -51,6 +51,7 @@ use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
 use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
 use OCA\Integriq\Service\StufZkn\StufZdsResponseReader;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
@@ -199,7 +200,7 @@ class StufZdsCaseClientTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register=null, ?string $schema=null) {
 				$this->assertSame('integriq', $register);
 				if ($schema === 'source') {
@@ -208,7 +209,7 @@ class StufZdsCaseClientTest extends TestCase {
 
 				return isset($this->rows[$id]) === true ? ObjectServiceMockBuilder::objectEntity($this, $this->rows[$id], $id) : null;
 			}
-		);
+		));
 		$objects->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true) {
 				$this->assertSame('stuf_message', $schema);

@@ -27,6 +27,7 @@ use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
 use OCA\Integriq\Service\ConfigurationService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -83,7 +84,7 @@ class ConfigurationServiceExportRegisterTest extends TestCase {
 		);
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
-		$registerMapper->method('find')->willReturnCallback(
+		$registerMapper->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				if ($id === '404') {
 					throw new \RuntimeException('no register');
@@ -91,9 +92,9 @@ class ConfigurationServiceExportRegisterTest extends TestCase {
 
 				return $this->slugged(id: (int)$id, slug: 'reg' . $id);
 			}
-		);
+		));
 		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->method('find')->willReturnCallback(fn ($id) => $this->slugged(id: (int)$id, slug: 'sch' . $id));
+		$schemaMapper->method('find')->willReturnCallback(FindCallShape::callback(fn ($id) => $this->slugged(id: (int)$id, slug: 'sch' . $id)));
 
 		$registry = new SensitiveFieldRegistry();
 

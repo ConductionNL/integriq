@@ -32,6 +32,7 @@ use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Outbound\OutboundRetryService;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\OCS\OCSForbiddenException;
@@ -99,11 +100,11 @@ class OutboundLogServicesTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
 		);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id) {
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->records[$id] ?? []), $id);
 			}
-		);
+		));
 		$this->objectService->method('findAll')->willReturnCallback(
 			function (): array {
 				$rows = [];

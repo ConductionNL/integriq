@@ -30,6 +30,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Http\Client\IClientService;
@@ -130,9 +131,9 @@ class EventServiceBrokerTest extends TestCase {
 			'event-uuid'
 		);
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			static fn (string $id, string $register, string $schema) => ($schema === 'event' ? $event : $subscription)
-		);
+		));
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {
 				$this->capturedMessage = $object;

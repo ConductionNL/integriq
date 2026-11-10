@@ -23,6 +23,7 @@ use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -141,8 +142,8 @@ class ZgwSetPullFixtureTest extends TestCase {
 
 	private function or(): ORObjectService {
 		$or      = ObjectServiceMockBuilder::make($this);
-		$findPos = $this->positions(ORObjectService::class, 'find');
-		$or->method('find')->willReturnCallback(
+		$findPos = FindCallShape::POSITIONS;
+		$or->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) use ($findPos) {
 				$id     = (string)($args[$findPos['id']] ?? '');
 				$schema = (string)($args[$findPos['schema']] ?? '');
@@ -152,7 +153,7 @@ class ZgwSetPullFixtureTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $this->store[$schema][$id], $id);
 			}
-		);
+		));
 		$or->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, ...$rest) {
 				$key                                = (string)($uuid ?? ($object['uuid'] ?? ($schema . '-' . (count($this->store[(string)$schema] ?? []) + 1))));

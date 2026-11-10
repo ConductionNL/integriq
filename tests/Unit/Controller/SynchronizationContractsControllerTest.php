@@ -21,6 +21,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\SynchronizationContractsController;
 use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -247,12 +248,12 @@ class SynchronizationContractsControllerTest extends TestCase {
 		$controller = $this->buildController($this->user());
 
 		$captured = [];
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) use (&$captured) {
 				$captured = $args;
 				return ObjectServiceMockBuilder::objectEntity($this, ['status' => 'inactive'], 'contract-1');
 			}
-		);
+		));
 
 		$controller->activate('contract-1');
 

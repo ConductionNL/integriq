@@ -75,6 +75,7 @@ use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Service\StufZknSyncService;
 use OCA\Integriq\Tests\Helpers\NestedWriteOnlyRenderBoundaryObjectService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\BackgroundJob\IJobList;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -345,7 +346,7 @@ class SourceRawReadContractTest extends TestCase {
 		$this->assertSame('token', ($auth['mode'] ?? null), 'A non-declared sibling must survive the strip.');
 
 		// An `_rbac: false` read is NOT an escape: the strip is schema-gated.
-		$rbacOff = $fake->find(id: self::SOURCE_UUID, register: 'integriq', schema: 'source', _rbac: false);
+		$rbacOff = $fake->find(id: self::SOURCE_UUID, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false);
 		$this->assertArrayNotHasKey(
 			'encryptedToken',
 			($rbacOff->getObject()['configuration']['authentication'] ?? []),

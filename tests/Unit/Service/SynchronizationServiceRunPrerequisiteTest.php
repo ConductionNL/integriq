@@ -25,6 +25,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -73,7 +74,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 		$synchronization['targetId'] = '1/2';
 
 		$orObjects = ObjectServiceMockBuilder::make($this);
-		$orObjects->method('find')->willReturnCallback(
+		$orObjects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null) use ($seeds) {
 				// An object found by slug comes back with uuid-<slug>; a second lookup uses that.
 				$id = preg_replace('/^uuid-/', '', (string)$id);
@@ -83,7 +84,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $seeds[$schema][$id], 'uuid-' . $id);
 			}
-		);
+		));
 		$orObjects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$orObjects->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ...$rest) use (&$writes) {

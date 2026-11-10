@@ -27,6 +27,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Http\Client\IClientService;
@@ -123,7 +124,7 @@ class EventServiceNotificatiesActionTest extends TestCase {
 		);
 
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($find, $event) {
 				if ($schema === 'event') {
 					return ($find['event'] ?? $event);
@@ -131,7 +132,7 @@ class EventServiceNotificatiesActionTest extends TestCase {
 
 				return ($find[$schema] ?? null);
 			}
-		);
+		));
 
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) {

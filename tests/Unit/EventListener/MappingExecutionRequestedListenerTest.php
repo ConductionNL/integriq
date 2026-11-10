@@ -28,6 +28,7 @@ use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -79,7 +80,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 		];
 
 		$this->orObjectService = $this->createMock(OrObjectService::class);
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args): ObjectEntity {
 				$id = (string)($args['id'] ?? $args[0]);
 				if (isset($this->stored[$id]) === false) {
@@ -89,7 +90,7 @@ class MappingExecutionRequestedListenerTest extends TestCase {
 
 				return $this->entity(data: $this->stored[$id]);
 			}
-		);
+		));
 		$this->orObjectService->method('findAll')->willReturn(['results' => []]);
 
 		$mappingService = new MappingService(

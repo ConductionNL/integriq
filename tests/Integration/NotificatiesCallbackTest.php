@@ -31,6 +31,7 @@ namespace OCA\Integriq\Tests\Integration;
 use OCA\Integriq\Controller\NotificatiesSubscriberController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
@@ -106,7 +107,7 @@ class NotificatiesCallbackTest extends TestCase {
 		$synchronization = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'zaken-sync'], 'sync-1');
 
 		$orObjectService = ObjectServiceMockBuilder::make($this);
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, string $register, string $schema) use ($abonnement, $synchronization) {
 				if ($schema === 'notificaties_abonnement') {
 					return $abonnement;
@@ -118,7 +119,7 @@ class NotificatiesCallbackTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 		$orObjectService->method('findAll')->willReturnCallback(
 			function (array $config = [], ...$rest) use ($consumer, $subscription) {
 				$schema = ($config['filters']['schema'] ?? null);
@@ -249,9 +250,9 @@ class NotificatiesCallbackTest extends TestCase {
 		);
 
 		$orObjectService = ObjectServiceMockBuilder::make($this);
-		$orObjectService->method('find')->willReturnCallback(
+		$orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			fn (string $id, string $register, string $schema) => ($schema === 'notificaties_abonnement') ? $abonnement : null
-		);
+		));
 		$orObjectService->method('findAll')->willReturnCallback(
 			function (array $config = [], ...$rest) use ($consumer) {
 				$schema = ($config['filters']['schema'] ?? null);

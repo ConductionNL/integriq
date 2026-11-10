@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Integration;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
 use OCA\Integriq\Service\ServiceRegistrar;
 use OCA\Integriq\Service\Integration\WriteBackConflictReader;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
@@ -240,7 +241,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 				return ['results' => $rows, 'total' => count($rows)];
 			}
 		);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null) use ($syncStatus, &$finds) {
 				$finds[] = $schema;
 				if ($schema === 'synchronization') {
@@ -249,7 +250,7 @@ class SynchronizationContractProviderContractTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, ['identificatie' => 'ZAAK-1', 'syncStatus' => $syncStatus], (string)$id);
 			}
-		);
+		));
 
 		return $objectService;
 

@@ -24,6 +24,7 @@ use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -70,7 +71,7 @@ class ZgwSetInstallerTest extends TestCase {
 
 	private function installer(?string $setDirectory=null): ZgwSetInstaller {
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register=null, ?string $schema=null) {
 				if ($this->findThrows === true) {
 					throw new \RuntimeException('Object not found');
@@ -85,7 +86,7 @@ class ZgwSetInstallerTest extends TestCase {
 				$entity->setObject($this->syncs[$id]);
 				return $entity;
 			}
-		);
+		));
 		$objects->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null) {
 				$this->assertSame('integriq', $register);

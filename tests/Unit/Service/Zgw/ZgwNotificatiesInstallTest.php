@@ -20,6 +20,7 @@ use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -80,7 +81,7 @@ class ZgwNotificatiesInstallTest extends TestCase {
 
 	private function installer(): ZgwSetInstaller {
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register=null, ?string $schema=null) {
 				if ($schema === 'source' && $id === self::SOURCE_UUID) {
 					$id = 'zgw-set-notificaties';
@@ -95,7 +96,7 @@ class ZgwNotificatiesInstallTest extends TestCase {
 				$entity->setObject($this->seeds[$schema][$id]);
 				return $entity;
 			}
-		);
+		));
 		$objects->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null) {
 				$this->saved[] = ['schema' => (string)$schema, 'object' => $object];

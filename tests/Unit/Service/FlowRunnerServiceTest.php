@@ -30,6 +30,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -472,7 +473,7 @@ class FlowRunnerServiceTest extends TestCase {
 			]
 		);
 
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($flowRunEntity, $flow) {
 				if ($schema === 'flow_run') {
 					return $flowRunEntity;
@@ -480,7 +481,7 @@ class FlowRunnerServiceTest extends TestCase {
 
 				return $flow;
 			}
-		);
+		));
 
 		$this->approvalService->method('rehydrateFlowToken')->willReturn(new FlowToken());
 		$this->synchronizationService->method('getSynchronization')->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Sync'], 'sync-1'));

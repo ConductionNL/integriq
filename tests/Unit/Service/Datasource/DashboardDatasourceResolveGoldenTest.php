@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Datasource;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
 use OCA\Integriq\Service\Datasource\JsonPathLiteEvaluator;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -124,7 +125,7 @@ class DashboardDatasourceResolveGoldenTest extends TestCase {
 		);
 
 		$objects = $this->createMock(OrObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args): ObjectEntity {
 				$this->trace[] = ['find' => $args];
 				$id = (string)($args['id'] ?? $args[0]);
@@ -142,7 +143,7 @@ class DashboardDatasourceResolveGoldenTest extends TestCase {
 				$source->setObject($data);
 				return $source;
 			}
-		);
+		));
 
 		$calls = $this->createMock(CallService::class);
 		$calls->method('call')->willReturnCallback(

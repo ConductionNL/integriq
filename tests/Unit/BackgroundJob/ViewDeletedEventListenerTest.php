@@ -17,6 +17,7 @@ namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
 use OCA\Integriq\BackgroundJob\DeferredViewCascadeJob;
 use OCA\Integriq\BackgroundJob\ViewDeletedEventListener;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -89,7 +90,7 @@ class ViewDeletedEventListenerTest extends TestCase {
 		$registerMapper->method('find')->willReturn($this->row(7, 'vng-gemma'));
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->method('find')->willReturnCallback(
+		$schemaMapper->method('find')->willReturnCallback(FindCallShape::callback(
 			function (mixed $ref): object {
 				if ($ref === 'extendview') {
 					return $this->row(42, 'extendview');
@@ -97,7 +98,7 @@ class ViewDeletedEventListenerTest extends TestCase {
 
 				return $this->row(11, 'view');
 			}
-		);
+		));
 
 		$deferral = $this->createMock(ListenerDeferralService::class);
 		$deferral->expects($this->once())
@@ -160,7 +161,7 @@ class ViewDeletedEventListenerTest extends TestCase {
 		$registerMapper->method('find')->willReturn($this->row(7, 'vng-gemma'));
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
-		$schemaMapper->method('find')->willReturnCallback(
+		$schemaMapper->method('find')->willReturnCallback(FindCallShape::callback(
 			function (mixed $ref): object {
 				if ($ref === 'extendview') {
 					return $this->row(42, 'extendview');
@@ -168,7 +169,7 @@ class ViewDeletedEventListenerTest extends TestCase {
 
 				return $this->row(11, 'view');
 			}
-		);
+		));
 
 		$deferral = $this->createMock(ListenerDeferralService::class);
 		$deferral->expects($this->never())->method('defer');

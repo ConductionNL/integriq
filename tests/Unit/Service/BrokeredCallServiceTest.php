@@ -29,6 +29,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
@@ -380,11 +381,11 @@ class BrokeredCallServiceTest extends TestCase {
 			}
 		);
 
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function () {
 				return $this->makeCredential(uuid: self::NIL_UUID, owner: 'alice');
 			}
-		);
+		));
 
 		$this->service = $this->buildService();
 	}//end setUp()

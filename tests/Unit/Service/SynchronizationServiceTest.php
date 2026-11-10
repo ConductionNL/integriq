@@ -23,6 +23,7 @@ use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1633,7 +1634,7 @@ HTML;
 		$syncEntity = ObjectServiceMockBuilder::objectEntity($this, $syncBody, ($syncBody['uuid'] ?? 'sync-uuid'));
 		$sourceEntity = ObjectServiceMockBuilder::objectEntity($this, $sourceBody, ($sourceBody['uuid'] ?? 'source-uuid'));
 
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($syncEntity, $sourceEntity) {
 				if ($schema === 'synchronization') {
 					return $syncEntity;
@@ -1641,7 +1642,7 @@ HTML;
 
 				return $sourceEntity;
 			}
-		);
+		));
 
 	}//end stubSynchronizationAndSource()
 

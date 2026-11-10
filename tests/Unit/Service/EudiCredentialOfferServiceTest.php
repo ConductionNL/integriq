@@ -29,6 +29,7 @@ use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
@@ -76,7 +77,7 @@ class EudiCredentialOfferServiceTest extends TestCase {
 	private function makeService(): EudiCredentialOfferService {
 		$objectService = $this->createMock(ObjectService::class);
 
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ...$rest) {
 				if (isset($this->rows[$id]) === false) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
@@ -87,7 +88,7 @@ class EudiCredentialOfferServiceTest extends TestCase {
 				$entity->setObject($this->rows[$id]);
 				return $entity;
 			}
-		);
+		));
 
 		$objectService->method('findAll')->willReturnCallback(
 			function ($config = []) {

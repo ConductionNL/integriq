@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Flow;
 use OCA\Integriq\Flow\ApprovalRequestNode;
 use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
@@ -368,7 +369,7 @@ class ApprovalRequestNodeTest extends TestCase {
 				'expiresAt' => '2999-01-01T00:00:00+00:00',
 			]
 		);
-		$this->approvalService->method('find')->with('req-1')->willReturn($record);
+		$this->approvalService->method('find')->with(...FindCallShape::args('req-1'))->willReturn($record);
 
 		$state = new FlowResumeState();
 		$state->forNode(nodeId: 'approve-1')->merge(

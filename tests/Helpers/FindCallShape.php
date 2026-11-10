@@ -29,6 +29,22 @@ use PHPUnit\Framework\Constraint\IsEqual;
 final class FindCallShape {
 
 	/**
+	 * Each name's index in the flat list.
+	 *
+	 * @var array<string, int>
+	 */
+	public const POSITIONS = [
+		'id'            => 0,
+		'register'      => 1,
+		'schema'        => 2,
+		'_rbac'         => 3,
+		'_multitenancy' => 4,
+		'_render'       => 5,
+		'_audit'        => 6,
+		'_extend'       => 7,
+	];
+
+	/**
 	 * The find() arguments as id, register, schema, rbac, multitenancy, render, audit, extend.
 	 *
 	 * @param array $args The arguments the double received, positional or by name.

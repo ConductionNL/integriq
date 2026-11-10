@@ -19,6 +19,7 @@ use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -126,7 +127,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'map-uuid-42', register: 'integriq', schema: 'mapping')
+			->with(...FindCallShape::args(id: 'map-uuid-42', register: 'integriq', schema: 'mapping'))
 			->willReturn($object);
 
 		$result = $this->service->getMapping('map-uuid-42');
@@ -251,7 +252,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-uuid', register: 'integriq', schema: 'mapping')
+			->with(...FindCallShape::args(id: 'lookup-uuid', register: 'integriq', schema: 'mapping'))
 			->willReturn($object);
 
 		$result = $this->service->executeMapping('lookup-uuid', ['in' => 'value']);
@@ -276,7 +277,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->with(id: 'lookup-slug', register: 'integriq', schema: 'mapping')
+			->with(...FindCallShape::args(id: 'lookup-slug', register: 'integriq', schema: 'mapping'))
 			->willReturn(null);
 
 		$this->orObjectService->expects($this->once())
@@ -411,7 +412,7 @@ class MappingServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('find')
-			->willReturnCallback(fn ($id) => ($id === 'related-uuid') ? $related : null);
+			->willReturnCallback(FindCallShape::callback(fn ($id) => ($id === 'related-uuid') ? $related : null));
 
 		$result = $this->service->expandRelations(
 			data: ['id' => 'partij-1', 'digitaleAdressen' => 'related-uuid'],
@@ -434,9 +435,9 @@ class MappingServiceTest extends TestCase {
 		$second->setUuid('b');
 		$second->setObject(['adres' => '2']);
 
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			fn ($id) => ($id === 'a') ? $first : $second
-		);
+		));
 
 		$result = $this->service->expandRelations(
 			data: ['digitaleAdressen' => ['a', 'b']],

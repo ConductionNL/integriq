@@ -29,6 +29,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -109,7 +110,7 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 	 */
 	private function service(): SynchronizationService {
 		$or = $this->createMock(ORObjectService::class);
-		$or->method('find')->willReturnCallback(
+		$or->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$id);
@@ -120,7 +121,7 @@ class SynchronizationZgwDocumentPushTest extends TestCase {
 				});
 				return $entity;
 			}
-		);
+		));
 		$or->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 		$or->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false) {

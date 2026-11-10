@@ -28,6 +28,7 @@ use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
@@ -251,7 +252,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 			['status' => 'approved', 'synchronizationId' => self::SYNC_ID],
 			'approval-valid'
 		);
-		$this->approvals->method('find')->willReturnCallback(
+		$this->approvals->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id) use ($valid) {
 				if ($id === 'approval-valid') {
 					return $valid;
@@ -267,7 +268,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 				}
 				throw new \Exception('not found');
 			}
-		);
+		));
 
 		$this->assertSame('approval-valid', $this->approvalService->resolve(self::SYNC_ID, 'approval-valid')?->getUuid());
 		$this->assertNull($this->approvalService->resolve(self::SYNC_ID, 'approval-consumed'));
@@ -296,7 +297,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 			'source-uuid-ag'
 		);
 		$target = ObjectServiceMockBuilder::objectEntity($this, ['id' => 'target-2', 'omschrijving' => 'Oud'], 'target-2');
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			static function (...$args) use ($sourceEntity, $target) {
 				$id = (string)($args['id'] ?? $args[0] ?? '');
 				if ($id === 'target-2') {
@@ -305,7 +306,7 @@ class SynchronizationServiceApprovalGateTest extends TestCase {
 
 				return $sourceEntity;
 			}
-		);
+		));
 
 		$changedContract = ObjectServiceMockBuilder::objectEntity(
 			$this,

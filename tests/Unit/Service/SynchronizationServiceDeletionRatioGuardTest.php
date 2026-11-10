@@ -29,6 +29,7 @@ use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -157,9 +158,9 @@ class SynchronizationServiceDeletionRatioGuardTest extends TestCase {
 		$this->orObjectService->method('findAll')
 			->willReturn(['results' => $contracts, 'total' => $count]);
 
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			fn (...$args) => ObjectServiceMockBuilder::objectEntity($this, [], (string)$args[0])
-		);
+		));
 
 		return $targetIds;
 	}//end seedContracts()

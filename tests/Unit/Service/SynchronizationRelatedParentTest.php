@@ -26,6 +26,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -77,7 +78,7 @@ class SynchronizationRelatedParentTest extends TestCase {
 		);
 
 		$openRegisters = $this->createMock(ORObjectService::class);
-		$openRegisters->method('find')->willReturnCallback(
+		$openRegisters->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, $register = null, $schema = null) {
 				$this->log[] = ['openRegisters.find', $id, $register, $schema];
 				if (($this->case['find'] ?? 'object') === 'throws') {
@@ -90,7 +91,7 @@ class SynchronizationRelatedParentTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, ['title' => 'parent'], $id);
 			}
-		);
+		));
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('getOpenRegisters')->willReturnCallback(

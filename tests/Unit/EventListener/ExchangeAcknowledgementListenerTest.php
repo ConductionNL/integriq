@@ -32,6 +32,7 @@ use OCA\Integriq\Service\Exchange\ExchangeErrorCodeCatalogue;
 use OCA\Integriq\Service\Exchange\ExchangeJobService;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
 use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -91,7 +92,7 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 				return $this->entity(uuid: $uuid, data: $object);
 			}
 		);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ...$rest) {
 				if (isset($this->store[$id]) === false) {
 					throw new \RuntimeException('not found');
@@ -99,7 +100,7 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 
 				return $this->entity(uuid: (string)$id, data: $this->store[$id]);
 			}
-		);
+		));
 		$objects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);

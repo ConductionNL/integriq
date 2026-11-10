@@ -30,6 +30,7 @@ use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationRunLog;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -129,9 +130,9 @@ class SynchronizationInternToExternTest extends TestCase {
 		};
 
 		$openRegisters = $this->createMock(ORObjectService::class);
-		$openRegisters->method('find')->willReturnCallback(
+		$openRegisters->method('find')->willReturnCallback(FindCallShape::callback(
 			fn ($id, $_extend = []) => $this->lookup('openRegisters.find', [$id, $_extend])
-		);
+		));
 		$openRegisters->method('getMapper')->willReturn($mapper);
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('getOpenRegisters')->willReturn($openRegisters);

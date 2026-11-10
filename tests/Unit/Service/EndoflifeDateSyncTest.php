@@ -36,6 +36,7 @@ use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -181,13 +182,7 @@ class EndoflifeDateSyncTest extends TestCase {
 	 * @return array<string, int>
 	 */
 	private function findParamPositions(): array {
-		$rm = new ReflectionMethod(ORObjectService::class, 'find');
-		$positions = [];
-		foreach ($rm->getParameters() as $i => $p) {
-			$positions[$p->getName()] = $i;
-		}
-
-		return $positions;
+		return FindCallShape::POSITIONS;
 	}//end findParamPositions()
 
 	/**
@@ -337,7 +332,7 @@ class EndoflifeDateSyncTest extends TestCase {
 		// either mapping — matching every lookup the real engine performs
 		// for this preset's seeded configuration.
 		$findPos = $this->findParamPositions();
-		$this->orObjectService->method('find')->willReturnCallback(
+		$this->orObjectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function (...$args) use ($findPos) {
 				$id = ($args[$findPos['id']] ?? null);
 				$schema = ($args[$findPos['schema']] ?? null);
@@ -369,7 +364,7 @@ class EndoflifeDateSyncTest extends TestCase {
 
 				return null;
 			}
-		);
+		));
 
 		// CallService::call dispatches by endpoint: first call for a given
 		// endpoint returns the configured fixture array, every subsequent

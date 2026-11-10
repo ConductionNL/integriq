@@ -28,6 +28,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -113,7 +114,7 @@ class SynchronizationGetAllObjectsFromApiTest extends TestCase {
 		);
 
 		$or = $this->createMock(ORObjectService::class);
-		$or->method('find')->willReturnCallback(
+		$or->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) {
 				$this->log[] = ['or.find', (string)$id];
 				$entity = new ObjectEntity();
@@ -121,7 +122,7 @@ class SynchronizationGetAllObjectsFromApiTest extends TestCase {
 				$entity->setObject(['uuid' => (string)$id, 'location' => 'https://found.invalid']);
 				return $entity;
 			}
-		);
+		));
 		$or->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid];

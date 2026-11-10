@@ -26,6 +26,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
@@ -152,7 +153,7 @@ class FlowRunnerServiceGoldenTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'run-1'));
 			}
 		);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			function (string $id, ?string $register = null, ?string $schema = null) use ($steps): ObjectEntity {
 				$this->trace[] = ['find' => $schema, 'id' => $id];
 				if ($schema === 'flow_run') {
@@ -161,7 +162,7 @@ class FlowRunnerServiceGoldenTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, ['steps' => $steps], $id);
 			}
-		);
+		));
 
 		$mapping = $this->createMock(MappingService::class);
 		$mapping->method('executeMapping')->willReturnCallback(

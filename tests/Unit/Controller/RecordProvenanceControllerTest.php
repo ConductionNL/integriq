@@ -19,6 +19,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\RecordProvenanceController;
 use OCA\Integriq\Service\RecordProvenanceService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -62,7 +63,7 @@ final class RecordProvenanceControllerTest extends TestCase {
 			$objects->method('find')->willThrowException($failure ?? new DoesNotExistException('not found'));
 		} else {
 			$objects->expects($this->once())->method('find')
-				->with('case-82', 'dossiq', 'case', true, true)
+				->with(...FindCallShape::args('case-82', 'dossiq', 'case', true, true))
 				->willReturn($record);
 		}
 

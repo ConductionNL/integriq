@@ -29,6 +29,7 @@ use OCA\Integriq\Controller\SourceDestroyedController;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
@@ -65,13 +66,13 @@ final class SourceDestroyedControllerTest extends TestCase {
 			'source-dms'
 		);
 		$objects = $this->createMock(OrObjectService::class);
-		$objects->method('find')->willReturnCallback(
+		$objects->method('find')->willReturnCallback(FindCallShape::callback(
 			fn (...$args) => match ((string)$args[0]) {
 				'sync-1' => $sync,
 				'source-dms' => $source,
 				default => null,
 			}
-		);
+		));
 
 		$logger = $this->createMock(LoggerInterface::class);
 

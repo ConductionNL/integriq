@@ -29,6 +29,7 @@ use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\OpenRegisterCredentials;
 use OCA\Integriq\Service\Lti\LtiJwksResolverService;
 use OCA\Integriq\Service\Lti\LtiKeyService;
@@ -671,14 +672,14 @@ class LtiLaunchServiceTest extends TestCase {
 		// tool has a genuine generated active key.
 		$registrations = [$toolUuid => ['signingKeys' => []]];
 		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) use (&$registrations) {
 				$entity = new ObjectEntity();
 				$entity->setUuid($id);
 				$entity->setObject($registrations[$id]);
 				return $entity;
 			}
-		);
+		));
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) use (&$registrations) {
 				$registrations[$uuid] = $object;
@@ -725,14 +726,14 @@ class LtiLaunchServiceTest extends TestCase {
 		$platformUuid = 'plat-dl-1';
 		$registrations = [$platformUuid => ['signingKeys' => []]];
 		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id) use (&$registrations) {
 				$entity = new ObjectEntity();
 				$entity->setUuid($id);
 				$entity->setObject($registrations[$id]);
 				return $entity;
 			}
-		);
+		));
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) use (&$registrations) {
 				$registrations[$uuid] = $object;

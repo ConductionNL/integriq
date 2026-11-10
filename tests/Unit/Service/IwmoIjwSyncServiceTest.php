@@ -28,6 +28,7 @@ use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\Integriq\Service\IwmoIjwSyncService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -149,11 +150,11 @@ class IwmoIjwSyncServiceTest extends TestCase {
 			}
 		);
 
-		$this->objectService->method('find')->willReturnCallback(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register = null, ?string $schema = null): ?ObjectEntity {
 				return ($this->cases[$register . ':' . $schema . ':' . $id] ?? null);
 			}
-		);
+		));
 
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {

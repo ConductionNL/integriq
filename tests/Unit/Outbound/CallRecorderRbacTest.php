@@ -29,6 +29,7 @@ use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\FindCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCP\IAppConfig;
@@ -75,12 +76,12 @@ class CallRecorderRbacTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
 		);
-		$objectService->method('find')->willReturnCallback(
+		$objectService->method('find')->willReturnCallback(FindCallShape::callback(
 			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true) {
 				$this->calls[] = ['verb' => 'find', 'schema' => (string)$schema, 'rbac' => $_rbac];
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->records[$id] ?? []), (string)$id);
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnArgument(2);
