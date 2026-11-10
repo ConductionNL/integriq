@@ -26,6 +26,7 @@ use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -196,7 +197,7 @@ class ContractMatchNodeTest extends TestCase {
 	public function testEmptyInputMatchesNothing(): void {
 		$this->contractService->expects($this->never())->method('findAllObjects');
 
-		$this->assertSame([], $this->node->execute([], ['synchronization' => 'demo-sync'], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall([], ['synchronization' => 'demo-sync'], $this->context())));
 
 	}//end testEmptyInputMatchesNothing()
 
@@ -216,11 +217,11 @@ class ContractMatchNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/No decisions were stamped/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['id' => 'o-1']]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 	}//end testFailedBulkLookupRaisesAndStampsNothing()
 
@@ -261,11 +262,11 @@ class ContractMatchNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['id' => 'o-1', 'value' => 'new']]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertSame('update', $out[0]['json']['contract']['outcome']);
 		$this->assertSame('c-first', $out[0]['json']['contract']['contractUuid']);
@@ -317,7 +318,7 @@ class ContractMatchNodeTest extends TestCase {
 				}
 			);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				['json' => $unchangedJson],
 				['json' => $changedJson],
@@ -326,7 +327,7 @@ class ContractMatchNodeTest extends TestCase {
 			],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		// The single lookup carried the page's collected origin ids — and NOT
 		// the id-less item.
@@ -378,11 +379,11 @@ class ContractMatchNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => $json]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertSame('update', $out[0]['json']['contract']['outcome']);
 
@@ -417,16 +418,16 @@ class ContractMatchNodeTest extends TestCase {
 			[$this->contractObject(uuid: 'c-1', payload: ($payload + ['targetHash' => 'th-1']))]
 		);
 
-		$withoutHash = $this->node->execute(
+		$withoutHash = $this->node->execute(new FlowNodeCall(
 			[['json' => $json]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
-		$withHash = $this->node->execute(
+		));
+		$withHash = $this->node->execute(new FlowNodeCall(
 			[['json' => $json]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertSame('update', $withoutHash[0]['json']['contract']['outcome']);
 		$this->assertSame('skip', $withHash[0]['json']['contract']['outcome']);
@@ -461,11 +462,11 @@ class ContractMatchNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => $json]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertSame('update', $out[0]['json']['contract']['outcome']);
 
@@ -494,11 +495,11 @@ class ContractMatchNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['id' => 'o-1', 'data' => ['x' => 1], 'fetchedAt' => 'just now']]],
 			['synchronization' => 'demo-sync', 'hashPosition' => 'data', 'output' => 'decision'],
 			$this->context()
-		);
+		));
 
 		$this->assertSame('skip', $out[0]['json']['decision']['outcome']);
 		$this->assertSame($this->hashOf(['x' => 1]), $out[0]['json']['decision']['originHash']);
@@ -515,11 +516,11 @@ class ContractMatchNodeTest extends TestCase {
 
 		$this->contractService->expects($this->never())->method('findAllObjects');
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['value' => 'no id']]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertSame('invalid', $out[0]['json']['contract']['outcome']);
 
