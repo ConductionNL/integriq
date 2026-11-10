@@ -113,6 +113,15 @@ class ExportEnvelopeGoldenTest extends TestCase {
 		);
 		$this->assertStringNotContainsString('attachmentRefs', $noRefs);
 
+		$scalarCategory = (new OsoExportEnvelopeTranslator())->translate(
+			'k-3',
+			['learnerEckId' => 'e', 'targetSchoolBrin' => 'b', 'categories' => ['plain']]
+		);
+		$this->assertStringContainsString(
+			'<categories><category><name/><included>false</included><data>[]</data></category></categories></body>',
+			$scalarCategory
+		);
+
 	}//end testOsoEnvelope()
 
 	/**
