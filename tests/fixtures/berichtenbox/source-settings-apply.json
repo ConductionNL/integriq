@@ -1,0 +1,242 @@
+{
+    "json configuration and token": {
+        "data": {
+            "slug": "bb",
+            "configuration": {
+                "authentication": {
+                    "mode": "none",
+                    "encryptedToken": "enc(tok)"
+                },
+                "keep": "yes",
+                "providerId": "berichtenbox",
+                "senderOin": "00000001234567890000",
+                "adapterUrl": "https://adapter.example.test",
+                "cpaId": "cpa-1",
+                "wusEndpoint": "https://wus.example.test/check"
+            }
+        },
+        "warnings": []
+    },
+    "array configuration, types, empty token": {
+        "data": {
+            "configuration": {
+                "providerId": "berichtenbox",
+                "berichtTypes": {
+                    "a": "AB12",
+                    "3": "X"
+                },
+                "authentication": []
+            }
+        },
+        "warnings": []
+    },
+    "no configuration, types not an array": {
+        "data": {
+            "configuration": {
+                "providerId": "berichtenbox",
+                "service": "svc",
+                "authentication": []
+            }
+        },
+        "warnings": []
+    },
+    "bad oin": {
+        "refused": [
+            "senderOin",
+            "An OIN has 20 digits."
+        ]
+    },
+    "bad adapter url": {
+        "refused": [
+            "adapterUrl",
+            "adapterUrl is not a URL."
+        ]
+    },
+    "bad wus url": {
+        "refused": [
+            "wusEndpoint",
+            "wusEndpoint is not a URL."
+        ]
+    },
+    "wus not https": {
+        "refused": [
+            "wusEndpoint",
+            "The subscription check goes over two-way TLS, so its endpoint starts with https://."
+        ]
+    },
+    "berichttype too long": {
+        "refused": [
+            "berichtTypes",
+            "BerichtType ABCDEFGHI is longer than the 8 characters Logius allows."
+        ]
+    },
+    "blank certificate": {
+        "data": {
+            "configuration": {
+                "providerId": "berichtenbox",
+                "senderOin": "00000001234567890000",
+                "adapterUrl": "https://adapter.example.test",
+                "cpaId": "cpa-1",
+                "wusEndpoint": "https://wus.example.test/check",
+                "authentication": []
+            }
+        },
+        "warnings": []
+    },
+    "certificate not an array": {
+        "data": {
+            "configuration": {
+                "providerId": "berichtenbox",
+                "senderOin": "00000001234567890000",
+                "adapterUrl": "https://adapter.example.test",
+                "cpaId": "cpa-1",
+                "wusEndpoint": "https://wus.example.test/check",
+                "authentication": []
+            }
+        },
+        "warnings": []
+    },
+    "matching certificate": {
+        "data": {
+            "configuration": {
+                "authentication": {
+                    "encryptedToken": "old",
+                    "mode": "mtls",
+                    "mtls": {
+                        "encryptedCertificate": "enc(match-cert)",
+                        "encryptedPrivateKey": "enc(match-key)",
+                        "encryptedPassphrase": "enc(pw)",
+                        "encryptedCaBundle": "enc(ca)"
+                    }
+                },
+                "providerId": "berichtenbox",
+                "senderOin": "00000001234567890000",
+                "adapterUrl": "https://adapter.example.test",
+                "cpaId": "cpa-1",
+                "wusEndpoint": "https://wus.example.test/check",
+                "certificateRef": "sha256:<match>"
+            }
+        },
+        "warnings": []
+    },
+    "other serial": {
+        "data": {
+            "configuration": {
+                "providerId": "berichtenbox",
+                "senderOin": "00000001234567890000",
+                "adapterUrl": "https://adapter.example.test",
+                "cpaId": "cpa-1",
+                "wusEndpoint": "https://wus.example.test/check",
+                "certificateRef": "sha256:<other>",
+                "authentication": {
+                    "mode": "mtls",
+                    "mtls": {
+                        "encryptedCertificate": "enc(other-cert)",
+                        "encryptedPrivateKey": "enc(other-key)"
+                    },
+                    "encryptedToken": "enc(tok)"
+                }
+            }
+        },
+        "warnings": [
+            "The certificate carries 00000009999999990000 as its serial number, not the sender OIN 00000001234567890000. Logius refuses a letter whose OIN differs from the certificate."
+        ]
+    },
+    "no serial": {
+        "data": {
+            "configuration": {
+                "providerId": "berichtenbox",
+                "senderOin": "00000001234567890000",
+                "adapterUrl": "https://adapter.example.test",
+                "cpaId": "cpa-1",
+                "wusEndpoint": "https://wus.example.test/check",
+                "certificateRef": "sha256:<bare>",
+                "authentication": {
+                    "mode": "mtls",
+                    "mtls": {
+                        "encryptedCertificate": "enc(bare-cert)",
+                        "encryptedPrivateKey": "enc(bare-key)"
+                    }
+                }
+            }
+        },
+        "warnings": [
+            "The certificate carries - as its serial number, not the sender OIN 00000001234567890000. Logius refuses a letter whose OIN differs from the certificate."
+        ]
+    },
+    "no oin": {
+        "data": {
+            "configuration": {
+                "providerId": "berichtenbox",
+                "certificateRef": "sha256:<other>",
+                "authentication": {
+                    "mode": "mtls",
+                    "mtls": {
+                        "encryptedCertificate": "enc(other-cert)",
+                        "encryptedPrivateKey": "enc(other-key)"
+                    }
+                }
+            }
+        },
+        "warnings": []
+    },
+    "key of another certificate": {
+        "refused": [
+            "certificate",
+            "The private key does not belong to this certificate."
+        ]
+    },
+    "unresolvable": {
+        "refused": [
+            "certificate",
+            "The certificate has expired."
+        ]
+    },
+    "resolved": [
+        {
+            "encryptedToken": "old",
+            "mode": "mtls",
+            "mtls": {
+                "encryptedCertificate": "enc(match-cert)",
+                "encryptedPrivateKey": "enc(match-key)",
+                "encryptedPassphrase": "enc(pw)",
+                "encryptedCaBundle": "enc(ca)"
+            }
+        },
+        {
+            "mode": "mtls",
+            "mtls": {
+                "encryptedCertificate": "enc(other-cert)",
+                "encryptedPrivateKey": "enc(other-key)"
+            }
+        },
+        {
+            "mode": "mtls",
+            "mtls": {
+                "encryptedCertificate": "enc(bare-cert)",
+                "encryptedPrivateKey": "enc(bare-key)"
+            }
+        },
+        {
+            "mode": "mtls",
+            "mtls": {
+                "encryptedCertificate": "enc(other-cert)",
+                "encryptedPrivateKey": "enc(other-key)"
+            }
+        },
+        {
+            "mode": "mtls",
+            "mtls": {
+                "encryptedCertificate": "enc(match-cert)",
+                "encryptedPrivateKey": "enc(other-key)"
+            }
+        },
+        {
+            "mode": "mtls",
+            "mtls": {
+                "encryptedCertificate": "enc(unresolvable)",
+                "encryptedPrivateKey": "enc()"
+            }
+        }
+    ]
+}
