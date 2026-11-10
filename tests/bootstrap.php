@@ -555,6 +555,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// must exist before they are parsed — exactly the compile-time
 		// reference the runtime `class_exists()` guard in Application.php
 		// exists to avoid resolving on an instance without a flow engine.
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeCall') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeCall.php';
+		}
+
 		if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNode') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNode.php';
 		}
