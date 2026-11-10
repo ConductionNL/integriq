@@ -9,6 +9,7 @@ import {
 	sourceStore,
 	synchronizationStore,
 } from '../../store/store.js'
+import { fetchOpenRegisterCollection } from '../openRegisterGet.js'
 import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
 defineOptions({
 	name: 'EditRule',
@@ -634,23 +635,7 @@ defineOptions({
 
 			// checking if OpenRegister is installed
 			console.info('Fetching schemas from Open Register')
-			const response = await fetch(
-				'/index.php/apps/openregister/api/schemas',
-				{
-					headers: {
-						accept: '*/*',
-						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-						'cache-control': 'no-cache',
-						pragma: 'no-cache',
-						'x-requested-with': 'XMLHttpRequest',
-					},
-					referrerPolicy: 'no-referrer',
-					body: null,
-					method: 'GET',
-					mode: 'cors',
-					credentials: 'include',
-				},
-			)
+			const response = await fetchOpenRegisterCollection('schemas')
 
 			if (!response.ok) {
 				console.info('Open Register is not installed')
@@ -1576,7 +1561,7 @@ defineOptions({
 						:label="t('integriq', 'JavaScript Code')"
 						class="code-editor"
 						:placeholder="
-							t('integriq', 'Enter your JavaScript code here...')
+							t('integriq', 'Enter your JavaScript code here…')
 						"
 						rows="10" />
 				</template>
