@@ -94,22 +94,43 @@ final class SignedEnvelopeDelivery {
 		// until OpenRegister's credential broker can issue in-process
 		// signing material (see the clients' class docblocks).
 		$signedXml = $this->profile->buildSignedRequest(certificateRef: $certificateRef, stufBodyXml: $request->envelopeXml);
-		$response  = $this->post(
-			url: $endpoint . $request->pathSuffix,
-			options: [
-				'headers' => ['Content-Type' => 'application/xml'] + $request->headers,
-				'body' => $signedXml,
-				'http_errors' => false,
-			]
-		);
+		$response  = $this->post(url: $endpoint . $request->pathSuffix, options: $this->postOptions(request: $request, signedXml: $signedXml));
+		$this->assertSuccessful(response: $response);
 
+		return $this->reference(response: $response, fallback: $request->kenmerk);
+	}//end deliver()
+
+	/**
+	 * The Guzzle options of the POST: the XML content type plus the client's headers, the signed body.
+	 *
+	 * @param SignedEnvelopeRequest $request   The envelope to deliver.
+	 * @param string                $signedXml The signed request.
+	 *
+	 * @return array The request options.
+	 */
+	private function postOptions(SignedEnvelopeRequest $request, string $signedXml): array {
+		return [
+			'headers' => ['Content-Type' => 'application/xml'] + $request->headers,
+			'body' => $signedXml,
+			'http_errors' => false,
+		];
+	}//end postOptions()
+
+	/**
+	 * Refuse an answer whose status is outside 2xx.
+	 *
+	 * @param ResponseInterface $response The answer.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception The client's status refusal.
+	 */
+	private function assertSuccessful(ResponseInterface $response): void {
 		$status = $response->getStatusCode();
 		if ($status < 200 || $status >= 300) {
 			throw $this->refusals->statusRefused(status: $status);
 		}
-
-		return $this->reference(response: $response, fallback: $request->kenmerk);
-	}//end deliver()
+	}//end assertSuccessful()
 
 	/**
 	 * Refuse closed when the certificate reference resolves no signing material.
