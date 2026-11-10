@@ -33,6 +33,7 @@ use OCA\Integriq\Controller\MappingsController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
@@ -70,13 +71,13 @@ class MappingsControllerSaveObjectTest extends TestCase {
 		// also what keeps this honest: the assertion is about the argument the
 		// controller passes to the real signature.
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ...$rest): ObjectEntity {
 				$this->written = (array)$object;
 
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$sourceMapping = $this->createMock(SourceMappingService::class);
 		$sourceMapping->method('getOpenRegisters')->willReturn($objectService);

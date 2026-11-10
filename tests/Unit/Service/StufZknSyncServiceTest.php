@@ -29,6 +29,7 @@ use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Service\StufZknSyncService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
@@ -161,7 +162,7 @@ class StufZknSyncServiceTest extends TestCase {
 			}
 		);
 
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$key = (string)$schema;
 				$this->saved[$key][] = ['object' => $object, 'register' => $register, 'uuid' => $uuid];
@@ -178,7 +179,7 @@ class StufZknSyncServiceTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$this->service = new StufZknSyncService(
 			$this->objectService,

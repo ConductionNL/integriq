@@ -26,6 +26,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiIdentityLinkService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -115,7 +116,7 @@ class LtiIdentityLinkServiceTest extends TestCase {
 			}
 		);
 
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null, $_rbac = true, $_multitenancy = true) {
 				// Application-level composite-uniqueness guard (mirrors OR's
 				// ValidateObject `configuration.unique` enforcement for
@@ -137,7 +138,7 @@ class LtiIdentityLinkServiceTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		$userManager = $this->createMock(IUserManager::class);
 		$userManager->method('get')->willReturnCallback(

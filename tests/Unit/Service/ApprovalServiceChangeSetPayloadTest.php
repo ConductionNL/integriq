@@ -26,6 +26,7 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\Synchronization\ChangeSetBuilder;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -66,12 +67,12 @@ class ApprovalServiceChangeSetPayloadTest extends TestCase {
 		parent::setUp();
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) {
 				$this->saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'approval-' . count($this->saved));
 			}
-		);
+		));
 
 		$this->service = new ApprovalService(
 			$this->objectService,

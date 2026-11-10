@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\FlowGraphMigrationService;
 use OCA\Integriq\Service\FlowStepsToGraphTranslator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
@@ -119,7 +120,7 @@ class FlowGraphMigrationServiceTest extends TestCase {
 		$written = null;
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register, $schema, $uuid) use (&$written): ObjectEntity {
 					$this->assertSame('integriq', $register);
 					$this->assertSame('flow', $schema);
@@ -128,7 +129,7 @@ class FlowGraphMigrationServiceTest extends TestCase {
 
 					return new ObjectEntity();
 				}
-			);
+			));
 
 		$report = $this->service->migrate(apply: true);
 
@@ -215,13 +216,13 @@ class FlowGraphMigrationServiceTest extends TestCase {
 		$written = null;
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				static function ($object) use (&$written): ObjectEntity {
 					$written = $object;
 
 					return new ObjectEntity();
 				}
-			);
+			));
 
 		$report = $this->service->rollback(apply: true);
 

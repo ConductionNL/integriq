@@ -23,6 +23,7 @@ use OCA\Integriq\Service\Security\PlaceholderSecretRepair;
 use OCA\Integriq\Service\Security\PlaceholderSecretRepairInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\ServiceBindings;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -84,7 +85,7 @@ class PlaceholderSecretRepairTest extends TestCase {
 		);
 
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true, $_multitenancy = true) use ($saveFails) {
 				if ($saveFails === true) {
 					throw new RuntimeException('save refused');
@@ -93,7 +94,7 @@ class PlaceholderSecretRepairTest extends TestCase {
 				$this->saves[] = [$register, $schema, $uuid, $object, $_rbac, $_multitenancy];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		return new PlaceholderSecretRepair($reader, $objects, $this->createMock(LoggerInterface::class));
 	}//end repair()

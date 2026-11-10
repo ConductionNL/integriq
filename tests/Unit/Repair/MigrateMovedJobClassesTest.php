@@ -30,6 +30,7 @@ use OCA\Integriq\Service\Job\PingAction;
 use OCA\Integriq\Service\Job\SynchronizationAction;
 use OCA\Integriq\Service\Synchronization\FetchFilesJob;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -87,7 +88,7 @@ class MigrateMovedJobClassesTest extends TestCase {
 				return ['results' => $results, 'total' => count($results)];
 			}
 		);
-		$store->method('saveObject')->willReturnCallback(
+		$store->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null) use (&$rows) {
 				$this->assertSame('integriq', $register);
 				$this->assertSame('job', $schema);
@@ -95,7 +96,7 @@ class MigrateMovedJobClassesTest extends TestCase {
 				$rows[(string)$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, (string)$uuid);
 			}
-		);
+		));
 
 		return $store;
 	}//end makeStore()

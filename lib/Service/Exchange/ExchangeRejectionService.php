@@ -29,6 +29,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -491,9 +493,10 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 	private function save(array $data, ?string $uuid = null): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: ExchangeJobService::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: ExchangeJobService::REGISTER, schema: self::SCHEMA),
+				uuid: $uuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

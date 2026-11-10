@@ -34,6 +34,7 @@ use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\DSOParserService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
@@ -117,7 +118,7 @@ class DsoIngestServiceTest extends TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 
-		$mock->method('saveObject')->willReturnCallback(
+		$mock->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				if ($schema === DsoIngestService::SCHEMA_MESSAGE) {
 					$entity = $this->buildEntity((array)$object, 'message-' . (++$this->uuidCounter));
@@ -135,7 +136,7 @@ class DsoIngestServiceTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$mock->method('find')->willReturnCallback(
 			function ($id, ?string $register = null, ?string $schema = null) {

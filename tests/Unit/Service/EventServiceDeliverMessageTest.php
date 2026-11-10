@@ -28,6 +28,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -87,12 +88,12 @@ class EventServiceDeliverMessageTest extends TestCase {
 		parent::setUp();
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 		$this->signatureService = $this->createMock(WebhookSignatureService::class);
 		$this->clientService = $this->createMock(IClientService::class);
 

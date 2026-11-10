@@ -41,6 +41,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Node;
 use OCP\Http\Client\IClient;
@@ -99,7 +100,7 @@ class NextcloudEventDeliveryTest extends TestCase {
 		$this->clientService = $this->createMock(IClientService::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) {
 				if ($schema !== 'event_message') {
 					return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'obj-uuid');
@@ -109,7 +110,7 @@ class NextcloudEventDeliveryTest extends TestCase {
 				$this->messages[$id] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $id);
 			}
-		);
+		));
 		$this->objectService->method('find')->willReturnCallback(
 			function (string $id, string $register, string $schema) {
 				if ($schema === 'event_message' && isset($this->messages[$id]) === true) {

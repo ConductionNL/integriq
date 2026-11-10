@@ -28,6 +28,9 @@
 namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\Uid\Uuid;
@@ -299,29 +302,29 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 		// no context, mm:EVENT-DISPATCH was still the single largest remaining
 		// cost of a 374-record sync — 6,866ms — spent dispatching events for rows
 		// nothing subscribes to.
+		// A contract is the engine's own bookkeeping: its shape is generated
+		// here, not authored, and nothing subscribes to its lifecycle. So it
+		// pays for neither.
+		//
+		// `silent` drops the audit row and the lifecycle event. Auditing
+		// contract WRITES is the same argument already applied to contract
+		// READS, which were 91% of this instance's audit table — a mapping
+		// row the engine wrote for itself is not the thing an audit trail
+		// exists to record.
+		//
+		// `_validation: false` skips re-validating that shape against the
+		// contract schema on every record. Unlike a target object, whose
+		// content comes from an external source and is exactly what
+		// validation is for, this payload never leaves the engine's hands.
 		$saved = SystemWrite::run(
 			what: 'a synchronization contract',
 			operation: fn (): mixed => $this->orObjectService->saveObject(
 				object: $object,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuidParam,
-				// A contract is the engine's own bookkeeping: its shape is generated
-				// here, not authored, and nothing subscribes to its lifecycle. So it
-				// pays for neither.
-				//
-				// `silent` drops the audit row and the lifecycle event. Auditing
-				// contract WRITES is the same argument already applied to contract
-				// READS, which were 91% of this instance's audit table — a mapping
-				// row the engine wrote for itself is not the thing an audit trail
-				// exists to record.
-				//
-				// `_validation: false` skips re-validating that shape against the
-				// contract schema on every record. Unlike a target object, whose
-				// content comes from an external source and is exactly what
-				// validation is for, this payload never leaves the engine's hands.
-				silent: true,
-				_validation: false
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: $uuidParam,
+					policy: new SavePolicy(silent: true, validation: false)
+				)
 			)
 		);
 
@@ -416,9 +419,10 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 		$uuid = $object['uuid'];
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+				uuid: $uuid
+			)
 		);
 
 		return $saved->jsonSerialize();
@@ -460,9 +464,10 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuidParam
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+				uuid: $uuidParam
+			)
 		);
 
 		return $saved->jsonSerialize();

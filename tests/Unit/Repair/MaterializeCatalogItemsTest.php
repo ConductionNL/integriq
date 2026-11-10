@@ -21,6 +21,7 @@ use OCA\Integriq\Repair\MaterializeCatalogItems;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
@@ -100,7 +101,7 @@ class MaterializeCatalogItemsTest extends TestCase {
 		$savedUuids = [];
 		$orObjectService->expects($this->exactly(2))
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
 					$this->assertSame('integriq', $register);
 					$this->assertSame('catalog_item', $schema);
@@ -109,7 +110,7 @@ class MaterializeCatalogItemsTest extends TestCase {
 					$savedUuids[] = $object['slug'];
 					return ObjectServiceMockBuilder::objectEntity($this, $object, 'new-' . $object['slug']);
 				}
-			);
+			));
 
 		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->makeOutput());
 
@@ -137,12 +138,12 @@ class MaterializeCatalogItemsTest extends TestCase {
 		$orObjectService->method('findAll')->willReturn(['results' => [$existing], 'total' => 1]);
 		$orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register = null, $schema = null, $uuid = null) {
 					$this->assertSame('existing-uuid', $uuid, 're-run must UPDATE the existing object in place');
 					return ObjectServiceMockBuilder::objectEntity($this, $object, 'existing-uuid');
 				}
-			);
+			));
 
 		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->makeOutput());
 	}//end testRerunUpsertsExistingObjectBySlug()
@@ -170,12 +171,12 @@ class MaterializeCatalogItemsTest extends TestCase {
 		$orObjectService = ObjectServiceMockBuilder::make($this);
 		$orObjectService->method('findAll')->willReturn(['results' => [$stale], 'total' => 1]);
 		$stored = null;
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object) use (&$stored) {
 				$stored = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'new');
 			}
-		);
+		));
 		$orObjectService->expects($this->once())->method('deleteObject')
 			->with($this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid'));
 

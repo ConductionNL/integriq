@@ -34,6 +34,7 @@ use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -141,7 +142,7 @@ class SourceDestructionServiceTest extends TestCase {
 			}
 		);
 		$orObjectService->method('find')->willReturnCallback(fn (...$args) => ($objects[(string)$args[0]] ?? null));
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) {
 				if (in_array('synchronization_contract', $args, true) === true) {
 					$this->contracts[] = $args[0];
@@ -151,7 +152,7 @@ class SourceDestructionServiceTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$args[0], 'saved');
 			}
-		);
+		));
 		$orObjectService->method('deleteObject')->willReturnCallback(
 			function (...$args): bool {
 				// By position: 0 is the uuid, 7 is `permanent` (openregister 98a3469c0f).

@@ -28,6 +28,7 @@ use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
 use OCA\Integriq\Service\CardfeedSyncService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -148,13 +149,13 @@ class CardfeedSyncServiceTest extends TestCase {
 	 * @return void
 	 */
 	private function captureSaves(): void {
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$key = (string)$schema;
 				$this->saved[$key][] = $object;
 				return $this->entity($object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));
 			}
-		);
+		));
 
 	}//end captureSaves()
 

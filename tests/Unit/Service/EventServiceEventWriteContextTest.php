@@ -36,12 +36,12 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 
 /**
  * Every EventService writer of an `event` row saves with `_rbac: false`.
@@ -71,12 +71,9 @@ class EventServiceEventWriteContextTest extends TestCase {
 		parent::setUp();
 
 		$objectService = ObjectServiceMockBuilder::make($this);
-		$names = array_map(
-			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-			(new ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters()
-		);
+		$names = array_keys(SaveCallShape::POSITIONS);
 
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use ($names) {
 				$named = array_combine(array_slice($names, 0, count($args)), $args);
 				if (($named['schema'] ?? null) === 'event') {
@@ -92,7 +89,7 @@ class EventServiceEventWriteContextTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->service = new EventService(

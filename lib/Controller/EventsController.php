@@ -29,6 +29,8 @@ use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -193,7 +195,12 @@ class EventsController extends Controller {
 		try {
 			// Create subscription. SubscriptionSigningDefaultListener gives a
 			// push subscription its signing secret on OpenRegister's create path.
-			$subscription = $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'event_subscription');
+			$subscription = $this->orObjectService->saveObject(
+				object: $data,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription')
+				)
+			);
 
 			// REQ-SOW-001: the one reveal of a generated secret. protocolSettings is
 			// writeOnly, so the stored row is read unrendered, as delivery reads it.
@@ -262,9 +269,10 @@ class EventsController extends Controller {
 			// Update subscription.
 			$subscription = $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'event_subscription',
-				uuid: (string)$subscriptionId
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription'),
+					uuid: (string)$subscriptionId
+				)
 			);
 
 			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
@@ -502,9 +510,10 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'event_subscription',
-			uuid: $subscription->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription'),
+				uuid: $subscription->getUuid()
+			)
 		);
 
 		return new JSONResponse(
@@ -559,9 +568,10 @@ class EventsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'event_subscription',
-			uuid: $subscription->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription'),
+				uuid: $subscription->getUuid()
+			)
 		);
 
 		return new JSONResponse(

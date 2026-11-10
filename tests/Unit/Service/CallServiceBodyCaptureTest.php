@@ -26,6 +26,7 @@ use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -72,7 +73,7 @@ class CallServiceBodyCaptureTest extends TestCase {
 	 */
 	private function service(Response $answer, ?IAppConfig $appConfig = null): CallService {
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null) {
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
@@ -80,7 +81,7 @@ class CallServiceBodyCaptureTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 		$objectService->method('saveObjects')->willReturnCallback(
 			function (array $objects = []) {
 				$this->batches[] = $objects;

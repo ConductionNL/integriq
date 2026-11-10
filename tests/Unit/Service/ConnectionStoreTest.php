@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ConnectionStore;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -68,7 +69,7 @@ class ConnectionStoreTest extends TestCase {
 	public function testSaveDropsNullsAndUnknownKeys(): void {
 		$objects = $this->getMockBuilder(className: OrObjectService::class)->disableOriginalConstructor()->onlyMethods(['saveObject'])->getMock();
 		$objects->expects($this->once())->method('saveObject')
-			->with(['app' => 'dossiq', 'key' => 'zgw', 'status' => 'unconfigured'], 'integriq', 'app_connection', 'u-1')
+			->with(...SaveCallShape::args(['app' => 'dossiq', 'key' => 'zgw', 'status' => 'unconfigured'], 'integriq', 'app_connection', 'u-1'))
 			->willReturn($this->entity(uuid: 'u-1', data: []));
 
 		$uuid = (new ConnectionStore(objectService: $objects))->save(

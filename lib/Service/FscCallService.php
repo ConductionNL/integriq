@@ -39,6 +39,8 @@ use OCA\Integriq\Service\Fsc\FscDirectoryClient;
 use OCA\Integriq\Service\Fsc\LogFscConnectivityProvider;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -174,8 +176,9 @@ class FscCallService implements FscCallServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_CALL
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CALL)
+			)
 		);
 
 		if ($status === 'failed') {
@@ -295,9 +298,10 @@ class FscCallService implements FscCallServiceInterface {
 				'resolvedVia' => $provider->getProviderId(),
 				'resolvedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_SERVICE,
-			uuid: ($existing?->getUuid())
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_SERVICE),
+				uuid: ($existing?->getUuid())
+			)
 		);
 
 	}//end cacheResolution()

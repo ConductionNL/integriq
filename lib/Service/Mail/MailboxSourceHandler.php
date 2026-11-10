@@ -33,6 +33,8 @@ use OCA\Integriq\Service\Mail\Transport\ImapMailboxTransport;
 use OCA\Integriq\Service\Mail\Transport\MailboxTransportInterface;
 use OCA\Integriq\Service\Mail\Transport\MockMailboxTransport;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -266,9 +268,10 @@ class MailboxSourceHandler implements MailboxSourceHandlerInterface {
 
 		$this->objectService->saveObject(
 			object: $object,
-			register: MailIntakeService::REGISTER,
-			schema: 'source',
-			uuid: (string)$source->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: MailIntakeService::REGISTER, schema: 'source'),
+				uuid: (string)$source->getUuid()
+			),
 		);
 
 		$this->logger->debug(

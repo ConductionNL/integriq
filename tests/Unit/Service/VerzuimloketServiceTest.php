@@ -30,6 +30,7 @@ use OCA\Integriq\Service\Verzuimloket\VerzuimloketEnvelopeTranslator;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketProviderRegistry;
 use OCA\Integriq\Service\VerzuimloketService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -134,13 +135,13 @@ class VerzuimloketServiceTest extends TestCase {
 			}
 		);
 
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$key = (string)$schema;
 				$this->saved[$key][] = ['object' => $object, 'register' => $register, 'uuid' => $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));
 			}
-		);
+		));
 
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 		$this->eventDispatcher->method('dispatchTyped')->willReturnCallback(

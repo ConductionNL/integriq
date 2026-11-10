@@ -33,6 +33,7 @@ use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use OCP\IDBConnection;
@@ -196,12 +197,12 @@ class EventServiceDeliveryOptOutTest extends TestCase {
 	 */
 	private function service(bool $withGate): EventService {
 		$objectService = ObjectServiceMockBuilder::make($this);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'evt-1');
 			}
-		);
+		));
 		$objectService->method('findAll')->willReturnCallback(
 			function (): array {
 				$this->subscriptionReads++;

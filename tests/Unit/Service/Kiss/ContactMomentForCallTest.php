@@ -45,6 +45,7 @@ use OCA\Integriq\Service\Kiss\KlantinteractiesClient;
 use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\Event;
@@ -108,7 +109,7 @@ class ContactMomentForCallTest extends TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args): ObjectEntity {
 				// Positional, as PHPUnit hands them over: object, register,
 				// schema, uuid, _rbac (OpenRegister's saveObject() order).
@@ -121,7 +122,7 @@ class ContactMomentForCallTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
-		);
+		));
 
 		$objectService->method('findAll')->willReturnCallback(
 			function (...$args): array {

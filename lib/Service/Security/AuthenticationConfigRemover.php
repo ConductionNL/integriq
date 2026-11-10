@@ -62,6 +62,8 @@ namespace OCA\Integriq\Service\Security;
 
 use LogicException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -232,9 +234,10 @@ class AuthenticationConfigRemover implements AuthenticationConfigRemoverInterfac
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: InlineSecretMigrationPlanner::REGISTER,
-				schema: InlineSecretMigrationPlanner::SCHEMA,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: InlineSecretMigrationPlanner::REGISTER, schema: InlineSecretMigrationPlanner::SCHEMA),
+					uuid: $uuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

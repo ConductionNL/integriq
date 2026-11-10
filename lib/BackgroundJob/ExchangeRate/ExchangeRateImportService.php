@@ -26,6 +26,8 @@ namespace OCA\Integriq\BackgroundJob\ExchangeRate;
 
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -183,8 +185,9 @@ class ExchangeRateImportService {
 						'rate'         => $rate,
 						'source'       => self::RATE_SOURCE,
 					],
-					register: self::REGISTER,
-					schema: self::SCHEMA,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)
+					),
 					_rbac: false,
 					_multitenancy: false
 				);

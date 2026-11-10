@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service\MessageValidation;
 use OCA\Integriq\Service\MessageValidation\EndpointMessageGate;
 use OCA\Integriq\Service\MessageValidationService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -80,14 +81,14 @@ class EndpointMessageGateRecordTest extends TestCase {
 				return $entity;
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				$this->assertSame('call_log', $schema);
 				$this->assertSame(self::UUID, $uuid);
 				$this->written = $object;
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$handedBack = new ObjectEntity();
 		$handedBack->setUuid(self::UUID);

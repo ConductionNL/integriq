@@ -53,6 +53,7 @@ use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -93,7 +94,7 @@ class ExecutionTraceIntegrationTest extends TestCase {
 		// param, unlike the real OpenRegister ObjectService), mirroring
 		// CallServiceTest::buildBrokeredCallService()'s own callback.
 		$objectService = $this->createMock(ORObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				$this->saved[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				$entity = new ObjectEntity();
@@ -101,7 +102,7 @@ class ExecutionTraceIntegrationTest extends TestCase {
 				$entity->setObject(is_array($object) === true ? $object : []);
 				return $entity;
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);

@@ -37,6 +37,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -266,7 +267,7 @@ class EndoflifeDateSyncTest extends TestCase {
 			}
 		);
 
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {
 				if ($schema === 'synchronization_contract') {
 					$key = ($uuid ?? ($object['uuid'] ?? 'contract-' . (count($this->contractStore) + 1)));
@@ -288,7 +289,7 @@ class EndoflifeDateSyncTest extends TestCase {
 					(string)($uuid ?? ($object['uuid'] ?? 'saved-uuid'))
 				);
 			}
-		);
+		));
 
 		// findAll replays the contract store for contract lookups (originId /
 		// synchronizationId filters); everything else finds nothing.

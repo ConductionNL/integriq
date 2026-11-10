@@ -35,6 +35,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
@@ -157,12 +158,12 @@ class EventServiceDeliverySeamTest extends TestCase {
 
 		$savedObject = null;
 		$eventEntity = ObjectServiceMockBuilder::objectEntity($this, [], 'evt-1');
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			static function (array $object) use (&$savedObject, $eventEntity) {
 				$savedObject = $object;
 				return $eventEntity;
 			}
-		);
+		));
 		// No active subscriptions: processEvent matches nothing.
 		$this->objectService->method('findAll')->willReturn(['results' => []]);
 

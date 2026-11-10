@@ -34,6 +34,7 @@ use OCA\Integriq\Service\Lti\LtiPlatformLoginService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ArrayCache;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -760,12 +761,12 @@ class LtiPlatformLaunchTest extends TestCase {
 		$objectService->method('find')->willReturnCallback(
 			fn ($id): ObjectEntity => $this->entity(uuid: (string)$id, data: $this->registrations[$id])
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$this->registrations[$uuid] = $object;
 				return $this->entity(uuid: (string)$uuid, data: $object);
 			}
-		);
+		));
 
 		// Passes the crypto as well, so the fixture also fits the constructor
 		// that encrypts keys at rest (integriq#2213).

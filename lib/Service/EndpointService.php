@@ -45,6 +45,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\FileService as ORFileService;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1585,6 +1587,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	public function recordInboundCallLog(ObjectEntity $endpoint, ObjectEntity $product, int $statusCode, float $durationMs): void {
 		try {
+			// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 			$this->orObjectService->saveObject(
 				object: [
 					'statusCode' => $statusCode,
@@ -1595,9 +1598,9 @@ class EndpointService implements EndpointServiceInterface {
 					'responseTime' => (int)round($durationMs),
 					'created' => (new DateTime())->format('c'),
 				],
-				register: 'integriq',
-				schema: 'call_log',
-				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log')
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1626,6 +1629,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	private function recordInboundThrottle(ObjectEntity $consumer, RateLimitDecision $decision): void {
 		try {
+			// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 			$this->orObjectService->saveObject(
 				object: [
 					'statusCode' => Http::STATUS_TOO_MANY_REQUESTS,
@@ -1633,9 +1637,9 @@ class EndpointService implements EndpointServiceInterface {
 					'direction' => 'inbound',
 					'created' => (new DateTime())->format('c'),
 				],
-				register: 'integriq',
-				schema: 'call_log',
-				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log')
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -2926,7 +2930,12 @@ class EndpointService implements EndpointServiceInterface {
 			$data = $this->processMapping(rule: $rule, mapping: $this->mappingService->getMapping($mapping), data: $data);
 		}
 
-		$data['body'] = $this->orObjectService->saveObject(register: $register, schema: $schema, object: $data['body']);
+		$data['body'] = $this->orObjectService->saveObject(
+			object: $data['body'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			)
+		);
 
 		return $data;
 	}//end processSaveObjectRule()
@@ -3301,9 +3310,10 @@ class EndpointService implements EndpointServiceInterface {
 		$object->setObject($data['body']);
 		$object = $this->objectService->getOpenRegisters()->saveObject(
 			object: $object,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
-			uuid: $object->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+				uuid: $object->getUuid()
+			)
 		);
 		$this->objectService->getOpenRegisters()->clearCurrents();
 
@@ -4470,10 +4480,11 @@ class EndpointService implements EndpointServiceInterface {
 
 				try {
 					$object = $this->objectService->getOpenRegisters()->saveObject(
-						register: $registerId,
-						schema: $schemaId,
 						object: $formatted,
-						uuid: $formatted['id']
+						options: new ObjectSaveOptions(
+							target: new ObjectFindTarget(register: $registerId, schema: $schemaId),
+							uuid: $formatted['id']
+						)
 					);
 					return $this->replaceInternalReferences(mapper: $openRegister, object: $object);
 				} catch (ValidationException $exception) {
@@ -4509,7 +4520,10 @@ class EndpointService implements EndpointServiceInterface {
 		$saveObject = clone $dataDot;
 		$saveObject[$filePartLocation] = $filepartIds;
 
-		$openRegister->saveObject(register: $registerId, schema: $schemaId, object: $saveObject->jsonSerialize());
+		$openRegister->saveObject(
+			object: $saveObject->jsonSerialize(),
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $registerId, schema: $schemaId))
+		);
 
 		return $dataDot->jsonSerialize();
 	}//end processFilePartRule()

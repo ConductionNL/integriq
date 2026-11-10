@@ -31,6 +31,7 @@ use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ArrayCache;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -137,7 +138,7 @@ class LtiAdHocSourceCallPathTest extends TestCase {
 	 */
 	private function callServiceAnswering(string $body): CallService {
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			// Parameter order of tests/stubs/OCA/OpenRegister/Service/ObjectService.php.
 			function ($object = [], $register = null, $schema = null) {
 				if ($schema === 'call_log') {
@@ -155,7 +156,7 @@ class LtiAdHocSourceCallPathTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);

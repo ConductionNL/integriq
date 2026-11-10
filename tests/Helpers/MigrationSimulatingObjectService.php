@@ -38,6 +38,7 @@ namespace OCA\Integriq\Tests\Helpers;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Reproduces the render boundary AND entity columns AND persisting saves.
@@ -163,24 +164,20 @@ class MigrationSimulatingObjectService extends OrObjectService {
 	 * Persist a save: replace the stored object array in full, and record the call.
 	 *
 	 * @param array|ObjectEntity $object The full object data to persist.
-	 * @param string|null $register Unused.
-	 * @param string|null $schema Unused.
-	 * @param string|null $uuid The target uuid.
+	 * @param ObjectSaveOptions $options Target, uuid, extend, files, policy and actor.
 	 * @param bool $_rbac Recorded for the system-context assertion.
 	 * @param bool $_multitenancy Recorded.
 	 *
 	 * @return ObjectEntity
 	 */
 	public function saveObject(
-		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
+		array|ObjectEntity $object,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
 	): ObjectEntity {
+		$uuid = $options->uuid;
+
 		$data = $object;
 		if ($object instanceof ObjectEntity === true) {
 			$data = $object->getObject();

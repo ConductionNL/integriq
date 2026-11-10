@@ -33,6 +33,7 @@ use OCA\Integriq\Service\UwlrEduV\UwlrEduVProviderRegistry;
 use OCA\Integriq\Service\UwlrEduV\UwlrExportEnvelopeTranslator;
 use OCA\Integriq\Service\UwlrEduVService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -123,13 +124,13 @@ class UwlrEduVServiceTest extends TestCase {
 			}
 		);
 
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$key = (string)$schema;
 				$this->saved[$key][] = ['object' => $object, 'register' => $register, 'uuid' => $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));
 			}
-		);
+		));
 
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 		$this->eventDispatcher->method('dispatchTyped')->willReturnCallback(

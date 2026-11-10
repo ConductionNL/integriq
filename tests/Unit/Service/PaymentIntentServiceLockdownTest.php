@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\PaymentIntentService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -95,26 +96,21 @@ class LockdownSimulatingObjectService extends OrObjectService {
 	 * Save a row, refused under RBAC for a locked schema.
 	 *
 	 * @param mixed $object The object.
-	 * @param string|null $register The register.
-	 * @param string|null $schema The schema.
-	 * @param string|null $uuid The uuid.
+	 * @param ObjectSaveOptions $options Target, uuid, extend, files, policy and actor.
 	 * @param bool $_rbac Whether RBAC applies.
 	 * @param bool $_multitenancy Whether multitenancy applies.
-	 * @param bool $silent Silent save.
-	 * @param bool $_validation Validate.
 	 *
 	 * @return ObjectEntity
 	 */
 	public function saveObject(
-		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
+		array|ObjectEntity $object,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
 	): ObjectEntity {
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+
 		if ($_rbac === true && in_array((string)$schema, self::LOCKED, true) === true) {
 			throw new RuntimeException('Permission denied: create/update on ' . $schema);
 		}

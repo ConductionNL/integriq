@@ -27,6 +27,8 @@ use DateTime;
 use Jose\Component\KeyManagement\JWKFactory;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Security\ICrypto;
@@ -382,9 +384,10 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
+				uuid: $registration->getUuid()
+			)
 		);
 
 		$this->logger->info(
@@ -443,9 +446,10 @@ class LtiKeyService implements LtiKeyServiceInterface {
 		$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
+				uuid: $registration->getUuid()
+			)
 		);
 
 		$this->logger->info(
@@ -495,9 +499,10 @@ class LtiKeyService implements LtiKeyServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: $registrationType,
-			uuid: $registration->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
+				uuid: $registration->getUuid()
+			)
 		);
 
 		$this->logger->info(
@@ -677,9 +682,10 @@ class LtiKeyService implements LtiKeyServiceInterface {
 					$data['signingKeys'] = $this->sealLegacyEntries(signingKeys: $signingKeys);
 					$this->orObjectService->saveObject(
 						object: $data,
-						register: 'integriq',
-						schema: $registrationType,
-						uuid: $registration->getUuid()
+						options: new ObjectSaveOptions(
+							target: new ObjectFindTarget(register: 'integriq', schema: $registrationType),
+							uuid: $registration->getUuid()
+						)
 					);
 				}
 			}//end foreach

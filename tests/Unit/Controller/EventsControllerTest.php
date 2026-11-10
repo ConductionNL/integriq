@@ -28,6 +28,7 @@ use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicy;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\OCS\OCSForbiddenException;
@@ -310,12 +311,12 @@ class EventsControllerTest extends TestCase {
 		);
 		$this->orObjectService->method('find')->willReturn($stored);
 		$written = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$written, $stored) {
 				$written = ($args['object'] ?? $args[0]);
 				return $stored;
 			}
-		);
+		));
 
 		$this->controller->generateSigningSecret('sub-uuid');
 

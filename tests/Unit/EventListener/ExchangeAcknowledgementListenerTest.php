@@ -33,6 +33,7 @@ use OCA\Integriq\Service\Exchange\ExchangeJobService;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
 use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\Event;
@@ -83,14 +84,14 @@ class ExchangeAcknowledgementListenerTest extends TestCase {
 		parent::setUp();
 
 		$objects = $this->createMock(ORObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null, ...$rest) {
 				$uuid = $uuid ?? ($schema . '-' . (count($this->store) + 1));
 				$this->store[$uuid] = $object;
 				$this->schemaOf[$uuid] = (string)$schema;
 				return $this->entity(uuid: $uuid, data: $object);
 			}
-		);
+		));
 		$objects->method('find')->willReturnCallback(
 			function ($id, ...$rest) {
 				if (isset($this->store[$id]) === false) {

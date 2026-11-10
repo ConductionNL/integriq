@@ -31,6 +31,8 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -254,9 +256,10 @@ class BodyCaptureController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
+					uuid: $source->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

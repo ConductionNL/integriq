@@ -26,6 +26,8 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -114,9 +116,10 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
+				uuid: $uuid
+			)
 		);
 
 	}//end findOrCreateStatusList()
@@ -162,9 +165,10 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
+				uuid: $entity->getUuid()
+			)
 		);
 
 		return ['statusListId' => $entity->getUuid(), 'index' => $index];
@@ -206,9 +210,10 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
+				uuid: $entity->getUuid()
+			)
 		);
 
 		// Re-sign immediately so a verifier fetching the endpoint right
@@ -338,9 +343,10 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'eudi_status_list',
-			uuid: $entity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'eudi_status_list'),
+				uuid: $entity->getUuid()
+			)
 		);
 
 		return $token;

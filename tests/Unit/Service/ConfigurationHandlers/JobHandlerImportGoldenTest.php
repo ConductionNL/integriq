@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service\ConfigurationHandlers;
 
 use OCA\Integriq\Service\ConfigurationHandlers\JobHandler;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
@@ -52,12 +53,12 @@ class JobHandlerImportGoldenTest extends TestCase {
 	 */
 	private function handler(): JobHandler {
 		$or = $this->createMock(OrObjectService::class);
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				$this->log[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		return new JobHandler($or, new SensitiveFieldRegistry());
 	}//end handler()

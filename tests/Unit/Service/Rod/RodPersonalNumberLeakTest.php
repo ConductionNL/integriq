@@ -42,6 +42,7 @@ use OCA\Integriq\Service\UwlrEduVService;
 use OCA\Integriq\Service\VerzuimloketService;
 use OCA\Integriq\Sources\Swv\SwvHandoffSourceAdapter;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -120,12 +121,12 @@ final class RodPersonalNumberLeakTest extends TestCase {
 		);
 		$objectService->method('findAll')->willReturn(['results' => [$source]]);
 		$objectService->method('find')->willReturn($source);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register=null, $schema=null, $uuid=null): ObjectEntity {
 				$this->savedRecords[] = (string) json_encode($object);
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'saved');
 			}
-		);
+		));
 
 		$provider = $this->createMock(RodProviderInterface::class);
 		$provider->method('getProviderId')->willReturn('echo');

@@ -35,6 +35,7 @@ use OCA\Integriq\Service\Lti\LtiKeyService;
 use OCA\Integriq\Service\Lti\LtiLaunchService;
 use OCA\Integriq\Service\Lti\LtiRegistrationResolverService;
 use OCA\Integriq\Tests\Helpers\ArrayCache;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICacheFactory;
 use OCP\IGroupManager;
@@ -679,7 +680,7 @@ class LtiLaunchServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) use (&$registrations) {
 				$registrations[$uuid] = $object;
 				$entity = new ObjectEntity();
@@ -687,7 +688,7 @@ class LtiLaunchServiceTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$activeKey = $keyService->generateKey('lti_tool', $toolUuid);
 
@@ -733,7 +734,7 @@ class LtiLaunchServiceTest extends TestCase {
 				return $entity;
 			}
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) use (&$registrations) {
 				$registrations[$uuid] = $object;
 				$entity = new ObjectEntity();
@@ -741,7 +742,7 @@ class LtiLaunchServiceTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 		$keyService = new LtiKeyService($objectService, new NullLogger(), new \OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto());
 		$activeKey = $keyService->generateKey('lti_platform', $platformUuid);
 

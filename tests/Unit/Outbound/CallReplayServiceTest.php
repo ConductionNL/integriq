@@ -34,6 +34,7 @@ use OCA\Integriq\Outbound\Call\VerdictService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClient;
 use OCP\IAppConfig;
@@ -154,7 +155,7 @@ class CallReplayServiceTest extends TestCase {
 		$this->refused = [];
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register = '', string $schema = '', ?string $uuid = null) {
 				if ($uuid === null || $uuid === '') {
 					$this->created++;
@@ -169,7 +170,7 @@ class CallReplayServiceTest extends TestCase {
 				$this->records[$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
-		);
+		));
 		$this->objectService->method('find')->willReturnCallback(
 			function (string $id) {
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->records[$id] ?? []), $id);

@@ -35,6 +35,7 @@ use OCA\Integriq\Service\StufZkn\StufWsseInboundVerifier;
 use OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\ICacheFactory;
@@ -488,7 +489,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 				return ['results' => $found, 'total' => count($found)];
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true) {
 				$this->assertSame('stuf_message', $schema);
 				$this->assertFalse($_rbac);
@@ -496,7 +497,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 				$this->rows[(string)$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
-		);
+		));
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(

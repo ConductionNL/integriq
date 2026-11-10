@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\ProductSubscriptionsController;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -122,12 +123,12 @@ class ProductSubscriptionsControllerTest extends TestCase {
 		);
 
 		$saved = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$saved) {
 				$saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
-		);
+		));
 
 		$response = $this->controller->subscribe(productId: 'product-1');
 
@@ -158,11 +159,11 @@ class ProductSubscriptionsControllerTest extends TestCase {
 			]
 		);
 
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
-		);
+		));
 
 		$approvalRequest = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-1');
 		$this->approvalService->expects($this->once())
@@ -243,12 +244,12 @@ class ProductSubscriptionsControllerTest extends TestCase {
 			->willReturn($approvalRequest);
 
 		$saved = null;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$saved) {
 				$saved = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
-		);
+		));
 
 		$response = $this->controller->approve(subscriptionId: 'sub-1');
 
@@ -411,7 +412,7 @@ class ProductSubscriptionsControllerTest extends TestCase {
 		// would escape uncaught and this test would report a 500 as a pass for
 		// the wrong reason.
 		$calls = 0;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$calls) {
 				$calls++;
 				if ($calls >= 2) {
@@ -422,7 +423,7 @@ class ProductSubscriptionsControllerTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'sub-1'));
 			}
-		);
+		));
 
 		$response = $this->controller->subscribe(productId: 'product-1');
 

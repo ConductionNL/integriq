@@ -24,6 +24,8 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -154,9 +156,10 @@ class OwnershipController extends Controller {
 				// survives in the audit trail rather than only in a log line.
 				$this->objectService->saveObject(
 					object: ([LocalDeleteGuardInterface::OVERRIDE_KEY => $override] + $this->readObject(id: $id, register: $register, schema: $schema)),
-					register: $register,
-					schema: $schema,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $register, schema: $schema),
+						uuid: $id
+					)
 				);
 			}
 

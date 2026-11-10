@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 
@@ -115,12 +116,12 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
+			->with(...SaveCallShape::args(
 				$this->anything(),
 				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract'),
 				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
-			)
+			))
 			->willReturn($saved);
 
 		$this->service->persist(contract: [
@@ -150,12 +151,12 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
+			->with(...SaveCallShape::args(
 				$this->anything(),
 				$this->equalTo('integriq'),
 				$this->equalTo('synchronization_contract'),
 				$this->equalTo('2ad6c9a4-45ba-44b4-b2e7-d01b6b236a33')
-			)
+			))
 			->willReturn($saved);
 
 		$this->service->persist(
@@ -180,13 +181,13 @@ class SynchronizationContractIdentityTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function (...$args) use ($saved, &$seen): mixed {
 					$seen = ($args[3] ?? null);
 
 					return $saved;
 				}
-			);
+			));
 
 		$this->service->persist(
 			contract: ['synchronizationId' => 's-1', 'originId' => 'o-2'],

@@ -31,6 +31,7 @@ use OCA\Integriq\Outbound\Call\CallRecorder;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -66,7 +67,7 @@ class CallRecorderRbacTest extends TestCase {
 		parent::setUp();
 
 		$objectService = ObjectServiceMockBuilder::make($this);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true) {
 				$this->calls[] = ['verb' => 'save', 'schema' => (string)$schema, 'rbac' => $_rbac];
 				$this->assertSame([], RegisterSchemaValidator::errors((string)$schema, $object));
@@ -74,7 +75,7 @@ class CallRecorderRbacTest extends TestCase {
 				$this->records[$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
-		);
+		));
 		$objectService->method('find')->willReturnCallback(
 			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true) {
 				$this->calls[] = ['verb' => 'find', 'schema' => (string)$schema, 'rbac' => $_rbac];

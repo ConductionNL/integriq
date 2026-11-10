@@ -30,6 +30,7 @@ use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -86,14 +87,14 @@ class SynchronizationServiceSynchronizeContractTest extends TestCase {
 		parent::setUp();
 
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) {
 				$object = ($args['object'] ?? $args[0]);
 				$this->saved[] = $object;
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'saved-' . count($this->saved));
 			}
-		);
+		));
 		$this->orObjectService->method('find')->willReturnCallback(
 			function (...$args) {
 				$id = ($args['id'] ?? $args[0]);

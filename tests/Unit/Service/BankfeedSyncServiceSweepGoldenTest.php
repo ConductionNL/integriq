@@ -29,6 +29,7 @@ use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
 use OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException;
 use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -139,7 +140,7 @@ class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 			}
 		);
 		$batches = 0;
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$batches): ObjectEntity {
 				$this->trace[] = ['save' => $schema, 'uuid' => $uuid, 'object' => $this->stable(value: $object)];
 				if ($uuid === null) {
@@ -149,7 +150,7 @@ class BankfeedSyncServiceSweepGoldenTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
-		);
+		));
 
 		$events = $this->createMock(EventService::class);
 		$events->method('emitCloudEvent')->willReturnCallback(

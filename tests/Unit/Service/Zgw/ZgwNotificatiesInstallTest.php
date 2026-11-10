@@ -21,6 +21,7 @@ use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -96,7 +97,7 @@ class ZgwNotificatiesInstallTest extends TestCase {
 				return $entity;
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null) {
 				$this->saved[] = ['schema' => (string)$schema, 'object' => $object];
 				$uuid          = ($uuid ?? sprintf('5a0c%04x-0000-4000-8000-%012x', count($this->saved), count($this->saved)));
@@ -106,7 +107,7 @@ class ZgwNotificatiesInstallTest extends TestCase {
 				$this->seeds[(string)$schema][$uuid] = $object;
 				return $entity;
 			}
-		);
+		));
 
 		$calls = $this->createMock(CallService::class);
 		$calls->method('call')->willReturnCallback(

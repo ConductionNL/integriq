@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\Integriq\Service\KissSyncService;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -96,7 +97,7 @@ class KissSyncServicePushGoldenTest extends TestCase {
 				return ['results' => $this->found($filters)];
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
 				unset($object['syncedAt']);
 				$object['occurredOn'] = $this->stableTime(time: ($object['occurredOn'] ?? null));
@@ -107,7 +108,7 @@ class KissSyncServicePushGoldenTest extends TestCase {
 				$this->trace[] = ['save' => $schema, 'uuid' => $uuid, 'object' => $object];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'local-1'));
 			}
-		);
+		));
 
 		$rest = $this->createMock(KlantinteractiesClient::class);
 		$rest->method('createCustomerContact')->willReturnCallback(

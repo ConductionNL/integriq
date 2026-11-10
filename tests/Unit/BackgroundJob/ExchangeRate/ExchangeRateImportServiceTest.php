@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\BackgroundJob\ExchangeRate;
 use OCA\Integriq\BackgroundJob\ExchangeRate\EcbReferenceRateParser;
 use OCA\Integriq\BackgroundJob\ExchangeRate\ExchangeRateImportService;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -149,7 +150,7 @@ class ExchangeRateImportServiceTest extends TestCase {
 				return ['results' => $results];
 			}
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true) {
 				$this->rows[]  = $object;
 				$this->saves[] = ['register' => $register, 'schema' => $schema, 'rbac' => $_rbac];
@@ -157,7 +158,7 @@ class ExchangeRateImportServiceTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		$client = $this->createMock(IClient::class);
 		$client->method('get')->willReturnCallback(

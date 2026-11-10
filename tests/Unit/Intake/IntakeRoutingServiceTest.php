@@ -33,6 +33,7 @@ use OCA\Integriq\Intake\IntakeReplyService;
 use OCA\Integriq\Intake\IntakeRoutingService;
 use OCA\Integriq\Intake\ReplyResult;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\Event;
@@ -136,12 +137,12 @@ class IntakeRoutingServiceTest extends TestCase {
 				return ['results' => $rows, 'total' => count($rows)];
 			}
 		);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'intake-uuid');
 			}
-		);
+		));
 
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 		$this->schemaMapper = $this->getMockBuilder(SchemaMapper::class)
@@ -469,12 +470,12 @@ class IntakeRoutingServiceTest extends TestCase {
 		$objectService = ObjectServiceMockBuilder::make($this);
 		$objectService->method('find')->willReturn($stored);
 		$recorded = [];
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$recorded) {
 				$recorded[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'intake-uuid');
 			}
-		);
+		));
 
 		$service = new IntakeReplyService($objectService, $this->registry(), (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate());
 		$result = $service->reply('intake-uuid', 'Dank voor uw melding.');

@@ -36,6 +36,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -254,7 +255,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 			->willReturn(['results' => $contracts, 'total' => count($contracts)]);
 
 		$savedSynchronizations = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$savedSynchronizations) {
 				$object = ($args[0] ?? []);
 				if (($args[2] ?? null) === 'synchronization') {
@@ -262,7 +263,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 				}
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) === true ? $object : [], 'saved');
 			}
-		);
+		));
 
 		$warnings = [];
 		$this->logger->method('warning')->willReturnCallback(
@@ -300,7 +301,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 		$this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$savedSynchronizations = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$savedSynchronizations) {
 				$object = ($args[0] ?? []);
 				if (($args[2] ?? null) === 'synchronization') {
@@ -308,7 +309,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase {
 				}
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) === true ? $object : [], 'saved');
 			}
-		);
+		));
 
 		$synchronization = $this->makeSyncPayload(['format' => 'jsonl', 'resultsPosition' => '_root', 'pageSize' => 1]);
 		$synchronization['currentPage'] = 4;

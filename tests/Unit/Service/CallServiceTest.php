@@ -24,6 +24,7 @@ use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -104,7 +105,7 @@ class CallServiceTest extends TestCase {
 		$this->saved = [];
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null, $_rbac = true) {
 				$this->saved[] = [
 					'object' => $object,
@@ -119,7 +120,7 @@ class CallServiceTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);

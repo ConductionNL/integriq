@@ -23,6 +23,7 @@ use OCA\Integriq\Service\ConfigurationService;
 use OCA\Integriq\Service\EnvironmentService;
 use OCA\Integriq\Service\PromotionService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -373,7 +374,7 @@ class PromotionServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
+			->with(...SaveCallShape::args(
 				$this->callback(
 					static function (array $payload): bool {
 						return ($payload['outcome'] ?? null) === 'success'
@@ -386,7 +387,7 @@ class PromotionServiceTest extends TestCase {
 				),
 				'integriq',
 				'promotion_audit'
-			)
+			))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-1'));
 
 		$result = $this->service->promote('cfg-1', 'acceptance', [], 'operator-uid');
@@ -414,7 +415,7 @@ class PromotionServiceTest extends TestCase {
 
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
+			->with(...SaveCallShape::args(
 				$this->callback(
 					static function (array $payload): bool {
 						return ($payload['outcome'] ?? null) === 'failed'
@@ -424,7 +425,7 @@ class PromotionServiceTest extends TestCase {
 				),
 				'integriq',
 				'promotion_audit'
-			)
+			))
 			->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'audit-2'));
 
 		$this->expectException(RuntimeException::class);

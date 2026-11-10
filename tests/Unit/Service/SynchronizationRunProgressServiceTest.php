@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationRunProgressService;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
@@ -46,14 +47,14 @@ final class SynchronizationRunProgressServiceTest extends TestCase {
 	 */
 	private function makeService(): SynchronizationRunProgressService {
 		$objects = $this->createMock(OrObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object): ObjectEntity {
 				$this->saved[] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid('7f1c1d2e-0000-4000-8000-000000000001');
 				return $entity;
 			}
-		);
+		));
 
 		return new SynchronizationRunProgressService($objects, $this->createMock(LoggerInterface::class));
 	}//end makeService()

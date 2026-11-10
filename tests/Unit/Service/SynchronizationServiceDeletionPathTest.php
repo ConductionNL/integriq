@@ -38,6 +38,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -293,13 +294,13 @@ class SynchronizationServiceDeletionPathTest extends TestCase {
 	public function testTheDeletedContractIsPersisted(): void {
 		$this->seed(['target-1', 'target-2', 'target-3']);
 		$saved = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$saved) {
 				$saved[] = ['object' => $args[0], 'schema' => $args[2]];
 
 				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved');
 			}
-		);
+		));
 
 		$this->runDeletion(['target-1', 'target-2']);
 

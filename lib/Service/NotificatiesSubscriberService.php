@@ -34,6 +34,8 @@ use Adbar\Dot;
 use InvalidArgumentException;
 use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -250,8 +252,9 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 				'authScheme' => (string)($config['authScheme'] ?? ''),
 				'status' => self::STATUS_PENDING,
 			],
-			register: 'integriq',
-			schema: 'notificaties_abonnement'
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'notificaties_abonnement')
+			)
 		);
 
 	}//end persistPendingAbonnement()
@@ -267,9 +270,10 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	private function persistAbonnement(array $data, string $id): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: 'integriq',
-			schema: 'notificaties_abonnement',
-			uuid: $id
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'notificaties_abonnement'),
+				uuid: $id
+			)
 		);
 
 	}//end persistAbonnement()
@@ -300,8 +304,9 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 				'authorizationType' => 'apiKey',
 				'authorizationConfiguration' => ['apiKey' => $secret],
 			],
-			register: 'integriq',
-			schema: 'consumer'
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'consumer')
+			)
 		);
 
 		return ['consumerId' => $consumer->getUuid(), 'secret' => $secret];

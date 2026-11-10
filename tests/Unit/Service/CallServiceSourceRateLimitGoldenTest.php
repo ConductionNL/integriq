@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -108,13 +109,13 @@ class CallServiceSourceRateLimitGoldenTest extends TestCase {
 	private function record(): array {
 		$service = (new ReflectionClass(CallService::class))->newInstanceWithoutConstructor();
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) {
 				// Only the object: the positions of the other arguments follow the loaded OpenRegister class.
 				$this->saved[] = $args[0];
 				return new ObjectEntity();
 			}
-		);
+		));
 		$property = new ReflectionProperty(CallService::class, 'objectService');
 		$property->setAccessible(true);
 		$property->setValue($service, $objects);

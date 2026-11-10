@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -93,7 +94,7 @@ class LtiKeyServiceTest extends TestCase {
 			}
 		);
 
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				$this->registrations[$uuid] = $object;
 
@@ -102,7 +103,7 @@ class LtiKeyServiceTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		return new LtiKeyService($objectService, new NullLogger(), new AesTestCrypto());
 	}//end makeService()

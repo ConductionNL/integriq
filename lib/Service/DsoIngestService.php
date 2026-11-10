@@ -52,6 +52,8 @@ use OCA\Integriq\Service\Dso\LogDsoConnectorProvider;
 use OCA\Integriq\Service\Portal\PortalRequestIntakeInterface;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -185,9 +187,10 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 						$request->getObject(),
 						['status' => 'failed', 'errorDetail' => $exception->getMessage()]
 					),
-					register: self::REGISTER,
-					schema: self::SCHEMA_VERZOEK,
-					uuid: $request->getUuid()
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_VERZOEK),
+						uuid: $request->getUuid()
+					)
 				),
 				actingUserId: $actingUserId
 			);
@@ -208,9 +211,10 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 		return $this->enqueueAttachmentFetch(
 			request: $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_VERZOEK,
-				uuid: $request->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_VERZOEK),
+					uuid: $request->getUuid()
+				)
 			),
 			actingUserId: $actingUserId
 		);
@@ -298,8 +302,9 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 
 		return $this->objectService->saveObject(
 			object: $object,
-			register: self::REGISTER,
-			schema: self::SCHEMA_VERZOEK
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_VERZOEK)
+			)
 		);
 
 	}//end createReceived()
@@ -514,8 +519,9 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			)
 		);
 
 		if ($status === 'failed') {

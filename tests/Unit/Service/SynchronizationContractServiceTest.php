@@ -18,6 +18,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -285,7 +286,7 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -294,7 +295,7 @@ class SynchronizationContractServiceTest extends TestCase {
 				$observedPayload = $object;
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'new-uuid');
-			});
+			}));
 
 		$this->service->persist(['id' => 17, 'uuid' => 'c-99', 'originId' => 'origin']);
 
@@ -313,7 +314,7 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -321,7 +322,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			) use (&$observedUuid) {
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'new');
-			});
+			}));
 
 		$this->service->persist(['originId' => 'origin'], true);
 
@@ -339,7 +340,7 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = 'sentinel';
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -347,7 +348,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			) use (&$observedUuid) {
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'new');
-			});
+			}));
 
 		$this->service->persist(['originId' => 'origin']);
 
@@ -365,7 +366,7 @@ class SynchronizationContractServiceTest extends TestCase {
 		$observedUuid = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -374,7 +375,7 @@ class SynchronizationContractServiceTest extends TestCase {
 				$observedPayload = $object;
 				$observedUuid = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'new');
-			});
+			}));
 
 		$this->service->createFromArray(['originId' => 'origin', 'id' => 99]);
 
@@ -416,7 +417,7 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$observedPayload = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -424,7 +425,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			) use (&$observedPayload) {
 				$observedPayload = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'c-1');
-			});
+			}));
 
 		$this->service->updateFromArray('c-1', ['targetId' => 't-new']);
 
@@ -450,7 +451,7 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$observedPayload = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -458,7 +459,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			) use (&$observedPayload) {
 				$observedPayload = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'c-1');
-			});
+			}));
 
 		$this->service->updateFromArray('c-1', ['targetId' => 't-new']);
 
@@ -480,7 +481,7 @@ class SynchronizationContractServiceTest extends TestCase {
 
 		$observedPayload = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -488,7 +489,7 @@ class SynchronizationContractServiceTest extends TestCase {
 			) use (&$observedPayload) {
 				$observedPayload = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'c-1');
-			});
+			}));
 
 		$this->service->updateFromArray('c-1', ['targetId' => 't-new', 'version' => '2.0.0']);
 

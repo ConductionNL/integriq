@@ -28,6 +28,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -129,12 +130,12 @@ class SynchronizationFetchAllPagesTest extends TestCase {
 				return ($this->case['known'] ?? 0);
 			}
 		);
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object) {
 				$this->log[] = ['or.saveObject', ($object['currentPage'] ?? null)];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['warning', 'debug', 'error', 'info'] as $level) {

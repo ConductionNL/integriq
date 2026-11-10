@@ -39,6 +39,8 @@ use OCA\Integriq\Service\Psd2\Psd2AggregatorProviderInterface;
 use OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException;
 use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
@@ -211,8 +213,9 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 				'accounts' => [],
 				'lifecycleState' => 'pending',
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONNECTION)
+			)
 		);
 
 		return [
@@ -288,9 +291,10 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONNECTION),
+				uuid: $connection->getUuid()
+			)
 		);
 
 		$this->emitConsentEvent(type: self::EVENT_TYPE_CONSENT_GRANTED, connection: $saved);
@@ -356,9 +360,10 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONNECTION),
+				uuid: $connection->getUuid()
+			)
 		);
 
 		return $data['accounts'];
@@ -461,9 +466,10 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 		$data['lastSyncAt'] = $run->until;
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONNECTION),
+				uuid: $connection->getUuid()
+			)
 		);
 
 		// Keep the in-memory entity in step for callers holding the reference.
@@ -535,8 +541,9 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 				'transactionCount' => count($pull['transactions']),
 				'transactions' => $pull['transactions'],
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_BATCH
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_BATCH)
+			)
 		);
 
 		$this->eventService->emitCloudEvent(
@@ -598,9 +605,10 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 			$data['lifecycleState'] = 'expired';
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_CONNECTION,
-				uuid: $connection->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONNECTION),
+					uuid: $connection->getUuid()
+				)
 			);
 			$connection->setObject($saved->getObject());
 			$this->logger->info(
@@ -617,9 +625,10 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 			$data['expiryWarnedAt'] = $now->format('c');
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_CONNECTION,
-				uuid: $connection->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONNECTION),
+					uuid: $connection->getUuid()
+				)
 			);
 			$connection->setObject($saved->getObject());
 			$this->logger->info(
@@ -652,9 +661,10 @@ class BankfeedSyncService implements BankfeedSyncServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONNECTION,
-			uuid: $connection->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONNECTION),
+				uuid: $connection->getUuid()
+			)
 		);
 
 		$this->logger->warning(

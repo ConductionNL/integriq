@@ -27,6 +27,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\Http\Client\IClientService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -98,12 +99,12 @@ class JsonLogicFilterDialectTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 
 		$savedMessages = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$savedMessages) {
 				$savedMessages[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		$event = ObjectServiceMockBuilder::objectEntity(
 			$this,

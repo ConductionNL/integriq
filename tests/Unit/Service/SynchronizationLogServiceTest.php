@@ -26,6 +26,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationRunLog;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ISession;
@@ -86,12 +87,12 @@ final class SynchronizationLogServiceTest extends TestCase {
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register, $schema, $uuid = null) use (&$captured): ObjectEntity {
 					$captured = ['register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 					return $this->entity($object);
 				}
-			);
+			));
 
 		$service = $this->makeService($objectService);
 		$log = $service->createFromArray(['message' => 'Running']);
@@ -118,9 +119,9 @@ final class SynchronizationLogServiceTest extends TestCase {
 		// Exactly one write across two finalize calls.
 		$objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				fn ($object): ObjectEntity => $this->entity($object)
-			);
+			));
 
 		$service = $this->makeService($objectService);
 		$log = $service->createFromArray(['message' => 'Running']);
@@ -168,12 +169,12 @@ final class SynchronizationLogServiceTest extends TestCase {
 		$captured = [];
 		$objectService = $this->createMock(OrObjectService::class);
 		$objectService->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register, $schema, $uuid = null) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->entity($object);
 				}
-			);
+			));
 
 		$service = $this->makeService($objectService);
 		$log = $service->createFromArray(

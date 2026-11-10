@@ -29,6 +29,8 @@ namespace OCA\Integriq\Outbound\Identity;
 
 use DateTimeImmutable;
 use OCA\Integriq\Outbound\MessageRecorder;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -142,8 +144,9 @@ class NoReplyHandler {
 					. $outcome . $targetSuffix . '. ' . $notice,
 				'receivedAt' => (new DateTimeImmutable())->format('c'),
 			],
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: self::SCHEMA)
+			),
 		);
 
 	}//end record()

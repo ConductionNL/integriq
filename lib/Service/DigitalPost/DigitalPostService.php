@@ -25,6 +25,8 @@ use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -431,9 +433,10 @@ class DigitalPostService implements DigitalPostServiceInterface {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $message,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: $uuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('digital-post.persist.failed', ['error' => $e->getMessage()]);

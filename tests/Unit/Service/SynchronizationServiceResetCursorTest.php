@@ -24,6 +24,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -110,12 +111,12 @@ class SynchronizationServiceResetCursorTest extends TestCase {
 		);
 
 		$captured = null;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}
-		);
+		));
 
 		$result = $this->service->resetCursor(synchronization: $synchronization);
 
@@ -146,9 +147,9 @@ class SynchronizationServiceResetCursorTest extends TestCase {
 			self::SYNC_ID
 		);
 
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $object, ...$rest) => ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID)
-		);
+		));
 
 		$cleared = $this->service->resetCursor(synchronization: $synchronization);
 

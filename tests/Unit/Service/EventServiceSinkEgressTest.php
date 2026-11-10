@@ -27,6 +27,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -109,12 +110,12 @@ class EventServiceSinkEgressTest extends TestCase {
 		$subscription = ObjectServiceMockBuilder::objectEntity($this, ['style' => 'push', 'sink' => $sink], 'sub-uuid');
 
 		$this->objectService->method('find')->willReturn($subscription);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured, $message) {
 				$captured = $object;
 				return $message;
 			}
-		);
+		));
 
 		return $message;
 	}//end pushTo()

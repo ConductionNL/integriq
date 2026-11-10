@@ -29,6 +29,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
@@ -195,14 +196,14 @@ class EventServiceDeliveryIngestGoldenTest extends TestCase {
 	 */
 	private function service(): EventService {
 		$objects = $this->createMock(ORObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true, $_multitenancy = true) {
 				$masked = $object;
 				$masked['time'] = (preg_match('/^\d{4}-\d{2}-\d{2}T/', (string)$object['time']) === 1) ? '<date>' : $object['time'];
 				$this->log[] = ['or.saveObject', $masked, $register, $schema, $_rbac, $_multitenancy];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'evt-1');
 			}
-		);
+		));
 
 		$logger = new class($this) extends AbstractLogger {
 			/**

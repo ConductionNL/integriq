@@ -47,6 +47,8 @@ use OCA\Integriq\Service\PayloadTooLargeException;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -392,9 +394,10 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 
 		return $this->objectService->saveObject(
 			object: $data,
-			register: DsoIngestService::REGISTER,
-			schema: DsoIngestService::SCHEMA_VERZOEK,
-			uuid: $request->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: DsoIngestService::REGISTER, schema: DsoIngestService::SCHEMA_VERZOEK),
+				uuid: $request->getUuid()
+			)
 		);
 	}//end saveAttachments()
 

@@ -31,6 +31,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -71,12 +72,12 @@ class SynchronizationServiceRetireValuesTest extends TestCase {
 		$orObjectService = $this->getMockBuilder(OrObjectService::class)->disableOriginalConstructor()->getMock();
 		$orObjectService->method('findAll')->willReturn(['results' => $contracts, 'total' => count($contracts)]);
 		$orObjectService->method('find')->willReturnCallback(fn (...$args) => $objects[(string)$args[0]]);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) {
 				$this->saved[] = ['object' => $object];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'saved');
 			}
-		);
+		));
 
 		$callService = $this->createMock(CallService::class);
 		$callService->method('applyConfigDot')->willReturnArgument(0);

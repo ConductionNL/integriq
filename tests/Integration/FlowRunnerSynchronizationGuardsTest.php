@@ -40,6 +40,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -103,11 +104,11 @@ class FlowRunnerSynchronizationGuardsTest extends TestCase {
 				}
 			);
 
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'flow-run-1'));
 			}
-		);
+		));
 
 		$service = new FlowRunnerService(
 			$callService,

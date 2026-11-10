@@ -39,6 +39,8 @@ use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\WebhookSignatureServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -175,9 +177,10 @@ class WebhookConnectionsSettingsController extends Controller {
 		try {
 			$this->objectService->saveObject(
 				object: $this->consumerData(profile: $profile, consumer: $consumer, trust: $trust, userId: $userId),
-				register: PortalConnectionInterface::REGISTER,
-				schema: PortalConnectionInterface::SCHEMA_CONSUMER,
-				uuid: $consumer?->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: PortalConnectionInterface::REGISTER, schema: PortalConnectionInterface::SCHEMA_CONSUMER),
+					uuid: $consumer?->getUuid()
+				)
 			);
 		} catch (Throwable $exception) {
 			$this->logger->error(

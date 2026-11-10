@@ -73,6 +73,9 @@ use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -968,9 +971,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$this->orObjectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'synchronization',
-			uuid: $uuidValue
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization'),
+				uuid: $uuidValue
+			)
 		);
 	}//end persistSynchronization()
 
@@ -1527,9 +1531,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'synchronization_contract',
-			uuid: $uuidValue
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization_contract'),
+				uuid: $uuidValue
+			)
 		);
 
 		return $saved->jsonSerialize();
@@ -1562,9 +1567,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$uuid = $object['uuid'];
 		$saved = $this->orObjectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'synchronization_contract',
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization_contract'),
+				uuid: $uuid
+			)
 		);
 
 		return $saved->jsonSerialize();
@@ -1610,9 +1616,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $merged,
-			register: 'integriq',
-			schema: 'synchronization_contract',
-			uuid: $uuidValue
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization_contract'),
+				uuid: $uuidValue
+			)
 		);
 
 		return $saved->jsonSerialize();
@@ -2230,10 +2237,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$this->orObjectService->saveObject(
 				object: $data,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid(),
-				silent: true
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					policy: new SavePolicy(silent: true)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -5097,9 +5105,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 			$this->orObjectService->saveObject(
 				object: $objectData,
-				register: $registerId,
-				schema: $schemaId,
-				uuid: (string)$targetObject->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $registerId, schema: $schemaId),
+					uuid: (string)$targetObject->getUuid()
+				)
 			);
 
 			$this->persistContract(
@@ -5905,12 +5914,15 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function writeTargetObject(OpenRegisterTargetWrite $write): mixed {
 		$objectService = $this->orObjectService;
 		$writeTarget = fn (): mixed => $objectService->saveObject(
-			register: $write->register,
-			schema: $write->schema,
 			object: $write->targetObject,
-			uuid: ($write->contract['targetId'] ?? null),
-			silent: (($write->sourceConfig['logs'] ?? true) === false),
-			_validation: (($write->sourceConfig['validation'] ?? true) !== false)
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $write->register, schema: $write->schema),
+				uuid: ($write->contract['targetId'] ?? null),
+				policy: new SavePolicy(
+					silent: (($write->sourceConfig['logs'] ?? true) === false),
+					validation: (($write->sourceConfig['validation'] ?? true) !== false)
+				)
+			)
 		);
 
 		if (($write->sourceConfig['events'] ?? true) === false) {
@@ -10710,10 +10722,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$data = $this->orObjectService->find(id: $originId, register: $sourceId[0], schema: $sourceId[1])->getObject();
 			$this->orObjectService->saveObject(
 				object: array_merge($data, $fields),
-				register: $sourceId[0],
-				schema: $sourceId[1],
-				uuid: $originId,
-				silent: true
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $sourceId[0], schema: $sourceId[1]),
+					uuid: $originId,
+					policy: new SavePolicy(silent: true)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -10855,7 +10868,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$data = array_merge($object->getObject(), ['id' => $object->getId()], $data);
 		}
 
-		$object = $this->orObjectService->saveObject(register: $register, schema: $schema, object: $data)->jsonSerialize();
+		$object = $this->orObjectService->saveObject(
+			object: $data,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			)
+		)->jsonSerialize();
 
 		return $object;
 	}//end processSaveObjectRule()

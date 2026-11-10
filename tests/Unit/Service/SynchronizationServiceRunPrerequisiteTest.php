@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -85,7 +86,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 			}
 		);
 		$orObjects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
-		$orObjects->method('saveObject')->willReturnCallback(
+		$orObjects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ...$rest) use (&$writes) {
 				if ($schema !== 'synchronization_log') {
 					$writes++;
@@ -93,7 +94,7 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$object, 'saved-uuid');
 			}
-		);
+		));
 
 		$callService = $this->createMock(CallService::class);
 		$callService->method('applyConfigDot')->willReturnArgument(0);
@@ -114,12 +115,12 @@ class SynchronizationServiceRunPrerequisiteTest extends TestCase {
 		$appConfig->method('hasKey')->willReturn(false);
 
 		$logOrService = ObjectServiceMockBuilder::make($this);
-		$logOrService->method('saveObject')->willReturnCallback(
+		$logOrService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ...$rest) {
 				$this->logs[] = (array)$object;
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$object, 'log-uuid');
 			}
-		);
+		));
 		$logService = new SynchronizationLogService($logOrService, $this->createMock(\OCP\IUserSession::class), $this->createMock(\OCP\ISession::class));
 
 		$service = new SynchronizationService(

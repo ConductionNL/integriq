@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Util\SafeXmlParser;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use SimpleXMLElement;
@@ -327,18 +329,20 @@ class StUFZKNService {
 
 				$merged = array_merge($existingData, $caseData);
 				$this->orObjectService->saveObject(
-					register: self::REGISTER_ZKN,
-					schema: self::SCHEMA_ZAAK,
-					object: $merged
+					object: $merged,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_ZKN, schema: self::SCHEMA_ZAAK)
+					)
 				);
 				return $identification;
 			}
 		}//end if
 
 		$saved = $this->orObjectService->saveObject(
-			register: self::REGISTER_ZKN,
-			schema: self::SCHEMA_ZAAK,
-			object: $caseData
+			object: $caseData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_ZKN, schema: self::SCHEMA_ZAAK)
+			)
 		);
 		if (is_array($saved) === true) {
 			$savedData = $saved;

@@ -23,6 +23,9 @@ namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -167,12 +170,13 @@ class LogCleanUpTask extends TimedJob {
 			try {
 				$this->orObjectService->saveObject(
 					object: $record,
-					register: 'integriq',
-					schema: 'call_log',
-					uuid: $object->getUuid(),
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+						uuid: $object->getUuid(),
+						policy: new SavePolicy(silent: true)
+					),
 					_rbac: false,
-					_multitenancy: false,
-					silent: true
+					_multitenancy: false
 				);
 				$stripped++;
 			} catch (\Exception $e) {

@@ -37,6 +37,8 @@ use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -158,8 +160,9 @@ class ProductSubscriptionsController extends Controller {
 				'requesterUserId' => $this->userSession->getUser()?->getUID(),
 				'createdAt' => $now->format('c'),
 			],
-			register: self::REGISTER,
-			schema: 'api_product_subscription'
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: 'api_product_subscription')
+			)
 		);
 
 		if ($requiresApproval === false) {
@@ -184,9 +187,10 @@ class ProductSubscriptionsController extends Controller {
 		$subscriptionData['approvalRequestId'] = $approvalRequest->getUuid();
 		$subscription = $this->orObjectService->saveObject(
 			object: $subscriptionData,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: 'api_product_subscription'),
+				uuid: $subscription->getUuid()
+			)
 		);
 
 		return new JSONResponse($this->summarizeSubscription(subscription: $subscription), Http::STATUS_ACCEPTED);
@@ -271,9 +275,10 @@ class ProductSubscriptionsController extends Controller {
 
 		$subscription = $this->orObjectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: 'api_product_subscription'),
+				uuid: $subscription->getUuid()
+			)
 		);
 
 		return new JSONResponse($this->summarizeSubscription(subscription: $subscription));
@@ -514,9 +519,10 @@ class ProductSubscriptionsController extends Controller {
 
 		return $this->orObjectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: 'api_product_subscription',
-			uuid: $subscription->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: 'api_product_subscription'),
+				uuid: $subscription->getUuid()
+			)
 		);
 
 	}//end activateSubscription()

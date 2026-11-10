@@ -35,6 +35,7 @@ use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportOptionsBuilder;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -159,7 +160,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 
 		$objectService = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objectService->method('find')->willReturnCallback(fn () => $this->stored);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)$uuid);
@@ -168,7 +169,7 @@ class DsoAttachmentFetcherTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$source = new ObjectEntity();
 		$source->setUuid('source-dso');

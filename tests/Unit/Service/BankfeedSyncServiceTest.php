@@ -32,6 +32,7 @@ use OCA\Integriq\Service\Psd2\LogPsd2AggregatorProvider;
 use OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException;
 use OCA\Integriq\Service\Psd2\RestPsd2AggregatorProvider;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -154,13 +155,13 @@ class BankfeedSyncServiceTest extends TestCase {
 	 * @return void
 	 */
 	private function captureSaves(): void {
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$key = (string)$schema;
 				$this->saved[$key][] = $object;
 				return $this->entity($object, ($uuid ?? 'saved-uuid-' . count($this->saved[$key])));
 			}
-		);
+		));
 
 	}//end captureSaves()
 

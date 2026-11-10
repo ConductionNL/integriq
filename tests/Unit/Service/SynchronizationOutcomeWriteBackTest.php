@@ -19,6 +19,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -111,12 +112,12 @@ class SynchronizationOutcomeWriteBackTest extends TestCase {
 			}
 		);
 		$or->method('findAll')->willReturn(['results' => [], 'total' => 0]);
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false) {
 				$this->saves[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid, 'silent' => $silent];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$calls = $this->createMock(CallService::class);
 		$calls->method('applyConfigDot')->willReturnArgument(0);

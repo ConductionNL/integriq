@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Outbound;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use InvalidArgumentException;
 
@@ -123,9 +125,10 @@ class ForwardService implements ForwardServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: MessageRecorder::REGISTER,
-			schema: MessageRecorder::SCHEMA,
-			uuid: (string)$forward->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: MessageRecorder::SCHEMA),
+				uuid: (string)$forward->getUuid()
+			),
 		);
 
 	}//end linkForward()
@@ -155,9 +158,10 @@ class ForwardService implements ForwardServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $original,
-			register: MessageRecorder::REGISTER,
-			schema: MessageRecorder::SCHEMA,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: MessageRecorder::SCHEMA),
+				uuid: $uuid
+			),
 		);
 
 	}//end linkOriginal()

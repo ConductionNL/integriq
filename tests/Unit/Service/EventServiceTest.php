@@ -22,6 +22,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCP\Http\Client\IClient;
@@ -429,12 +430,12 @@ class EventServiceTest extends TestCase {
 		$this->objectService->method('find')->willReturn($subscription);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured, $message) {
 				$captured = $object;
 				return $message;
 			}
-		);
+		));
 
 		$signatureService = $this->createMock(WebhookSignatureService::class);
 		$signatureService->method('isRotationGraceActive')->willReturn(false);
@@ -526,12 +527,12 @@ class EventServiceTest extends TestCase {
 		$this->objectService->method('find')->willReturn($subscription);
 
 		$saved = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$saved, $message) {
 				$saved = ($args['object'] ?? $args[0]);
 				return $message;
 			}
-		);
+		));
 
 		$headers = [];
 		$response = $this->createMock(IResponse::class);
@@ -655,12 +656,12 @@ class EventServiceTest extends TestCase {
 			'sub-uuid'
 		);
 		$this->objectService->method('find')->willReturn($subscription);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured, $message) {
 				$captured = $object;
 				return $message;
 			}
-		);
+		));
 
 		return $message;
 	}//end pushMessage()
@@ -820,7 +821,7 @@ class EventServiceTest extends TestCase {
 		$delivered = 0;
 		$abandoned = 0;
 		$this->stubHttpResponse(200, 'ok');
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$delivered, &$abandoned, $entities) {
 				if (($object['status'] ?? '') === 'abandoned') {
 					$abandoned++;
@@ -830,7 +831,7 @@ class EventServiceTest extends TestCase {
 
 				return $entities[0];
 			}
-		);
+		));
 
 		$count = $this->service->processRetries(5);
 
@@ -885,7 +886,7 @@ class EventServiceTest extends TestCase {
 		);
 
 		$this->stubHttpResponse(200, 'ok');
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured, $abandoned) {
 				// Capture the reset (first) save; ignore the delivery save.
 				if ($captured === null) {
@@ -894,7 +895,7 @@ class EventServiceTest extends TestCase {
 
 				return $abandoned;
 			}
-		);
+		));
 
 		$this->service->replayMessage('msg-uuid', 'alice');
 
@@ -938,12 +939,12 @@ class EventServiceTest extends TestCase {
 			'msg-uuid'
 		);
 		$this->objectService->method('find')->willReturn($abandoned);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured, $abandoned) {
 				$captured = $object;
 				return $abandoned;
 			}
-		);
+		));
 
 		$this->service->discardMessage('msg-uuid', 'bob');
 
@@ -984,12 +985,12 @@ class EventServiceTest extends TestCase {
 			'event-uuid-1'
 		);
 
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured, $eventEntity) {
 				$captured = $object;
 				return $eventEntity;
 			}
-		);
+		));
 		$this->objectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$messages = $this->service->emitCloudEvent(
