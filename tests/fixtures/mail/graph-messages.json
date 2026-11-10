@@ -1,0 +1,81 @@
+{
+    "requests": [
+        [
+            "https://graph.example/v1/users/box%40x.nl/mailFolders/Post%20In/messages",
+            {
+                "headers": {
+                    "Authorization": "Bearer tok",
+                    "Accept": "application/json"
+                },
+                "query": {
+                    "$top": "50",
+                    "$orderby": "receivedDateTime asc",
+                    "$filter": "receivedDateTime gt 2026-01-01T00:00:00Z"
+                },
+                "timeout": 30
+            }
+        ],
+        [
+            "https://graph.example/v1/users/box%40x.nl/mailFolders/Post%20In/messages/m-1/attachments",
+            {
+                "headers": {
+                    "Authorization": "Bearer tok",
+                    "Accept": "application/json"
+                },
+                "query": [],
+                "timeout": 30
+            }
+        ]
+    ],
+    "messages": [
+        [
+            "abc@x.nl",
+            "a@x.nl",
+            [
+                "b@x.nl",
+                "c@x.nl"
+            ],
+            "Hallo",
+            "2026-01-01T10:00:00Z",
+            "Hoi daar",
+            "<p>Hoi <b>daar</b></p>",
+            [
+                {
+                    "name": "a.txt",
+                    "mime": "text/plain",
+                    "size": 5,
+                    "content": "hello"
+                },
+                {
+                    "name": "attachment",
+                    "mime": "application/octet-stream",
+                    "size": 0,
+                    "content": ""
+                }
+            ],
+            null
+        ],
+        [
+            "m 2",
+            "",
+            [],
+            "",
+            null,
+            "plain",
+            "",
+            [],
+            null
+        ],
+        [
+            "",
+            "",
+            [],
+            "",
+            "12",
+            "",
+            "",
+            [],
+            null
+        ]
+    ]
+}
