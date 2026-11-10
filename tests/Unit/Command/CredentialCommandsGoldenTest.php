@@ -351,7 +351,31 @@ class CredentialCommandsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheCommandsMatchTheRecording(): void {
+		$columns = getenv('COLUMNS');
 		putenv('COLUMNS=120');
+		try {
+			$found = $this->runCases();
+		} finally {
+			putenv($columns === false ? 'COLUMNS' : 'COLUMNS=' . $columns);
+		}
+
+		if (getenv('RECORD_GOLDEN') === '1') {
+			file_put_contents(self::GOLDEN, json_encode($found, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n");
+		}
+
+		$golden = json_decode((string)file_get_contents(self::GOLDEN), true, 512, JSON_THROW_ON_ERROR);
+		$this->assertSame(array_keys($golden), array_keys($found));
+		foreach ($golden as $name => $expected) {
+			$this->assertSame($expected, $found[$name], 'case ' . $name);
+		}
+	}
+
+	/**
+	 * Run every case at a fixed console width.
+	 *
+	 * @return array<string, array<string, mixed>> Exit code, display lines and calls per case.
+	 */
+	private function runCases(): array {
 		$found = [];
 		foreach (self::cases() as $name => [$command, $world, $input]) {
 			$this->calls = [];
@@ -365,14 +389,6 @@ class CredentialCommandsGoldenTest extends TestCase {
 			$found[$name] = ['status' => $status, 'display' => explode("\n", $tester->getDisplay()), 'calls' => $this->calls];
 		}
 
-		if (getenv('RECORD_GOLDEN') === '1') {
-			file_put_contents(self::GOLDEN, json_encode($found, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n");
-		}
-
-		$golden = json_decode((string)file_get_contents(self::GOLDEN), true, 512, JSON_THROW_ON_ERROR);
-		$this->assertSame(array_keys($golden), array_keys($found));
-		foreach ($golden as $name => $expected) {
-			$this->assertSame($expected, $found[$name], 'case ' . $name);
-		}
+		return $found;
 	}
 }
