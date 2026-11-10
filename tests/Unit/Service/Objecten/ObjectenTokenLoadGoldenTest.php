@@ -53,6 +53,7 @@ class ObjectenTokenLoadGoldenTest extends TestCase {
 			['credential' => 'ref-a', 'principal' => 'p-a', 'key' => 'pasted', 'permissions' => ['aaa' => 'read_write']],
 			['credential' => 'ref-b', 'principal' => 'p-b', 'secret' => 'pasted'],
 			['credential' => 'ref-b', 'principal' => 'p-b', 'token' => null, 'secret' => 'x'],
+			['credential' => 'ref-b', 'principal' => 'p-b', 'token' => 'pasted'],
 			['credential' => '  ', 'principal' => 'p-c'],
 			['principal' => 'p-c'],
 			['credential' => 'ref-c', 'principal' => ' '],

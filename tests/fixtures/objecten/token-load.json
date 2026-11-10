@@ -4,6 +4,7 @@
         "a token declaration may not carry \"key\": the key is resolved through the credential broker by reference, so it never reaches a configuration export",
         "a token declaration may not carry \"secret\": the key is resolved through the credential broker by reference, so it never reaches a configuration export",
         "a token declaration may not carry \"secret\": the key is resolved through the credential broker by reference, so it never reaches a configuration export",
+        "a token declaration may not carry \"token\": the key is resolved through the credential broker by reference, so it never reaches a configuration export",
         "a token declaration must name the credential reference its key is resolved from",
         "a token declaration must name the credential reference its key is resolved from",
         "a token declaration must name the principal its writes are attributed to",
