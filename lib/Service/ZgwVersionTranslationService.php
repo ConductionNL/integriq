@@ -39,6 +39,8 @@ use OCA\Integriq\Service\ZgwVersion\ResultTranslator;
 use OCA\Integriq\Service\ZgwVersion\RolTranslator;
 use OCA\Integriq\Service\ZgwVersion\StatusTranslator;
 use OCA\Integriq\Service\ZgwVersion\ZgwResourceTranslatorInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -242,8 +244,9 @@ class ZgwVersionTranslationService implements ZgwVersionTranslationServiceInterf
 				'error' => $error,
 				'translatedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_LOG
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_LOG)
+			)
 		);
 
 	}//end persistLog()

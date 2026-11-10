@@ -33,6 +33,8 @@ namespace OCA\Integriq\Service\Kiss;
 
 use OCA\Integriq\Event\CallEvent;
 use OCA\Integriq\Exception\CallEventNotFoundException;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -90,8 +92,9 @@ class CallEventLog {
 				'at'              => $event->at,
 				'durationSeconds' => max(0, $event->durationSeconds),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false,
 		);

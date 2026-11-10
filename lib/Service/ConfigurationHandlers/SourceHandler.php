@@ -22,6 +22,8 @@ namespace OCA\Integriq\Service\ConfigurationHandlers;
 
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
@@ -119,14 +121,20 @@ class SourceHandler implements ConfigurationHandlerInterface {
 			// Update existing source.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $mappings['source']['slugToId'][$slug]
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
+					uuid: $mappings['source']['slugToId'][$slug]
+				)
 			);
 		}
 
 		// Create new source.
-		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'source');
+		return $this->orObjectService->saveObject(
+			object: $data,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'source')
+			)
+		);
 	}//end import()
 
 	/**

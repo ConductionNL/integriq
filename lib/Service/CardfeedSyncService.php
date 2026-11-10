@@ -39,6 +39,8 @@ use OCA\Integriq\Service\Cardfeed\CardfeedProviderInterface;
 use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
 use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -168,9 +170,10 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_ACCOUNT,
-				uuid: $existing->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT),
+					uuid: $existing->getUuid()
+				)
 			);
 
 			return [
@@ -191,8 +194,9 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 				'seenTransactionIds' => [],
 				'lifecycleState' => 'active',
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_ACCOUNT
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT)
+			)
 		);
 
 		return [
@@ -310,9 +314,10 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_ACCOUNT,
-			uuid: $account->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_ACCOUNT),
+				uuid: $account->getUuid()
+			)
 		);
 
 		// Keep the in-memory entity in step for callers holding the reference.
@@ -413,8 +418,9 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 					'transactionCount' => count($pull['transactions']),
 					'transactions' => $pull['transactions'],
 				],
-				register: self::REGISTER,
-				schema: self::SCHEMA_BATCH
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_BATCH)
+				)
 			);
 
 			$this->eventService->emitCloudEvent(

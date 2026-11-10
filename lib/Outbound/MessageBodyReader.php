@@ -31,6 +31,8 @@ namespace OCA\Integriq\Outbound;
 
 use DateTimeImmutable;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 
@@ -114,9 +116,10 @@ class MessageBodyReader implements MessageBodyReaderInterface {
 
 		$this->objectService->saveObject(
 			object: $record,
-			register: MessageRecorder::REGISTER,
-			schema: MessageRecorder::SCHEMA,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: MessageRecorder::REGISTER, schema: MessageRecorder::SCHEMA),
+				uuid: $uuid
+			),
 		);
 
 	}//end recordRead()

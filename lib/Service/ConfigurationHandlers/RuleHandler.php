@@ -22,6 +22,8 @@ namespace OCA\Integriq\Service\ConfigurationHandlers;
 
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
@@ -177,14 +179,20 @@ class RuleHandler implements ConfigurationHandlerInterface {
 			// Update existing rule.
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'rule',
-				uuid: $mappings['rule']['slugToId'][$slug]
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'rule'),
+					uuid: $mappings['rule']['slugToId'][$slug]
+				)
 			);
 		}
 
 		// Create new rule.
-		return $this->orObjectService->saveObject(object: $data, register: 'integriq', schema: 'rule');
+		return $this->orObjectService->saveObject(
+			object: $data,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'rule')
+			)
+		);
 	}//end import()
 
 	/**

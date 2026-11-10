@@ -29,6 +29,8 @@ use DateTime;
 use OCA\Integriq\Event\DocumentRenderedEvent;
 use OCA\Integriq\Exception\DocumentGenerationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -98,14 +100,14 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 		$configuration = $this->sourceConfiguration(sourceId: $sourceId);
 		$provider = $this->registry->resolve(sourceConfiguration: $configuration);
 
+		// The hash, never the data. A beschikking's merge data is
+		// the case, and integriq is not where a second copy of the
+		// case belongs.
 		$job = $this->objectService->saveObject(
 			object: [
 				'sourceId' => $sourceId,
 				'providerId' => $provider->getProviderId(),
 				'templateId' => $templateId,
-				// The hash, never the data. A beschikking's merge data is
-				// the case, and integriq is not where a second copy of the
-				// case belongs.
 				'dataHash' => $this->hash(data: $data),
 				'requestedBy' => $requestedBy,
 				'requestedByApp' => $requestedByApp,
@@ -115,8 +117,9 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 				'lastError' => '',
 				'attempts' => [],
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_JOB)
+			)
 		);
 
 		return $this->apply(
@@ -342,9 +345,10 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_JOB,
-			uuid: $job->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_JOB),
+				uuid: $job->getUuid()
+			)
 		);
 
 		if ($outcome->isTerminal() === true) {

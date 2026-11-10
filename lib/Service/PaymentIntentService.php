@@ -38,6 +38,8 @@ use OCA\Integriq\Service\Payment\LogPaymentProvider;
 use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\Payment\PaymentProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -153,6 +155,10 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 		$result = $provider->createPayment(sourceConfiguration: $configuration, payload: $payload);
 
 		$now = (new DateTime())->format('c');
+		// System context: `payment_intent` is locked to admins and owners
+		// (99-payment-intent-lockdown.json), and a `payments.create` holder
+		// need not be an admin. The ADR-023 action check in
+		// PaymentsController::create() is the gate for this write.
 		$record = $this->objectService->saveObject(
 			object: [
 				'sourceSlug' => ($source->getObject()['slug'] ?? $sourceSlug ?? ''),
@@ -170,12 +176,9 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				'createdAt' => $now,
 				'updatedAt' => $now,
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_PAYMENT_INTENT,
-			// System context: `payment_intent` is locked to admins and owners
-			// (99-payment-intent-lockdown.json), and a `payments.create` holder
-			// need not be an admin. The ADR-023 action check in
-			// PaymentsController::create() is the gate for this write.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_PAYMENT_INTENT)
+			),
 			_rbac: false
 		);
 
@@ -247,9 +250,10 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			// latest native status, no outcome change, no event (REQ-LPP-004).
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_PAYMENT_INTENT),
+					uuid: $record->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -262,9 +266,10 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			// not re-emit.
 			$this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_PAYMENT_INTENT,
-				uuid: $record->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_PAYMENT_INTENT),
+					uuid: $record->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -274,9 +279,10 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 		$data['lastOutcome'] = $outcome;
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_PAYMENT_INTENT,
-			uuid: $record->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_PAYMENT_INTENT),
+				uuid: $record->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

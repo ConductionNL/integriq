@@ -35,6 +35,8 @@ use OCA\Integriq\Service\Peppol\LogPeppolAccessPointProvider;
 use OCA\Integriq\Service\Peppol\PeppolAccessPointProviderInterface;
 use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -252,8 +254,9 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 					'detail' => $this->l->t('Transmission queued'),
 					'attempts' => [],
 				],
-				register: self::REGISTER,
-				schema: self::SCHEMA_TRANSMISSION
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION)
+				)
 			);
 		}//end if
 
@@ -301,9 +304,10 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_TRANSMISSION,
-				uuid: $transmission->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION),
+					uuid: $transmission->getUuid()
+				)
 			);
 
 			$this->emitDeliveryStatus(transmission: $saved);
@@ -316,9 +320,10 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_TRANSMISSION,
-				uuid: $transmission->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION),
+					uuid: $transmission->getUuid()
+				)
 			);
 
 			$this->logger->warning(
@@ -459,9 +464,10 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_TRANSMISSION,
-			uuid: $transmission->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_TRANSMISSION),
+				uuid: $transmission->getUuid()
+			)
 		);
 
 		$this->emitDeliveryStatus(transmission: $saved);

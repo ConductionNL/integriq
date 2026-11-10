@@ -42,6 +42,8 @@ use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -259,9 +261,10 @@ class DsoConnection implements PortalConnectionInterface {
 	public function saveConsumer(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_CONSUMER,
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_CONSUMER),
+				uuid: $uuid
+			)
 		);
 
 	}//end saveConsumer()

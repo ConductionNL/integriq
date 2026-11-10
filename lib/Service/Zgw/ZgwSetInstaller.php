@@ -26,6 +26,8 @@ namespace OCA\Integriq\Service\Zgw;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -128,7 +130,13 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 		foreach ($bound as $object) {
 			$uuid = $object['uuid'];
 			unset($object['uuid']);
-			$this->objectService->saveObject(object: $object, register: 'integriq', schema: 'synchronization', uuid: $uuid);
+			$this->objectService->saveObject(
+				object: $object,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'synchronization'),
+					uuid: $uuid
+				)
+			);
 		}
 
 		$bindings = array_filter($bindings, fn (string $holder): bool => $holder !== $slug);

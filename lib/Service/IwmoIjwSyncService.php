@@ -41,6 +41,8 @@ use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -174,7 +176,12 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 			$record['bsnHash'] = hash('sha256', (string)$input['bsn']);
 		}
 
-		$this->objectService->saveObject(object: $record, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$this->objectService->saveObject(
+			object: $record,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			)
+		);
 
 		if ($status === 'failed') {
 			throw new IwmoIjwProviderException(message: (string)$error);
@@ -242,8 +249,9 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			)
 		);
 
 		if ($outbound === null || $caseReference === null || $caseRegister === null || $caseSchema === null) {
@@ -348,9 +356,10 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: $message->getUuid()
+			)
 		);
 
 	}//end retryOne()
@@ -402,9 +411,10 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: $caseRegister,
-			schema: $caseSchema,
-			uuid: $caseReference
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $caseRegister, schema: $caseSchema),
+				uuid: $caseReference
+			)
 		);
 
 	}//end updateLinkedCase()

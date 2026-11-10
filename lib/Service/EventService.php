@@ -43,6 +43,8 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
@@ -597,21 +599,22 @@ class EventService implements EventServiceInterface {
 	private function createEventMessage(ObjectEntity $event, ObjectEntity $subscription): ObjectEntity {
 		$subscriptionData = $subscription->getObject();
 
+		// 🔴 `event` and `subscription` (both string, format uuid) are the
+		// real FKs. `eventId`/`subscriptionId` are the LEGACY INTEGER FKs
+		// kept only during the transition (see the schema's own
+		// description; cleanup tracked at #821). Writing a UUID into an
+		// integer property fails validation with "Property '<name>' should
+		// be type 'integer or null' but is 'string'", so EVERY event
+		// message was rejected — two logged exceptions on every
+		// OpenRegister object write, fleet-wide, for a row that was never
+		// created. The `event`/`eventId` half was fixed first; the
+		// `subscription`/`subscriptionId` half was missed, so every write
+		// still 400'd on `subscriptionId` (empty event_message table).
+		// Write both references to their uuid FK and omit the legacy
+		// integer keys entirely rather than sending null.
+		// System context: see processEvent().
 		return $this->objectService->saveObject(
 			object: [
-				// 🔴 `event` and `subscription` (both string, format uuid) are the
-				// real FKs. `eventId`/`subscriptionId` are the LEGACY INTEGER FKs
-				// kept only during the transition (see the schema's own
-				// description; cleanup tracked at #821). Writing a UUID into an
-				// integer property fails validation with "Property '<name>' should
-				// be type 'integer or null' but is 'string'", so EVERY event
-				// message was rejected — two logged exceptions on every
-				// OpenRegister object write, fleet-wide, for a row that was never
-				// created. The `event`/`eventId` half was fixed first; the
-				// `subscription`/`subscriptionId` half was missed, so every write
-				// still 400'd on `subscriptionId` (empty event_message table).
-				// Write both references to their uuid FK and omit the legacy
-				// integer keys entirely rather than sending null.
 				'event' => $event->getUuid(),
 				'consumerId' => ($subscriptionData['consumerId'] ?? null),
 				'subscription' => $subscription->getUuid(),
@@ -620,9 +623,9 @@ class EventService implements EventServiceInterface {
 				'created' => (new DateTime())->format('c'),
 				'updated' => (new DateTime())->format('c'),
 			],
-			register: 'integriq',
-			schema: 'event_message',
-			// System context: see processEvent().
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -924,12 +927,13 @@ class EventService implements EventServiceInterface {
 			error: null,
 			signed: $delivery->signed
 		);
+		// System context: see processEvent().
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $delivery->message->getUuid(),
-			// System context: see processEvent().
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
+				uuid: $delivery->message->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -1070,12 +1074,13 @@ class EventService implements EventServiceInterface {
 			);
 		}
 
+		// System context: see processEvent().
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid(),
-			// System context: see processEvent().
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
+				uuid: $message->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2231,12 +2236,13 @@ class EventService implements EventServiceInterface {
 			error: null
 		);
 
+		// System context: see processEvent().
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid(),
-			// System context: see processEvent().
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
+				uuid: $message->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2355,12 +2361,13 @@ class EventService implements EventServiceInterface {
 			error: $error
 		);
 
+		// System context: see processEvent().
 		$this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid(),
-			// System context: see processEvent().
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
+				uuid: $message->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2414,9 +2421,10 @@ class EventService implements EventServiceInterface {
 		// Attempts[] is deliberately preserved across the replay campaign.
 		$saved = $this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
+				uuid: $message->getUuid()
+			)
 		);
 
 		// Re-enter the delivery machine immediately, through the SAME action
@@ -2531,9 +2539,10 @@ class EventService implements EventServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $messageData,
-			register: 'integriq',
-			schema: 'event_message',
-			uuid: $message->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
+				uuid: $message->getUuid()
+			)
 		);
 
 	}//end discardMessage()
@@ -2606,9 +2615,10 @@ class EventService implements EventServiceInterface {
 			$message->setObject($messageData);
 			$this->objectService->saveObject(
 				object: $messageData,
-				register: 'integriq',
-				schema: 'event_message',
-				uuid: $message->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'event_message'),
+					uuid: $message->getUuid()
+				)
 			);
 			$this->logger->warning(
 				'Abandoned event message "' . $message->getUuid() . '" after exhausting ' . $limit
@@ -2784,6 +2794,12 @@ class EventService implements EventServiceInterface {
 	 * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
 	 */
 	public function emitCloudEvent(string $type, string $source, ?string $subject, array $data, ?string $userId = null): array {
+		// Marks this row as our own output so CloudEventListener drops it
+		// even when the schema ids cannot identify it (a renamed register, or
+		// the schema copied elsewhere).
+		// System context: the `event` schema lets only administrators create
+		// an event through the object API (integriq#2224), and this is
+		// integriq's own write.
 		$event = $this->objectService->saveObject(
 			object: [
 				'source' => $source,
@@ -2792,16 +2808,11 @@ class EventService implements EventServiceInterface {
 				'subject' => $subject,
 				'data' => $data,
 				'userId' => $userId,
-				// Marks this row as our own output so CloudEventListener drops it
-				// even when the schema ids cannot identify it (a renamed register, or
-				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2919,6 +2930,12 @@ class EventService implements EventServiceInterface {
 	 * @throws Exception On persistence failure.
 	 */
 	private function saveDeliveryEvent(DeliveryRequestedEvent $request, array $data): ObjectEntity {
+		// Marks this row as our own output so CloudEventListener drops it
+		// even when the schema ids cannot identify it (a renamed register, or
+		// the schema copied elsewhere).
+		// System context: the `event` schema lets only administrators create
+		// an event through the object API (integriq#2224), and this is
+		// integriq's own write.
 		return $this->objectService->saveObject(
 			object: [
 				'source' => ('/apps/' . $request->getSourceApp() . '/delivery'),
@@ -2927,16 +2944,11 @@ class EventService implements EventServiceInterface {
 				'subject' => $request->getSubjectId(),
 				'data' => $data,
 				'userId' => $request->getUserId(),
-				// Marks this row as our own output so CloudEventListener drops it
-				// even when the schema ids cannot identify it (a renamed register, or
-				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3115,6 +3127,12 @@ class EventService implements EventServiceInterface {
 	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
 	 */
 	public function handleNextcloudEvent(string $type, array $payload): array {
+		// Marks this row as our own output so CloudEventListener drops it
+		// even when the schema ids cannot identify it (a renamed register, or
+		// the schema copied elsewhere).
+		// System context: the `event` schema lets only administrators create
+		// an event through the object API (integriq#2224), and this is
+		// integriq's own write.
 		$event = $this->objectService->saveObject(
 			object: [
 				'source' => (string)($payload['source'] ?? ''),
@@ -3123,16 +3141,11 @@ class EventService implements EventServiceInterface {
 				'subject' => ($payload['subject'] ?? null),
 				'data' => ($payload['data'] ?? []),
 				'userId' => ($payload['userId'] ?? null),
-				// Marks this row as our own output so CloudEventListener drops it
-				// even when the schema ids cannot identify it (a renamed register, or
-				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3155,6 +3168,12 @@ class EventService implements EventServiceInterface {
 	 */
 	public function handleObjectCreated(ObjectEntity $object): array {
 		$objectData = $object->getObject();
+		// Marks this row as our own output so CloudEventListener drops it
+		// even when the schema ids cannot identify it (a renamed register, or
+		// the schema copied elsewhere).
+		// System context: the `event` schema lets only administrators create
+		// an event through the object API (integriq#2224), and this is
+		// integriq's own write.
 		$event = $this->objectService->saveObject(
 			object: [
 				'source' => ('/objects/' . ($objectData['type'] ?? '')),
@@ -3167,16 +3186,11 @@ class EventService implements EventServiceInterface {
 					'attributes' => $objectData,
 				],
 				'userId' => ($objectData['userId'] ?? null),
-				// Marks this row as our own output so CloudEventListener drops it
-				// even when the schema ids cannot identify it (a renamed register, or
-				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3202,6 +3216,12 @@ class EventService implements EventServiceInterface {
 		$oldData = $oldObject->getObject();
 		$newData = $newObject->getObject();
 
+		// Marks this row as our own output so CloudEventListener drops it
+		// even when the schema ids cannot identify it (a renamed register, or
+		// the schema copied elsewhere).
+		// System context: the `event` schema lets only administrators create
+		// an event through the object API (integriq#2224), and this is
+		// integriq's own write.
 		$event = $this->objectService->saveObject(
 			object: [
 				'source' => ('/objects/' . ($newData['type'] ?? '')),
@@ -3217,16 +3237,11 @@ class EventService implements EventServiceInterface {
 					],
 				],
 				'userId' => ($newData['userId'] ?? null),
-				// Marks this row as our own output so CloudEventListener drops it
-				// even when the schema ids cannot identify it (a renamed register, or
-				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3250,6 +3265,12 @@ class EventService implements EventServiceInterface {
 	public function handleObjectDeleted(ObjectEntity $object): array {
 		$objectData = $object->getObject();
 
+		// Marks this row as our own output so CloudEventListener drops it
+		// even when the schema ids cannot identify it (a renamed register, or
+		// the schema copied elsewhere).
+		// System context: the `event` schema lets only administrators create
+		// an event through the object API (integriq#2224), and this is
+		// integriq's own write.
 		$event = $this->objectService->saveObject(
 			object: [
 				'source' => ('/objects/' . ($objectData['type'] ?? '')),
@@ -3261,16 +3282,11 @@ class EventService implements EventServiceInterface {
 					'id' => $object->getUuid(),
 				],
 				'userId' => ($objectData['userId'] ?? null),
-				// Marks this row as our own output so CloudEventListener drops it
-				// even when the schema ids cannot identify it (a renamed register, or
-				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
 			],
-			register: 'integriq',
-			schema: 'event',
-			// System context: the `event` schema lets only administrators create
-			// an event through the object API (integriq#2224), and this is
-			// integriq's own write.
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'event')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

@@ -33,6 +33,8 @@ use DateTime;
 use OCA\Integriq\Service\Otel\TraceExportQueue;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -153,9 +155,10 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $trace->getTraceId(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+				uuid: $trace->getTraceId()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -171,9 +173,10 @@ class ConnectionStore implements ConnectionStoreInterface {
 		$saved = $this->asSystem(
 			operation: 			fn () => $this->objectService->saveObject(
 				object: $payload,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				uuid: $uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+					uuid: $uuid
+				)
 			)
 		);
 
@@ -290,7 +293,12 @@ class ConnectionStore implements ConnectionStoreInterface {
 	 */
 	public function createSource(array $payload): ObjectEntity {
 		return $this->asSystem(
-			operation: 			fn () => $this->objectService->saveObject(object: $payload, register: self::REGISTER, schema: 'source')
+			operation: 			fn () => $this->objectService->saveObject(
+				object: $payload,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: 'source')
+				)
+			)
 		);
 	}//end createSource()
 

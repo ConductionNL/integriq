@@ -47,6 +47,8 @@ use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\Intake\WebhookProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 
@@ -219,9 +221,10 @@ class OpenFormulierenConnection {
 	public function saveConsumer(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: DsoConnection::REGISTER,
-			schema: DsoConnection::SCHEMA_CONSUMER,
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: DsoConnection::REGISTER, schema: DsoConnection::SCHEMA_CONSUMER),
+				uuid: $uuid
+			)
 		);
 
 	}//end saveConsumer()

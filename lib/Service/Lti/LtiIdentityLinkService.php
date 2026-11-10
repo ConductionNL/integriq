@@ -28,6 +28,8 @@ namespace OCA\Integriq\Service\Lti;
 use DateTime;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -285,8 +287,9 @@ class LtiIdentityLinkService {
 		try {
 			return $this->orObjectService->saveObject(
 				object: $data,
-				register: 'integriq',
-				schema: 'lti_identity_link',
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'lti_identity_link')
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

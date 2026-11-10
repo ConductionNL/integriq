@@ -41,6 +41,8 @@ use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -110,8 +112,9 @@ class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 			what: 'the ' . $profile->label . ' connection migration',
 			operation: fn () => $this->objectService->saveObject(
 				object: $consumer,
-				register: DsoConnection::REGISTER,
-				schema: DsoConnection::SCHEMA_CONSUMER
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: DsoConnection::REGISTER, schema: DsoConnection::SCHEMA_CONSUMER)
+				)
 			)
 		);
 

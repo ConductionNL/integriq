@@ -33,6 +33,8 @@ use OCA\Integriq\Event\IntakeMessageRoutedEvent;
 use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -103,8 +105,9 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 		$payload = array_merge($message->toObject(), ['status' => self::STATUS_RECEIVED]);
 		$stored = $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			),
 		);
 
 		$rule = $this->firstMatchingRule(message: $message);
@@ -141,9 +144,10 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: (string)$stored->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: (string)$stored->getUuid()
+			),
 		);
 
 	}//end route()
@@ -427,9 +431,10 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: $uuid
+			),
 		);
 
 	}//end hold()
@@ -449,8 +454,9 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 					$message->toObject(),
 					['status' => self::STATUS_FAILED, 'reason' => $reason]
 				),
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+				),
 			);
 		} catch (Throwable $exception) {
 			$this->logger->error(

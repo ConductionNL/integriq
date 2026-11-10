@@ -42,6 +42,8 @@ use OCA\Integriq\Service\UwlrEduV\UwlrEduVAcknowledgementTranslator;
 use OCA\Integriq\Service\UwlrEduV\UwlrEduVProviderRegistry;
 use OCA\Integriq\Service\UwlrEduV\UwlrExportEnvelopeTranslator;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -259,8 +261,9 @@ class UwlrEduVService implements UwlrEduVServiceInterface {
 				'error' => null,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			)
 		);
 
 		$this->eventDispatcher->dispatchTyped(
@@ -343,9 +346,10 @@ class UwlrEduVService implements UwlrEduVServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: $message->getUuid()
+			)
 		);
 
 	}//end retryOne()
@@ -431,8 +435,9 @@ class UwlrEduVService implements UwlrEduVServiceInterface {
 				'error' => $error,
 				'syncedAt' => (new DateTime())->format('c'),
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			)
 		);
 
 		if ($status === 'failed') {

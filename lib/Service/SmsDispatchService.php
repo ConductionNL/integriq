@@ -41,6 +41,8 @@ use OCA\Integriq\Service\Sms\PhoneNumberValidator;
 use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
 use OCA\Integriq\Service\Sms\SmsProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -212,8 +214,9 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 				'detail' => $this->l->t('Message queued'),
 				'attempts' => [],
 			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE)
+			)
 		);
 
 		$sent = $this->attemptSend(message: $message, provider: $provider, to: $e164, body: $body, options: $options);
@@ -265,9 +268,10 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
-				uuid: $message->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+					uuid: $message->getUuid()
+				)
 			);
 
 			$this->emitDeliveryStatus(message: $saved);
@@ -280,9 +284,10 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: self::REGISTER,
-				schema: self::SCHEMA_MESSAGE,
-				uuid: $message->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+					uuid: $message->getUuid()
+				)
 			);
 
 			$this->logger->warning(
@@ -386,9 +391,10 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE,
-			uuid: $message->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA_MESSAGE),
+				uuid: $message->getUuid()
+			)
 		);
 
 		$this->emitDeliveryStatus(message: $saved);

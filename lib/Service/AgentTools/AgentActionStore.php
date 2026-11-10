@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\AgentTools;
 
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -62,8 +64,9 @@ class AgentActionStore implements AgentActionStoreInterface {
 	public function record(array $record): string {
 		$saved = $this->objectService->saveObject(
 			object: $record,
-			register: 'integriq',
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: self::SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -114,9 +117,10 @@ class AgentActionStore implements AgentActionStoreInterface {
 	public function update(string $uuid, array $record): void {
 		$this->objectService->saveObject(
 			object: $record,
-			register: 'integriq',
-			schema: self::SCHEMA,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: self::SCHEMA),
+				uuid: $uuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

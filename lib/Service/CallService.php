@@ -61,6 +61,9 @@ use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -770,8 +773,9 @@ class CallService implements CallServiceInterface {
 		// for whoever triggered it, so the write runs past RBAC.
 		return $this->objectService->saveObject(
 			object: $object,
-			register: 'integriq',
-			schema: 'call_log',
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log')
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -828,9 +832,10 @@ class CallService implements CallServiceInterface {
 			// state.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
+					uuid: $source->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1856,12 +1861,12 @@ class CallService implements CallServiceInterface {
 
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
-			register: 'integriq',
-			schema: 'call_log',
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+				policy: new SavePolicy(silent: true, validation: false)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			silent: true,
-			_validation: false
+			_multitenancy: false
 		);
 
 		// Set full response (with body) on the returned entity for processing.
@@ -2371,9 +2376,10 @@ class CallService implements CallServiceInterface {
 	private function persistSourceState(ObjectEntity $source, array $sourceData): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $sourceData,
-			register: 'integriq',
-			schema: 'source',
-			uuid: $source->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
+				uuid: $source->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -3548,9 +3554,10 @@ class CallService implements CallServiceInterface {
 			// back to its own admin-owned source config on behalf of any caller.
 			$this->objectService->saveObject(
 				object: $sourceData,
-				register: 'integriq',
-				schema: 'source',
-				uuid: $source->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'source'),
+					uuid: $source->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

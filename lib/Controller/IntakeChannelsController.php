@@ -40,6 +40,8 @@ use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
 use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -226,9 +228,10 @@ class IntakeChannelsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $rule,
-			register: IntakeRoutingServiceInterface::REGISTER,
-			schema: IntakeRoutingServiceInterface::SCHEMA_RULE,
-			uuid: $targetUuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: IntakeRoutingServiceInterface::REGISTER, schema: IntakeRoutingServiceInterface::SCHEMA_RULE),
+				uuid: $targetUuid
+			),
 		);
 
 		return new JSONResponse(
@@ -293,8 +296,12 @@ class IntakeChannelsController extends Controller {
 					'status' => 'rejected',
 					'reason' => $reason,
 				],
-				register: IntakeRoutingServiceInterface::REGISTER,
-				schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+						register: IntakeRoutingServiceInterface::REGISTER,
+						schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE
+					)
+				),
 			);
 		} catch (Throwable) {
 			// The rejection record is evidence, not the refusal itself: a

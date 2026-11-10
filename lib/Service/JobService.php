@@ -24,6 +24,8 @@ use DateTime;
 use Exception;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
@@ -233,9 +235,10 @@ class JobService implements JobServiceInterface {
 			$jobData['jobListId'] = null;
 			return $this->objectService->saveObject(
 				object: $jobData,
-				register: 'integriq',
-				schema: 'job',
-				uuid: $job->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'job'),
+					uuid: $job->getUuid()
+				)
 			);
 		}
 
@@ -259,9 +262,10 @@ class JobService implements JobServiceInterface {
 		// Save the job to the database.
 		return $this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'job'),
+				uuid: $job->getUuid()
+			)
 		);
 
 	}//end scheduleJob()
@@ -562,9 +566,10 @@ class JobService implements JobServiceInterface {
 
 		$this->objectService->saveObject(
 			object: $jobData,
-			register: 'integriq',
-			schema: 'job',
-			uuid: $job->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'job'),
+				uuid: $job->getUuid()
+			)
 		);
 
 		return $logEntry;
@@ -873,8 +878,9 @@ class JobService implements JobServiceInterface {
 
 		return $this->objectService->saveObject(
 			object: $logObject,
-			register: 'integriq',
-			schema: 'job_log'
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'integriq', schema: 'job_log')
+			)
 		);
 	}//end saveJobLog()
 

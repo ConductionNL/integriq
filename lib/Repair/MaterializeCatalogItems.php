@@ -32,6 +32,8 @@ namespace OCA\Integriq\Repair;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -142,9 +144,10 @@ class MaterializeCatalogItems implements IRepairStep {
 				try {
 					$orObjectService->saveObject(
 						object: $payload,
-						register: 'integriq',
-						schema: 'catalog_item',
-						uuid: ($existingBySlug[$slug] ?? null)
+						options: new ObjectSaveOptions(
+							target: new ObjectFindTarget(register: 'integriq', schema: 'catalog_item'),
+							uuid: ($existingBySlug[$slug] ?? null)
+						)
 					);
 					$upserted++;
 				} catch (\Throwable $e) {

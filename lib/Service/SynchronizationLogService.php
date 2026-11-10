@@ -20,6 +20,8 @@
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ISession;
 use OCP\IUserSession;
@@ -155,8 +157,9 @@ class SynchronizationLogService implements SynchronizationLogServiceInterface {
 		// identifier; the pre-generated uuid travels in the body for traceability.
 		$saved = $this->orObjectService->saveObject(
 			object: $this->normalize(object: $object),
-			register: self::REGISTER,
-			schema: self::SCHEMA
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)
+			)
 		);
 
 		$log->markPersisted(saved: $saved->jsonSerialize());

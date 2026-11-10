@@ -19,6 +19,9 @@ namespace OCA\Integriq\BackgroundJob;
 
 use DateTime;
 use OCA\Integriq\Service\SynchronizationRunProgressServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -224,13 +227,16 @@ class StaleRunSweepJob extends TimedJob {
 		try {
 			$this->objectService->saveObject(
 				object: $object,
-				register: SynchronizationRunProgressServiceInterface::REGISTER,
-				schema: SynchronizationRunProgressServiceInterface::SCHEMA,
-				uuid: $entity->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+						register: SynchronizationRunProgressServiceInterface::REGISTER,
+						schema: SynchronizationRunProgressServiceInterface::SCHEMA
+					),
+					uuid: $entity->getUuid(),
+					policy: new SavePolicy(silent: true, validation: false)
+				),
 				_rbac: false,
 				_multitenancy: false,
-				silent: true,
-				_validation: false,
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->warning(
