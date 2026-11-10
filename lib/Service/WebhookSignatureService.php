@@ -189,7 +189,7 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 	 */
 	private function verifyUntimestamped(SignatureCheck $check): ?bool {
 		$scheme = $check->scheme;
-		if ($scheme !== 'github' && $scheme !== 'teams') {
+		if (in_array($scheme, ['github', 'teams'], true) === false) {
 			return null;
 		}
 
@@ -273,25 +273,9 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
 	 */
 	private function parseTimestampedHeader(string $headerValue): ?array {
-		$timestamp = null;
-		$signatures = [];
-
-		foreach (explode(',', $headerValue) as $part) {
-			$part = trim($part);
-			$eq = strpos($part, '=');
-			if ($eq === false) {
-				continue;
-			}
-
-			$key = substr($part, 0, $eq);
-			$value = substr($part, ($eq + 1));
-
-			if ($key === 't' && ctype_digit($value) === true) {
-				$timestamp = (int)$value;
-			} elseif ($key === 'v1' && $value !== '') {
-				$signatures[] = $value;
-			}
-		}
+		$pairs = $this->headerPairs(headerValue: $headerValue);
+		$timestamp = $this->headerTimestamp(pairs: $pairs);
+		$signatures = $this->headerSignatures(pairs: $pairs);
 
 		if ($timestamp === null || empty($signatures) === true) {
 			return null;
@@ -299,6 +283,70 @@ class WebhookSignatureService implements WebhookSignatureServiceInterface {
 
 		return [$timestamp, $signatures];
 	}//end parseTimestampedHeader()
+
+	/**
+	 * Split a comma-separated header into its `key=value` pairs, skipping parts without `=`.
+	 *
+	 * @param string $headerValue The header value.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs, in order.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
+	 */
+	private function headerPairs(string $headerValue): array {
+		$pairs = [];
+		foreach (explode(',', $headerValue) as $part) {
+			$part = trim($part);
+			$eq = strpos($part, '=');
+			if ($eq === false) {
+				continue;
+			}
+
+			$pairs[] = [substr($part, 0, $eq), substr($part, ($eq + 1))];
+		}
+
+		return $pairs;
+	}//end headerPairs()
+
+	/**
+	 * The header's timestamp: the last all-digit `t` value.
+	 *
+	 * @param array<int, array{0: string, 1: string}> $pairs The header pairs.
+	 *
+	 * @return integer|null The timestamp, or null when there is none.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
+	 */
+	private function headerTimestamp(array $pairs): ?int {
+		$timestamp = null;
+		foreach ($pairs as [$key, $value]) {
+			if ($key === 't' && ctype_digit($value) === true) {
+				$timestamp = (int)$value;
+			}
+		}
+
+		return $timestamp;
+	}//end headerTimestamp()
+
+	/**
+	 * The header's non-empty `v1` signatures, in order.
+	 *
+	 * @param array<int, array{0: string, 1: string}> $pairs The header pairs.
+	 *
+	 * @return string[] The signatures.
+	 *
+	 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-1
+	 */
+	private function headerSignatures(array $pairs): array {
+		$signatures = [];
+		foreach ($pairs as [$key, $value]) {
+			if ($key === 'v1' && $value !== '') {
+				$signatures[] = $value;
+			}
+		}
+
+		return $signatures;
+	}//end headerSignatures()
 
 	/**
 	 * Whether a rotation grace window is still active for a subscription.
