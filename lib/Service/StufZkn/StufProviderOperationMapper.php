@@ -253,37 +253,61 @@ class StufProviderOperationMapper {
 			return $operation;
 		}
 
-		foreach (self::DOCUMENT_TEXT as $element => $key) {
-			$operation[$key] = $this->text(xml: $object, path: './*[local-name()="' . $element . '"]');
-		}
-
-		$operation['caseIdentifier']  = $this->text(
-			xml: $object,
-			path: './*[local-name()="isRelevantVoor"]/*[local-name()="gerelateerde"]/*[local-name()="identificatie"]'
-		);
-		$operation['creationDate']    = self::isoDate(stuf: $this->text(xml: $object, path: './*[local-name()="creatiedatum"]'));
-		$operation['receivedDate']    = self::isoDate(stuf: $this->text(xml: $object, path: './*[local-name()="ontvangstdatum"]'));
-		$operation['confidentiality'] = str_replace(
-			' ',
-			'_',
-			strtolower($this->text(xml: $object, path: './*[local-name()="vertrouwelijkAanduiding"]'))
-		);
-		$operation['fileName']        = $this->text(xml: $object, path: './*[local-name()="inhoud"]/@*[local-name()="bestandsnaam"]');
-
-		$inhoud = $this->text(xml: $object, path: './*[local-name()="inhoud"]');
-		if ($inhoud !== '') {
-			$bytes = base64_decode((string)preg_replace('/\s+/', '', $inhoud), true);
-			if ($bytes === false) {
-				$operation['contentError'] = 'inhoud is geen geldige base64';
-			}
-
-			if ($bytes !== false) {
-				$operation['content'] = $bytes;
-			}
-		}
+		$operation += $this->documentFields(object: $object);
+		$operation += $this->documentContent(object: $object);
 
 		return array_filter($operation, static fn(mixed $value): bool => $value !== '' && $value !== []);
 	}//end documentOperation()
+
+	/**
+	 * The document's fields, in the operation's key order; empty ones are filtered by the caller.
+	 *
+	 * @param SimpleXMLElement $object The current document object.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	private function documentFields(SimpleXMLElement $object): array {
+		$fields = [];
+		foreach (self::DOCUMENT_TEXT as $element => $key) {
+			$fields[$key] = $this->text(xml: $object, path: './*[local-name()="' . $element . '"]');
+		}
+
+		$fields['caseIdentifier']  = $this->text(
+			xml: $object,
+			path: './*[local-name()="isRelevantVoor"]/*[local-name()="gerelateerde"]/*[local-name()="identificatie"]'
+		);
+		$fields['creationDate']    = self::isoDate(stuf: $this->text(xml: $object, path: './*[local-name()="creatiedatum"]'));
+		$fields['receivedDate']    = self::isoDate(stuf: $this->text(xml: $object, path: './*[local-name()="ontvangstdatum"]'));
+		$fields['confidentiality'] = str_replace(' ', '_', strtolower($this->text(xml: $object, path: './*[local-name()="vertrouwelijkAanduiding"]')));
+		$fields['fileName']        = $this->text(xml: $object, path: './*[local-name()="inhoud"]/@*[local-name()="bestandsnaam"]');
+
+		return $fields;
+	}//end documentFields()
+
+	/**
+	 * The decoded inhoud as `content`, `contentError` when it is not base64, or nothing when empty.
+	 *
+	 * @param SimpleXMLElement $object The current document object.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-write-message-reaches-the-owning-app-as-a-generic-case-operation
+	 */
+	private function documentContent(SimpleXMLElement $object): array {
+		$inhoud = $this->text(xml: $object, path: './*[local-name()="inhoud"]');
+		if ($inhoud === '') {
+			return [];
+		}
+
+		$bytes = base64_decode((string)preg_replace('/\s+/', '', $inhoud), true);
+		if ($bytes === false) {
+			return ['contentError' => 'inhoud is geen geldige base64'];
+		}
+
+		return ['content' => $bytes];
+	}//end documentContent()
 
 	/**
 	 * The object carrying the current values: the last one, since a W kennisgeving sends old then new.
