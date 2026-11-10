@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Minimal stub for OCA\OpenRegister\Service\Task\TaskService.
@@ -65,13 +66,12 @@ class TaskService {
 	 * Offer a task to a pool (real: requester only, records the `offer`
 	 * action that OpenRegister's pool notification rule fires on).
 	 *
-	 * @param string $uuid The task uuid.
+	 * @param TaskActorRef $ref The task uuid and the offering identity.
 	 * @param array<string, mixed> $pool candidateUsers / candidateGroups / ...
-	 * @param string|null $actor The offering identity.
 	 *
 	 * @return Task An empty task entity.
 	 */
-	public function offer(string $uuid, array $pool, ?string $actor): Task {
+	public function offer(TaskActorRef $ref, array $pool): Task {
 		return new Task();
 	}//end offer()
 
