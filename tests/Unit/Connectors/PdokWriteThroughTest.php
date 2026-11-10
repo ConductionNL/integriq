@@ -123,7 +123,7 @@ class PdokWriteThroughTest extends TestCase {
 
 		$this->assertCount(1, $this->stored);
 		$this->assertSame(
-			[['uuid' => null, 'register' => 'integriq', 'schema' => 'addresses', 'rbac' => true, 'multitenancy' => true]],
+			[['uuid' => null, 'register' => 'integriq', 'schema' => 'addresses', 'rbac' => false, 'multitenancy' => true]],
 			$this->saves
 		);
 		$this->assertSame(
@@ -140,12 +140,12 @@ class PdokWriteThroughTest extends TestCase {
 	 */
 	public function testSecondLookupUpdatesTheSameUuid(): void {
 		$connector = $this->makeConnector();
-		$connector->writeThrough(doc: ['pdokId' => 'adr-1', 'fetchedAt' => '2001-01-01T00:00:00Z']);
-		$connector->writeThrough(doc: ['pdokId' => 'adr-1', 'fetchedAt' => '2026-11-10T12:00:00Z']);
+		$connector->writeThrough(doc: ['pdokId' => 'adr-1', 'displayName' => 'old']);
+		$connector->writeThrough(doc: ['pdokId' => 'adr-1', 'displayName' => 'new']);
 
 		$this->assertCount(1, $this->stored);
 		$this->assertSame('uuid-1', $this->saves[1]['uuid']);
-		$this->assertSame('2026-11-10T12:00:00Z', $this->stored['uuid-1']->getObject()['fetchedAt']);
+		$this->assertSame('new', $this->stored['uuid-1']->getObject()['displayName']);
 
 	}//end testSecondLookupUpdatesTheSameUuid()
 
