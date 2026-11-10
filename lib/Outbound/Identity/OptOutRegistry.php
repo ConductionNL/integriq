@@ -288,13 +288,13 @@ class OptOutRegistry implements OptOutRegistryInterface {
 		$channel = strtolower(trim($channel));
 		$run = new SendDecisionRun(
 			channel: $channel,
-			category: $this->categories->canonical(category: $category, inReplyTo: $inReplyTo, sourceApp: $sourceApp),
-			sourceApp: $sourceApp,
-			correlationId: $correlationId,
-			probe: $probe,
-			requiresConsent: $requiresConsent,
-			baseUrl: $baseUrl
+			category: $this->categories->canonical(category: $category, inReplyTo: $inReplyTo, sourceApp: $sourceApp)
 		);
+		$run->sourceApp = $sourceApp;
+		$run->correlationId = $correlationId;
+		$run->probe = $probe;
+		$run->requiresConsent = $requiresConsent;
+		$run->baseUrl = $baseUrl;
 
 		$decisions = [];
 		foreach (array_chunk($recipients, self::CHUNK) as $chunk) {
@@ -720,12 +720,12 @@ class OptOutRegistry implements OptOutRegistryInterface {
 			return $this->decision(send: true, code: self::CODE_ALLOWED, reason: $reason, key: $addressed->key, category: $run->category);
 		}
 
-		$match = $this->matchRecipient(run: $run, addressed: $addressed);
+		$this->matchRecipient(run: $run, addressed: $addressed);
 		if ($this->categories->isExempt($run->category) === true) {
-			return $this->decideExempt(run: $run, match: $match);
+			return $this->decideExempt(run: $run, addressed: $addressed);
 		}
 
-		return $this->decideStoppable(run: $run, match: $match);
+		return $this->decideStoppable(run: $run, addressed: $addressed);
 
 	}//end decideOne()
 
@@ -733,20 +733,18 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * Find a usable recipient's own rows and the opt-out among them that stops this send.
 	 *
 	 * @param SendDecisionRun    $run       The batch, with the rows of the chunk.
-	 * @param AddressedRecipient $addressed The recipient, with a normalised address.
+	 * @param AddressedRecipient $addressed The recipient, with a normalised address; its rows and opt-out are filled in.
 	 *
-	 * @return RecipientMatch The recipient's rows and its stopping opt-out, if any.
+	 * @return void
 	 */
-	private function matchRecipient(SendDecisionRun $run, AddressedRecipient $addressed): RecipientMatch {
-		$key = (string)$addressed->key;
+	private function matchRecipient(SendDecisionRun $run, AddressedRecipient $addressed): void {
 		$recipient = $addressed->recipient;
-		$mine = $this->matcher->rowsOf(rows: $run->rows, key: $key, contactRef: (string)($recipient['contactRef'] ?? ''));
-
-		return new RecipientMatch(
-			key: $key,
+		$addressed->mine = $this->matcher->rowsOf(rows: $run->rows, key: (string)$addressed->key, contactRef: (string)($recipient['contactRef'] ?? ''));
+		$addressed->optOut = $this->matcher->matchingOptOut(
+			rows: $addressed->mine,
 			recipient: $recipient,
-			mine: $mine,
-			optOut: $this->matcher->matchingOptOut(rows: $mine, recipient: $recipient, channel: $run->channel, category: $run->category)
+			channel: $run->channel,
+			category: $run->category
 		);
 
 	}//end matchRecipient()
@@ -754,22 +752,22 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	/**
 	 * Decide an exempt category: always sent, logged as an override when an opt-out matched.
 	 *
-	 * @param SendDecisionRun $run   The batch.
-	 * @param RecipientMatch  $match The recipient's rows and its stopping opt-out, if any.
+	 * @param SendDecisionRun    $run       The batch.
+	 * @param AddressedRecipient $addressed The recipient's rows and its stopping opt-out, if any.
 	 *
 	 * @return array<string,mixed> The decision.
 	 */
-	private function decideExempt(SendDecisionRun $run, RecipientMatch $match): array {
+	private function decideExempt(SendDecisionRun $run, AddressedRecipient $addressed): array {
 		$category = $run->category;
-		$optOut = $match->optOut;
+		$optOut = $addressed->optOut;
 		if ($optOut === null) {
-			return $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: $match->key, category: $category);
+			return $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: (string)$addressed->key, category: $category);
 		}
 
 		$detail = ['scope' => (string)$optOut->getScope(), 'optOutId' => $optOut->getId()];
-		$this->append(kind: OptOutLogEntry::KIND_OVERRIDE, address: $match->key, context: $run->logContext(), detail: $detail);
+		$this->append(kind: OptOutLogEntry::KIND_OVERRIDE, address: (string)$addressed->key, context: $run->logContext(), detail: $detail);
 		$reason = 'Category "' . $category . '" cannot be stopped by an opt-out.';
-		$decision = $this->decision(send: true, code: self::CODE_EXEMPT_OVERRIDE, reason: $reason, key: $match->key, category: $category);
+		$decision = $this->decision(send: true, code: self::CODE_EXEMPT_OVERRIDE, reason: $reason, key: (string)$addressed->key, category: $category);
 		$decision['overridden'] = true;
 		return $decision;
 
@@ -779,58 +777,58 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * Decide a category an opt-out can stop: refused when opted out or when
 	 * required consent is missing, otherwise allowed.
 	 *
-	 * @param SendDecisionRun $run   The batch.
-	 * @param RecipientMatch  $match The recipient's rows and its stopping opt-out, if any.
+	 * @param SendDecisionRun    $run       The batch.
+	 * @param AddressedRecipient $addressed The recipient's rows and its stopping opt-out, if any.
 	 *
 	 * @return array<string,mixed> The decision.
 	 */
-	private function decideStoppable(SendDecisionRun $run, RecipientMatch $match): array {
-		$optOut = $match->optOut;
+	private function decideStoppable(SendDecisionRun $run, AddressedRecipient $addressed): array {
+		$optOut = $addressed->optOut;
 		if ($optOut !== null) {
 			$reason = 'This address opted out (' . $optOut->getScope() . ').';
 			$detail = ['scope' => (string)$optOut->getScope()];
-			return $this->suppress(code: self::CODE_OPTED_OUT, reason: $reason, key: $match->key, context: $run->logContext(), detail: $detail);
+			return $this->suppress(code: self::CODE_OPTED_OUT, reason: $reason, key: (string)$addressed->key, context: $run->logContext(), detail: $detail);
 		}
 
-		if ($this->consentPermits(run: $run, match: $match) === false) {
+		if ($this->consentPermits(run: $run, addressed: $addressed) === false) {
 			$reason = 'No recorded consent permits this message.';
-			return $this->suppress(code: self::CODE_NO_CONSENT, reason: $reason, key: $match->key, context: $run->logContext(), detail: []);
+			return $this->suppress(code: self::CODE_NO_CONSENT, reason: $reason, key: (string)$addressed->key, context: $run->logContext(), detail: []);
 		}
 
-		return $this->allow(run: $run, match: $match);
+		return $this->allow(run: $run, addressed: $addressed);
 
 	}//end decideStoppable()
 
 	/**
 	 * Whether the send needs no consent or a recorded consent permits it.
 	 *
-	 * @param SendDecisionRun $run   The batch.
-	 * @param RecipientMatch  $match The recipient's rows.
+	 * @param SendDecisionRun    $run       The batch.
+	 * @param AddressedRecipient $addressed The recipient's rows.
 	 *
 	 * @return bool True when consent is not required or is recorded.
 	 */
-	private function consentPermits(SendDecisionRun $run, RecipientMatch $match): bool {
+	private function consentPermits(SendDecisionRun $run, AddressedRecipient $addressed): bool {
 		return $run->requiresConsent === false
-			|| $this->matcher->hasConsent(rows: $match->mine, recipient: $match->recipient, channel: $run->channel, category: $run->category) === true;
+			|| $this->matcher->hasConsent(rows: $addressed->mine, recipient: $addressed->recipient, channel: $run->channel, category: $run->category) === true;
 
 	}//end consentPermits()
 
 	/**
 	 * Allow a send, with unsubscribe material unless the batch is a probe.
 	 *
-	 * @param SendDecisionRun $run   The batch.
-	 * @param RecipientMatch  $match The allowed recipient.
+	 * @param SendDecisionRun    $run       The batch.
+	 * @param AddressedRecipient $addressed The allowed recipient.
 	 *
 	 * @return array<string,mixed> The decision.
 	 */
-	private function allow(SendDecisionRun $run, RecipientMatch $match): array {
-		$decision = $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: $match->key, category: $run->category);
+	private function allow(SendDecisionRun $run, AddressedRecipient $addressed): array {
+		$decision = $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: (string)$addressed->key, category: $run->category);
 		if ($run->probe === true) {
 			// A probe only shows a state: no token, no short link.
 			return $decision;
 		}
 
-		$decision['unsubscribe'] = $this->material(run: $run, match: $match);
+		$decision['unsubscribe'] = $this->material(run: $run, addressed: $addressed);
 
 		return $decision;
 
@@ -885,14 +883,14 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * A list send stops the list, a case send stops the case, anything else
 	 * stops this channel.
 	 *
-	 * @param SendDecisionRun $run   The batch.
-	 * @param RecipientMatch  $match The allowed recipient.
+	 * @param SendDecisionRun    $run       The batch.
+	 * @param AddressedRecipient $addressed The allowed recipient.
 	 *
 	 * @return array<string,mixed>|null The material.
 	 */
-	private function material(SendDecisionRun $run, RecipientMatch $match): ?array {
+	private function material(SendDecisionRun $run, AddressedRecipient $addressed): ?array {
 		$channel = $run->channel;
-		$recipient = $match->recipient;
+		$recipient = $addressed->recipient;
 		$scope = self::SCOPE_INSTANCE;
 		$ref = '';
 		if ($channel !== '') {
@@ -910,7 +908,7 @@ class OptOutRegistry implements OptOutRegistryInterface {
 		}
 
 		return $this->tokens->materialFor(
-			address: $match->key,
+			address: (string)$addressed->key,
 			scope: $scope,
 			channel: $channel,
 			ref: $ref,

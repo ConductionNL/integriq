@@ -36,6 +36,41 @@ use OCA\Integriq\Db\OptOut;
  */
 final class SendDecisionRun {
 	/**
+	 * The asking app.
+	 *
+	 * @var string
+	 */
+	public string $sourceApp = '';
+
+	/**
+	 * The sender's correlation id.
+	 *
+	 * @var string
+	 */
+	public string $correlationId = '';
+
+	/**
+	 * True to answer only: no log row, no link material.
+	 *
+	 * @var bool
+	 */
+	public bool $probe = false;
+
+	/**
+	 * Whether consent is required.
+	 *
+	 * @var bool
+	 */
+	public bool $requiresConsent = false;
+
+	/**
+	 * The instance url the link is built on.
+	 *
+	 * @var string
+	 */
+	public string $baseUrl = '';
+
+	/**
 	 * The rows read for the chunk being decided.
 	 *
 	 * @var list<OptOut>
@@ -45,22 +80,12 @@ final class SendDecisionRun {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $channel         The normalised channel.
-	 * @param string $category        The canonical category.
-	 * @param string $sourceApp       The asking app.
-	 * @param string $correlationId   The sender's correlation id.
-	 * @param bool   $probe           True to answer only: no log row, no link material.
-	 * @param bool   $requiresConsent Whether consent is required.
-	 * @param string $baseUrl         The instance url the link is built on.
+	 * @param string $channel  The normalised channel.
+	 * @param string $category The canonical category.
 	 */
 	public function __construct(
 		public readonly string $channel,
 		public readonly string $category,
-		public readonly string $sourceApp,
-		public readonly string $correlationId,
-		public readonly bool $probe,
-		public readonly bool $requiresConsent,
-		public readonly string $baseUrl,
 	) {
 	}//end __construct()
 
