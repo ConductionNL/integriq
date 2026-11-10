@@ -205,4 +205,33 @@ class RestPsd2DispatchGoldenTest extends TestCase {
 		$this->assertSame([['[RestPsd2AggregatorProvider] unexpected transport failure', ['exception' => 'socket closed']]], $this->warnings);
 
 	}//end testTransportFailureIsLoggedAndWrapped()
+
+	/**
+	 * Answers: 403 on a non-consent call is a plain status refusal, a non-JSON 2xx is refused.
+	 *
+	 * @return void
+	 */
+	public function testAnswerRefusals(): void {
+		$cases = [
+			[new Response(403, [], '{}'), 'createRequisition', 'The PSD2 aggregator responded with HTTP 403.', Psd2ProviderException::class],
+			[new Response(200, [], 'not json'), 'createRequisition', 'The PSD2 aggregator returned a non-JSON response.', Psd2ProviderException::class],
+			[new Response(401, [], 'not json'), 'listTransactions', 'The PSD2 aggregator rejected the consent (HTTP 401) — it was revoked or is no longer usable.', \OCA\Integriq\Service\Psd2\Psd2ConsentRevokedException::class],
+		];
+		foreach ($cases as [$answer, $operation, $message, $class]) {
+			$provider = $this->provider(true, null, $answer);
+			try {
+				if ($operation === 'createRequisition') {
+					$provider->createRequisition($this->configuration(), 'BANK', 'https://nc.example/back');
+				} else {
+					$provider->listTransactions($this->configuration(), 'acc-1', '2026-01-01', '2026-01-31');
+				}
+
+				$this->fail('Not refused.');
+			} catch (Psd2ProviderException $exception) {
+				$this->assertSame($class, $exception::class);
+				$this->assertSame($message, $exception->getMessage());
+			}
+		}
+
+	}//end testAnswerRefusals()
 }//end class
