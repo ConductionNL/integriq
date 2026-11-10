@@ -381,4 +381,68 @@ class MigrateLegacyStorageTest extends TestCase {
 		$this->assertGreaterThan(0, $checked, 'no repair steps were checked — the XML lookup found nothing');
 
 	}//end testEveryDeclaredRepairStepClassExists()
+
+	/**
+	 * Run the step over a migrator that answers (or throws), recording info and warnings.
+	 *
+	 * @param mixed $results    The migrateAll() results, or 'throw'.
+	 * @param bool  $setsFlag   Whether migrateAll() flips storage_migrated.
+	 *
+	 * @return array{0: array<int, string>, 1: array<int, string>, 2: array<int, array<int, mixed>>} Infos, warnings, migrateAll calls.
+	 */
+	private function runWithMigrator(mixed $results, bool $setsFlag): array {
+		$appConfig = $this->appConfig();
+		$calls = [];
+		$migrator = $this->createMock(\OCA\Integriq\Service\Migration\LegacyToRegisterMigratorInterface::class);
+		$migrator->method('migrateAll')->willReturnCallback(
+			function (bool $dryRun = false, ?string $entitySlug = null, int $batchSize = 10000) use ($results, $setsFlag, &$calls): array {
+				$calls[] = [$dryRun, $entitySlug, $batchSize];
+				if ($results === 'throw') {
+					throw new \RuntimeException('register write failed');
+				}
+
+				if ($setsFlag === true) {
+					$this->flag = 'true';
+				}
+
+				return $results;
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($migrator);
+		$infos = [];
+		$warnings = [];
+		$output = $this->createMock(IOutput::class);
+		$output->method('info')->willReturnCallback(static function (string $message) use (&$infos): void {
+			$infos[] = $message;
+		});
+		$output->method('warning')->willReturnCallback(static function (string $message) use (&$warnings): void {
+			$warnings[] = $message;
+		});
+
+		(new MigrateLegacyStorage($container, $appConfig, $this->database(['openconnector_sources' => 3]), new NullLogger()))->run($output);
+
+		return [$infos, $warnings, $calls];
+	}//end runWithMigrator()
+
+	/**
+	 * A resolved migrator's results are printed per entity, and the step says
+	 * whether the migrator completed the cutover; a failing migrator is a warning.
+	 *
+	 * @return void
+	 */
+	public function testTheMigratorsOutcomeIsReported(): void {
+		$results = [['slug' => 'source', 'legacyCount' => 3, 'migratedCount' => 3, 'skipped' => 0], ['legacyCount' => '2']];
+
+		[$infos, $warnings, $calls] = $this->runWithMigrator(results: $results, setsFlag: true);
+		$this->assertSame([[false, null, 10000]], $calls);
+		$this->assertSame(['  source: legacy=3 migrated=3 skipped=0', '  ?: legacy=2 migrated=0 skipped=0', 'Integriq: storage_migrated set to true — the cutover is complete.'], array_slice($infos, -3));
+		$this->assertSame([], $warnings);
+
+		[$infos, $warnings] = $this->runWithMigrator(results: [], setsFlag: false);
+		$this->assertSame(['Integriq: storage_migrated NOT set — at least one entity reported skips or errors. Use `occ integriq:migrate-storage` to retry per-entity.'], $warnings);
+
+		[$infos, $warnings] = $this->runWithMigrator(results: 'throw', setsFlag: false);
+		$this->assertSame(['Integriq: the legacy row migration failed: register write failed'], $warnings);
+	}//end testTheMigratorsOutcomeIsReported()
 }//end class
