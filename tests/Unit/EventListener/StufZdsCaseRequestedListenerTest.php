@@ -97,7 +97,7 @@ class StufZdsCaseRequestedListenerTest extends TestCase {
 		$bare = ['sourceApp' => 'dossiq', 'correlationId' => 'c-9', 'includeDocuments' => false];
 		return [
 			'creeerZaak, bare'           => ['creeerZaak', [], 'creeerZaak', ['src-1', [], '', $bare]],
-			'creeerZaak, full'           => ['creeerZaak', ['case' => ['a' => 1], 'zaaktypeOmschrijving' => 7, 'includeDocuments' => 'yes', 'payloadLimitBytes' => '12'], 'creeerZaak', ['src-1', ['a' => 1], '7', ['includeDocuments' => true, 'payloadLimitBytes' => 12] + $bare]],
+			'creeerZaak, full'           => ['creeerZaak', ['case' => ['a' => 1], 'zaaktypeOmschrijving' => 7, 'includeDocuments' => 'yes', 'payloadLimitBytes' => '12'], 'creeerZaak', ['src-1', ['a' => 1], '7', array_replace($bare, ['includeDocuments' => true]) + ['payloadLimitBytes' => 12]]],
 			'actualiseerZaak, bare'      => ['actualiseerZaak', [], 'actualiseerZaak', ['src-1', '', [], $bare]],
 			'actualiseerZaak, full'      => ['actualiseerZaak', ['caseIdentification' => 5, 'changes' => ['b' => 2]], 'actualiseerZaak', ['src-1', '5', ['b' => 2], $bare]],
 			'geefZaakdetails, bare'      => ['geefZaakdetails', [], 'geefZaakdetails', ['src-1', '', [], $bare]],
@@ -110,7 +110,7 @@ class StufZdsCaseRequestedListenerTest extends TestCase {
 	}//end operations()
 
 	/**
-	 * Each operation reaches its client method with exactly these arguments.
+	 * Each operation reaches its client method with exactly these arguments (compared strictly).
 	 *
 	 * @param string              $operation The operation.
 	 * @param array<string,mixed> $arguments The event's arguments.
@@ -123,7 +123,9 @@ class StufZdsCaseRequestedListenerTest extends TestCase {
 	 */
 	public function testEachOperationReachesItsClientCall(string $operation, array $arguments, string $method, array $expected): void {
 		$client = $this->createMock(StufZdsCaseClient::class);
-		$client->expects($this->once())->method($method)->with(...$expected)->willReturn(['ok' => $operation]);
+		$client->expects($this->once())->method($method)
+			->with(...array_map(fn (mixed $argument) => $this->identicalTo($argument), $expected))
+			->willReturn(['ok' => $operation]);
 
 		$event = new StufZdsCaseRequestedEvent('dossiq', 'src-1', $operation, $arguments, 'c-9');
 		(new StufZdsCaseRequestedListener($client, $this->createMock(LoggerInterface::class)))->handle($event);
