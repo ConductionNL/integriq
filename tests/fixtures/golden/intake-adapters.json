@@ -1,0 +1,925 @@
+{
+    "form-full": {
+        "object": {
+            "channelId": "form-submission",
+            "externalId": "s-1",
+            "correspondent": {
+                "id": "12345678",
+                "name": "BV",
+                "address": "a@b.nl",
+                "phone": "06"
+            },
+            "text": "Aanvraag",
+            "attachments": [
+                {
+                    "name": "brief.pdf",
+                    "mime": "application/pdf",
+                    "size": 9
+                },
+                {
+                    "name": "bijlage-2",
+                    "mime": "application/octet-stream",
+                    "size": 1
+                }
+            ],
+            "media": [],
+            "location": null,
+            "fields": {
+                "naam": "Piet",
+                "formId": "f-9",
+                "submissionId": "s-1"
+            },
+            "rawPayload": {
+                "submissionId": " s-1 ",
+                "formId": "f-9",
+                "data": {
+                    "naam": "Piet",
+                    "formId": "x"
+                },
+                "submitter": {
+                    "kvk": "12345678",
+                    "name": "BV",
+                    "email": "a@b.nl",
+                    "phone": "06"
+                },
+                "summary": "Aanvraag",
+                "submittedAt": 1700000000,
+                "attachments": [
+                    {
+                        "name": "brief.pdf",
+                        "mime": "application/pdf",
+                        "contentBase64": "UERGLWJ5dGVz"
+                    },
+                    {
+                        "contentBase64": "eA=="
+                    },
+                    "junk"
+                ]
+            },
+            "receivedAt": "1700000000"
+        },
+        "location": null,
+        "media": [],
+        "attachments": [
+            {
+                "name": "brief.pdf",
+                "mime": "application/pdf",
+                "size": 9,
+                "content": "PDF-bytes"
+            },
+            {
+                "name": "bijlage-2",
+                "mime": "application/octet-stream",
+                "size": 1,
+                "content": "x"
+            }
+        ]
+    },
+    "form-bsn-and-defaults": {
+        "object": {
+            "channelId": "form-submission",
+            "externalId": "s-2",
+            "correspondent": {
+                "id": "999993653",
+                "name": "",
+                "address": "",
+                "phone": ""
+            },
+            "text": "",
+            "attachments": [],
+            "media": [],
+            "location": null,
+            "fields": {
+                "formId": "f-9",
+                "submissionId": "s-2"
+            },
+            "rawPayload": {
+                "submissionId": "s-2",
+                "formId": "f-9",
+                "data": "not-a-map",
+                "submitter": {
+                    "bsn": "999993653",
+                    "kvk": "1"
+                }
+            },
+            "receivedAt": null
+        },
+        "location": null,
+        "media": [],
+        "attachments": []
+    },
+    "form-refused": {
+        "refused": "A \"form-submission\" payload must carry a submissionId and a formId."
+    },
+    "report-full": {
+        "object": {
+            "channelId": "public-space-report",
+            "externalId": "r-1",
+            "correspondent": {
+                "name": "Jan",
+                "address": "j@x.nl",
+                "phone": ""
+            },
+            "text": "Losse tegel",
+            "attachments": [],
+            "media": [
+                {
+                    "name": "photo-1.jpg",
+                    "mime": "image/jpeg",
+                    "size": 3
+                },
+                {
+                    "name": "b.png",
+                    "mime": "image/png",
+                    "size": 3
+                }
+            ],
+            "location": null,
+            "fields": {
+                "category": "straat",
+                "description": "Losse tegel",
+                "street": "Dorpsstraat 1",
+                "reportedAt": "1700000001"
+            },
+            "rawPayload": {
+                "id": "r-1",
+                "reporter": {
+                    "name": "Jan",
+                    "email": "j@x.nl"
+                },
+                "reportedAt": 1700000001,
+                "description": "Losse tegel",
+                "category": "straat",
+                "location": {
+                    "lat": 52.1,
+                    "lon": 5.1,
+                    "address": "Dorpsstraat 1"
+                },
+                "photos": [
+                    {
+                        "contentBase64": "anBn"
+                    },
+                    {
+                        "name": "b.png",
+                        "mime": "image/png",
+                        "contentBase64": "cG5n"
+                    },
+                    7
+                ]
+            },
+            "receivedAt": "1700000001"
+        },
+        "location": null,
+        "media": [
+            {
+                "name": "photo-1.jpg",
+                "mime": "image/jpeg",
+                "size": 3,
+                "content": "jpg"
+            },
+            {
+                "name": "b.png",
+                "mime": "image/png",
+                "size": 3,
+                "content": "png"
+            }
+        ],
+        "attachments": []
+    },
+    "report-bare": {
+        "object": {
+            "channelId": "public-space-report",
+            "externalId": "r-2",
+            "correspondent": {
+                "name": "",
+                "address": "",
+                "phone": ""
+            },
+            "text": "",
+            "attachments": [],
+            "media": [],
+            "location": null,
+            "fields": {
+                "category": "",
+                "description": "",
+                "street": "",
+                "reportedAt": ""
+            },
+            "rawPayload": {
+                "id": "r-2",
+                "reporter": "nobody"
+            },
+            "receivedAt": null
+        },
+        "location": null,
+        "media": [],
+        "attachments": []
+    },
+    "report-refused": {
+        "refused": "A \"public-space-report\" report must carry an id, so the same report cannot arrive twice."
+    },
+    "messaging-full": {
+        "object": {
+            "channelId": "messaging",
+            "externalId": "m-1",
+            "correspondent": {
+                "id": "+316",
+                "phone": "+316",
+                "name": "Ali"
+            },
+            "text": "Hoi",
+            "attachments": [
+                {
+                    "name": "brief.pdf",
+                    "mime": "application/pdf",
+                    "size": 9
+                },
+                {
+                    "name": "attachment-2",
+                    "mime": "application/octet-stream",
+                    "size": 0
+                }
+            ],
+            "media": [],
+            "location": null,
+            "fields": {
+                "text": "Hoi",
+                "service": "whatsapp"
+            },
+            "rawPayload": {
+                "messageId": "m-1",
+                "from": {
+                    "phone": "+316",
+                    "name": "Ali"
+                },
+                "text": "Hoi",
+                "service": "whatsapp",
+                "timestamp": 1700000002,
+                "attachments": [
+                    {
+                        "name": "brief.pdf",
+                        "mime": "application/pdf",
+                        "contentBase64": "UERGLWJ5dGVz"
+                    },
+                    {
+                        "contentBase64": ""
+                    }
+                ]
+            },
+            "receivedAt": "1700000002"
+        },
+        "location": null,
+        "media": [],
+        "attachments": [
+            {
+                "name": "brief.pdf",
+                "mime": "application/pdf",
+                "size": 9,
+                "content": "PDF-bytes"
+            },
+            {
+                "name": "attachment-2",
+                "mime": "application/octet-stream",
+                "size": 0,
+                "content": ""
+            }
+        ]
+    },
+    "messaging-handle-and-string-from": {
+        "object": {
+            "channelId": "messaging",
+            "externalId": "m-2",
+            "correspondent": {
+                "id": "+317",
+                "phone": "+317",
+                "name": ""
+            },
+            "text": "",
+            "attachments": [],
+            "media": [],
+            "location": null,
+            "fields": {
+                "text": "",
+                "service": ""
+            },
+            "rawPayload": {
+                "messageId": "m-2",
+                "from": "+317"
+            },
+            "receivedAt": null
+        },
+        "location": null,
+        "media": [],
+        "attachments": []
+    },
+    "messaging-handle-field": {
+        "object": {
+            "channelId": "messaging",
+            "externalId": "m-3",
+            "correspondent": {
+                "id": "@ali",
+                "phone": "@ali",
+                "name": ""
+            },
+            "text": "",
+            "attachments": [],
+            "media": [],
+            "location": null,
+            "fields": {
+                "text": "",
+                "service": ""
+            },
+            "rawPayload": {
+                "messageId": "m-3",
+                "from": {
+                    "handle": "@ali"
+                }
+            },
+            "receivedAt": null
+        },
+        "location": null,
+        "media": [],
+        "attachments": []
+    },
+    "messaging-refused": {
+        "refused": "A \"messaging\" message must carry a messageId and a sender handle, because a reply has nowhere to go without one."
+    },
+    "teams-full": {
+        "object": {
+            "channelId": "teams",
+            "externalId": "1485983408511",
+            "correspondent": {
+                "id": "29:author",
+                "name": "Jamila Bakker",
+                "aadObjectId": "aad-1"
+            },
+            "text": "Graag update op ZAAK-2026-0042",
+            "attachments": [
+                {
+                    "name": "scan.pdf",
+                    "mime": "application/octet-stream",
+                    "size": 0
+                },
+                {
+                    "name": "attachment-3",
+                    "mime": "image/png",
+                    "size": 0
+                }
+            ],
+            "media": [],
+            "location": null,
+            "fields": {
+                "text": "Graag update op ZAAK-2026-0042",
+                "caseReference": "ZAAK-2026-0042",
+                "conversationId": "19:thread@thread.tacv2",
+                "tenantId": "tenant-1",
+                "teamId": "19:team",
+                "conversationType": "channel"
+            },
+            "rawPayload": {
+                "type": "message",
+                "id": "1485983408511",
+                "timestamp": "2026-09-22T10:11:12.437Z",
+                "serviceUrl": "https://smba.trafficmanager.net/emea/",
+                "from": {
+                    "id": "29:author",
+                    "name": "Jamila Bakker",
+                    "aadObjectId": "aad-1"
+                },
+                "conversation": {
+                    "id": "19:thread@thread.tacv2",
+                    "conversationType": "channel"
+                },
+                "text": "<p>Graag update op <b>ZAAK-2026-0042</b>&nbsp;</p>",
+                "channelData": {
+                    "tenant": {
+                        "id": "tenant-1"
+                    },
+                    "teamsTeamId": "19:team"
+                },
+                "attachments": [
+                    {
+                        "contentType": "application/vnd.microsoft.card.adaptive",
+                        "content": []
+                    },
+                    {
+                        "contentType": "application/vnd.microsoft.teams.file.download.info",
+                        "name": "scan.pdf",
+                        "content": {
+                            "downloadUrl": " https://files.example/scan "
+                        }
+                    },
+                    {
+                        "contentType": "image/png",
+                        "contentUrl": "https://files.example/img"
+                    },
+                    {
+                        "contentType": "text/plain"
+                    },
+                    "not-an-attachment"
+                ]
+            },
+            "receivedAt": "2026-09-22T10:11:12.437Z"
+        },
+        "location": null,
+        "media": [],
+        "attachments": [
+            {
+                "name": "scan.pdf",
+                "mime": "application/octet-stream",
+                "size": 0,
+                "content": "",
+                "downloadUrl": "https://files.example/scan"
+            },
+            {
+                "name": "attachment-3",
+                "mime": "image/png",
+                "size": 0,
+                "content": "",
+                "downloadUrl": "https://files.example/img"
+            }
+        ]
+    },
+    "teams-configured-pattern": {
+        "object": {
+            "channelId": "teams",
+            "externalId": "1485983408511",
+            "correspondent": {
+                "id": "29:author",
+                "name": "Jamila Bakker",
+                "aadObjectId": "aad-1"
+            },
+            "text": "zie D-123456 en ZAAK-2026-0042",
+            "attachments": [],
+            "media": [],
+            "location": null,
+            "fields": {
+                "text": "zie D-123456 en ZAAK-2026-0042",
+                "caseReference": "D-123456",
+                "conversationId": "c-2",
+                "tenantId": "",
+                "teamId": "",
+                "conversationType": ""
+            },
+            "rawPayload": {
+                "type": "message",
+                "id": "1485983408511",
+                "timestamp": null,
+                "serviceUrl": "https://smba.trafficmanager.net/emea/",
+                "from": {
+                    "id": "29:author",
+                    "name": "Jamila Bakker",
+                    "aadObjectId": "aad-1"
+                },
+                "conversation": {
+                    "id": "c-2"
+                },
+                "text": "zie D-123456 en ZAAK-2026-0042",
+                "channelData": "x",
+                "attachments": "none"
+            },
+            "receivedAt": null
+        },
+        "location": null,
+        "media": [],
+        "attachments": []
+    },
+    "teams-no-text": {
+        "object": {
+            "channelId": "teams",
+            "externalId": "1485983408511",
+            "correspondent": {
+                "id": "29:author",
+                "name": "Jamila Bakker",
+                "aadObjectId": "aad-1"
+            },
+            "text": "",
+            "attachments": [
+                {
+                    "name": "scan.pdf",
+                    "mime": "application/octet-stream",
+                    "size": 0
+                },
+                {
+                    "name": "attachment-3",
+                    "mime": "image/png",
+                    "size": 0
+                }
+            ],
+            "media": [],
+            "location": null,
+            "fields": {
+                "text": "",
+                "caseReference": "",
+                "conversationId": "19:thread@thread.tacv2",
+                "tenantId": "tenant-1",
+                "teamId": "19:team",
+                "conversationType": "channel"
+            },
+            "rawPayload": {
+                "type": "message",
+                "id": "1485983408511",
+                "timestamp": "2026-09-22T10:11:12.437Z",
+                "serviceUrl": "https://smba.trafficmanager.net/emea/",
+                "from": {
+                    "id": "29:author",
+                    "name": "Jamila Bakker",
+                    "aadObjectId": "aad-1"
+                },
+                "conversation": {
+                    "id": "19:thread@thread.tacv2",
+                    "conversationType": "channel"
+                },
+                "text": "",
+                "channelData": {
+                    "tenant": {
+                        "id": "tenant-1"
+                    },
+                    "teamsTeamId": "19:team"
+                },
+                "attachments": [
+                    {
+                        "contentType": "application/vnd.microsoft.card.adaptive",
+                        "content": []
+                    },
+                    {
+                        "contentType": "application/vnd.microsoft.teams.file.download.info",
+                        "name": "scan.pdf",
+                        "content": {
+                            "downloadUrl": " https://files.example/scan "
+                        }
+                    },
+                    {
+                        "contentType": "image/png",
+                        "contentUrl": "https://files.example/img"
+                    },
+                    {
+                        "contentType": "text/plain"
+                    },
+                    "not-an-attachment"
+                ]
+            },
+            "receivedAt": "2026-09-22T10:11:12.437Z"
+        },
+        "location": null,
+        "media": [],
+        "attachments": [
+            {
+                "name": "scan.pdf",
+                "mime": "application/octet-stream",
+                "size": 0,
+                "content": "",
+                "downloadUrl": "https://files.example/scan"
+            },
+            {
+                "name": "attachment-3",
+                "mime": "image/png",
+                "size": 0,
+                "content": "",
+                "downloadUrl": "https://files.example/img"
+            }
+        ]
+    },
+    "teams-refused": {
+        "refused": "A \"teams\" activity must carry an id, an author and a conversation id, because a reply has nowhere to go without one."
+    },
+    "teams-no-source": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "No Teams source is configured, so there is no connector to answer through."
+        },
+        "posted": []
+    },
+    "teams-mock": {
+        "result": {
+            "status": "sent",
+            "channelId": "teams",
+            "reference": "MOCK-REPLY-1ea925cbc72a",
+            "detail": null
+        },
+        "posted": []
+    },
+    "teams-sent": {
+        "result": {
+            "status": "sent",
+            "channelId": "teams",
+            "reference": "act-9",
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://smba.trafficmanager.net/emea/v3/conversations/19%3Athread%40thread.tacv2/activities",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "type": "message",
+                        "text": "Uw zaak is in behandeling",
+                        "replyToId": "1485983408511"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "teams-sent-no-reference": {
+        "result": {
+            "status": "sent",
+            "channelId": "teams",
+            "reference": null,
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://smba.trafficmanager.net/emea/v3/conversations/19%3Athread%40thread.tacv2/activities",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "type": "message",
+                        "text": "Uw zaak is in behandeling",
+                        "replyToId": "1485983408511"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "teams-gateway-down": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "Teams refused the reply: connection refused"
+        },
+        "posted": [
+            [
+                "https://smba.trafficmanager.net/emea/v3/conversations/19%3Athread%40thread.tacv2/activities",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "type": "message",
+                        "text": "Uw zaak is in behandeling",
+                        "replyToId": "1485983408511"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "teams-payload-service-url": {
+        "result": {
+            "status": "sent",
+            "channelId": "teams",
+            "reference": "x",
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://smba.trafficmanager.net/emea/v3/conversations/19%3Athread%40thread.tacv2/activities",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "type": "message",
+                        "text": "Uw zaak is in behandeling",
+                        "replyToId": "1485983408511"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "teams-untrusted-http": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "The serviceUrl is not a trusted connector host, so no reply is sent."
+        },
+        "posted": []
+    },
+    "teams-untrusted-host": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "The serviceUrl is not a trusted connector host, so no reply is sent."
+        },
+        "posted": []
+    },
+    "teams-lookalike-host": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "The serviceUrl is not a trusted connector host, so no reply is sent."
+        },
+        "posted": []
+    },
+    "teams-unparseable": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "The serviceUrl is not a trusted connector host, so no reply is sent."
+        },
+        "posted": []
+    },
+    "teams-configured-hosts": {
+        "result": {
+            "status": "sent",
+            "channelId": "teams",
+            "reference": "s",
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://bot.sovereign.example/v3/conversations/19%3Athread%40thread.tacv2/activities",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "type": "message",
+                        "text": "Uw zaak is in behandeling",
+                        "replyToId": "1485983408511"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "teams-configured-hosts-replace-default": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "The serviceUrl is not a trusted connector host, so no reply is sent."
+        },
+        "posted": []
+    },
+    "teams-no-token": {
+        "result": {
+            "status": "failed",
+            "channelId": "teams",
+            "reference": null,
+            "detail": "The Teams source holds no connector access token."
+        },
+        "posted": []
+    },
+    "messaging-no-source": {
+        "result": {
+            "status": "failed",
+            "channelId": "messaging",
+            "reference": null,
+            "detail": "No messaging source is configured, so there is no gateway to answer through."
+        },
+        "posted": []
+    },
+    "messaging-mock": {
+        "result": {
+            "status": "sent",
+            "channelId": "messaging",
+            "reference": "MOCK-REPLY-b6cd565b685b",
+            "detail": null
+        },
+        "posted": []
+    },
+    "messaging-no-endpoint": {
+        "result": {
+            "status": "failed",
+            "channelId": "messaging",
+            "reference": null,
+            "detail": "The messaging source names no reply endpoint."
+        },
+        "posted": []
+    },
+    "messaging-sent": {
+        "result": {
+            "status": "sent",
+            "channelId": "messaging",
+            "reference": "g-1",
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://gw.example/reply",
+                {
+                    "headers": {
+                        "Accept": "application/json",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "to": "+316",
+                        "text": "Dank u",
+                        "inReplyTo": "m-1"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "messaging-sent-id": {
+        "result": {
+            "status": "sent",
+            "channelId": "messaging",
+            "reference": "g-2",
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://gw.example/reply",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "json": {
+                        "to": "+316",
+                        "text": "Dank u",
+                        "inReplyTo": "m-1"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "messaging-sent-no-reference": {
+        "result": {
+            "status": "sent",
+            "channelId": "messaging",
+            "reference": null,
+            "detail": null
+        },
+        "posted": [
+            [
+                "https://gw.example/reply",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "json": {
+                        "to": "+316",
+                        "text": "Dank u",
+                        "inReplyTo": "m-1"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "messaging-gateway-down": {
+        "result": {
+            "status": "failed",
+            "channelId": "messaging",
+            "reference": null,
+            "detail": "The gateway refused the reply: connection refused"
+        },
+        "posted": [
+            [
+                "https://gw.example/reply",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "json": {
+                        "to": "+316",
+                        "text": "Dank u",
+                        "inReplyTo": "m-1"
+                    },
+                    "timeout": 30
+                }
+            ]
+        ]
+    },
+    "form-reply": {
+        "result": {
+            "status": "unsupported by this channel",
+            "channelId": "form-submission",
+            "reference": null,
+            "detail": "A form submission is one way; answer the case on a channel the submitter gave you."
+        },
+        "posted": []
+    },
+    "report-reply": {
+        "result": {
+            "status": "unsupported by this channel",
+            "channelId": "public-space-report",
+            "reference": null,
+            "detail": "The public space report channel delivers reports and carries no reply leg."
+        },
+        "posted": []
+    }
+}
