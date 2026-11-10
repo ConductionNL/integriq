@@ -25,6 +25,7 @@ use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallRefusedException;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -86,7 +87,7 @@ class ZgwSetInstallerTest extends TestCase {
 				return $entity;
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null) {
 				$this->assertSame('integriq', $register);
 				$this->assertSame('synchronization', $schema);
@@ -95,7 +96,7 @@ class ZgwSetInstallerTest extends TestCase {
 				$this->saved[]      = ['slug' => $slug, 'object' => $object];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(

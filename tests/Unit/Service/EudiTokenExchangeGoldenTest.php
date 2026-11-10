@@ -28,6 +28,7 @@ use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
@@ -153,7 +154,7 @@ class EudiTokenExchangeGoldenTest extends TestCase {
 				return ['results' => $results];
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
 				foreach (['accessTokenHash', 'cNonce'] as $key) {
 					if (isset($object[$key]) === true) {
@@ -167,7 +168,7 @@ class EudiTokenExchangeGoldenTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));

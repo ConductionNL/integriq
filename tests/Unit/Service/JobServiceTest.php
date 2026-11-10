@@ -17,6 +17,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
@@ -126,12 +127,12 @@ class JobServiceTest extends TestCase {
 		$capturedArgs = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				static function (...$args) use (&$capturedArgs, $savedMock) {
 					$capturedArgs = $args;
 					return $savedMock;
 				}
-			);
+			));
 
 		$this->jobList->expects($this->never())->method('add');
 
@@ -307,7 +308,7 @@ class JobServiceTest extends TestCase {
 		$savedSchemas = [];
 		$savedErrorLevels = [];
 		$defaultEntity = ObjectServiceMockBuilder::objectEntity($this, [], 'saved');
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			static function (...$args) use (
 				&$savedSchemas,
 				&$savedErrorLevels,
@@ -327,7 +328,7 @@ class JobServiceTest extends TestCase {
 				}
 				return $defaultEntity;
 			}
-		);
+		));
 
 		// Act
 		$results = $this->service->run();
@@ -431,7 +432,7 @@ class JobServiceTest extends TestCase {
 		});
 
 		$saved = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$saved) {
 				if (isset($args[0]) === true && is_array($args[0]) === true) {
 					$saved[] = $args[0];
@@ -439,7 +440,7 @@ class JobServiceTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, ['id' => 'x'], 'x');
 			}
-		);
+		));
 
 		$this->service->executeJob($jobEntity);
 
@@ -492,7 +493,7 @@ class JobServiceTest extends TestCase {
 		// saveObject is (object, extend, register, schema, uuid, ...) and
 		// the engine calls it with NAMED args — accept variadic.
 		$logLevels = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$logLevels) {
 				$object = ($args[0] ?? []);
 				$schema = ($args[2] ?? null);
@@ -505,7 +506,7 @@ class JobServiceTest extends TestCase {
 					'log-uuid'
 				);
 			}
-		);
+		));
 
 		// Act
 		$result = $this->service->executeJob($jobEntity);
@@ -557,9 +558,9 @@ class JobServiceTest extends TestCase {
 		$this->objectService->method('findAll')->willReturnCallback(
 			static fn () => ['results' => [$jobA, $jobB], 'total' => 2]
 		);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (...$args) => ObjectServiceMockBuilder::objectEntity($this, is_array($args[0] ?? null) === true ? $args[0] : [], 'saved')
-		);
+		));
 
 		$alice = $this->createMock(IUser::class);
 		// No prior session user — cron starts as system (matches
@@ -688,7 +689,7 @@ class JobServiceTest extends TestCase {
 		);
 
 		$savedJobRows = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$savedJobRows) {
 				$object = ($args[0] ?? []);
 				$schema = ($args[2] ?? null);
@@ -698,7 +699,7 @@ class JobServiceTest extends TestCase {
 				}
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) === true ? $object : [], $uuid ?? 'saved');
 			}
-		);
+		));
 
 		// Act
 		$results = $this->service->run();
@@ -752,7 +753,7 @@ class JobServiceTest extends TestCase {
 		);
 
 		$nextRuns = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use (&$nextRuns) {
 				$object = ($args[0] ?? []);
 				if (($args[2] ?? null) === 'job' && isset($object['nextRun']) === true) {
@@ -760,7 +761,7 @@ class JobServiceTest extends TestCase {
 				}
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) === true ? $object : [], ($args[3] ?? 'saved'));
 			}
-		);
+		));
 
 		$this->service->run();
 

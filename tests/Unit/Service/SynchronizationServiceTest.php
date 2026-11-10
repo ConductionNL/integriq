@@ -24,6 +24,7 @@ use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -247,7 +248,7 @@ class SynchronizationServiceTest extends TestCase {
 		);
 
 		$orObjectService = $this->createMock(ORObjectService::class);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			static function (
 				$object,
 				$register = null,
@@ -258,7 +259,7 @@ class SynchronizationServiceTest extends TestCase {
 				$observedBody = $object;
 				return $defaultEntity;
 			}
-		);
+		));
 
 		$userSession = $this->createMock(\OCP\IUserSession::class);
 		$session = $this->createMock(\OCP\ISession::class);
@@ -306,7 +307,7 @@ class SynchronizationServiceTest extends TestCase {
 		);
 
 		$orObjectService = $this->createMock(ORObjectService::class);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			static function (
 				$object,
 				$register = null,
@@ -316,7 +317,7 @@ class SynchronizationServiceTest extends TestCase {
 				$observedBody = $object;
 				return $defaultEntity;
 			}
-		);
+		));
 
 		$logService = new SynchronizationLogService(
 			$orObjectService,
@@ -355,7 +356,7 @@ class SynchronizationServiceTest extends TestCase {
 		);
 
 		$orObjectService = $this->createMock(ORObjectService::class);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			static function (
 				$object,
 				$register = null,
@@ -365,7 +366,7 @@ class SynchronizationServiceTest extends TestCase {
 				$observedBody = $object;
 				return $defaultEntity;
 			}
-		);
+		));
 
 		$logService = new SynchronizationLogService(
 			$orObjectService,
@@ -894,12 +895,12 @@ class SynchronizationServiceTest extends TestCase {
 		$this->stubStreamingCall((string)gzencode(implode("\n", $lines)), $sinks);
 
 		$saved = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$saved) {
 				$saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'sync-jsonl');
 			}
-		);
+		));
 
 		$fetchInfo = null;
 		$first = $this->service->getAllObjectsFromApi(synchronization: $this->jsonlSynchronization(2, 1), fetchInfo: $fetchInfo);
@@ -957,12 +958,12 @@ class SynchronizationServiceTest extends TestCase {
 		$this->stubStreamingCall((string)gzencode(implode("\n", $lines)), $sinks, ['ETag' => ['"b"']]);
 
 		$saved = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$saved) {
 				$saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'sync-jsonl');
 			}
-		);
+		));
 
 		$synchronization = $this->jsonlSynchronization(2, 2);
 		$synchronization['currentPageVersion'] = 'etag:"a"';
@@ -1926,9 +1927,9 @@ HTML;
 		$orphanContract = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'sync-id-nt-6', 'originId' => 'origin-orphan', 'targetId' => '2'], 'contract-orphan');
 
 		$this->orObjectService->method('findAll')->willReturn(['results' => [$keptContract, $orphanContract]]);
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $object, string $register, string $schema, ?string $uuid = null) => ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'saved-contract')
-		);
+		));
 
 		$this->tablesSyncAdapter->method('assertEnabled');
 		$this->tablesSyncAdapter->expects($this->once())->method('deleteRow')

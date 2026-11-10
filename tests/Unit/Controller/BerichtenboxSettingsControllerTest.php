@@ -24,6 +24,7 @@ use OCA\Integriq\Controller\BerichtenboxSettingsController;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxSourceSettings;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -91,7 +92,7 @@ class BerichtenboxSettingsControllerTest extends TestCase {
 		$store->method('readSourceRaw')->willReturnArgument(0);
 
 		$objectService = $this->createMock(OrObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved[] = $object;
 				$entity = $this->createMock(ObjectEntity::class);
@@ -100,7 +101,7 @@ class BerichtenboxSettingsControllerTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnCallback(static fn (string $text, array $p = []) => vsprintf(str_replace(['%1$s', '%2$s'], ['%s', '%s'], $text), $p));

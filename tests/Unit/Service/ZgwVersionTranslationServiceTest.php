@@ -32,6 +32,7 @@ use OCA\Integriq\Service\ZgwVersion\RolTranslator;
 use OCA\Integriq\Service\ZgwVersion\StatusTranslator;
 use OCA\Integriq\Service\ZgwVersionNegotiationService;
 use OCA\Integriq\Service\ZgwVersionTranslationService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 
@@ -118,13 +119,13 @@ class ZgwVersionTranslationServiceTest extends TestCase {
 	public function testSameVersionIsPassthroughAndSkipsTranslator(): void {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->with(
+			->with(...SaveCallShape::args(
 				$this->anything(),
 				$this->anything(),
 				$this->callback(
 					static fn (string $schema): bool => $schema === ZgwVersionTranslationService::SCHEMA_LOG
 				)
-			);
+			));
 
 		$payload = $this->conformantStatusPayload();
 		$translated = $this->service->translate(

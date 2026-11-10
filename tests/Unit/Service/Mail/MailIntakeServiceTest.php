@@ -27,6 +27,7 @@ use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
 use OCA\Integriq\Service\Mail\MailIntakeService;
 use OCA\Integriq\Service\Mail\ParsedMessage;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -99,12 +100,12 @@ class MailIntakeServiceTest extends TestCase {
 				return ['results' => $this->existingRows, 'total' => count($this->existingRows)];
 			}
 		);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'message-uuid');
 			}
-		);
+		));
 
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 		$this->intakeDispatcher = $this->getMockBuilder(IntakeDocumentDispatcher::class)

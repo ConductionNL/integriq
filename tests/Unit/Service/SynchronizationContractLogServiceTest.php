@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\ISession;
 use OCP\IUser;
@@ -171,7 +172,7 @@ class SynchronizationContractLogServiceTest extends TestCase {
 		$observedBody = null;
 
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -180,7 +181,7 @@ class SynchronizationContractLogServiceTest extends TestCase {
 				$observedUuid = $uuid;
 				$observedBody = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'log-1');
-			});
+			}));
 
 		$log = ['uuid' => 'log-1', 'synchronizationContractId' => 'c-1', 'message' => 'ok'];
 		$this->service->update($log);
@@ -206,14 +207,14 @@ class SynchronizationContractLogServiceTest extends TestCase {
 	public function testUpdateIsNoOpForAlreadyPersistedUuid(): void {
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
 				?string $uuid = null,
 			) {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'log-1');
-			});
+			}));
 
 		$log = ['uuid' => 'log-1', 'synchronizationContractId' => 'c-1'];
 		$this->service->update($log);
@@ -230,7 +231,7 @@ class SynchronizationContractLogServiceTest extends TestCase {
 	public function testUpdateStripsNullValuesFromPayload(): void {
 		$observedBody = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(function (
+			->willReturnCallback(SaveCallShape::callback(function (
 				$object,
 				?string $register = null,
 				?string $schema = null,
@@ -238,7 +239,7 @@ class SynchronizationContractLogServiceTest extends TestCase {
 			) use (&$observedBody) {
 				$observedBody = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'log-1');
-			});
+			}));
 
 		$log = [
 			'uuid' => 'log-1',
@@ -259,9 +260,9 @@ class SynchronizationContractLogServiceTest extends TestCase {
 	 */
 	public function testInsertDelegatesToUpdate(): void {
 		$this->orObjectService->expects($this->once())->method('saveObject')
-			->willReturnCallback(function ($object) {
+			->willReturnCallback(SaveCallShape::callback(function ($object) {
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'log-1');
-			});
+			}));
 
 		$log = ['uuid' => 'log-1', 'synchronizationContractId' => 'c-1'];
 		$this->service->insert($log);

@@ -3310,9 +3310,10 @@ class EndpointService implements EndpointServiceInterface {
 		$object->setObject($data['body']);
 		$object = $this->objectService->getOpenRegisters()->saveObject(
 			object: $object,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
-			uuid: $object->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+				uuid: $object->getUuid()
+			)
 		);
 		$this->objectService->getOpenRegisters()->clearCurrents();
 
@@ -4479,10 +4480,11 @@ class EndpointService implements EndpointServiceInterface {
 
 				try {
 					$object = $this->objectService->getOpenRegisters()->saveObject(
-						register: $registerId,
-						schema: $schemaId,
 						object: $formatted,
-						uuid: $formatted['id']
+						options: new ObjectSaveOptions(
+							target: new ObjectFindTarget(register: $registerId, schema: $schemaId),
+							uuid: $formatted['id']
+						)
 					);
 					return $this->replaceInternalReferences(mapper: $openRegister, object: $object);
 				} catch (ValidationException $exception) {
@@ -4518,7 +4520,10 @@ class EndpointService implements EndpointServiceInterface {
 		$saveObject = clone $dataDot;
 		$saveObject[$filePartLocation] = $filepartIds;
 
-		$openRegister->saveObject(register: $registerId, schema: $schemaId, object: $saveObject->jsonSerialize());
+		$openRegister->saveObject(
+			object: $saveObject->jsonSerialize(),
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $registerId, schema: $schemaId))
+		);
 
 		return $dataDot->jsonSerialize();
 	}//end processFilePartRule()

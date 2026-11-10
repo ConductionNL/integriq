@@ -29,6 +29,7 @@ namespace OCA\Integriq\Service;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -262,7 +263,7 @@ class SoftwareCatalogueService implements SoftwareCatalogueServiceInterface {
 								);
 
 								// Save the updated view.
-								$this->objectService->getOpenRegisters()->saveObject($view, uuid: $id);
+								$this->objectService->getOpenRegisters()->saveObject(object: $view, options: new ObjectSaveOptions(uuid: $id));
 							}
 						)
 						->otherwise(

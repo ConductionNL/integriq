@@ -27,6 +27,7 @@ use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\FileService;
@@ -78,7 +79,7 @@ class OpenFormulierenIntakeServiceTest extends TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 
-		$mock->method('saveObject')->willReturnCallback(
+		$mock->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				if ($schema !== OpenFormulierenIntakeService::SCHEMA_SUBMISSION) {
 					return $this->buildEntity((array)$object, ($uuid ?? 'other-' . (++$this->uuidCounter)));
@@ -90,7 +91,7 @@ class OpenFormulierenIntakeServiceTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$mock->method('find')->willReturnCallback(
 			function ($id, ?string $register = null, ?string $schema = null) {

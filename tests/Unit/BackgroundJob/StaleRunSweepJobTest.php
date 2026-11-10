@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
 use OCA\Integriq\BackgroundJob\StaleRunSweepJob;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
@@ -178,12 +179,12 @@ final class StaleRunSweepJobTest extends TestCase {
 		$objects->method('findAll')->willReturn(
 			['results' => [$this->runEntity(['status' => 'running', 'updatedAt' => $old])]]
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			static function (...$args) use (&$saved) {
 				$saved = ($args[0] ?? null);
 				return null;
 			}
-		);
+		));
 
 		$this->invokeRun($this->makeJob($objects, $this->createMock(LoggerInterface::class)));
 
@@ -275,7 +276,7 @@ final class StaleRunSweepJobTest extends TestCase {
 					return $answer;
 				}
 			);
-			$objects->method('saveObject')->willReturnCallback(
+			$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 				function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $rbac = true, bool $multitenancy = true, bool $silent = false, bool $validation = true) use (&$saved) {
 					if ($uuid === 'save-fails') {
 						throw new \RuntimeException('write refused');
@@ -290,7 +291,7 @@ final class StaleRunSweepJobTest extends TestCase {
 					$saved[] = ['uuid' => $uuid, 'object' => $object, 'register' => $register, 'schema' => $schema, 'flags' => [$rbac, $multitenancy, $silent, $validation]];
 					return new \OCA\OpenRegister\Db\ObjectEntity();
 				}
-			);
+			));
 			$logger = $this->createMock(LoggerInterface::class);
 			foreach (['warning', 'info'] as $level) {
 				$logger->method($level)->willReturnCallback(

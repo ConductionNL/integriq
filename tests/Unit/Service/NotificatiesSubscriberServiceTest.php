@@ -27,6 +27,7 @@ use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -82,14 +83,14 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 		$this->savedObjects = [];
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) {
 				$id = ($uuid ?? ('generated-' . $schema . '-' . count($this->savedObjects)));
 				$this->savedObjects[] = ['schema' => $schema, 'object' => $object, 'uuid' => $id];
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $id);
 			}
-		);
+		));
 
 		$this->callService = $this->createMock(CallService::class);
 		$this->eventService = $this->createMock(EventService::class);

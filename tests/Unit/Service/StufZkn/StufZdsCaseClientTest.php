@@ -52,6 +52,7 @@ use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
 use OCA\Integriq\Service\StufZkn\StufZdsResponseReader;
 use OCA\Integriq\Service\StufZkn\StufZknClient;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -209,7 +210,7 @@ class StufZdsCaseClientTest extends TestCase {
 				return isset($this->rows[$id]) === true ? ObjectServiceMockBuilder::objectEntity($this, $this->rows[$id], $id) : null;
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true) {
 				$this->assertSame('stuf_message', $schema);
 				$this->assertFalse($_rbac);
@@ -223,7 +224,7 @@ class StufZdsCaseClientTest extends TestCase {
 				$this->rows[$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnCallback(fn (string $app, string $key, int $default=0): int => ($this->config[$key] ?? $default));

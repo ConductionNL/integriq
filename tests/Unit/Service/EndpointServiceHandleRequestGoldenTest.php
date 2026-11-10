@@ -44,6 +44,7 @@ use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -170,12 +171,12 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 				};
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
 				$this->trace[] = ['save' => $schema, 'uuid' => $uuid, 'object' => $object];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$calls = $this->createMock(CallService::class);
 		$calls->method('renderEndpointPath')->willReturn('/personen');

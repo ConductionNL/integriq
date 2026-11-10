@@ -26,6 +26,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MigrateStoredJobClasses;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
@@ -89,7 +90,7 @@ class MigrateStoredJobClassesTest extends TestCase {
 		$saved = [];
 		$orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register = null, $schema = null, $uuid = null) use (&$saved) {
 					$saved = [$object, $register, $schema, $uuid];
 					$this->assertSame(
@@ -104,7 +105,7 @@ class MigrateStoredJobClassesTest extends TestCase {
 					$this->assertSame('job-uuid-1', $uuid, 'must update in place, never create a duplicate');
 					return ObjectServiceMockBuilder::objectEntity($this, $object, 'job-uuid-1');
 				}
-			);
+			));
 
 		$this->makeStep($orObjectService)->run($this->makeOutput());
 
@@ -208,12 +209,12 @@ class MigrateStoredJobClassesTest extends TestCase {
 		);
 
 		$savedUuids = [];
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
 				$savedUuids[] = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, (string)$uuid);
 			}
-		);
+		));
 
 		$this->makeStep($orObjectService)->run($this->makeOutput());
 
@@ -245,7 +246,7 @@ class MigrateStoredJobClassesTest extends TestCase {
 		$orObjectService->method('findAll')->willReturn(['results' => [$bad, $good], 'total' => 2]);
 
 		$savedUuids = [];
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
 				if ($uuid === 'bad-uuid') {
 					throw new \RuntimeException('write rejected');
@@ -254,7 +255,7 @@ class MigrateStoredJobClassesTest extends TestCase {
 				$savedUuids[] = $uuid;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, (string)$uuid);
 			}
-		);
+		));
 
 		$this->makeStep($orObjectService)->run($this->makeOutput());
 

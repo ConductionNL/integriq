@@ -37,6 +37,7 @@ use OCA\Integriq\Service\FlowRunnerService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -99,7 +100,7 @@ class FlowRunnerIntegrationTest extends TestCase {
 			}
 		);
 
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$loggedEntries) {
 				if ($schema === 'flow_run_log') {
 					$loggedEntries[] = $object;
@@ -111,7 +112,7 @@ class FlowRunnerIntegrationTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'saved-1'));
 			}
-		);
+		));
 
 		$orObjectService->method('find')->willReturnCallback(
 			function (string $id, ?string $register = null, ?string $schema = null) {

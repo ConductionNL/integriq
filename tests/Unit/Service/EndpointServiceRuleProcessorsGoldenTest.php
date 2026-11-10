@@ -40,6 +40,7 @@ use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -164,6 +165,10 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 		foreach ($answers as $name => $answer) {
 			$mock->method($name)->willReturnCallback(
 				function (...$args) use ($name, $answer, $label, &$mock) {
+					if ($name === 'saveObject' && is_a($mock, ORObjectService::class) === true) {
+						$args = array_slice(SaveCallShape::save(args: $args), 0, 8);
+					}
+
 					$this->log[] = [$label . '.' . $name, $this->d($args)];
 					$result = $answer(...$args);
 					return ($result === self::class ? $mock : $result);

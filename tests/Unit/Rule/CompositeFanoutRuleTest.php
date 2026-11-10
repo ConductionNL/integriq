@@ -17,6 +17,7 @@ namespace OCA\Integriq\Tests\Unit\Rule;
 
 use Exception;
 use OCA\Integriq\Rule\CompositeFanoutRule;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
@@ -157,7 +158,7 @@ class CompositeFanoutRuleTest extends TestCase {
 
 		$captured = [];
 		$orObjectService->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register, $schema) use (&$captured, $parentObject, $involvedPartyObject, $adresObject) {
 					$captured[] = $object;
 					return match (count($captured)) {
@@ -166,7 +167,7 @@ class CompositeFanoutRuleTest extends TestCase {
 						default => $adresObject,
 					};
 				}
-			);
+			));
 
 		$rule = $this->makeRule(
 			[
@@ -274,7 +275,7 @@ class CompositeFanoutRuleTest extends TestCase {
 			$calls = [];
 			$counter = 0;
 			$service = $this->createMock(ORObjectService::class);
-			$service->method('saveObject')->willReturnCallback(
+			$service->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register = null, $schema = null) use (&$calls, &$counter): ObjectEntity {
 					$calls[] = ['save', $object, $register, $schema];
 					if ($schema === 'boom') {
@@ -284,7 +285,7 @@ class CompositeFanoutRuleTest extends TestCase {
 					$counter++;
 					return $this->makeObject('uuid-' . $counter, ['saved' => $schema]);
 				}
-			);
+			));
 			$service->method('deleteObject')->willReturnCallback(
 				function (...$args) use (&$calls, $body) {
 					$calls[] = ['delete', $args];

@@ -24,6 +24,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
@@ -109,11 +110,8 @@ class EventServiceSessionlessContextTest extends TestCase {
 			}
 		);
 
-		$names = array_map(
-			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-			(new ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters()
-		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$names = array_keys(SaveCallShape::POSITIONS);
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use ($names) {
 				$named = array_combine(array_slice($names, 0, count($args)), $args);
 				$schema = ($named['schema'] ?? null);
@@ -132,7 +130,7 @@ class EventServiceSessionlessContextTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->service = new EventService(

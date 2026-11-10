@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Peppol\LogPeppolAccessPointProvider;
 use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCA\Integriq\Service\PeppolTransmissionService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Files\File;
@@ -571,12 +572,12 @@ class PeppolTransmissionServiceTest extends TestCase {
 		$this->rootFolder->method('get')->willThrowException(new NotFoundException($missing));
 
 		$saved = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$saved, $created) {
 				$saved[] = $object;
 				return (count($saved) === 1) ? $created : $this->entity($object, 'tx-uuid-142');
 			}
-		);
+		));
 
 		$this->logProvider->expects($this->never())->method('submitDocument');
 
@@ -597,9 +598,9 @@ class PeppolTransmissionServiceTest extends TestCase {
 	 */
 	public function testPathOutsideUserFilesIsNotRead(): void {
 		$this->givenActiveSourceAndNoTransmission();
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $object) => $this->entity($object, 'tx-uuid-142')
-		);
+		));
 
 		$this->rootFolder->expects($this->never())->method('get');
 		$this->logProvider->expects($this->never())->method('submitDocument');
@@ -663,12 +664,12 @@ class PeppolTransmissionServiceTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn(['results' => [$existing], 'total' => 1]);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'tx-uuid-1');
 			}
-		);
+		));
 
 		$this->service->handleDeliveryCallback('AP-TX-123', 'rejected', null);
 

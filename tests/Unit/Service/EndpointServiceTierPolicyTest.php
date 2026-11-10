@@ -39,6 +39,7 @@ use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
@@ -434,13 +435,13 @@ class EndpointServiceTierPolicyTest extends TestCase {
 
 		$captured = null;
 		$rbac = null;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$captured, &$rbac) {
 				$captured = $object;
 				$rbac = $_rbac;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
 			}
-		);
+		));
 
 		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 42.4);
 
@@ -481,12 +482,12 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$consumer = ObjectServiceMockBuilder::objectEntity($this, [], 'consumer-uuid-1');
 
 		$calls = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null, bool $_rbac = true) use (&$calls) {
 				$calls[] = ['schema' => $schema, 'object' => $object, 'rbac' => $_rbac];
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
 			}
-		);
+		));
 
 		$method = new \ReflectionMethod($this->service, 'recordInboundThrottle');
 		$method->invoke($this->service, $consumer, new \OCA\Integriq\Service\RateLimit\RateLimitDecision(allowed: false, reason: 'rate'));

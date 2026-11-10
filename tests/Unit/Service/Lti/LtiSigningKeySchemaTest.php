@@ -29,6 +29,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Lti;
 
 use OCA\Integriq\Repair\InitializeRegister;
 use OCA\Integriq\Service\Lti\LtiKeyService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\Integriq\Tests\Unit\Service\Lti\Support\AesTestCrypto;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -120,7 +121,7 @@ class LtiSigningKeySchemaTest extends TestCase {
 			}
 		);
 
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				$this->saved[$uuid] = $object;
 				$this->registrations[$uuid] = $object;
@@ -130,7 +131,7 @@ class LtiSigningKeySchemaTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		return new LtiKeyService($objectService, new NullLogger(), new AesTestCrypto());
 	}//end makeService()

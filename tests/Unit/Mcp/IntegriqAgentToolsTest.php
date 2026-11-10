@@ -45,6 +45,7 @@ use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IAppConfig;
@@ -98,7 +99,15 @@ class InMemoryObjects extends ObjectService {
 		return ['results' => $rows, 'total' => count($rows)];
 	}
 
-	public function saveObject($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, bool $_validation=true): ObjectEntity {
+	public function saveObject(
+		array|ObjectEntity $object,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+	): ObjectEntity {
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+
 		if ($uuid === null) {
 			$this->next++;
 			$uuid = sprintf('00000000-0000-4000-8000-%012d', $this->next);

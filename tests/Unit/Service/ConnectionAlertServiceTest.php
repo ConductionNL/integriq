@@ -21,6 +21,7 @@ use DateTimeImmutable;
 use OCA\Integriq\Service\ConnectionAlertService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
@@ -87,14 +88,14 @@ final class ConnectionAlertServiceTest extends TestCase {
 				return array_slice($rows, (int)($config['offset'] ?? 0), (int)($config['limit'] ?? 1000));
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, $register = null, $schema = null, $uuid = null): ObjectEntity {
 				$this->saves[] = [(string)$schema, $object, $uuid];
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid ?? 'alert-new');
 				return $entity;
 			}
-		);
+		));
 
 		return new ConnectionAlertService($objects, $this->createMock(LoggerInterface::class));
 	}//end makeService()

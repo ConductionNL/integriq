@@ -33,6 +33,7 @@ use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Tests\Helpers\InMemoryOptOutMapper;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -118,7 +119,7 @@ class OptOutAndHoldTest extends TestCase {
 		$this->config = [];
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register = '', string $schema = '', ?string $uuid = null) {
 				if ($uuid === null || $uuid === '') {
 					$this->created++;
@@ -128,7 +129,7 @@ class OptOutAndHoldTest extends TestCase {
 				$this->records[$uuid] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, $uuid);
 			}
-		);
+		));
 		$this->objectService->method('find')->willReturnCallback(
 			function (string $id) {
 				return ObjectServiceMockBuilder::objectEntity($this, ($this->records[$id] ?? []), $id);

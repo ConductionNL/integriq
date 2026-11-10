@@ -21,6 +21,7 @@ use OCA\Integriq\Controller\CatalogController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -255,14 +256,14 @@ class CatalogControllerTest extends TestCase {
 			->willReturn(['results' => [$existingSource], 'total' => 1]);
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register = null, $schema = null, $uuid = null) use ($savedSource) {
 					$this->assertTrue($object['isEnabled']);
 					$this->assertSame('source', $schema);
 					$this->assertSame('source-uuid', $uuid);
 					return $savedSource;
 				}
-			);
+			));
 
 		$response = $this->makeController()->instantiate('item-uuid');
 
@@ -300,7 +301,7 @@ class CatalogControllerTest extends TestCase {
 			->willReturn(['results' => [], 'total' => 0]);
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register = null, $schema = null, $uuid = null) use ($createdSource) {
 					// The payload is the REAL seed fragment body.
 					$this->assertSame('brp-haalcentraal', $object['slug']);
@@ -310,7 +311,7 @@ class CatalogControllerTest extends TestCase {
 					$this->assertNull($uuid);
 					return $createdSource;
 				}
-			);
+			));
 
 		$response = $this->makeController()->instantiate('item-uuid');
 

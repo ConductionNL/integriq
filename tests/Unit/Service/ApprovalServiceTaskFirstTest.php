@@ -27,6 +27,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
@@ -90,7 +91,7 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 		$this->notifications = $this->createMock(INotificationManager::class);
 
 		$this->saved = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) {
 				$this->saved[] = $object;
 				$entity = new ObjectEntity();
@@ -99,7 +100,7 @@ class ApprovalServiceTaskFirstTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$userSession = $this->createMock(IUserSession::class);
 		$user = $this->createMock(IUser::class);

@@ -24,6 +24,7 @@ use OCA\Integriq\Controller\MappingsController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\Integriq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -243,7 +244,7 @@ class MappingsControllerRegisterResolutionTest extends TestCase {
 		// SourceMappingService::getOpenRegisters() declares that return type and
 		// an anonymous double is rejected outright.
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args): ObjectEntity {
 				$this->writeCount++;
 				// Positional: named arguments reach a mock callback in
@@ -253,7 +254,7 @@ class MappingsControllerRegisterResolutionTest extends TestCase {
 
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$sourceMapping = $this->createMock(SourceMappingService::class);
 		$sourceMapping->method('getOpenRegisters')->willReturn($objectService);

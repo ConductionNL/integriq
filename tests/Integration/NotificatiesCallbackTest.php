@@ -40,6 +40,7 @@ use OCA\Integriq\Service\NotificatiesSubscriberService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\AppFramework\Http;
 use OCP\Http\Client\IClientService;
 use OCP\ICache;
@@ -133,9 +134,9 @@ class NotificatiesCallbackTest extends TestCase {
 				return ['results' => [], 'total' => 0];
 			}
 		);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $object, string $register, string $schema, ?string $uuid = null) => ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? ('generated-' . $schema)))
-		);
+		));
 
 		$logger = $this->createMock(LoggerInterface::class);
 

@@ -33,6 +33,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -191,9 +192,9 @@ class SynchronizationServiceIncrementalDeletionGuardTest extends TestCase {
 		// saves the new contract through this same OR mock — give it back a
 		// real uuid so downstream `$result['contracts']` never carries a
 		// null id into findContract().
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $object, ...$rest) => ObjectServiceMockBuilder::objectEntity($this, $object, 'contract-uuid-new')
-		);
+		));
 	}//end stubSourceOnePageNoContracts()
 
 	/**

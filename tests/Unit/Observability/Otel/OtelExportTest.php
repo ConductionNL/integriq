@@ -36,6 +36,7 @@ use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -487,14 +488,14 @@ class OtelExportTest extends TestCase {
 		$this->config = ['otel_enabled' => true, 'otel_endpoint' => 'https://otel.example.org', 'otel_sampling_ratio' => 1.0];
 		$saved = [];
 		$objects = $this->createMock(ORObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$saved) {
 				$saved[] = $object;
 				$entity = new ObjectEntity();
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 		$jobList = $this->createMock(IJobList::class);
 		$queued = [];
 		$jobList->method('add')->willReturnCallback(

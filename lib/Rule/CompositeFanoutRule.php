@@ -129,8 +129,7 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 		$parentObject = $this->orObjectService->saveObject(
 			$parentBody,
 			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: $parentConfig['schema']),
-				extend: $parentConfig['register']
+				target: new ObjectFindTarget(register: $parentConfig['register'], schema: $parentConfig['schema'])
 			)
 		);
 		$run->created[] = [
@@ -188,8 +187,7 @@ class CompositeFanoutRule implements CompositeFanoutRuleInterface {
 		$childObject = $this->orObjectService->saveObject(
 			$childBody,
 			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: $childConfig['schema']),
-				extend: $register
+				target: new ObjectFindTarget(register: $register, schema: $childConfig['schema'])
 			)
 		);
 		$run->created[] = [

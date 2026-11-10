@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 use OCA\Integriq\BackgroundJob\LogCleanUpTask;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -149,7 +150,7 @@ class LogCleanUpTaskTest extends TestCase {
 				return ['results' => $rows];
 			}
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null) {
 				if (in_array((string)$uuid, $this->failingSaves, true) === true) {
 					throw new \RuntimeException('refused');
@@ -158,7 +159,7 @@ class LogCleanUpTaskTest extends TestCase {
 				$this->saves[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			}
-		);
+		));
 		$objectService->method('deleteObject')->willReturnCallback(
 			function ($uuid, $register = null, $schema = null, bool $_rbac = true) {
 				$this->rbacFlags[] = ['deleteObject', (string)$uuid, $_rbac];

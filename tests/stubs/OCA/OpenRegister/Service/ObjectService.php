@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -186,23 +187,20 @@ class ObjectService {
 	 * (`$object, $register, $schema, $uuid, $_rbac, $_multitenancy`) or
 	 * capture the tail with `...$rest`.
 	 *
+	 * Signature as OpenRegister #9123; tests/Helpers/SaveCallShape flattens a
+	 * call for the recordings that predate the options object.
+	 *
 	 * @param array|ObjectEntity $object
-	 * @param string|null $register
-	 * @param string|null $schema
-	 * @param string|null $uuid
+	 * @param ObjectSaveOptions $options Target, uuid, extend, files, policy and actor.
 	 * @param bool $_rbac Apply RBAC checks when true.
 	 * @param bool $_multitenancy Apply multitenancy scoping when true.
 	 * @return ObjectEntity
 	 */
 	public function saveObject(
-		$object,
-		?string $register = null,
-		?string $schema = null,
-		?string $uuid = null,
+		array|ObjectEntity $object,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
 	): ObjectEntity {
 		return new ObjectEntity();
 	}

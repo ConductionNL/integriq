@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -101,12 +102,12 @@ class ApprovalServiceSubscriptionTest extends TestCase {
 		$this->groupManager->method('get')->willReturn($group);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'approval-created');
 			}
-		);
+		));
 
 		$result = $this->service->suspendForSubscription(
 			subscriptionId: 'sub-1',

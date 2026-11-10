@@ -47,6 +47,8 @@ namespace OCA\Integriq\Service\Objecten;
 
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\EventService;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -204,7 +206,10 @@ class ObjectenOpenRegisterAccess {
 
 		$stored = $this->runAs(
 			principal: $principal,
-			callback: fn (): mixed => $service->saveObject(object: $data, register: $register, schema: $schema, uuid: $uuid)
+			callback: fn (): mixed => $service->saveObject(
+				object: $data,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $uuid)
+			)
 		);
 
 		return ($this->rows(found: [$stored])[0] ?? $data);

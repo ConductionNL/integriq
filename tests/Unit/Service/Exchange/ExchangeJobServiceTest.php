@@ -26,6 +26,7 @@ use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Service\Exchange\ExchangeJobService;
 use OCA\Integriq\Service\Exchange\ExchangeTargetCatalogue;
 use OCA\Integriq\Service\Job\ExchangeJobAction;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
@@ -66,12 +67,12 @@ class ExchangeJobServiceTest extends TestCase {
 		parent::setUp();
 
 		$store = $this->createMock(ORObjectService::class);
-		$store->method('saveObject')->willReturnCallback(
+		$store->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null, ...$rest) {
 				$this->saved[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return $this->entity(uuid: $uuid ?? ('new-' . count($this->saved)), data: $object);
 			}
-		);
+		));
 		$store->method('findAll')->willReturnCallback(
 			function (array $config = [], ...$rest) {
 				$filters = $config['filters'] ?? [];

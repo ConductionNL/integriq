@@ -27,6 +27,7 @@ use OCA\Integriq\Service\ConfigurationHandlers\RuleHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SourceHandler;
 use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
@@ -66,12 +67,12 @@ class ConfigurationRedactionRoundTripTest extends TestCase {
 	 */
 	private function objects(): OrObjectService {
 		$objects = $this->createMock(OrObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved[] = $object;
 				return new ObjectEntity();
 			}
-		);
+		));
 		return $objects;
 	}//end objects()
 

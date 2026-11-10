@@ -24,6 +24,7 @@ use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\SyncItemDeadLetterService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
@@ -69,7 +70,7 @@ class SyncItemDeadLetterServiceTest extends TestCase {
 
 		$this->saved = [];
 		$this->objectService = $this->createMock(ORObjectService::class);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				$this->saved[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				$entity = new ObjectEntity();
@@ -77,7 +78,7 @@ class SyncItemDeadLetterServiceTest extends TestCase {
 				$entity->setObject(is_array($object) === true ? $object : []);
 				return $entity;
 			}
-		);
+		));
 
 		$this->container = $this->createMock(ContainerInterface::class);
 

@@ -38,6 +38,7 @@ use OCA\Integriq\Service\SynchronizationRunLog;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\SyncItemDeadLetterService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -83,14 +84,14 @@ class SynchronizationItemIsolationTest extends TestCase {
 	 */
 	private function buildServiceReturningObjects(array $objectList): SynchronizationService {
 		$this->orObjectService = ObjectServiceMockBuilder::make($this);
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid ?? 'saved-synchronization');
 				$entity->setObject(is_array($object) === true ? $object : []);
 				return $entity;
 			}
-		);
+		));
 		$this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$this->callService = $this->createMock(CallService::class);

@@ -33,6 +33,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
@@ -134,12 +135,12 @@ class EventServiceActionDispatchGoldenTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, ['name' => $schema . '-' . $id, 'location' => 'https://x.invalid'], $schema . '-' . $id);
 			}
 		);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null) {
 				$this->log[] = ['or.saveObject', $this->mask(value: $object), $schema, $uuid];
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$object, (string)$uuid);
 			}
-		);
+		));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['error', 'warning', 'info'] as $level) {

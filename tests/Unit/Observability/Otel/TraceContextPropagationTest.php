@@ -32,6 +32,7 @@ use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IRequest;
@@ -155,13 +156,13 @@ class TraceContextPropagationTest extends TestCase {
 		$header = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
 		$saves = [];
 		$objects = $this->createMock(ORObjectService::class);
-		$objects->method('saveObject')->willReturnCallback(
+		$objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			static function (array $object, mixed $register = null, mixed $schema = null, ?string $uuid = null) use (&$saves): ObjectEntity {
 				$saves[] = ['uuid' => $uuid, 'object' => $object];
 
 				return new ObjectEntity();
 			}
-		);
+		));
 		$service = new ExecutionTraceService($objects, $this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class));
 
 		$service->persist(trace: $this->endpointTrace($header), status: 'success');

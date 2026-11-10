@@ -30,6 +30,7 @@ use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -148,12 +149,12 @@ class IntakeChannelsControllerTest extends TestCase {
 		$this->gate = $this->createMock(WebhookGate::class);
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved[] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'saved-uuid');
 			}
-		);
+		));
 
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);

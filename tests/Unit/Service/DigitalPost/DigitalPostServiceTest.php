@@ -30,6 +30,7 @@ use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\DigitalPost\DigitalPostResult;
 use OCA\Integriq\Service\DigitalPost\DigitalPostService;
 use OCA\Integriq\Service\Mail\IntakeDocumentDispatcher;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
@@ -130,7 +131,7 @@ class DigitalPostServiceTest extends TestCase {
 		}
 
 		$objectService = $this->createMock(OrObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) {
 				if ($this->failSaves === true) {
 					throw new \RuntimeException('OpenRegister refused the write');
@@ -142,7 +143,7 @@ class DigitalPostServiceTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(

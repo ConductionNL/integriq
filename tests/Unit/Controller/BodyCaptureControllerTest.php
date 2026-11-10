@@ -21,6 +21,7 @@ use DateTimeImmutable;
 use OCA\Integriq\Controller\BodyCaptureController;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -99,7 +100,7 @@ class BodyCaptureControllerTest extends TestCase {
 				return $entity;
 			}
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, $uuid = null, $_rbac = true, $_multitenancy = true, $silent = false) {
 				if ($this->failSave === true) {
 					throw new \RuntimeException('database unavailable');
@@ -112,7 +113,7 @@ class BodyCaptureControllerTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnArgument(2);

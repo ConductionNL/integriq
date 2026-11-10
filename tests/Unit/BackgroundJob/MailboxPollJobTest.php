@@ -38,6 +38,7 @@ use OCA\Integriq\Service\Mail\Transport\GraphMailboxTransport;
 use OCA\Integriq\Service\Mail\Transport\ImapMailboxTransport;
 use OCA\Integriq\Service\Mail\Transport\MockMailboxTransport;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Http\Client\IClientService;
@@ -114,9 +115,9 @@ class MailboxPollJobTest extends TestCase {
 				return ['results' => $sources];
 			}
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn ($object = [], $register = null, $schema = null, $uuid = null) => ObjectServiceMockBuilder::objectEntity($this, $object, (string)$uuid)
-		);
+		));
 
 		$intakeService = $this->getMockBuilder(MailIntakeService::class)
 			->disableOriginalConstructor()

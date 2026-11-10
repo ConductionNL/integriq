@@ -29,6 +29,7 @@ use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
@@ -120,7 +121,7 @@ class EudiCredentialOfferServiceTest extends TestCase {
 			}
 		);
 
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				if ($uuid === null) {
 					$uuid = bin2hex(random_bytes(8));
@@ -134,7 +135,7 @@ class EudiCredentialOfferServiceTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		$appConfigStore = [];
 		$appConfig = $this->createMock(\OCP\IAppConfig::class);

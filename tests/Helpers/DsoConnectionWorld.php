@@ -32,6 +32,7 @@ use OCA\Integriq\Service\Intake\IntakeGroups;
 use OCA\Integriq\Service\Intake\WebhookConnection;
 use OCA\Integriq\Service\OpenFormulieren\OpenFormulierenConnection;
 use OCA\Integriq\Service\WebhookSignatureService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -343,11 +344,11 @@ trait DsoConnectionWorld {
 			}
 		);
 
-		$service->method('saveObject')->willReturnCallback(
+		$service->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true): ObjectEntity {
 				return $this->worldSave(object: (array)$object, schema: (string)$schema, uuid: $uuid, rbac: $_rbac);
 			}
-		);
+		));
 
 		return $service;
 	}//end buildWorldObjectService()

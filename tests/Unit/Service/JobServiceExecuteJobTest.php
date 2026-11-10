@@ -20,6 +20,7 @@ use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
@@ -86,12 +87,12 @@ class JobServiceExecuteJobTest extends TestCase {
 		parent::setUp();
 
 		$this->objectService = ObjectServiceMockBuilder::make($this);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) {
 				$this->saved[$args[2]][] = $args[0];
 				return ObjectServiceMockBuilder::objectEntity($this, $args[0], 'saved-' . $args[2]);
 			}
-		);
+		));
 
 		$this->traceService = $this->createMock(ExecutionTraceService::class);
 		$action = new class($this) {

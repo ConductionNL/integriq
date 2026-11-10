@@ -27,6 +27,7 @@ use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Service\CaseSystem\ZgwCaseSystem;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -57,7 +58,7 @@ class CaseSystemOperationsTest extends TestCase {
 	 */
 	private function callService(?ZgwCaseSystem $zgw = null): CallService {
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
 				$entity = new ObjectEntity();
@@ -66,7 +67,7 @@ class CaseSystemOperationsTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);

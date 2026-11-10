@@ -28,6 +28,9 @@ namespace OCA\Integriq\Service\MessageValidation;
 use OCA\Integriq\Service\MessageValidationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -237,13 +240,13 @@ class EndpointMessageGate {
 		try {
 			$this->objects->saveObject(
 				object: array_merge($stored, ['validation' => $findings]),
-				register: 'integriq',
-				schema: 'call_log',
-				uuid: (string)$callLog->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: 'integriq', schema: 'call_log'),
+					uuid: (string)$callLog->getUuid(),
+					policy: new SavePolicy(silent: true, validation: false)
+				),
 				_rbac: false,
-				_multitenancy: false,
-				silent: true,
-				_validation: false
+				_multitenancy: false
 			);
 		} catch (Throwable $failure) {
 			$this->logger->error('[integriq] could not write validation findings to call log ' . $callLog->getUuid() . ': ' . $failure->getMessage());

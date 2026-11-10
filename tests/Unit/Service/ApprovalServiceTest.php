@@ -26,6 +26,7 @@ use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IGroupManager;
@@ -176,12 +177,12 @@ class ApprovalServiceTest extends TestCase {
 		$flowToken->setRequestAmended($flowToken->getRequestOriginal());
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-created');
 			}
-		);
+		));
 
 		$result = $this->service->suspend(endpoint: $endpoint, rule: $rule, flowToken: $flowToken);
 
@@ -217,12 +218,12 @@ class ApprovalServiceTest extends TestCase {
 		$flowToken->setRequestAmended($flowToken->getRequestOriginal());
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-created');
 			}
-		);
+		));
 
 		$result = $this->service->suspendForFlow(
 			flowRun: $flowRun,
@@ -258,12 +259,12 @@ class ApprovalServiceTest extends TestCase {
 		$this->groupManager->method('get')->willReturn($group);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-created');
 			}
-		);
+		));
 
 		$result = $this->service->suspendForEngineRun(
 			engineRunUuid: 'run-uuid-1',
@@ -305,12 +306,12 @@ class ApprovalServiceTest extends TestCase {
 		$this->groupManager->method('get')->willReturn($group);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-created');
 			}
-		);
+		));
 
 		$this->service->suspendForEngineRun(
 			engineRunUuid: 'run-uuid-1',
@@ -529,12 +530,12 @@ class ApprovalServiceTest extends TestCase {
 		$approver = $this->mockUser('alice');
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-1');
 			}
-		);
+		));
 
 		$this->service->completeApproval(approvalRequest: $request, approver: $approver, resumeResult: 'success', comment: 'ok');
 
@@ -575,12 +576,12 @@ class ApprovalServiceTest extends TestCase {
 		$approver = $this->mockUser('carol');
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-1');
 			}
-		);
+		));
 
 		$this->service->reject(approvalRequest: $request, approver: $approver, comment: 'Missing legal basis field');
 
@@ -601,12 +602,12 @@ class ApprovalServiceTest extends TestCase {
 		$approver = $this->mockUser('dave');
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-1');
 			}
-		);
+		));
 
 		$this->service->reject(approvalRequest: $request, approver: $approver, comment: 'nope');
 
@@ -627,12 +628,12 @@ class ApprovalServiceTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn(['results' => [$expired, $future], 'total' => 2]);
 
 		$captured = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register, string $schema, ?string $uuid = null) use (&$captured) {
 				$captured[$uuid] = $object;
 				return $this->entity($object, (string)$uuid);
 			}
-		);
+		));
 
 		$result = $this->service->sweepExpired();
 
@@ -711,12 +712,12 @@ class ApprovalServiceTest extends TestCase {
 		$request = $this->entity(['status' => 'approved'], 'approval-1');
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return $this->entity($object, 'approval-1');
 			}
-		);
+		));
 
 		$this->gate->markConsumed($request);
 

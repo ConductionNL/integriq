@@ -30,6 +30,7 @@ use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\SyncItemDeadLetterService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
 use OCP\ISession;
@@ -158,7 +159,7 @@ class SynchronizationMessageValidationTest extends TestCase {
 			}
 		);
 		$orObjects->method('findAll')->willReturn(['results' => [], 'total' => 0]);
-		$orObjects->method('saveObject')->willReturnCallback(
+		$orObjects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ...$rest): ObjectEntity {
 				if ($schema === 'sync_item_dead_letter') {
 					$this->deadLetters[] = (array)$object;
@@ -166,7 +167,7 @@ class SynchronizationMessageValidationTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$object, 'saved-uuid');
 			}
-		);
+		));
 
 		$callService = $this->createMock(CallService::class);
 		$callService->method('applyConfigDot')->willReturnArgument(0);
@@ -204,12 +205,12 @@ class SynchronizationMessageValidationTest extends TestCase {
 		$appConfig->method('hasKey')->willReturn(false);
 
 		$logOrService = ObjectServiceMockBuilder::make($this);
-		$logOrService->method('saveObject')->willReturnCallback(
+		$logOrService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ...$rest): ObjectEntity {
 				$this->logs[] = (array)$object;
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$object, 'log-uuid');
 			}
-		);
+		));
 		$logService = new SynchronizationLogService($logOrService, $this->createMock(IUserSession::class), $this->createMock(ISession::class));
 
 		$service = $this->getMockBuilder(SynchronizationService::class)

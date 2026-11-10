@@ -28,6 +28,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -97,13 +98,13 @@ class SynchronizationServiceAdHocSourceTest extends TestCase {
 		// Record every saveObject schema so the tests can assert no `source`
 		// write ever happens (other schemas — e.g. `synchronization` for the
 		// non-test run's targetLastSynced — are legitimate).
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ...$rest) {
 				$this->savedSchemas[] = (string)$schema;
 
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) ? $object : [], 'saved-uuid');
 			}
-		);
+		));
 
 		// Record the source entity of every CallService call and return one
 		// page with a single object, then a naturally-empty page.

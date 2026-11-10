@@ -24,6 +24,7 @@ use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Zgw\ZgwSetInstaller;
 use OCA\Integriq\Service\Zgw\ZgwSetInstallGuard;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -153,13 +154,13 @@ class ZgwSetPullFixtureTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, $this->store[$schema][$id], $id);
 			}
 		);
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register=null, ?string $schema=null, ?string $uuid=null, ...$rest) {
 				$key                                = (string)($uuid ?? ($object['uuid'] ?? ($schema . '-' . (count($this->store[(string)$schema] ?? []) + 1))));
 				$this->store[(string)$schema][$key] = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, is_array($object) ? $object : [], $key);
 			}
-		);
+		));
 		$or->method('saveObjects')->willReturnCallback(
 			function (array $objects, $register=null, $schema=null, ...$rest): array {
 				$saved = [];

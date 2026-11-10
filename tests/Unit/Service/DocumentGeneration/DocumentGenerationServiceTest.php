@@ -32,6 +32,7 @@ use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationProviderRegistry;
 use OCA\Integriq\Service\DocumentGeneration\DocumentGenerationService;
 use OCA\Integriq\Service\DocumentGeneration\RenderOutcome;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\EventDispatcher\Event;
@@ -141,13 +142,13 @@ class DocumentGenerationServiceTest extends TestCase {
 			->onlyMethods(['find', 'saveObject', 'findAll'])
 			->getMock();
 		$this->objectService->method('find')->willReturn($source);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register = '', string $schema = '', ?string $uuid = null): ObjectEntity {
 				$this->saved[] = $object;
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'job-1'));
 			}
-		);
+		));
 
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 		$this->eventDispatcher->method('dispatchTyped')->willReturnCallback(

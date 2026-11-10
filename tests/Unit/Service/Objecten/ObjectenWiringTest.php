@@ -37,6 +37,7 @@ use OCA\Integriq\Service\Objecten\ObjecttypeEndpointHandler;
 use OCA\Integriq\Service\Objecten\ObjecttypeRegistry;
 use OCA\Integriq\Service\Objecten\ObjectWriteHandler;
 use OCA\Integriq\Service\Objecten\OpenRegisterObjectenGateway;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -525,7 +526,7 @@ class ObjectenWiringTest extends TestCase {
 				};
 			}
 		);
-		$service->method('saveObject')->willReturnCallback(
+		$service->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$arguments): ObjectEntity {
 				$this->saved[] = [
 					'register' => $arguments[1],
@@ -539,7 +540,7 @@ class ObjectenWiringTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		return $service;
 	}//end objectService()

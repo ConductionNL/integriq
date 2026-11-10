@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use InvalidArgumentException;
 use OCA\Integriq\Service\EnvironmentService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -66,11 +67,11 @@ class EnvironmentServiceTest extends TestCase {
 		);
 		$this->orObjectService->expects($this->once())
 			->method('saveObject')
-			->with(
+			->with(...SaveCallShape::args(
 				['name' => 'Acceptance', 'slug' => 'acceptance', 'role' => 'target', 'sourceRef' => 'source-uuid'],
 				'integriq',
 				'environment'
-			)
+			))
 			->willReturn($created);
 
 		$result = $this->service->create(['name' => 'Acceptance', 'slug' => 'acceptance', 'role' => 'target', 'sourceRef' => 'source-uuid']);

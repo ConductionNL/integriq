@@ -27,6 +27,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -87,12 +88,12 @@ class SynchronizationWriteObjectToTargetTest extends TestCase {
 				return $entity;
 			}
 		);
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$openRegisters = $this->createMock(ORObjectService::class);
 		$openRegisters->method('setRegister')->willReturnCallback(

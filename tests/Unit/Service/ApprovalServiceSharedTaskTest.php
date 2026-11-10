@@ -26,6 +26,7 @@ use OCA\Integriq\Service\ApprovalService;
 use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Task\TaskService as ORTaskService;
@@ -88,7 +89,7 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->saved = [];
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved[] = $object;
 				$entity = new ObjectEntity();
@@ -97,7 +98,7 @@ class ApprovalServiceSharedTaskTest extends TestCase {
 
 				return $entity;
 			}
-		);
+		));
 
 		$userSession = $this->createMock(IUserSession::class);
 		$user = $this->createMock(IUser::class);

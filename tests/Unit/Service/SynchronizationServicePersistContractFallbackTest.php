@@ -27,6 +27,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -84,13 +85,13 @@ class SynchronizationServicePersistContractFallbackTest extends TestCase {
 		$saved = ObjectServiceMockBuilder::objectEntity($this, ['originId' => 'o-1'], 'c-1');
 		$seen = 'unset';
 
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use ($saved, &$seen): mixed {
 				$seen = ($args[3] ?? null);
 
 				return $saved;
 			}
-		);
+		));
 
 		$this->persistContract(
 			service: $this->serviceWithoutDelegate(orObjectService: $or),
@@ -112,13 +113,13 @@ class SynchronizationServicePersistContractFallbackTest extends TestCase {
 		$saved = ObjectServiceMockBuilder::objectEntity($this, ['originId' => 'o-2'], 'c-2');
 		$seen = null;
 
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (...$args) use ($saved, &$seen): mixed {
 				$seen = ($args[3] ?? null);
 
 				return $saved;
 			}
-		);
+		));
 
 		$this->persistContract(
 			service: $this->serviceWithoutDelegate(orObjectService: $or),

@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service\ConfigurationHandlers;
 
 use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
@@ -53,12 +54,12 @@ class SynchronizationHandlerGoldenTest extends TestCase {
 	 */
 	private function handler(): SynchronizationHandler {
 		$or = $this->createMock(OrObjectService::class);
-		$or->method('saveObject')->willReturnCallback(
+		$or->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) {
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$registry = new SensitiveFieldRegistry();
 

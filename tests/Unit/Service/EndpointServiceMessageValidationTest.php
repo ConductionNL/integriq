@@ -42,6 +42,7 @@ use OCA\Integriq\Service\StorageService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService as ORFileService;
@@ -267,12 +268,12 @@ class EndpointServiceMessageValidationTest extends TestCase {
 		$this->callService->expects($this->once())->method('call')->willReturn($this->callLog('{"ok":true}'));
 
 		$saved = [];
-		$this->objects->method('saveObject')->willReturnCallback(
+		$this->objects->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null) use (&$saved): ObjectEntity {
 				$saved[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			}
-		);
+		));
 
 		$response = $service->handleRequest(
 			$this->endpoint(['mode' => 'record', 'request' => ['messageSchema' => self::SCHEMA_UUID]]),

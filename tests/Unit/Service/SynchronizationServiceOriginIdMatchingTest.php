@@ -37,6 +37,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -113,7 +114,7 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 
 		// Stateful saveObject: contract writes are recorded and replayed by
 		// findAll below, so a second run sees the first run's contract.
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {
 				if ($schema === 'synchronization_contract') {
 					$this->contractSaves++;
@@ -127,7 +128,7 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 					(string)($uuid ?? ($object['uuid'] ?? 'saved-uuid'))
 				);
 			}
-		);
+		));
 
 		// Stateful saveObjectS — the BULK path. Contract writes are buffered for
 		// the duration of a run and flushed through `persistBulk()`, which calls

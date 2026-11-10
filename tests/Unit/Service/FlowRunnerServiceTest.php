@@ -31,6 +31,7 @@ use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
@@ -106,7 +107,7 @@ class FlowRunnerServiceTest extends TestCase {
 		$this->containerInterface = $this->createMock(ContainerInterface::class);
 
 		$this->loggedEntries = [];
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) {
 				if ($schema === 'flow_run_log') {
 					$this->loggedEntries[] = $object;
@@ -118,7 +119,7 @@ class FlowRunnerServiceTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'saved-1'));
 			}
-		);
+		));
 
 		$this->service = new FlowRunnerService(
 			$this->callService,

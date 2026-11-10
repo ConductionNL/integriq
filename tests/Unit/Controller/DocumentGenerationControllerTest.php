@@ -30,6 +30,7 @@ use OCA\Integriq\Service\DocumentGeneration\SmartDocumentsProvider;
 use OCA\Integriq\Service\DocumentGeneration\XentialProvider;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http;
@@ -68,13 +69,13 @@ class DocumentGenerationControllerTest extends TestCase {
 			->onlyMethods(['find', 'saveObject'])
 			->getMock();
 		$objectService->method('find')->willReturn($entity);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, string $register = '', string $schema = '', ?string $uuid = null): ObjectEntity {
 				$this->saved[] = $object;
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($uuid ?? 'source-1'));
 			}
-		);
+		));
 
 		$broker = $this->getMockBuilder(BrokeredCallService::class)
 			->disableOriginalConstructor()

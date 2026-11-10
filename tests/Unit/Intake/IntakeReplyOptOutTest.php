@@ -32,6 +32,7 @@ use OCA\Integriq\Intake\IntakeReplyService;
 use OCA\Integriq\Intake\ReplyResult;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\OptOutFixture;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\Http\Client\IClientService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -126,12 +127,12 @@ class IntakeReplyOptOutTest extends TestCase {
 				'intake-uuid'
 			)
 		);
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) {
 				$this->saved = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'intake-uuid');
 			}
-		);
+		));
 
 		$resolver = $this->getMockBuilder(IntakeChannelSourceResolver::class)
 			->disableOriginalConstructor()

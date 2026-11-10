@@ -33,6 +33,7 @@ use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\FileService as OrFileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -321,12 +322,12 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$captured = null;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}
-		);
+		));
 
 		$synchronization = $this->makeSyncPayload(
 			['syncMode' => 'incremental'],
@@ -378,12 +379,12 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$captured = null;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}
-		);
+		));
 
 		$synchronization = $this->makeSyncPayload(
 			['syncMode' => 'incremental', 'cursorWatermark' => '2026-07-01T00:00:00Z'],
@@ -413,12 +414,12 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$captured = null;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, self::SYNC_ID);
 			}
-		);
+		));
 
 		$synchronization = $this->makeSyncPayload(
 			['syncMode' => 'incremental', 'cursorWatermark' => '2026-07-01T00:00:00Z'],
@@ -594,7 +595,7 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 		$this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$persisted = null;
-		$this->orObjectService->method('saveObject')->willReturnCallback(
+		$this->orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$persisted) {
 				// Only the top-level Synchronization save (identified by its
 				// own uuid) is tracked here; per-object contract saves reuse
@@ -605,7 +606,7 @@ class SynchronizationServiceIncrementalCursorTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, $object, ($object['uuid'] ?? 'contract-uuid'));
 			}
-		);
+		));
 
 		$synchronization = $this->makeSyncPayload(
 			['syncMode' => 'incremental'],

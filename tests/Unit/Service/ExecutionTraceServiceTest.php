@@ -14,6 +14,7 @@ use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -42,13 +43,13 @@ final class ExecutionTraceServiceTest extends TestCase {
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function (...$args) use (&$capturedPayload, &$capturedArgs) {
 					$capturedArgs = $args;
 					$capturedPayload = $args[0];
 					return ObjectServiceMockBuilder::objectEntity($this, $capturedPayload, 'trace-abc');
 				}
-			);
+			));
 
 		$service = new ExecutionTraceService($orObjectService, $this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class));
 
@@ -130,12 +131,12 @@ final class ExecutionTraceServiceTest extends TestCase {
 		$orObjectService->method('find')->willReturn($originalTrace);
 
 		$savedNewTrace = null;
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $payload) use (&$savedNewTrace) {
 				$savedNewTrace = $payload;
 				return ObjectServiceMockBuilder::objectEntity($this, $payload, ($payload['traceId'] ?? 'new-trace'));
 			}
-		);
+		));
 
 		$synchronizationEntity = ObjectServiceMockBuilder::objectEntity($this, ['uuid' => 'sync-uuid-1'], 'sync-uuid-1');
 		$synchronizationService = $this->createMock(SynchronizationService::class);
@@ -187,9 +188,9 @@ final class ExecutionTraceServiceTest extends TestCase {
 
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->method('find')->willReturn($originalTrace);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $payload) => ObjectServiceMockBuilder::objectEntity($this, $payload, ($payload['traceId'] ?? 'new-trace'))
-		);
+		));
 
 		$synchronizationEntity = ObjectServiceMockBuilder::objectEntity($this, ['uuid' => 'sync-uuid-2'], 'sync-uuid-2');
 		$synchronizationService = $this->createMock(SynchronizationService::class);
@@ -232,9 +233,9 @@ final class ExecutionTraceServiceTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, [], $id);
 			}
 		);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $payload) => ObjectServiceMockBuilder::objectEntity($this, $payload, ($payload['traceId'] ?? 'new-trace'))
-		);
+		));
 
 		$eventService = $this->createMock(EventService::class);
 		$eventService->expects($this->never())->method('replayMessage');
@@ -266,9 +267,9 @@ final class ExecutionTraceServiceTest extends TestCase {
 
 		$orObjectService = $this->createMock(ORObjectService::class);
 		$orObjectService->method('find')->willReturn($originalTrace);
-		$orObjectService->method('saveObject')->willReturnCallback(
+		$orObjectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $payload) => ObjectServiceMockBuilder::objectEntity($this, $payload, ($payload['traceId'] ?? 'new-trace'))
-		);
+		));
 
 		$eventService = $this->createMock(EventService::class);
 		$eventService->expects($this->once())

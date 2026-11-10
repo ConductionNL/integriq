@@ -24,6 +24,7 @@ use OCA\Integriq\Service\ConfigurationHandlers\SynchronizationHandler;
 use OCA\Integriq\Service\ConfigurationService;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -397,12 +398,12 @@ class ConfigurationServiceTest extends TestCase {
 
 		$savedCapture = null;
 		$this->orObjectService->method('saveObject')
-			->willReturnCallback(
+			->willReturnCallback(SaveCallShape::callback(
 				function ($object, $register = null, $schema = null, $uuid = null) use (&$savedCapture) {
 					$savedCapture = $object;
 					return ObjectServiceMockBuilder::objectEntity($this, (array)$object, 'imported-source-uuid');
 				}
-			);
+			));
 
 		$this->service = $this->buildService();
 

@@ -30,6 +30,7 @@ use OCA\Integriq\Service\JobService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -108,7 +109,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 			'event-uuid-1'
 		);
 
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured, $eventEntity) {
 				if ($captured === null) {
 					$captured = $object;
@@ -116,7 +117,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 				return $eventEntity;
 			}
-		);
+		));
 		$this->objectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
 
 		$messages = $this->service->handleNextcloudEvent(
@@ -153,9 +154,9 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 		$this->objectService->method('find')->willReturn($subscription);
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			fn (array $object, ...$rest) => ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid')
-		);
+		));
 
 		$response = $this->createMock(IResponse::class);
 		$response->method('getStatusCode')->willReturn(200);
@@ -203,12 +204,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		$this->synchronizationService->expects($this->once())
 			->method('synchronize')
@@ -248,12 +249,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		$event = ObjectServiceMockBuilder::objectEntity($this, ['type' => 'com.example.created'], 'event-uuid');
 		$this->service->processEvent($event);
@@ -298,12 +299,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		$this->synchronizationService->method('synchronize')->willThrowException(new \RuntimeException('sync failed'));
 
@@ -347,12 +348,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		$this->jobService->expects($this->once())
 			->method('executeJob')
@@ -385,12 +386,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$this->objectService->method('find')->willReturn($subscription);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object, ...$rest) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		$this->clientService->expects($this->never())->method('newClient');
 		$this->synchronizationService->expects($this->never())->method('synchronize');
@@ -433,12 +434,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$this->clientService->method('newClient')->willReturn($client);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		// retryCount 0 -> 1: nextAttempt should be ~30s (custom baseSeconds), not 60s.
 		$message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 0], 'msg-uuid');
@@ -483,12 +484,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$this->clientService->method('newClient')->willReturn($client);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		$message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 0], 'msg-uuid');
 		$this->service->deliverMessage($message);
@@ -536,12 +537,12 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$this->clientService->method('newClient')->willReturn($client);
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured) {
 				$captured = $object;
 				return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
 			}
-		);
+		));
 
 		// retryCount 4 -> 5 == default maxRetries: abandons.
 		$message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 4], 'msg-uuid');
@@ -597,7 +598,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 		$this->clientService->expects($this->never())->method('newClient');
 
 		$captured = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
+		$this->objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function (array $object) use (&$captured, $abandoned) {
 				if ($captured === null) {
 					$captured = $object;
@@ -605,7 +606,7 @@ class EventServiceNextcloudEventTest extends TestCase {
 
 				return $abandoned;
 			}
-		);
+		));
 
 		$this->service->replayMessage('msg-uuid', 'alice');
 

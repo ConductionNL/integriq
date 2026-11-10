@@ -27,6 +27,7 @@ use OCA\Integriq\Service\SynchronizationApprovalGate;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -90,7 +91,7 @@ class SynchronizationUpdateTargetTest extends TestCase {
 		}
 
 		$openRegisters = $builder->getMock();
-		$openRegisters->method('saveObject')->willReturnCallback(
+		$openRegisters->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true) {
 				$this->log[] = ['or.saveObject', $object, $register, $schema, $uuid, $silent, $_validation];
 				if (($this->case['save'] ?? '') === 'throws') {
@@ -99,7 +100,7 @@ class SynchronizationUpdateTargetTest extends TestCase {
 
 				return ObjectServiceMockBuilder::objectEntity($this, (is_array($object) === true ? $object : []), ($uuid ?? 'new-uuid'));
 			}
-		);
+		));
 		$openRegisters->method('renderEntity')->willReturnCallback(
 			function ($entity, $extend = []) {
 				$this->log[] = ['or.renderEntity', $entity->getUuid(), $extend];

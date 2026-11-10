@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTime;
 use OCA\Integriq\Service\EudiIssuerKeyService;
 use OCA\Integriq\Service\EudiStatusListService;
+use OCA\Integriq\Tests\Helpers\SaveCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -83,7 +84,7 @@ class EudiStatusListServiceTest extends TestCase {
 			}
 		);
 
-		$objectService->method('saveObject')->willReturnCallback(
+		$objectService->method('saveObject')->willReturnCallback(SaveCallShape::callback(
 			function ($object = [], $register = null, $schema = null, $uuid = null) {
 				if ($uuid === null) {
 					$uuid = bin2hex(random_bytes(8));
@@ -96,7 +97,7 @@ class EudiStatusListServiceTest extends TestCase {
 				$entity->setObject($object);
 				return $entity;
 			}
-		);
+		));
 
 		$appConfigStore = [];
 		$appConfig = $this->createMock(\OCP\IAppConfig::class);
