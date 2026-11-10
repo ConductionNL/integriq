@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Exchange;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
 use OCA\Integriq\Event\ExchangeRecordsReceivedEvent;
 use OCA\Integriq\Exception\OsoTranslationException;
+use OCA\Integriq\Service\Exchange\ExchangeHandOff;
 use OCA\Integriq\Service\Exchange\ExchangeTargetDispatcher;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\RodService;
@@ -128,13 +129,15 @@ class ExchangeTargetDispatcherGoldenTest extends TestCase {
 		$this->calls = [];
 
 		return $this->dispatcher()->dispatch(
-			jobId: $job['jobId'],
-			target: $job['target'],
-			direction: $job['direction'],
-			scope: $job['scope'],
-			records: $job['records'],
-			ownerApp: ($job['ownerApp'] ?? ''),
-			ownerRef: ($job['ownerRef'] ?? '')
+			new ExchangeHandOff(
+				jobId: $job['jobId'],
+				target: $job['target'],
+				direction: $job['direction'],
+				scope: $job['scope'],
+				records: $job['records'],
+				ownerApp: ($job['ownerApp'] ?? ''),
+				ownerRef: ($job['ownerRef'] ?? '')
+			)
 		);
 
 	}//end dispatch()
