@@ -119,18 +119,28 @@ class ZgwVersionTranslateController extends Controller {
 
 		$params = $this->request->getParams();
 		if ($this->hasResourceAndPayload(params: $params) === false) {
-			return new JSONResponse(
-				[
-					'error' => 'missing_fields',
-					'message' => $this->l->t('The "resource" and "payload" fields are required'),
-				],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingFields();
 		}
 
 		return $this->translateParams(params: $params);
 
 	}//end translate()
+
+	/**
+	 * The 400 answer for a body without a resource or an array payload.
+	 *
+	 * @return JSONResponse
+	 */
+	private function missingFields(): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => 'missing_fields',
+				'message' => $this->l->t('The "resource" and "payload" fields are required'),
+			],
+			Http::STATUS_BAD_REQUEST
+		);
+
+	}//end missingFields()
 
 	/**
 	 * Whether the body names a resource and carries an array payload.
