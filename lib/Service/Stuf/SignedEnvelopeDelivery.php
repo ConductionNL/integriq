@@ -78,6 +78,11 @@ final class SignedEnvelopeDelivery {
 	 * @param string $certificateDescription What the certificate reference is.
 	 *
 	 * @return array The JSON schema.
+	 *
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public static function configSchema(string $endpointDescription, string $certificateDescription): array {
 		return [

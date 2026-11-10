@@ -130,15 +130,24 @@ class RodEdukoppelingClient implements RodProviderInterface, SignedEnvelopeRefus
 			headers: ['X-Berichtsoort' => $berichtsoort]
 		);
 
-		$delivery = new SignedEnvelopeDelivery(
+		return $this->delivery()->deliver(request: $request);
+	}//end send()
+
+	/**
+	 * The delivery that signs and sends this client's envelopes.
+	 *
+	 * @return SignedEnvelopeDelivery The delivery.
+	 *
+	 * @spec openspec/specs/rod-adapter/spec.md#scenario-the-edukoppeling-provider-refuses-closed-without-a-certificate-reference
+	 */
+	private function delivery(): SignedEnvelopeDelivery {
+		return new SignedEnvelopeDelivery(
 			httpClient: $this->httpClient,
 			credentialResolver: $this->credentialResolver,
 			profile: $this->wusProfileService,
 			refusals: $this
 		);
-
-		return $delivery->deliver(request: $request);
-	}//end send()
+	}//end delivery()
 
 	/**
 	 * {@inheritDoc}

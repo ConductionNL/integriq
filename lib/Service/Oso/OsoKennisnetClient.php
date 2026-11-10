@@ -121,15 +121,24 @@ class OsoKennisnetClient implements OsoProviderInterface, SignedEnvelopeRefusals
 			envelopeXml: $envelopeXml
 		);
 
-		$delivery = new SignedEnvelopeDelivery(
+		return $this->delivery()->deliver(request: $request);
+	}//end sendExport()
+
+	/**
+	 * The delivery that signs and sends this client's envelopes.
+	 *
+	 * @return SignedEnvelopeDelivery The delivery.
+	 *
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 */
+	private function delivery(): SignedEnvelopeDelivery {
+		return new SignedEnvelopeDelivery(
 			httpClient: $this->httpClient,
 			credentialResolver: $this->credentialResolver,
 			profile: $this->wusProfileService,
 			refusals: $this
 		);
-
-		return $delivery->deliver(request: $request);
-	}//end sendExport()
+	}//end delivery()
 
 	/**
 	 * {@inheritDoc}
