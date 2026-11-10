@@ -30,6 +30,7 @@ namespace OCA\Integriq\Outbound\Call;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Service\CallServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -192,8 +193,7 @@ class CallServiceDispatcher implements CallDispatcherInterface {
 		try {
 			$source = $this->objectService->find(
 				id: $target,
-				register: MessageRecorder::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: 'source'),
 			);
 		} catch (DoesNotExistException) {
 			throw new CallDispatchException(message: 'No source "' . $target . '" to call.');

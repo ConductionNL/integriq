@@ -27,6 +27,7 @@ namespace OCA\Integriq\Service\MessageValidation;
 
 use OCA\Integriq\Service\MessageValidationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -268,8 +269,7 @@ class EndpointMessageGate {
 		try {
 			$entity = $this->objects->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'call_log',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'call_log'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -297,8 +297,7 @@ class EndpointMessageGate {
 		try {
 			$entity = $this->objects->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'message_schema',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'message_schema'),
 				_rbac: false,
 				_multitenancy: false
 			);

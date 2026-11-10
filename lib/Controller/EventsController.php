@@ -29,6 +29,7 @@ use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -122,7 +123,7 @@ class EventsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
 		try {
-			$event = $this->orObjectService->find(id: (string)$id, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false);
+			$event = $this->orObjectService->find(id: (string)$id, options: new ObjectFindOptions(register: 'integriq', schema: 'event'), _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
 		}
@@ -201,11 +202,9 @@ class EventsController extends Controller {
 			if ($this->signingPolicy->generatesSecret(subscription: $data) === true) {
 				$stored = $this->orObjectService->find(
 					id: (string)$subscription->getUuid(),
-					register: 'integriq',
-					schema: 'event_subscription',
+					options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 					_rbac: false,
-					_multitenancy: false,
-					_render: false
+					_multitenancy: false
 				);
 				$response += $this->signingPolicy->reveal(stored: (array)$stored?->getObject());
 			}
@@ -299,8 +298,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -387,8 +385,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -440,8 +437,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -480,8 +476,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -534,8 +529,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -796,8 +790,7 @@ class EventsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -842,7 +835,7 @@ class EventsController extends Controller {
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function deadLetterShow(string $id): JSONResponse {
 		try {
-			$message = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'event_message', _rbac: false, _multitenancy: false);
+			$message = $this->orObjectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: 'event_message'), _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
 		}
@@ -854,8 +847,7 @@ class EventsController extends Controller {
 			try {
 				$subscription = $this->orObjectService->find(
 					id: (string)$subscriptionId,
-					register: 'integriq',
-					schema: 'event_subscription',
+					options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription'),
 					_rbac: false,
 					_multitenancy: false
 				);

@@ -51,6 +51,7 @@ use OCA\Integriq\Twig\MappingExtension;
 use OCA\Integriq\Twig\MappingRuntimeLoader;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -246,8 +247,7 @@ class MappingService implements MappingServiceInterface {
 		try {
 			$object = $this->orObjectService->find(
 				id: $reference,
-				register: self::REGISTER,
-				schema: self::SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA)
 			);
 		} catch (DoesNotExistException) {
 			$object = null;
@@ -767,8 +767,7 @@ class MappingService implements MappingServiceInterface {
 	public function getMapping(string $mappingId): OrMapping {
 		$object = $this->orObjectService->find(
 			id: $mappingId,
-			register: self::REGISTER,
-			schema: self::SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA)
 		);
 
 		if ($object === null) {

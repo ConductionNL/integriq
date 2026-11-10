@@ -38,6 +38,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Security;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -180,7 +181,7 @@ class InlineSecretMigrationPlannerTest extends TestCase {
 	public function testRenderedReadLosesTheSecretProvingTheDoubleIsHonest(): void {
 		$this->objectService->stored['src-1'] = ['name' => 'x', 'apikey' => self::SECRET];
 
-		$rendered = $this->objectService->find(id: 'src-1', register: 'integriq', schema: 'source');
+		$rendered = $this->objectService->find(id: 'src-1', options: new ObjectFindOptions(register: 'integriq', schema: 'source'));
 
 		$this->assertNotNull($rendered);
 		$this->assertArrayNotHasKey(

@@ -43,6 +43,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\Integriq\Outbound\Identity\OptOutCategoriesInterface;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
@@ -409,8 +410,7 @@ class EventService implements EventServiceInterface {
 			try {
 				$event = $this->objectService->find(
 					id: $eventId,
-					register: 'integriq',
-					schema: 'event',
+					options: new ObjectFindOptions(register: 'integriq', schema: 'event'),
 					_rbac: false,
 					_multitenancy: false
 				);
@@ -768,11 +768,9 @@ class EventService implements EventServiceInterface {
 		// `(string)` cast is defensive (find() signs for a string $id).
 		$subscription = $this->objectService->find(
 			id: (string)$subscriptionId,
-			register: 'integriq',
-			schema: 'event_subscription',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 		if ($subscription === null) {
@@ -1349,11 +1347,9 @@ class EventService implements EventServiceInterface {
 		// `(string)` cast is defensive (find() signs for a string $id).
 		return $this->objectService->find(
 			id: (string)$subscriptionId,
-			register: 'integriq',
-			schema: 'event_subscription',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 	}//end resolveDispatchSubscription()
@@ -1543,7 +1539,7 @@ class EventService implements EventServiceInterface {
 		}
 
 		try {
-			return $this->objectService->find(id: $id, register: 'integriq', schema: $schema);
+			return $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: $schema));
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -1682,8 +1678,7 @@ class EventService implements EventServiceInterface {
 			// notificaties API with NO credentials at all.
 			return $this->objectService->find(
 				id: $sourceId,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1709,7 +1704,7 @@ class EventService implements EventServiceInterface {
 		}
 
 		try {
-			return $this->objectService->find(id: $eventId, register: 'integriq', schema: 'event');
+			return $this->objectService->find(id: $eventId, options: new ObjectFindOptions(register: 'integriq', schema: 'event'));
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -2191,8 +2186,7 @@ class EventService implements EventServiceInterface {
 			// unauthenticated.
 			return $this->objectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: $schema,
+				options: new ObjectFindOptions(register: 'integriq', schema: $schema),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -2392,8 +2386,7 @@ class EventService implements EventServiceInterface {
 	public function replayMessage(string $id, string $actorUid): ObjectEntity {
 		$message = $this->objectService->find(
 			id: $id,
-			register: 'integriq',
-			schema: 'event_message'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_message')
 		);
 		$messageData = $message->getObject();
 		$status = ($messageData['status'] ?? '');
@@ -2427,8 +2420,7 @@ class EventService implements EventServiceInterface {
 
 		return $this->objectService->find(
 			id: $message->getUuid(),
-			register: 'integriq',
-			schema: 'event_message'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_message')
 		);
 
 	}//end replayMessage()
@@ -2456,8 +2448,7 @@ class EventService implements EventServiceInterface {
 		if ($subscriptionId !== null) {
 			$subscription = $this->objectService->find(
 				id: $subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription')
 			);
 
 			if ($subscription !== null) {
@@ -2510,8 +2501,7 @@ class EventService implements EventServiceInterface {
 	public function discardMessage(string $id, string $actorUid): ObjectEntity {
 		$message = $this->objectService->find(
 			id: $id,
-			register: 'integriq',
-			schema: 'event_message'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'event_message')
 		);
 		$messageData = $message->getObject();
 		$status = ($messageData['status'] ?? '');
@@ -2564,11 +2554,9 @@ class EventService implements EventServiceInterface {
 			// `(string)` cast is defensive (find() signs for a string $id).
 			$subscription = $this->objectService->find(
 				id: (string)$subscriptionId,
-				register: 'integriq',
-				schema: 'event_subscription',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'event_subscription', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			return self::DEFAULT_MAX_RETRIES;

@@ -73,6 +73,7 @@ use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -768,8 +769,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function findSynchronizationObject(string|int $id): ObjectEntity {
 		$object = $this->orObjectService->find(
 			id: (string)$id,
-			register: 'integriq',
-			schema: 'synchronization'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization')
 		);
 
 		if ($object === null) {
@@ -1067,8 +1067,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $this->orObjectService->find(
 			id: (string)$id,
-			register: 'integriq',
-			schema: 'synchronization_contract'
+			options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_contract')
 		);
 	}//end findContractObject()
 
@@ -1642,8 +1641,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// schema back open. Neither is acceptable, so the engine reads as the system.
 		$object = $this->orObjectService->find(
 			id: (string)$id,
-			register: 'integriq',
-			schema: 'source',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -2301,8 +2299,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$parentObject = $openRegisters->find(
 				id: $parentObjectId,
-				register: $parentRegister,
-				schema: $parentSchema
+				options: new ObjectFindOptions(register: $parentRegister, schema: $parentSchema)
 			);
 
 			return $parentObject?->jsonSerialize();
@@ -3573,8 +3570,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		if (empty($synchronization['sourceTargetMapping']) === false) {
 			$mapping = $this->orObjectService->find(
 				id: (string)$synchronization['sourceTargetMapping'],
-				register: 'integriq',
-				schema: 'mapping'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
 			);
 		}
 
@@ -3666,7 +3662,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		try {
-			$target = $this->orObjectService->find(id: $targetId, register: $parts[0], schema: $parts[1]);
+			$target = $this->orObjectService->find(id: $targetId, options: new ObjectFindOptions(register: $parts[0], schema: $parts[1]));
 		} catch (\Throwable $exception) {
 			return null;
 		}
@@ -4603,8 +4599,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			try {
 				$sourceHashMapping = $this->orObjectService->find(
 					id: (string)$synchronization['sourceHashMapping'],
-					register: 'integriq',
-					schema: 'mapping'
+					options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
 				);
 			} catch (DoesNotExistException $exception) {
 				return new Exception($exception->getMessage());
@@ -5033,8 +5028,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			return $this->orObjectService->find(
 				id: (string)$targetId,
-				register: $run->registerId,
-				schema: $run->schemaId,
+				options: new ObjectFindOptions(register: $run->registerId, schema: $run->schemaId),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -5541,8 +5535,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			return $this->orObjectService->find(
 				id: (string)$synchronization['sourceTargetMapping'],
-				register: 'integriq',
-				schema: 'mapping'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'mapping')
 			);
 		} catch (DoesNotExistException $exception) {
 			return new Exception($exception->getMessage());
@@ -6148,8 +6141,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		[$registerId, $schemaId] = array_pad(explode(separator: '/', string: (string)($synchronization['targetId'] ?? '')), 2, '');
 		$targetObject = $this->orObjectService->find(
 			id: (string)$contract['targetId'],
-			register: $registerId,
-			schema: $schemaId,
+			options: new ObjectFindOptions(register: $registerId, schema: $schemaId),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -10541,11 +10533,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$raw = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source', render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 			if ($raw !== null) {
 				return $raw->getObject();
@@ -10707,7 +10697,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		try {
-			$data = $this->orObjectService->find(id: $originId, register: $sourceId[0], schema: $sourceId[1])->getObject();
+			$data = $this->orObjectService->find(id: $originId, options: new ObjectFindOptions(register: $sourceId[0], schema: $sourceId[1]))->getObject();
 			$this->orObjectService->saveObject(
 				object: array_merge($data, $fields),
 				register: $sourceId[0],
@@ -10896,7 +10886,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		) {
 			$object = $this->objectService->getOpenRegisters()->find(
 				id: $id,
-				_extend: $config['extend_input']['properties']
+				options: new ObjectFindOptions(extend: $config['extend_input']['properties'])
 			);
 			return $object->jsonSerialize();
 		}
@@ -11111,8 +11101,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$object = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'rule',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'rule'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -11200,8 +11189,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		try {
 			$object = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'rule'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'rule')
 			);
 		} catch (Exception $e) {
 			return null;

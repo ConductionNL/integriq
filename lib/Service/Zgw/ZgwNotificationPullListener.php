@@ -26,6 +26,7 @@ namespace OCA\Integriq\Service\Zgw;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -85,7 +86,7 @@ class ZgwNotificationPullListener {
 		}
 
 		try {
-			$synchronization = $this->objectService->find(id: $set . '-pull', register: 'integriq', schema: 'synchronization');
+			$synchronization = $this->objectService->find(id: $set . '-pull', options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'));
 			if ($synchronization === null) {
 				$this->logger->warning('[ZgwNotificationPullListener] The pull synchronization of '.$set.' is missing; '.$url.' was not pulled.');
 				return null;
@@ -166,7 +167,7 @@ class ZgwNotificationPullListener {
 	 * @return bool True when the url is on that source.
 	 */
 	private function isUnderSource(string $url, string $sourceId): bool {
-		$source = $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source');
+		$source = $this->objectService->find(id: $sourceId, options: new ObjectFindOptions(register: 'integriq', schema: 'source'));
 		if ($source === null) {
 			return false;
 		}

@@ -37,6 +37,7 @@ use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OCA\Integriq\Exception\EudiIssuanceException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Http\Client\IClientService;
@@ -327,8 +328,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		try {
 			$entity = $this->orObjectService->find(
 				id: $uuid,
-				register: 'integriq',
-				schema: 'eudi_credential_offer',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_credential_offer'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -734,8 +734,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		try {
 			$offerEntity = $this->orObjectService->find(
 				id: $offerId,
-				register: 'integriq',
-				schema: 'eudi_credential_offer',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_credential_offer'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -862,8 +861,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 		try {
 			$entity = $this->orObjectService->find(
 				id: $offerUuid,
-				register: 'integriq',
-				schema: 'eudi_credential_offer',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_credential_offer'),
 				_rbac: false,
 				_multitenancy: false
 			);

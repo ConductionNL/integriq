@@ -31,6 +31,7 @@ namespace OCA\Integriq\Outbound\Identity;
 
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -147,8 +148,7 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 			try {
 				$entity = $this->objectService->find(
 					id: trim($identityId),
-					register: MessageRecorder::REGISTER,
-					schema: self::SCHEMA,
+					options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: self::SCHEMA),
 				);
 			} catch (DoesNotExistException) {
 				throw new RuntimeException('No sender identity "' . $identityId . '".');
@@ -332,11 +332,9 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 		try {
 			$entity = $this->objectService->find(
 				id: $identityId,
-				register: MessageRecorder::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: self::SCHEMA, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return null;

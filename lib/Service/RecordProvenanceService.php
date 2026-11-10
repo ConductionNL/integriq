@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IL10N;
 
@@ -128,7 +129,7 @@ class RecordProvenanceService implements RecordProvenanceServiceInterface {
 		}
 
 		try {
-			return $this->objectService->find(id: $id, register: self::REGISTER, schema: $schema, _rbac: false, _multitenancy: false);
+			return $this->objectService->find(id: $id, options: new ObjectFindOptions(register: self::REGISTER, schema: $schema), _rbac: false, _multitenancy: false);
 		} catch (\Throwable) {
 			return null;
 		}

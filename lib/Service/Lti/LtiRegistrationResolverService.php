@@ -28,6 +28,7 @@ namespace OCA\Integriq\Service\Lti;
 
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -244,8 +245,7 @@ class LtiRegistrationResolverService {
 		try {
 			$deployment = $this->orObjectService->find(
 				id: $deploymentUuid,
-				register: 'integriq',
-				schema: 'lti_deployment',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'lti_deployment'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -280,8 +280,7 @@ class LtiRegistrationResolverService {
 		try {
 			$registration = $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'integriq',
-				schema: $registrationType,
+				options: new ObjectFindOptions(register: 'integriq', schema: $registrationType),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -317,8 +316,7 @@ class LtiRegistrationResolverService {
 		try {
 			$registration = $this->orObjectService->find(
 				id: $registrationUuid,
-				register: 'integriq',
-				schema: $registrationType,
+				options: new ObjectFindOptions(register: 'integriq', schema: $registrationType),
 				_rbac: false,
 				_multitenancy: false
 			);

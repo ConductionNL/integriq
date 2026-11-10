@@ -26,6 +26,7 @@ namespace OCA\Integriq\Service\Zgw;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -202,7 +203,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 	private function sourceUuid(string $slug): string {
 		$source = null;
 		try {
-			$source = $this->objectService->find(id: $slug, register: 'integriq', schema: 'source');
+			$source = $this->objectService->find(id: $slug, options: new ObjectFindOptions(register: 'integriq', schema: 'source'));
 		} catch (\Throwable) {
 			$source = null;
 		}
@@ -292,7 +293,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 		foreach ($slugs as $syncSlug) {
 			$entity = null;
 			try {
-				$entity = $this->objectService->find(id: (string)$syncSlug, register: 'integriq', schema: 'synchronization');
+				$entity = $this->objectService->find(id: (string)$syncSlug, options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization'));
 			} catch (\Throwable) {
 				$entity = null;
 			}

@@ -43,6 +43,7 @@ namespace OCA\Integriq\Service;
 
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -998,8 +999,7 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 		try {
 			$credential = $this->objectService->find(
 				id: $credentialId,
-				register: self::CREDENTIAL_REGISTER,
-				schema: self::CREDENTIAL_SCHEMA,
+				options: new ObjectFindOptions(register: self::CREDENTIAL_REGISTER, schema: self::CREDENTIAL_SCHEMA),
 				_rbac: false
 			);
 		} catch (Throwable) {

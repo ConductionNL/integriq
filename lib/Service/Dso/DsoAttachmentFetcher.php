@@ -46,6 +46,7 @@ use OCA\Integriq\Service\DsoIngestService;
 use OCA\Integriq\Service\PayloadTooLargeException;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
@@ -120,8 +121,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 	public function fetchPending(string $requestUuid): ?array {
 		$request = $this->objectService->find(
 			id: $requestUuid,
-			register: DsoIngestService::REGISTER,
-			schema: DsoIngestService::SCHEMA_VERZOEK
+			options: new ObjectFindOptions(register: DsoIngestService::REGISTER, schema: DsoIngestService::SCHEMA_VERZOEK)
 		);
 		if ($request instanceof ObjectEntity === false) {
 			$this->logger->warning('[DsoAttachmentFetcher] no dso_verzoek ' . $requestUuid . '; nothing fetched');

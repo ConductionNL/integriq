@@ -43,6 +43,7 @@ use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\Integriq\Service\OpenFormulieren\MappingResolutionException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -251,8 +252,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 	public function getSubmission(string $submissionUuid): array {
 		$submission = $this->objectService->find(
 			id: $submissionUuid,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION)
 		);
 		if ($submission instanceof ObjectEntity === false) {
 			throw new OpenFormulierenException(message: 'No submission found for uuid "' . $submissionUuid . '".');
@@ -285,8 +285,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 	public function handoff(string $submissionUuid): array {
 		$submission = $this->objectService->find(
 			id: $submissionUuid,
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION)
 		);
 		if ($submission instanceof ObjectEntity === false) {
 			throw new OpenFormulierenException(message: 'No submission found for uuid "' . $submissionUuid . '".');
@@ -487,8 +486,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 
 		$current = $this->objectService->find(
 			id: $submission->getUuid(),
-			register: self::REGISTER,
-			schema: self::SCHEMA_SUBMISSION
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SUBMISSION)
 		);
 		$data = $submission->getObject();
 		if ($current instanceof ObjectEntity === true) {
@@ -508,8 +506,7 @@ class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterf
 		if (isset($target['register'], $target['schema'], $target['uuid']) === true) {
 			$targetObject = $this->objectService->find(
 				id: (string)$target['uuid'],
-				register: (string)$target['register'],
-				schema: (string)$target['schema']
+				options: new ObjectFindOptions(register: (string)$target['register'], schema: (string)$target['schema'])
 			);
 		}
 

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Lti;
 
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -118,8 +119,7 @@ class LtiCustomParameterReader {
 		try {
 			$synchronization = $this->objectService->find(
 				id: $synchronizationId,
-				register: 'integriq',
-				schema: 'synchronization'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization')
 			);
 		} catch (\Throwable $e) {
 			return null;

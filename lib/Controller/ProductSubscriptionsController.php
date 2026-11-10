@@ -37,6 +37,7 @@ use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -124,8 +125,7 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$product = $this->orObjectService->find(
 				id: $productId,
-				register: self::REGISTER,
-				schema: 'api_product',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -311,8 +311,7 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$this->orObjectService->find(
 				id: $productId,
-				register: self::REGISTER,
-				schema: 'api_product',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product'),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -451,8 +450,7 @@ class ProductSubscriptionsController extends Controller {
 		try {
 			$subscription = $this->orObjectService->find(
 				id: $subscriptionId,
-				register: self::REGISTER,
-				schema: 'api_product_subscription',
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'api_product_subscription'),
 				_rbac: false,
 				_multitenancy: false
 			);

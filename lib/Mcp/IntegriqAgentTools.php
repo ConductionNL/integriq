@@ -41,6 +41,7 @@ use OCA\Integriq\Service\EventServiceInterface;
 use OCA\Integriq\Service\SourceTestServiceInterface;
 use OCA\Integriq\Service\SyncItemDeadLetterServiceInterface;
 use OCA\Integriq\Service\SynchronizationServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\OCS\OCSForbiddenException;
@@ -315,7 +316,7 @@ class IntegriqAgentTools {
 	public function testSource(string $sourceId, ?string $agentId=null): array {
 		$tool   = 'testSource';
 		$user   = $this->authorize(tool: $tool, agentId: $agentId, ids: [$sourceId]);
-		$source = $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
+		$source = $this->objectService->find(id: $sourceId, options: new ObjectFindOptions(register: 'integriq', schema: 'source'), _rbac: false, _multitenancy: false);
 		if ($source === null) {
 			throw new InvalidArgumentException('Not found: ' . $sourceId);
 		}
@@ -623,7 +624,7 @@ class IntegriqAgentTools {
 	 */
 	private function findObject(string $schema, string $id): \OCA\OpenRegister\Db\ObjectEntity {
 		try {
-			$found = $this->objectService->find(id: $id, register: 'integriq', schema: $schema, _rbac: false, _multitenancy: false);
+			$found = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: 'integriq', schema: $schema), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$found = null;
 		}

@@ -26,6 +26,7 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -188,8 +189,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 	public function revokeIndex(string $statusListId, int $index): bool {
 		$entity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'integriq',
-			schema: 'eudi_status_list',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_status_list'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -216,8 +216,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 		// background refresh window.
 		$refreshedEntity = $this->orObjectService->find(
 			id: $statusListId,
-			register: 'integriq',
-			schema: 'eudi_status_list',
+			options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_status_list'),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -360,8 +359,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 		try {
 			$entity = $this->orObjectService->find(
 				id: $statusListId,
-				register: 'integriq',
-				schema: 'eudi_status_list',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'eudi_status_list'),
 				_rbac: false,
 				_multitenancy: false
 			);

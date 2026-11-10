@@ -37,6 +37,7 @@ use OCA\Integriq\Outbound\BodyRedactor;
 use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -271,8 +272,7 @@ class CallRecorder implements CallRecorderInterface {
 	public function read(string $uuid): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: MessageRecorder::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: self::SCHEMA),
 			_rbac: false,
 			_multitenancy: false,
 		);
@@ -336,8 +336,7 @@ class CallRecorder implements CallRecorderInterface {
 		try {
 			$source = $this->objectService->find(
 				id: $uuid,
-				register: MessageRecorder::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: MessageRecorder::REGISTER, schema: 'source'),
 				_rbac: false,
 				_multitenancy: false,
 			);

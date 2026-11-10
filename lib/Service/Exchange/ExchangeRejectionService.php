@@ -29,6 +29,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\InvalidMessageStateException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -176,8 +177,7 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 		try {
 			$entry = $this->objectService->find(
 				id: $rejectionId,
-				register: ExchangeJobService::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: ExchangeJobService::REGISTER, schema: self::SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);

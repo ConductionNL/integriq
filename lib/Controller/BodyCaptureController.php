@@ -31,6 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -222,8 +223,7 @@ class BodyCaptureController extends Controller {
 		try {
 			$source = $this->objectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'source',
+				options: new ObjectFindOptions(register: 'integriq', schema: 'source'),
 				_rbac: false,
 				_multitenancy: false
 			);

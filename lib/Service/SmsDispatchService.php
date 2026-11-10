@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Sms\PhoneNumberValidator;
 use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
 use OCA\Integriq\Service\Sms\SmsProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -308,7 +309,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 */
 	public function pollStatus(string $uuid): ObjectEntity {
-		$message = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_MESSAGE);
+		$message = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_MESSAGE));
 		if ($message instanceof ObjectEntity === false) {
 			throw new SmsProviderException(message: 'No sms_message found for uuid "' . $uuid . '".');
 		}

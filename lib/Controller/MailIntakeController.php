@@ -33,6 +33,7 @@ use OCA\Integriq\Service\Mail\MailboxSourceHandlerInterface;
 use OCA\Integriq\Service\Mail\MailIntakeServiceInterface;
 use OCA\Integriq\Service\Mail\MessageParserInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -222,8 +223,7 @@ class MailIntakeController extends Controller {
 		try {
 			$source = $this->orObjectService->find(
 				id: $sourceId,
-				register: MailIntakeServiceInterface::REGISTER,
-				schema: 'source',
+				options: new ObjectFindOptions(register: MailIntakeServiceInterface::REGISTER, schema: 'source'),
 			);
 		} catch (DoesNotExistException) {
 			return null;

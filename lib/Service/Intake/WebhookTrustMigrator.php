@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Dso\DsoConnection;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
 use OCA\Integriq\Service\SystemWrite;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
@@ -203,11 +204,9 @@ class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 	private function readRaw(ObjectEntity $source): ObjectEntity {
 		$raw = $this->objectService->find(
 			id: (string)$source->getUuid(),
-			register: DsoConnection::REGISTER,
-			schema: self::SCHEMA_SOURCE,
+			options: new ObjectFindOptions(register: DsoConnection::REGISTER, schema: self::SCHEMA_SOURCE, render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 		if ($raw instanceof ObjectEntity === false) {
 			return $source;

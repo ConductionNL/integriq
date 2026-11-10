@@ -28,6 +28,7 @@
 namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\Uid\Uuid;
@@ -88,9 +89,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 		// and every one of those inserts maintained nine indexes.
 		return $this->orObjectService->find(
 			id: (string)$id,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			_audit: false
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA, audit: false)
 		);
 
 	}//end findObject()

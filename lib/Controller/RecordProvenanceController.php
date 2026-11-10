@@ -24,6 +24,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\RecordProvenanceServiceInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -80,7 +81,7 @@ class RecordProvenanceController extends Controller {
 		}
 
 		try {
-			$record = $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true, _multitenancy: true);
+			$record = $this->objectService->find(id: $id, options: new ObjectFindOptions(register: $register, schema: $schema), _rbac: true, _multitenancy: true);
 		} catch (DoesNotExistException | NotAuthorizedException) {
 			// A miss and a refused read look the same to the caller: the record does not exist for them.
 			$record = null;

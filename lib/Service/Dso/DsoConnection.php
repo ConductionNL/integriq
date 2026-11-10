@@ -42,6 +42,7 @@ use OCA\Integriq\Exception\DsoSignatureException;
 use OCA\Integriq\Service\DSOSignatureVerifierService;
 use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -348,11 +349,9 @@ class DsoConnection implements PortalConnectionInterface {
 		try {
 			$raw = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER,
-				schema: self::SCHEMA_CONSUMER,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_CONSUMER, render: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false
+				_multitenancy: false
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning(

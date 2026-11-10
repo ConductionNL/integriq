@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Exchange;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
@@ -114,8 +115,7 @@ class ExchangeReadModel implements ExchangeReadModelInterface {
 		try {
 			$job = $this->objectService->find(
 				id: $jobId,
-				register: ExchangeJobService::REGISTER,
-				schema: ExchangeJobService::SCHEMA_JOB,
+				options: new ObjectFindOptions(register: ExchangeJobService::REGISTER, schema: ExchangeJobService::SCHEMA_JOB),
 				_rbac: false,
 				_multitenancy: false
 			);

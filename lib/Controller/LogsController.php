@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -277,8 +278,7 @@ class LogsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization_log'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_log')
 			);
 		} catch (DoesNotExistException $e) {
 			$log = null;
@@ -330,8 +330,7 @@ class LogsController extends Controller {
 		try {
 			$log = $this->orObjectService->find(
 				id: $id,
-				register: 'integriq',
-				schema: 'synchronization_log'
+				options: new ObjectFindOptions(register: 'integriq', schema: 'synchronization_log')
 			);
 			if ($log === null) {
 				return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
