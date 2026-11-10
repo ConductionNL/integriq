@@ -99,77 +99,109 @@ class DSOStatusService {
 	): bool {
 		$dsoStatus = $this->mapCaseStatusToDsoStatus(caseStatus: $caseStatus);
 		$payload = $this->buildStatusPayload(requestId: $requestId, dsoStatus: $dsoStatus);
+		$post = new MtlsJsonPost(clientService: $this->clientService, certPath: $certPath);
 
-		$attempt = 0;
-		$clientOptions = [
-			'json' => $payload,
-			'headers' => ['Content-Type' => 'application/json'],
-		];
+		return $this->pushWithRetries(run: new StatusPushRun(uri: $dsoApiUrl . '/statussen', payload: $payload), post: $post);
+	}//end pushStatusToDSO()
 
-		if ($certPath !== null) {
-			$clientOptions['cert'] = $certPath;
-		}
+	/**
+	 * Attempt the push up to MAX_RETRIES times, backing off between attempts.
+	 *
+	 * @param StatusPushRun $run  The push.
+	 * @param MtlsJsonPost  $post The POST over the configured certificate.
+	 *
+	 * @return bool True on successful push, false if all retries fail.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
+	 */
+	private function pushWithRetries(StatusPushRun $run, MtlsJsonPost $post): bool {
+		while ($run->attempt < self::MAX_RETRIES) {
+			$run->attempt++;
 
-		while ($attempt < self::MAX_RETRIES) {
-			$attempt++;
+			if ($this->attempt(run: $run, post: $post) === true) {
+				return true;
+			}
 
-			try {
-				$client = $this->clientService->newClient();
-				$response = $client->post(
-					uri: $dsoApiUrl . '/statussen',
-					options: $clientOptions
-				);
-
-				$statusCode = $response->getStatusCode();
-
-				if ($statusCode >= 200 && $statusCode < 300) {
-					$this->logger->info(
-						'DSO: status pushed successfully',
-						[
-							'verzoekId' => $requestId,
-							'dsoStatus' => $dsoStatus,
-							'attempt' => $attempt,
-						]
-					);
-
-					return true;
-				}
-
-				$this->logger->warning(
-					'DSO: status push returned non-2xx',
-					[
-						'verzoekId' => $requestId,
-						'statusCode' => $statusCode,
-						'attempt' => $attempt,
-					]
-				);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					'DSO: status push attempt failed',
-					[
-						'verzoekId' => $requestId,
-						'attempt' => $attempt,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-
-			if ($attempt < self::MAX_RETRIES) {
-				$sleepSeconds = (self::BACKOFF_BASE_SECONDS ** $attempt);
+			if ($run->attempt < self::MAX_RETRIES) {
+				$sleepSeconds = (self::BACKOFF_BASE_SECONDS ** $run->attempt);
 				sleep(seconds: $sleepSeconds);
 			}
-		}//end while
+		}
 
 		$this->logger->error(
 			'DSO: status push failed after all retries',
 			[
-				'verzoekId' => $requestId,
-				'dsoStatus' => $dsoStatus,
+				'verzoekId' => $run->requestId(),
+				'dsoStatus' => $run->dsoStatus(),
 			]
 		);
 
 		return false;
-	}//end pushStatusToDSO()
+	}//end pushWithRetries()
+
+	/**
+	 * One attempt: POST the payload and log how it went.
+	 *
+	 * @param StatusPushRun $run  The push, with the attempt number.
+	 * @param MtlsJsonPost  $post The POST over the configured certificate.
+	 *
+	 * @return bool True when DSO-LV accepted the status.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
+	 */
+	private function attempt(StatusPushRun $run, MtlsJsonPost $post): bool {
+		try {
+			$response = $post->post(uri: $run->uri, payload: $run->payload);
+			return $this->answered(run: $run, statusCode: $response->getStatusCode());
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				'DSO: status push attempt failed',
+				[
+					'verzoekId' => $run->requestId(),
+					'attempt' => $run->attempt,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return false;
+	}//end attempt()
+
+	/**
+	 * Log the answer DSO-LV gave to one attempt.
+	 *
+	 * @param StatusPushRun $run        The push, with the attempt number.
+	 * @param int           $statusCode The HTTP status DSO-LV answered with.
+	 *
+	 * @return bool True for a 2xx answer.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-11
+	 */
+	private function answered(StatusPushRun $run, int $statusCode): bool {
+		if ($statusCode >= 200 && $statusCode < 300) {
+			$this->logger->info(
+				'DSO: status pushed successfully',
+				[
+					'verzoekId' => $run->requestId(),
+					'dsoStatus' => $run->dsoStatus(),
+					'attempt' => $run->attempt,
+				]
+			);
+
+			return true;
+		}
+
+		$this->logger->warning(
+			'DSO: status push returned non-2xx',
+			[
+				'verzoekId' => $run->requestId(),
+				'statusCode' => $statusCode,
+				'attempt' => $run->attempt,
+			]
+		);
+
+		return false;
+	}//end answered()
 
 	/**
 	 * Map an internal zaak status to its DSO-LV equivalent.

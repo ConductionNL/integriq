@@ -91,79 +91,103 @@ class DSOSamenwerkingService {
 		string $dsoSwfUrl,
 		?string $certPath = null,
 	): array {
-		$payload = $this->buildAdviesverzoekPayload(
-			case: $case,
-			partnerOin: $partnerOin,
-			term: $term
-		);
-		$adviesverzoekId = ($payload['adviesverzoekId'] ?? uniqid(prefix: 'avz-', more_entropy: true));
+		$payload = $this->buildAdviesverzoekPayload(case: $case, partnerOin: $partnerOin, term: $term);
+		$run = new AdviesverzoekRun(uri: $dsoSwfUrl . '/adviesverzoeken', payload: $payload);
 
-		$clientOptions = [
-			'json' => $payload,
-			'headers' => ['Content-Type' => 'application/json'],
-		];
+		return $this->deliver(run: $run, post: new MtlsJsonPost(clientService: $this->clientService, certPath: $certPath));
 
-		if ($certPath !== null) {
-			$clientOptions['cert'] = $certPath;
-		}
+	}//end sendAdviesverzoek()
 
+	/**
+	 * POST the adviesverzoek and turn the answer, or the exception, into the result.
+	 *
+	 * @param AdviesverzoekRun $run  The adviesverzoek.
+	 * @param MtlsJsonPost     $post The POST over the configured certificate.
+	 *
+	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function deliver(AdviesverzoekRun $run, MtlsJsonPost $post): array {
 		try {
-			$client = $this->clientService->newClient();
-			$response = $client->post(
-				uri: $dsoSwfUrl . '/adviesverzoeken',
-				options: $clientOptions
-			);
-
-			$statusCode = $response->getStatusCode();
-
-			if ($statusCode >= 200 && $statusCode < 300) {
-				$this->logger->info(
-					'DSO-SWF: adviesverzoek sent successfully',
-					[
-						'adviesverzoekId' => $adviesverzoekId,
-						'partnerOin' => $partnerOin,
-						'caseId' => ($case['id'] ?? null),
-					]
-				);
-
-				return [
-					'success' => true,
-					'adviesverzoekId' => $adviesverzoekId,
-					'message' => 'Adviesverzoek succesvol verzonden naar ' . $partnerOin,
-				];
-			}
-
-			$this->logger->warning(
-				'DSO-SWF: adviesverzoek post returned non-2xx',
-				[
-					'adviesverzoekId' => $adviesverzoekId,
-					'statusCode' => $statusCode,
-				]
-			);
-
-			return [
-				'success' => false,
-				'adviesverzoekId' => $adviesverzoekId,
-				'message' => 'DSO-SWF responded with HTTP ' . $statusCode,
-			];
+			$response = $post->post(uri: $run->uri, payload: $run->payload);
+			return $this->answered(run: $run, statusCode: $response->getStatusCode());
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'DSO-SWF: failed to send adviesverzoek',
 				[
-					'adviesverzoekId' => $adviesverzoekId,
-					'partnerOin' => $partnerOin,
+					'adviesverzoekId' => $run->adviesverzoekId,
+					'partnerOin' => $run->partnerOin(),
 					'error' => $e->getMessage(),
 				]
 			);
 
 			return [
 				'success' => false,
-				'adviesverzoekId' => $adviesverzoekId,
+				'adviesverzoekId' => $run->adviesverzoekId,
 				'message' => 'Send failed: ' . $e->getMessage(),
 			];
 		}//end try
 
-	}//end sendAdviesverzoek()
+	}//end deliver()
+
+	/**
+	 * The result for the HTTP status DSO-SWF answered with.
+	 *
+	 * @param AdviesverzoekRun $run        The adviesverzoek.
+	 * @param int              $statusCode The HTTP status.
+	 *
+	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function answered(AdviesverzoekRun $run, int $statusCode): array {
+		if ($statusCode >= 200 && $statusCode < 300) {
+			return $this->accepted(run: $run);
+		}
+
+		$this->logger->warning(
+			'DSO-SWF: adviesverzoek post returned non-2xx',
+			[
+				'adviesverzoekId' => $run->adviesverzoekId,
+				'statusCode' => $statusCode,
+			]
+		);
+
+		return [
+			'success' => false,
+			'adviesverzoekId' => $run->adviesverzoekId,
+			'message' => 'DSO-SWF responded with HTTP ' . $statusCode,
+		];
+
+	}//end answered()
+
+	/**
+	 * Log and answer an adviesverzoek DSO-SWF accepted.
+	 *
+	 * @param AdviesverzoekRun $run The adviesverzoek.
+	 *
+	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function accepted(AdviesverzoekRun $run): array {
+		$this->logger->info(
+			'DSO-SWF: adviesverzoek sent successfully',
+			[
+				'adviesverzoekId' => $run->adviesverzoekId,
+				'partnerOin' => $run->partnerOin(),
+				'caseId' => $run->caseId(),
+			]
+		);
+
+		return [
+			'success' => true,
+			'adviesverzoekId' => $run->adviesverzoekId,
+			'message' => 'Adviesverzoek succesvol verzonden naar ' . $run->partnerOin(),
+		];
+
+	}//end accepted()
 
 	/**
 	 * Receive and store an advies from a partner organisation.
