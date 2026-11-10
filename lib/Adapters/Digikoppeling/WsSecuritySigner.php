@@ -96,6 +96,18 @@ class WsSecuritySigner {
 	private const DIGEST_METHOD = 'http://www.w3.org/2001/04/xmlenc#sha256';
 
 	/**
+	 * The Algorithm of each ds:* method element the signature carries.
+	 *
+	 * @var array<string, string>
+	 */
+	private const METHOD_ALGORITHMS = [
+		'ds:CanonicalizationMethod' => self::C14N,
+		'ds:SignatureMethod' => self::SIG_METHOD,
+		'ds:Transform' => self::C14N,
+		'ds:DigestMethod' => self::DIGEST_METHOD,
+	];
+
+	/**
 	 * Sign a SOAP envelope's Body with a WS-Security X.509 enveloped signature.
 	 *
 	 * @param string $soapEnvelopeXml The SOAP 1.1/1.2 envelope XML.
@@ -109,76 +121,97 @@ class WsSecuritySigner {
 	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: WUS synchronous profile with WS-Security signing (REQ-DK-002)
 	 */
 	public function sign(string $soapEnvelopeXml, string $certificatePem, string $privateKeyPem): string {
-		$doc = new DOMDocument();
-		$doc->preserveWhiteSpace = false;
-		if (@$doc->loadXML($soapEnvelopeXml) === false) {
+		$doc = $this->loadEnvelope(xml: $soapEnvelopeXml);
+		if ($doc === null) {
 			throw new DigikoppelingException(message:'Cannot sign: the SOAP envelope is not well-formed XML.');
 		}
 
+		$body = $this->bodyToSign(doc: $doc);
+		$privateKey = $this->signingKey(privateKeyPem: $privateKeyPem);
+
+		$signedInfo = $this->signedInfoFor(body: $body);
+		$signatureValue = $this->signatureOver(signedInfo: $signedInfo, privateKey: $privateKey);
+		$signature = $this->signatureElement(signedInfo: $signedInfo, signatureValue: $signatureValue);
+		$signature->appendChild($this->keyInfo(doc: $doc, certificatePem: $certificatePem));
+		$this->attachSecurityHeader(signature: $signature);
+
+		return (string)$doc->saveXML();
+	}//end sign()
+
+	/**
+	 * Parse an envelope, or null when it is not well-formed XML.
+	 *
+	 * @param string $xml The SOAP envelope XML.
+	 *
+	 * @return DOMDocument|null
+	 */
+	private function loadEnvelope(string $xml): ?DOMDocument {
+		$doc = new DOMDocument();
+		$doc->preserveWhiteSpace = false;
+		if (@$doc->loadXML($xml) === false) {
+			return null;
+		}
+
+		return $doc;
+	}//end loadEnvelope()
+
+	/**
+	 * The envelope's Body, which the signature covers.
+	 *
+	 * @param DOMDocument $doc The envelope.
+	 *
+	 * @return DOMElement
+	 *
+	 * @throws DigikoppelingException If the envelope has no Body.
+	 */
+	private function bodyToSign(DOMDocument $doc): DOMElement {
 		$body = $this->firstByLocalName(doc: $doc, localName: 'Body');
 		if ($body === null) {
 			throw new DigikoppelingException(message:'Cannot sign: the SOAP envelope has no Body element.');
 		}
 
+		return $body;
+	}//end bodyToSign()
+
+	/**
+	 * The signer's private key.
+	 *
+	 * @param string $privateKeyPem The signer's RSA private key (PEM).
+	 *
+	 * @return \OpenSSLAsymmetricKey
+	 *
+	 * @throws DigikoppelingException If the key material is invalid.
+	 */
+	private function signingKey(string $privateKeyPem): \OpenSSLAsymmetricKey {
 		$privateKey = @openssl_pkey_get_private($privateKeyPem);
 		if ($privateKey === false) {
 			throw new DigikoppelingException(message:'Cannot sign: the PKIoverheid private key material is invalid.');
 		}
 
+		return $privateKey;
+	}//end signingKey()
+
+	/**
+	 * Tag the Body with a wsu:Id and build the ds:SignedInfo whose Reference digests it.
+	 *
+	 * @param DOMElement $body The envelope's Body.
+	 *
+	 * @return DOMElement The ds:SignedInfo, not yet in the document.
+	 */
+	private function signedInfoFor(DOMElement $body): DOMElement {
+		$doc = $body->ownerDocument;
+
 		// Tag the Body with a wsu:Id so the Reference can point at it.
 		$bodyId = 'body-' . bin2hex(random_bytes(8));
 		$body->setAttributeNS(self::NS_WSU, 'wsu:Id', $bodyId);
 
-		// Digest the canonicalised Body.
-		$digestValue = base64_encode(hash('sha256', (string)$body->C14N(true, false), true));
-
-		// Build ds:SignedInfo.
 		$signedInfo = $doc->createElementNS(self::NS_DS, 'ds:SignedInfo');
-		$signedInfo->appendChild($this->methodElement(doc: $doc, qname: 'ds:CanonicalizationMethod', algorithm: self::C14N));
-		$signedInfo->appendChild($this->methodElement(doc: $doc, qname: 'ds:SignatureMethod', algorithm: self::SIG_METHOD));
+		$this->appendDsMethod(parent: $signedInfo, qname: 'ds:CanonicalizationMethod');
+		$this->appendDsMethod(parent: $signedInfo, qname: 'ds:SignatureMethod');
+		$signedInfo->appendChild($this->bodyReference(body: $body));
 
-		$reference = $doc->createElementNS(self::NS_DS, 'ds:Reference');
-		$reference->setAttribute('URI', '#' . $bodyId);
-		$transforms = $doc->createElementNS(self::NS_DS, 'ds:Transforms');
-		$transforms->appendChild($this->methodElement(doc: $doc, qname: 'ds:Transform', algorithm: self::C14N));
-		$reference->appendChild($transforms);
-		$reference->appendChild($this->methodElement(doc: $doc, qname: 'ds:DigestMethod', algorithm: self::DIGEST_METHOD));
-		$digestEl = $doc->createElementNS(self::NS_DS, 'ds:DigestValue', $digestValue);
-		$reference->appendChild($digestEl);
-		$signedInfo->appendChild($reference);
-
-		// Sign the canonicalised SignedInfo. It must be in-document so the ds
-		// namespace resolves during C14N; park it under a detached holder.
-		$holder = $doc->createElementNS(self::NS_DS, 'ds:SignatureHolder');
-		$holder->appendChild($signedInfo);
-		$doc->documentElement->appendChild($holder);
-		$canonicalSignedInfo = (string)$signedInfo->C14N(true, false);
-		$doc->documentElement->removeChild($holder);
-
-		$signatureValue = '';
-		if (openssl_sign($canonicalSignedInfo, $signatureValue, $privateKey, OPENSSL_ALGO_SHA256) === false) {
-			throw new DigikoppelingException(message:'Cannot sign: RSA-SHA256 signing failed over the SignedInfo.');
-		}
-
-		// Build ds:Signature.
-		$signature = $doc->createElementNS(self::NS_DS, 'ds:Signature');
-		$signature->appendChild($signedInfo);
-		$signature->appendChild($doc->createElementNS(self::NS_DS, 'ds:SignatureValue', base64_encode($signatureValue)));
-
-		$keyInfo = $doc->createElementNS(self::NS_DS, 'ds:KeyInfo');
-		$x509Data = $doc->createElementNS(self::NS_DS, 'ds:X509Data');
-		$x509Data->appendChild($doc->createElementNS(self::NS_DS, 'ds:X509Certificate', $this->certificateBody(certificatePem: $certificatePem)));
-		$keyInfo->appendChild($x509Data);
-		$signature->appendChild($keyInfo);
-
-		// Attach a wsse:Security header carrying the signature.
-		$header = $this->ensureHeader(doc: $doc);
-		$security = $doc->createElementNS(self::NS_WSSE, 'wsse:Security');
-		$security->appendChild($signature);
-		$header->insertBefore($security, $header->firstChild);
-
-		return (string)$doc->saveXML();
-	}//end sign()
+		return $signedInfo;
+	}//end signedInfoFor()
 
 	/**
 	 * Verify the WS-Security signature on a signed SOAP envelope.
@@ -198,72 +231,223 @@ class WsSecuritySigner {
 	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: WUS synchronous profile with WS-Security signing (REQ-DK-002)
 	 */
 	public function verify(string $signedXml, ?string $expectedCertificatePem = null): bool {
-		$doc = new DOMDocument();
-		$doc->preserveWhiteSpace = false;
-		if (@$doc->loadXML($signedXml) === false) {
+		$doc = $this->loadEnvelope(xml: $signedXml);
+		if ($doc === null || $this->hasSignatureParts(doc: $doc) === false) {
 			return false;
 		}
 
-		$signature = $this->firstByLocalNameNs(doc: $doc, namespace: self::NS_DS, localName: 'Signature');
-		$signedInfo = $this->firstByLocalNameNs(doc: $doc, namespace: self::NS_DS, localName: 'SignedInfo');
-		$reference = $this->firstByLocalNameNs(doc: $doc, namespace: self::NS_DS, localName: 'Reference');
-		if ($signature === null || $signedInfo === null || $reference === null) {
+		if ($this->bodyDigestMatches(doc: $doc) === false) {
 			return false;
 		}
 
-		// Recompute + compare the Body digest.
+		return $this->signatureVerifies(doc: $doc, expectedCertificatePem: $expectedCertificatePem);
+	}//end verify()
+
+	/**
+	 * The ds:Reference over the Body: its URI, the transform, the digest method and the digest.
+	 *
+	 * @param DOMElement $body The Body, tagged with its wsu:Id.
+	 *
+	 * @return DOMElement
+	 */
+	private function bodyReference(DOMElement $body): DOMElement {
+		$doc = $body->ownerDocument;
+		$digestValue = base64_encode(hash('sha256', (string)$body->C14N(true, false), true));
+
+		$reference = $doc->createElementNS(self::NS_DS, 'ds:Reference');
+		$reference->setAttribute('URI', '#' . $body->getAttributeNS(self::NS_WSU, 'Id'));
+		$transforms = $doc->createElementNS(self::NS_DS, 'ds:Transforms');
+		$this->appendDsMethod(parent: $transforms, qname: 'ds:Transform');
+		$reference->appendChild($transforms);
+		$this->appendDsMethod(parent: $reference, qname: 'ds:DigestMethod');
+		$reference->appendChild($doc->createElementNS(self::NS_DS, 'ds:DigestValue', $digestValue));
+
+		return $reference;
+	}//end bodyReference()
+
+	/**
+	 * RSA-SHA256 over the canonicalised SignedInfo.
+	 *
+	 * The SignedInfo must be in-document so the ds namespace resolves during
+	 * C14N; it is parked under a detached holder while it is canonicalised.
+	 *
+	 * @param DOMElement            $signedInfo The ds:SignedInfo.
+	 * @param \OpenSSLAsymmetricKey $privateKey The signer's private key.
+	 *
+	 * @return string The raw signature.
+	 *
+	 * @throws DigikoppelingException If signing fails.
+	 */
+	private function signatureOver(DOMElement $signedInfo, \OpenSSLAsymmetricKey $privateKey): string {
+		$doc = $signedInfo->ownerDocument;
+		$holder = $doc->createElementNS(self::NS_DS, 'ds:SignatureHolder');
+		$holder->appendChild($signedInfo);
+		$doc->documentElement->appendChild($holder);
+		$canonicalSignedInfo = (string)$signedInfo->C14N(true, false);
+		$doc->documentElement->removeChild($holder);
+
+		$signatureValue = '';
+		if (openssl_sign($canonicalSignedInfo, $signatureValue, $privateKey, OPENSSL_ALGO_SHA256) === false) {
+			throw new DigikoppelingException(message:'Cannot sign: RSA-SHA256 signing failed over the SignedInfo.');
+		}
+
+		return $signatureValue;
+	}//end signatureOver()
+
+	/**
+	 * The ds:Signature carrying the SignedInfo and its value.
+	 *
+	 * @param DOMElement $signedInfo     The ds:SignedInfo.
+	 * @param string     $signatureValue The raw signature.
+	 *
+	 * @return DOMElement
+	 */
+	private function signatureElement(DOMElement $signedInfo, string $signatureValue): DOMElement {
+		$doc = $signedInfo->ownerDocument;
+		$signature = $doc->createElementNS(self::NS_DS, 'ds:Signature');
+		$signature->appendChild($signedInfo);
+		$signature->appendChild($doc->createElementNS(self::NS_DS, 'ds:SignatureValue', base64_encode($signatureValue)));
+
+		return $signature;
+	}//end signatureElement()
+
+	/**
+	 * The ds:KeyInfo carrying the signer's certificate.
+	 *
+	 * @param DOMDocument $doc            The envelope.
+	 * @param string      $certificatePem The signer's X.509 certificate (PEM).
+	 *
+	 * @return DOMElement
+	 */
+	private function keyInfo(DOMDocument $doc, string $certificatePem): DOMElement {
+		$keyInfo = $doc->createElementNS(self::NS_DS, 'ds:KeyInfo');
+		$x509Data = $doc->createElementNS(self::NS_DS, 'ds:X509Data');
+		$x509Data->appendChild($doc->createElementNS(self::NS_DS, 'ds:X509Certificate', $this->certificateBody(certificatePem: $certificatePem)));
+		$keyInfo->appendChild($x509Data);
+
+		return $keyInfo;
+	}//end keyInfo()
+
+	/**
+	 * Attach a wsse:Security header carrying the signature, first in the SOAP Header.
+	 *
+	 * @param DOMElement $signature The ds:Signature.
+	 *
+	 * @return void
+	 *
+	 * @throws DigikoppelingException If the envelope has no Envelope root.
+	 */
+	private function attachSecurityHeader(DOMElement $signature): void {
+		$doc = $signature->ownerDocument;
+		$header = $this->ensureHeader(doc: $doc);
+		$security = $doc->createElementNS(self::NS_WSSE, 'wsse:Security');
+		$security->appendChild($signature);
+		$header->insertBefore($security, $header->firstChild);
+	}//end attachSecurityHeader()
+
+	/**
+	 * Whether the envelope carries a ds:Signature, a ds:SignedInfo and a ds:Reference.
+	 *
+	 * @param DOMDocument $doc The envelope.
+	 *
+	 * @return bool
+	 */
+	private function hasSignatureParts(DOMDocument $doc): bool {
+		foreach (['Signature', 'SignedInfo', 'Reference'] as $localName) {
+			if ((new XmlDsigLookup())->element(doc: $doc, localName: $localName) === null) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end hasSignatureParts()
+
+	/**
+	 * Whether the Reference points at the Body and its digest matches the recomputed one.
+	 *
+	 * @param DOMDocument $doc The envelope, with its signature parts.
+	 *
+	 * @return bool
+	 */
+	private function bodyDigestMatches(DOMDocument $doc): bool {
+		$reference = (new XmlDsigLookup())->element(doc: $doc, localName: 'Reference');
 		$referenceUri = ltrim($reference->getAttribute('URI'), '#');
 		$body = $this->firstByLocalName(doc: $doc, localName: 'Body');
 		if ($body === null || $body->getAttributeNS(self::NS_WSU, 'Id') !== $referenceUri) {
 			return false;
 		}
 
-		$expectedDigest = $this->firstChildText(parent: $reference, namespace: self::NS_DS, localName: 'DigestValue');
+		$expectedDigest = (new XmlDsigLookup())->childText(parent: $reference, localName: 'DigestValue');
 		$actualDigest = base64_encode(hash('sha256', (string)$body->C14N(true, false), true));
-		if (hash_equals((string)$expectedDigest, $actualDigest) === false) {
+
+		return hash_equals((string)$expectedDigest, $actualDigest);
+	}//end bodyDigestMatches()
+
+	/**
+	 * Whether the RSA-SHA256 signature over the canonicalised SignedInfo verifies
+	 * against the carried certificate, or the pinned one.
+	 *
+	 * @param DOMDocument $doc                    The envelope, with its signature parts.
+	 * @param string|null $expectedCertificatePem Optional certificate to pin the signer to.
+	 *
+	 * @return bool
+	 */
+	private function signatureVerifies(DOMDocument $doc, ?string $expectedCertificatePem): bool {
+		$signature = (new XmlDsigLookup())->element(doc: $doc, localName: 'Signature');
+		$publicKey = $this->signerKey(signature: $signature, expectedCertificatePem: $expectedCertificatePem);
+		if ($publicKey === null) {
 			return false;
 		}
 
-		// Resolve the certificate to verify against.
-		$certBody = $this->firstDeepText(parent: $signature, namespace: self::NS_DS, localName: 'X509Certificate');
+		$signatureValue = base64_decode((string)(new XmlDsigLookup())->childText(parent: $signature, localName: 'SignatureValue'), true);
+		if ($signatureValue === false) {
+			return false;
+		}
+
+		$canonicalSignedInfo = (string)(new XmlDsigLookup())->element(doc: $doc, localName: 'SignedInfo')->C14N(true, false);
+
+		return (openssl_verify($canonicalSignedInfo, $signatureValue, $publicKey, OPENSSL_ALGO_SHA256) === 1);
+	}//end signatureVerifies()
+
+	/**
+	 * The public key of the carried certificate, or of the pinned one, or null when there is none.
+	 *
+	 * @param DOMElement  $signature              The ds:Signature.
+	 * @param string|null $expectedCertificatePem Optional certificate to pin the signer to.
+	 *
+	 * @return \OpenSSLAsymmetricKey|null
+	 */
+	private function signerKey(DOMElement $signature, ?string $expectedCertificatePem): ?\OpenSSLAsymmetricKey {
+		$certBody = (new XmlDsigLookup())->descendantText(parent: $signature, localName: 'X509Certificate');
 		if ($expectedCertificatePem !== null) {
 			$certBody = $this->certificateBody(certificatePem: $expectedCertificatePem);
 		}
 
 		if ($certBody === null || $certBody === '') {
-			return false;
+			return null;
 		}
 
 		$publicKey = @openssl_pkey_get_public($this->pemFromBody(certificateBody: $certBody));
 		if ($publicKey === false) {
-			return false;
+			return null;
 		}
 
-		$signatureText = (string)$this->firstChildText(parent: $signature, namespace: self::NS_DS, localName: 'SignatureValue');
-		$signatureValue = base64_decode($signatureText, true);
-		if ($signatureValue === false) {
-			return false;
-		}
-
-		$canonicalSignedInfo = (string)$signedInfo->C14N(true, false);
-
-		return (openssl_verify($canonicalSignedInfo, $signatureValue, $publicKey, OPENSSL_ALGO_SHA256) === 1);
-	}//end verify()
+		return $publicKey;
+	}//end signerKey()
 
 	/**
-	 * Build a ds:* method element with an Algorithm attribute (+ optional text).
+	 * Append a ds:* method element carrying its Algorithm attribute.
 	 *
-	 * @param DOMDocument $doc Owner document.
-	 * @param string $qname The ds:* qualified name.
-	 * @param string $algorithm The Algorithm attribute value.
+	 * @param DOMElement $parent The element to append to.
+	 * @param string     $qname  The ds:* qualified name, a key of METHOD_ALGORITHMS.
 	 *
-	 * @return DOMElement
+	 * @return void
 	 */
-	private function methodElement(DOMDocument $doc, string $qname, string $algorithm): DOMElement {
-		$element = $doc->createElementNS(self::NS_DS, $qname);
-		$element->setAttribute('Algorithm', $algorithm);
-		return $element;
-	}//end methodElement()
+	private function appendDsMethod(DOMElement $parent, string $qname): void {
+		$element = $parent->ownerDocument->createElementNS(self::NS_DS, $qname);
+		$element->setAttribute('Algorithm', self::METHOD_ALGORITHMS[$qname]);
+		$parent->appendChild($element);
+	}//end appendDsMethod()
 
 	/**
 	 * Ensure the envelope has a SOAP Header, creating one if needed.
@@ -312,63 +496,6 @@ class WsSecuritySigner {
 
 		return null;
 	}//end firstByLocalName()
-
-	/**
-	 * First element by namespace + local name.
-	 *
-	 * @param DOMDocument $doc The document.
-	 * @param string $namespace The namespace URI.
-	 * @param string $localName The local name.
-	 *
-	 * @return DOMElement|null
-	 */
-	private function firstByLocalNameNs(DOMDocument $doc, string $namespace, string $localName): ?DOMElement {
-		$nodes = $doc->getElementsByTagNameNS($namespace, $localName);
-		$first = $nodes->item(0);
-		if ($first instanceof DOMElement) {
-			return $first;
-		}
-
-		return null;
-	}//end firstByLocalNameNs()
-
-	/**
-	 * Text of a direct child element by namespace + local name.
-	 *
-	 * @param DOMElement $parent The parent element.
-	 * @param string $namespace The child namespace URI.
-	 * @param string $localName The child local name.
-	 *
-	 * @return string|null
-	 */
-	private function firstChildText(DOMElement $parent, string $namespace, string $localName): ?string {
-		foreach ($parent->childNodes as $child) {
-			if ($child instanceof DOMElement && $child->namespaceURI === $namespace && $child->localName === $localName) {
-				return $child->textContent;
-			}
-		}
-
-		return null;
-	}//end firstChildText()
-
-	/**
-	 * Text of the first descendant element by namespace + local name.
-	 *
-	 * @param DOMElement $parent The parent element.
-	 * @param string $namespace The descendant namespace URI.
-	 * @param string $localName The descendant local name.
-	 *
-	 * @return string|null
-	 */
-	private function firstDeepText(DOMElement $parent, string $namespace, string $localName): ?string {
-		$nodes = $parent->getElementsByTagNameNS($namespace, $localName);
-		$first = $nodes->item(0);
-		if ($first !== null) {
-			return $first->textContent;
-		}
-
-		return null;
-	}//end firstDeepText()
 
 	/**
 	 * Extract the base64 body of a PEM certificate (no header/footer/newlines).
