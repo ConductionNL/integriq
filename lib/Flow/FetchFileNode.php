@@ -71,6 +71,7 @@ namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -231,15 +232,17 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * Run the rule over every item in the page.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		// An empty page fetches nothing and produces no items — the filter
 		// contract, not a failure.
 		if ($items === []) {
