@@ -44,6 +44,7 @@ use OCA\Integriq\Exception\PaymentProviderException;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCP\IL10N;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -87,6 +88,34 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 	 * @spec openspec/specs/live-payment-providers/spec.md
 	 */
 	public function createPayment(array $sourceConfiguration, array $payload): array {
+		$response = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			call: new PaymentCall(
+				method: 'POST',
+				url: $this->baseUrl(sourceConfiguration: $sourceConfiguration) . '/payments',
+				json: $this->paymentBody(payload: $payload)
+			)
+		);
+
+		$decoded = json_decode($response, true);
+		if (is_array($decoded) === false) {
+			throw new PaymentProviderException(
+				message: 'Mollie returned a non-JSON response for payment creation.'
+			);
+		}
+
+		return $this->createdPayment(decoded: $decoded, payload: $payload);
+
+	}//end createPayment()
+
+	/**
+	 * The payment request body: amount, description and URLs, plus method and metadata when given.
+	 *
+	 * @param array $payload The integriq payment payload.
+	 *
+	 * @return array The Mollie request body.
+	 */
+	private function paymentBody(array $payload): array {
 		$body = [
 			'amount' => $payload['amount'],
 			'description' => $payload['description'],
@@ -102,26 +131,24 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 			$body['metadata'] = $payload['metadata'];
 		}
 
-		$response = $this->dispatch(
-			sourceConfiguration: $sourceConfiguration,
-			method: 'POST',
-			url: $this->baseUrl(sourceConfiguration: $sourceConfiguration) . '/payments',
-			json: $body
-		);
+		return $body;
 
-		$decoded = json_decode($response, true);
-		if (is_array($decoded) === false) {
-			throw new PaymentProviderException(
-				message: 'Mollie returned a non-JSON response for payment creation.'
-			);
-		}
+	}//end paymentBody()
 
+	/**
+	 * The created payment; Mollie must have answered a payment id and a checkout URL.
+	 *
+	 * @param array $decoded The decoded Mollie answer.
+	 * @param array $payload The integriq payment payload.
+	 *
+	 * @return array{providerPaymentId: string, paymentStatus: string, checkoutUrl: string, extras: array<string, mixed>}
+	 *
+	 * @throws PaymentProviderException When the id or the checkout URL is missing.
+	 */
+	private function createdPayment(array $decoded, array $payload): array {
 		$providerPaymentId = ($decoded['id'] ?? null);
 		$checkoutUrl = ($decoded['_links']['checkout']['href'] ?? null);
-
-		if (is_string($providerPaymentId) === false || $providerPaymentId === ''
-			|| is_string($checkoutUrl) === false || $checkoutUrl === ''
-		) {
+		if ($this->isUsableText(value: $providerPaymentId) === false || $this->isUsableText(value: $checkoutUrl) === false) {
 			throw new PaymentProviderException(
 				message: 'Mollie accepted the request but returned no usable payment id or checkout URL.'
 			);
@@ -134,7 +161,19 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 			'extras' => ['method' => ($decoded['method'] ?? ($payload['method'] ?? null))],
 		];
 
-	}//end createPayment()
+	}//end createdPayment()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isUsableText(mixed $value): bool {
+		return (is_string($value) === true && $value !== '');
+
+	}//end isUsableText()
 
 	/**
 	 * {@inheritDoc}
@@ -149,8 +188,10 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 	public function fetchPaymentStatus(array $sourceConfiguration, string $providerPaymentId): array {
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'GET',
-			url: $this->baseUrl(sourceConfiguration: $sourceConfiguration) . '/payments/' . rawurlencode($providerPaymentId)
+			call: new PaymentCall(
+				method: 'GET',
+				url: $this->baseUrl(sourceConfiguration: $sourceConfiguration) . '/payments/' . rawurlencode($providerPaymentId)
+			)
 		);
 
 		$decoded = json_decode($response, true);
@@ -188,56 +229,28 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 	 * failure mode to a secret-free {@see PaymentProviderException} — never a
 	 * 500 crash, per REQ-LPP-001/REQ-LPP-006.
 	 *
-	 * @param array $sourceConfiguration The payment source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $url The composed URL.
-	 * @param array|null $json Optional JSON request body.
+	 * @param array       $sourceConfiguration The payment source's `configuration` object.
+	 * @param PaymentCall $call                The HTTP method, the composed URL and the optional JSON request body.
 	 *
 	 * @return string The response body.
 	 *
 	 * @throws PaymentProviderException On any configuration, brokering, transport, or upstream error.
 	 */
-	private function dispatch(array $sourceConfiguration, string $method, string $url, ?array $json = null): string {
+	private function dispatch(array $sourceConfiguration, PaymentCall $call): string {
 		$config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])];
-		if ($json !== null) {
-			$config['json'] = $json;
+		if ($call->json !== null) {
+			$config['json'] = $call->json;
 		}
 
-		if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
-			throw new PaymentProviderException(
-				message: $this->l->t('Payment provider credential missing') . ': the `mollie` payment provider '
-					. 'requires `configuration.authentication.credentialRef` — none is configured. Configure a '
-					. 'credentialRef through the OpenRegister credential broker; no plaintext-key fallback is '
-					. 'permitted (ADR-007).'
-			);
-		}
+		$this->assertCredentialConfigured(config: $config);
 
 		try {
-			$dispatch = $this->brokeredCallService->prepare(
-				config: $config,
-				sourceData: ['type' => 'payment'],
-				asynchronous: false
-			);
-
-			$response = $this->brokeredCallService->dispatch(
-				credentialId: $dispatch['credentialId'],
-				actingUserId: $dispatch['actingUserId'],
-				method: $method,
-				url: $url,
-				config: $config
-			);
+			$response = $this->brokeredDispatch(config: $config, call: $call);
 		} catch (BrokeredCallConfigurationException $exception) {
 			throw new PaymentProviderException(message: $exception->getMessage(), previous: $exception);
 		} catch (Throwable $exception) {
-			$this->logger->warning(
-				'[MolliePaymentProvider] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new PaymentProviderException(
-				message: 'The Mollie request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+			throw $this->unexpectedFailure(exception: $exception);
+		}
 
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
@@ -247,4 +260,72 @@ class MolliePaymentProvider implements PaymentProviderInterface {
 
 		return $body;
 	}//end dispatch()
+
+	/**
+	 * Refuse a call when the source names no broker credential: there is no plaintext-key fallback.
+	 *
+	 * @param array $config The brokered call config.
+	 *
+	 * @return void
+	 *
+	 * @throws PaymentProviderException When no credentialRef is configured.
+	 */
+	private function assertCredentialConfigured(array $config): void {
+		if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
+			throw new PaymentProviderException(
+				message: $this->l->t('Payment provider credential missing') . ': the `mollie` payment provider '
+					. 'requires `configuration.authentication.credentialRef` — none is configured. Configure a '
+					. 'credentialRef through the OpenRegister credential broker; no plaintext-key fallback is '
+					. 'permitted (ADR-007).'
+			);
+		}
+
+	}//end assertCredentialConfigured()
+
+	/**
+	 * Prepare the brokered credential and dispatch the call with it.
+	 *
+	 * @param array       $config The brokered call config.
+	 * @param PaymentCall $call   The method and URL.
+	 *
+	 * @return ResponseInterface The answer, whatever its status.
+	 *
+	 * @throws BrokeredCallConfigurationException When the broker refuses the configuration.
+	 */
+	private function brokeredDispatch(array $config, PaymentCall $call): ResponseInterface {
+		$dispatch = $this->brokeredCallService->prepare(
+			config: $config,
+			sourceData: ['type' => 'payment'],
+			asynchronous: false
+		);
+
+		return $this->brokeredCallService->dispatch(
+			credentialId: $dispatch['credentialId'],
+			actingUserId: $dispatch['actingUserId'],
+			method: $call->method,
+			url: $call->url,
+			config: $config
+		);
+
+	}//end brokeredDispatch()
+
+	/**
+	 * Log an unexpected transport failure and wrap it.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return PaymentProviderException The exception to throw.
+	 */
+	private function unexpectedFailure(Throwable $exception): PaymentProviderException {
+		$this->logger->warning(
+			'[MolliePaymentProvider] unexpected transport failure',
+			['exception' => $exception->getMessage()]
+		);
+
+		return new PaymentProviderException(
+			message: 'The Mollie request failed unexpectedly: ' . $exception->getMessage(),
+			previous: $exception
+		);
+
+	}//end unexpectedFailure()
 }//end class
