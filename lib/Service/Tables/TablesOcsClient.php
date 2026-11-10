@@ -33,15 +33,15 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Tables;
 
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\TablesNotFoundException;
 use OCA\Integriq\Exception\TablesPermissionDeniedException;
 use OCA\Integriq\Exception\TablesUpstreamException;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Helper\OcsApi;
+use OCA\Integriq\Service\Helper\OcsApiDispatcher;
+use OCA\Integriq\Service\Helper\OcsRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
-use Twig\Error\LoaderError;
-use Twig\Error\SyntaxError;
 
 /**
  * Speaks the Tables `index.php/apps/tables/api/1/*` REST dialect over `CallService`.
@@ -296,50 +296,25 @@ class TablesOcsClient implements TablesClientInterface {
 	 * @throws TablesUpstreamException On transport failure or another non-2xx status.
 	 */
 	private function dispatch(ObjectEntity $source, string $endpoint, string $method, array $config = []): ?array {
-		try {
-			$callLog = $this->callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
-		} catch (GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception $exception) {
-			$this->logger->warning(
-				'TablesOcsClient: transport failure calling Tables API',
-				['endpoint' => $endpoint, 'method' => $method, 'error' => $exception->getMessage()]
-			);
-			throw new TablesUpstreamException(
-				message: "Failed to reach the Tables API ({$method} {$endpoint}): " . $exception->getMessage()
-			);
-		}
-
-		$callLogBody = $callLog->getObject();
-		$statusCode = (int)($callLogBody['response']['statusCode'] ?? 0);
-		$rawBody = (string)($callLogBody['response']['body'] ?? '');
-
-		if ($statusCode === 401 || $statusCode === 403) {
-			throw new TablesPermissionDeniedException(
-				message: "Tables API denied {$method} {$endpoint} (HTTP {$statusCode})",
-				statusCode: $statusCode
-			);
-		}
-
-		if ($statusCode === 404) {
-			throw new TablesNotFoundException(message: "Tables API resource not found: {$method} {$endpoint}");
-		}
-
-		if ($statusCode < 200 || $statusCode >= 300) {
-			throw new TablesUpstreamException(
-				message: "Tables API returned HTTP {$statusCode} for {$method} {$endpoint} (see CallLog {$callLog->getUuid()})"
-			);
-		}
-
-		if ($rawBody === '') {
-			return null;
-		}
-
-		$decoded = json_decode($rawBody, true);
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return null;
+		return (new OcsApiDispatcher(callService: $this->callService, logger: $this->logger))->dispatch(
+			request: new OcsRequest(api: self::ocsApi(), source: $source, endpoint: $endpoint, method: $method, config: $config)
+		);
 	}//end dispatch()
+
+	/**
+	 * The Tables OCS API and the exceptions this client raises for it.
+	 *
+	 * @return OcsApi The API.
+	 */
+	private static function ocsApi(): OcsApi {
+		return new OcsApi(
+			label: 'Tables',
+			permissionDenied: TablesPermissionDeniedException::class,
+			notFound: TablesNotFoundException::class,
+			upstream: TablesUpstreamException::class
+		);
+
+	}//end ocsApi()
 
 	/**
 	 * Coerce a value to an array, treating any non-array as empty.

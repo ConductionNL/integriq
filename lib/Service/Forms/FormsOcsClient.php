@@ -39,15 +39,15 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Forms;
 
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\FormsNotFoundException;
 use OCA\Integriq\Exception\FormsPermissionDeniedException;
 use OCA\Integriq\Exception\FormsUpstreamException;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Helper\OcsApi;
+use OCA\Integriq\Service\Helper\OcsApiDispatcher;
+use OCA\Integriq\Service\Helper\OcsRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
-use Twig\Error\LoaderError;
-use Twig\Error\SyntaxError;
 
 /**
  * Speaks the Forms `index.php/apps/forms/api/v3/*` REST dialect over `CallService`.
@@ -216,50 +216,25 @@ class FormsOcsClient implements FormsClientInterface {
 	 * @throws FormsUpstreamException On transport failure or another non-2xx status.
 	 */
 	private function dispatch(ObjectEntity $source, string $endpoint, string $method, array $config = []): ?array {
-		try {
-			$callLog = $this->callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
-		} catch (GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception $exception) {
-			$this->logger->warning(
-				'FormsOcsClient: transport failure calling Forms API',
-				['endpoint' => $endpoint, 'method' => $method, 'error' => $exception->getMessage()]
-			);
-			throw new FormsUpstreamException(
-				message: "Failed to reach the Forms API ({$method} {$endpoint}): " . $exception->getMessage()
-			);
-		}
-
-		$callLogBody = $callLog->getObject();
-		$statusCode = (int)($callLogBody['response']['statusCode'] ?? 0);
-		$rawBody = (string)($callLogBody['response']['body'] ?? '');
-
-		if ($statusCode === 401 || $statusCode === 403) {
-			throw new FormsPermissionDeniedException(
-				message: "Forms API denied {$method} {$endpoint} (HTTP {$statusCode})",
-				statusCode: $statusCode
-			);
-		}
-
-		if ($statusCode === 404) {
-			throw new FormsNotFoundException(message: "Forms API resource not found: {$method} {$endpoint}");
-		}
-
-		if ($statusCode < 200 || $statusCode >= 300) {
-			throw new FormsUpstreamException(
-				message: "Forms API returned HTTP {$statusCode} for {$method} {$endpoint} (see CallLog {$callLog->getUuid()})"
-			);
-		}
-
-		if ($rawBody === '') {
-			return null;
-		}
-
-		$decoded = json_decode($rawBody, true);
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return null;
+		return (new OcsApiDispatcher(callService: $this->callService, logger: $this->logger))->dispatch(
+			request: new OcsRequest(api: self::ocsApi(), source: $source, endpoint: $endpoint, method: $method, config: $config)
+		);
 	}//end dispatch()
+
+	/**
+	 * The Forms OCS API and the exceptions this client raises for it.
+	 *
+	 * @return OcsApi The API.
+	 */
+	private static function ocsApi(): OcsApi {
+		return new OcsApi(
+			label: 'Forms',
+			permissionDenied: FormsPermissionDeniedException::class,
+			notFound: FormsNotFoundException::class,
+			upstream: FormsUpstreamException::class
+		);
+
+	}//end ocsApi()
 
 	/**
 	 * Coerce a value to an array, treating any non-array as empty.
