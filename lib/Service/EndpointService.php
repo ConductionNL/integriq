@@ -26,6 +26,8 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
@@ -4106,9 +4108,8 @@ class EndpointService implements EndpointServiceInterface {
 			$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
 			$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
 			$stored = $fileService->addFile(
-				objectEntity: $objectService->find($objectId),
-				fileName: $file['name'],
-				content: base64_decode($file['content'])
+				target: new FileTarget(object: $objectService->find($objectId)),
+				upload: new FileUpload(fileName: $file['name'], content: base64_decode($file['content']), share: false)
 			);
 
 			return $stored->getPath();
