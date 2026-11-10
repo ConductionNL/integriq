@@ -109,6 +109,11 @@ class PdokConnector implements PdokConnectorInterface {
 	private const OR_SCHEMA = 'addresses';
 
 	/**
+	 * Seconds a stored `fetchedAt` may lie in the future before it counts as stale.
+	 */
+	private const CLOCK_SKEW_SECONDS = 300;
+
+	/**
 	 * Cache for APCu-backed responses + breaker state.
 	 *
 	 * Nullable: if no cache backend is configured the connector still
@@ -576,8 +581,7 @@ class PdokConnector implements PdokConnectorInterface {
 			return null;
 		}
 
-		$age = (time() - strtotime(($docs[0]['fetchedAt'] ?? '1970-01-01T00:00:00Z')));
-		if ($age > self::TTL_RESOLVED) {
+		if ($this->isFresh(fetchedAt: ($docs[0]['fetchedAt'] ?? null)) === false) {
 			return null;
 		}
 
@@ -585,7 +589,39 @@ class PdokConnector implements PdokConnectorInterface {
 	}//end orLookup()
 
 	/**
+	 * Whether a stored address was fetched within the resolved TTL.
+	 *
+	 * A `fetchedAt` that cannot be read, or that lies further in the future
+	 * than the allowed clock skew, counts as stale, so a row with a planted
+	 * date is fetched again instead of being served for ever.
+	 *
+	 * @param mixed $fetchedAt The stored `fetchedAt` value.
+	 *
+	 * @return bool True when the row may be served.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-write-through-to-or-addresses-register
+	 */
+	private function isFresh(mixed $fetchedAt): bool {
+		if (is_string($fetchedAt) === false) {
+			return false;
+		}
+
+		$fetched = strtotime($fetchedAt);
+		if ($fetched === false) {
+			return false;
+		}
+
+		$age = (time() - $fetched);
+		return $age >= -self::CLOCK_SKEW_SECONDS && $age <= self::TTL_RESOLVED;
+	}//end isFresh()
+
+	/**
 	 * Persist a normalised PDOK document into OR's `addresses` register.
+	 *
+	 * The save runs in the system context: the schema grants create and
+	 * update to admins only, so a signed-in user cannot write an address
+	 * through the object API, while the connector still can. `fetchedAt` is
+	 * set to the connector's own clock.
 	 *
 	 * @param array $doc Normalised PostalAddress.
 	 *
@@ -601,11 +637,11 @@ class PdokConnector implements PdokConnectorInterface {
 
 		try {
 			$objectService->saveObject(
-				object: $doc,
+				object: array_replace($doc, ['fetchedAt' => gmdate('Y-m-d\TH:i:s\Z')]),
 				register: self::OR_REGISTER,
 				schema: self::OR_SCHEMA,
 				uuid: $this->storedUuid(objectService: $objectService, pdokId: (string)$doc['pdokId']),
-				_rbac: true,
+				_rbac: false,
 				_multitenancy: true,
 			);
 		} catch (Throwable $e) {

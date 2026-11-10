@@ -1,5 +1,5 @@
 {
-  "$comment": "pdok-adapter (ADR-037 register fragment). Adds the addresses schema that PdokConnector::writeThrough() saves lookup and reverse results into (register integriq, schema addresses). Its properties are exactly the keys PdokConnector::normalize() writes; PdokAddressSchemaTest pins that. pdokId identifies a record: the connector looks a pdokId up before it saves and updates the stored object under its uuid, so each PDOK record is stored once. The schema declares no configuration.unique, because openregister's unique check also counts the object being updated and would refuse that refresh. Spec: openspec/specs/pdok-adapter/spec.md, requirement Write-Through to OR Addresses Register.",
+  "$comment": "pdok-adapter (ADR-037 register fragment). Adds the addresses schema that PdokConnector::writeThrough() saves lookup and reverse results into (register integriq, schema addresses). Its properties are exactly the keys PdokConnector::normalize() writes; PdokAddressSchemaTest pins that. pdokId identifies a record: the connector looks a pdokId up before it saves and updates the stored object under its uuid, so each PDOK record is stored once. Writes are limited to the connector: create and update are granted to admins only, and the connector saves in the system context. A row whose fetchedAt is older than an hour, or in the future, is fetched again. The schema declares no configuration.unique, because openregister's unique check also counts the object being updated and would refuse that refresh. Spec: openspec/specs/pdok-adapter/spec.md, requirement Write-Through to OR Addresses Register.",
   "components": {
     "registers": {
       "integriq": {
@@ -25,9 +25,9 @@
         "appendOnly": false,
         "immutable": false,
         "authorization": {
-          "create": ["authenticated"],
+          "create": ["admin"],
           "read": ["authenticated"],
-          "update": ["authenticated"],
+          "update": ["admin"],
           "delete": ["admin"]
         },
         "properties": {

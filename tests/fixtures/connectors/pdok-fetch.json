@@ -485,7 +485,7 @@
                         "fetchedAt": "(clock)"
                     },
                     "uuid": null,
-                    "_rbac": true,
+                    "_rbac": false,
                     "_multitenancy": true
                 }
             ],
@@ -734,7 +734,7 @@
                         "fetchedAt": "(clock)"
                     },
                     "uuid": null,
-                    "_rbac": true,
+                    "_rbac": false,
                     "_multitenancy": true
                 }
             ],
@@ -887,7 +887,7 @@
                         "fetchedAt": "(clock)"
                     },
                     "uuid": null,
-                    "_rbac": true,
+                    "_rbac": false,
                     "_multitenancy": true
                 }
             ],
