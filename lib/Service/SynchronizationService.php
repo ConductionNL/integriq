@@ -73,6 +73,8 @@ use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -11617,10 +11619,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$file->objectEntity = $objectService->find(id: $file->objectId);
 		$stored = $file->fileService->saveFile(
 			objectEntity: $file->objectEntity,
-			fileName: $file->filename,
-			content: $saveContent,
-			share: $shouldShare,
-			tags: $file->tags
+			upload: new FileUpload(fileName: $file->filename, content: $saveContent, share: $shouldShare, tags: $file->tags)
 		);
 
 		if ($stored !== null) {
@@ -11647,14 +11646,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		$stored = $file->fileService->addFile(
-			objectEntity: $file->objectId,
-			fileName: $file->filename,
-			content: $addContent,
-			share: ($file->config['autoShare'] ?? false),
-			tags: $file->tags,
-			_schema: ($file->config['schema'] ?? null),
-			_register: ($file->config['register'] ?? null),
-			registerId: $file->registerId
+			target: new FileTarget(object: $file->objectId, registerId: $file->registerId),
+			upload: new FileUpload(
+				fileName: $file->filename,
+				content: $addContent,
+				share: ($file->config['autoShare'] ?? false),
+				tags: $file->tags
+			)
 		);
 
 		if ($stored !== null) {
@@ -12755,10 +12753,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 					// Use the new saveFile method.
 					$file = $fileService->saveFile(
 						objectEntity: $objectEntity,
-						fileName: $fileName,
-						content: $content,
-						share: $shouldShare,
-						tags: $allTags
+						upload: new FileUpload(fileName: $fileName, content: $content, share: $shouldShare, tags: $allTags)
 					);
 
 					$result[$key] = $file->getPath();
@@ -12784,10 +12779,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				// Use the new saveFile method.
 				$file = $fileService->saveFile(
 					objectEntity: $objectEntity,
-					fileName: $fileName,
-					content: $content,
-					share: $shouldShare,
-					tags: $tags
+					upload: new FileUpload(fileName: $fileName, content: $content, share: $shouldShare, tags: $tags)
 				);
 
 				$dataDot[$config['filePath']] = $file->getPath();

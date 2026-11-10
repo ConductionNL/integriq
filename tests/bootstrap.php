@@ -316,6 +316,18 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/SchemaMapper.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileTarget') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileTarget.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileTransfer') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileTransfer.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileUpload') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileUpload.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\FileService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/FileService.php';
 		}
