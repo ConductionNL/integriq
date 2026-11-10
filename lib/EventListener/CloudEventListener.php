@@ -277,34 +277,55 @@ class CloudEventListener implements IEventListener {
 			return false;
 		}
 
-		// One line per suppression, naming which guard stopped it. The
-		// ceiling in particular must be loud: reaching it means the marker
-		// and the schema ids both failed to recognise our own output, and
-		// the only thing standing between this instance and the storm is a
-		// counter. It is also the one refusal an operator can act on.
+		$this->logSuppression(decision: $decision, uuid: $object->getUuid());
+
+		return true;
+	}//end isSelfReference()
+
+	/**
+	 * Log why the guard refused to forward an object: one line per suppression, naming the guard.
+	 *
+	 * The ceiling in particular must be loud: reaching it means the marker
+	 * and the schema ids both failed to recognise our own output, and the
+	 * only thing standing between this instance and the storm is a counter.
+	 * It is also the one refusal an operator can act on.
+	 *
+	 * @param array<string,mixed> $decision The guard's decision: reason, chain, identified.
+	 * @param string|null         $uuid     The object's uuid.
+	 *
+	 * @return void
+	 */
+	private function logSuppression(array $decision, ?string $uuid): void {
 		if ($decision['reason'] === EventForwardingGuardInterface::REFUSED_CEILING) {
-			$ceilingNote = '';
-			if ($decision['identified'] === false) {
-				$ceilingNote = '; the event-machinery schema ids resolved to nothing, so only the ceiling was left';
-			}
-
-			$this->logger->warning(
-				'[CloudEventListener] stopped forwarding: ' . $decision['reason']
-				. ' after ' . $decision['chain'] . ' events in one request'
-				. $ceilingNote,
-				['uuid' => $object->getUuid()]
-			);
-
-			return true;
+			$this->logger->warning($this->ceilingMessage(decision: $decision), ['uuid' => $uuid]);
+			return;
 		}
 
 		$this->logger->debug(
 			'[CloudEventListener] suppressed: ' . $decision['reason'],
-			['uuid' => $object->getUuid()]
+			['uuid' => $uuid]
 		);
 
-		return true;
-	}//end isSelfReference()
+	}//end logSuppression()
+
+	/**
+	 * The warning for a request that reached the forwarding ceiling.
+	 *
+	 * @param array<string,mixed> $decision The guard's decision: reason, chain, identified.
+	 *
+	 * @return string
+	 */
+	private function ceilingMessage(array $decision): string {
+		$ceilingNote = '';
+		if ($decision['identified'] === false) {
+			$ceilingNote = '; the event-machinery schema ids resolved to nothing, so only the ceiling was left';
+		}
+
+		return '[CloudEventListener] stopped forwarding: ' . $decision['reason']
+			. ' after ' . $decision['chain'] . ' events in one request'
+			. $ceilingNote;
+
+	}//end ceilingMessage()
 
 	/**
 	 * Resolve {@see self::SELF_SCHEMAS} to schema ids owned by the
