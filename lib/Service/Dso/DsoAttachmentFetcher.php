@@ -47,6 +47,8 @@ use OCA\Integriq\Service\PayloadTooLargeException;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -284,10 +286,8 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 		);
 		try {
 			$file = $job['fileService']->addFile(
-				objectEntity: $job['request'],
-				fileName: (string)($entry['name'] ?? ''),
-				content: $stream,
-				tags: [self::TAG]
+				target: new FileTarget(object: $job['request']),
+				upload: new FileUpload(fileName: (string)($entry['name'] ?? ''), content: $stream, share: false, tags: [self::TAG])
 			);
 		} finally {
 			if (is_resource($stream) === true) {
