@@ -11,6 +11,14 @@ import {
 } from '../../store/store.js'
 import { fetchOpenRegisterCollection } from '../openRegisterGet.js'
 import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
+import {
+	blankActionPickers,
+	blankAuthenticationTypeOptions,
+	blankListPicker,
+	blankRequestState,
+	blankRuleItem,
+	blankRuleTypeOptions,
+} from './editRuleDefaults.js'
 defineOptions({
 	name: 'EditRule',
 	components: {
@@ -32,177 +40,20 @@ defineOptions({
 	data() {
 		return {
 			IS_EDIT: !!ruleStore.ruleItem?.id,
-			success: null,
-			loading: false,
-			error: false,
-			warning: null,
-			closeAlert: false,
-			sourcesLoading: false,
-			usersLoading: false,
-			groupsLoading: false,
-			openRegister: {
-				isInstalled: true,
-				isAvailable: true,
-			},
-
-			mappingOptions: {
-				options: [],
-				value: null,
-				loading: false,
-			},
-
-			syncOptions: {
-				options: [],
-				value: null,
-				loading: false,
-			},
+			...blankRequestState(),
+			mappingOptions: blankListPicker(),
+			syncOptions: blankListPicker(),
 
 			usersList: [],
 			groupsList: [],
 
-			authenticationTypeOptions: {
-				options: [
-					{ label: 'Basic Authentication', value: 'basic' },
-					{ label: 'JWT', value: 'jwt' },
-					{ label: 'JWT-ZGW', value: 'jwt-zgw' },
-					{ label: 'OAuth', value: 'oauth' },
-					{ label: 'Api-key', value: 'api-key' },
-				],
-
-				value: {
-					label: 'Basic Authentication',
-					value: 'basic',
-				},
-			},
+			authenticationTypeOptions: blankAuthenticationTypeOptions(),
 
 			apiKeyUsers: [],
 			apiKeys: [{ apiKey: '', user: this.apiKeyUsers }],
-			ruleItem: {
-				name: '',
-				description: '',
-				conditions: '',
-				order: 0,
-				action: '',
-				type: '',
-				actionConfig: '{}',
-				timing: '',
-				configuration: {
-					extend_input: {
-						items: [{ property: '', extends: [] }],
-					},
-
-					extend_external_input: {
-						validate: true,
-						properties: [{ property: '', schema: '' }],
-					},
-
-					mapping: null,
-					synchronization: {
-						synchronization: null,
-						retainResponse: false,
-					},
-
-					error: {
-						code: 500,
-						name: 'Something went wrong',
-						message: 'We encountered an unexpected problem',
-						includeJsonLogicResult: false,
-					},
-
-					javascript: '',
-					authentication: {
-						type: { label: 'Basic Authentication', value: 'basic' },
-						users: [],
-						groups: [],
-					},
-
-					download: {
-						fileIdPosition: 0,
-					},
-
-					upload: {
-						path: '',
-						allowedTypes: '',
-						maxSize: 10,
-					},
-
-					locking: {
-						action: 'lock',
-						timeout: 30,
-					},
-
-					fetch_file: {
-						source: '',
-						filePath: '',
-						subObjectFilepath: '',
-						objectIdPath: '',
-						method: '',
-						tags: [],
-						sourceConfiguration: '[]',
-						autoShare: false,
-						endpoint: '',
-						contentPath: '',
-						originIdPath: '',
-						filenamePath: '',
-						fileExtension: '',
-					},
-
-					write_file: {
-						filePath: '',
-						tags: [],
-						fileNamePath: '',
-						autoShare: false,
-					},
-
-					fileparts_create: {
-						sizeLocation: '',
-						schemaId: '',
-						filenameLocation: '',
-						filePartLocation: '',
-						mappingId: '',
-					},
-
-					filepart_upload: {
-						mappingId: '',
-					},
-
-					save_object: {
-						register: '',
-						schema: '',
-						mapping: '',
-					},
-				},
-			},
-
-			actionOptions: {},
-			timingOptions: {},
-			sourceOptions: {},
-			methodOptions: {},
-			filepartUploadMappingOptions: {},
-			filepartsCreateMappingOptions: {},
-			schemaOptions: {},
-			typeOptions: {
-				options: [
-					{ label: 'Error', id: 'error' },
-					{ label: 'Mapping', id: 'mapping' },
-					{ label: 'Synchronization', id: 'synchronization' },
-					{ label: 'JavaScript', id: 'javascript' },
-					{ label: 'Authentication', id: 'authentication' },
-					{ label: 'Download', id: 'download' },
-					{ label: 'Upload', id: 'upload' },
-					{ label: 'Locking', id: 'locking' },
-					{ label: 'Fetch File', id: 'fetch_file' },
-					{ label: 'Write File', id: 'write_file' },
-					{ label: 'Fileparts Create', id: 'fileparts_create' },
-					{ label: 'Filepart Upload', id: 'filepart_upload' },
-					{ label: 'Save object', id: 'save_object' },
-					{ label: 'Extend input', id: 'extend_input' },
-					{ label: 'Extend external input', id: 'extend_external_input' },
-				],
-
-				value: { label: 'Error', id: 'error' },
-			},
-
+			ruleItem: blankRuleItem(),
+			...blankActionPickers(),
+			typeOptions: blankRuleTypeOptions(),
 			closeTimeoutFunc: null,
 		}
 	},
