@@ -19,13 +19,11 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\DSOController;
 use OCA\Integriq\Controller\IwmoIjwController;
-use OCA\Integriq\Controller\NotifyNlController;
 use OCA\Integriq\Controller\OpenFormulierenController;
 use OCA\Integriq\Controller\OsoController;
-use OCA\Integriq\Controller\PaymentsController;
-use OCA\Integriq\Controller\PeppolController;
 use OCA\Integriq\Controller\RodController;
 use OCA\Integriq\Controller\UwlrEduVController;
+use OCA\Integriq\Controller\VerzuimloketController;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -44,13 +42,11 @@ class RawRequestBodyGoldenTest extends TestCase {
 		return [
 			'dso' => [DSOController::class],
 			'iwmo-ijw' => [IwmoIjwController::class],
-			'notify-nl' => [NotifyNlController::class],
 			'open-formulieren' => [OpenFormulierenController::class],
 			'oso' => [OsoController::class],
-			'payments' => [PaymentsController::class],
-			'peppol' => [PeppolController::class],
 			'rod' => [RodController::class],
 			'uwlr-eduv' => [UwlrEduVController::class],
+			'verzuimloket' => [VerzuimloketController::class],
 		];
 
 	}//end controllers()
