@@ -123,6 +123,19 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 			)
 		);
 
+		return $this->transmissionId(response: $response);
+	}//end submitDocument()
+
+	/**
+	 * The transmissionId the Access Point assigned to a submission.
+	 *
+	 * @param string $response The submission answer body.
+	 *
+	 * @return string The transmission id.
+	 *
+	 * @throws PeppolProviderException When the answer carries no usable transmissionId.
+	 */
+	private function transmissionId(string $response): string {
 		$decoded = json_decode($response, true);
 		$transmissionId = null;
 		if (is_array($decoded) === true) {
@@ -136,7 +149,7 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 		}
 
 		return $transmissionId;
-	}//end submitDocument()
+	}//end transmissionId()
 
 	/**
 	 * Dispatch one brokered call and return its raw body, mapping every
