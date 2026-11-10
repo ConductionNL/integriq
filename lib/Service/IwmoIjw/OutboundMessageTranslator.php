@@ -93,6 +93,33 @@ class OutboundMessageTranslator {
 	}//end __construct()
 
 	/**
+	 * The stuurgegevens parties: element name to the case field holding its code.
+	 *
+	 * @var array<string, string>
+	 */
+	private const PARTIES = [
+		'zender' => 'gemeentecode',
+		'ontvanger' => 'aanbiederAgbCode',
+	];
+
+	/**
+	 * The body fields per kind, in envelope order.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const BODY_FIELDS = [
+		self::KIND_TOEWIJZING => ['bsn', 'productcode', 'ingangsdatum', 'einddatum', 'omvang', 'leveringsvorm'],
+		self::KIND_DECLARATIE => ['toewijzingReferentie', 'productcode', 'factuurnummer', 'bedrag', 'periodeStart', 'periodeEind'],
+	];
+
+	/**
+	 * Body fields left out when the case object has no value for them.
+	 *
+	 * @var array<int, string>
+	 */
+	private const OPTIONAL_BODY_FIELDS = ['einddatum'];
+
+	/**
 	 * Required fields per kind — see design.md's outbound field table.
 	 *
 	 * @var array<string, array<int, string>>
@@ -138,6 +165,35 @@ class OutboundMessageTranslator {
 	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-a-complete-toewijzing-translates-to-a-valid-wmo303-envelope
 	 */
 	public function translate(array $caseObject, string $kind, string $domain): array {
+		$this->assertSupported(kind: $kind, domain: $domain);
+		$this->assertRequiredFieldsPresent(caseObject: $caseObject, kind: $kind);
+
+		$run = new OutboundBerichtRun(document: new DOMDocument(version: '1.0', encoding: 'UTF-8'), caseObject: $caseObject);
+		$run->berichttype = $this->domainPrefix(domain: $domain) . $this->berichtCode(kind: $kind);
+		$run->ref = strtoupper($this->domainPrefix(domain: $domain)) . '-' . bin2hex(random_bytes(8));
+
+		$root = $run->document->createElement('Bericht');
+		$run->document->appendChild($root);
+		$this->appendStuurgegevens(run: $run, root: $root);
+		$this->appendBody(run: $run, kind: $kind);
+
+		$xml = (string)$run->document->saveXML();
+		$this->assertNoUnresolvedPlaceholder(xml: $xml);
+
+		return ['berichttype' => $run->berichttype, 'ref' => $run->ref, 'xml' => $xml];
+	}//end translate()
+
+	/**
+	 * Refuse an unsupported bericht kind or domain.
+	 *
+	 * @param string $kind   `toewijzing` or `declaratie`.
+	 * @param string $domain `wmo` or `jw`.
+	 *
+	 * @return void
+	 *
+	 * @throws IwmoIjwTranslationException When either is not supported.
+	 */
+	private function assertSupported(string $kind, string $domain): void {
 		if (isset(self::REQUIRED_FIELDS[$kind]) === false) {
 			throw new IwmoIjwTranslationException(message: 'Unsupported bericht kind "' . $kind . '".');
 		}
@@ -146,71 +202,100 @@ class OutboundMessageTranslator {
 			throw new IwmoIjwTranslationException(message: 'Unsupported domain "' . $domain . '" — expected "wmo" or "jw".');
 		}
 
-		$this->assertRequiredFieldsPresent(caseObject: $caseObject, kind: $kind);
+	}//end assertSupported()
 
-		$prefix = 'Jw';
+	/**
+	 * The berichttype prefix of a domain: `Wmo` or `Jw`.
+	 *
+	 * @param string $domain `wmo` or `jw`.
+	 *
+	 * @return string The prefix.
+	 */
+	private function domainPrefix(string $domain): string {
 		if ($domain === 'wmo') {
-			$prefix = 'Wmo';
+			return 'Wmo';
 		}
 
-		$code = self::CODE_DECLARATIE;
+		return 'Jw';
+
+	}//end domainPrefix()
+
+	/**
+	 * The berichtcode of a kind: 303 for a toewijzing, 321 for a declaratie.
+	 *
+	 * @param string $kind `toewijzing` or `declaratie`.
+	 *
+	 * @return string The code.
+	 */
+	private function berichtCode(string $kind): string {
 		if ($kind === self::KIND_TOEWIJZING) {
-			$code = self::CODE_TOEWIJZING;
+			return self::CODE_TOEWIJZING;
 		}
 
-		$berichttype = $prefix . $code;
-		$ref = strtoupper($prefix) . '-' . bin2hex(random_bytes(8));
+		return self::CODE_DECLARATIE;
 
-		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-		$root = $document->createElement('Bericht');
-		$document->appendChild($root);
+	}//end berichtCode()
 
-		$stuurgegevens = $document->createElement('stuurgegevens');
+	/**
+	 * Append the stuurgegevens: berichtcode, zender, ontvanger, referentienummer and tijdstipBericht.
+	 *
+	 * @param OutboundBerichtRun $run  The bericht being built.
+	 * @param DOMElement         $root The `<Bericht>` element.
+	 *
+	 * @return void
+	 */
+	private function appendStuurgegevens(OutboundBerichtRun $run, DOMElement $root): void {
+		$stuurgegevens = $run->document->createElement('stuurgegevens');
 		$root->appendChild($stuurgegevens);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: $berichttype);
-
-		$zender = $document->createElement('zender');
-		$stuurgegevens->appendChild($zender);
+		$this->appendText(document: $run->document, parent: $stuurgegevens, name: 'berichtcode', value: $run->berichttype);
+		$this->appendParties(run: $run, stuurgegevens: $stuurgegevens);
+		$this->appendText(document: $run->document, parent: $stuurgegevens, name: 'referentienummer', value: $run->ref);
 		$this->appendText(
-			document: $document,
-			parent: $zender,
-			name: 'code',
-			value: (string)$caseObject['gemeentecode']
-		);
-
-		$ontvanger = $document->createElement('ontvanger');
-		$stuurgegevens->appendChild($ontvanger);
-		$this->appendText(
-			document: $document,
-			parent: $ontvanger,
-			name: 'code',
-			value: (string)$caseObject['aanbiederAgbCode']
-		);
-
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'referentienummer', value: $ref);
-		$this->appendText(
-			document: $document,
+			document: $run->document,
 			parent: $stuurgegevens,
 			name: 'tijdstipBericht',
 			value: (new DateTime())->format('c')
 		);
 
-		$body = $document->createElement('body');
-		$root->appendChild($body);
+	}//end appendStuurgegevens()
 
-		if ($kind === self::KIND_TOEWIJZING) {
-			$this->appendToewijzingBody(document: $document, body: $body, caseObject: $caseObject);
+	/**
+	 * Append the zender (the municipality) and the ontvanger (the provider's AGB code).
+	 *
+	 * @param OutboundBerichtRun $run           The bericht being built.
+	 * @param DOMElement         $stuurgegevens The `<stuurgegevens>` element.
+	 *
+	 * @return void
+	 */
+	private function appendParties(OutboundBerichtRun $run, DOMElement $stuurgegevens): void {
+		foreach (self::PARTIES as $element => $field) {
+			$party = $run->document->createElement($element);
+			$stuurgegevens->appendChild($party);
+			$this->appendText(document: $run->document, parent: $party, name: 'code', value: (string)$run->caseObject[$field]);
 		}
 
-		if ($kind === self::KIND_DECLARATIE) {
-			$this->appendDeclaratieBody(document: $document, body: $body, caseObject: $caseObject);
+	}//end appendParties()
+
+	/**
+	 * Append the body with the kind's fields, in order; an optional field is left out when empty.
+	 *
+	 * @param OutboundBerichtRun $run  The bericht being built.
+	 * @param string             $kind `toewijzing` or `declaratie`.
+	 *
+	 * @return void
+	 */
+	private function appendBody(OutboundBerichtRun $run, string $kind): void {
+		$body = $run->document->createElement('body');
+		$run->document->documentElement->appendChild($body);
+		foreach (self::BODY_FIELDS[$kind] as $field) {
+			if (in_array($field, self::OPTIONAL_BODY_FIELDS, true) === true && empty($run->caseObject[$field]) === true) {
+				continue;
+			}
+
+			$this->appendText(document: $run->document, parent: $body, name: $field, value: (string)$run->caseObject[$field]);
 		}
 
-		$xml = (string)$document->saveXML();
-		$this->assertNoUnresolvedPlaceholder(xml: $xml);
-
-		return ['berichttype' => $berichttype, 'ref' => $ref, 'xml' => $xml];
-	}//end translate()
+	}//end appendBody()
 
 	/**
 	 * Assert every required field for `$kind` is present and non-empty —
@@ -238,93 +323,6 @@ class OutboundMessageTranslator {
 		}
 
 	}//end assertRequiredFieldsPresent()
-
-	/**
-	 * Append the Toewijzing (303) body fields.
-	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $body The `<body>` element to append into.
-	 * @param array $caseObject The OR case object fields (already validated present).
-	 *
-	 * @return void
-	 */
-	private function appendToewijzingBody(DOMDocument $document, DOMElement $body, array $caseObject): void {
-		$this->appendText(document: $document, parent: $body, name: 'bsn', value: (string)$caseObject['bsn']);
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'productcode',
-			value: (string)$caseObject['productcode']
-		);
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'ingangsdatum',
-			value: (string)$caseObject['ingangsdatum']
-		);
-
-		if (empty($caseObject['einddatum']) === false) {
-			$this->appendText(
-				document: $document,
-				parent: $body,
-				name: 'einddatum',
-				value: (string)$caseObject['einddatum']
-			);
-		}
-
-		$this->appendText(document: $document, parent: $body, name: 'omvang', value: (string)$caseObject['omvang']);
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'leveringsvorm',
-			value: (string)$caseObject['leveringsvorm']
-		);
-
-	}//end appendToewijzingBody()
-
-	/**
-	 * Append the Declaratie (321) body fields.
-	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $body The `<body>` element to append into.
-	 * @param array $caseObject The OR case object fields (already validated present).
-	 *
-	 * @return void
-	 */
-	private function appendDeclaratieBody(DOMDocument $document, DOMElement $body, array $caseObject): void {
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'toewijzingReferentie',
-			value: (string)$caseObject['toewijzingReferentie']
-		);
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'productcode',
-			value: (string)$caseObject['productcode']
-		);
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'factuurnummer',
-			value: (string)$caseObject['factuurnummer']
-		);
-		$this->appendText(document: $document, parent: $body, name: 'bedrag', value: (string)$caseObject['bedrag']);
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'periodeStart',
-			value: (string)$caseObject['periodeStart']
-		);
-		$this->appendText(
-			document: $document,
-			parent: $body,
-			name: 'periodeEind',
-			value: (string)$caseObject['periodeEind']
-		);
-
-	}//end appendDeclaratieBody()
 
 	/**
 	 * Append a text-valued child element.
