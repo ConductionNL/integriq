@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use UnexpectedValueException;
 
 /**
@@ -119,9 +120,7 @@ interface ContractCommitNodeInterface {
 	/**
 	 * Commit the page's contracts in one bulk upsert.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items, one per input item, in input order.
 	 *
@@ -130,5 +129,5 @@ interface ContractCommitNodeInterface {
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array;
+	public function execute(FlowNodeCall $call): array;
 }

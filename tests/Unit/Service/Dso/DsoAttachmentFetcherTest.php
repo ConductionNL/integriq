@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
@@ -181,7 +183,12 @@ class DsoAttachmentFetcherTest extends TestCase {
 
 		$fileService = $this->getMockBuilder(FileService::class)->disableOriginalConstructor()->getMock();
 		$fileService->method('addFile')->willReturnCallback(
-			function ($objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []) {
+			function (FileTarget $target, FileUpload $upload) {
+				$objectEntity = $target->object;
+				$fileName = $upload->fileName;
+				$content = $upload->content;
+				$share = $upload->share;
+				$tags = $upload->tags;
 				if ($this->dieOnAddFile !== null && count($this->addFileCalls) + 1 === $this->dieOnAddFile) {
 					throw new \Error('worker killed');
 				}
