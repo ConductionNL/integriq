@@ -443,6 +443,19 @@
                 }
             ],
             [
+                "or.findAll",
+                {
+                    "limit": 1,
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "addresses",
+                        "pdokId": "adr-0363200000218908"
+                    }
+                },
+                true,
+                true
+            ],
+            [
                 "or.saveObject",
                 {
                     "register": "integriq",
@@ -471,9 +484,9 @@
                         "source": "pdok",
                         "fetchedAt": "(clock)"
                     },
-                    "uniqueOn": [
-                        "pdokId"
-                    ]
+                    "uuid": null,
+                    "_rbac": true,
+                    "_multitenancy": true
                 }
             ],
             [
@@ -679,6 +692,19 @@
                 }
             ],
             [
+                "or.findAll",
+                {
+                    "limit": 1,
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "addresses",
+                        "pdokId": "adr-0363200000218908"
+                    }
+                },
+                true,
+                true
+            ],
+            [
                 "or.saveObject",
                 {
                     "register": "integriq",
@@ -707,9 +733,9 @@
                         "source": "pdok",
                         "fetchedAt": "(clock)"
                     },
-                    "uniqueOn": [
-                        "pdokId"
-                    ]
+                    "uuid": null,
+                    "_rbac": true,
+                    "_multitenancy": true
                 }
             ],
             [
@@ -819,6 +845,19 @@
                 }
             ],
             [
+                "or.findAll",
+                {
+                    "limit": 1,
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "addresses",
+                        "pdokId": "adr-0363200000218908"
+                    }
+                },
+                true,
+                true
+            ],
+            [
                 "or.saveObject",
                 {
                     "register": "integriq",
@@ -847,9 +886,9 @@
                         "source": "pdok",
                         "fetchedAt": "(clock)"
                     },
-                    "uniqueOn": [
-                        "pdokId"
-                    ]
+                    "uuid": null,
+                    "_rbac": true,
+                    "_multitenancy": true
                 }
             ],
             [

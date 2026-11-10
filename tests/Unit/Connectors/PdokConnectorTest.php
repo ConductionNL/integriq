@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Connectors;
 
 use OCA\Integriq\Connectors\PdokConnector;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -327,7 +329,7 @@ class PdokConnectorTest extends TestCase {
 			}
 
 			if (isset($case['stored']) === true || ($case['noRegister'] ?? false) === true) {
-				$register = new class($case, $calls) {
+				$register = new class($case, $calls) extends ObjectService {
 					/**
 					 * @param array $case  The case.
 					 * @param array $calls The call log, by reference.
@@ -362,15 +364,45 @@ class PdokConnectorTest extends TestCase {
 					}
 
 					/**
-					 * @param mixed ...$args The save arguments.
+					 * @param array $config        The query.
+					 * @param bool  $_rbac         Apply RBAC.
+					 * @param bool  $_multitenancy Apply multitenancy.
 					 *
-					 * @return void
+					 * @return array
 					 */
-					public function saveObject(...$args): void {
-						$this->calls[] = ['or.saveObject', $args];
+					public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array {
+						$this->calls[] = ['or.findAll', $config, $_rbac, $_multitenancy];
+						return [];
+					}
+
+					/**
+					 * @param mixed       $object        The object.
+					 * @param string|null $register      The register.
+					 * @param string|null $schema        The schema.
+					 * @param string|null $uuid          The uuid.
+					 * @param bool        $_rbac         Apply RBAC.
+					 * @param bool        $_multitenancy Apply multitenancy.
+					 * @param bool        $silent        Suppress events.
+					 * @param bool        $_validation   Validate.
+					 *
+					 * @return ObjectEntity
+					 */
+					public function saveObject(
+						$object,
+						?string $register = null,
+						?string $schema = null,
+						?string $uuid = null,
+						bool $_rbac = true,
+						bool $_multitenancy = true,
+						bool $silent = false,
+						bool $_validation = true,
+					): ObjectEntity {
+						$this->calls[] = ['or.saveObject', ['register' => $register, 'schema' => $schema, 'object' => $object, 'uuid' => $uuid, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
 						if (($this->case['saveFails'] ?? false) === true) {
 							throw new \RuntimeException('register refused');
 						}
+
+						return new ObjectEntity();
 					}
 				};
 				$this->container = $this->createMock(ContainerInterface::class);
