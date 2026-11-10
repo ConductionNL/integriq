@@ -45,6 +45,7 @@ use OCA\Integriq\Exception\FormsUpstreamException;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\Helper\OcsApi;
 use OCA\Integriq\Service\Helper\OcsApiDispatcher;
+use OCA\Integriq\Service\Helper\OcsPayload;
 use OCA\Integriq\Service\Helper\OcsRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
@@ -95,7 +96,7 @@ class FormsOcsClient implements FormsClientInterface {
 	public function getForm(ObjectEntity $source, int $formId): array {
 		$body = $this->dispatch(source: $source, endpoint: self::BASE_PATH . "/forms/{$formId}", method: 'GET');
 
-		return $this->normaliseForm(form: $this->asArray(value: $body));
+		return $this->normaliseForm(form: OcsPayload::asArray(value: $body));
 	}//end getForm()
 
 	/**
@@ -121,7 +122,7 @@ class FormsOcsClient implements FormsClientInterface {
 			method: 'GET'
 		);
 
-		return $this->normaliseSubmission(submission: $this->asArray(value: $body), fallbackFormId: $formId);
+		return $this->normaliseSubmission(submission: OcsPayload::asArray(value: $body), fallbackFormId: $formId);
 	}//end getSubmission()
 
 	/**
@@ -155,13 +156,13 @@ class FormsOcsClient implements FormsClientInterface {
 			]
 		);
 
-		$submissionsPayload = $this->asArray(value: $body);
+		$submissionsPayload = OcsPayload::asArray(value: $body);
 		// The Forms `FormsSubmissions` response shape wraps the list under a
 		// `submissions` key alongside form metadata; tolerate a bare list too.
 		$rawSubmissions = $submissionsPayload['submissions'] ?? $submissionsPayload;
 
 		$submissions = [];
-		foreach ($this->asArray(value: $rawSubmissions) as $submission) {
+		foreach (OcsPayload::asArray(value: $rawSubmissions) as $submission) {
 			if (is_array($submission) === false) {
 				continue;
 			}
@@ -187,7 +188,7 @@ class FormsOcsClient implements FormsClientInterface {
 		$body = $this->dispatch(source: $source, endpoint: self::BASE_PATH . '/forms', method: 'GET');
 
 		$forms = [];
-		foreach ($this->asArray(value: $body) as $form) {
+		foreach (OcsPayload::asArray(value: $body) as $form) {
 			if (is_array($form) === false) {
 				continue;
 			}
@@ -216,40 +217,16 @@ class FormsOcsClient implements FormsClientInterface {
 	 * @throws FormsUpstreamException On transport failure or another non-2xx status.
 	 */
 	private function dispatch(ObjectEntity $source, string $endpoint, string $method, array $config = []): ?array {
-		return (new OcsApiDispatcher(callService: $this->callService, logger: $this->logger))->dispatch(
-			request: new OcsRequest(api: self::ocsApi(), source: $source, endpoint: $endpoint, method: $method, config: $config)
-		);
-	}//end dispatch()
-
-	/**
-	 * The Forms OCS API and the exceptions this client raises for it.
-	 *
-	 * @return OcsApi The API.
-	 */
-	private static function ocsApi(): OcsApi {
-		return new OcsApi(
+		$formsApi = new OcsApi(
 			label: 'Forms',
 			permissionDenied: FormsPermissionDeniedException::class,
 			notFound: FormsNotFoundException::class,
 			upstream: FormsUpstreamException::class
 		);
+		$request = new OcsRequest(api: $formsApi, source: $source, endpoint: $endpoint, method: $method, config: $config);
 
-	}//end ocsApi()
-
-	/**
-	 * Coerce a value to an array, treating any non-array as empty.
-	 *
-	 * @param mixed $value The value to coerce.
-	 *
-	 * @return array
-	 */
-	private function asArray(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return [];
-	}//end asArray()
+		return (new OcsApiDispatcher(callService: $this->callService, logger: $this->logger))->dispatch(request: $request);
+	}//end dispatch()
 
 	/**
 	 * Normalise a raw Forms `Form` payload (incl. questions) into the contract shape.
@@ -261,7 +238,7 @@ class FormsOcsClient implements FormsClientInterface {
 	 */
 	private function normaliseForm(array $form): array {
 		$questions = [];
-		foreach ($this->asArray(value: ($form['questions'] ?? null)) as $question) {
+		foreach (OcsPayload::asArray(value: ($form['questions'] ?? null)) as $question) {
 			if (is_array($question) === false) {
 				continue;
 			}
@@ -300,7 +277,7 @@ class FormsOcsClient implements FormsClientInterface {
 	 */
 	private function normaliseSubmission(array $submission, int $fallbackFormId): array {
 		$answers = [];
-		foreach ($this->asArray(value: ($submission['answers'] ?? null)) as $answer) {
+		foreach (OcsPayload::asArray(value: ($submission['answers'] ?? null)) as $answer) {
 			if (is_array($answer) === false) {
 				continue;
 			}
