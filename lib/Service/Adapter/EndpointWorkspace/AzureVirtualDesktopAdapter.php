@@ -210,14 +210,26 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 			return [];
 		}
 
-		$decoded = json_decode($response['body'], true);
+		return self::sessionRows(body: $response['body']);
+
+	}//end answeredRows()
+
+	/**
+	 * The `value` list of an ARM answer body, or none when it has no such list.
+	 *
+	 * @param string $body The answer body.
+	 *
+	 * @return array<int,array<string,mixed>> The rows.
+	 */
+	private static function sessionRows(string $body): array {
+		$decoded = json_decode($body, true);
 		if (is_array($decoded) === false || isset($decoded['value']) === false || is_array($decoded['value']) === false) {
 			return [];
 		}
 
 		return $decoded['value'];
 
-	}//end answeredRows()
+	}//end sessionRows()
 
 	/**
 	 * The summary of one session row.
