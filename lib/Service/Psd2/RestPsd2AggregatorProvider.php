@@ -37,10 +37,11 @@ use DateTime;
 use OCA\Integriq\Exception\Psd2ProviderException;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
-use OCP\IL10N;
 use OCA\Integriq\Service\Helper\BrokeredCall;
 use OCA\Integriq\Service\Helper\BrokeredCallRefusals;
 use OCA\Integriq\Service\Helper\BrokeredJsonDispatch;
+use OCP\IL10N;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -275,11 +276,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface, Bro
 	private function dispatchJson(array $sourceConfiguration, BrokeredCall $call): array {
 		$response = $this->brokered()->send(sourceConfiguration: $sourceConfiguration, call: $call);
 
-		return $this->decodeResponse(
-			status: $response->getStatusCode(),
-			body: (string)$response->getBody(),
-			consentScoped: false
-		);
+		return $this->decodeResponse(response: $response, consentScoped: false);
 
 	}//end dispatchJson()
 
@@ -298,11 +295,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface, Bro
 	private function dispatchConsentJson(array $sourceConfiguration, string $url): array {
 		$response = $this->brokered()->send(sourceConfiguration: $sourceConfiguration, call: new BrokeredCall(method: 'GET', url: $url));
 
-		return $this->decodeResponse(
-			status: $response->getStatusCode(),
-			body: (string)$response->getBody(),
-			consentScoped: true
-		);
+		return $this->decodeResponse(response: $response, consentScoped: true);
 
 	}//end dispatchConsentJson()
 
@@ -377,27 +370,24 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface, Bro
 	/**
 	 * Map one aggregator response to decoded JSON or a domain exception.
 	 *
-	 * @param integer $status The HTTP status code.
-	 * @param string $body The raw response body.
-	 * @param boolean $consentScoped Whether a 401/403 means a dead consent (vs a bad API key).
+	 * @param ResponseInterface $response      The aggregator's answer.
+	 * @param boolean           $consentScoped Whether a 401/403 means a dead consent (vs a bad API key).
 	 *
-	 * @return array<string, mixed> The decoded response body.
+	 * @return array<string, mixed> The decoded body.
 	 *
-	 * @throws Psd2ProviderException On any non-2xx or non-JSON response.
-	 * @throws Psd2ConsentRevokedException On a consent-scoped 401/403.
+	 * @throws Psd2ConsentRevokedException On 401/403 for a consent-scoped call.
+	 * @throws Psd2ProviderException       On any other non-2xx status or a non-JSON body.
 	 */
-	private function decodeResponse(int $status, string $body, bool $consentScoped): array {
+	private function decodeResponse(ResponseInterface $response, bool $consentScoped): array {
+		$status = $response->getStatusCode();
+		$body   = (string)$response->getBody();
 		if (($status === 401 || $status === 403) && $consentScoped === true) {
 			throw new Psd2ConsentRevokedException(
 				message: 'The PSD2 aggregator rejected the consent (HTTP ' . $status . ') — it was revoked or is no longer usable.'
 			);
 		}
 
-		if ($status < 200 || $status >= 300) {
-			throw new Psd2ProviderException(
-				message: 'The PSD2 aggregator responded with HTTP ' . $status . '.'
-			);
-		}
+		$this->assertSuccessStatus(status: $status);
 
 		$decoded = json_decode($body, true);
 		if (is_array($decoded) === false) {
@@ -408,4 +398,22 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface, Bro
 
 		return $decoded;
 	}//end decodeResponse()
+
+	/**
+	 * Refuse a status outside 2xx.
+	 *
+	 * @param integer $status The HTTP status code.
+	 *
+	 * @return void
+	 *
+	 * @throws Psd2ProviderException On a non-2xx status.
+	 */
+	private function assertSuccessStatus(int $status): void {
+		if ($status < 200 || $status >= 300) {
+			throw new Psd2ProviderException(
+				message: 'The PSD2 aggregator responded with HTTP ' . $status . '.'
+			);
+		}
+
+	}//end assertSuccessStatus()
 }//end class

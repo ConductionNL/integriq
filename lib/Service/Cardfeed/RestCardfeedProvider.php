@@ -34,10 +34,10 @@ namespace OCA\Integriq\Service\Cardfeed;
 use OCA\Integriq\Exception\CardfeedProviderException;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
-use OCP\IL10N;
 use OCA\Integriq\Service\Helper\BrokeredCall;
 use OCA\Integriq\Service\Helper\BrokeredCallRefusals;
 use OCA\Integriq\Service\Helper\BrokeredJsonDispatch;
+use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
