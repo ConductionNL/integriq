@@ -31,6 +31,7 @@ use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\ResponseDecoder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\ObjectService as OpenRegisterObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -403,7 +404,7 @@ class SourceCallNodeTest extends TestCase {
 	public function testEmptyInputMakesNoCall(): void {
 		$this->callService->expects($this->never())->method('callAsync');
 
-		$this->assertSame([], $this->node->execute([], $this->config(), $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall([], $this->config(), $this->context())));
 
 	}//end testEmptyInputMakesNoCall()
 
@@ -426,7 +427,7 @@ class SourceCallNodeTest extends TestCase {
 			['json' => ['issue' => ['number' => 3]]],
 		];
 
-		$out = $this->node->execute($items, $this->config(), $this->context());
+		$out = $this->node->execute(new FlowNodeCall($items, $this->config(), $this->context()));
 
 		$this->assertCount(3, $out);
 		foreach ($out as $index => $item) {
@@ -470,7 +471,7 @@ class SourceCallNodeTest extends TestCase {
 			],
 		];
 
-		$this->node->execute($items, $config, $this->context());
+		$this->node->execute(new FlowNodeCall($items, $config, $this->context()));
 
 		$this->assertSame('/issues/42/labels', $captured[1]);
 		$this->assertSame('POST', $captured[2]);
@@ -496,7 +497,7 @@ class SourceCallNodeTest extends TestCase {
 		);
 
 		$case = ['id' => 'c-7', 'title' => 'Kapvergunning', 'status' => 'open'];
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => $case]],
 			[
 				'source' => 'url-https-hooks-example-org',
@@ -505,7 +506,7 @@ class SourceCallNodeTest extends TestCase {
 				'body' => ['case' => '{{ @item }}', 'transition' => ['to' => 'closed']],
 			],
 			$this->context()
-		);
+		));
 
 		$this->assertSame('/case-events', $captured[1]);
 		$this->assertSame(['case' => $case, 'transition' => ['to' => 'closed']], $captured[3]['json']);
@@ -525,11 +526,11 @@ class SourceCallNodeTest extends TestCase {
 			$this->promisedLog(statusCode: 200, body: '{"status":"ok","pairedItem":"spoofed"}')
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['issue' => ['number' => 1]]]],
 			['source' => 'demo-echo-api', 'endpoint' => '/get', 'method' => 'GET', 'output' => 'labelResult'],
 			$this->context()
-		);
+		));
 
 		$this->assertSame(['item' => 0], $out[0]['pairedItem']);
 		$this->assertSame('ok', $out[0]['json']['labelResult']['body']['status']);
@@ -550,7 +551,7 @@ class SourceCallNodeTest extends TestCase {
 			$this->promisedLog(statusCode: 200, body: '{"status":"ok","labels":[{"name":"bug"},{"name":"triage"}]}')
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			[
 				'source' => 'demo-forge-api',
@@ -563,7 +564,7 @@ class SourceCallNodeTest extends TestCase {
 				],
 			],
 			$this->context()
-		);
+		));
 
 		$this->assertSame(['bug', 'triage'], $out[0]['json']['mapped']['applied']);
 		$this->assertSame('ok', $out[0]['json']['mapped']['status']);
@@ -583,11 +584,11 @@ class SourceCallNodeTest extends TestCase {
 
 		$this->expectException(UnexpectedValueException::class);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['issue' => ['ref' => '../../evil']]]],
 			['source' => 'demo-forge-api', 'endpoint' => '/issues/{{issue.ref}}', 'method' => 'GET'],
 			$this->context()
-		);
+		));
 
 	}//end testRenderedEndpointEscapeIsRefusedBeforeAnyRequest()
 
@@ -609,7 +610,7 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectExceptionMessageMatches('/demo-echo-api/');
 		$this->expectExceptionMessageMatches('#/get#');
 
-		$this->node->execute([['json' => []]], $this->config(), $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), $this->context()));
 
 	}//end testFiveHundredRaisesUnderDefaultPolicy()
 
@@ -634,18 +635,18 @@ class SourceCallNodeTest extends TestCase {
 
 		$raised = false;
 		try {
-			$this->node->execute([['json' => []]], $this->config(), $this->context());
+			$this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), $this->context()));
 		} catch (FlowNodeException $exception) {
 			$raised = true;
 		}
 
 		$this->assertTrue($raised, 'A 500 must raise under the default policy.');
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			array_merge($this->config(), ['onError' => 'continue']),
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertArrayNotHasKey('echo', $out[0]['json'], 'A failed item must not carry the output key at all.');
@@ -674,11 +675,11 @@ class SourceCallNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['n' => 1]], ['json' => ['n' => 2]]],
 			array_merge($this->config(), ['onError' => 'continue']),
 			$this->context()
-		);
+		));
 
 		$this->assertCount(2, $out);
 
@@ -706,11 +707,11 @@ class SourceCallNodeTest extends TestCase {
 			$this->promisedLog(statusCode: 404, body: '{"detail":"absent"}', statusMessage: 'Not Found')
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			array_merge($this->config(), ['acceptStatuses' => [200, 404]]),
 			$this->context()
-		);
+		));
 
 		$this->assertSame(404, $out[0]['json']['echo']['status']);
 		$this->assertArrayNotHasKey(FlowNodeSupport::ERROR_KEY, $out[0]['json']);
@@ -731,7 +732,7 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/transport level/');
 
-		$this->node->execute([['json' => []]], $this->config(), $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), $this->context()));
 
 	}//end testTransportFailureIsNotAnEmptyResponse()
 
@@ -755,7 +756,7 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/409/');
 
-		$this->node->execute([['json' => []]], $this->config(), $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), $this->context()));
 
 	}//end testDisabledSourceRefusalSurfacesAsError()
 
@@ -772,11 +773,11 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/no-such-source/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			['source' => 'no-such-source', 'endpoint' => '/get', 'method' => 'GET'],
 			$this->context()
-		);
+		));
 
 	}//end testUnknownSourceRaisesAndMakesNoRequest()
 
@@ -792,7 +793,7 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/unattributed/');
 
-		$this->node->execute([['json' => []]], $this->config(), []);
+		$this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), []));
 
 	}//end testUnattributedRunRefusesToCall()
 
@@ -808,7 +809,7 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/ghost/');
 
-		$this->node->execute([['json' => []]], $this->config(), ['triggeredBy' => 'ghost']);
+		$this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), ['triggeredBy' => 'ghost']));
 
 	}//end testUnknownUserRefusesToCall()
 
@@ -833,7 +834,7 @@ class SourceCallNodeTest extends TestCase {
 
 		$this->callService->method('callAsync')->willReturn($this->promisedLog(statusCode: 200, body: '{}'));
 
-		$this->node->execute([['json' => []]], $this->config(), $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), $this->context()));
 
 		$this->assertSame([$owner, $prior], $seen);
 
@@ -882,7 +883,7 @@ class SourceCallNodeTest extends TestCase {
 				}
 
 				try {
-					$outcome = ['out' => $this->node->execute([['json' => ['n' => 1]]], $stepConfig, $this->context())];
+					$outcome = ['out' => $this->node->execute(new FlowNodeCall([['json' => ['n' => 1]]], $stepConfig, $this->context()))];
 				} catch (FlowNodeException $exception) {
 					$outcome = ['message' => $exception->getMessage(), 'details' => $exception->getDetails(), 'previous' => ($exception->getPrevious() === null ? null : $exception->getPrevious()->getMessage())];
 				}
@@ -997,7 +998,7 @@ class SourceCallNodeTest extends TestCase {
 			$items[] = ['json' => ['n' => $number]];
 		}
 
-		$out = $this->node->execute($items, $this->config(), $this->context());
+		$out = $this->node->execute(new FlowNodeCall($items, $this->config(), $this->context()));
 
 		$this->assertSame(
 			FlowConcurrency::DEFAULT_LIMIT,
@@ -1058,11 +1059,11 @@ class SourceCallNodeTest extends TestCase {
 			$items[] = ['json' => ['n' => $number]];
 		}
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			$items,
 			array_merge($this->config(), ['endpoint' => '/get/{{ n }}', 'concurrency' => 2]),
 			$this->context()
-		);
+		));
 
 		$this->assertSame(2, $peak, 'the authored concurrency limit was not honoured');
 		$this->assertCount(9, $out);
@@ -1111,11 +1112,11 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessageMatches('/path traversal/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			$items,
 			array_merge($this->config(), ['endpoint' => '/get/{{ path }}']),
 			$this->context()
-		);
+		));
 
 	}//end testAnOutOfBoundsEndpointOnALaterItemPreventsEveryCall()
 
@@ -1136,7 +1137,7 @@ class SourceCallNodeTest extends TestCase {
 			)
 		);
 
-		$out = $this->node->execute([['json' => []]], array_merge($this->config(), ['decode' => 'yaml']), $this->context());
+		$out = $this->node->execute(new FlowNodeCall([['json' => []]], array_merge($this->config(), ['decode' => 'yaml']), $this->context()));
 
 		$body = $out[0]['json']['echo']['body'];
 		$this->assertIsArray($body);
@@ -1159,7 +1160,7 @@ class SourceCallNodeTest extends TestCase {
 			$this->promisedLog(statusCode: 200, body: $this->fixture(name: 'github-contents-v0.4-opencatalogi.json'))
 		);
 
-		$out = $this->node->execute([['json' => []]], array_merge($this->config(), ['decode' => 'base64+yaml']), $this->context());
+		$out = $this->node->execute(new FlowNodeCall([['json' => []]], array_merge($this->config(), ['decode' => 'base64+yaml']), $this->context()));
 
 		$body = $out[0]['json']['echo']['body'];
 		$this->assertSame('OpenCatalogi', $body['name']);
@@ -1181,7 +1182,7 @@ class SourceCallNodeTest extends TestCase {
 			$this->promisedLog(statusCode: 200, body: $yaml, contentType: 'text/plain; charset=utf-8')
 		);
 
-		$out = $this->node->execute([['json' => []]], $this->config(), $this->context());
+		$out = $this->node->execute(new FlowNodeCall([['json' => []]], $this->config(), $this->context()));
 
 		$this->assertSame($yaml, $out[0]['json']['echo']['body']);
 
@@ -1207,11 +1208,11 @@ class SourceCallNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['n' => 1]], ['json' => ['n' => 2]], ['json' => ['n' => 3]]],
 			array_merge($this->config(), ['decode' => 'yaml', 'onError' => 'continue']),
 			$this->context()
-		);
+		));
 
 		$this->assertCount(3, $out);
 		$this->assertSame('0.2', $out[0]['json']['echo']['body']['publiccodeYmlVersion']);
@@ -1240,7 +1241,7 @@ class SourceCallNodeTest extends TestCase {
 		);
 
 		try {
-			$this->node->execute([['json' => []]], array_merge($this->config(), ['decode' => 'yaml']), $this->context());
+			$this->node->execute(new FlowNodeCall([['json' => []]], array_merge($this->config(), ['decode' => 'yaml']), $this->context()));
 			$this->fail('A malformed file must raise.');
 		} catch (FlowNodeException $exception) {
 			$this->assertSame('decode', $exception->getDetails()['kind']);
@@ -1388,7 +1389,7 @@ class SourceCallNodeTest extends TestCase {
 		);
 
 		$send = ['name' => 'Zaaksysteem', 'u_bbn_level' => '2', 'install_status' => '1'];
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['usage' => ['uuid' => 'u-1'], 'send' => $send]]],
 			[
 				'source' => 'servicenow',
@@ -1398,7 +1399,7 @@ class SourceCallNodeTest extends TestCase {
 				'output' => 'created',
 			],
 			$this->context()
-		);
+		));
 
 		$this->assertSame($send, $captured[3]['json']);
 		$this->assertArrayNotHasKey('body', $captured[3]);
@@ -1418,11 +1419,11 @@ class SourceCallNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessage('did not resolve to an object');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['send' => 'not an object']]],
 			['source' => 'servicenow', 'endpoint' => '/api/now/table/cmdb_ci_appl', 'method' => 'POST', 'bodyFrom' => 'send'],
 			$this->context()
-		);
+		));
 
 	}//end testBodyFromWithoutAnObjectSendsNothing()
 
