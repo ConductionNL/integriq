@@ -133,7 +133,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 				register: 'integriq',
 				schema: 'synchronization',
 				uuid: $uuid,
-				_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema is admin-only (99-engine-config-lockdown).
 			);
 		}
 
@@ -302,7 +302,7 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 					id: (string)$syncSlug,
 					register: 'integriq',
 					schema: 'synchronization',
-					_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+					_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 				);
 			} catch (\Throwable) {
 				$entity = null;

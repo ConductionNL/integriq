@@ -173,7 +173,7 @@ class SourceDestructionService implements SourceDestructionServiceInterface {
 		try {
 			$matches = $this->objectService->findAll(
 				config: ['filters' => ['register' => 'integriq', 'schema' => 'synchronization', 'sourceId' => $sourceId]],
-				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning(

@@ -186,7 +186,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 			id: $id,
 			register: 'integriq',
 			schema: 'notificaties_abonnement',
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$data = $this->mergeAbonnementConfig(current: $abonnement->getObject(), config: $config);
 
@@ -257,7 +257,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 			],
 			register: 'integriq',
 			schema: 'notificaties_abonnement',
-			_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
 		);
 
 	}//end persistPendingAbonnement()
@@ -276,7 +276,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 			register: 'integriq',
 			schema: 'notificaties_abonnement',
 			uuid: $id,
-			_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
 		);
 
 	}//end persistAbonnement()
@@ -426,7 +426,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 			id: $id,
 			register: 'integriq',
 			schema: 'notificaties_abonnement',
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$data = $abonnement->getObject();
 
@@ -506,7 +506,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 				id: $abonnementId,
 				register: 'integriq',
 				schema: 'notificaties_abonnement',
-				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (Throwable $e) {
 			return null;

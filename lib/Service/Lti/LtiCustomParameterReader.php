@@ -120,7 +120,7 @@ class LtiCustomParameterReader {
 				id: $synchronizationId,
 				register: 'integriq',
 				schema: 'synchronization',
-				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (\Throwable $e) {
 			return null;

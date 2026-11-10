@@ -1917,7 +1917,7 @@ class EndpointService implements EndpointServiceInterface {
 						'method' => 'GET',
 					],
 				],
-				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 			$epEntities = $epMatches['results'] ?? $epMatches;
 
@@ -2860,7 +2860,7 @@ class EndpointService implements EndpointServiceInterface {
 					'method' => 'GET',
 				],
 			],
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$endpoints = $epMatches['results'] ?? $epMatches;
 

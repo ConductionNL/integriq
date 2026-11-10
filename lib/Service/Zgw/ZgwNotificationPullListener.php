@@ -89,7 +89,7 @@ class ZgwNotificationPullListener {
 				id: $set . '-pull',
 				register: 'integriq',
 				schema: 'synchronization',
-				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 			if ($synchronization === null) {
 				$this->logger->warning('[ZgwNotificationPullListener] The pull synchronization of '.$set.' is missing; '.$url.' was not pulled.');

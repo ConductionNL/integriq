@@ -197,7 +197,7 @@ class EventsController extends Controller {
 				object: $data,
 				register: 'integriq',
 				schema: 'event_subscription',
-				_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema is admin-only (99-engine-config-lockdown).
 			);
 
 			// REQ-SOW-001: the one reveal of a generated secret. protocolSettings is
@@ -270,7 +270,7 @@ class EventsController extends Controller {
 				register: 'integriq',
 				schema: 'event_subscription',
 				uuid: (string)$subscriptionId,
-				_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema is admin-only (99-engine-config-lockdown).
 			);
 
 			return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
@@ -316,7 +316,7 @@ class EventsController extends Controller {
 
 		$this->orObjectService->deleteObject(
 			uuid: $subscription->getUuid(),
-			_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema is admin-only (99-engine-config-lockdown).
 		);
 		return new JSONResponse([]);
 	}//end unsubscribe()
@@ -514,7 +514,7 @@ class EventsController extends Controller {
 			register: 'integriq',
 			schema: 'event_subscription',
 			uuid: $subscription->getUuid(),
-			_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema is admin-only (99-engine-config-lockdown).
 		);
 
 		return new JSONResponse(
@@ -572,7 +572,7 @@ class EventsController extends Controller {
 			register: 'integriq',
 			schema: 'event_subscription',
 			uuid: $subscription->getUuid(),
-			_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema is admin-only (99-engine-config-lockdown).
 		);
 
 		return new JSONResponse(

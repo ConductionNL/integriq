@@ -68,7 +68,7 @@ class EnvironmentService implements EnvironmentServiceInterface {
 	public function list(): array {
 		$result = $this->orObjectService->findAll(
 			config: ['filters' => ['register' => self::REGISTER, 'schema' => self::SCHEMA]],
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$items = ($result['results'] ?? $result);
 
@@ -109,7 +109,7 @@ class EnvironmentService implements EnvironmentServiceInterface {
 			object: $data,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			_rbac: false, // rbac-bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
 		);
 	}//end create()
 
@@ -131,7 +131,7 @@ class EnvironmentService implements EnvironmentServiceInterface {
 					'slug' => $slug,
 				],
 			],
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$items = ($result['results'] ?? $result);
 

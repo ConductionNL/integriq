@@ -91,7 +91,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			_audit: false,
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 	}//end findObject()
@@ -115,7 +115,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 		];
 		$matches = $this->orObjectService->findAll(
 			config: $config,
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 		return array_values(($matches['results'] ?? $matches));
@@ -428,7 +428,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $uuid,
-			_rbac: false, // rbac-bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -473,7 +473,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			uuid: $uuidParam,
-			_rbac: false, // rbac-bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();

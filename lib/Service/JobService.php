@@ -239,7 +239,7 @@ class JobService implements JobServiceInterface {
 				register: 'integriq',
 				schema: 'job',
 				uuid: $job->getUuid(),
-				_rbac: false, // rbac-bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 			);
 		}
 
@@ -266,7 +266,7 @@ class JobService implements JobServiceInterface {
 			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid(),
-			_rbac: false, // rbac-bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 		);
 
 	}//end scheduleJob()
@@ -617,7 +617,7 @@ class JobService implements JobServiceInterface {
 			register: 'integriq',
 			schema: 'job',
 			uuid: $job->getUuid(),
-			_rbac: false, // rbac-bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 		);
 
 		return $logEntry;
@@ -951,7 +951,7 @@ class JobService implements JobServiceInterface {
 					'isEnabled' => true,
 				],
 			],
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$jobs = ($matches['results'] ?? $matches);
 		$results = [];

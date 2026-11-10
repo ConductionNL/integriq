@@ -133,7 +133,7 @@ class RunPrerequisiteGuard {
 				id: $mapping,
 				register: 'integriq',
 				schema: 'mapping',
-				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (\Throwable) {
 			return null;

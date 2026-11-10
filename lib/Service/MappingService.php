@@ -336,7 +336,7 @@ class MappingService implements MappingServiceInterface {
 				id: $reference,
 				register: self::REGISTER,
 				schema: self::SCHEMA,
-				_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (DoesNotExistException) {
 			$object = null;
@@ -367,7 +367,7 @@ class MappingService implements MappingServiceInterface {
 							$field => $identifier,
 						],
 					],
-					_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+					_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 				);
 			} catch (DoesNotExistException) {
 				continue;
@@ -859,7 +859,7 @@ class MappingService implements MappingServiceInterface {
 			id: $mappingId,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 		if ($object === null) {
@@ -888,7 +888,7 @@ class MappingService implements MappingServiceInterface {
 					'schema' => self::SCHEMA,
 				],
 			],
-			_rbac: false, // rbac-bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 		$rows = ($results['results'] ?? $results);

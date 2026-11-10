@@ -286,7 +286,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $uuid,
-			_rbac: false, // rbac-bypass: service-built row; consumer passed JWT + ConsumerPrivilegeGate (eudi.issue or admin) (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: service-built row; consumer passed JWT + ConsumerPrivilegeGate (eudi.issue or admin) (99-engine-config-lockdown).
 			_multitenancy: false,
 		);
 
@@ -371,7 +371,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $uuid,
-			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
 			_multitenancy: false,
 		);
 
@@ -482,7 +482,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 					register: 'integriq',
 					schema: 'eudi_credential_offer',
 					uuid: $entity->getUuid(),
-					_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+					_rbac: false, // RBAC bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
 					_multitenancy: false,
 				);
 
@@ -505,7 +505,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $entity->getUuid(),
-			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
 			_multitenancy: false,
 		);
 
@@ -530,7 +530,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			register: 'integriq',
 			schema: 'eudi_issuance_session',
 			uuid: $sessionUuid,
-			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
 			_multitenancy: false,
 		);
 
@@ -711,7 +711,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			register: 'integriq',
 			schema: 'eudi_issuance_session',
 			uuid: $session->getUuid(),
-			_rbac: false, // rbac-bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: service-built state change, wallet holds the offer uuid/code/token, no caller fields (99-engine-config-lockdown).
 			_multitenancy: false,
 		);
 
@@ -831,7 +831,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 			register: 'integriq',
 			schema: 'eudi_credential_offer',
 			uuid: $entity->getUuid(),
-			_rbac: false, // rbac-bypass: service-built row; consumer passed JWT + ConsumerPrivilegeGate (eudi.issue or admin) (99-engine-config-lockdown).
+			_rbac: false, // RBAC bypass: service-built row; consumer passed JWT + ConsumerPrivilegeGate (eudi.issue or admin) (99-engine-config-lockdown).
 			_multitenancy: false,
 		);
 
