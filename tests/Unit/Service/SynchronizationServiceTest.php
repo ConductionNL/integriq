@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
@@ -2122,14 +2123,8 @@ HTML;
 		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$fileService->method('getFiles')->willReturn([]);
 		$fileService->method('saveFile')->willReturnCallback(
-			function (...$args) use ($onSave) {
-				$fileName = null;
-				foreach ($args as $arg) {
-					if (is_string($arg) === true && $arg !== '') {
-						$fileName = $arg;
-						break;
-					}
-				}
+			function ($objectEntity, FileUpload $upload) use ($onSave) {
+				$fileName = $upload->fileName;
 
 				$this->fetchRun['saved'][] = $fileName;
 				$this->fetchRun['timeline'][] = 'save:' . $fileName;
