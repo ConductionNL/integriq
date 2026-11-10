@@ -86,8 +86,28 @@ class DsoAccountRights {
 			return null;
 		}
 
+		$schemaEntity = $this->resolveSchema(schema: $schema);
+		if ($schemaEntity === null) {
+			return null;
+		}
+
+		$check = new AccountRightsCheck(handler: $handler, schema: $schemaEntity, userId: $userId);
+		return $this->missingActions(check: $check, actions: $actions);
+
+	}//end missing()
+
+	/**
+	 * Resolve the schema the account writes, or null when it cannot be resolved.
+	 *
+	 * @param string $schema The schema slug.
+	 *
+	 * @return object|null The schema entity.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 */
+	private function resolveSchema(string $schema): ?object {
 		try {
-			$schemaEntity = $this->schemaMapper->find($schema, [], false, false);
+			return $this->schemaMapper->find($schema, [], false, false);
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				'[DsoAccountRights] the schema could not be resolved for the rights check',
@@ -96,30 +116,57 @@ class DsoAccountRights {
 			return null;
 		}
 
-		if ($schemaEntity === null) {
-			return null;
-		}
+	}//end resolveSchema()
 
+	/**
+	 * The actions not granted, in order; null as soon as one check cannot be answered.
+	 *
+	 * @param AccountRightsCheck $check   The handler, schema and uid.
+	 * @param list<string>       $actions The actions needed.
+	 *
+	 * @return list<string>|null
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 */
+	private function missingActions(AccountRightsCheck $check, array $actions): ?array {
 		$missing = [];
 		foreach ($actions as $action) {
-			try {
-				$granted = $handler->hasPermission(schema: $schemaEntity, action: $action, userId: $userId);
-			} catch (Throwable $exception) {
-				$this->logger->error(
-					'[DsoAccountRights] the rights check raised an exception; treating the rights as unverifiable',
-					['action' => $action, 'exception' => $exception->getMessage()]
-				);
+			$granted = $this->granted(check: $check, action: $action);
+			if ($granted === null) {
 				return null;
 			}
 
-			if ($granted !== true) {
+			if ($granted === false) {
 				$missing[] = $action;
 			}
 		}
 
 		return $missing;
 
-	}//end missing()
+	}//end missingActions()
+
+	/**
+	 * Whether one action is granted (only a literal true counts), or null when the check raised.
+	 *
+	 * @param AccountRightsCheck $check  The handler, schema and uid.
+	 * @param string             $action The action.
+	 *
+	 * @return bool|null
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
+	 */
+	private function granted(AccountRightsCheck $check, string $action): ?bool {
+		try {
+			return ($check->handler->hasPermission(schema: $check->schema, action: $action, userId: $check->userId) === true);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				'[DsoAccountRights] the rights check raised an exception; treating the rights as unverifiable',
+				['action' => $action, 'exception' => $exception->getMessage()]
+			);
+			return null;
+		}
+
+	}//end granted()
 
 	/**
 	 * Resolve OpenRegister's PermissionHandler, or null when it is absent.
