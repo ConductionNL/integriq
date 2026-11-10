@@ -222,6 +222,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/Task.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\TaskActorRef') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/TaskActorRef.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\Task\\TaskService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
 		}
@@ -314,6 +318,18 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
 		if (class_exists('OCA\\OpenRegister\\Db\\SchemaMapper') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/SchemaMapper.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileTarget') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileTarget.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileTransfer') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileTransfer.php';
+		}
+
+		if (class_exists('OCA\\OpenRegister\\Service\\File\\FileUpload') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileUpload.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\FileService') === false) {
@@ -555,6 +571,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// must exist before they are parsed — exactly the compile-time
 		// reference the runtime `class_exists()` guard in Application.php
 		// exists to avoid resolving on an instance without a flow engine.
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeCall') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeCall.php';
+		}
+
 		if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNode') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNode.php';
 		}

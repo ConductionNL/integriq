@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Kernel\FlowNodeIds;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use UnexpectedValueException;
 
 /**
@@ -128,9 +129,7 @@ interface SynchronizationRunNodeInterface {
 	/**
 	 * Run the synchronization once per item and fan out its objects.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -138,5 +137,5 @@ interface SynchronizationRunNodeInterface {
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array;
+	public function execute(FlowNodeCall $call): array;
 }

@@ -36,6 +36,7 @@ use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Flow\SourcePaginateNode;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -300,11 +301,11 @@ class SourcePaginateNodeTest extends TestCase {
 			'failureReason' => null,
 		];
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['trigger' => 'manual'], 'binary' => ['file' => 'x']]],
 			['synchronization' => 'demo-sync', 'pageSize' => 2, 'output' => 'page'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(3, $out);
 		$this->assertSame([1, 2, 3], array_map(static fn (array $item): int => $item['json']['page']['page'], $out));
@@ -349,11 +350,11 @@ class SourcePaginateNodeTest extends TestCase {
 			'failureReason' => 'page_fetch_failed',
 		];
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			['synchronization' => 'demo-sync', 'pageSize' => 2],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(2, $out);
 		foreach ($out as $item) {
@@ -376,7 +377,7 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->synchronizationService->objects = $this->objects(1);
 		$this->synchronizationService->fetchInfoToWrite = null;
 
-		$out = $this->node->execute([['json' => []]], ['synchronization' => 'demo-sync'], $this->context());
+		$out = $this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'demo-sync'], $this->context()));
 
 		$this->assertTrue($out[0]['json']['fetchInfo']['complete']);
 		$this->assertSame(0, $out[0]['json']['fetchInfo']['pagesFetched']);
@@ -394,11 +395,11 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->givenOwner();
 		$this->synchronizationService->objects = $this->objects(2);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['trigger' => 'schedule']]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertArrayNotHasKey('trigger', $out[0]['json']);
@@ -421,7 +422,7 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->givenOwner();
 		$this->synchronizationService->objects = [];
 
-		$out = $this->node->execute([['json' => []]], ['synchronization' => 'demo-sync'], $this->context());
+		$out = $this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'demo-sync'], $this->context()));
 
 		$this->assertCount(1, $out);
 		$this->assertSame(1, $out[0]['json']['page']);
@@ -446,11 +447,11 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->synchronizationService->objects = $this->objects(10);
 
 		try {
-			$this->node->execute(
+			$this->node->execute(new FlowNodeCall(
 				[['json' => []]],
 				['synchronization' => 'demo-sync', 'pageSize' => 1, 'maxPages' => 4],
 				$this->context()
-			);
+			));
 			$this->fail('A fetch above the ceiling must raise.');
 		} catch (FlowNodeException $exception) {
 			$details = $exception->getDetails();
@@ -476,7 +477,7 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/connection refused/');
 
-		$this->node->execute([['json' => []]], ['synchronization' => 'demo-sync'], $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'demo-sync'], $this->context()));
 
 	}//end testAFailedFetchRaisesUnderStop()
 
@@ -493,7 +494,7 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/no such synchronization/');
 
-		$this->node->execute([['json' => []]], ['synchronization' => 'ghost'], $this->context());
+		$this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'ghost'], $this->context()));
 
 	}//end testAnUnresolvableSynchronizationFails()
 
@@ -507,11 +508,11 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->givenOwner();
 		$this->synchronizationService->throwOnFetch = new RuntimeException('gateway timeout');
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['trigger' => 'manual'], 'binary' => ['f' => 1]]],
 			['synchronization' => 'demo-sync', 'onError' => 'continue'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertArrayNotHasKey('results', $out[0]['json']);
@@ -537,11 +538,11 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->givenOwner();
 		$this->synchronizationService->throwOnFetch = new RuntimeException('boom');
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => []]],
 			['synchronization' => 'demo-sync', 'onError' => 'dead_letter'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertArrayHasKey(FlowNodeSupport::ERROR_KEY, $out[0]['json']);
@@ -568,11 +569,11 @@ class SourcePaginateNodeTest extends TestCase {
 		);
 
 		try {
-			$this->node->execute(
+			$this->node->execute(new FlowNodeCall(
 				[['json' => []]],
 				['synchronization' => 'demo-sync', 'onError' => 'continue'],
 				$this->context()
-			);
+			));
 			$this->fail('A rate limit must suspend the run, not produce items.');
 		} catch (FlowSuspension $suspension) {
 			$resumeAt = $suspension->getResumeAt();
@@ -594,11 +595,11 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->givenOwner();
 		$this->synchronizationService->objects = $this->objects(3);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[['json' => ['n' => 1]], ['json' => ['n' => 2]]],
 			['synchronization' => 'demo-sync', 'pageSize' => 2],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(4, $out);
 		$this->assertSame([0, 0, 1, 1], array_map(
@@ -619,7 +620,7 @@ class SourcePaginateNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEmptyBranchFetchesNothing(): void {
-		$this->assertSame([], $this->node->execute([], ['synchronization' => 'demo-sync'], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall([], ['synchronization' => 'demo-sync'], $this->context())));
 		$this->assertArrayNotHasKey('getAllObjectsFromApi', $this->synchronizationService->received);
 
 	}//end testAnEmptyBranchFetchesNothing()
@@ -635,7 +636,7 @@ class SourcePaginateNodeTest extends TestCase {
 		$this->expectException(Throwable::class);
 
 		try {
-			$this->node->execute([['json' => []]], ['synchronization' => 'demo-sync'], $this->context());
+			$this->node->execute(new FlowNodeCall([['json' => []]], ['synchronization' => 'demo-sync'], $this->context()));
 		} finally {
 			$this->assertArrayNotHasKey('getAllObjectsFromApi', $this->synchronizationService->received);
 		}
