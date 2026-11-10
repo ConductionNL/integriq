@@ -34,6 +34,58 @@ const AUTHENTICATION_TYPES = [
 ]
 
 /**
+ * The request and availability flags, all idle.
+ *
+ * @return {object} The flags.
+ */
+export function blankRequestState() {
+	return {
+		success: null,
+		loading: false,
+		error: false,
+		warning: null,
+		closeAlert: false,
+		sourcesLoading: false,
+		usersLoading: false,
+		groupsLoading: false,
+		openRegister: {
+			isInstalled: true,
+			isAvailable: true,
+		},
+	}
+}
+
+/**
+ * An empty picker that loads its options from a list.
+ *
+ * @return {{options: Array, value: null, loading: boolean}} The picker state.
+ */
+export function blankListPicker() {
+	return {
+		options: [],
+		value: null,
+		loading: false,
+	}
+}
+
+/**
+ * The pickers the editor fills once it has loaded their options.
+ *
+ * @return {object} The pickers, each empty.
+ */
+export function blankActionPickers() {
+	return {
+		actionOptions: {},
+		timingOptions: {},
+		sourceOptions: {},
+		methodOptions: {},
+		filepartUploadMappingOptions: {},
+		filepartsCreateMappingOptions: {},
+		schemaOptions: {},
+	}
+}
+
+/**
  * The rule type picker, on Error.
  *
  * @return {{options: Array<object>, value: object}} The picker state.

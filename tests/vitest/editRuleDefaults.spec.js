@@ -7,7 +7,14 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { blankAuthenticationTypeOptions, blankRuleItem, blankRuleTypeOptions } from '../../src/modals/Rule/editRuleDefaults.js'
+import {
+	blankActionPickers,
+	blankAuthenticationTypeOptions,
+	blankListPicker,
+	blankRequestState,
+	blankRuleItem,
+	blankRuleTypeOptions,
+} from '../../src/modals/Rule/editRuleDefaults.js'
 
 const INLINE_RULE_ITEM = {
 		name: '',
@@ -143,7 +150,53 @@ const INLINE_AUTHENTICATION_TYPE_OPTIONS = {
 		},
 	}
 
+const INLINE_STATE = {
+	success: null,
+	loading: false,
+	error: false,
+	warning: null,
+	closeAlert: false,
+	sourcesLoading: false,
+	usersLoading: false,
+	groupsLoading: false,
+	openRegister: {
+		isInstalled: true,
+		isAvailable: true,
+	},
+
+	mappingOptions: {
+		options: [],
+		value: null,
+		loading: false,
+	},
+
+	syncOptions: {
+		options: [],
+		value: null,
+		loading: false,
+	},
+}
+
+const INLINE_PICKERS = {
+	actionOptions: {},
+	timingOptions: {},
+	sourceOptions: {},
+	methodOptions: {},
+	filepartUploadMappingOptions: {},
+	filepartsCreateMappingOptions: {},
+	schemaOptions: {},
+}
+
 describe('editRuleDefaults', () => {
+	it('the request flags, list pickers and action pickers are the inline ones, keys in order', () => {
+		const state = { ...blankRequestState(), mappingOptions: blankListPicker(), syncOptions: blankListPicker() }
+
+		expect(JSON.stringify(state)).toBe(JSON.stringify(INLINE_STATE))
+		expect(state).toStrictEqual(INLINE_STATE)
+		expect(blankActionPickers()).toStrictEqual(INLINE_PICKERS)
+		expect(blankListPicker().options).not.toBe(blankListPicker().options)
+	})
+
 	it('blankRuleItem is the inline blank rule item, keys in the same order', () => {
 		expect(blankRuleItem()).toStrictEqual(INLINE_RULE_ITEM)
 		expect(JSON.stringify(blankRuleItem())).toBe(JSON.stringify(INLINE_RULE_ITEM))
