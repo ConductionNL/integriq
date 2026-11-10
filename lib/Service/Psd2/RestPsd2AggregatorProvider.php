@@ -290,11 +290,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 		$this->assertCredentialConfigured(config: $config);
 		$response = $this->brokeredDispatch(config: $config, call: $call);
 
-		return $this->decodeResponse(
-			status: $response->getStatusCode(),
-			body: (string)$response->getBody(),
-			consentScoped: $call->consentScoped
-		);
+		return $this->decodeResponse(response: $response, consentScoped: $call->consentScoped);
 
 	}//end dispatchJson()
 
@@ -330,11 +326,7 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 	 */
 	private function brokeredDispatch(array $config, AggregatorCall $call): ResponseInterface {
 		try {
-			$dispatch = $this->brokeredCallService->prepare(
-				config: $config,
-				sourceData: ['type' => 'psd2'],
-				asynchronous: false
-			);
+			$dispatch = $this->prepareDispatch(config: $config);
 
 			return $this->brokeredCallService->dispatch(
 				credentialId: $dispatch['credentialId'],
@@ -346,42 +338,70 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 		} catch (BrokeredCallConfigurationException $exception) {
 			throw new Psd2ProviderException(message: $exception->getMessage(), previous: $exception);
 		} catch (Throwable $exception) {
-			$this->logger->warning(
-				'[RestPsd2AggregatorProvider] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new Psd2ProviderException(
-				message: 'The PSD2 aggregator request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+			throw $this->unexpectedFailure(exception: $exception);
+		}
 
 	}//end brokeredDispatch()
 
 	/**
+	 * Ask the broker which credential and acting user the call runs under.
+	 *
+	 * @param array $config The brokered call configuration.
+	 *
+	 * @return array{credentialId: string, actingUserId: string|null} The prepared dispatch.
+	 *
+	 * @throws BrokeredCallConfigurationException When the broker refuses the configuration.
+	 */
+	private function prepareDispatch(array $config): array {
+		return $this->brokeredCallService->prepare(
+			config: $config,
+			sourceData: ['type' => 'psd2'],
+			asynchronous: false
+		);
+
+	}//end prepareDispatch()
+
+	/**
+	 * Log an unexpected transport failure and wrap it in a secret-free exception.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return Psd2ProviderException The exception to throw.
+	 */
+	private function unexpectedFailure(Throwable $exception): Psd2ProviderException {
+		$this->logger->warning(
+			'[RestPsd2AggregatorProvider] unexpected transport failure',
+			['exception' => $exception->getMessage()]
+		);
+
+		return new Psd2ProviderException(
+			message: 'The PSD2 aggregator request failed unexpectedly: ' . $exception->getMessage(),
+			previous: $exception
+		);
+
+	}//end unexpectedFailure()
+
+	/**
 	 * Map one aggregator response to decoded JSON or a domain exception.
 	 *
-	 * @param integer $status The HTTP status code.
-	 * @param string $body The raw response body.
-	 * @param boolean $consentScoped Whether a 401/403 means a dead consent (vs a bad API key).
+	 * @param ResponseInterface $response      The aggregator's answer.
+	 * @param boolean           $consentScoped Whether a 401/403 means a dead consent (vs a bad API key).
 	 *
-	 * @return array<string, mixed> The decoded response body.
+	 * @return array<string, mixed> The decoded body.
 	 *
-	 * @throws Psd2ProviderException On any non-2xx or non-JSON response.
-	 * @throws Psd2ConsentRevokedException On a consent-scoped 401/403.
+	 * @throws Psd2ConsentRevokedException On 401/403 for a consent-scoped call.
+	 * @throws Psd2ProviderException       On any other non-2xx status or a non-JSON body.
 	 */
-	private function decodeResponse(int $status, string $body, bool $consentScoped): array {
+	private function decodeResponse(ResponseInterface $response, bool $consentScoped): array {
+		$status = $response->getStatusCode();
+		$body   = (string)$response->getBody();
 		if (($status === 401 || $status === 403) && $consentScoped === true) {
 			throw new Psd2ConsentRevokedException(
 				message: 'The PSD2 aggregator rejected the consent (HTTP ' . $status . ') — it was revoked or is no longer usable.'
 			);
 		}
 
-		if ($status < 200 || $status >= 300) {
-			throw new Psd2ProviderException(
-				message: 'The PSD2 aggregator responded with HTTP ' . $status . '.'
-			);
-		}
+		$this->assertSuccessStatus(status: $status);
 
 		$decoded = json_decode($body, true);
 		if (is_array($decoded) === false) {
@@ -392,4 +412,22 @@ class RestPsd2AggregatorProvider implements Psd2AggregatorProviderInterface {
 
 		return $decoded;
 	}//end decodeResponse()
+
+	/**
+	 * Refuse a status outside 2xx.
+	 *
+	 * @param integer $status The HTTP status code.
+	 *
+	 * @return void
+	 *
+	 * @throws Psd2ProviderException On a non-2xx status.
+	 */
+	private function assertSuccessStatus(int $status): void {
+		if ($status < 200 || $status >= 300) {
+			throw new Psd2ProviderException(
+				message: 'The PSD2 aggregator responded with HTTP ' . $status . '.'
+			);
+		}
+
+	}//end assertSuccessStatus()
 }//end class
