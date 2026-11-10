@@ -37,6 +37,7 @@ use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
+use OCP\Notification\INotification;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -156,13 +157,7 @@ class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 	 */
 	private function notifyAdmin(IUser $admin, DsoAlertNotice $notice): bool {
 		try {
-			$notification = $this->notificationManager->createNotification();
-			$notification->setApp(AppIdentity::APP_ID)
-				->setUser($admin->getUID())
-				->setDateTime((new DateTime())->setTimestamp($notice->now))
-				->setObject($notice->channel . '_connection', $notice->reason)
-				->setSubject(self::SUBJECT, ['reason' => $notice->reason, 'channel' => $notice->channel]);
-			$this->notificationManager->notify($notification);
+			$this->notificationManager->notify($this->notificationFor(admin: $admin, notice: $notice));
 			return true;
 		} catch (Throwable $exception) {
 			$this->logger->warning(
@@ -173,4 +168,25 @@ class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 		}
 
 	}//end notifyAdmin()
+
+	/**
+	 * The notification for one administrator.
+	 *
+	 * @param IUser          $admin  The administrator.
+	 * @param DsoAlertNotice $notice The alert.
+	 *
+	 * @return INotification
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function notificationFor(IUser $admin, DsoAlertNotice $notice): INotification {
+		$notification = $this->notificationManager->createNotification();
+		$notification->setApp(AppIdentity::APP_ID)
+			->setUser($admin->getUID())
+			->setDateTime((new DateTime())->setTimestamp($notice->now))
+			->setObject($notice->channel . '_connection', $notice->reason)
+			->setSubject(self::SUBJECT, ['reason' => $notice->reason, 'channel' => $notice->channel]);
+		return $notification;
+
+	}//end notificationFor()
 }//end class
