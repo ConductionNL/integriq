@@ -24,6 +24,7 @@ use OCA\Integriq\Flow\EventEmitNode;
 use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Service\EventServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -187,14 +188,14 @@ class EventEmitNodeTest extends TestCase {
 				}
 			);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [
 				['json' => ['issue' => ['number' => 41]]],
 				['json' => ['issue' => ['number' => 42]]],
 			],
 			config: $this->config(overrides: ['subject' => 'issue/{{issue.number}}']),
 			context: []
-		);
+		));
 
 		$this->assertSame(['issue/41', 'issue/42'], $subjects);
 		$this->assertCount(2, $out);
@@ -211,7 +212,7 @@ class EventEmitNodeTest extends TestCase {
 	public function testEmptyInputEmitsNothing(): void {
 		$this->eventService->expects($this->never())->method('emitCloudEvent');
 
-		$this->assertSame([], $this->node->execute(items: [], config: $this->config(), context: []));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: $this->config(), context: [])));
 
 	}//end testEmptyInputEmitsNothing()
 
@@ -226,7 +227,7 @@ class EventEmitNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/broker down/');
 
-		$this->node->execute(items: [['json' => []]], config: $this->config(), context: []);
+		$this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: []));
 
 	}//end testFailedEmitRaisesByDefault()
 
@@ -249,11 +250,11 @@ class EventEmitNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [['json' => ['a' => 1]], ['json' => ['a' => 2]]],
 			config: $this->config(overrides: ['onError' => 'continue']),
 			context: []
-		);
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertArrayHasKey(FlowNodeSupport::ERROR_KEY, $out[0]['json']);

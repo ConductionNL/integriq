@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -114,6 +116,14 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 
 		if ($value instanceof FlowToken) {
 			return ['flowToken' => $value->getRequestOriginal()];
+		}
+
+		if ($value instanceof FileTarget) {
+			return ['target' => $this->d($value->object), 'registerId' => $value->registerId];
+		}
+
+		if ($value instanceof FileUpload) {
+			return ['fileName' => $value->fileName, 'content' => $value->content, 'share' => $value->share, 'tags' => $value->tags];
 		}
 
 		if ($value instanceof ExecutionTraceContext) {
@@ -333,12 +343,12 @@ class EndpointServiceRuleProcessorsGoldenTest extends TestCase {
 		$fileService = $this->recorder(
 			FileService::class,
 			[
-				'addFile' => function ($objectEntity, string $fileName = '', $content = null) {
-					if ($content === 'fail') {
+				'addFile' => function (FileTarget $target, FileUpload $upload) {
+					if ($upload->content === 'fail') {
 						throw new RuntimeException('write failed');
 					}
 
-					return $this->file((string)$fileName);
+					return $this->file($upload->fileName);
 				},
 				'getObjectFolder' => fn () => $folder,
 				'getFiles' => fn () => array_map(fn ($name) => $this->file($name), ($this->case['orFiles'] ?? [])),
