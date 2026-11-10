@@ -105,7 +105,7 @@
                     "mtls": {
                         "encryptedCertificate": "enc(match-cert)",
                         "encryptedPrivateKey": "enc(match-key)",
-                        "encryptedPassphrase": "enc(pw)",
+                        "encryptedPassphrase": "enc( pw )",
                         "encryptedCaBundle": "enc(ca)"
                     }
                 },
@@ -199,7 +199,7 @@
             "mtls": {
                 "encryptedCertificate": "enc(match-cert)",
                 "encryptedPrivateKey": "enc(match-key)",
-                "encryptedPassphrase": "enc(pw)",
+                "encryptedPassphrase": "enc( pw )",
                 "encryptedCaBundle": "enc(ca)"
             }
         },

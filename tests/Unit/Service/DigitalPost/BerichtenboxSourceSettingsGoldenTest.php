@@ -155,7 +155,7 @@ class BerichtenboxSourceSettingsGoldenTest extends TestCase {
 			'berichttype too long' => [[], ['berichtTypes' => ['a' => 'ABCDEFGHI']]],
 			'blank certificate' => [[], $base + ['certificate' => ['certificatePem' => '  ']]],
 			'certificate not an array' => [[], $base + ['certificate' => 'pem']],
-			'matching certificate' => [['configuration' => ['authentication' => ['encryptedToken' => 'old']]], $base + ['certificate' => $certificate('match', ['passphrase' => 'pw', 'caBundlePem' => ' ca '])]],
+			'matching certificate' => [['configuration' => ['authentication' => ['encryptedToken' => 'old']]], $base + ['certificate' => $certificate('match', ['passphrase' => ' pw ', 'caBundlePem' => ' ca '])]],
 			'other serial' => [[], $base + ['certificate' => $certificate('other'), 'adapterToken' => 'tok']],
 			'no serial' => [[], $base + ['certificate' => $certificate('bare')]],
 			'no oin' => [[], ['certificate' => $certificate('other')]],
