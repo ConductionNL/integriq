@@ -222,6 +222,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Db/Task.php';
 		}
 
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\TaskActorRef') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/TaskActorRef.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\Task\\TaskService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Task/TaskService.php';
 		}
