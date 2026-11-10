@@ -67,6 +67,7 @@ use OCA\Integriq\Service\CallServiceInterface;
 use OCA\Integriq\Service\ResponseDecoderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowConcurrency;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -391,9 +392,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Call the source once per item and return one item per input item.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
@@ -401,7 +400,11 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		// An empty branch makes no call and produces no items. That is the
 		// filter contract, not a failure, so it short-circuits before the
 		// owner is even resolved — there is nothing to attribute.
