@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Connectors;
 
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\ICache;
@@ -95,6 +97,16 @@ class PdokConnector implements PdokConnectorInterface {
 	 * Seconds the breaker stays open before allowing a half-open probe.
 	 */
 	private const BREAKER_OPEN_SECONDS = 30;
+
+	/**
+	 * OpenRegister register that holds the stored addresses.
+	 */
+	private const OR_REGISTER = 'integriq';
+
+	/**
+	 * OpenRegister schema of the stored addresses.
+	 */
+	private const OR_SCHEMA = 'addresses';
 
 	/**
 	 * Cache for APCu-backed responses + breaker state.
@@ -578,6 +590,8 @@ class PdokConnector implements PdokConnectorInterface {
 	 * @param array $doc Normalised PostalAddress.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-write-through-to-or-addresses-register
 	 */
 	public function writeThrough(array $doc): void {
 		$objectService = $this->getOpenRegisterObjectService();
@@ -587,10 +601,12 @@ class PdokConnector implements PdokConnectorInterface {
 
 		try {
 			$objectService->saveObject(
-				register: 'integriq',
-				schema: 'addresses',
 				object: $doc,
-				uniqueOn: ['pdokId'],
+				register: self::OR_REGISTER,
+				schema: self::OR_SCHEMA,
+				uuid: $this->storedUuid(objectService: $objectService, pdokId: (string)$doc['pdokId']),
+				_rbac: true,
+				_multitenancy: true,
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -600,6 +616,34 @@ class PdokConnector implements PdokConnectorInterface {
 		}
 
 	}//end writeThrough()
+
+	/**
+	 * Find the uuid of the stored address for a pdokId, so a save updates it.
+	 *
+	 * @param ObjectService $objectService OpenRegister's object service.
+	 * @param string        $pdokId        The PDOK document id.
+	 *
+	 * @return string|null The stored object's uuid, or null when none is stored.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-write-through-to-or-addresses-register
+	 */
+	private function storedUuid(ObjectService $objectService, string $pdokId): ?string {
+		$rows = $objectService->findAll(
+			config: [
+				'limit' => 1,
+				'filters' => ['register' => self::OR_REGISTER, 'schema' => self::OR_SCHEMA, 'pdokId' => $pdokId],
+			],
+			_rbac: true,
+			_multitenancy: true,
+		);
+
+		$row = ($rows[0] ?? null);
+		if ($row instanceof ObjectEntity === false || $row->getUuid() === '') {
+			return null;
+		}
+
+		return $row->getUuid();
+	}//end storedUuid()
 
 	/**
 	 * Read the current breaker state from the cache.
@@ -700,11 +744,11 @@ class PdokConnector implements PdokConnectorInterface {
 	/**
 	 * Resolve OR's ObjectService if installed; null otherwise.
 	 *
-	 * @return \OCA\OpenRegister\Service\ObjectService|null
+	 * @return ObjectService|null
 	 */
-	private function getOpenRegisterObjectService() {
+	private function getOpenRegisterObjectService(): ?ObjectService {
 		try {
-			return $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+			return $this->container->get(ObjectService::class);
 		} catch (Throwable $e) {
 			return null;
 		}
