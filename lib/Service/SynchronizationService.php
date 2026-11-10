@@ -74,6 +74,7 @@ use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\RenderSelection;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -5866,7 +5867,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// Orphan cleanup is handled by the fetch-file rule path
 		// (see SynchronizationService::fetchAndRegisterFileFromEndpoint).
 		if (isset($sourceConfig['subObjects']) === true) {
-			$targetObject = $this->orObjectService->renderEntity($target, ['all']);
+			$targetObject = $this->orObjectService->renderEntity(
+				entity: $target,
+				selection: new RenderSelection(extend: ['all'], filter: [], fields: [], unset: [])
+			);
 			$this->updateContractsForSubObjects(
 				subObjectsConfig: $sourceConfig['subObjects'],
 				synchronizationId: ($write->synchronization['id'] ?? null),

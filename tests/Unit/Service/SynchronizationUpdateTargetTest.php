@@ -28,6 +28,7 @@ use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Object\RenderSelection;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -101,8 +102,8 @@ class SynchronizationUpdateTargetTest extends TestCase {
 			}
 		);
 		$openRegisters->method('renderEntity')->willReturnCallback(
-			function ($entity, $extend = []) {
-				$this->log[] = ['or.renderEntity', $entity->getUuid(), $extend];
+			function ($entity, ?RenderSelection $selection = null) {
+				$this->log[] = ['or.renderEntity', $entity->getUuid(), $selection?->extend];
 				return ['rendered' => $entity->getUuid(), 'sub' => ['naam' => 'kind']];
 			}
 		);
