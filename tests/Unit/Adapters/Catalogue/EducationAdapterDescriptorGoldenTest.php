@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Adapters\Catalogue;
 
+use OCA\Integriq\Adapters\Digikoppeling\DigikoppelingAdapter;
 use OCA\Integriq\Adapters\Oso\OsoAdapter;
 use OCA\Integriq\Adapters\Rod\RodAdapter;
 use OCA\Integriq\Adapters\UwlrEduV\UwlrEduVAdapter;
@@ -30,8 +31,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins every catalogue answer of the ROD, Verzuimloket, OSO and UWLR/Edu-V
- * descriptors, key order included.
+ * Pins every catalogue answer of the ROD, Verzuimloket, OSO, UWLR/Edu-V and
+ * Digikoppeling descriptors, key order included.
  */
 final class EducationAdapterDescriptorGoldenTest extends TestCase {
 
@@ -66,6 +67,12 @@ final class EducationAdapterDescriptorGoldenTest extends TestCase {
 				{"id":"uwlr-eduv","label":"UWLR / Edu-V / Basispoort","category":"government","addsTopLevelMenu":false,"addsManagementRoute":false,"providers":["log","uwlr-eduv"],"configSchema":{"type":"object","title":"UWLR / Edu-V / Basispoort","properties":{"provider":{"type":"string","enum":["log","uwlr-eduv"],"default":"log","title":"Provider binding","description":"`log` (default) simulates every send. `uwlr-eduv` dispatches over the live koppelvlak. It requires a certificate reference and, per target, its own certification/aansluiting (see decisions.md M3(c))."},"endpoint":{"type":"string","format":"uri","title":"Endpoint URL","description":"UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL. Required when provider=uwlr-eduv."},"certificateRef":{"type":"string","title":"PKIoverheid certificate reference","description":"Broker credentialRef for the certificate. Never stored here (ADR-007). Required when provider=uwlr-eduv."},"webhookSignature":{"type":"object","title":"Inbound signature","description":"HMAC verification settings for the shared inbound acknowledgement/retour endpoint.","properties":{"scheme":{"type":"string","default":"openconnector"},"secret":{"type":"string"},"header":{"type":"string","default":"X-OpenConnector-Signature"},"toleranceSeconds":{"type":"integer"}}}}},"targets":["uwlr","edu-v","basispoort","entree-content"]}
 				JSON,
 			],
+			'digikoppeling' => [
+				new DigikoppelingAdapter(),
+				<<<'JSON'
+				{"id":"digikoppeling","label":"Digikoppeling","category":"government","addsTopLevelMenu":false,"addsManagementRoute":false,"profiles":["wus","ebms2"],"configSchema":{"type":"object","title":"Digikoppeling","required":["profile","oin","endpoint","certificateRef"],"properties":{"profile":{"type":"string","enum":["wus","ebms2"],"title":"Transport profile","description":"WUS (synchronous bevragingen) or ebMS2 (asynchronous reliable meldingen)."},"oin":{"type":"string","title":"Partner OIN","description":"Partner organisation identifier (OIN)."},"service":{"type":"string","title":"Service","description":"Digikoppeling service name."},"action":{"type":"string","title":"Action","description":"Digikoppeling action name."},"endpoint":{"type":"string","format":"uri","title":"Endpoint URL","description":"Partner endpoint URL (two-way TLS)."},"certificateRef":{"type":"string","title":"PKIoverheid certificate reference","description":"Broker credentialRef for the PKIoverheid certificate + key. Never stored here (ADR-007)."},"reliableMessaging":{"type":"object","title":"Reliable messaging (ebMS2)","description":"ebMS2 reliable-messaging parameters.","properties":{"retryBudget":{"type":"integer","minimum":0,"title":"Retry budget","description":"Maximum retransmissions before the message is dead-lettered."},"retryIntervalSeconds":{"type":"integer","minimum":1,"title":"Retry interval (seconds)","description":"Seconds between retransmission attempts."}}},"groteBerichtenThresholdBytes":{"type":"integer","minimum":1,"title":"Grote Berichten threshold (bytes)","description":"Payloads larger than this are transferred out-of-band by reference (URL + checksum)."}}}}
+				JSON,
+			],
 		];
 
 	}//end descriptors()
@@ -86,11 +93,11 @@ final class EducationAdapterDescriptorGoldenTest extends TestCase {
 			'category' => $adapter->category(),
 			'addsTopLevelMenu' => $adapter->addsTopLevelMenu(),
 			'addsManagementRoute' => $adapter->addsManagementRoute(),
-			'providers' => $adapter->providers(),
-			'configSchema' => $adapter->configSchema(),
 		];
-		if (method_exists($adapter, 'targets') === true) {
-			$description['targets'] = $adapter->targets();
+		foreach (['providers', 'profiles', 'configSchema', 'targets'] as $answer) {
+			if (method_exists($adapter, $answer) === true) {
+				$description[$answer] = $adapter->$answer();
+			}
 		}
 
 		$this->assertSame(json_decode($golden, true, 512, JSON_THROW_ON_ERROR), $description);
