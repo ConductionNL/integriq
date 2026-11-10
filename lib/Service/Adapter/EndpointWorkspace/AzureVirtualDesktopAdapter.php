@@ -147,17 +147,65 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 		string $sessionHost,
 		array $filters = [],
 	): array {
-		$path = sprintf(
+		return $this->listHostSessions(
+			host: new SessionHostRef(
+				subscriptionId: $subscriptionId,
+				resourceGroup: $resourceGroup,
+				hostPool: $hostPool,
+				sessionHost: $sessionHost
+			)
+		);
+
+	}//end listSessions()
+
+	/**
+	 * Enumerate active user sessions on one session host.
+	 *
+	 * @param SessionHostRef $host The session host.
+	 *
+	 * @return array<int,array<string,mixed>> Normalised session summaries; empty when
+	 *                                        unconfigured or the upstream call fails.
+	 *
+	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-2
+	 */
+	public function listHostSessions(SessionHostRef $host): array {
+		$response = $this->brokeredRequest(method: 'GET', path: $this->sessionsPath(host: $host));
+
+		return array_map(
+			static fn (array $session): array => self::sessionSummary(session: $session),
+			self::answeredRows(response: $response)
+		);
+
+	}//end listHostSessions()
+
+	/**
+	 * The ARM `userSessions` path of a session host, every segment encoded.
+	 *
+	 * @param SessionHostRef $host The session host.
+	 *
+	 * @return string The path.
+	 */
+	private function sessionsPath(SessionHostRef $host): string {
+		return sprintf(
 			'/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DesktopVirtualization'
 			. '/hostPools/%s/sessionHosts/%s/userSessions?api-version=%s',
-			rawurlencode($subscriptionId),
-			rawurlencode($resourceGroup),
-			rawurlencode($hostPool),
-			rawurlencode($sessionHost),
+			rawurlencode($host->subscriptionId),
+			rawurlencode($host->resourceGroup),
+			rawurlencode($host->hostPool),
+			rawurlencode($host->sessionHost),
 			self::ARM_API_VERSION
 		);
 
-		$response = $this->brokeredRequest(method: 'GET', path: $path);
+	}//end sessionsPath()
+
+	/**
+	 * The session rows of a 2xx answer, or none for anything else.
+	 *
+	 * @param array|null $response The brokered answer, null when unconfigured or failed.
+	 *
+	 * @return array<int,array<string,mixed>> The rows.
+	 */
+	private static function answeredRows(?array $response): array {
 		if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
 			return [];
 		}
@@ -167,21 +215,28 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 			return [];
 		}
 
-		return array_map(
-			static function (array $session): array {
-				$properties = ($session['properties'] ?? []);
-				return [
-					'id' => ($session['name'] ?? null),
-					'userPrincipalName' => ($properties['userPrincipalName'] ?? null),
-					'sessionState' => ($properties['sessionState'] ?? null),
-					'createTime' => ($properties['createTime'] ?? null),
-					'activeDirectoryUserName' => ($properties['activeDirectoryUserName'] ?? null),
-				];
-			},
-			$decoded['value']
-		);
+		return $decoded['value'];
 
-	}//end listSessions()
+	}//end answeredRows()
+
+	/**
+	 * The summary of one session row.
+	 *
+	 * @param array<string,mixed> $session The ARM session row.
+	 *
+	 * @return array<string,mixed> id, userPrincipalName, sessionState, createTime, activeDirectoryUserName.
+	 */
+	private static function sessionSummary(array $session): array {
+		$properties = ($session['properties'] ?? []);
+		return [
+			'id' => ($session['name'] ?? null),
+			'userPrincipalName' => ($properties['userPrincipalName'] ?? null),
+			'sessionState' => ($properties['sessionState'] ?? null),
+			'createTime' => ($properties['createTime'] ?? null),
+			'activeDirectoryUserName' => ($properties['activeDirectoryUserName'] ?? null),
+		];
+
+	}//end sessionSummary()
 
 	/**
 	 * Map an AVD session's `userPrincipalName` to a normalised identity shape.
@@ -258,11 +313,13 @@ class AzureVirtualDesktopAdapter extends AbstractCategoryAdapterProvider {
 			return [];
 		}
 
-		return $this->listSessions(
-			subscriptionId: (string)$filters['subscriptionId'],
-			resourceGroup: (string)$filters['resourceGroup'],
-			hostPool: (string)$filters['hostPool'],
-			sessionHost: (string)$filters['sessionHost']
+		return $this->listHostSessions(
+			host: new SessionHostRef(
+				subscriptionId: (string)$filters['subscriptionId'],
+				resourceGroup: (string)$filters['resourceGroup'],
+				hostPool: (string)$filters['hostPool'],
+				sessionHost: (string)$filters['sessionHost']
+			)
 		);
 
 	}//end list()
