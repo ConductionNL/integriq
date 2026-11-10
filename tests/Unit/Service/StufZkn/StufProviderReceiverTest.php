@@ -1191,4 +1191,94 @@ class StufProviderReceiverTest extends TestCase {
 			. ' xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">'
 			. $header . '<soapenv:Body>' . $body . '</soapenv:Body></soapenv:Envelope>';
 	}//end envelope()
+	/**
+	 * Golden transcript: the answer (status and body, with the generated reference and the time
+	 * masked) and every log line of each outcome, pinned against a fixture.
+	 *
+	 * @return void
+	 */
+	public function testGoldenTranscriptOfEveryOutcome(): void {
+		$scenarios = [
+			['answer', 'zsh', 'cases', self::zakLv01(), false],
+			['empty', 'zsh', 'cases', self::zakLv01(), false],
+			['many', 'zsh', 'cases', self::zakLv01(), false],
+			['silent', 'zsh', 'cases', self::zakLv01(), false],
+			['throw', 'zsh', 'cases', self::zakLv01(), false],
+			['refuse', 'zsh', 'cases', self::zakLv01(), false],
+			['forbidden', 'zsh', 'cases', self::zakLv01(), false],
+			['not-found', 'zsh', 'cases', self::zakLv01(), false],
+			['conflict', 'zsh', 'cases', self::zakLv01(), false],
+			['leaky', 'zsh', 'cases', self::zakLv01(), false],
+			['intruder', 'zsh', 'cases', self::zakLv01(), false],
+			['answer', 'zsh', 'cases', self::zakLv01(criteria: ''), false],
+			['answer', 'zsh', 'persons', self::npsLv01(), false],
+			['silent', 'zsh', 'persons', self::npsLv01(), false],
+			['answer', 'zsh', 'cases', self::zakLk01(), false],
+			['refuse', 'zsh', 'cases', self::zakLk01(), false],
+			['silent', 'zsh', 'cases', self::zakLk01(), false],
+			['answer', 'zsh', 'cases', self::edcLk01(), false],
+			['answer', 'zsh', 'cases', self::creeerZaak(), false],
+			['answer', 'zsh', 'cases', self::voegZaakdocumentToe(inhoud: 'aGFsbG8='), false],
+			['answer', 'zsh', 'cases', self::creeerZaak(), true],
+			['answer', 'zsh', 'cases', self::zakLv01(), true],
+			['answer', 'zsh', 'cases', self::zakLv01(password: 'wrong'), false],
+			['answer', 'zsh', 'cases', self::zakLv01(password: null), false],
+			['answer', 'closed', 'cases', self::zakLv01(), false],
+			['answer', 'tokenless', 'cases', self::zakLv01(), false],
+			['answer', 'missing', 'cases', self::zakLv01(), false],
+			['answer', 'rest', 'cases', self::zakLv01(), false],
+			['answer', 'zsh', 'cases', self::npsLv01(), false],
+			['answer', 'zsh', 'persons', self::zakLv01(), false],
+			['answer', 'zsh', 'cases', self::envelope(body: '<ZKN:adrLv01/>'), false],
+			['answer', 'zsh', 'cases', '<not-xml', false],
+			['answer', 'zsh', 'cases', '', false],
+			['answer', 'zsh', 'cases', str_repeat('a', 2097153), false],
+		];
+
+		$transcript = [];
+		foreach ($scenarios as $index => [$owner, $sourceId, $service, $xml, $forwarded]) {
+			$lines = [];
+			$this->logger = new class($lines) extends \Psr\Log\AbstractLogger {
+				/**
+				 * Constructor.
+				 *
+				 * @param array $lines The shared log line list.
+				 */
+				public function __construct(private array &$lines) {
+				}
+
+				/**
+				 * Record one log line.
+				 *
+				 * @param mixed              $level   The level.
+				 * @param string|\Stringable $message The message.
+				 * @param array              $context The context.
+				 *
+				 * @return void
+				 */
+				public function log($level, string|\Stringable $message, array $context = []): void {
+					$this->lines[] = [$level, (string)$message, $context];
+				}
+			};
+			$this->owner = $owner;
+			$this->nonces = [];
+			$this->events = [];
+			$receiver = $this->receiver();
+			if ($forwarded === true) {
+				$answer = $receiver->receiveForwarded(rawXml: $xml, sourceId: $sourceId, service: $service);
+			} else {
+				$answer = $receiver->receive(rawXml: $xml, sourceId: $sourceId, service: $service);
+			}
+
+			$body = preg_replace('/<StUF:(referentienummer|tijdstipBericht)>[^<]*</', '<StUF:$1>X<', (string)$answer['body']);
+			$transcript[] = ['scenario' => $index, 'status' => $answer['statusCode'], 'body' => $body, 'events' => count($this->events), 'log' => $lines];
+		}
+
+		$fixture = __DIR__ . '/../../../fixtures/stuf-provider/receiver-transcript.json';
+		$this->assertSame(
+			(string)file_get_contents($fixture),
+			json_encode($transcript, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n"
+		);
+
+	}//end testGoldenTranscriptOfEveryOutcome()
 }//end class
