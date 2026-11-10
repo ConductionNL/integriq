@@ -31,6 +31,7 @@ namespace OCA\Integriq\Controller;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
+use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
 use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
@@ -106,16 +107,13 @@ class NotifyNlController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function send(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		$refused = $this->refusedCaller(action: 'sms.send');
+		if ($refused !== null) {
+			return $refused;
 		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'sms.send');
 
 		$params = $this->request->getParams();
 		$to = (string)($params['to'] ?? '');
-		$body = (string)($params['body'] ?? '');
 		if ($to === '') {
 			return new JSONResponse(
 				['error' => 'missing_recipient', 'message' => $this->l->t('The "to" field is required')],
@@ -123,45 +121,75 @@ class NotifyNlController extends Controller {
 			);
 		}
 
-		$options = $this->sendOptions(params: $params);
+		return $this->dispatchSend(to: $to, params: $params);
 
-		$sourceApp = null;
-		if (isset($params['sourceApp']) === true) {
-			$sourceApp = (string)$params['sourceApp'];
-		}
+	}//end send()
 
-		$objectUri = null;
-		if (isset($params['objectUri']) === true) {
-			$objectUri = (string)$params['objectUri'];
-		}
-
+	/**
+	 * Hand one checked send request to the dispatch service and answer its outcome.
+	 *
+	 * @param string              $to     The recipient.
+	 * @param array<string,mixed> $params The request parameters.
+	 *
+	 * @return JSONResponse The created `sms_message` record, or the refusal or failure envelope.
+	 */
+	private function dispatchSend(string $to, array $params): JSONResponse {
 		try {
 			$message = $this->dispatchService->sendMessage(
 				to: $to,
-				body: $body,
-				options: $options,
-				sourceApp: $sourceApp,
-				objectUri: $objectUri
+				body: (string)($params['body'] ?? ''),
+				options: $this->sendOptions(params: $params),
+				sourceApp: $this->optionalString(params: $params, key: 'sourceApp'),
+				objectUri: $this->optionalString(params: $params, key: 'objectUri')
 			);
 
 			return new JSONResponse($message->getObject() + ['id' => $message->getUuid()]);
 		} catch (SmsProviderException $exception) {
-			if (in_array($exception->getErrorCode(), self::REFUSAL_CODES, true) === true) {
-				// The opt-out list refused the send: no provider call happened.
-				return new JSONResponse(
-					['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
-					Http::STATUS_CONFLICT
-				);
-			}
+			return $this->sendFailure(exception: $exception);
+		}
 
-			$this->logger->warning('[NotifyNlController] send failed: ' . $exception->getMessage());
+	}//end dispatchSend()
+
+	/**
+	 * Answer a send the dispatch service did not complete.
+	 *
+	 * @param SmsProviderException $exception The provider or opt-out failure.
+	 *
+	 * @return JSONResponse 409 with the decision code when the opt-out list refused the send, else 502.
+	 */
+	private function sendFailure(SmsProviderException $exception): JSONResponse {
+		if (in_array($exception->getErrorCode(), self::REFUSAL_CODES, true) === true) {
+			// The opt-out list refused the send: no provider call happened.
 			return new JSONResponse(
-				['error' => 'sms_send_failed', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_GATEWAY
+				['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
+				Http::STATUS_CONFLICT
 			);
-		}//end try
+		}
 
-	}//end send()
+		$this->logger->warning('[NotifyNlController] send failed: ' . $exception->getMessage());
+		return new JSONResponse(
+			['error' => 'sms_send_failed', 'message' => $exception->getMessage()],
+			Http::STATUS_BAD_GATEWAY
+		);
+
+	}//end sendFailure()
+
+	/**
+	 * A request parameter as a string, or null when the request does not carry it.
+	 *
+	 * @param array<string,mixed> $params The request parameters.
+	 * @param string              $key    The parameter name.
+	 *
+	 * @return string|null The parameter, or null.
+	 */
+	private function optionalString(array $params, string $key): string|null {
+		if (isset($params[$key]) === true) {
+			return (string)$params[$key];
+		}
+
+		return null;
+
+	}//end optionalString()
 
 	/**
 	 * The send options a request carries.
@@ -180,13 +208,7 @@ class NotifyNlController extends Controller {
 			$options['personalisation'] = $params['personalisation'];
 		}
 
-		// Opt-out-before-send: the category decides whether an opt-out stops
-		// the message. Default `service`.
-		$options['category'] = 'service';
-		if (is_string($params['category'] ?? null) === true && trim($params['category']) !== '') {
-			$options['category'] = trim($params['category']);
-		}
-
+		$options['category'] = $this->sendCategory(params: $params);
 		if (is_string($params['caseRef'] ?? null) === true) {
 			$options['caseRef'] = $params['caseRef'];
 		}
@@ -194,6 +216,23 @@ class NotifyNlController extends Controller {
 		return $options;
 
 	}//end sendOptions()
+
+	/**
+	 * The category a request sends under (opt-out-before-send: the category
+	 * decides whether an opt-out stops the message).
+	 *
+	 * @param array<string,mixed> $params The request parameters.
+	 *
+	 * @return string The trimmed category, or `service` when it is missing or blank.
+	 */
+	private function sendCategory(array $params): string {
+		if (is_string($params['category'] ?? null) === true && trim($params['category']) !== '') {
+			return trim($params['category']);
+		}
+
+		return 'service';
+
+	}//end sendCategory()
 
 	/**
 	 * Poll the provider for a message's current delivery status.
@@ -207,12 +246,10 @@ class NotifyNlController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function status(string $id = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		$refused = $this->refusedCaller(action: 'sms.status');
+		if ($refused !== null) {
+			return $refused;
 		}
-
-		$this->actionAuth->requireAction(user: $user, action: 'sms.status');
 
 		if ($id === '') {
 			return new JSONResponse(
@@ -221,6 +258,18 @@ class NotifyNlController extends Controller {
 			);
 		}
 
+		return $this->pollStatus(id: $id);
+
+	}//end status()
+
+	/**
+	 * Poll the provider for one message and answer its current state.
+	 *
+	 * @param string $id The `sms_message` uuid.
+	 *
+	 * @return JSONResponse The (possibly updated) message, or the 502 error envelope.
+	 */
+	private function pollStatus(string $id): JSONResponse {
 		try {
 			$message = $this->dispatchService->pollStatus(uuid: $id);
 			return new JSONResponse($message->getObject() + ['id' => $message->getUuid()]);
@@ -230,9 +279,30 @@ class NotifyNlController extends Controller {
 				['error' => 'sms_status_unavailable', 'message' => $exception->getMessage()],
 				Http::STATUS_BAD_GATEWAY
 			);
-		}//end try
+		}
 
-	}//end status()
+	}//end pollStatus()
+
+	/**
+	 * The answer for a caller who may not use the send and status endpoints.
+	 *
+	 * Throws the action service's refusal when the signed-in user may not run
+	 * the action.
+	 *
+	 * @param string $action The action the endpoint needs.
+	 *
+	 * @return JSONResponse|null 401 without a session, or null when the caller may go on.
+	 */
+	private function refusedCaller(string $action): JSONResponse|null {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: $action);
+		return null;
+
+	}//end refusedCaller()
 
 	/**
 	 * Receive a NotifyNL delivery-status callback.
@@ -265,38 +335,58 @@ class NotifyNlController extends Controller {
 		// Payload access goes through the framework's normalised params (NC decodes
 		// a JSON body into params), NOT a second json_decode($rawBody) — signature
 		// verification already ran over the exact raw bytes above.
-		$body = $this->request->getParams();
+		return $this->deliverCallback(identity: $identity, body: $this->request->getParams());
+	}//end inbound()
 
+	/**
+	 * Record a signed status callback as the connection's account.
+	 *
+	 * @param DsoIdentity         $identity The consumer the callback authenticated as.
+	 * @param array<string,mixed> $body     The callback's params.
+	 *
+	 * @return JSONResponse `{received: true}`, or 503 when the account's write was refused.
+	 */
+	private function deliverCallback(DsoIdentity $identity, array $body): JSONResponse {
 		try {
 			$this->gate->deliver(
 				identity: $identity,
 				operation: function () use ($body): void {
-					if (isset($body['providerMessageId']) === true) {
-						$detail = null;
-						if (isset($body['detail']) === true) {
-							$detail = (string)$body['detail'];
-						}
-
-						$this->dispatchService->handleStatusCallback(
-							providerMessageId: (string)$body['providerMessageId'],
-							status: (string)($body['status'] ?? ''),
-							detail: $detail
-						);
-					} else {
-						$this->logger->warning(
-							'[NotifyNlController] inbound webhook payload missing providerMessageId',
-							['keys' => array_keys($body)]
-						);
-					}
+					$this->recordStatusCallback(body: $body);
 				}
 			);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so NotifyNL delivers again.
 			return $this->gate->notStored(profile: WebhookProfilesInterface::NOTIFYNL, reason: $exception->getMessage());
-		}//end try
+		}
 
 		return new JSONResponse(['received' => true]);
-	}//end inbound()
+
+	}//end deliverCallback()
+
+	/**
+	 * Hand a callback's delivery status to the dispatch service, or log a
+	 * callback that names no message.
+	 *
+	 * @param array<string,mixed> $body The callback's params.
+	 *
+	 * @return void
+	 */
+	private function recordStatusCallback(array $body): void {
+		if (isset($body['providerMessageId']) === false) {
+			$this->logger->warning(
+				'[NotifyNlController] inbound webhook payload missing providerMessageId',
+				['keys' => array_keys($body)]
+			);
+			return;
+		}
+
+		$this->dispatchService->handleStatusCallback(
+			providerMessageId: (string)$body['providerMessageId'],
+			status: (string)($body['status'] ?? ''),
+			detail: $this->optionalString(params: $body, key: 'detail')
+		);
+
+	}//end recordStatusCallback()
 
 	/**
 	 * Read the raw request body bytes for signature verification.
