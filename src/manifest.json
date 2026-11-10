@@ -3173,6 +3173,8 @@
       "_note": "The shared `flow` page type, replacing a hand-written wrapper around the same CnFlowDetail canvas. config.app is LOAD-BEARING and deliberately still \"openconnector\", not \"integriq\": CnFlowEditorPage stamps it on a flow created here, and the Flows index filters on it. Every flow already stored carries the old literal, so renaming it to match the app id would orphan them all — the list would go empty and new flows would be invisible to it. The id moves only with a migration of the stored rows.",
       "sidebarComponent": "FlowDetailSidebar",
       "config": {
+        "listMode": true,
+        "testPayload": true,
         "app": "openconnector"
       }
     },
