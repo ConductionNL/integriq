@@ -547,43 +547,14 @@ class LtiAgsService implements LtiAgsServiceInterface {
 	 */
 	private function dispatchAgsCall(string $url, string $method, string $accessToken, ?array $body): array {
 		$parts = parse_url($url);
-		$location = (($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? ''));
-		if (isset($parts['port']) === true) {
-			$location .= ':' . $parts['port'];
-		}
-
-		$endpoint = ($parts['path'] ?? '');
-		if (isset($parts['query']) === true) {
-			$endpoint .= '?' . $parts['query'];
-		}
-
-		$source = new ObjectEntity();
-		$source->setUuid('lti-ags-adhoc');
-		$source->setObject(
-			[
-				'name' => 'LTI AGS call (ad-hoc, not persisted)',
-				'isEnabled' => true,
-				'location' => $location,
-			]
-		);
-
-		$config = [
-			'headers' => [
-				'Authorization' => 'Bearer ' . $accessToken,
-				'Content-Type' => 'application/vnd.ims.lis.v1.score+json',
-			],
-		];
-		if ($body !== null) {
-			$config['json'] = $body;
-		}
 
 		// Ad-hoc, never-persisted source: see LtiJwksResolverService::fetchJwks()
 		// for why its call is not written as a call log.
 		$callLog = $this->callService->call(
-			source: $source,
-			endpoint: $endpoint,
+			source: $this->adhocSource(parts: $parts),
+			endpoint: $this->endpointOf(parts: $parts),
 			method: $method,
-			config: $config,
+			config: $this->requestConfig(accessToken: $accessToken, body: $body),
 			read: ($method === 'GET'),
 			persistLog: false
 		);
@@ -596,4 +567,65 @@ class LtiAgsService implements LtiAgsServiceInterface {
 		];
 
 	}//end dispatchAgsCall()
+
+	/**
+	 * The ad-hoc, never-persisted source for the URL's scheme, host and port.
+	 *
+	 * @param array<string, int|string>|false $parts The parsed AGS URL.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function adhocSource(array|false $parts): ObjectEntity {
+		$location = (($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? ''));
+		if (isset($parts['port']) === true) {
+			$location .= ':' . $parts['port'];
+		}
+
+		$source = new ObjectEntity();
+		$source->setUuid('lti-ags-adhoc');
+		$source->setObject(['name' => 'LTI AGS call (ad-hoc, not persisted)', 'isEnabled' => true, 'location' => $location]);
+
+		return $source;
+
+	}//end adhocSource()
+
+	/**
+	 * The URL's path with its query, as the endpoint on the ad-hoc source.
+	 *
+	 * @param array<string, int|string>|false $parts The parsed AGS URL.
+	 *
+	 * @return string
+	 */
+	private function endpointOf(array|false $parts): string {
+		$endpoint = (string)($parts['path'] ?? '');
+		if (isset($parts['query']) === true) {
+			$endpoint .= '?' . $parts['query'];
+		}
+
+		return $endpoint;
+
+	}//end endpointOf()
+
+	/**
+	 * The bearer and score content-type headers, with the JSON body for a POST.
+	 *
+	 * @param string     $accessToken The platform's bearer token.
+	 * @param array|null $body        The JSON body, or null for a GET.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function requestConfig(string $accessToken, ?array $body): array {
+		$config = [
+			'headers' => [
+				'Authorization' => 'Bearer ' . $accessToken,
+				'Content-Type' => 'application/vnd.ims.lis.v1.score+json',
+			],
+		];
+		if ($body !== null) {
+			$config['json'] = $body;
+		}
+
+		return $config;
+
+	}//end requestConfig()
 }//end class
