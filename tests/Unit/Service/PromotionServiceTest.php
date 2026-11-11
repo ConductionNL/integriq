@@ -396,6 +396,90 @@ class PromotionServiceTest extends TestCase {
 	}//end testPromoteWritesSuccessAuditWithCallLogIdAndCountsOnlySummary()
 
 	/**
+	 * The golden promotions, taken before promote() was split.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_PROMOTIONS = '{"success rebound":{"returned":{"creates":[{"slug":"a"}],"updates":[{"slug":"b"},{"slug":"c"}],"written":{"sources":["a"]},"auditId":"audit-2","callLogId":"calllog-200"},"seen":[["call","\\/index.php\\/apps\\/integriq\\/api\\/configurations\\/import","POST",{"json":{"document":{"components":{"sources":{"api":[{"slug":"my-api-source","name":"My API Source","configuration":{"authentication":{"credentialRef":{"credentialId":"new-id"}}}}]}}},"confirmed":true}}],["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"local","toEnvironmentSlug":"acceptance","startedAt":true,"completedAt":true,"outcome":"success","message":"","previewSummary":{"creates":1,"updates":2,"collisions":0,"written":{"sources":["a"]}},"credentialRebindCount":1,"callLogId":"calllog-200"},["integriq","promotion_audit"]]]},"success unbound":{"returned":{"creates":[],"auditId":"audit-2","callLogId":"calllog-201"},"seen":[["call","\\/index.php\\/apps\\/integriq\\/api\\/configurations\\/import","POST",{"json":{"document":{"components":{"sources":{"api":[{"slug":"my-api-source","name":"My API Source","configuration":{"authentication":{"credentialRef":{"credentialId":"old-id"}}}}]}}},"confirmed":true}}],["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"local","toEnvironmentSlug":"acceptance","startedAt":true,"completedAt":true,"outcome":"success","message":"","previewSummary":{"creates":0,"updates":0,"collisions":0,"written":[]},"credentialRebindCount":0,"callLogId":"calllog-201"},["integriq","promotion_audit"]]]},"success from test":{"returned":{"creates":[{"slug":"a"}],"updates":[{"slug":"b"},{"slug":"c"}],"written":{"sources":["a"]},"auditId":"audit-2","callLogId":"calllog-200"},"seen":[["call","\\/index.php\\/apps\\/integriq\\/api\\/configurations\\/import","POST",{"json":{"document":{"components":[]},"confirmed":true}}],["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"test","toEnvironmentSlug":"acceptance","startedAt":true,"completedAt":true,"outcome":"success","message":"","previewSummary":{"creates":1,"updates":2,"collisions":0,"written":{"sources":["a"]}},"credentialRebindCount":0,"callLogId":"calllog-200"},["integriq","promotion_audit"]]]},"unknown target":{"threw":"InvalidArgumentException","message":"Target environment \'nowhere\' does not exist.","seen":[["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"local","toEnvironmentSlug":"nowhere","startedAt":true,"completedAt":true,"outcome":"failed","message":"Target environment \'nowhere\' does not exist.","previewSummary":[],"credentialRebindCount":0,"callLogId":""},["integriq","promotion_audit"]]]},"export fails":{"threw":"RuntimeException","message":"export broke","seen":[["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"local","toEnvironmentSlug":"acceptance","startedAt":true,"completedAt":true,"outcome":"failed","message":"export broke","previewSummary":[],"credentialRebindCount":0,"callLogId":""},["integriq","promotion_audit"]]]},"call fails":{"threw":"RuntimeException","message":"target unreachable","seen":[["call","\\/index.php\\/apps\\/integriq\\/api\\/configurations\\/import","POST",{"json":{"document":{"components":{"sources":{"api":[{"slug":"my-api-source","name":"My API Source","configuration":{"authentication":{"credentialRef":{"credentialId":"new-id"}}}}]}}},"confirmed":true}}],["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"local","toEnvironmentSlug":"acceptance","startedAt":true,"completedAt":true,"outcome":"failed","message":"target unreachable","previewSummary":[],"credentialRebindCount":0,"callLogId":""},["integriq","promotion_audit"]]]},"target refuses":{"threw":"RuntimeException","message":"Target environment call failed with HTTP 409: collision","seen":[["call","\\/index.php\\/apps\\/integriq\\/api\\/configurations\\/import","POST",{"json":{"document":{"components":{"sources":{"api":[{"slug":"my-api-source","name":"My API Source","configuration":{"authentication":{"credentialRef":{"credentialId":"new-id"}}}}]}}},"confirmed":true}}],["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"local","toEnvironmentSlug":"acceptance","startedAt":true,"completedAt":true,"outcome":"failed","message":"Target environment call failed with HTTP 409: collision","previewSummary":[],"credentialRebindCount":0,"callLogId":"calllog-409"},["integriq","promotion_audit"]]]},"unreadable answer":{"threw":"RuntimeException","message":"Target environment returned a non-JSON response.","seen":[["call","\\/index.php\\/apps\\/integriq\\/api\\/configurations\\/import","POST",{"json":{"document":{"components":{"sources":{"api":[{"slug":"my-api-source","name":"My API Source","configuration":{"authentication":{"credentialRef":{"credentialId":"new-id"}}}}]}}},"confirmed":true}}],["audit",{"actorUid":"operator-uid","configurationId":"cfg-1","fromEnvironmentSlug":"local","toEnvironmentSlug":"acceptance","startedAt":true,"completedAt":true,"outcome":"failed","message":"Target environment returned a non-JSON response.","previewSummary":[],"credentialRebindCount":0,"callLogId":"calllog-200"},["integriq","promotion_audit"]]]}}';
+
+	/**
+	 * GOLDEN: one promotion per outcome — success with and without a
+	 * rebinding, from a named environment, and a failure at every stage — with
+	 * every audit record (its times only as present), every call to the target
+	 * and the answer or the exception. Pinned before promote() was split.
+	 *
+	 * @return void
+	 */
+	public function testGoldenPromotions(): void {
+		$document = $this->documentWithTopLevelPlaceholder('my-api-source', ['credentialId' => 'old-id']);
+		$bindings = [['sourceSlug' => 'my-api-source', 'credentialId' => 'new-id']];
+		$body = ['creates' => [['slug' => 'a']], 'updates' => [['slug' => 'b'], ['slug' => 'c']], 'written' => ['sources' => ['a']]];
+		$cases = [
+			'success rebound' => ['acceptance', $bindings, 'local', $document, 200, $body],
+			'success unbound' => ['acceptance', [], 'local', $document, 201, ['creates' => []]],
+			'success from test' => ['acceptance', $bindings, 'test', ['components' => []], 200, $body],
+			'unknown target' => ['nowhere', $bindings, 'local', $document, 200, $body],
+			'export fails' => ['acceptance', $bindings, 'local', null, 200, $body],
+			'call fails' => ['acceptance', $bindings, 'local', $document, null, $body],
+			'target refuses' => ['acceptance', $bindings, 'local', $document, 409, ['error' => 'collision']],
+			'unreadable answer' => ['acceptance', $bindings, 'local', $document, 200, 'not json'],
+		];
+
+		$record = [];
+		foreach ($cases as $name => [$target, $caseBindings, $from, $export, $status, $answer]) {
+			$seen = [];
+			$environments = $this->createMock(EnvironmentService::class);
+			$environments->method('findBySlug')->willReturnCallback(
+				fn (string $slug) => ($slug === 'acceptance') ? ObjectServiceMockBuilder::objectEntity($this, ['slug' => 'acceptance', 'sourceRef' => 'source-uuid'], 'env-uuid') : null
+			);
+			$environments->method('resolveSource')->willReturn(ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Acceptance API'], 'source-uuid'));
+			$configurations = $this->createMock(ConfigurationService::class);
+			$configurations->method('exportConfiguration')->willReturnCallback(
+				function () use ($export): array {
+					if ($export === null) {
+						throw new RuntimeException('export broke');
+					}
+
+					return $export;
+				}
+			);
+			$calls = $this->createMock(CallService::class);
+			$calls->method('call')->willReturnCallback(
+				function (...$args) use ($status, $answer, &$seen) {
+					$seen[] = ['call', $args[1], $args[2], $args[3]];
+					if ($status === null) {
+						throw new RuntimeException('target unreachable');
+					}
+
+					$raw = is_string($answer) ? $answer : json_encode($answer);
+					return ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => $status, 'response' => ['body' => $raw]], 'calllog-' . $status);
+				}
+			);
+			$objects = ObjectServiceMockBuilder::make($this);
+			$objects->method('saveObject')->willReturnCallback(
+				function (...$args) use (&$seen) {
+					$payload = $args[0];
+					$payload['startedAt'] = isset($payload['startedAt']);
+					$payload['completedAt'] = isset($payload['completedAt']);
+					$seen[] = ['audit', $payload, array_values(array_filter(array_slice($args, 1), 'is_string'))];
+					return ObjectServiceMockBuilder::objectEntity($this, [], 'audit-' . count($seen));
+				}
+			);
+			$service = new PromotionService($configurations, $environments, $calls, $objects);
+
+			try {
+				$outcome = ['returned' => $service->promote('cfg-1', $target, $caseBindings, 'operator-uid', $from)];
+			} catch (\Throwable $exception) {
+				$outcome = ['threw' => get_class($exception), 'message' => $exception->getMessage()];
+			}
+
+			$record[$name] = $outcome + ['seen' => $seen];
+		}//end foreach
+
+		$this->assertSame(self::GOLDEN_PROMOTIONS, json_encode($record));
+	}//end testGoldenPromotions()
+
+	/**
 	 * REQ-006 — a failed promotion (target returns 404, e.g. an older
 	 * Integriq without the import routes) still writes exactly one
 	 * promotion_audit object, with outcome failed and no fabricated
@@ -431,4 +515,5 @@ class PromotionServiceTest extends TestCase {
 
 		$this->service->promote('cfg-1', 'acceptance', [], 'operator-uid');
 	}//end testPromoteWritesFailedAuditAndRethrowsWhenTargetReturns404()
+
 }//end class
