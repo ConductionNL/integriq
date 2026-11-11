@@ -143,9 +143,13 @@ class PdokGeocodingClientHttpShapeTest extends TestCase {
 	public function testTheNormalisedShapeOfASparseDocument(): void {
 		$body = json_encode(['response' => ['docs' => ['skip', ['huisnummer' => 7, 'centroide_ll' => 'POINT(x y)'], ['id' => 12, 'nummeraanduiding_id' => 34, 'adresseerbaarobject_id' => 56, 'centroide_ll' => 'POINT(4.5 52.25)']]]]);
 
-		foreach (['suggest', 'reverse'] as $method) {
+		foreach (['suggest', 'reverse', 'find'] as $method) {
 			$client = $this->client([new Response(200, [], $body)]);
-			$result = ($method === 'suggest') ? $client->suggest('x') : $client->reverse(1.0, 2.0);
+			$result = match ($method) {
+				'suggest' => $client->suggest('x'),
+				'reverse' => $client->reverse(1.0, 2.0),
+				default => $client->find('x'),
+			};
 
 			$this->assertSame(
 				[
