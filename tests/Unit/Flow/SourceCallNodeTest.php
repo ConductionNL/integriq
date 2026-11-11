@@ -1442,4 +1442,58 @@ class SourceCallNodeTest extends TestCase {
 
 	}//end testBodyAndBodyFromTogetherAreRefused()
 
+	/**
+	 * Under `continue` a failed item carries the whole error state, both items
+	 * keep their binary part and position, and the failure is logged once.
+	 *
+	 * @return void
+	 */
+	public function testContinueKeepsBinaryAndLogsTheWholeErrorState(): void {
+		$this->givenSource();
+		$this->givenOwner();
+
+		$responses = [
+			$this->promisedLog(statusCode: 500, body: '{"error":"boom"}', statusMessage: 'Internal Server Error'),
+			$this->promisedLog(statusCode: 200, body: '{"status":"ok"}'),
+		];
+		$this->callService->method('callAsync')->willReturnCallback(
+			static function () use (&$responses) {
+				return array_shift($responses);
+			}
+		);
+
+		$logged = [];
+		$this->logger->expects($this->once())->method('error')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				unset($context['line']);
+				$logged = [$message, $context];
+			}
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[['json' => ['n' => 1], 'binary' => ['f' => 'one']], ['json' => ['n' => 2], 'binary' => ['f' => 'two']]],
+			array_merge($this->config(), ['onError' => 'continue', 'id' => 'call-1']),
+			$this->context()
+		));
+
+		$error = $out[0]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertSame(
+			['step', 'node', 'status', 'statusMessage', 'kind', 'message', 'source', 'endpoint', 'method'],
+			array_keys($error)
+		);
+		$this->assertSame('call-1', $error['step']);
+		$this->assertSame('openconnector.source-call', $error['node']);
+		$this->assertSame('GET', $error['method']);
+		$this->assertSame(['json', 'binary', 'pairedItem'], array_keys($out[0]));
+		$this->assertSame(['f' => 'one'], $out[0]['binary']);
+		$this->assertSame(['item' => 0], $out[0]['pairedItem']);
+		$this->assertSame(['json', 'binary', 'pairedItem'], array_keys($out[1]));
+		$this->assertSame(['f' => 'two'], $out[1]['binary']);
+		$this->assertSame(['item' => 1], $out[1]['pairedItem']);
+
+		$this->assertSame('[openconnector.source-call] ' . $error['message'], $logged[0]);
+		$this->assertSame(['file', 'step', 'source', 'endpoint', 'method'], array_keys($logged[1]));
+		$this->assertSame([$error['step'], 'demo-echo-api', '/get', 'GET'], array_slice(array_values($logged[1]), 1));
+
+	}//end testContinueKeepsBinaryAndLogsTheWholeErrorState()
 }//end class
