@@ -243,7 +243,7 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Mail/EmlParser.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Mail/MessageParser.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Mail/MsgParser.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/MsgParser.php" method="readProperties"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/MsgParser.php" method="decodeProperty"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Mail/Transport/GraphMailboxTransport.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/Transport/ImapMailboxTransport.php" method="fetch"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/Transport/ImapMailboxTransport.php" method="readMessages"/>
