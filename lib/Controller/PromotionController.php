@@ -46,6 +46,8 @@ use Throwable;
  * Controller exposing promotion preview (REQ-003) and confirmed promotion
  * (REQ-002/REQ-005/REQ-006).
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- a controller wires its services, session, action check and l10n
+ *
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-exportimport-req-005
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
