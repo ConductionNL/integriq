@@ -1,0 +1,388 @@
+{
+    "npsLv01 malformed": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "warning [\"StUF-BG: malformed XML in npsLv01 request.\",[]]",
+            "buildFo01 [\"StUF046\",\"Malformed XML: unable to parse SOAP request.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "npsLv01 no body": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "buildFo01 [\"StUF046\",\"Malformed XML: missing SOAP body.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "npsLv01 no criteria": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "buildFo01 [\"StUF046\",\"Missing required search criteria in npsLv01.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "npsLv01 no gelijk": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "buildFo01 [\"StUF046\",\"Missing required search criteria in npsLv01.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "npsLv01 no npsLv01": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "buildFo01 [\"StUF046\",\"Missing required search criteria in npsLv01.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "npsLv01 empty criterion only": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "buildFo01 [\"StUF046\",\"Missing required search criteria in npsLv01.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "npsLv01 full request": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"999993653\",\"geslachtsnaam\":\"Moulin\",\"voorvoegsel\":\"de\",\"voornamen\":\"Suzanne\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},[\"inp.bsn\",\"geslachtsnaam\"]]"
+        ]
+    },
+    "npsLv01 maximum zero": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 maximum blank": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 parameters without maximum": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 blank reference": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 stuurgegevens without ref": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 empty scope object": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 scope without object": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 no stuf namespace": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 no bg-named prefix": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 unprefixed wrapper, maximum 5 and a ref": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":5,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\",\"crossRefnummer\":\"REF-W\"},null]"
+        ]
+    },
+    "npsLv01 unprefixed wrapper, maximum 0": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":1,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 unprefixed wrapper, maximum blank": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 unprefixed wrapper, maximum abc": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":1,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\",\"crossRefnummer\":\"R\"},null]"
+        ]
+    },
+    "npsLv01 unprefixed wrapper, no criteria": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "buildFo01 [\"StUF046\",\"Missing required search criteria in npsLv01.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "npsLv01 a blank ref, then a ref": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\",\"crossRefnummer\":\"R3\"},null]"
+        ]
+    },
+    "npsLv01 parameters without maximum, then 9": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 bg used before stuf": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 two wrappers, the first has none": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":7,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\",\"crossRefnummer\":\"R2\"},null]"
+        ]
+    },
+    "npsLv01 soap 1.2 without soap prefix": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "npsLv01 soap 1.1 without soap prefix": {
+        "answer": "<buildNpsLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"brp\",\"schema\":\"ingeschreven-persoon\",\"_limit\":100,\"burgerservicenummer\":\"1\"}},true,true]",
+            "mapPersonToStUF [{\"id\":\"r-1\"},null]",
+            "mapPersonToStUF [{\"id\":\"r-2\"},null]",
+            "buildNpsLa01 [[{\"mapped by mapPersonToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapPersonToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},null]"
+        ]
+    },
+    "adrLv01 malformed": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "warning [\"StUF-BG: malformed XML in adrLv01 request.\",[]]",
+            "buildFo01 [\"StUF046\",\"Malformed XML: unable to parse SOAP request.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "adrLv01 no body": {
+        "answer": "<buildFo01/>",
+        "calls": [
+            "buildFo01 [\"StUF046\",\"Malformed XML: missing SOAP body.\",{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"},\"client\"]"
+        ]
+    },
+    "adrLv01 full request": {
+        "answer": "<buildAdrLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"bag\",\"schema\":\"nummeraanduiding\",\"postcode\":\"1234AB\",\"huisnummer\":\"7\",\"straatnaam\":\"Laan\"}},true,true]",
+            "mapAddressToStUF [{\"id\":\"r-1\"},null]",
+            "mapAddressToStUF [{\"id\":\"r-2\"},null]",
+            "buildAdrLa01 [[{\"mapped by mapAddressToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapAddressToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"}]"
+        ]
+    },
+    "adrLv01 no criteria": {
+        "answer": "<buildAdrLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"bag\",\"schema\":\"nummeraanduiding\"}},true,true]",
+            "mapAddressToStUF [{\"id\":\"r-1\"},null]",
+            "mapAddressToStUF [{\"id\":\"r-2\"},null]",
+            "buildAdrLa01 [[{\"mapped by mapAddressToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapAddressToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"}]"
+        ]
+    },
+    "adrLv01 no gelijk": {
+        "answer": "<buildAdrLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"bag\",\"schema\":\"nummeraanduiding\"}},true,true]",
+            "mapAddressToStUF [{\"id\":\"r-1\"},null]",
+            "mapAddressToStUF [{\"id\":\"r-2\"},null]",
+            "buildAdrLa01 [[{\"mapped by mapAddressToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapAddressToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"}]"
+        ]
+    },
+    "adrLv01 no adrLv01": {
+        "answer": "<buildAdrLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"bag\",\"schema\":\"nummeraanduiding\"}},true,true]",
+            "mapAddressToStUF [{\"id\":\"r-1\"},null]",
+            "mapAddressToStUF [{\"id\":\"r-2\"},null]",
+            "buildAdrLa01 [[{\"mapped by mapAddressToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapAddressToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"}]"
+        ]
+    },
+    "adrLv01 blank postcode": {
+        "answer": "<buildAdrLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"bag\",\"schema\":\"nummeraanduiding\",\"huisnummer\":\"1\"}},true,true]",
+            "mapAddressToStUF [{\"id\":\"r-1\"},null]",
+            "mapAddressToStUF [{\"id\":\"r-2\"},null]",
+            "buildAdrLa01 [[{\"mapped by mapAddressToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapAddressToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"}]"
+        ]
+    },
+    "adrLv01 unprefixed wrapper with a ref": {
+        "answer": "<buildAdrLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"bag\",\"schema\":\"nummeraanduiding\",\"postcode\":\"1\"}},true,true]",
+            "mapAddressToStUF [{\"id\":\"r-1\"},null]",
+            "mapAddressToStUF [{\"id\":\"r-2\"},null]",
+            "buildAdrLa01 [[{\"mapped by mapAddressToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapAddressToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\",\"crossRefnummer\":\"REF-A\"}]"
+        ]
+    },
+    "adrLv01 no bg namespace": {
+        "answer": "<buildAdrLa01/>",
+        "calls": [
+            "findAll [{\"filters\":{\"register\":\"bag\",\"schema\":\"nummeraanduiding\",\"postcode\":\"1\"}},true,true]",
+            "mapAddressToStUF [{\"id\":\"r-1\"},null]",
+            "mapAddressToStUF [{\"id\":\"r-2\"},null]",
+            "buildAdrLa01 [[{\"mapped by mapAddressToStUF\":[{\"id\":\"r-1\"},null]},{\"mapped by mapAddressToStUF\":[{\"id\":\"r-2\"},null]}],{\"zenderOrganisatie\":\"Z\",\"ontvangerOrganisatie\":\"O\"}]"
+        ]
+    },
+    "npsLa01 malformed": {
+        "answer": [],
+        "calls": [
+            "warning [\"StUF-BG: could not parse npsLa01 response.\",[]]"
+        ]
+    },
+    "npsLa01 no body": {
+        "answer": [],
+        "calls": []
+    },
+    "npsLa01 no npsLa01": {
+        "answer": [],
+        "calls": []
+    },
+    "npsLa01 no antwoord": {
+        "answer": [],
+        "calls": []
+    },
+    "npsLa01 empty antwoord": {
+        "answer": [],
+        "calls": []
+    },
+    "npsLa01 two persons": {
+        "answer": [
+            {
+                "mapped by mapStUFToPerson": [
+                    {
+                        "inp.bsn": "1",
+                        "geslachtsnaam": "",
+                        "voornamen": "",
+                        "verblijfsadres": {
+                            "postcode": "1234AB",
+                            "huisnummer": "7"
+                        }
+                    },
+                    null
+                ]
+            },
+            {
+                "mapped by mapStUFToPerson": [
+                    {
+                        "inp.bsn": "2",
+                        "verblijfsadres": []
+                    },
+                    null
+                ]
+            }
+        ],
+        "calls": [
+            "mapStUFToPerson [{\"inp.bsn\":\"1\",\"geslachtsnaam\":\"\",\"voornamen\":\"\",\"verblijfsadres\":{\"postcode\":\"1234AB\",\"huisnummer\":\"7\"}},null]",
+            "mapStUFToPerson [{\"inp.bsn\":\"2\",\"verblijfsadres\":[]},null]"
+        ]
+    },
+    "npsLa01 stuf used first": {
+        "answer": [
+            {
+                "mapped by mapStUFToPerson": [
+                    {
+                        "inp.bsn": "3",
+                        "geslachtsnaam": null,
+                        "verblijfsadres": {
+                            "postcode": "9999ZZ"
+                        }
+                    },
+                    null
+                ]
+            }
+        ],
+        "calls": [
+            "mapStUFToPerson [{\"inp.bsn\":\"3\",\"geslachtsnaam\":null,\"verblijfsadres\":{\"postcode\":\"9999ZZ\"}},null]"
+        ]
+    },
+    "npsLa01 no bg namespace": {
+        "answer": [
+            {
+                "mapped by mapStUFToPerson": [
+                    {
+                        "inp.bsn": "1"
+                    },
+                    null
+                ]
+            }
+        ],
+        "calls": [
+            "mapStUFToPerson [{\"inp.bsn\":\"1\"},null]"
+        ]
+    }
+}

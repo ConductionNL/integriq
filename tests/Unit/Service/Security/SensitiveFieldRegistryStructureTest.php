@@ -218,6 +218,99 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 	}//end testSecretsInsideUrlsAreMasked()
 
 	/**
+	 * Secrets inside text: a JSON document held as a string, and header lines.
+	 *
+	 * @return void
+	 */
+	public function testSecretsInsideJsonTextAndHeaderLinesAreMasked(): void {
+		$result = $this->registry->redactConfiguration(
+			data: [
+				'body' => '{"client_secret":"CS","page":2,"nested":{"apiKey":"AK"}}',
+				'list' => '[{"password":"PW"},{"name":"n"}]',
+				'plainJson' => '{"page":2,"name":"n"}',
+				'notJson' => '{not json',
+				'raw' => "GET /x HTTP/1.1\nAuthorization: Bearer abc.def\nX-Session-Id: s-1\nAccept: text/plain",
+				'templated' => 'Authorization: {{ source.authorization }}',
+				'prose' => 'Note: call the desk',
+			]
+		);
+
+		$body = json_decode(json: $result['body'], associative: true);
+		$this->assertSame(expected: self::MASK, actual: $body['client_secret']);
+		$this->assertSame(expected: self::MASK, actual: $body['nested']['apiKey']);
+		$this->assertSame(expected: 2, actual: $body['page']);
+		$this->assertSame(expected: self::MASK, actual: json_decode(json: $result['list'], associative: true)[0]['password']);
+		$this->assertSame(expected: '{"page":2,"name":"n"}', actual: $result['plainJson']);
+		$this->assertSame(expected: '{not json', actual: $result['notJson']);
+		$this->assertSame(
+			expected: "GET /x HTTP/1.1\nAuthorization: " . self::MASK . "\nX-Session-Id: " . self::MASK . "\nAccept: text/plain",
+			actual: $result['raw']
+		);
+		$this->assertSame(expected: 'Authorization: {{ source.authorization }}', actual: $result['templated']);
+		$this->assertSame(expected: 'Note: call the desk', actual: $result['prose']);
+	}//end testSecretsInsideJsonTextAndHeaderLinesAreMasked()
+
+	/**
+	 * A client certificate and its passphrase are masked by name.
+	 *
+	 * @return void
+	 */
+	public function testCertificateNamesAreSecret(): void {
+		$result = $this->registry->redactConfiguration(
+			data: ['mtls' => ['certificate' => 'PEM', 'passphrase' => 'PP', 'pass_phrase' => 'PP', 'pkcs12' => 'P12', 'pfx' => 'PFX', 'host' => 'h']]
+		);
+
+		$this->assertSame(
+			expected: [
+				'certificate' => self::MASK,
+				'passphrase' => self::MASK,
+				'pass_phrase' => self::MASK,
+				'pkcs12' => self::MASK,
+				'pfx' => self::MASK,
+				'host' => 'h',
+			],
+			actual: $result['mtls']
+		);
+	}//end testCertificateNamesAreSecret()
+
+	/**
+	 * URL secrets in the forms a plain `user:password@` match misses: a password
+	 * with an `@`, a token written as the user, a token in the fragment, and a URL
+	 * that is itself percent-encoded, whole or as a query value.
+	 *
+	 * @return void
+	 */
+	public function testUrlSecretsInLessCommonFormsAreMasked(): void {
+		$encodedInner = rawurlencode(string: 'https://user:pw@host.example/cb?token=T');
+		$result = $this->registry->redactConfiguration(
+			data: [
+				'atSign' => 'https://user:p@ss@host.example/x',
+				'asUser' => 'https://ghp_abc123@github.example/org/repo.git',
+				'frag' => 'https://app.example/cb#access_token=AT&state=1',
+				'both' => 'https://app.example/cb?page=2#id_token=IT',
+				'whole' => $encodedInner,
+				'inQuery' => 'https://idp.example/login?redirect_uri=' . $encodedInner . '&page=1',
+				'plainInQuery' => 'https://idp.example/login?redirect_uri=' . rawurlencode(string: 'https://app.example/cb'),
+				'blankUser' => 'https://@host.example/',
+			]
+		);
+
+		$this->assertSame(expected: 'https://user:' . self::MASK . '@host.example/x', actual: $result['atSign']);
+		$this->assertSame(expected: 'https://' . self::MASK . '@github.example/org/repo.git', actual: $result['asUser']);
+		$this->assertSame(expected: 'https://app.example/cb#access_token=' . self::MASK . '&state=1', actual: $result['frag']);
+		$this->assertSame(expected: 'https://app.example/cb?page=2#id_token=' . self::MASK, actual: $result['both']);
+		$this->assertStringNotContainsString(needle: 'pw', haystack: rawurldecode(string: $result['whole']));
+		$this->assertStringNotContainsString(needle: 'token=T', haystack: rawurldecode(string: $result['whole']));
+		$this->assertStringNotContainsString(needle: 'pw', haystack: rawurldecode(string: $result['inQuery']));
+		$this->assertStringEndsWith(suffix: '&page=1', string: $result['inQuery']);
+		$this->assertSame(
+			expected: 'https://idp.example/login?redirect_uri=' . rawurlencode(string: 'https://app.example/cb'),
+			actual: $result['plainInQuery']
+		);
+		$this->assertSame(expected: 'https://@host.example/', actual: $result['blankUser']);
+	}//end testUrlSecretsInLessCommonFormsAreMasked()
+
+	/**
 	 * Values that are not text, and keys that are not names, are left alone.
 	 *
 	 * @return void

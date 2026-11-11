@@ -33,6 +33,7 @@ namespace OCA\Integriq\Controller;
 
 use InvalidArgumentException;
 use OCA\Integriq\Outbound\Call\VerdictServiceInterface;
+use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
 use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -110,32 +111,27 @@ class VerdictController extends Controller {
 			return $identity;
 		}
 
-		$body = $this->request->getParams();
+		return $this->recordVerdict(identity: $identity, body: $this->request->getParams());
 
-		$verdictPayload = ($body['payload'] ?? null);
-		if (is_array($verdictPayload) === false) {
-			$verdictPayload = [];
-		}
+	}//end inbound()
 
+	/**
+	 * Record a signed verdict as the connection's account and answer it.
+	 *
+	 * @param DsoIdentity         $identity The consumer the delivery authenticated as.
+	 * @param array<string,mixed> $body     The delivery's params.
+	 *
+	 * @return JSONResponse 201 with the verdict's id, 400 for a verdict the service refuses,
+	 *                      or 503 when the account's write was refused.
+	 */
+	private function recordVerdict(DsoIdentity $identity, array $body): JSONResponse {
 		try {
 			$verdict = $this->gate->deliver(
 				identity: $identity,
-				operation: fn (): ObjectEntity => $this->verdicts->record(
-					(string)($body['objectRef'] ?? ''),
-					(string)($body['state'] ?? ''),
-					(string)($body['source'] ?? ''),
-					(string)($body['reason'] ?? ''),
-					$verdictPayload,
-				)
+				operation: fn (): ObjectEntity => $this->record(body: $body)
 			);
-		} catch (InvalidArgumentException $exception) {
-			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so the checker delivers again.
-			return $this->gate->notStored(
-				profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
-				reason: $exception->getMessage()
-			);
+			return $this->notRecorded(exception: $exception);
 		}
 
 		return new JSONResponse(
@@ -143,7 +139,50 @@ class VerdictController extends Controller {
 			Http::STATUS_CREATED
 		);
 
-	}//end inbound()
+	}//end recordVerdict()
+
+	/**
+	 * Hand a delivery's fields to the verdict service.
+	 *
+	 * @param array<string,mixed> $body The delivery's params.
+	 *
+	 * @return ObjectEntity The recorded verdict.
+	 */
+	private function record(array $body): ObjectEntity {
+		$verdictPayload = ($body['payload'] ?? null);
+		if (is_array($verdictPayload) === false) {
+			$verdictPayload = [];
+		}
+
+		return $this->verdicts->record(
+			(string)($body['objectRef'] ?? ''),
+			(string)($body['state'] ?? ''),
+			(string)($body['source'] ?? ''),
+			(string)($body['reason'] ?? ''),
+			$verdictPayload,
+		);
+
+	}//end record()
+
+	/**
+	 * Answer a verdict that was not recorded.
+	 *
+	 * @param Throwable $exception Why it was not recorded.
+	 *
+	 * @return JSONResponse 400 for a verdict the service refuses; else, the account's
+	 *                      write was refused: 503 so the checker delivers again.
+	 */
+	private function notRecorded(Throwable $exception): JSONResponse {
+		if ($exception instanceof InvalidArgumentException) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->gate->notStored(
+			profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . self::CHANNEL_ID,
+			reason: $exception->getMessage()
+		);
+
+	}//end notRecorded()
 
 	/**
 	 * The verdicts recorded against one object.
