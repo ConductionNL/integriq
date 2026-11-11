@@ -20,6 +20,8 @@ return [
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+		// The OpenAPI document, public (spec api-contract).
+		['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
 
 		// DSO / Omgevingsloket STAM koppelvlak.
 		//
