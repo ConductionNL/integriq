@@ -333,17 +333,7 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	private function emitForItem(EventEmission $run, array $json): array {
 		try {
-			$messages = $run->eventService->emitCloudEvent(
-				type: (string)$run->config['type'],
-				source: (string)$run->config['source'],
-				subject: $this->renderSubject(config: $run->config, json: $json),
-				data: $json
-			);
-
-			$json[$run->outputKey] = [
-				'emitted' => true,
-				'messageCount' => count($messages),
-			];
+			$json[$run->outputKey] = $this->emitSummary(run: $run, json: $json);
 		} catch (Throwable $e) {
 			$json[FlowNodeSupport::ERROR_KEY] = $this->absorbFailure(run: $run, error: $e);
 		}
@@ -351,6 +341,31 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 		return $json;
 
 	}//end emitForItem()
+
+	/**
+	 * Emit the item's CloudEvent and summarise the delivery.
+	 *
+	 * @param EventEmission $run  The step run.
+	 * @param array         $json The item's record, sent as the event's data.
+	 *
+	 * @return array The emit summary.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
+	 */
+	private function emitSummary(EventEmission $run, array $json): array {
+		$messages = $run->eventService->emitCloudEvent(
+			type: (string)$run->config['type'],
+			source: (string)$run->config['source'],
+			subject: $this->renderSubject(config: $run->config, json: $json),
+			data: $json
+		);
+
+		return [
+			'emitted' => true,
+			'messageCount' => count($messages),
+		];
+
+	}//end emitSummary()
 
 	/**
 	 * The item's CloudEvent subject, null when it renders empty.
@@ -388,16 +403,8 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
 	 */
 	private function absorbFailure(EventEmission $run, Throwable $error): array {
-		$type = (string)$run->config['type'];
 		if ($run->onError !== 'continue') {
-			throw new FlowNodeException(
-				message: $this->l10n->t(
-					'Step "%1$s" failed to emit event "%2$s": %3$s',
-					[$run->stepId, $type, $error->getMessage()]
-				),
-				details: ['stepId' => $run->stepId, 'type' => $type],
-				previous: $error
-			);
+			throw $this->emitFailure(run: $run, error: $error);
 		}
 
 		$this->logger->warning(
@@ -409,8 +416,32 @@ class EventEmitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 			'failed' => true,
 			'stepId' => $run->stepId,
 			'message' => $error->getMessage(),
-			'type' => $type,
+			'type' => (string)$run->config['type'],
 		];
 
 	}//end absorbFailure()
+
+	/**
+	 * The failure a raised emit surfaces as, for the `onError` policy to decide on.
+	 *
+	 * @param EventEmission $run   The step run.
+	 * @param Throwable     $error The failure.
+	 *
+	 * @return FlowNodeException The step failure.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
+	 */
+	private function emitFailure(EventEmission $run, Throwable $error): FlowNodeException {
+		$type = (string)$run->config['type'];
+
+		return new FlowNodeException(
+			message: $this->l10n->t(
+				'Step "%1$s" failed to emit event "%2$s": %3$s',
+				[$run->stepId, $type, $error->getMessage()]
+			),
+			details: ['stepId' => $run->stepId, 'type' => $type],
+			previous: $error
+		);
+
+	}//end emitFailure()
 }//end class
