@@ -63,6 +63,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Exception\StufZknProviderException;
+use OCA\Integriq\Service\Mtls\ClientAuthenticationSchema;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCA\Integriq\Service\Stuf\StufXmlParser;
@@ -86,7 +87,7 @@ class StufZknClient implements StufZknProviderInterface {
 	 *
 	 * @var string
 	 */
-	private const DEFAULT_AUTH_SCHEME = 'Bearer';
+	private const DEFAULT_AUTH_SCHEME = ClientAuthenticationSchema::DEFAULT_SCHEME;
 
 	/**
 	 * Read timeout of one StUF-ZDS case message, in seconds.
@@ -148,16 +149,14 @@ class StufZknClient implements StufZknProviderInterface {
 				'authentication' => [
 					'type' => 'object',
 					'properties' => [
-						'mode' => [
-							'type' => 'string',
-							'enum' => ['token', 'mtls', 'wsse'],
-							'default' => 'token',
-							'description' => '`token` (default, pre-production fallback) sends a Bearer '
-								. 'Authorization header from `encryptedToken`. `mtls` (the expected production '
-								. 'mode for a real StUF/PKIoverheid-secured consumer) dispatches over a real '
-								. 'mutual-TLS connection using `mtls.*`. `wsse` sends no Authorization header: '
-								. 'the ZDS case client puts a WS-Security UsernameToken from `wsse.*` in the envelope.',
-						],
+						'mode' => ClientAuthenticationSchema::modeField(
+							modes: ['token', 'mtls', 'wsse'],
+							description: '`token` (default, pre-production fallback) sends a Bearer '
+							. 'Authorization header from `encryptedToken`. `mtls` (the expected production '
+							. 'mode for a real StUF/PKIoverheid-secured consumer) dispatches over a real '
+							. 'mutual-TLS connection using `mtls.*`. `wsse` sends no Authorization header: '
+							. 'the ZDS case client puts a WS-Security UsernameToken from `wsse.*` in the envelope.'
+						),
 						'wsse' => [
 							'type' => 'object',
 							'description' => 'Optional WS-Security UsernameToken for StUF-ZDS case messages, '
@@ -174,27 +173,12 @@ class StufZknClient implements StufZknProviderInterface {
 								],
 							],
 						],
-						'encryptedToken' => [
-							'type' => 'string',
-							'description' => 'Required when `mode=token`. The StUF consumer API token, encrypted '
-								. 'at rest via OCP\\Security\\ICrypto — never store the raw token.',
-						],
-						'scheme' => [
-							'type' => 'string',
-							'description' => 'Authorization header scheme, used only when `mode=token`.',
-							'default' => self::DEFAULT_AUTH_SCHEME,
-						],
-						'mtls' => [
-							'type' => 'object',
-							'description' => 'Required when `mode=mtls`. Client certificate material, each field '
-								. 'individually encrypted at rest via OCP\\Security\\ICrypto.',
-							'properties' => [
-								'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
-								'encryptedPrivateKey' => ['type' => 'string', 'description' => 'PEM private key.'],
-								'encryptedPassphrase' => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
-								'encryptedCaBundle' => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
-							],
-						],
+						'encryptedToken' => ClientAuthenticationSchema::tokenField(
+							description: 'Required when `mode=token`. The StUF consumer API token, encrypted '
+							. 'at rest via OCP\\Security\\ICrypto — never store the raw token.'
+						),
+						'scheme' => ClientAuthenticationSchema::schemeField(),
+						'mtls' => ClientAuthenticationSchema::mtlsField(),
 					],
 				],
 				'organisatie' => [
