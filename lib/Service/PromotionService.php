@@ -302,64 +302,124 @@ class PromotionService implements PromotionServiceInterface {
 		string $actorUid,
 		string $fromEnvironmentSlug = 'local',
 	): array {
-		$startedAt = new DateTime();
-		$index = $this->buildBindingIndex(credentialBindings: $credentialBindings);
-		$callLogId = null;
+		$run = new PromotionRun(configurationId: $configurationId, targetEnvironmentSlug: $targetEnvironmentSlug);
+		$run->credentialBindings = $credentialBindings;
+		$run->actorUid = $actorUid;
+		$run->fromEnvironmentSlug = $fromEnvironmentSlug;
+
+		return $this->promoteRun(run: $run);
+	}//end promote()
+
+	/**
+	 * Promote, and audit the attempt either way: a failure is audited and rethrown.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 *
+	 * @return array<string,mixed> The target's post-import summary plus `auditId`/`callLogId`.
+	 *
+	 * @throws Throwable Whatever stopped the promotion, after its `failed` audit.
+	 */
+	private function promoteRun(PromotionRun $run): array {
+		$index = $this->buildBindingIndex(credentialBindings: $run->credentialBindings);
 
 		try {
-			$targetSource = $this->resolveTargetSource(targetEnvironmentSlug: $targetEnvironmentSlug);
-
-			$document = $this->export(configurationId: $configurationId);
-			$flagged = $this->scanCredentialRefs(document: $document);
-			$rebindCount = $this->countRebound(flagged: $flagged, index: $index);
-			$rewritten = $this->applyCredentialBindings(document: $document, credentialBindings: $credentialBindings);
-
-			$callLog = $this->dispatchToTarget(
-				source: $targetSource,
-				path: self::IMPORT_PATH,
-				payload: ['document' => $rewritten, 'confirmed' => true]
-			);
-			$callLogId = $callLog->getUuid();
-			$result = $this->decodeCallLogBody(callLog: $callLog);
-
-			$previewSummary = [
-				'creates' => count($result['creates'] ?? []),
-				'updates' => count($result['updates'] ?? []),
-				'collisions' => count($result['collisions'] ?? []),
-				'written' => ($result['written'] ?? []),
-			];
-
-			$audit = $this->writeAudit(
-				configurationId: $configurationId,
-				fromEnvironmentSlug: $fromEnvironmentSlug,
-				toEnvironmentSlug: $targetEnvironmentSlug,
-				actorUid: $actorUid,
-				startedAt: $startedAt,
-				outcome: 'success',
-				message: '',
-				previewSummary: $previewSummary,
-				credentialRebindCount: $rebindCount,
-				callLogId: $callLogId
-			);
-
-			return array_merge($result, ['auditId' => $audit->getUuid(), 'callLogId' => $callLogId]);
+			return $this->promoteDocument(run: $run, index: $index);
 		} catch (Throwable $e) {
-			$this->writeAudit(
-				configurationId: $configurationId,
-				fromEnvironmentSlug: $fromEnvironmentSlug,
-				toEnvironmentSlug: $targetEnvironmentSlug,
-				actorUid: $actorUid,
-				startedAt: $startedAt,
-				outcome: 'failed',
-				message: $e->getMessage(),
-				previewSummary: [],
-				credentialRebindCount: 0,
-				callLogId: $callLogId
-			);
+			$this->auditFailure(run: $run, exception: $e);
 			throw $e;
-		}//end try
+		}
 
-	}//end promote()
+	}//end promoteRun()
+
+	/**
+	 * Export, rebind, import on the target, and audit the success.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 * @param array<string,array<string,array<string,string>>> $index Binding index (see {@see buildBindingIndex()}).
+	 *
+	 * @return array<string,mixed> The target's post-import summary plus `auditId`/`callLogId`.
+	 */
+	private function promoteDocument(PromotionRun $run, array $index): array {
+		$targetSource = $this->resolveTargetSource(targetEnvironmentSlug: $run->targetEnvironmentSlug);
+
+		$document = $this->export(configurationId: $run->configurationId);
+		$run->rebindCount = $this->countRebound(flagged: $this->scanCredentialRefs(document: $document), index: $index);
+		$rewritten = $this->applyCredentialBindings(document: $document, credentialBindings: $run->credentialBindings);
+
+		$callLog = $this->dispatchToTarget(
+			source: $targetSource,
+			path: self::IMPORT_PATH,
+			payload: ['document' => $rewritten, 'confirmed' => true]
+		);
+		$run->callLogId = $callLog->getUuid();
+		$result = $this->decodeCallLogBody(callLog: $callLog);
+
+		$audit = $this->auditSuccess(run: $run, result: $result);
+
+		return array_merge($result, ['auditId' => $audit->getUuid(), 'callLogId' => $run->callLogId]);
+	}//end promoteDocument()
+
+	/**
+	 * Write the `success` audit: counts only, never the entities themselves.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 * @param array<string,mixed> $result The target's post-import summary.
+	 *
+	 * @return ObjectEntity The audit record.
+	 */
+	private function auditSuccess(PromotionRun $run, array $result): ObjectEntity {
+		return $this->writeAudit(
+			configurationId: $run->configurationId,
+			fromEnvironmentSlug: $run->fromEnvironmentSlug,
+			toEnvironmentSlug: $run->targetEnvironmentSlug,
+			actorUid: $run->actorUid,
+			startedAt: $run->startedAt,
+			outcome: 'success',
+			message: '',
+			previewSummary: $this->previewSummary(result: $result),
+			credentialRebindCount: $run->rebindCount,
+			callLogId: $run->callLogId
+		);
+	}//end auditSuccess()
+
+	/**
+	 * Write the `failed` audit: the reason, no summary, the call log when the import was sent.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 * @param Throwable $exception What stopped it.
+	 *
+	 * @return void
+	 */
+	private function auditFailure(PromotionRun $run, Throwable $exception): void {
+		$this->writeAudit(
+			configurationId: $run->configurationId,
+			fromEnvironmentSlug: $run->fromEnvironmentSlug,
+			toEnvironmentSlug: $run->targetEnvironmentSlug,
+			actorUid: $run->actorUid,
+			startedAt: $run->startedAt,
+			outcome: 'failed',
+			message: $exception->getMessage(),
+			previewSummary: [],
+			credentialRebindCount: 0,
+			callLogId: $run->callLogId
+		);
+	}//end auditFailure()
+
+	/**
+	 * The counts-only summary of the target's answer.
+	 *
+	 * @param array<string,mixed> $result The target's post-import summary.
+	 *
+	 * @return array{creates:int,updates:int,collisions:int,written:mixed}
+	 */
+	private function previewSummary(array $result): array {
+		return [
+			'creates' => count($result['creates'] ?? []),
+			'updates' => count($result['updates'] ?? []),
+			'collisions' => count($result['collisions'] ?? []),
+			'written' => ($result['written'] ?? []),
+		];
+	}//end previewSummary()
 
 	/**
 	 * Dispatch a preview/import call to the target environment's Source via
