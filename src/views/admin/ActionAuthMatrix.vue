@@ -86,6 +86,7 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { editableMatrix, savePayload } from './actionMatrix.js'
 
 /**
  * Admin editor for the ADR-023 action-authorization matrix.
@@ -143,16 +144,7 @@ export default {
 				this.actions = Array.isArray(data.actions) ? data.actions : []
 				this.groups = Array.isArray(data.groups) ? data.groups : []
 				// Clone the matrix into a plain editable map keyed by action.
-				const next = {}
-				const source =
-					data.matrix && typeof data.matrix === 'object' ? data.matrix : {}
-				for (const action of this.actions) {
-					const allowed = Array.isArray(source[action])
-						? source[action]
-						: []
-					next[action] = [...allowed]
-				}
-				this.matrix = next
+				this.matrix = editableMatrix(this.actions, data.matrix)
 			} catch (e) {
 				console.error('Failed to load action matrix', e)
 				this.error = this.t('integriq', 'Failed to load the action matrix.')
@@ -212,29 +204,11 @@ export default {
 		async save() {
 			this.saving = true
 			try {
-				// Persist `admin` plus any explicitly ticked groups so the
-				// stored posture stays admin-inclusive and human-readable.
-				const payload = {}
-				for (const action of this.actions) {
-					const extra = (this.matrix[action] || []).filter(
-						(g) => g !== 'admin',
-					)
-					payload[action] = ['admin', ...extra]
-				}
 				const { data } = await axios.put(
 					generateUrl('/apps/integriq/api/admin/action-matrix'),
-					{ matrix: payload },
+					{ matrix: savePayload(this.actions, this.matrix) },
 				)
-				const saved =
-					data && data.matrix && typeof data.matrix === 'object'
-						? data.matrix
-						: {}
-				const next = {}
-				for (const action of this.actions) {
-					const allowed = Array.isArray(saved[action]) ? saved[action] : []
-					next[action] = [...allowed]
-				}
-				this.matrix = next
+				this.matrix = editableMatrix(this.actions, data && data.matrix)
 				showSuccess(this.t('integriq', 'Action matrix saved.'))
 			} catch (e) {
 				console.error('Failed to save action matrix', e)
