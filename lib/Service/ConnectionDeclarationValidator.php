@@ -142,23 +142,36 @@ class ConnectionDeclarationValidator {
 			return $errors;
 		}
 
+		return array_merge($errors, $this->validateConnections(connections: $data['connections']));
+	}//end validate()
+
+	/**
+	 * Validate every connection entry, then refuse a key used twice.
+	 *
+	 * @param array<int,mixed> $connections The `connections` list.
+	 *
+	 * @return string[] Messages per failing path, entry by entry.
+	 */
+	private function validateConnections(array $connections): array {
+		$errors = [];
 		$seen = [];
-		foreach ($data['connections'] as $index => $entry) {
+		foreach ($connections as $index => $entry) {
 			$path = '/connections/' . $index;
 			$errors = array_merge($errors, $this->validateEntry(entry: $entry, path: $path));
-
 			$key = $this->entryKey(entry: $entry);
-			if ($key !== null && isset($seen[$key]) === true) {
+			if ($key === null) {
+				continue;
+			}
+
+			if (isset($seen[$key]) === true) {
 				$errors[] = $path . '/key: duplicates key "' . $key . '"';
 			}
 
-			if ($key !== null) {
-				$seen[$key] = true;
-			}
+			$seen[$key] = true;
 		}
 
 		return $errors;
-	}//end validate()
+	}//end validateConnections()
 
 	/**
 	 * Validate one connection entry.
@@ -194,10 +207,8 @@ class ConnectionDeclarationValidator {
 	 */
 	private function checkObject(array $data, array $fields, string $path): array {
 		$errors = [];
-		foreach (array_keys($data) as $name) {
-			if (array_key_exists((string)$name, $fields) === false) {
-				$errors[] = $path . '/' . $name . ': is not allowed';
-			}
+		foreach ($this->unknownFields(data: $data, fields: $fields) as $name) {
+			$errors[] = $path . '/' . $name . ': is not allowed';
 		}
 
 		foreach ($fields as $name => [$required, $type]) {
@@ -213,6 +224,25 @@ class ConnectionDeclarationValidator {
 
 		return $errors;
 	}//end checkObject()
+
+	/**
+	 * The keys of an object that its field table does not allow.
+	 *
+	 * @param array<string|int,mixed>              $data   The object.
+	 * @param array<string,array{0:bool,1:string}> $fields The field table.
+	 *
+	 * @return array<int,string|int> The unknown keys, in object order.
+	 */
+	private function unknownFields(array $data, array $fields): array {
+		$unknown = [];
+		foreach (array_keys($data) as $name) {
+			if (array_key_exists((string)$name, $fields) === false) {
+				$unknown[] = $name;
+			}
+		}
+
+		return $unknown;
+	}//end unknownFields()
 
 	/**
 	 * The error for an absent field, when it is required.
@@ -319,19 +349,30 @@ class ConnectionDeclarationValidator {
 		}
 
 		foreach ($value as $item) {
-			if (is_string($item) === true && $item !== '') {
-				continue;
-			}
-
-			if ($this->isObject(value: $item) === false
-				|| $this->checkObject(data: $item, fields: self::REQUIRED_ENTRY_FIELDS, path: '') !== []
-			) {
+			if ($this->isRequiredItem(item: $item) === false) {
 				return false;
 			}
 		}
 
 		return true;
 	}//end isRequiredList()
+
+	/**
+	 * Whether one `requiredConfig` item is a non-empty app-config key or an
+	 * object with exactly a non-empty `configKey` and a dot-path `jsonPath`.
+	 *
+	 * @param mixed $item The item.
+	 *
+	 * @return bool
+	 */
+	private function isRequiredItem(mixed $item): bool {
+		if (is_string($item) === true && $item !== '') {
+			return true;
+		}
+
+		return $this->isObject(value: $item) === true
+			&& $this->checkObject(data: $item, fields: self::REQUIRED_ENTRY_FIELDS, path: '') === [];
+	}//end isRequiredItem()
 
 	/**
 	 * Whether a decoded JSON value is an object.
