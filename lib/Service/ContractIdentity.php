@@ -56,7 +56,7 @@ final class ContractIdentity {
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
-	public static function of(array $object): ?string {
+	public static function forUpsert(array $object): ?string {
 		$uuid = ($object['uuid'] ?? null);
 		if ($uuid !== null && (string)$uuid !== '') {
 			return (string)$uuid;
@@ -73,5 +73,5 @@ final class ContractIdentity {
 		}
 
 		return $id;
-	}//end of()
+	}//end forUpsert()
 }//end class

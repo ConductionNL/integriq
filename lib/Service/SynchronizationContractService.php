@@ -224,7 +224,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	public function contractIdentity(array $object): ?string {
-		return ContractIdentity::of(object: $object);
+		return ContractIdentity::forUpsert(object: $object);
 	}//end contractIdentity()
 
 	/**
