@@ -55,7 +55,7 @@ use Throwable;
  * if/else dispatch on the inbound payload shape (a known providerMessageId vs. an
  * unrecognised payload) is more readable as one linear branch than an early return.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- a controller wires the dispatch service, the webhook gate, the session, the action check, l10n and logging
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- a controller wires its services, gate, session, l10n and log
  *
  * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
