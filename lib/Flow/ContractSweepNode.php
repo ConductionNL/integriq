@@ -208,14 +208,7 @@ class ContractSweepNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 					. 'dropped those objects.'
 				),
 			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('On error'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What a failed item does to the run: stop, continue or dead_letter.'
-				),
-			],
+			FlowNodeSupport::onErrorField(l10n: $this->l10n),
 		];
 	}//end configForm()
 

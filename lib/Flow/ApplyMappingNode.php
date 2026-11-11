@@ -175,14 +175,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 					'Item key the mapped result is written under. Leave empty to replace the item with the result.'
 				),
 			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('On error'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What a failed item does to the run: stop, continue or dead_letter.'
-				),
-			],
+			FlowNodeSupport::onErrorField(l10n: $this->l10n),
 			[
 				'key' => 'ownership',
 				'label' => $this->l10n->t('Field ownership'),
