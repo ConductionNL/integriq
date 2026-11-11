@@ -48,6 +48,8 @@ use Throwable;
 /**
  * Reads and sets the digital post service account.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- an admin setting wires the account, groups, connection, l10n and log
+ *
  * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
  */
 class DigitalPostAccountSettingsController extends Controller {
