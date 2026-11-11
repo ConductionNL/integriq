@@ -218,6 +218,43 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 	}//end testSecretsInsideUrlsAreMasked()
 
 	/**
+	 * URL secrets in the forms a plain `user:password@` match misses: a password
+	 * with an `@`, a token written as the user, a token in the fragment, and a URL
+	 * that is itself percent-encoded, whole or as a query value.
+	 *
+	 * @return void
+	 */
+	public function testUrlSecretsInLessCommonFormsAreMasked(): void {
+		$encodedInner = rawurlencode(string: 'https://user:pw@host.example/cb?token=T');
+		$result = $this->registry->redactConfiguration(
+			data: [
+				'atSign' => 'https://user:p@ss@host.example/x',
+				'asUser' => 'https://ghp_abc123@github.example/org/repo.git',
+				'frag' => 'https://app.example/cb#access_token=AT&state=1',
+				'both' => 'https://app.example/cb?page=2#id_token=IT',
+				'whole' => $encodedInner,
+				'inQuery' => 'https://idp.example/login?redirect_uri=' . $encodedInner . '&page=1',
+				'plainInQuery' => 'https://idp.example/login?redirect_uri=' . rawurlencode(string: 'https://app.example/cb'),
+				'blankUser' => 'https://@host.example/',
+			]
+		);
+
+		$this->assertSame(expected: 'https://user:' . self::MASK . '@host.example/x', actual: $result['atSign']);
+		$this->assertSame(expected: 'https://' . self::MASK . '@github.example/org/repo.git', actual: $result['asUser']);
+		$this->assertSame(expected: 'https://app.example/cb#access_token=' . self::MASK . '&state=1', actual: $result['frag']);
+		$this->assertSame(expected: 'https://app.example/cb?page=2#id_token=' . self::MASK, actual: $result['both']);
+		$this->assertStringNotContainsString(needle: 'pw', haystack: rawurldecode(string: $result['whole']));
+		$this->assertStringNotContainsString(needle: 'token=T', haystack: rawurldecode(string: $result['whole']));
+		$this->assertStringNotContainsString(needle: 'pw', haystack: rawurldecode(string: $result['inQuery']));
+		$this->assertStringEndsWith(suffix: '&page=1', string: $result['inQuery']);
+		$this->assertSame(
+			expected: 'https://idp.example/login?redirect_uri=' . rawurlencode(string: 'https://app.example/cb'),
+			actual: $result['plainInQuery']
+		);
+		$this->assertSame(expected: 'https://@host.example/', actual: $result['blankUser']);
+	}//end testUrlSecretsInLessCommonFormsAreMasked()
+
+	/**
 	 * Values that are not text, and keys that are not names, are left alone.
 	 *
 	 * @return void
