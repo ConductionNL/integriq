@@ -86,58 +86,130 @@ class BerichtenboxLetterBuilder implements LetterBuilderInterface {
 		?string $batchId = null,
 		?string $berichtId = null,
 	): BerichtenboxBatch {
-		$batchId = ($batchId ?? $this->guid());
-		$berichtId = ($berichtId ?? $this->guid());
-		$created = ($now ?? new DateTimeImmutable('now'))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
+		$fields = LetterFields::forSender(senderOin: $senderOin, berichtType: $berichtType);
+		$fields->batchId = ($batchId ?? $this->guid());
+		$fields->berichtId = ($berichtId ?? $this->guid());
+		$fields->created = ($now ?? new DateTimeImmutable('now'))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
 
-		$bsn = trim((string)($message['recipient'] ?? ''));
-		if (preg_match('/^\d{1,9}$/', $bsn) !== 1) {
+		return $this->assemble(fields: $fields, message: $message);
+	}//end build()
+
+	/**
+	 * Check the message, write the batch document and check it against the schema.
+	 *
+	 * @param LetterFields        $fields  The letter's identity and sender.
+	 * @param array<string,mixed> $message The digital post message.
+	 *
+	 * @return BerichtenboxBatch The batch.
+	 *
+	 * @throws BerichtenboxException When the letter breaks a rule.
+	 */
+	private function assemble(LetterFields $fields, array $message): BerichtenboxBatch {
+		$this->readMessage(fields: $fields, message: $message);
+
+		$document = $this->batchDocument(fields: $fields, attachments: (array)($message['attachments'] ?? []));
+
+		$xml = (string)$document->saveXML();
+		$this->assertValid(xml: $xml);
+
+		return new BerichtenboxBatch(xml: $xml, batchId: $fields->batchId, berichtId: $fields->berichtId);
+	}//end assemble()
+
+	/**
+	 * Take the recipient, subject, text and reference from the message, refusing what breaks a rule.
+	 *
+	 * The BSN is checked first, then the subject, the text and the BerichtType.
+	 *
+	 * @param LetterFields        $fields  The fields to fill.
+	 * @param array<string,mixed> $message The digital post message.
+	 *
+	 * @return void
+	 *
+	 * @throws BerichtenboxException When a field breaks a rule.
+	 */
+	private function readMessage(LetterFields $fields, array $message): void {
+		$fields->bsn = trim((string)($message['recipient'] ?? ''));
+		if (preg_match('/^\d{1,9}$/', $fields->bsn) !== 1) {
 			$this->refuse(reason: 'GebruikerID must be a BSN of at most 9 digits.');
 		}
 
-		$subject = (string)($message['subject'] ?? '');
-		$this->assertLength(field: 'Onderwerp', value: $subject, min: 1, max: self::MAX_SUBJECT);
+		$fields->subject = (string)($message['subject'] ?? '');
+		$this->assertLength(field: 'Onderwerp', value: $fields->subject, min: 1, max: self::MAX_SUBJECT);
 
-		$text = $this->text(body: (string)($message['body'] ?? ''));
-		$this->assertLength(field: 'BerichtTekst', value: $text, min: 0, max: self::MAX_TEXT);
+		$fields->text = $this->text(body: (string)($message['body'] ?? ''));
+		$this->assertLength(field: 'BerichtTekst', value: $fields->text, min: 0, max: self::MAX_TEXT);
 
-		$this->assertLength(field: 'BerichtType', value: $berichtType, min: 1, max: 8);
+		$this->assertLength(field: 'BerichtType', value: $fields->berichtType, min: 1, max: 8);
 
+		$fields->reference = (string)($message['caseRef'] ?? '');
+	}//end readMessage()
+
+	/**
+	 * Write the batch document: the batch information, then the one letter with its attachments.
+	 *
+	 * @param LetterFields     $fields      The checked fields.
+	 * @param array<int,mixed> $attachments The message attachments.
+	 *
+	 * @return DOMDocument The document.
+	 *
+	 * @throws BerichtenboxException When an attachment breaks a rule.
+	 */
+	private function batchDocument(LetterFields $fields, array $attachments): DOMDocument {
 		$document = new DOMDocument('1.0', 'UTF-8');
 		$root = $document->createElementNS(self::NS_BATCH, 'r:Berichten');
 		$document->appendChild($root);
 		$root->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:b', self::NS_LETTER);
 
-		$info = $this->child(parent: $root, namespace: self::NS_BATCH, name: 'r:BatchInformatie');
-		$this->child(parent: $info, namespace: self::NS_BATCH, name: 'r:BatchID', text: $batchId);
-		$this->child(parent: $info, namespace: self::NS_BATCH, name: 'r:AanmaakDatum', text: $created);
-		$this->child(parent: $info, namespace: self::NS_BATCH, name: 'r:BerichtLeverancierID', text: $senderOin);
+		$this->appendBatchInformation(root: $root, fields: $fields);
+		$letter = $this->appendLetter(root: $root, fields: $fields);
+		$this->attachments(letter: $letter, attachments: $attachments);
 
+		return $document;
+	}//end batchDocument()
+
+	/**
+	 * Append the BatchInformatie element.
+	 *
+	 * @param DOMElement   $root   The Berichten element.
+	 * @param LetterFields $fields The checked fields.
+	 *
+	 * @return void
+	 */
+	private function appendBatchInformation(DOMElement $root, LetterFields $fields): void {
+		$info = $this->child(parent: $root, namespace: self::NS_BATCH, name: 'r:BatchInformatie');
+		$this->child(parent: $info, namespace: self::NS_BATCH, name: 'r:BatchID', text: $fields->batchId);
+		$this->child(parent: $info, namespace: self::NS_BATCH, name: 'r:AanmaakDatum', text: $fields->created);
+		$this->child(parent: $info, namespace: self::NS_BATCH, name: 'r:BerichtLeverancierID', text: $fields->senderOin);
+	}//end appendBatchInformation()
+
+	/**
+	 * Append the Bericht element with its BerichtInformatie.
+	 *
+	 * @param DOMElement   $root   The Berichten element.
+	 * @param LetterFields $fields The checked fields.
+	 *
+	 * @return DOMElement The Bericht element.
+	 */
+	private function appendLetter(DOMElement $root, LetterFields $fields): DOMElement {
 		$letter = $this->child(parent: $root, namespace: self::NS_LETTER, name: 'b:Bericht');
 		$letterInfo = $this->child(parent: $letter, namespace: self::NS_LETTER, name: 'b:BerichtInformatie');
-		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BatchID', text: $batchId);
-		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BerichtID', text: $berichtId);
-		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BerichtType', text: $berichtType);
-		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:Onderwerp', text: $subject);
-		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BerichtTekst', text: $text);
+		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BatchID', text: $fields->batchId);
+		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BerichtID', text: $fields->berichtId);
+		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BerichtType', text: $fields->berichtType);
+		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:Onderwerp', text: $fields->subject);
+		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:BerichtTekst', text: $fields->text);
 
 		// The reference is shown to the citizen. It carries the case reference
 		// when that fits, and is left out when it does not.
-		$reference = (string)($message['caseRef'] ?? '');
-		if ($reference !== '' && mb_strlen($reference) <= self::MAX_REFERENCE) {
-			$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:Referentie', text: $reference);
+		if ($fields->reference !== '' && mb_strlen($fields->reference) <= self::MAX_REFERENCE) {
+			$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:Referentie', text: $fields->reference);
 		}
 
-		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:GebruikerID', text: $bsn);
+		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:GebruikerID', text: $fields->bsn);
 		$this->child(parent: $letterInfo, namespace: self::NS_LETTER, name: 'b:SoortGebruiker', text: 'Burger');
 
-		$this->attachments(letter: $letter, attachments: (array)($message['attachments'] ?? []));
-
-		$xml = (string)$document->saveXML();
-		$this->assertValid(xml: $xml);
-
-		return new BerichtenboxBatch(xml: $xml, batchId: $batchId, berichtId: $berichtId);
-	}//end build()
+		return $letter;
+	}//end appendLetter()
 
 	/**
 	 * Check a batch document against the vendored schema.
@@ -200,43 +272,105 @@ class BerichtenboxLetterBuilder implements LetterBuilderInterface {
 			$this->refuse(reason: sprintf('A letter carries at most %d attachments; this one has %d.', self::MAX_ATTACHMENTS, count($attachments)));
 		}
 
-		$total = 0;
-		$list = $this->child(parent: $letter, namespace: self::NS_LETTER, name: 'b:Bijlagen');
-		foreach ($attachments as $index => $attachment) {
-			$content = (string)($attachment['content'] ?? '');
-			$bytes = $content;
-			if ((string)($attachment['encoding'] ?? '') === 'base64') {
-				$bytes = base64_decode($content, true);
-				if ($bytes === false) {
-					$this->refuse(reason: sprintf('Attachment %d is not valid base64.', $index + 1));
-				}
-			}
-
-			if (str_starts_with((string)$bytes, '%PDF-') === false) {
-				$this->refuse(reason: sprintf('Attachment %d is not a PDF. The Berichtenbox takes PDF attachments only.', $index + 1));
-			}
-
-			$total += strlen((string)$bytes);
-
-			$description = trim((string)($attachment['description'] ?? $attachment['filename'] ?? $attachment['name'] ?? ''));
-			if ($description === '') {
-				$description = 'Bijlage ' . ($index + 1);
-			}
-
-			$this->assertLength(field: 'Omschrijving', value: $description, min: 1, max: self::MAX_DESCRIPTION);
-
-			$item = $this->child(parent: $list, namespace: self::NS_LETTER, name: 'b:Bijlage');
-			$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:Inhoud', text: base64_encode((string)$bytes));
-			$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:BijlageType', text: 'Pdf');
-			$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:Omschrijving', text: $description);
-			$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:Volgorde', text: (string)($index + 1));
-		}//end foreach
+		$total = $this->appendAttachments(letter: $letter, attachments: $attachments);
 
 		if ($total > self::MAX_ATTACHMENT_BYTES) {
 			$kilobytes = (int)ceil($total / 1024);
 			$this->refuse(reason: sprintf('The attachments are %d kB together; the Berichtenbox takes at most 500 kB before base64.', $kilobytes));
 		}
 	}//end attachments()
+
+	/**
+	 * Append the Bijlagen element with one Bijlage per attachment, in order.
+	 *
+	 * @param DOMElement                       $letter      The Bericht element.
+	 * @param array<int,array<string,mixed>>   $attachments The attachments, numbered from 0.
+	 *
+	 * @return int The attachments' size together, in bytes before base64.
+	 *
+	 * @throws BerichtenboxException When an attachment breaks a rule.
+	 */
+	private function appendAttachments(DOMElement $letter, array $attachments): int {
+		$total = 0;
+		$list = $this->child(parent: $letter, namespace: self::NS_LETTER, name: 'b:Bijlagen');
+		foreach ($attachments as $attachment) {
+			$total += $this->appendAttachment(list: $list, attachment: $attachment);
+		}
+
+		return $total;
+	}//end appendAttachments()
+
+	/**
+	 * Append one Bijlage, numbered after the ones already in the list.
+	 *
+	 * @param DOMElement          $list       The Bijlagen element.
+	 * @param array<string,mixed> $attachment The attachment.
+	 *
+	 * @return int Its size in bytes before base64.
+	 *
+	 * @throws BerichtenboxException When the attachment breaks a rule.
+	 */
+	private function appendAttachment(DOMElement $list, array $attachment): int {
+		$position = ($list->childNodes->length + 1);
+		$bytes = $this->attachmentBytes(attachment: $attachment, position: $position);
+		$description = $this->attachmentDescription(attachment: $attachment, position: $position);
+
+		$item = $this->child(parent: $list, namespace: self::NS_LETTER, name: 'b:Bijlage');
+		$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:Inhoud', text: base64_encode($bytes));
+		$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:BijlageType', text: 'Pdf');
+		$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:Omschrijving', text: $description);
+		$this->child(parent: $item, namespace: self::NS_LETTER, name: 'b:Volgorde', text: (string)$position);
+
+		return strlen($bytes);
+	}//end appendAttachment()
+
+	/**
+	 * The attachment's bytes, decoded when it is base64, refused unless it is a PDF.
+	 *
+	 * @param array<string,mixed> $attachment The attachment.
+	 * @param int                 $position   Its position in the letter, from 1.
+	 *
+	 * @return string The bytes.
+	 *
+	 * @throws BerichtenboxException When it is not valid base64 or not a PDF.
+	 */
+	private function attachmentBytes(array $attachment, int $position): string {
+		$content = (string)($attachment['content'] ?? '');
+		$bytes = $content;
+		if ((string)($attachment['encoding'] ?? '') === 'base64') {
+			$bytes = base64_decode($content, true);
+			if ($bytes === false) {
+				$this->refuse(reason: sprintf('Attachment %d is not valid base64.', $position));
+			}
+		}
+
+		if (str_starts_with((string)$bytes, '%PDF-') === false) {
+			$this->refuse(reason: sprintf('Attachment %d is not a PDF. The Berichtenbox takes PDF attachments only.', $position));
+		}
+
+		return (string)$bytes;
+	}//end attachmentBytes()
+
+	/**
+	 * The attachment's description, or its position when it has none, within the length limit.
+	 *
+	 * @param array<string,mixed> $attachment The attachment.
+	 * @param int                 $position   Its position in the letter, from 1.
+	 *
+	 * @return string The description.
+	 *
+	 * @throws BerichtenboxException When the description is too long.
+	 */
+	private function attachmentDescription(array $attachment, int $position): string {
+		$description = trim((string)($attachment['description'] ?? $attachment['filename'] ?? $attachment['name'] ?? ''));
+		if ($description === '') {
+			$description = 'Bijlage ' . $position;
+		}
+
+		$this->assertLength(field: 'Omschrijving', value: $description, min: 1, max: self::MAX_DESCRIPTION);
+
+		return $description;
+	}//end attachmentDescription()
 
 	/**
 	 * Refuse a value outside its length.
