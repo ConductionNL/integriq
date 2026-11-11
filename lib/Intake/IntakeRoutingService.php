@@ -197,31 +197,10 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	 * @throws IntakeRoutingException When the channel, the target or a mapped field is unknown.
 	 */
 	public function validateRule(array $rule, IntakeChannelRegistryInterface $registry): void {
-		$channelId = trim((string)($rule['channelId'] ?? ''));
-		if ($registry->has($channelId) === false) {
-			throw new IntakeRoutingException(
-				message: 'No intake channel adapter answers to "' . $channelId . '".'
-			);
-		}
-
-		$targetSchema = trim((string)($rule['targetSchema'] ?? ''));
-		if ($targetSchema === '') {
-			throw new IntakeRoutingException(message: 'A routing rule must name the case type it opens.');
-		}
-
+		$this->assertKnownChannel(rule: $rule, registry: $registry);
+		$targetSchema = $this->requiredTargetSchema(rule: $rule);
 		$properties = $this->targetProperties(targetSchema: $targetSchema);
-		$mapped = ($rule['fieldMapping'] ?? []);
-		if (is_array($mapped) === false) {
-			throw new IntakeRoutingException(message: 'The field mapping must be an object of target field to source.');
-		}
-
-		$locationField = trim((string)($rule['locationField'] ?? ''));
-		$targets = array_keys($mapped);
-		if ($locationField !== '') {
-			$targets[] = $locationField;
-		}
-
-		foreach ($targets as $field) {
+		foreach ($this->mappedTargets(rule: $rule) as $field) {
 			if (array_key_exists((string)$field, $properties) === false) {
 				throw new IntakeRoutingException(
 					message: 'Case type "' . $targetSchema . '" has no field "' . $field . '".'
@@ -230,6 +209,70 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 		}
 
 	}//end validateRule()
+
+	/**
+	 * Refuse a rule whose channel no adapter answers to.
+	 *
+	 * @param array<string,mixed>            $rule     The rule.
+	 * @param IntakeChannelRegistryInterface $registry The channels this instance has.
+	 *
+	 * @return void
+	 *
+	 * @throws IntakeRoutingException When the channel is unknown.
+	 */
+	private function assertKnownChannel(array $rule, IntakeChannelRegistryInterface $registry): void {
+		$channelId = trim((string)($rule['channelId'] ?? ''));
+		if ($registry->has($channelId) === false) {
+			throw new IntakeRoutingException(
+				message: 'No intake channel adapter answers to "' . $channelId . '".'
+			);
+		}
+
+	}//end assertKnownChannel()
+
+	/**
+	 * The case type a rule opens.
+	 *
+	 * @param array<string,mixed> $rule The rule.
+	 *
+	 * @return string The target schema.
+	 *
+	 * @throws IntakeRoutingException When the rule names none.
+	 */
+	private function requiredTargetSchema(array $rule): string {
+		$targetSchema = trim((string)($rule['targetSchema'] ?? ''));
+		if ($targetSchema === '') {
+			throw new IntakeRoutingException(message: 'A routing rule must name the case type it opens.');
+		}
+
+		return $targetSchema;
+
+	}//end requiredTargetSchema()
+
+	/**
+	 * The target fields a rule writes: its mapped fields, then its location field.
+	 *
+	 * @param array<string,mixed> $rule The rule.
+	 *
+	 * @return array<int,int|string> The field names.
+	 *
+	 * @throws IntakeRoutingException When the field mapping is not an object.
+	 */
+	private function mappedTargets(array $rule): array {
+		$mapped = ($rule['fieldMapping'] ?? []);
+		if (is_array($mapped) === false) {
+			throw new IntakeRoutingException(message: 'The field mapping must be an object of target field to source.');
+		}
+
+		$targets = array_keys($mapped);
+		$locationField = trim((string)($rule['locationField'] ?? ''));
+		if ($locationField !== '') {
+			$targets[] = $locationField;
+		}
+
+		return $targets;
+
+	}//end mappedTargets()
 
 	/**
 	 * The first enabled rule whose channel and condition match.
@@ -249,6 +292,30 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	 * @spec openspec/changes/opt-outs-in-an-app-table-and-routing-rules-read-as-config/specs/intake-channels/spec.md
 	 */
 	public function firstMatchingRule(InboundMessage $message): ?array {
+		$results = $this->readChannelRules(message: $message);
+		if (is_array($results) === false) {
+			return null;
+		}
+
+		foreach ($this->enabledChannelRules(rows: $results, message: $message) as $rule) {
+			if ($this->matches(rule: $rule, message: $message) === true) {
+				return $rule;
+			}
+		}
+
+		return null;
+
+	}//end firstMatchingRule()
+
+	/**
+	 * The stored rules of the message's channel, read as the engine (see
+	 * firstMatchingRule()).
+	 *
+	 * @param InboundMessage $message The message.
+	 *
+	 * @return mixed The result rows, or whatever the object service answered.
+	 */
+	private function readChannelRules(InboundMessage $message): mixed {
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => [
@@ -262,31 +329,30 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 			_multitenancy: false
 		);
 
-		$results = ($matches['results'] ?? $matches);
-		if (is_array($results) === false) {
-			return null;
-		}
+		return ($matches['results'] ?? $matches);
 
-		// The channel is both a filter and a check here on purpose. A filter
-		// the objects endpoint does not apply comes back as a wider result
-		// set, not as an error, and a rule for another channel matching this
-		// message would open the wrong case type without anything failing.
+	}//end readChannelRules()
+
+	/**
+	 * The enabled rules of the message's channel, lowest order first.
+	 *
+	 * The channel is both a filter and a check here on purpose. A filter
+	 * the objects endpoint does not apply comes back as a wider result
+	 * set, not as an error, and a rule for another channel matching this
+	 * message would open the wrong case type without anything failing.
+	 *
+	 * @param array          $rows    The rows read.
+	 * @param InboundMessage $message The message.
+	 *
+	 * @return array<int,array<string,mixed>> The rules.
+	 */
+	private function enabledChannelRules(array $rows, InboundMessage $message): array {
 		$rules = [];
-		foreach ($results as $row) {
-			if (($row instanceof ObjectEntity) === false) {
-				continue;
+		foreach ($rows as $row) {
+			$rule = $this->enabledChannelRule(row: $row, message: $message);
+			if ($rule !== null) {
+				$rules[] = $rule;
 			}
-
-			$rule = $row->getObject();
-			if ((string)($rule['channelId'] ?? '') !== $message->getChannelId()) {
-				continue;
-			}
-
-			if (($rule['isEnabled'] ?? true) === false) {
-				continue;
-			}
-
-			$rules[] = $rule;
 		}
 
 		usort(
@@ -294,15 +360,31 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 			static fn (array $left, array $right): int => ((int)($left['order'] ?? 0) <=> (int)($right['order'] ?? 0))
 		);
 
-		foreach ($rules as $rule) {
-			if ($this->matches(rule: $rule, message: $message) === true) {
-				return $rule;
-			}
+		return $rules;
+
+	}//end enabledChannelRules()
+
+	/**
+	 * One row's rule when it is an enabled rule of the message's channel.
+	 *
+	 * @param mixed          $row     The row read.
+	 * @param InboundMessage $message The message.
+	 *
+	 * @return array<string,mixed>|null The rule, or null.
+	 */
+	private function enabledChannelRule(mixed $row, InboundMessage $message): ?array {
+		if (($row instanceof ObjectEntity) === false) {
+			return null;
 		}
 
-		return null;
+		$rule = $row->getObject();
+		if ((string)($rule['channelId'] ?? '') !== $message->getChannelId() || ($rule['isEnabled'] ?? true) === false) {
+			return null;
+		}
 
-	}//end firstMatchingRule()
+		return $rule;
+
+	}//end enabledChannelRule()
 
 	/**
 	 * Whether one rule's condition holds for a message.
@@ -324,16 +406,42 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 		$expected = ($condition['value'] ?? null);
 
 		return match ((string)($condition['operator'] ?? 'equals')) {
-			'contains' => (is_string($actual) === true && str_contains(
-				mb_strtolower($actual),
-				mb_strtolower((string)$expected)
-			) === true),
+			'contains' => $this->containsText(actual: $actual, expected: $expected),
 			'exists' => ($actual !== null && $actual !== ''),
-			'in' => (is_array($expected) === true && in_array($actual, $expected, false) === true),
+			'in' => $this->isOneOf(actual: $actual, expected: $expected),
 			default => ((string)$actual === (string)$expected),
 		};
 
 	}//end matches()
+
+	/**
+	 * Whether a text value contains the expected text, ignoring case.
+	 *
+	 * @param mixed $actual   The value read from the message.
+	 * @param mixed $expected The condition's value.
+	 *
+	 * @return bool
+	 */
+	private function containsText(mixed $actual, mixed $expected): bool {
+		return is_string($actual) === true && str_contains(
+			mb_strtolower($actual),
+			mb_strtolower((string)$expected)
+		) === true;
+
+	}//end containsText()
+
+	/**
+	 * Whether the value is one of the condition's list, compared loosely.
+	 *
+	 * @param mixed $actual   The value read from the message.
+	 * @param mixed $expected The condition's value.
+	 *
+	 * @return bool
+	 */
+	private function isOneOf(mixed $actual, mixed $expected): bool {
+		return is_array($expected) === true && in_array($actual, $expected, false) === true;
+
+	}//end isOneOf()
 
 	/**
 	 * Build the payload the target is opened with.
