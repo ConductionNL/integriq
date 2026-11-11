@@ -333,11 +333,7 @@ class OpenFormulierenController extends Controller {
 			$result = $this->intakeService->handoff(submissionUuid: $id);
 			return new JSONResponse($result);
 		} catch (Throwable $exception) {
-			[$error, $status] = $this->handoffError(exception: $exception);
-			return new JSONResponse(
-				['error' => $error, 'message' => $exception->getMessage()],
-				$status
-			);
+			return $this->handoffFailure(exception: $exception);
 		}
 
 	}//end handoff()
@@ -367,6 +363,22 @@ class OpenFormulierenController extends Controller {
 
 		return null;
 	}//end callerRefusal()
+
+	/**
+	 * The answer to a failed handoff: its error code and the exception's message.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private function handoffFailure(Throwable $exception): JSONResponse {
+		[$error, $status] = $this->handoffError(exception: $exception);
+
+		return new JSONResponse(
+			['error' => $error, 'message' => $exception->getMessage()],
+			$status
+		);
+	}//end handoffFailure()
 
 	/**
 	 * The error code and status a failed handoff answers with: a submission
