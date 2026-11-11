@@ -36,13 +36,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCP\IUser;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Guarded `FlowRunSignalService::signalAs()` delivery for approval decisions.
+ * Guarded `FlowRunSignalService::answerByUuid()` delivery for approval decisions.
  *
  * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
  */
@@ -75,7 +76,7 @@ class EngineSignalService {
 	/**
 	 * Deliver a decision to the suspended engine run an approval_request gates.
 	 *
-	 * Uses `FlowRunSignalService::signalAs()` so the engine's own assignee
+	 * Uses `FlowRunSignalService::answerByUuid()` so the engine's own assignee
 	 * guard applies — the same audience check Integriq already made through
 	 * `isAuthorizedApprover()`, enforced a second time by the engine against
 	 * the resume slot's recorded approver group.
@@ -104,15 +105,17 @@ class EngineSignalService {
 		}
 
 		try {
-			$this->container->get(self::SIGNAL_SERVICE_CLASS)->signalAs(
+			$this->container->get(self::SIGNAL_SERVICE_CLASS)->answerByUuid(
 				runUuid: (string)($data['engineRunUuid'] ?? ''),
-				payload: [
-					'decision' => $decision,
-					'decidedBy' => $user->getUID(),
-					'comment' => (string)($comment ?? ''),
-				],
-				actorUid: $user->getUID(),
-				nodeId: $nodeId
+				signal: new RunSignal(
+					payload: [
+						'decision' => $decision,
+						'decidedBy' => $user->getUID(),
+						'comment' => (string)($comment ?? ''),
+					],
+					actorUid: $user->getUID(),
+					nodeId: $nodeId
+				)
 			);
 
 			return true;

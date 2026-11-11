@@ -9,7 +9,7 @@
  * shared task service by `ApprovalService`) and then suspends the run exactly
  * the way `openregister.await-signal` does: a `FlowSuspension` with a
  * heartbeat, answered either by a delivered signal
- * (`FlowRunSignalService::signalAs()` from `ApprovalsController`) or — when
+ * (`FlowRunSignalService::answerByUuid()` from `ApprovalsController`) or — when
  * that delivery was lost — by the heartbeat re-reading the approval_request
  * itself. The record is the authority; the signal is the fast path.
  *
@@ -118,7 +118,7 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	 * The context key carrying the engine run's uuid.
 	 *
 	 * Mirrors `FlowRunContext::CONTEXT_RUN`. The uuid is what the approval
-	 * resolution later addresses through `FlowRunSignalService::signalAs()`,
+	 * resolution later addresses through `FlowRunSignalService::answerByUuid()`,
 	 * so a run that cannot name itself cannot be approved and is refused.
 	 *
 	 * @var string
