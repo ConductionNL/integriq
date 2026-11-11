@@ -117,47 +117,93 @@ class BrpRelationReader {
 	public function read(string $burgerservicenummer, array $config = []): array {
 		$sourceSlug = (string)($config['source'] ?? BrpPropertySource::SOURCE_SLUG);
 
-		if (preg_match('/^\d{9}$/', $burgerservicenummer) !== 1) {
-			return $this->notAvailable(reason: self::REASON_INVALID_IDENTIFIER, sourceSlug: $sourceSlug);
+		$refusal = $this->refusalFor(burgerservicenummer: $burgerservicenummer, sourceSlug: $sourceSlug);
+		if ($refusal !== null) {
+			return $this->notAvailable(reason: $refusal, sourceSlug: $sourceSlug);
 		}
 
-		$configuration = $this->gateway->configuration(sourceSlug: $sourceSlug);
-		if ($configuration === null) {
-			return $this->notAvailable(reason: self::REASON_NO_SOURCE, sourceSlug: $sourceSlug);
-		}
-
-		if (($configuration[self::SETTING] ?? false) !== true) {
-			return $this->notAvailable(reason: self::REASON_NOT_ENABLED, sourceSlug: $sourceSlug);
-		}
-
-		try {
-			$body = $this->gateway->readWithoutBodies(
-				BrpPropertySource::ID,
-				$sourceSlug,
-				'/personen',
-				[],
-				[
-					'type' => 'RaadpleegMetBurgerservicenummer',
-					'burgerservicenummer' => [$burgerservicenummer],
-					'fields' => self::FIELDS,
-				]
-			);
-		} catch (MissingSourceConfigurationException) {
-			return $this->notAvailable(reason: self::REASON_NO_SOURCE, sourceSlug: $sourceSlug);
-		} catch (PropertySourceException) {
-			// The exception's message is not logged: a registry may echo the question.
-			return $this->notAvailable(reason: self::REASON_UNREACHABLE, sourceSlug: $sourceSlug);
-		}
-
-		$person = current(array_filter((array)($body['personen'] ?? []), 'is_array'));
-		if ($person === false) {
-			return $this->notAvailable(reason: self::REASON_UNREACHABLE, sourceSlug: $sourceSlug);
+		$person = $this->personFor(burgerservicenummer: $burgerservicenummer, sourceSlug: $sourceSlug);
+		if (is_string($person) === true) {
+			return $this->notAvailable(reason: $person, sourceSlug: $sourceSlug);
 		}
 
 		$this->logger->info('property-source.brp.relations.read', ['source' => $sourceSlug, 'outcome' => 'answered']);
 
 		return ['available' => true, 'reason' => '', 'relations' => $this->relationsOf(person: $person)];
 	}//end read()
+
+	/**
+	 * Why the registry is not asked at all, if it is not: not a burgerservicenummer,
+	 * no source, or a source without the relations setting.
+	 *
+	 * @param string $burgerservicenummer The number asked.
+	 * @param string $sourceSlug          The source.
+	 *
+	 * @return string|null The reason, or null when the registry may be asked.
+	 */
+	private function refusalFor(string $burgerservicenummer, string $sourceSlug): ?string {
+		if (preg_match('/^\d{9}$/', $burgerservicenummer) !== 1) {
+			return self::REASON_INVALID_IDENTIFIER;
+		}
+
+		$configuration = $this->gateway->configuration(sourceSlug: $sourceSlug);
+		if ($configuration === null) {
+			return self::REASON_NO_SOURCE;
+		}
+
+		if (($configuration[self::SETTING] ?? false) !== true) {
+			return self::REASON_NOT_ENABLED;
+		}
+
+		return null;
+	}//end refusalFor()
+
+	/**
+	 * The person the registry answers for the number.
+	 *
+	 * @param string $burgerservicenummer The number asked.
+	 * @param string $sourceSlug          The source.
+	 *
+	 * @return array|string The person, or the reason there is none.
+	 */
+	private function personFor(string $burgerservicenummer, string $sourceSlug): array|string {
+		$body = $this->fetched(burgerservicenummer: $burgerservicenummer, sourceSlug: $sourceSlug);
+		if (is_string($body) === true) {
+			return $body;
+		}
+
+		$person = current(array_filter((array)($body['personen'] ?? []), 'is_array'));
+		if ($person === false) {
+			return self::REASON_UNREACHABLE;
+		}
+
+		return $person;
+	}//end personFor()
+
+	/**
+	 * Ask the registry for the person's relation numbers, without recording bodies.
+	 *
+	 * @param string $burgerservicenummer The number asked.
+	 * @param string $sourceSlug          The source.
+	 *
+	 * @return array|string The registry's answer, or the reason it gave none.
+	 */
+	private function fetched(string $burgerservicenummer, string $sourceSlug): array|string {
+		try {
+			return $this->gateway->readWithoutBodies(
+				BrpPropertySource::ID,
+				$sourceSlug,
+				'/personen',
+				[],
+				['type' => 'RaadpleegMetBurgerservicenummer', 'burgerservicenummer' => [$burgerservicenummer], 'fields' => self::FIELDS]
+			);
+		} catch (MissingSourceConfigurationException) {
+			return self::REASON_NO_SOURCE;
+		} catch (PropertySourceException) {
+			// The exception's message is not logged: a registry may echo the question.
+			return self::REASON_UNREACHABLE;
+		}
+	}//end fetched()
 
 	/**
 	 * The relations in a person as Haal Centraal answers it.
