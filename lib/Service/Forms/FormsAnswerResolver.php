@@ -49,6 +49,13 @@ class FormsAnswerResolver {
 	private const MULTI_VALUE_TYPES = ['multiple', 'multiple_unique'];
 
 	/**
+	 * The refusal of a question text that matches more than one question.
+	 *
+	 * @var string
+	 */
+	private const AMBIGUOUS_TEXT = "Ambiguous question text '%s' matches multiple questions (ids: %s) — reference by question id instead of text.";
+
+	/**
 	 * Resolve a question reference to its answer value(s).
 	 *
 	 * @param array $questions The form's fetched `questions`, each
@@ -69,11 +76,12 @@ class FormsAnswerResolver {
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
 	 */
 	public function resolve(array $questions, array $answers, int|string $questionRef): array|string|null {
+		$form = new FormAnswers(questions: $questions, answers: $answers);
 		if ($this->isNumericReference(questionRef: $questionRef) === true) {
-			return $this->resolveById(questions: $questions, answers: $answers, questionId: (int)$questionRef);
+			return $this->resolveById(form: $form, questionId: (int)$questionRef);
 		}
 
-		return $this->resolveByText(questions: $questions, answers: $answers, text: (string)$questionRef);
+		return $this->resolveByText(form: $form, text: (string)$questionRef);
 	}//end resolve()
 
 	/**
@@ -92,73 +100,73 @@ class FormsAnswerResolver {
 	}//end isNumericReference()
 
 	/**
-	 * Resolve directly against `answers[].questionId` — always unambiguous
-	 * (`questionId` is the Forms DB primary key).
+	 * The answer to one question, by id.
 	 *
-	 * @param array $questions The form's fetched questions (for type-driven coercion).
-	 * @param array $answers The submission's fetched answers.
-	 * @param int $questionId The numeric question id.
+	 * @param FormAnswers $form       The questions and answers.
+	 * @param int         $questionId The question id.
 	 *
-	 * @return array|string|null
+	 * @return array<int, mixed>|string|null
 	 *
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
 	 */
-	private function resolveById(array $questions, array $answers, int $questionId): array|string|null {
+	private function resolveById(FormAnswers $form, int $questionId): array|string|null {
 		$matchingAnswers = array_values(
 			array_filter(
-				$answers,
+				$form->answers,
 				static fn (array $answer) => ((int)($answer['questionId'] ?? -1) === $questionId)
 			)
 		);
 
-		$isMultiValue = $this->isMultiValueType(questions: $questions, questionId: $questionId);
+		$isMultiValue = $this->isMultiValueType(questions: $form->questions, questionId: $questionId);
 
 		return $this->coerce(matchingAnswers: $matchingAnswers, isMultiValue: $isMultiValue);
 	}//end resolveById()
 
 	/**
-	 * Resolve a question-TEXT reference via the form's `questions[].text` index.
-	 * Exactly one match resolves via {@see resolveById}; zero matches resolve
-	 * to `null`; two or more matches is a hard config error — never a guess.
+	 * The answer to the one question with this text; ambiguous text is refused.
 	 *
-	 * @param array $questions The form's fetched questions.
-	 * @param array $answers The submission's fetched answers.
-	 * @param string $text The question text to resolve.
+	 * @param FormAnswers $form The questions and answers.
+	 * @param string      $text The question text.
 	 *
-	 * @return array|string|null
+	 * @return array<int, mixed>|string|null
 	 *
-	 * @throws FormsConfigException When two or more questions share this exact text.
+	 * @throws FormsConfigException When more than one question carries the text.
 	 *
 	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
 	 */
-	private function resolveByText(array $questions, array $answers, string $text): array|string|null {
-		$matchingIds = [];
-		foreach ($questions as $question) {
-			if (is_array($question) === false) {
-				continue;
-			}
-
-			if ((string)($question['text'] ?? '') === $text) {
-				$matchingIds[] = (int)($question['id'] ?? 0);
-			}
-		}
-
+	private function resolveByText(FormAnswers $form, string $text): array|string|null {
+		$matchingIds = self::questionIdsWithText(questions: $form->questions, text: $text);
 		if (count($matchingIds) === 0) {
 			return null;
 		}
 
 		if (count($matchingIds) > 1) {
-			throw new FormsConfigException(
-				message: sprintf(
-					"Ambiguous question text '%s' matches multiple questions (ids: %s) — reference by question id instead of text.",
-					$text,
-					implode(', ', $matchingIds)
-				)
-			);
+			throw new FormsConfigException(message: sprintf(self::AMBIGUOUS_TEXT, $text, implode(', ', $matchingIds)));
 		}
 
-		return $this->resolveById(questions: $questions, answers: $answers, questionId: $matchingIds[0]);
+		return $this->resolveById(form: $form, questionId: $matchingIds[0]);
 	}//end resolveByText()
+
+	/**
+	 * The ids of the questions whose text is exactly this, in order.
+	 *
+	 * @param array<int, mixed> $questions The form's questions.
+	 * @param string            $text      The question text.
+	 *
+	 * @return list<int>
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
+	 */
+	private static function questionIdsWithText(array $questions, string $text): array {
+		$matchingIds = [];
+		foreach ($questions as $question) {
+			if (is_array($question) === true && (string)($question['text'] ?? '') === $text) {
+				$matchingIds[] = (int)($question['id'] ?? 0);
+			}
+		}
+
+		return $matchingIds;
+	}//end questionIdsWithText()
 
 	/**
 	 * Whether the given question id is a `multiple`/`multiple_unique`-type
@@ -205,19 +213,29 @@ class FormsAnswerResolver {
 			);
 		}
 
-		if (count($matchingAnswers) === 0) {
-			return null;
-		}
+		return self::singleText(matchingAnswers: $matchingAnswers);
+	}//end coerce()
 
+	/**
+	 * The first answer's text for a single-value question, or null.
+	 *
+	 * `null` preserves "unanswered"/no-text semantics; an unexpected array
+	 * shape (should not occur for a non-multi-value question) is defensively
+	 * treated the same way rather than violating the declared `string` scalar
+	 * return type.
+	 *
+	 * @param array<int, array<string, mixed>> $matchingAnswers The answers to the question.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
+	 */
+	private static function singleText(array $matchingAnswers): ?string {
 		$rawText = ($matchingAnswers[0]['text'] ?? null);
 		if ($rawText === null || is_array($rawText) === true) {
-			// `null` preserves "unanswered"/no-text semantics; an unexpected
-			// array shape (should not occur for a non-multi-value question)
-			// is defensively treated the same way rather than violating the
-			// declared `string` scalar return type.
 			return null;
 		}
 
 		return (string)$rawText;
-	}//end coerce()
+	}//end singleText()
 }//end class
