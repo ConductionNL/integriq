@@ -1481,7 +1481,7 @@ class SourceCallNodeTest extends TestCase {
 			['step', 'node', 'status', 'statusMessage', 'kind', 'message', 'source', 'endpoint', 'method'],
 			array_keys($error)
 		);
-		$this->assertSame('call-1', $error['step']);
+		$this->assertSame('step-echo', $error['step']);
 		$this->assertSame('openconnector.source-call', $error['node']);
 		$this->assertSame('GET', $error['method']);
 		$this->assertSame(['json', 'binary', 'pairedItem'], array_keys($out[0]));
