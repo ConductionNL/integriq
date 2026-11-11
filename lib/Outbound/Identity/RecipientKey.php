@@ -85,13 +85,11 @@ class RecipientKey implements RecipientKeyInterface {
 	public const CONFIG_SECRET = 'outbound.recipient_key_secret';
 
 	/**
-	 * The secret, once read. A sensitive app-config value is decrypted on
-	 * every read, which made a batch of 500 cost 300 ms; one read per request
-	 * is enough.
+	 * The hashing secret, read once per instance.
 	 *
-	 * @var string|null
+	 * @var AppSecret
 	 */
-	private ?string $secretCache = null;
+	private readonly AppSecret $secret;
 
 	/**
 	 * Constructor.
@@ -101,10 +99,11 @@ class RecipientKey implements RecipientKeyInterface {
 	 * @param PhoneNumberNormaliserInterface $phoneNumbers Normalises a phone number to E.164.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly ISecureRandom $random,
+		IAppConfig $appConfig,
+		ISecureRandom $random,
 		private readonly PhoneNumberNormaliserInterface $phoneNumbers,
 	) {
+		$this->secret = new AppSecret(appConfig: $appConfig, random: $random, configKey: self::CONFIG_SECRET);
 
 	}//end __construct()
 
@@ -231,21 +230,7 @@ class RecipientKey implements RecipientKeyInterface {
 	 * @return string The secret.
 	 */
 	private function secret(): string {
-		if ($this->secretCache !== null) {
-			return $this->secretCache;
-		}
-
-		$secret = $this->appConfig->getValueString('integriq', self::CONFIG_SECRET, '');
-		if (trim($secret) !== '') {
-			$this->secretCache = $secret;
-			return $secret;
-		}
-
-		$secret = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
-		$this->appConfig->setValueString('integriq', self::CONFIG_SECRET, $secret, false, true);
-		$this->secretCache = $secret;
-
-		return $secret;
+		return $this->secret->value();
 
 	}//end secret()
 
