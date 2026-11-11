@@ -3,6 +3,9 @@
 /**
  * A node that can name the config keys it reads.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY THIS EXISTS
  * ---------------
  * `IFlowNode::validateConfig()` answers "is anything REQUIRED missing". It
@@ -49,9 +52,6 @@
  * keys are exempt by contract, not by accident. This is the same rule
  * `hydra/scripts/test-flow-definitions.sh` applies, stated here so the two
  * cannot drift apart on what counts as an annotation.
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Flow

@@ -3,6 +3,9 @@
 /**
  * Synchronization contract integration provider.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Exposes Integriq SyncContract objects as "leaves" on the OR objects they
  * synchronise. Registered with OR's IntegrationRegistry at app boot (see
  * {@see \OCA\Integriq\Service\ServiceRegistrar::boot()}). When a user opens any

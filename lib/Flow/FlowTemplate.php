@@ -3,6 +3,9 @@
 /**
  * Integriq Flow Template.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * A thin, node-local renderer for `{{dotted.path}}` placeholders resolved
  * against the CURRENT FLOW ITEM's `json` record. It exists because that
  * substitution has no existing implementation in this app: `CallService`
@@ -39,9 +42,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

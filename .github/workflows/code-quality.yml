@@ -133,20 +133,9 @@ concurrency:
   # superseding really is correct.
   cancel-in-progress: ${{ github.event_name != 'push' }}
 
-# Permission CEILING for the called quality pipeline. GitHub statically
-# validates the called workflow's declared job permissions against this
-# grant — even for jobs that are disabled — so capping any of these at
-# `read` makes the whole call fail to START (zero jobs, no annotations).
-# Union of what the nested jobs need: journeydoc-capture (contents+actions
-# write), update-baseline / features-extract (contents write), the Quality
-# Report PR comment (issues / pull-requests write), and packages: read for
-# pulling org images.
+# Read-only by default; the write grants sit on the job that needs them.
 permissions:
-  contents: write
-  actions: write
-  issues: write
-  pull-requests: write
-  packages: read
+  contents: read
 
 jobs:
   quality:
@@ -154,6 +143,20 @@ jobs:
     if: >-
       (github.event_name != 'push' || github.event.created != true)
       && (github.event_name != 'pull_request' || github.head_ref != 'development')
+    # Permission CEILING for the called quality pipeline. GitHub statically
+    # validates the called workflow's declared job permissions against this
+    # grant, even for jobs that are disabled, so capping any of these at
+    # `read` makes the whole call fail to START (zero jobs, no annotations).
+    # Union of what the nested jobs need: journeydoc-capture (contents+actions
+    # write), update-baseline / features-extract (contents write), the Quality
+    # Report PR comment (issues / pull-requests write), and packages: read for
+    # pulling org images.
+    permissions:
+      contents: write
+      actions: write
+      issues: write
+      pull-requests: write
+      packages: read
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: integriq

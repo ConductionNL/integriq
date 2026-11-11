@@ -18,6 +18,9 @@
  * @link https://conduction.nl
  *
  * Specified in OpenRegister at openspec/changes/openregister-legacy-quality-cleanup/tasks.md#task-1.1 (copied from openregister development 98a3469c0f).
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

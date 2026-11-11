@@ -3,6 +3,9 @@
 /**
  * Integriq — ebMS2 reliable-messaging state machine (core).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Digikoppeling's ebMS2 (OSB) profile carries *meldingen* with reliable
  * delivery: each outbound message is persisted with its `MessageId` /
  * `ConversationId`, retransmitted until acknowledged or until the retry budget

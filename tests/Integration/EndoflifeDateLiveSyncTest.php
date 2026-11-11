@@ -4,6 +4,9 @@
  * Live smoke test for the endoflife-date-source preset against the REAL,
  * public, unauthenticated https://endoflife.date/api.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Follows the established `tests/Integration` self-skipping convention
  * (tests/Integration/Tables/TablesBridgeIntegrationTest.php) — the whole
  * class skips, not fails, on a network-isolated CI run.
@@ -26,9 +29,6 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/endoflife-date-source/spec.md#requirement-a-live-smoke-test-proves-the-preset-against-the-real-public-api
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

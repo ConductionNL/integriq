@@ -3,6 +3,9 @@
 /**
  * Integriq Capabilities.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Contributes `{ dashboard_http_datasource: { name, version, enabled } }` to
  * the Nextcloud capabilities document so a leaf dashboard/widget host (e.g.
  * LaunchPad's `live-data-tile-widget`) can probe for the

@@ -3,6 +3,9 @@
 /**
  * Read-only audit of the vestigial `source.authenticationConfig` field (ocon#232).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHY THIS FIELD IS TREATED AS DEAD DATA RATHER THAN MIGRATED
  * ─────────────────────────────────────────────────────────────────────────────
@@ -67,9 +70,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

@@ -3,6 +3,9 @@
 /**
  * Integriq Contract Sweep flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.contract-sweep` — the "[Stale sweep]" step of the decomposed
  * synchronization flow: objects whose contracts were NOT touched by this pass
  * are gone from the source, and this step hands their cleanup to the EXISTING
@@ -41,9 +44,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

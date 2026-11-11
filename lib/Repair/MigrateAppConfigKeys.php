@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+/**
  * Integriq Migrate App Config Keys Repair Step.
  *
  * Repair step that carries this app's stored `IAppConfig` values across the

@@ -3,6 +3,9 @@
 /**
  * The scheduled-notification filter grammar, enumerated once.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Before this class existed the grammar was written down twice — as a switch in
  * ScheduledFilterEvaluator and as a validation list in
  * NotificationAnnotationValidator — and the two disagreed. The validator

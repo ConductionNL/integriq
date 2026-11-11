@@ -3,6 +3,9 @@
 /**
  * Where a node was when the run stopped.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `FlowToken` carries values that belong to the RUN and `FlowStateHandle`
  * values that belong to the FLOW. Neither answers the question a node that
  * suspends mid-work has to answer when it wakes up: *how far did I get?*
@@ -26,9 +29,6 @@
  * nests: a Loop node dispatches its body through a dispatcher of its own while
  * the outer node is still on the stack. A single mutable "current node" would
  * be corrupted by exactly that, and would be corrupted quietly.
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Flow

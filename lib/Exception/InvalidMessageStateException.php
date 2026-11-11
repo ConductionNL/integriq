@@ -17,6 +17,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Exception;

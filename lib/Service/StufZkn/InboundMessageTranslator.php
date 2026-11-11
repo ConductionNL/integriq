@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Inbound Bericht Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates an inbound StUF-ZKN 3.10 SOAP kennisgeving (`zakLk01` — zaak
  * create/update, or `edcLk01` — document create/update) into this bridge's
  * normalised OR/ZGW-shaped representation. See design.md "StUF element/
@@ -47,9 +50,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

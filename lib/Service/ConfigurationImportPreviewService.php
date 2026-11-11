@@ -3,6 +3,9 @@
 /**
  * Configuration Import Preview Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Non-mutating dry-run companion to the existing
  * {@see \OCA\Integriq\Service\ConfigurationService::importConfiguration()}:
  * given the same OAS document, computes the creates/updates/collisions

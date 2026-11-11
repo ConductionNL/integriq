@@ -3,6 +3,9 @@
 /**
  * Integriq DSO Attachment Fetcher.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Downloads the bijlagen a `dso_verzoek` references and attaches each one as
  * a file to that request object, through OpenRegister's FileService, tagged
  * `dso-bijlage`. OpenRegister stores the file in the object's own folder in
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *
