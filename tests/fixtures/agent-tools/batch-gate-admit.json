@@ -1,0 +1,420 @@
+{
+    "admitted": {
+        "admitted": {
+            "proposal": {
+                "outcome": "executed",
+                "binding": "bind-1",
+                "targetIds": [
+                    "a",
+                    "b"
+                ],
+                "tool": "objects.update",
+                "store": "zaken",
+                "agent": "agent-1",
+                "grantingUser": "alice",
+                "at": "<time>",
+                "approval": "appr-1",
+                "approvedBy": "approver-1",
+                "executedAt": "<time>"
+            },
+            "approvedBy": "approver-1"
+        },
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "verify": [
+                    "appr-1",
+                    "objects.update",
+                    "bind-1",
+                    "agent-1"
+                ]
+            },
+            {
+                "update": [
+                    "prop-1",
+                    {
+                        "outcome": "executed",
+                        "binding": "bind-1",
+                        "targetIds": [
+                            "a",
+                            "b"
+                        ],
+                        "tool": "objects.update",
+                        "store": "zaken",
+                        "agent": "agent-1",
+                        "grantingUser": "alice",
+                        "at": "<time>",
+                        "approval": "appr-1",
+                        "approvedBy": "approver-1",
+                        "executedAt": "<time>"
+                    }
+                ]
+            }
+        ]
+    },
+    "no proposal": {
+        "refused": "no-staged-batch",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "no-staged-batch",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "not staged": {
+        "refused": "no-staged-batch",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "no-staged-batch",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "other tool": {
+        "refused": "batch-mismatch",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "tool": "objects.delete",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "batch-mismatch",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "other granting user": {
+        "refused": "batch-mismatch",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "grantingUser": "bob",
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "batch-mismatch",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "missing field on both": {
+        "admitted": {
+            "proposal": {
+                "outcome": "executed",
+                "binding": "bind-1",
+                "targetIds": [
+                    "a",
+                    "b"
+                ],
+                "tool": "objects.update",
+                "agent": "agent-1",
+                "grantingUser": "alice",
+                "at": "<time>",
+                "approval": "appr-1",
+                "approvedBy": "approver-1",
+                "executedAt": "<time>"
+            },
+            "approvedBy": "approver-1"
+        },
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "verify": [
+                    "appr-1",
+                    "objects.update",
+                    "bind-1",
+                    "agent-1"
+                ]
+            },
+            {
+                "update": [
+                    "prop-1",
+                    {
+                        "outcome": "executed",
+                        "binding": "bind-1",
+                        "targetIds": [
+                            "a",
+                            "b"
+                        ],
+                        "tool": "objects.update",
+                        "agent": "agent-1",
+                        "grantingUser": "alice",
+                        "at": "<time>",
+                        "approval": "appr-1",
+                        "approvedBy": "approver-1",
+                        "executedAt": "<time>"
+                    }
+                ]
+            }
+        ]
+    },
+    "other targets": {
+        "refused": "batch-mismatch",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "targetIds": [
+                        "a",
+                        "c"
+                    ],
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "batch-mismatch",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "fewer targets": {
+        "refused": "batch-mismatch",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "targetIds": [
+                        "a"
+                    ],
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "batch-mismatch",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "expired": {
+        "refused": "proposal-expired",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "proposal-expired",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "unreadable time": {
+        "refused": "proposal-expired",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "proposal-expired",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "no time": {
+        "refused": "proposal-expired",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "record": {
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "proposal-expired",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "approval refused": {
+        "refused": "approval-not-granted",
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "verify": [
+                    "appr-1",
+                    "objects.update",
+                    "bind-1",
+                    "agent-1"
+                ]
+            },
+            {
+                "record": {
+                    "tool": "objects.update",
+                    "store": "zaken",
+                    "agent": "agent-1",
+                    "grantingUser": "alice",
+                    "targetIds": [
+                        "b",
+                        "a"
+                    ],
+                    "at": "<time>",
+                    "outcome": "refused",
+                    "reason": "approval-not-granted",
+                    "proposal": "prop-1",
+                    "approval": "appr-1"
+                }
+            }
+        ]
+    },
+    "no binding stored": {
+        "admitted": {
+            "proposal": {
+                "outcome": "executed",
+                "targetIds": [
+                    "a",
+                    "b"
+                ],
+                "tool": "objects.update",
+                "store": "zaken",
+                "agent": "agent-1",
+                "grantingUser": "alice",
+                "at": "<time>",
+                "approval": "appr-1",
+                "approvedBy": "approver-1",
+                "executedAt": "<time>"
+            },
+            "approvedBy": "approver-1"
+        },
+        "calls": [
+            {
+                "find": "prop-1"
+            },
+            {
+                "verify": [
+                    "appr-1",
+                    "objects.update",
+                    "",
+                    "agent-1"
+                ]
+            },
+            {
+                "update": [
+                    "prop-1",
+                    {
+                        "outcome": "executed",
+                        "targetIds": [
+                            "a",
+                            "b"
+                        ],
+                        "tool": "objects.update",
+                        "store": "zaken",
+                        "agent": "agent-1",
+                        "grantingUser": "alice",
+                        "at": "<time>",
+                        "approval": "appr-1",
+                        "approvedBy": "approver-1",
+                        "executedAt": "<time>"
+                    }
+                ]
+            }
+        ]
+    }
+}

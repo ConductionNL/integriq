@@ -137,33 +137,45 @@ class MigrateSchemaApplicationId implements IRepairStep {
 			return;
 		}
 
-		$moved = 0;
-		$refused = 0;
+		$counts = ['moved' => 0, 'refused' => 0, 'failed' => 0];
 		foreach ($candidates as $slug) {
-			if (in_array(strtolower($slug), $taken, true) === true) {
-				$refused++;
-				$this->logger->warning(
-					'MigrateSchemaApplicationId: schema slug already exists under the new application id; '
-					. 'refusing to create a duplicate (application, slug) pair. Merge them by hand.',
-					['slug' => $slug, 'old' => self::OLD_APP_ID, 'new' => self::NEW_APP_ID]
-				);
-				continue;
-			}
-
-			if ($this->repoint(slug: $slug) === true) {
-				$moved++;
-			}
+			$counts[$this->moveSlug(slug: $slug, taken: $taken)]++;
 		}
 
 		$output->info(
 			sprintf(
 				'MigrateSchemaApplicationId: %d schema(s) moved to %s, %d refused as duplicates.',
-				$moved,
+				$counts['moved'],
 				self::NEW_APP_ID,
-				$refused
+				$counts['refused']
 			)
 		);
 	}//end run()
+
+	/**
+	 * Move one schema to the new application id, unless its slug is already taken there.
+	 *
+	 * @param string             $slug  The schema slug under the old application id.
+	 * @param array<int, string> $taken The lower-cased slugs already under the new application id.
+	 *
+	 * @return string The outcome: `moved`, `refused` (a duplicate, logged) or `failed`.
+	 */
+	private function moveSlug(string $slug, array $taken): string {
+		if (in_array(strtolower($slug), $taken, true) === true) {
+			$this->logger->warning(
+				'MigrateSchemaApplicationId: schema slug already exists under the new application id; '
+				. 'refusing to create a duplicate (application, slug) pair. Merge them by hand.',
+				['slug' => $slug, 'old' => self::OLD_APP_ID, 'new' => self::NEW_APP_ID]
+			);
+			return 'refused';
+		}
+
+		if ($this->repoint(slug: $slug) === true) {
+			return 'moved';
+		}
+
+		return 'failed';
+	}//end moveSlug()
 
 	/**
 	 * Slugs already claimed under the NEW application id.

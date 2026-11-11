@@ -128,36 +128,11 @@ class InboundMessageTranslator {
 		$stuurgegevens = $messageEl->children(StufZknNamespaces::ZKN)->stuurgegevens;
 		$stuur = $stuurgegevens->children(StufZknNamespaces::STUF);
 
-		$referenceNumber = trim((string)$stuur->referentienummer);
-		if ($referenceNumber === '') {
-			throw new StufZknTranslationException(
-				message: 'StUF-ZKN envelope is missing stuurgegevens.referentienummer — refusing to process an '
-					. 'unacknowledgeable, uncorrelatable message.'
-			);
-		}
-
+		$referenceNumber    = $this->referenceNumber(stuur: $stuur);
 		$senderOrganisation = trim((string)$stuur->zender->organisatie);
-
-		$object = $messageEl->children(StufZknNamespaces::ZKN)->object;
-		if (count($object) === 0) {
-			throw new StufZknTranslationException(message: 'StUF-ZKN envelope is missing the `object` element.');
-		}
-
-		$processingKind = trim((string)$this->stufAttribute(element: $object, name: 'verwerkingssoort'));
-		if (in_array($processingKind, self::VERWERKINGSSOORTEN, true) === false) {
-			throw new StufZknTranslationException(
-				message: 'StUF-ZKN object carries an unrecognised verwerkingssoort "' . $processingKind . '" '
-					. '(expected one of T/W/I/V).'
-			);
-		}
-
-		$identification = $this->readField(parent: $object, name: 'identificatie');
-		if ($identification === null || trim($identification) === '') {
-			throw new StufZknTranslationException(
-				message: 'StUF-ZKN object is missing identificatie — refusing to upsert an unidentifiable '
-					. $meta['kind'] . '.'
-			);
-		}
+		$object             = $this->messageObject(messageEl: $messageEl);
+		$processingKind     = $this->processingKind(object: $object);
+		$identification     = $this->identification(object: $object, kind: $meta['kind']);
 
 		$fields = match ($meta['kind']) {
 			'zaak' => $this->extractCaseFields(object: $object, identification: $identification),
@@ -175,6 +150,92 @@ class InboundMessageTranslator {
 		];
 
 	}//end translate()
+
+	/**
+	 * The stuurgegevens' referentienummer, refused when absent.
+	 *
+	 * @param SimpleXMLElement $stuur The StUF children of the stuurgegevens.
+	 *
+	 * @return string The referentienummer.
+	 *
+	 * @throws StufZknTranslationException When it is missing or empty.
+	 */
+	private function referenceNumber(SimpleXMLElement $stuur): string {
+		$referenceNumber = trim((string)$stuur->referentienummer);
+		if ($referenceNumber === '') {
+			throw new StufZknTranslationException(
+				message: 'StUF-ZKN envelope is missing stuurgegevens.referentienummer — refusing to process an '
+					. 'unacknowledgeable, uncorrelatable message.'
+			);
+		}
+
+		return $referenceNumber;
+
+	}//end referenceNumber()
+
+	/**
+	 * The bericht's `object` element, refused when absent.
+	 *
+	 * @param SimpleXMLElement $messageEl The bericht element.
+	 *
+	 * @return SimpleXMLElement The object.
+	 *
+	 * @throws StufZknTranslationException When there is no object.
+	 */
+	private function messageObject(SimpleXMLElement $messageEl): SimpleXMLElement {
+		$object = $messageEl->children(StufZknNamespaces::ZKN)->object;
+		if (count($object) === 0) {
+			throw new StufZknTranslationException(message: 'StUF-ZKN envelope is missing the `object` element.');
+		}
+
+		return $object;
+
+	}//end messageObject()
+
+	/**
+	 * The object's verwerkingssoort, refused unless it is T, W, I or V.
+	 *
+	 * @param SimpleXMLElement $object The object element.
+	 *
+	 * @return string The verwerkingssoort.
+	 *
+	 * @throws StufZknTranslationException When it is unrecognised.
+	 */
+	private function processingKind(SimpleXMLElement $object): string {
+		$processingKind = trim((string)$this->stufAttribute(element: $object, name: 'verwerkingssoort'));
+		if (in_array($processingKind, self::VERWERKINGSSOORTEN, true) === false) {
+			throw new StufZknTranslationException(
+				message: 'StUF-ZKN object carries an unrecognised verwerkingssoort "' . $processingKind . '" '
+					. '(expected one of T/W/I/V).'
+			);
+		}
+
+		return $processingKind;
+
+	}//end processingKind()
+
+	/**
+	 * The object's identificatie, refused when absent or blank.
+	 *
+	 * @param SimpleXMLElement $object The object element.
+	 * @param string           $kind   `zaak` or `document`, for the refusal.
+	 *
+	 * @return string The identificatie, untrimmed.
+	 *
+	 * @throws StufZknTranslationException When it is missing or blank.
+	 */
+	private function identification(SimpleXMLElement $object, string $kind): string {
+		$identification = $this->readField(parent: $object, name: 'identificatie');
+		if ($identification === null || trim($identification) === '') {
+			throw new StufZknTranslationException(
+				message: 'StUF-ZKN object is missing identificatie — refusing to upsert an unidentifiable '
+					. $kind . '.'
+			);
+		}
+
+		return $identification;
+
+	}//end identification()
 
 	/**
 	 * Locate the `zakLk01`/`edcLk01` element inside `soap:Envelope/soap:Body`.

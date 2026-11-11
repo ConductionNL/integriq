@@ -137,22 +137,9 @@ class KvkMutatieProvider extends AbstractSourceSubscriptionProvider implements M
 			return [];
 		}
 
-		$changes = [];
-		foreach (($outcome['body']['mutaties'] ?? $outcome['body']['results'] ?? []) as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
+		$shape = new ChangeRowShape(identityKey: 'kvkNummer', referenceKey: 'mutatieId');
 
-			$kvk = (string)($row['kvkNummer'] ?? '');
-			$properties = ($row['gewijzigd'] ?? []);
-			if ($kvk === '' || is_array($properties) === false || $properties === []) {
-				continue;
-			}
-
-			$changes[] = new SubscriptionChange($kvk, $properties, (string)($row['mutatieId'] ?? $row['eventReference'] ?? ''));
-		}
-
-		return $changes;
+		return $shape->changesIn(rows: ($outcome['body']['mutaties'] ?? $outcome['body']['results'] ?? []));
 	}//end pollChanges()
 
 	/**

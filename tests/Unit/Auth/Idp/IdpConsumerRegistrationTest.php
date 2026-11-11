@@ -169,4 +169,59 @@ class IdpConsumerRegistrationTest extends TestCase {
 		$this->assertSame('inline-secret-0123456789abcdef0123', $this->config()->consumerSecret(consumer: 'legacyapp'));
 	}//end testWritingOneConsumerLeavesTheOthers()
 
+	/**
+	 * Every registration, recorded: from these stored consumers, with these
+	 * arguments, the exit code, the output and the consumers stored after.
+	 *
+	 * Regenerate with IDP_CONSUMER_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryRegistrationMatchesTheGoldenFile(): void {
+		$url = IdpBrowserLoginTest::RETURN_URL;
+		$stored = (string)json_encode(['portaliq' => ['enabled' => true, 'returnUrls' => [$url], 'secretRef' => 'cred-0', 'secretOrganisation' => 'org-0']]);
+		$legacy = (string)json_encode(['legacyapp' => 'inline-secret-0123456789abcdef0123']);
+		$cases = [
+			'uppercase id' => [null, ['consumer' => 'Portaliq']],
+			'empty id' => [null, ['consumer' => '  ']],
+			'id too long' => [null, ['consumer' => str_repeat('a', 65)]],
+			'id starting with a dash' => [null, ['consumer' => '-x']],
+			'longest id' => [null, ['consumer' => str_repeat('a', 64), '--secret-ref' => 'c']],
+			'new, nothing given' => [null, ['consumer' => 'portaliq']],
+			'new, disabled' => [null, ['consumer' => 'portaliq', '--disable' => true]],
+			'new, return url only' => [null, ['consumer' => 'portaliq', '--return-url' => [$url]]],
+			'new, secret only' => [null, ['consumer' => 'portaliq', '--secret-ref' => ' cred-1 ']],
+			'new, everything' => [null, ['consumer' => ' portal_iq-2 ', '--return-url' => [$url, $url, 'https://other.example.nl/cb'], '--secret-ref' => 'cred-1', '--secret-organisation' => ' org-1 ']],
+			'new, one unsafe url' => [null, ['consumer' => 'portaliq', '--return-url' => [$url, 'http://x.example.nl/cb'], '--secret-ref' => 'c']],
+			'stored, nothing given' => [$stored, ['consumer' => 'portaliq']],
+			'stored, disabled' => [$stored, ['consumer' => 'portaliq', '--disable' => true]],
+			'stored, blank options keep' => [$stored, ['consumer' => 'portaliq', '--secret-ref' => '  ', '--secret-organisation' => '']],
+			'stored, new url' => [$stored, ['consumer' => 'portaliq', '--return-url' => ['https://new.example.nl/cb']]],
+			'legacy, no reference' => [$legacy, ['consumer' => 'legacyapp', '--return-url' => [$url]]],
+			'legacy, moved' => [$legacy, ['consumer' => 'legacyapp', '--secret-ref' => 'cred-9']],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$settings, $input]) {
+			$this->settings = [];
+			if ($settings !== null) {
+				$this->settings[IdpBrokerConfig::KEY_CONSUMERS] = $settings;
+			}
+
+			$tester = $this->runCommand($input);
+			$actual[$name] = [
+				'exit' => $tester->getStatusCode(),
+				'output' => $tester->getDisplay(),
+				'stored' => json_decode((string)($this->settings[IdpBrokerConfig::KEY_CONSUMERS] ?? 'null'), true),
+			];
+		}
+
+		$golden = __DIR__ . '/../../../fixtures/golden/idp-consumer-command.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('IDP_CONSUMER_GOLDEN') === '1') {
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryRegistrationMatchesTheGoldenFile()
 }//end class

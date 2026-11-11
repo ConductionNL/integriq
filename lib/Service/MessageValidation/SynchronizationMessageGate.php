@@ -121,15 +121,7 @@ class SynchronizationMessageGate {
 		}
 
 		$declared = $config['validation'];
-
-		// A source object is an item of the source's answer; a target body is
-		// the request the engine is about to send.
-		$direction = EndpointMessageGate::REQUEST;
-		if ($side === self::SOURCE) {
-			$direction = EndpointMessageGate::RESPONSE;
-		}
-
-		$outcome = $this->messages->checkDeclared(declared: $declared, direction: $direction, body: $message);
+		$outcome = $this->messages->checkDeclared(declared: $declared, direction: self::directionOf(side: $side), body: $message);
 		if ($outcome->isValid() === true) {
 			return null;
 		}
@@ -145,13 +137,46 @@ class SynchronizationMessageGate {
 			throw new MessageValidationRefusedException(message: self::describe(finding: $finding));
 		}
 
-		$this->logger->warning(
-			'[integriq] synchronization let a ' . $side . ' message through that does not match its message schema (mode record)',
-			['finding' => $finding]
-		);
+		$this->recorded(finding: $finding);
 
 		return $finding;
 	}//end inspect()
+
+	/**
+	 * The direction a side's message is checked in.
+	 *
+	 * A source object is an item of the source's answer; a target body is the
+	 * request the engine is about to send.
+	 *
+	 * @param string $side self::SOURCE or self::TARGET.
+	 *
+	 * @return string EndpointMessageGate::RESPONSE or EndpointMessageGate::REQUEST.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	private static function directionOf(string $side): string {
+		if ($side === self::SOURCE) {
+			return EndpointMessageGate::RESPONSE;
+		}
+
+		return EndpointMessageGate::REQUEST;
+	}//end directionOf()
+
+	/**
+	 * Log a message let through in mode `record`.
+	 *
+	 * @param array<string, mixed> $finding The finding.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+	 */
+	private function recorded(array $finding): void {
+		$this->logger->warning(
+			'[integriq] synchronization let a ' . $finding['side'] . ' message through that does not match its message schema (mode record)',
+			['finding' => $finding]
+		);
+	}//end recorded()
 
 	/**
 	 * The refusal for a declared validation that has no gate to run it.

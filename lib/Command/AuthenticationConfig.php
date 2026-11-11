@@ -193,64 +193,72 @@ class AuthenticationConfig extends Command {
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io = new SymfonyStyle($input, $output);
 
-		$limitRaw = (string)$input->getOption('limit');
-		if (preg_match('/^\d+$/', $limitRaw) !== 1) {
-			$io->error(sprintf('limit must be an integer, got "%s"', $limitRaw));
+		$limit = CommandConsole::readLimit(input: $input, io: $io);
+		if ($limit === null) {
 			return Command::FAILURE;
 		}
 
-		$limit = (int)$limitRaw;
-		if ($limit < 1 || $limit > 100000) {
-			$io->error(sprintf('limit must be in [1, 100000], got %d', $limit));
-			return Command::FAILURE;
-		}
-
-		$json = (bool)$input->getOption('json');
+		$run = new ConsoleRun(io: $io, output: $output);
+		$run->limit = $limit;
+		$run->json = (bool)$input->getOption('json');
 
 		// ── THE GATE ─────────────────────────────────────────────────────────
 		// Only these two explicit flags reach a writing path. The default action
 		// is the read-only audit. A repair step / upgrade cannot reach any of it:
 		// this is a Command, registered under <commands>, not <repair-steps>.
 		if ((bool)$input->getOption(self::FLAG_DROP_SCHEMA) === true) {
-			return $this->runDropSchemaProperty(io: $io, limit: $limit);
+			return $this->runDropSchemaProperty(run: $run);
 		}
 
 		if ((bool)$input->getOption(self::FLAG_REMOVE) === true) {
-			return $this->runRemove(io: $io, output: $output, limit: $limit, json: $json);
+			return $this->runRemove(run: $run);
 		}
 
-		return $this->runAudit(io: $io, output: $output, limit: $limit, json: $json);
+		return $this->runAudit(run: $run);
 	}//end execute()
 
 	/**
 	 * Run the read-only audit. Writes NOTHING.
 	 *
-	 * @param SymfonyStyle $io Styled console I/O.
-	 * @param OutputInterface $output Raw console output (for the --json payload).
-	 * @param integer $limit Maximum sources to inspect.
-	 * @param boolean $json Whether to emit the machine-readable report.
+	 * @param ConsoleRun $run The run: output, limit and output mode.
 	 *
 	 * @return integer Command::SUCCESS, or Command::FAILURE when the audit could not run.
 	 *
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
-	private function runAudit(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
-		try {
-			$report = $this->auditor->auditAll(limit: $limit);
-		} catch (Throwable $e) {
-			$io->error('Could not audit authenticationConfig: ' . $e->getMessage());
+	private function runAudit(ConsoleRun $run): int {
+		$report = $this->audit(run: $run);
+		if ($report === null) {
 			return Command::FAILURE;
 		}
 
-		if ($json === true) {
-			$output->writeln((string)json_encode($report, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)));
+		if ($run->json === true) {
+			CommandConsole::writeJson(run: $run, payload: $report);
 			return Command::SUCCESS;
 		}
 
-		$io->note('Audit only: nothing is written. Values are NEVER printed — key names, shapes and fingerprints only.');
-		$this->renderAudit(io: $io, report: $report);
+		$run->io->note('Audit only: nothing is written. Values are NEVER printed — key names, shapes and fingerprints only.');
+		$this->renderAudit(io: $run->io, report: $report);
 		return Command::SUCCESS;
 	}//end runAudit()
+
+	/**
+	 * Audit every source, reporting a failed audit.
+	 *
+	 * @param ConsoleRun $run The run: output and limit.
+	 *
+	 * @return array<string, mixed>|null The auditor's report, or null after reporting the failure.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 */
+	private function audit(ConsoleRun $run): ?array {
+		try {
+			return $this->auditor->auditAll(limit: $run->limit);
+		} catch (Throwable $e) {
+			$run->io->error('Could not audit authenticationConfig: ' . $e->getMessage());
+			return null;
+		}
+	}//end audit()
 
 	/**
 	 * Render the human-readable audit.
@@ -265,30 +273,8 @@ class AuthenticationConfig extends Command {
 	private function renderAudit(SymfonyStyle $io, array $report): void {
 		$rows = [];
 		foreach ((array)($report['sources'] ?? []) as $source) {
-			$shapes = [];
-			foreach ((array)($source['shapes'] ?? []) as $key => $shape) {
-				$hint = (string)($shape['shape'] ?? '?');
-				if (($shape['fingerprint'] ?? null) !== null) {
-					$hint .= ' #' . (string)$shape['fingerprint'];
-				}
-
-				$shapes[] = $key . ': ' . $hint;
-			}
-
-			$referenced = 'no';
-			if (($source['referenced'] ?? false) === true) {
-				$referenced = 'YES -> ' . implode(', ', (array)($source['references'] ?? []));
-			}
-
-			$rows[] = [
-				(string)($source['name'] ?? '?'),
-				(string)($source['uuid'] ?? '?'),
-				(string)($source['state'] ?? '?'),
-				implode(', ', (array)($source['keys'] ?? [])),
-				implode(' | ', $shapes),
-				$referenced,
-			];
-		}//end foreach
+			$rows[] = $this->auditRow(source: $source);
+		}
 
 		if ($rows !== []) {
 			$io->table(['source', 'uuid', 'state', 'keys (names only)', 'value shapes', 'twig-referenced'], $rows);
@@ -301,6 +287,55 @@ class AuthenticationConfig extends Command {
 		$io->writeln(sprintf('Twig-referenced   : %d', (int)($report['referenced'] ?? 0)));
 		$io->newLine();
 
+		$this->renderAuditAdvice(io: $io, report: $report);
+	}//end renderAudit()
+
+	/**
+	 * One audited source as a table row: names, shapes and references, never a value.
+	 *
+	 * @param array<string, mixed> $source One audited source.
+	 *
+	 * @return array<int, string> The row.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 */
+	private function auditRow(array $source): array {
+		$shapes = [];
+		foreach ((array)($source['shapes'] ?? []) as $key => $shape) {
+			$hint = (string)($shape['shape'] ?? '?');
+			if (($shape['fingerprint'] ?? null) !== null) {
+				$hint .= ' #' . (string)$shape['fingerprint'];
+			}
+
+			$shapes[] = $key . ': ' . $hint;
+		}
+
+		$referenced = 'no';
+		if (($source['referenced'] ?? false) === true) {
+			$referenced = 'YES -> ' . implode(', ', (array)($source['references'] ?? []));
+		}
+
+		return [
+			(string)($source['name'] ?? '?'),
+			(string)($source['uuid'] ?? '?'),
+			(string)($source['state'] ?? '?'),
+			implode(', ', (array)($source['keys'] ?? [])),
+			implode(' | ', $shapes),
+			$referenced,
+		];
+	}//end auditRow()
+
+	/**
+	 * Tell the operator what the audit means: the Twig warning, then the next step.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string, mixed> $report The auditor's report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 */
+	private function renderAuditAdvice(SymfonyStyle $io, array $report): void {
 		if ((int)($report['referenced'] ?? 0) > 0) {
 			$io->warning(
 				'Some sources reference `source.authenticationConfig` from a Twig template in their '
@@ -322,52 +357,32 @@ class AuthenticationConfig extends Command {
 			'Next: review the keys above, then run with --' . self::FLAG_REMOVE . ' to DELETE these values. '
 			. 'authenticationConfig is vestigial (no code authenticates from it) — see ocon#232.'
 		);
-	}//end renderAudit()
+	}//end renderAuditAdvice()
 
 	/**
 	 * Run the gated removal. Reached ONLY via the explicit flag.
 	 *
-	 * @param SymfonyStyle $io Styled console I/O.
-	 * @param OutputInterface $output Raw console output (for the --json payload).
-	 * @param integer $limit Maximum sources to inspect.
-	 * @param boolean $json Whether to emit the machine-readable result.
+	 * @param ConsoleRun $run The run: output, limit and output mode.
 	 *
 	 * @return integer Command::SUCCESS, or Command::FAILURE when a source failed.
 	 *
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
 	 */
-	private function runRemove(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
+	private function runRemove(ConsoleRun $run): int {
 		try {
 			// `optIn: true` is the remover's OWN independent gate — it throws without it.
-			$result = $this->remover->removeAll(limit: $limit, optIn: true);
+			$result = $this->remover->removeAll(limit: $run->limit, optIn: true);
 		} catch (Throwable $e) {
-			$io->error('Refusing to remove authenticationConfig: ' . $e->getMessage());
+			$run->io->error('Refusing to remove authenticationConfig: ' . $e->getMessage());
 			return Command::FAILURE;
 		}
 
-		if ($json === true) {
-			$output->writeln((string)json_encode($result, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)));
+		if ($run->json === true) {
+			CommandConsole::writeJson(run: $run, payload: $result);
 		}
 
-		if ($json === false) {
-			$rows = [];
-			foreach ((array)($result['sources'] ?? []) as $source) {
-				$rows[] = [
-					(string)($source['name'] ?? '?'),
-					(string)($source['uuid'] ?? '?'),
-					(string)($source['outcome'] ?? '?'),
-					(string)($source['reason'] ?? '-'),
-				];
-			}
-
-			if ($rows !== []) {
-				$io->table(['source', 'uuid', 'outcome', 'reason'], $rows);
-			}
-
-			$io->writeln(sprintf('Removed : %d', (int)($result['removed'] ?? 0)));
-			$io->writeln(sprintf('Skipped : %d (already clear)', (int)($result['skipped'] ?? 0)));
-			$io->writeln(sprintf('Blocked : %d (a Twig template still references the field)', (int)($result['blocked'] ?? 0)));
-			$io->writeln(sprintf('Failed  : %d', (int)($result['failed'] ?? 0)));
+		if ($run->json === false) {
+			$this->renderRemoval(io: $run->io, result: $result);
 		}
 
 		if ((int)($result['failed'] ?? 0) > 0) {
@@ -378,64 +393,72 @@ class AuthenticationConfig extends Command {
 	}//end runRemove()
 
 	/**
+	 * Render the human-readable removal result.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string, mixed> $result The remover's result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+	 */
+	private function renderRemoval(SymfonyStyle $io, array $result): void {
+		$rows = [];
+		foreach ((array)($result['sources'] ?? []) as $source) {
+			$rows[] = [
+				(string)($source['name'] ?? '?'),
+				(string)($source['uuid'] ?? '?'),
+				(string)($source['outcome'] ?? '?'),
+				(string)($source['reason'] ?? '-'),
+			];
+		}
+
+		if ($rows !== []) {
+			$io->table(['source', 'uuid', 'outcome', 'reason'], $rows);
+		}
+
+		$io->writeln(sprintf('Removed : %d', (int)($result['removed'] ?? 0)));
+		$io->writeln(sprintf('Skipped : %d (already clear)', (int)($result['skipped'] ?? 0)));
+		$io->writeln(sprintf('Blocked : %d (a Twig template still references the field)', (int)($result['blocked'] ?? 0)));
+		$io->writeln(sprintf('Failed  : %d', (int)($result['failed'] ?? 0)));
+	}//end renderRemoval()
+
+	/**
 	 * Drop `authenticationConfig` from the LIVE source schema — gated on a clean audit.
 	 *
 	 * Per-instance only. The register JSON keeps declaring the property on purpose
 	 * (see this class's docblock).
 	 *
-	 * @param SymfonyStyle $io Styled console I/O.
-	 * @param integer $limit Maximum sources to inspect for the gate.
+	 * @param ConsoleRun $run The run: output and the limit for the gate.
 	 *
 	 * @return integer Command::SUCCESS, or Command::FAILURE when refused.
 	 *
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
 	 */
-	private function runDropSchemaProperty(SymfonyStyle $io, int $limit): int {
-		try {
-			$report = $this->auditor->auditAll(limit: $limit);
-		} catch (Throwable $e) {
-			$io->error('Could not audit authenticationConfig: ' . $e->getMessage());
+	private function runDropSchemaProperty(ConsoleRun $run): int {
+		$io = $run->io;
+		$report = $this->audit(run: $run);
+		if ($report === null) {
 			return Command::FAILURE;
 		}
 
 		// Fail closed: never drop the property while a source still holds a value,
 		// a Twig template still references it, or a source could not be read at all.
 		if ((bool)($report['schemaPropertyRemovable'] ?? false) === false) {
-			$io->error(
-				sprintf(
-					'Refusing to drop the schema property: %d source(s) still hold a value, '
-					. '%d still reference it from a Twig template, %d could not be read. '
-					. 'Run the audit, then --%s first.',
-					(int)($report['holdValue'] ?? 0),
-					(int)($report['referenced'] ?? 0),
-					(int)($report['unreadable'] ?? 0),
-					self::FLAG_REMOVE
-				)
-			);
+			$this->refuseSchemaDrop(io: $io, report: $report);
 			return Command::FAILURE;
 		}
 
 		try {
-			$schemaMapper = $this->container->get(self::SCHEMA_MAPPER);
-			$schema = $schemaMapper->find(self::SCHEMA_SLUG);
-			$properties = $schema->getProperties();
-			if (is_array($properties) === false) {
-				$io->error('Could not read the live source schema properties; nothing was changed.');
-				return Command::FAILURE;
-			}
-
-			if (array_key_exists(AuthenticationConfigAuditorInterface::FIELD, $properties) === false) {
-				$io->success('authenticationConfig is already absent from the live source schema; nothing to do.');
-				return Command::SUCCESS;
-			}
-
-			unset($properties[AuthenticationConfigAuditorInterface::FIELD]);
-			$schema->setProperties($properties);
-			$schemaMapper->update($schema);
+			$early = $this->dropFromLiveSchema(io: $io);
 		} catch (Throwable $e) {
 			$io->error('Could not drop the schema property: ' . $e->getMessage());
 			return Command::FAILURE;
-		}//end try
+		}
+
+		if ($early !== null) {
+			return $early;
+		}
 
 		$io->success(
 			'Dropped authenticationConfig from the live source schema. '
@@ -444,4 +467,59 @@ class AuthenticationConfig extends Command {
 		);
 		return Command::SUCCESS;
 	}//end runDropSchemaProperty()
+
+	/**
+	 * Say why the schema property may not be dropped yet.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string, mixed> $report The auditor's report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+	 */
+	private function refuseSchemaDrop(SymfonyStyle $io, array $report): void {
+		$io->error(
+			sprintf(
+				'Refusing to drop the schema property: %d source(s) still hold a value, '
+				. '%d still reference it from a Twig template, %d could not be read. '
+				. 'Run the audit, then --%s first.',
+				(int)($report['holdValue'] ?? 0),
+				(int)($report['referenced'] ?? 0),
+				(int)($report['unreadable'] ?? 0),
+				self::FLAG_REMOVE
+			)
+		);
+	}//end refuseSchemaDrop()
+
+	/**
+	 * Remove the property from the live source schema, unless it cannot be read or is already gone.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 *
+	 * @return integer|null The exit code when the run ends here, or null once the property was dropped.
+	 *
+	 * @throws Throwable When the schema cannot be read or written.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-removal
+	 */
+	private function dropFromLiveSchema(SymfonyStyle $io): ?int {
+		$schemaMapper = $this->container->get(self::SCHEMA_MAPPER);
+		$schema = $schemaMapper->find(self::SCHEMA_SLUG);
+		$properties = $schema->getProperties();
+		if (is_array($properties) === false) {
+			$io->error('Could not read the live source schema properties; nothing was changed.');
+			return Command::FAILURE;
+		}
+
+		if (array_key_exists(AuthenticationConfigAuditorInterface::FIELD, $properties) === false) {
+			$io->success('authenticationConfig is already absent from the live source schema; nothing to do.');
+			return Command::SUCCESS;
+		}
+
+		unset($properties[AuthenticationConfigAuditorInterface::FIELD]);
+		$schema->setProperties($properties);
+		$schemaMapper->update($schema);
+		return null;
+	}//end dropFromLiveSchema()
 }//end class

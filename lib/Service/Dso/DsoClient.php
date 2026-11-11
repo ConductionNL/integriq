@@ -76,6 +76,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Service\PayloadTooLargeException;
+use OCA\Integriq\Service\Mtls\ClientAuthenticationSchema;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
@@ -99,7 +100,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 *
 	 * @var string
 	 */
-	private const DEFAULT_AUTH_SCHEME = 'Bearer';
+	private const DEFAULT_AUTH_SCHEME = ClientAuthenticationSchema::DEFAULT_SCHEME;
 
 	/**
 	 * Outbound message-kind to endpoint-path mapping (relative to `configuration.baseUrl`).
@@ -166,40 +167,13 @@ class DsoClient implements DsoConnectorProviderInterface {
 					'type' => 'string',
 					'description' => 'DSO-LV outbound (voortgangsinformatie/besluit) endpoint base URL (no trailing slash)',
 				],
-				'authentication' => [
-					'type' => 'object',
-					'properties' => [
-						'mode' => [
-							'type' => 'string',
-							'enum' => ['token', 'mtls'],
-							'default' => 'token',
-							'description' => '`token` (default) sends a Bearer Authorization header from '
-								. '`encryptedToken`. `mtls` dispatches over a real PKIoverheid mutual-TLS connection '
-								. 'using `mtls.*` — closes the real DSO-LV outbound transport gap.',
-						],
-						'encryptedToken' => [
-							'type' => 'string',
-							'description' => 'Required when `mode=token` (the default). The DSO-LV API token, '
-								. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.',
-						],
-						'scheme' => [
-							'type' => 'string',
-							'description' => 'Authorization header scheme, used only when `mode=token`.',
-							'default' => self::DEFAULT_AUTH_SCHEME,
-						],
-						'mtls' => [
-							'type' => 'object',
-							'description' => 'Required when `mode=mtls`. Client certificate material, each field '
-								. 'individually encrypted at rest via OCP\\Security\\ICrypto.',
-							'properties' => [
-								'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
-								'encryptedPrivateKey' => ['type' => 'string', 'description' => 'PEM private key.'],
-								'encryptedPassphrase' => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
-								'encryptedCaBundle' => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
-							],
-						],
-					],
-				],
+				'authentication' => ClientAuthenticationSchema::tokenOrMtls(
+					modeDescription: '`token` (default) sends a Bearer Authorization header from '
+						. '`encryptedToken`. `mtls` dispatches over a real PKIoverheid mutual-TLS connection '
+						. 'using `mtls.*` — closes the real DSO-LV outbound transport gap.',
+					tokenDescription: 'Required when `mode=token` (the default). The DSO-LV API token, '
+						. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.'
+				),
 				'bronorganisatie' => [
 					'type' => 'string',
 					'description' => 'This bevoegd gezag\'s OIN/bronorganisatie code (outbound stuurgegevens default).',

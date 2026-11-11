@@ -91,7 +91,9 @@ class ObjectWriteHandler implements ObjectWriteHandlerInterface {
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	public function create(string $type, array $body, string $principal, string $baseUrl = ''): array {
-		return $this->write(type: $type, uuid: null, body: $body, principal: $principal, baseUrl: $baseUrl, action: 'create');
+		return $this->write(
+			write: new RecordWrite(type: $type, uuid: null, body: $body, principal: $principal, baseUrl: $baseUrl, action: 'create')
+		);
 	}//end create()
 
 	/**
@@ -108,7 +110,9 @@ class ObjectWriteHandler implements ObjectWriteHandlerInterface {
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	public function replace(string $type, string $uuid, array $body, string $principal, string $baseUrl = ''): array {
-		return $this->write(type: $type, uuid: $uuid, body: $body, principal: $principal, baseUrl: $baseUrl, action: 'update');
+		return $this->write(
+			write: new RecordWrite(type: $type, uuid: $uuid, body: $body, principal: $principal, baseUrl: $baseUrl, action: 'update')
+		);
 	}//end replace()
 
 	/**
@@ -138,20 +142,36 @@ class ObjectWriteHandler implements ObjectWriteHandlerInterface {
 		string $principal,
 		string $baseUrl = ''
 	): array {
+		return $this->write(
+			write: new RecordWrite(
+				type: $type,
+				uuid: $uuid,
+				body: $this->mergedRecord(body: $body, current: $current),
+				principal: $principal,
+				baseUrl: $baseUrl,
+				action: 'update'
+			)
+		);
+	}//end update()
+
+	/**
+	 * A partial update's record: the stored data with the submitted fields merged over it,
+	 * and the submitted geometry, else the stored one.
+	 *
+	 * @param array<string, mixed> $body    The submitted fields.
+	 * @param array<string, mixed> $current The object as stored.
+	 *
+	 * @return array<string, mixed> The record to write.
+	 */
+	private function mergedRecord(array $body, array $current): array {
 		$merged = array_merge(
 			$this->translator->dataOf(object: $current),
 			(array)($body['record']['data'] ?? [])
 		);
 
-		return $this->write(
-			type: $type,
-			uuid: $uuid,
-			body: ['record' => ['data' => $merged, 'geometry' => ($body['record']['geometry'] ?? ($current['geometry'] ?? null))]],
-			principal: $principal,
-			baseUrl: $baseUrl,
-			action: 'update'
-		);
-	}//end update()
+		return ['record' => ['data' => $merged, 'geometry' => ($body['record']['geometry'] ?? ($current['geometry'] ?? null))]];
+
+	}//end mergedRecord()
 
 	/**
 	 * `DELETE /api/v2/objects/{uuid}`.
@@ -193,35 +213,46 @@ class ObjectWriteHandler implements ObjectWriteHandlerInterface {
 	/**
 	 * The shared write path.
 	 *
-	 * @param string               $type      The objecttype.
-	 * @param string|null          $uuid      The object, null on a create.
-	 * @param array<string, mixed> $body      The submitted record.
-	 * @param string               $principal The token's principal.
-	 * @param string               $baseUrl   The API base.
-	 * @param string               $action    The announced action.
+	 * @param RecordWrite $write The write.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The response.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Every branch here is a refusal with its own
-	 * status and its own sentence: no objecttype, no principal, no write path, no announcer, a
-	 * schema that rejected the record. Folding them into fewer branches would fold the reasons
-	 * into fewer messages, and the message is what the caller acts on.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) Same branches, counted the other way.
 	 */
-	private function write(
-		string $type,
-		?string $uuid,
-		array $body,
-		string $principal,
-		string $baseUrl,
-		string $action
-	): array {
-		$declaration = $this->objecttypes->find(uuid: $type);
-		if ($declaration === null) {
-			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $type));
+	private function write(RecordWrite $write): array {
+		$declaration = $this->objecttypes->find(uuid: $write->type);
+		$refusal = $this->writeRefusal(write: $write, declaration: $declaration);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if (trim($principal) === '') {
+		try {
+			$written = $this->storeRecord(write: $write, declaration: $declaration);
+		} catch (Throwable $e) {
+			return $this->problem(status: 400, title: 'Validation refused', detail: $e->getMessage());
+		}
+
+		$rendered = $this->translator->toRecord(object: $written, objecttype: $write->type, baseUrl: $write->baseUrl);
+		$this->publish(type: $write->type, uuid: (string)$rendered['uuid'], action: $write->action);
+
+		return ['status' => $this->writtenStatus(write: $write), 'body' => $rendered];
+	}//end write()
+
+	/**
+	 * Why a write is refused before anything is stored, or null when it may go ahead.
+	 *
+	 * Every refusal has its own status and its own sentence: no objecttype, no
+	 * principal, then (in unwritableRefusal) no announcer, no write path, no data.
+	 *
+	 * @param RecordWrite               $write       The write.
+	 * @param array<string, mixed>|null $declaration The objecttype's declaration, null when none is published.
+	 *
+	 * @return array{status: int, body: array<string, mixed>}|null The refusal.
+	 */
+	private function writeRefusal(RecordWrite $write, ?array $declaration): ?array {
+		if ($declaration === null) {
+			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $write->type));
+		}
+
+		if (trim($write->principal) === '') {
 			// Without a principal the audit entry names nobody, which is the
 			// thing the requirement's third scenario exists to prevent.
 			return $this->problem(
@@ -231,6 +262,18 @@ class ObjectWriteHandler implements ObjectWriteHandlerInterface {
 			);
 		}
 
+		return $this->unwritableRefusal(body: $write->body);
+
+	}//end writeRefusal()
+
+	/**
+	 * Refuse when the change cannot be announced, there is no write path, or the record carries no data.
+	 *
+	 * @param array<string, mixed> $body The submitted record.
+	 *
+	 * @return array{status: int, body: array<string, mixed>}|null The refusal.
+	 */
+	private function unwritableRefusal(array $body): ?array {
 		$unannounceable = $this->refuseWhenNoAnnouncer();
 		if ($unannounceable !== null) {
 			return $unannounceable;
@@ -240,51 +283,78 @@ class ObjectWriteHandler implements ObjectWriteHandlerInterface {
 			return $this->problem(status: 503, title: 'Unavailable', detail: 'No write path is wired.');
 		}
 
-		$data = (array)($body['record']['data'] ?? []);
-		if ($data === []) {
+		if ((array)($body['record']['data'] ?? []) === []) {
 			return $this->problem(status: 400, title: 'Bad request', detail: 'A write needs "record.data".');
 		}
 
+		return null;
+
+	}//end unwritableRefusal()
+
+	/**
+	 * Store the record through the object service; what it returns, or the data sent.
+	 *
+	 * Through the object service, so the SCHEMA validates it. A validation
+	 * refusal here is the schema's answer, passed through rather than
+	 * reworded: the consumer needs to know which field.
+	 *
+	 * @param RecordWrite          $write       The write.
+	 * @param array<string, mixed> $declaration The objecttype's declaration.
+	 *
+	 * @return array<string, mixed> The stored object.
+	 *
+	 * @throws Throwable Whatever the object service refuses the write with.
+	 */
+	private function storeRecord(RecordWrite $write, array $declaration): array {
+		$data = $this->recordData(body: $write->body);
+		$stored = ($this->objectWrite)(
+			(string)$declaration['register'],
+			(string)$declaration['schema'],
+			$write->uuid,
+			$data,
+			$write->principal
+		);
+		if (is_array($stored) === true) {
+			return $stored;
+		}
+
+		return $data;
+
+	}//end storeRecord()
+
+	/**
+	 * The submitted record's data, with its geometry when it has one.
+	 *
+	 * @param array<string, mixed> $body The submitted record.
+	 *
+	 * @return array<string, mixed> The data to store.
+	 */
+	private function recordData(array $body): array {
+		$data = (array)($body['record']['data'] ?? []);
 		$geometry = ($body['record']['geometry'] ?? null);
 		if ($geometry !== null) {
 			$data['geometry'] = $geometry;
 		}
 
-		try {
-			// Through the object service, so the SCHEMA validates it. A
-			// validation refusal here is the schema's answer, passed through
-			// rather than reworded: the consumer needs to know which field.
-			$stored = ($this->objectWrite)(
-				(string)$declaration['register'],
-				(string)$declaration['schema'],
-				$uuid,
-				$data,
-				$principal
-			);
-		} catch (Throwable $e) {
-			return $this->problem(status: 400, title: 'Validation refused', detail: $e->getMessage());
+		return $data;
+
+	}//end recordData()
+
+	/**
+	 * 201 for a create, 200 for a replace or update.
+	 *
+	 * @param RecordWrite $write The write.
+	 *
+	 * @return int The status.
+	 */
+	private function writtenStatus(RecordWrite $write): int {
+		if ($write->uuid === null) {
+			return 201;
 		}
 
-		$written = $data;
-		if (is_array($stored) === true) {
-			$written = $stored;
-		}
+		return 200;
 
-		$rendered = $this->translator->toRecord(
-			object: $written,
-			objecttype: $type,
-			baseUrl: $baseUrl
-		);
-
-		$this->publish(type: $type, uuid: (string)$rendered['uuid'], action: $action);
-
-		$status = 200;
-		if ($uuid === null) {
-			$status = 201;
-		}
-
-		return ['status' => $status, 'body' => $rendered];
-	}//end write()
+	}//end writtenStatus()
 
 	/**
 	 * Refuse when nothing can announce the change.

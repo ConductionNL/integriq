@@ -34,6 +34,9 @@ namespace OCA\Integriq\Service\Cardfeed;
 use OCA\Integriq\Exception\CardfeedProviderException;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\Helper\BrokeredCall;
+use OCA\Integriq\Service\Helper\BrokeredCallRefusals;
+use OCA\Integriq\Service\Helper\BrokeredJsonDispatch;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -54,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
-class RestCardfeedProvider implements CardfeedProviderInterface {
+class RestCardfeedProvider implements CardfeedProviderInterface, BrokeredCallRefusals {
 	/**
 	 * Constructor.
 	 *
@@ -82,7 +85,7 @@ class RestCardfeedProvider implements CardfeedProviderInterface {
 	public function listCards(array $sourceConfiguration): array {
 		$url = $this->baseUrl(sourceConfiguration: $sourceConfiguration) . '/cards';
 
-		$decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, method: 'GET', url: $url);
+		$decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, url: $url);
 
 		$cards = [];
 		foreach (array_values((array)($decoded['cards'] ?? $decoded['data'] ?? [])) as $card) {
@@ -115,7 +118,7 @@ class RestCardfeedProvider implements CardfeedProviderInterface {
 			. '/cards/' . rawurlencode($cardId) . '/transactions'
 			. '?since=' . rawurlencode(substr($since, 0, 10)) . '&until=' . rawurlencode(substr($until, 0, 10));
 
-		$decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, method: 'GET', url: $url);
+		$decoded = $this->dispatchJson(sourceConfiguration: $sourceConfiguration, url: $url);
 
 		return array_values((array)($decoded['transactions'] ?? $decoded['data'] ?? []));
 	}//end listTransactions()
@@ -132,59 +135,89 @@ class RestCardfeedProvider implements CardfeedProviderInterface {
 	}//end baseUrl()
 
 	/**
-	 * Dispatch one brokered call and return its decoded JSON body, mapping every
-	 * failure mode to a secret-free {@see CardfeedProviderException} — never a
-	 * 500 crash, per REQ-001/REQ-005. A missing `credentialRef` fails closed with
-	 * no plaintext fallback.
+	 * Dispatch one brokered GET and return its decoded JSON body, mapping
+	 * every failure mode to a secret-free {@see CardfeedProviderException}.
 	 *
-	 * @param array $sourceConfiguration The cardfeed source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $url The composed URL.
+	 * @param array  $sourceConfiguration The cardfeed source's `configuration` object.
+	 * @param string $url                 The composed URL (only its path+query is forwarded, per BrokeredCallService).
 	 *
 	 * @return array<string, mixed> The decoded response body.
 	 *
 	 * @throws CardfeedProviderException On any configuration, brokering, transport, or upstream error.
 	 */
-	private function dispatchJson(array $sourceConfiguration, string $method, string $url): array {
-		$config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])];
-
-		if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
-			throw new CardfeedProviderException(
-				message: $this->l->t('Card provider credential missing') . ': the `rest` cardfeed provider requires '
-					. '`configuration.authentication.credentialRef` — none is configured. Configure a credentialRef '
-					. 'through the OpenRegister credential broker; no plaintext-key fallback is permitted (ADR-007).'
-			);
-		}
-
-		try {
-			$dispatch = $this->brokeredCallService->prepare(
-				config: $config,
-				sourceData: ['type' => 'cardfeed'],
-				asynchronous: false
-			);
-
-			$response = $this->brokeredCallService->dispatch(
-				credentialId: $dispatch['credentialId'],
-				actingUserId: $dispatch['actingUserId'],
-				method: $method,
-				url: $url,
-				config: $config
-			);
-		} catch (BrokeredCallConfigurationException $exception) {
-			throw new CardfeedProviderException(message: $exception->getMessage(), previous: $exception);
-		} catch (Throwable $exception) {
-			$this->logger->warning(
-				'[RestCardfeedProvider] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new CardfeedProviderException(
-				message: 'The card provider request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+	private function dispatchJson(array $sourceConfiguration, string $url): array {
+		$response = $this->brokered()->send(sourceConfiguration: $sourceConfiguration, call: new BrokeredCall(method: 'GET', url: $url));
 
 		return $this->decodeResponse(status: $response->getStatusCode(), body: (string)$response->getBody());
 	}//end dispatchJson()
+
+	/**
+	 * The brokered dispatch this provider sends its calls through.
+	 *
+	 * @return BrokeredJsonDispatch The dispatch.
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	private function brokered(): BrokeredJsonDispatch {
+		return new BrokeredJsonDispatch(
+			broker: $this->brokeredCallService,
+			refusals: $this,
+			sourceType: 'cardfeed'
+		);
+
+	}//end brokered()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return CardfeedProviderException The refusal.
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	public function credentialMissing(): CardfeedProviderException {
+		return new CardfeedProviderException(
+			message: $this->l->t('Card provider credential missing') . ': the `rest` cardfeed provider requires '
+				. '`configuration.authentication.credentialRef` — none is configured. Configure a credentialRef '
+				. 'through the OpenRegister credential broker; no plaintext-key fallback is permitted (ADR-007).'
+		);
+
+	}//end credentialMissing()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param BrokeredCallConfigurationException $cause The broker's refusal.
+	 *
+	 * @return CardfeedProviderException The refusal.
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	public function configurationRefused(BrokeredCallConfigurationException $cause): CardfeedProviderException {
+		return new CardfeedProviderException(message: $cause->getMessage(), previous: $cause);
+
+	}//end configurationRefused()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param Throwable $cause The failure.
+	 *
+	 * @return CardfeedProviderException The refusal.
+	 *
+	 * @spec openspec/specs/corporate-card-feed/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	public function transportFailed(Throwable $cause): CardfeedProviderException {
+		$this->logger->warning(
+			'[RestCardfeedProvider] unexpected transport failure',
+			['exception' => $cause->getMessage()]
+		);
+
+		return new CardfeedProviderException(
+			message: 'The card provider request failed unexpectedly: ' . $cause->getMessage(),
+			previous: $cause
+		);
+
+	}//end transportFailed()
 
 	/**
 	 * Map one provider response to decoded JSON or a domain exception.

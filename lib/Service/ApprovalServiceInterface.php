@@ -101,7 +101,7 @@ interface ApprovalServiceInterface {
 	 * `approval_request` carrying `engineRunUuid`/`signalNodeId` instead of
 	 * `flowRunId`/`resumeStepOrder`, and notify the configured approver
 	 * group. The engine run resumes through
-	 * `FlowRunSignalService::signalAs()` (delivered by
+	 * `FlowRunSignalService::answerByUuid()` (delivered by
 	 * `ApprovalsController`), never through a FlowToken rehydration — the
 	 * engine holds the run's own state, so `snapshot` stays empty and this
 	 * record remains purely the human-decision system of record

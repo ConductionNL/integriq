@@ -30,6 +30,8 @@ namespace OCA\Integriq\Observability\Otel;
 /**
  * Maps an `execution_trace` object to an OTLP JSON `resourceSpans` payload.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) -- the complexity sits in the URL masking, kept as one guarded step
+ *
  * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-spans-carry-no-message-content-req-otel-003
  */
 class SpanMapper implements SpanMapperInterface {
@@ -70,6 +72,31 @@ class SpanMapper implements SpanMapperInterface {
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-a-persisted-trace-is-exported-as-opentelemetry-spans-req-otel-001
 	 */
 	public function map(array $trace, string $serviceName): array {
+		$frame = $this->frameFor(trace: $trace);
+		$spans = $this->stepSpans(trace: $trace, frame: $frame);
+		array_unshift($spans, $this->rootSpan(trace: $trace, frame: $frame));
+
+		return [
+			'resourceSpans' => [
+				[
+					'resource' => [
+						'attributes' => $this->attributes(values: ['service.name' => $serviceName]),
+					],
+					'scopeSpans' => $this->scopeSpans(spans: $spans),
+				],
+			],
+		];
+
+	}//end map()
+
+	/**
+	 * The ids and start every span of a trace shares.
+	 *
+	 * @param array $trace The `execution_trace` object data.
+	 *
+	 * @return TraceFrame The frame.
+	 */
+	private function frameFor(array $trace): TraceFrame {
 		$traceId = (string)($trace['traceId'] ?? '');
 		// A trace that continues a caller's exports under the caller's W3C
 		// trace id; the record's own id still names the spans.
@@ -78,13 +105,24 @@ class SpanMapper implements SpanMapperInterface {
 			$otelTraceId = $traceId;
 		}
 
-		$frame = new TraceFrame(
+		return new TraceFrame(
 			traceId: $traceId,
 			traceHex: $this->traceParent->toHex(traceId: $otelTraceId),
 			rootSpanId: $this->spanId(traceId: $traceId, salt: 'root'),
 			rootStart: $this->micros(micros: ($trace['startedAtUs'] ?? null), iso: ($trace['startedAt'] ?? null))
 		);
 
+	}//end frameFor()
+
+	/**
+	 * One span per kept step; the truncation tally goes on the frame.
+	 *
+	 * @param array      $trace The `execution_trace` object data.
+	 * @param TraceFrame $frame The trace's shared ids and start; takes the dropped-step count.
+	 *
+	 * @return list<array> The step spans, in order.
+	 */
+	private function stepSpans(array $trace, TraceFrame $frame): array {
 		$spans = [];
 		foreach (array_filter((array)($trace['steps'] ?? []), 'is_array') as $step) {
 			if (($step['status'] ?? null) === 'truncated') {
@@ -97,25 +135,26 @@ class SpanMapper implements SpanMapperInterface {
 			$spans[] = $this->stepSpan(step: $step, frame: $frame);
 		}
 
-		array_unshift($spans, $this->rootSpan(trace: $trace, frame: $frame));
+		return $spans;
 
+	}//end stepSpans()
+
+	/**
+	 * The one scope the spans are exported under.
+	 *
+	 * @param list<array> $spans The root span and the step spans.
+	 *
+	 * @return list<array> The scope spans.
+	 */
+	private function scopeSpans(array $spans): array {
 		return [
-			'resourceSpans' => [
-				[
-					'resource' => [
-						'attributes' => $this->attributes(values: ['service.name' => $serviceName]),
-					],
-					'scopeSpans' => [
-						[
-							'scope' => ['name' => 'integriq.execution-trace'],
-							'spans' => $spans,
-						],
-					],
-				],
+			[
+				'scope' => ['name' => 'integriq.execution-trace'],
+				'spans' => $spans,
 			],
 		];
 
-	}//end map()
+	}//end scopeSpans()
 
 	/**
 	 * The root span of a trace.
@@ -137,23 +176,48 @@ class SpanMapper implements SpanMapperInterface {
 			'kind' => $this->rootKind(entryPoint: $entryPoint),
 			'startTimeUnixNano' => $this->nanos(micros: $frame->rootStart),
 			'endTimeUnixNano' => $this->nanos(micros: max($rootEnd, $frame->rootStart)),
-			'attributes' => $this->attributes(
-				values: [
-					'integriq.entry_point' => $entryPoint,
-					'integriq.entry_point_id' => ($trace['entryPointId'] ?? null),
-					'integriq.trace_id' => $frame->traceId,
-					'integriq.steps.dropped' => $frame->droppedSteps,
-				]
-			),
+			'attributes' => $this->rootAttributes(trace: $trace, frame: $frame),
 			'status' => ['code' => $this->rootStatus(status: (string)($trace['status'] ?? ''))],
 		];
+
+		return $this->withParent(root: $root, trace: $trace);
+	}//end rootSpan()
+
+	/**
+	 * The root span under the caller's span, when the trace continues one.
+	 *
+	 * @param array $root  The root span.
+	 * @param array $trace The `execution_trace` object data.
+	 *
+	 * @return array The root span, with a parentSpanId when the trace names a valid one.
+	 */
+	private function withParent(array $root, array $trace): array {
 		$parent = (string)($trace['parentSpanId'] ?? '');
 		if (preg_match('/^[0-9a-f]{16}$/', $parent) === 1) {
 			$root['parentSpanId'] = $parent;
 		}
 
 		return $root;
-	}//end rootSpan()
+	}//end withParent()
+
+	/**
+	 * The root span's attributes: the entry point, the trace id and the dropped-step count.
+	 *
+	 * @param array      $trace The `execution_trace` object data.
+	 * @param TraceFrame $frame The trace's shared ids and start.
+	 *
+	 * @return array The OTLP attributes.
+	 */
+	private function rootAttributes(array $trace, TraceFrame $frame): array {
+		return $this->attributes(
+			values: [
+				'integriq.entry_point' => (string)($trace['entryPoint'] ?? 'execution'),
+				'integriq.entry_point_id' => ($trace['entryPointId'] ?? null),
+				'integriq.trace_id' => $frame->traceId,
+				'integriq.steps.dropped' => $frame->droppedSteps,
+			]
+		);
+	}//end rootAttributes()
 
 	/**
 	 * The span id a step gets: the one its outbound call carried in its
@@ -187,44 +251,106 @@ class SpanMapper implements SpanMapperInterface {
 	 */
 	private function stepSpan(array $step, TraceFrame $frame): array {
 		$type = (string)($step['type'] ?? 'step');
-		$start = $this->micros(micros: ($step['startedAtUs'] ?? null), iso: ($step['startedAt'] ?? null));
-		if ($start === 0) {
-			$start = $frame->rootStart;
-		}
-
-		$durationMs = max(0, (int)($step['durationMs'] ?? 0));
-		$status = (string)($step['status'] ?? '');
-
-		$values = [
-			'integriq.step.type' => $type,
-			'integriq.step.name' => (string)($step['name'] ?? ''),
-			'integriq.step.status' => $status,
-			'integriq.step.duration_ms' => $durationMs,
-		];
-		$kind = self::KIND_INTERNAL;
-		if ($type === 'call') {
-			$kind = self::KIND_CLIENT;
-			$values += $this->httpAttributes(input: ($step['input'] ?? []), output: ($step['output'] ?? []));
-		}
-
-		$code = self::STATUS_OK;
-		if ($status === 'error') {
-			$code = self::STATUS_ERROR;
-		}
+		$start = $this->stepStart(step: $step, frame: $frame);
 
 		return [
 			'traceId' => $frame->traceHex,
 			'spanId' => $this->stepSpanId(step: $step, traceId: $frame->traceId),
 			'parentSpanId' => $frame->rootSpanId,
 			'name' => trim($type . ' ' . (string)($step['name'] ?? '')),
-			'kind' => $kind,
+			'kind' => $this->stepKind(type: $type),
 			'startTimeUnixNano' => $this->nanos(micros: $start),
-			'endTimeUnixNano' => $this->nanos(micros: ($start + ($durationMs * 1000))),
-			'attributes' => $this->attributes(values: $values),
-			'status' => ['code' => $code],
+			'endTimeUnixNano' => $this->nanos(micros: ($start + ($this->durationMs(step: $step) * 1000))),
+			'attributes' => $this->attributes(values: $this->stepValues(step: $step)),
+			'status' => ['code' => $this->stepStatusCode(status: (string)($step['status'] ?? ''))],
 		];
 
 	}//end stepSpan()
+
+	/**
+	 * When a step started; the trace's start when the step carries no time.
+	 *
+	 * @param array      $step  The step.
+	 * @param TraceFrame $frame The trace's shared ids and start.
+	 *
+	 * @return int Microseconds since the epoch.
+	 */
+	private function stepStart(array $step, TraceFrame $frame): int {
+		$start = $this->micros(micros: ($step['startedAtUs'] ?? null), iso: ($step['startedAt'] ?? null));
+		if ($start === 0) {
+			return $frame->rootStart;
+		}
+
+		return $start;
+
+	}//end stepStart()
+
+	/**
+	 * A step's duration in milliseconds, never below zero.
+	 *
+	 * @param array $step The step.
+	 *
+	 * @return int The duration.
+	 */
+	private function durationMs(array $step): int {
+		return max(0, (int)($step['durationMs'] ?? 0));
+
+	}//end durationMs()
+
+	/**
+	 * A step's attribute values: its type, name, status and duration, and the HTTP ones for a call.
+	 *
+	 * @param array $step The step.
+	 *
+	 * @return array The values.
+	 */
+	private function stepValues(array $step): array {
+		$type = (string)($step['type'] ?? 'step');
+		$values = [
+			'integriq.step.type' => $type,
+			'integriq.step.name' => (string)($step['name'] ?? ''),
+			'integriq.step.status' => (string)($step['status'] ?? ''),
+			'integriq.step.duration_ms' => $this->durationMs(step: $step),
+		];
+		if ($type === 'call') {
+			$values += $this->httpAttributes(input: ($step['input'] ?? []), output: ($step['output'] ?? []));
+		}
+
+		return $values;
+
+	}//end stepValues()
+
+	/**
+	 * A step's span kind: client for an outbound call, else internal.
+	 *
+	 * @param string $type The step type.
+	 *
+	 * @return int The OTLP span kind.
+	 */
+	private function stepKind(string $type): int {
+		if ($type === 'call') {
+			return self::KIND_CLIENT;
+		}
+
+		return self::KIND_INTERNAL;
+
+	}//end stepKind()
+
+	/**
+	 * A step's status code: error for a failed step, else ok.
+	 *
+	 * @param string $status The step status.
+	 *
+	 * @return int The OTLP status code.
+	 */
+	private function stepStatusCode(string $status): int {
+		if ($status === 'error') {
+			return self::STATUS_ERROR;
+		}
+
+		return self::STATUS_OK;
+
+	}//end stepStatusCode()
 
 	/**
 	 * The HTTP attributes of a call step: method, status code and the URL

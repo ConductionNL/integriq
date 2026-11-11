@@ -39,15 +39,16 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Forms;
 
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\FormsNotFoundException;
 use OCA\Integriq\Exception\FormsPermissionDeniedException;
 use OCA\Integriq\Exception\FormsUpstreamException;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Helper\OcsApi;
+use OCA\Integriq\Service\Helper\OcsApiDispatcher;
+use OCA\Integriq\Service\Helper\OcsPayload;
+use OCA\Integriq\Service\Helper\OcsRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
-use Twig\Error\LoaderError;
-use Twig\Error\SyntaxError;
 
 /**
  * Speaks the Forms `index.php/apps/forms/api/v3/*` REST dialect over `CallService`.
@@ -95,7 +96,7 @@ class FormsOcsClient implements FormsClientInterface {
 	public function getForm(ObjectEntity $source, int $formId): array {
 		$body = $this->dispatch(source: $source, endpoint: self::BASE_PATH . "/forms/{$formId}", method: 'GET');
 
-		return $this->normaliseForm(form: $this->asArray(value: $body));
+		return $this->normaliseForm(form: OcsPayload::asArray(value: $body));
 	}//end getForm()
 
 	/**
@@ -121,7 +122,7 @@ class FormsOcsClient implements FormsClientInterface {
 			method: 'GET'
 		);
 
-		return $this->normaliseSubmission(submission: $this->asArray(value: $body), fallbackFormId: $formId);
+		return $this->normaliseSubmission(submission: OcsPayload::asArray(value: $body), fallbackFormId: $formId);
 	}//end getSubmission()
 
 	/**
@@ -155,13 +156,13 @@ class FormsOcsClient implements FormsClientInterface {
 			]
 		);
 
-		$submissionsPayload = $this->asArray(value: $body);
+		$submissionsPayload = OcsPayload::asArray(value: $body);
 		// The Forms `FormsSubmissions` response shape wraps the list under a
 		// `submissions` key alongside form metadata; tolerate a bare list too.
 		$rawSubmissions = $submissionsPayload['submissions'] ?? $submissionsPayload;
 
 		$submissions = [];
-		foreach ($this->asArray(value: $rawSubmissions) as $submission) {
+		foreach (OcsPayload::asArray(value: $rawSubmissions) as $submission) {
 			if (is_array($submission) === false) {
 				continue;
 			}
@@ -187,7 +188,7 @@ class FormsOcsClient implements FormsClientInterface {
 		$body = $this->dispatch(source: $source, endpoint: self::BASE_PATH . '/forms', method: 'GET');
 
 		$forms = [];
-		foreach ($this->asArray(value: $body) as $form) {
+		foreach (OcsPayload::asArray(value: $body) as $form) {
 			if (is_array($form) === false) {
 				continue;
 			}
@@ -216,65 +217,16 @@ class FormsOcsClient implements FormsClientInterface {
 	 * @throws FormsUpstreamException On transport failure or another non-2xx status.
 	 */
 	private function dispatch(ObjectEntity $source, string $endpoint, string $method, array $config = []): ?array {
-		try {
-			$callLog = $this->callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
-		} catch (GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception $exception) {
-			$this->logger->warning(
-				'FormsOcsClient: transport failure calling Forms API',
-				['endpoint' => $endpoint, 'method' => $method, 'error' => $exception->getMessage()]
-			);
-			throw new FormsUpstreamException(
-				message: "Failed to reach the Forms API ({$method} {$endpoint}): " . $exception->getMessage()
-			);
-		}
+		$formsApi = new OcsApi(
+			label: 'Forms',
+			permissionDenied: FormsPermissionDeniedException::class,
+			notFound: FormsNotFoundException::class,
+			upstream: FormsUpstreamException::class
+		);
+		$request = new OcsRequest(api: $formsApi, source: $source, endpoint: $endpoint, method: $method, config: $config);
 
-		$callLogBody = $callLog->getObject();
-		$statusCode = (int)($callLogBody['response']['statusCode'] ?? 0);
-		$rawBody = (string)($callLogBody['response']['body'] ?? '');
-
-		if ($statusCode === 401 || $statusCode === 403) {
-			throw new FormsPermissionDeniedException(
-				message: "Forms API denied {$method} {$endpoint} (HTTP {$statusCode})",
-				statusCode: $statusCode
-			);
-		}
-
-		if ($statusCode === 404) {
-			throw new FormsNotFoundException(message: "Forms API resource not found: {$method} {$endpoint}");
-		}
-
-		if ($statusCode < 200 || $statusCode >= 300) {
-			throw new FormsUpstreamException(
-				message: "Forms API returned HTTP {$statusCode} for {$method} {$endpoint} (see CallLog {$callLog->getUuid()})"
-			);
-		}
-
-		if ($rawBody === '') {
-			return null;
-		}
-
-		$decoded = json_decode($rawBody, true);
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return null;
+		return (new OcsApiDispatcher(callService: $this->callService, logger: $this->logger))->dispatch(request: $request);
 	}//end dispatch()
-
-	/**
-	 * Coerce a value to an array, treating any non-array as empty.
-	 *
-	 * @param mixed $value The value to coerce.
-	 *
-	 * @return array
-	 */
-	private function asArray(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return [];
-	}//end asArray()
 
 	/**
 	 * Normalise a raw Forms `Form` payload (incl. questions) into the contract shape.
@@ -286,7 +238,7 @@ class FormsOcsClient implements FormsClientInterface {
 	 */
 	private function normaliseForm(array $form): array {
 		$questions = [];
-		foreach ($this->asArray(value: ($form['questions'] ?? null)) as $question) {
+		foreach (OcsPayload::asArray(value: ($form['questions'] ?? null)) as $question) {
 			if (is_array($question) === false) {
 				continue;
 			}
@@ -325,7 +277,7 @@ class FormsOcsClient implements FormsClientInterface {
 	 */
 	private function normaliseSubmission(array $submission, int $fallbackFormId): array {
 		$answers = [];
-		foreach ($this->asArray(value: ($submission['answers'] ?? null)) as $answer) {
+		foreach (OcsPayload::asArray(value: ($submission['answers'] ?? null)) as $answer) {
 			if (is_array($answer) === false) {
 				continue;
 			}

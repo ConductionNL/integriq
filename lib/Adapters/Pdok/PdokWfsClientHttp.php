@@ -149,9 +149,31 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 			'count' => max(1, $count),
 			'srsName' => $srsName,
 		];
+		$query += $this->bboxParameter(bbox: $bbox, srsName: $srsName);
+		if ($filterFields !== []) {
+			$query['filter'] = $this->buildOgcFilter(filterFields: $filterFields);
+		}
 
-		if ($bbox !== null && count($bbox) === 4) {
-			$query['bbox'] = implode(
+		$body = $this->requestRaw(dataset: $dataset, query: $query, expectedAccept: 'application/json');
+
+		return $this->featureCollection(body: $body, logContext: ['dataset' => $dataset, 'featureType' => $featureType]);
+	}//end getFeature()
+
+	/**
+	 * The `bbox` parameter for four coordinates, suffixed with the CRS; none otherwise.
+	 *
+	 * @param array|null $bbox    Bounding box (minx,miny,maxx,maxy), or null.
+	 * @param string     $srsName The CRS.
+	 *
+	 * @return array<string,string>
+	 */
+	private function bboxParameter(?array $bbox, string $srsName): array {
+		if ($bbox === null || count($bbox) !== 4) {
+			return [];
+		}
+
+		return [
+			'bbox' => implode(
 				',',
 				[
 					(string)(float)$bbox[0],
@@ -160,39 +182,38 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 					(string)(float)$bbox[3],
 					$srsName,
 				]
-			);
-		}
+			),
+		];
+	}//end bboxParameter()
 
-		if ($filterFields !== []) {
-			$query['filter'] = $this->buildOgcFilter(filterFields: $filterFields);
-		}
-
-		$body = $this->requestRaw(dataset: $dataset, query: $query, expectedAccept: 'application/json');
+	/**
+	 * The decoded GeoJSON FeatureCollection, or an empty one marked unanswered.
+	 *
+	 * `unanswered` tells a caller that decides on the answer that this
+	 * empty collection is a failure, not "nothing matched".
+	 *
+	 * @param string              $body       The raw response body.
+	 * @param array<string,mixed> $logContext The dataset and feature type, for the decode warning.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function featureCollection(string $body, array $logContext): array {
 		$decoded = json_decode($body, true);
-
-		if (is_array($decoded) === false) {
-			$this->logger->warning(
-				'pdok-wfs.http.decode',
-				[
-					'dataset' => $dataset,
-					'featureType' => $featureType,
-					'bodySize' => strlen($body),
-				]
-			);
-			// `unanswered` tells a caller that decides on the answer that this
-			// empty collection is a failure, not "nothing matched".
-			return [
-				'type' => 'FeatureCollection',
-				'features' => [],
-				'totalFeatures' => 0,
-				'numberMatched' => 0,
-				'numberReturned' => 0,
-				'unanswered' => true,
-			];
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
-		return $decoded;
-	}//end getFeature()
+		$this->logger->warning('pdok-wfs.http.decode', $logContext + ['bodySize' => strlen($body)]);
+
+		return [
+			'type' => 'FeatureCollection',
+			'features' => [],
+			'totalFeatures' => 0,
+			'numberMatched' => 0,
+			'numberReturned' => 0,
+			'unanswered' => true,
+		];
+	}//end featureCollection()
 
 	/**
 	 * Flavour identifier.

@@ -130,36 +130,44 @@ class FlowToken {
 	 * @spec openspec/specs/flow-token-helper/spec.md
 	 */
 	private function getHeaders(array $server, bool $proxyHeaders = false): array {
-		$headers = array_filter(
-			array: $server,
-			callback: function (string $key) use ($proxyHeaders) {
-				if (str_starts_with($key, 'HTTP_') === false) {
-					return false;
-				} elseif ($proxyHeaders === false
-					&& (str_starts_with(haystack: $key, needle: 'HTTP_X_FORWARDED') === true
-					|| $key === 'HTTP_X_REAL_IP' || $key === 'HTTP_X_ORIGINAL_URI')
-				) {
-					return false;
-				}
+		$headers = [];
+		foreach ($server as $key => $value) {
+			if ($this->isKeptHeader(key: (string)$key, proxyHeaders: $proxyHeaders) === true) {
+				$headers[strtolower(string: substr(string: (string)$key, offset: 5))] = $value;
+			}
+		}
 
-				return true;
-			},
-			mode: ARRAY_FILTER_USE_KEY
-		);
-
-		$keys = array_keys($headers);
-
-		return array_combine(
-			array_map(
-				callback: function ($key) {
-					return strtolower(string: substr(string: $key, offset: 5));
-				},
-				array: $keys
-			),
-			$headers
-		);
+		return $headers;
 
 	}//end getHeaders()
+
+	/**
+	 * Whether a server key is a request header the token keeps.
+	 *
+	 * Only `HTTP_*` keys are headers. Without proxy headers, the forwarding
+	 * headers a proxy adds (`X-Forwarded-*`, `X-Real-IP`, `X-Original-URI`)
+	 * are dropped.
+	 *
+	 * @param string $key          The server key.
+	 * @param bool   $proxyHeaders Whether proxy headers are kept.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/flow-token-helper/spec.md
+	 */
+	private function isKeptHeader(string $key, bool $proxyHeaders): bool {
+		if (str_starts_with($key, 'HTTP_') === false) {
+			return false;
+		}
+
+		if ($proxyHeaders === true) {
+			return true;
+		}
+
+		return str_starts_with(haystack: $key, needle: 'HTTP_X_FORWARDED') === false
+			&& in_array($key, ['HTTP_X_REAL_IP', 'HTTP_X_ORIGINAL_URI'], true) === false;
+
+	}//end isKeptHeader()
 
 	/**
 	 * Gets the raw content for a http request from the input stream.

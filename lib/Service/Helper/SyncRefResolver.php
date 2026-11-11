@@ -43,6 +43,17 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/openconnector-direct-or-usage/spec.md
  */
 final class SyncRefResolver {
+
+	/**
+	 * The reference formats kept as they are, by variant, checked in order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FORMATS = [
+		'register-schema' => '/^[\w-]+\/[\w-]+$/',
+		'uuid' => '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+	];
+
 	/**
 	 * Constructor.
 	 *
@@ -75,20 +86,13 @@ final class SyncRefResolver {
 			return ['value' => ($uuid ?? $value), 'variant' => 'integer-pk'];
 		}
 
-		if (preg_match('/^[\w-]+\/[\w-]+$/', $value) === 1) {
-			return ['value' => $value, 'variant' => 'register-schema'];
+		foreach (self::FORMATS as $variant => $pattern) {
+			if (preg_match($pattern, $value) === 1) {
+				return ['value' => $value, 'variant' => $variant];
+			}
 		}
 
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return ['value' => $value, 'variant' => 'uuid'];
-		}
-
-		$this->logger->warning(
-			sprintf(
-				'SyncRefResolver: value "%s" matches no known format — preserved as-is, marked unrecognised',
-				$value
-			)
-		);
+		$this->logger->warning(sprintf('SyncRefResolver: value "%s" matches no known format — preserved as-is, marked unrecognised', $value));
 
 		return ['value' => $value, 'variant' => 'unrecognised'];
 	}//end resolve()
@@ -104,34 +108,7 @@ final class SyncRefResolver {
 	 * @return string|null The resolved source uuid, or null when unresolved.
 	 */
 	private function lookupSourceUuidByInt(int $legacyId): ?string {
-		try {
-			// OpenRegister's ObjectService::findAll takes a single config array
-			// (register/schema/id live inside `filters`), NOT positional
-			// register/schema arguments. See OR ObjectService::findAll().
-			$result = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => 'integriq',
-						'schema' => 'source',
-						'id' => $legacyId,
-					],
-				]
-			);
-
-			// FindAll() returns either a `['results' => [...]]` envelope or a
-			// bare list depending on the render config; normalise to a list.
-			$objects = ($result['results'] ?? $result);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf(
-					'SyncRefResolver: lookup of source legacyId=%d raised %s — treating as unresolved',
-					$legacyId,
-					$e::class
-				)
-			);
-			return null;
-		}//end try
-
+		$objects = $this->sourceRows(legacyId: $legacyId);
 		if (is_array($objects) === false || count($objects) === 0) {
 			return null;
 		}
@@ -140,33 +117,69 @@ final class SyncRefResolver {
 	}//end lookupSourceUuidByInt()
 
 	/**
-	 * Extract a non-empty uuid from an OpenRegister result row.
+	 * The source rows with this legacy integer id, or null when the read fails.
 	 *
-	 * The row may be an object exposing getUuid() or a bare array carrying a
-	 * `uuid` key, depending on the OpenRegister render config.
+	 * @param int $legacyId The legacy integer primary key.
 	 *
-	 * @param mixed $row A single OpenRegister findAll() result row.
+	 * @return mixed The rows (any shape the read answers).
 	 *
-	 * @return string|null The non-empty uuid, or null when absent/empty.
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 */
+	private function sourceRows(int $legacyId): mixed {
+		try {
+			// OpenRegister's ObjectService::findAll takes a single config array
+			// (register/schema/id live inside `filters`), NOT positional
+			// register/schema arguments. See OR ObjectService::findAll().
+			$result = $this->objectService->findAll(
+				config: ['filters' => ['register' => 'integriq', 'schema' => 'source', 'id' => $legacyId]]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('SyncRefResolver: lookup of source legacyId=%d raised %s — treating as unresolved', $legacyId, $e::class)
+			);
+			return null;
+		}
+
+		// FindAll() returns either a `['results' => [...]]` envelope or a
+		// bare list depending on the render config; normalise to a list.
+		return ($result['results'] ?? $result);
+	}//end sourceRows()
+
+	/**
+	 * The uuid of an entity or of an array row; null when it has none or an empty one.
+	 *
+	 * @param mixed $row An entity or a row.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
 	 */
 	private function extractUuid(mixed $row): ?string {
 		if (is_object($row) === true && method_exists($row, 'getUuid') === true) {
-			$uuid = (string)$row->getUuid();
-			if ($uuid === '') {
-				return null;
-			}
-
-			return $uuid;
+			return self::nonEmpty(value: (string)$row->getUuid());
 		}
 
-		if (is_array($row) === true && isset($row['uuid']) === true && is_string($row['uuid']) === true) {
-			if ($row['uuid'] === '') {
-				return null;
-			}
-
-			return $row['uuid'];
+		if (is_array($row) === true && is_string($row['uuid'] ?? null) === true) {
+			return self::nonEmpty(value: $row['uuid']);
 		}
 
 		return null;
 	}//end extractUuid()
+
+	/**
+	 * A string, or null when it is empty.
+	 *
+	 * @param string $value The value.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 */
+	private static function nonEmpty(string $value): ?string {
+		if ($value === '') {
+			return null;
+		}
+
+		return $value;
+	}//end nonEmpty()
 }//end class

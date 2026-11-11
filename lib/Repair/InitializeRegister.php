@@ -90,100 +90,237 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 	public function run(IOutput $output): void {
 		$output->info('Integriq: initializing register + schemas via OR ConfigurationService…');
 
-		if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
-			$output->warning('Integriq: OpenRegister is not installed or enabled. Skipping register initialization.');
-			$this->logger->warning(
-				'Integriq: OpenRegister not available, skipping register initialization'
-			);
+		$configurationService = $this->resolveConfigurationService(output: $output);
+		if ($configurationService === null) {
 			return;
 		}
 
+		$run = new RegisterImportRun(output: $output);
+		if ($this->loadDescriptor(run: $run) === false) {
+			return;
+		}
+
+		$run->version = $this->appConfig->getValueString('integriq', 'installed_version', '1.0.0');
+
+		$this->mergeFragments(run: $run);
+		$this->tagVersionWithFragments(run: $run);
+		$this->importDescriptor(configurationService: $configurationService, run: $run);
+
+	}//end run()
+
+	/**
+	 * Resolve OpenRegister's ConfigurationService, warning when it is unavailable.
+	 *
+	 * @param IOutput $output Progress/info channel.
+	 *
+	 * @return object|null The service, or null when the import must be skipped.
+	 */
+	private function resolveConfigurationService(IOutput $output): ?object {
+		if ($this->isOpenRegisterAvailable(output: $output) === false) {
+			return null;
+		}
+
 		try {
-			$configurationService = $this->container->get('OCA\\OpenRegister\\Service\\ConfigurationService');
+			return $this->container->get('OCA\\OpenRegister\\Service\\ConfigurationService');
 		} catch (\Throwable $e) {
 			$output->warning('Integriq: could not resolve OR ConfigurationService: ' . $e->getMessage());
 			$this->logger->error(
 				'Integriq: ConfigurationService resolution failed',
 				['exception' => $e->getMessage()]
 			);
-			return;
+			return null;
 		}
 
+	}//end resolveConfigurationService()
+
+	/**
+	 * Whether OpenRegister's ConfigurationService class is loadable; warns when not.
+	 *
+	 * @param IOutput $output Progress/info channel.
+	 *
+	 * @return bool
+	 */
+	private function isOpenRegisterAvailable(IOutput $output): bool {
+		if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === true) {
+			return true;
+		}
+
+		$output->warning('Integriq: OpenRegister is not installed or enabled. Skipping register initialization.');
+		$this->logger->warning(
+			'Integriq: OpenRegister not available, skipping register initialization'
+		);
+		return false;
+
+	}//end isOpenRegisterAvailable()
+
+	/**
+	 * Read and decode the register descriptor into the run.
+	 *
+	 * @param RegisterImportRun $run The import run.
+	 *
+	 * @return bool False when the descriptor is missing or malformed.
+	 */
+	private function loadDescriptor(RegisterImportRun $run): bool {
 		$descriptorPath = __DIR__ . '/../Settings/integriq_register.json';
 		if (file_exists($descriptorPath) === false) {
-			$output->warning('Integriq: register descriptor missing at ' . $descriptorPath . ' — nothing to import');
-			return;
+			$run->output->warning('Integriq: register descriptor missing at ' . $descriptorPath . ' — nothing to import');
+			return false;
 		}
 
+		return $this->decodeDescriptor(run: $run, descriptorPath: $descriptorPath);
+
+	}//end loadDescriptor()
+
+	/**
+	 * Decode the register descriptor file into the run.
+	 *
+	 * @param RegisterImportRun $run            The import run.
+	 * @param string            $descriptorPath Absolute path of the descriptor.
+	 *
+	 * @return bool False when the JSON does not parse.
+	 */
+	private function decodeDescriptor(RegisterImportRun $run, string $descriptorPath): bool {
 		try {
-			$descriptor = json_decode((string)file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
+			$run->descriptor = json_decode((string)file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
 		} catch (\Throwable $e) {
-			$output->warning('Integriq: register descriptor JSON parse failed: ' . $e->getMessage());
+			$run->output->warning('Integriq: register descriptor JSON parse failed: ' . $e->getMessage());
 			$this->logger->error(
 				'Integriq: descriptor JSON parse failed',
 				['exception' => $e->getMessage()]
 			);
+			return false;
+		}
+
+		return true;
+
+	}//end decodeDescriptor()
+
+	/**
+	 * Merge every modular register fragment from Settings/register.d/*.json (ADR-037).
+	 *
+	 * Each OpenSpec change drops its own fragment file instead of editing the
+	 * monolith, so concurrent builds touch disjoint files (no merge conflicts).
+	 * OpenAPI `components.schemas` / `paths` are keyed objects, so disjoint
+	 * fragments union cleanly by key.
+	 *
+	 * @param RegisterImportRun $run The import run.
+	 *
+	 * @return void
+	 */
+	private function mergeFragments(RegisterImportRun $run): void {
+		$fragmentDir = __DIR__ . '/../Settings/register.d';
+		if (is_dir($fragmentDir) === false) {
 			return;
 		}
 
-		$appVersion = $this->appConfig->getValueString('integriq', 'installed_version', '1.0.0');
-
-		// ADR-037: merge modular register fragments from Settings/register.d/*.json.
-		// Each OpenSpec change drops its own fragment file instead of editing this
-		// monolith, so concurrent builds touch disjoint files (no merge conflicts).
-		// OpenAPI `components.schemas` / `paths` are keyed objects, so disjoint
-		// fragments union cleanly by key.
-		$fragmentDir = __DIR__ . '/../Settings/register.d';
-		$fragmentSig = '';
-		if (is_dir($fragmentDir) === true) {
-			$fragmentFiles = glob($fragmentDir . '/*.json');
-			sort($fragmentFiles);
-			foreach ($fragmentFiles as $fragmentFile) {
-				$fragmentContent = file_get_contents($fragmentFile);
-				if ($fragmentContent === false) {
-					continue;
-				}
-
-				$fragmentData = json_decode($fragmentContent, true);
-				if (json_last_error() !== JSON_ERROR_NONE) {
-					$output->warning(
-						'Integriq: skipping malformed register fragment ' . basename($fragmentFile)
-						. ': ' . json_last_error_msg()
-					);
-					$this->logger->warning(
-						'Integriq: skipping malformed register fragment ' . basename($fragmentFile)
-						. ': ' . json_last_error_msg()
-					);
-					continue;
-				}
-
-				$descriptor = self::deepMergeConfig(base: $descriptor, overlay: $fragmentData);
-				$fragmentSig .= basename($fragmentFile) . ':' . md5($fragmentContent) . ';';
-			}//end foreach
-		}//end if
-
-		// Fold the fragment signature into the version so OpenRegister's
-		// version-gated importFromApp re-imports whenever fragments change.
-		if ($fragmentSig !== '') {
-			$appVersion .= '+frag.' . substr(md5($fragmentSig), 0, 8);
+		$fragmentFiles = glob($fragmentDir . '/*.json');
+		sort($fragmentFiles);
+		foreach ($fragmentFiles as $fragmentFile) {
+			$this->mergeFragment(run: $run, fragmentFile: $fragmentFile);
 		}
 
+	}//end mergeFragments()
+
+	/**
+	 * Merge one fragment file into the run's descriptor and signature.
+	 *
+	 * @param RegisterImportRun $run          The import run.
+	 * @param string            $fragmentFile Absolute path of the fragment.
+	 *
+	 * @return void
+	 */
+	private function mergeFragment(RegisterImportRun $run, string $fragmentFile): void {
+		$fragmentContent = file_get_contents($fragmentFile);
+		if ($fragmentContent === false) {
+			return;
+		}
+
+		$fragmentData = json_decode($fragmentContent, true);
+		if ($this->isMalformedFragment(output: $run->output, fragmentFile: $fragmentFile) === true) {
+			return;
+		}
+
+		$run->descriptor         = self::deepMergeConfig(base: $run->descriptor, overlay: $fragmentData);
+		$run->fragmentSignature .= basename($fragmentFile) . ':' . md5($fragmentContent) . ';';
+
+	}//end mergeFragment()
+
+	/**
+	 * Whether the last json_decode() failed; warns and logs the skipped fragment when so.
+	 *
+	 * @param IOutput $output       Progress/info channel.
+	 * @param string  $fragmentFile Absolute path of the fragment just decoded.
+	 *
+	 * @return bool
+	 */
+	private function isMalformedFragment(IOutput $output, string $fragmentFile): bool {
+		if (json_last_error() === JSON_ERROR_NONE) {
+			return false;
+		}
+
+		$message = 'Integriq: skipping malformed register fragment ' . basename($fragmentFile)
+			. ': ' . json_last_error_msg();
+		$output->warning($message);
+		$this->logger->warning($message);
+		return true;
+
+	}//end isMalformedFragment()
+
+	/**
+	 * Fold the fragment signature into the version.
+	 *
+	 * OpenRegister's version-gated importFromApp then re-imports whenever
+	 * fragments change.
+	 *
+	 * @param RegisterImportRun $run The import run.
+	 *
+	 * @return void
+	 */
+	private function tagVersionWithFragments(RegisterImportRun $run): void {
+		if ($run->fragmentSignature !== '') {
+			$run->version .= '+frag.' . substr(md5($run->fragmentSignature), 0, 8);
+		}
+
+	}//end tagVersionWithFragments()
+
+	/**
+	 * Hand the merged descriptor to OpenRegister, warning when the import fails.
+	 *
+	 * @param object            $configurationService OpenRegister's ConfigurationService.
+	 * @param RegisterImportRun $run                  The import run.
+	 *
+	 * @return void
+	 */
+	private function importDescriptor(object $configurationService, RegisterImportRun $run): void {
 		try {
-			$configurationService->importFromApp(
-				appId: AppIdentity::APP_ID,
-				data: $descriptor,
-				version: $appVersion
-			);
-			$output->info('Integriq: register descriptor imported (existing schemas reused).');
+			$this->callImportFromApp(configurationService: $configurationService, run: $run);
 		} catch (\Throwable $e) {
-			$output->warning('Integriq: register import failed: ' . $e->getMessage());
+			$run->output->warning('Integriq: register import failed: ' . $e->getMessage());
 			$this->logger->error(
 				'Integriq: importFromApp failed',
 				['exception' => $e->getMessage()]
 			);
 		}
 
-	}//end run()
+	}//end importDescriptor()
+
+	/**
+	 * Call importFromApp with the run's descriptor and version, then report success.
+	 *
+	 * @param object            $configurationService OpenRegister's ConfigurationService.
+	 * @param RegisterImportRun $run                  The import run.
+	 *
+	 * @return void
+	 */
+	private function callImportFromApp(object $configurationService, RegisterImportRun $run): void {
+		$configurationService->importFromApp(
+			appId: AppIdentity::APP_ID,
+			data: $run->descriptor,
+			version: $run->version
+		);
+		$run->output->info('Integriq: register descriptor imported (existing schemas reused).');
+
+	}//end callImportFromApp()
 
 	/**
 	 * Deep-merge a register fragment onto the base config (ADR-037).
@@ -199,22 +336,43 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 	 */
 	private static function deepMergeConfig(array $base, array $overlay): array {
 		foreach ($overlay as $key => $value) {
-			if (is_array($value) === true
-				&& isset($base[$key]) === true
-				&& is_array($base[$key]) === true
-			) {
-				$baseIsList = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
-				$overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
-				if ($baseIsList === true && $overlayIsList === true) {
-					$base[$key] = array_merge($base[$key], $value);
-				} else {
-					$base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
-				}
-			} else {
-				$base[$key] = $value;
-			}
+			$base[$key] = self::mergeConfigValue(base: ($base[$key] ?? null), overlay: $value);
 		}
 
 		return $base;
 	}//end deepMergeConfig()
+
+	/**
+	 * Merge one fragment value onto the base value at the same key.
+	 *
+	 * Two lists concatenate, two other arrays merge recursively, anything else
+	 * takes the fragment's value.
+	 *
+	 * @param mixed $base    The accumulated value, null when the key is absent.
+	 * @param mixed $overlay The fragment's value.
+	 *
+	 * @return mixed The merged value.
+	 */
+	private static function mergeConfigValue(mixed $base, mixed $overlay): mixed {
+		if (is_array($overlay) === false || is_array($base) === false) {
+			return $overlay;
+		}
+
+		if (self::isList(value: $base) === true && self::isList(value: $overlay) === true) {
+			return array_merge($base, $overlay);
+		}
+
+		return self::deepMergeConfig(base: $base, overlay: $overlay);
+	}//end mergeConfigValue()
+
+	/**
+	 * Whether an array is a list (empty, or keyed 0..n-1 in order).
+	 *
+	 * @param array<mixed> $value The array to inspect.
+	 *
+	 * @return bool
+	 */
+	private static function isList(array $value): bool {
+		return ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
+	}//end isList()
 }//end class

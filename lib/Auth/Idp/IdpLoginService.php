@@ -112,17 +112,17 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-a-login-starts-at-integriq-with-a-signed-single-use-state-req-idp-001
 	 */
 	public function start(string $provider, array $params): string {
-		$organisation = strtolower(trim((string)($params['organisation'] ?? '')));
-		$consumerId = trim((string)($params['consumer'] ?? ''));
-		$trust = strtolower(trim((string)($params['trust'] ?? '')));
-		$returnUrl = (string)($params['returnUrl'] ?? '');
-		$relayState = (string)($params['relayState'] ?? '');
+		$login = new IdpLoginStart(provider: $provider, organisation: strtolower(trim((string)($params['organisation'] ?? ''))));
+		$login->consumer = trim((string)($params['consumer'] ?? ''));
+		$login->trust = strtolower(trim((string)($params['trust'] ?? '')));
+		$login->returnUrl = (string)($params['returnUrl'] ?? '');
+		$login->relayState = (string)($params['relayState'] ?? '');
 
 		$adapter = $this->adapters->forProvider(provider: $provider);
 		$this->assertBrokerUsable();
 
-		$consumer = $this->startableConsumer(consumerId: $consumerId, returnUrl: $returnUrl);
-		$this->assertStartParameters(organisation: $organisation, trust: $trust, relayState: $relayState);
+		$login->consumer = $this->startableConsumer(consumerId: $login->consumer, returnUrl: $login->returnUrl)->getId();
+		$this->assertStartParameters(login: $login);
 
 		if ($adapter->isConfigured() === false) {
 			throw new IdpAssertionException(
@@ -130,13 +130,31 @@ class IdpLoginService implements IdpLoginServiceInterface {
 			);
 		}
 
-		$nonce = $this->states->newNonce();
+		$login->nonce = $this->states->newNonce();
+		[$requestId, $redirectUrl] = $this->beginAt(adapter: $adapter, login: $login);
+		$this->storeState(login: $login, requestId: $requestId);
+
+		return $redirectUrl;
+
+	}//end start()
+
+	/**
+	 * Send the login to the identity provider adapter and read what to follow.
+	 *
+	 * @param GovernmentIdpAdapterInterface $adapter The provider's adapter.
+	 * @param IdpLoginStart                 $login   The login being started.
+	 *
+	 * @return array{0: string, 1: string} The request id and the identity provider's address.
+	 *
+	 * @throws IdpAssertionException When the adapter gave no request to follow.
+	 */
+	private function beginAt(GovernmentIdpAdapterInterface $adapter, IdpLoginStart $login): array {
 		$begun = $adapter->beginAuthentication(
 			[
-				'organisation' => $organisation,
-				'consumer' => $consumer->getId(),
-				'trust' => $trust,
-				'relayState' => $nonce,
+				'organisation' => $login->organisation,
+				'consumer' => $login->consumer,
+				'trust' => $login->trust,
+				'relayState' => $login->nonce,
 			]
 		);
 
@@ -146,23 +164,34 @@ class IdpLoginService implements IdpLoginServiceInterface {
 			throw new IdpAssertionException(message: 'The identity provider adapter gave no request to follow.');
 		}
 
+		return [$requestId, $redirectUrl];
+
+	}//end beginAt()
+
+	/**
+	 * Store the signed, single-use state the callback will consume.
+	 *
+	 * @param IdpLoginStart $login     The login being started.
+	 * @param string        $requestId The request the identity provider will answer.
+	 *
+	 * @return void
+	 */
+	private function storeState(IdpLoginStart $login, string $requestId): void {
 		$this->states->store(
 			requestId: $requestId,
 			state: [
-				'nonce' => $nonce,
-				'organisation' => $organisation,
-				'consumer' => $consumer->getId(),
-				'provider' => $provider,
-				'trust' => $trust,
-				'returnUrl' => $returnUrl,
-				'relayState' => $relayState,
+				'nonce' => $login->nonce,
+				'organisation' => $login->organisation,
+				'consumer' => $login->consumer,
+				'provider' => $login->provider,
+				'trust' => $login->trust,
+				'returnUrl' => $login->returnUrl,
+				'relayState' => $login->relayState,
 			],
 			signingKey: $this->config->signingKey()
 		);
 
-		return $redirectUrl;
-
-	}//end start()
+	}//end storeState()
 
 	/**
 	 * Finish a login and answer where to send the browser.
@@ -191,8 +220,13 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		// asked, so it finds no state.
 		$state = $this->states->consume(requestId: $requestId, signingKey: $this->config->signingKey(), now: $now);
 
+		$login = new IdpLoginCallback(provider: $provider, assertion: $assertion);
+		$login->requestId = $requestId;
+		$login->state = $state;
+		$login->now = $now;
+
 		try {
-			$code = $this->finish(provider: $provider, assertion: $assertion, requestId: $requestId, state: $state, now: $now);
+			$code = $this->finish(login: $login);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
@@ -212,81 +246,133 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	/**
 	 * Run the guards, mint the envelope and issue the code.
 	 *
-	 * @param string $provider The provider id from the route.
-	 * @param array<string,mixed> $assertion The normalised assertion.
-	 * @param string $requestId The request the assertion answers.
-	 * @param array<string,string> $state The consumed state.
-	 * @param integer|null $now The clock.
+	 * @param IdpLoginCallback $login The login being finished.
 	 *
 	 * @return string The one-time code.
 	 *
 	 * @throws IdpAssertionException On any failure.
 	 */
-	private function finish(string $provider, array $assertion, string $requestId, array $state, ?int $now): string {
-		if ($state['provider'] !== $provider) {
+	private function finish(IdpLoginCallback $login): string {
+		if ($login->state['provider'] !== $login->provider) {
 			throw new IdpAssertionException(message: 'The response came back on another provider than it started on.');
 		}
 
-		// The consumer is read again: an administrator who disabled it, or
-		// removed the address, between start and callback is obeyed.
-		$consumer = $this->config->consumer(consumer: $state['consumer']);
-		if ($consumer === null || $consumer->mayReturnTo(returnUrl: $state['returnUrl']) === false) {
-			throw new IdpAssertionException(message: 'The consumer was disabled or its return address removed during the login.');
-		}
+		$consumer = $this->returningConsumer(login: $login);
 
 		$this->assertionGuard->assertAcceptable(
-			assertion: $assertion,
-			outstandingRequestId: $requestId,
-			expectedAudience: $this->config->entityId(provider: $provider),
-			now: $now
+			assertion: $login->assertion,
+			outstandingRequestId: $login->requestId,
+			expectedAudience: $this->config->entityId(provider: $login->provider),
+			now: $login->now
 		);
 
-		$assertedOrganisation = strtolower(trim((string)($assertion['organisation'] ?? '')));
-		if ($assertedOrganisation !== '' && $assertedOrganisation !== $state['organisation']) {
-			throw new IdpAssertionException(message: 'The assertion names another organisation than the login started for.');
-		}
+		$this->assertSameOrganisation(login: $login);
+		$login->trust = $this->sufficientTrust(login: $login);
 
-		$trust = $this->trustMapper->map(
-			provider: $provider,
-			level: (string)($assertion['assuranceLevel'] ?? ''),
-			aliases: $this->config->trustAliases(provider: $provider)
-		);
-		if ($this->trustMapper->satisfies(have: $trust, need: $state['trust']) === false) {
-			throw new IdpAssertionException(message: 'The assurance level is below the trust the login asked for.');
-		}
-
-		[$subject, $subType] = $this->subjectOf(provider: $provider, assertion: $assertion, organisation: $state['organisation']);
-
-		$envelope = new SubjectEnvelope(
-			subject: $subject,
-			subType: $subType,
-			provider: $provider,
-			audience: $consumer->getId(),
-			organisation: $state['organisation'],
-			trust: $trust,
-			branch: $this->branchOf(provider: $provider, assertion: $assertion)
-		);
-
-		return $this->exchange->issueCode(envelope: $envelope);
+		return $this->exchange->issueCode(envelope: $this->envelopeFor(login: $login, consumer: $consumer));
 
 	}//end finish()
 
 	/**
+	 * The consumer, read again: an administrator who disabled it, or removed
+	 * the address, between start and callback is obeyed.
+	 *
+	 * @param IdpLoginCallback $login The login being finished.
+	 *
+	 * @return IdpConsumer The consumer.
+	 *
+	 * @throws IdpAssertionException When the consumer was disabled or its return address removed.
+	 */
+	private function returningConsumer(IdpLoginCallback $login): IdpConsumer {
+		$consumer = $this->config->consumer(consumer: $login->state['consumer']);
+		if ($consumer === null || $consumer->mayReturnTo(returnUrl: $login->state['returnUrl']) === false) {
+			throw new IdpAssertionException(message: 'The consumer was disabled or its return address removed during the login.');
+		}
+
+		return $consumer;
+
+	}//end returningConsumer()
+
+	/**
+	 * Refuse an assertion that names another organisation than the login started for.
+	 *
+	 * @param IdpLoginCallback $login The login being finished.
+	 *
+	 * @return void
+	 *
+	 * @throws IdpAssertionException When the organisations differ.
+	 */
+	private function assertSameOrganisation(IdpLoginCallback $login): void {
+		$assertedOrganisation = strtolower(trim((string)($login->assertion['organisation'] ?? '')));
+		if ($assertedOrganisation !== '' && $assertedOrganisation !== $login->state['organisation']) {
+			throw new IdpAssertionException(message: 'The assertion names another organisation than the login started for.');
+		}
+
+	}//end assertSameOrganisation()
+
+	/**
+	 * The trust the assertion carries, when it meets the trust the login asked for.
+	 *
+	 * @param IdpLoginCallback $login The login being finished.
+	 *
+	 * @return string The mapped trust.
+	 *
+	 * @throws IdpAssertionException When the assurance level is below the trust asked for.
+	 */
+	private function sufficientTrust(IdpLoginCallback $login): string {
+		$trust = $this->trustMapper->map(
+			provider: $login->provider,
+			level: (string)($login->assertion['assuranceLevel'] ?? ''),
+			aliases: $this->config->trustAliases(provider: $login->provider)
+		);
+		if ($this->trustMapper->satisfies(have: $trust, need: $login->state['trust']) === false) {
+			throw new IdpAssertionException(message: 'The assurance level is below the trust the login asked for.');
+		}
+
+		return $trust;
+
+	}//end sufficientTrust()
+
+	/**
+	 * The subject envelope the code is issued for.
+	 *
+	 * @param IdpLoginCallback $login    The login being finished, with its trust mapped.
+	 * @param IdpConsumer      $consumer The consumer the browser returns to.
+	 *
+	 * @return SubjectEnvelope The envelope.
+	 *
+	 * @throws IdpAssertionException When the subject or the branch is unusable.
+	 */
+	private function envelopeFor(IdpLoginCallback $login, IdpConsumer $consumer): SubjectEnvelope {
+		[$subject, $subType] = $this->subjectOf(login: $login);
+
+		return new SubjectEnvelope(
+			subject: $subject,
+			subType: $subType,
+			provider: $login->provider,
+			audience: $consumer->getId(),
+			organisation: $login->state['organisation'],
+			trust: $login->trust,
+			branch: $this->branchOf(provider: $login->provider, assertion: $login->assertion)
+		);
+
+	}//end envelopeFor()
+
+	/**
 	 * The subject and its type, with a BSN turned into a pseudonym here.
 	 *
-	 * @param string $provider The provider.
-	 * @param array<string,mixed> $assertion The assertion.
-	 * @param string $organisation The organisation the login is for.
+	 * @param IdpLoginCallback $login The login being finished.
 	 *
 	 * @return array{0: string, 1: string} The subject and the subject type.
 	 *
 	 * @throws IdpAssertionException When the subject type does not belong to the provider, or the subject is empty.
 	 */
-	private function subjectOf(string $provider, array $assertion, string $organisation): array {
-		$subType = trim((string)($assertion['subType'] ?? ''));
-		$subject = trim((string)($assertion['subject'] ?? ''));
+	private function subjectOf(IdpLoginCallback $login): array {
+		$organisation = $login->state['organisation'];
+		$subType = trim((string)($login->assertion['subType'] ?? ''));
+		$subject = trim((string)($login->assertion['subject'] ?? ''));
 
-		if (in_array($subType, (self::SUBJECT_TYPES[$provider] ?? []), true) === false || $subject === '') {
+		if (in_array($subType, (self::SUBJECT_TYPES[$login->provider] ?? []), true) === false || $subject === '') {
 			throw new IdpAssertionException(message: 'The assertion carries no subject this provider may deliver.');
 		}
 
@@ -364,21 +450,19 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	/**
 	 * Refuse a start without an organisation, with an unknown trust level or an oversized relay state.
 	 *
-	 * @param string $organisation The organisation.
-	 * @param string $trust The requested trust.
-	 * @param string $relayState The consumer's relay state.
+	 * @param IdpLoginStart $login The login being started.
 	 *
 	 * @return void
 	 *
 	 * @throws IdpAssertionException When a parameter is unusable.
 	 */
-	private function assertStartParameters(string $organisation, string $trust, string $relayState): void {
+	private function assertStartParameters(IdpLoginStart $login): void {
 		$knownTrust = [TrustLevelMapper::TRUST_LOW, TrustLevelMapper::TRUST_SUBSTANTIAL, TrustLevelMapper::TRUST_HIGH];
-		if ($organisation === '' || in_array($trust, $knownTrust, true) === false) {
+		if ($login->organisation === '' || in_array($login->trust, $knownTrust, true) === false) {
 			throw new IdpAssertionException(message: 'The login names no organisation or no known trust level.');
 		}
 
-		if (strlen($relayState) > self::MAX_RELAY_STATE) {
+		if (strlen($login->relayState) > self::MAX_RELAY_STATE) {
 			throw new IdpAssertionException(message: 'The relay state is too long, so no login starts.');
 		}
 

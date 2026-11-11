@@ -1,0 +1,11 @@
+{
+    "eerste": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VerzuimloketMelding><stuurgegevens><meldingType>eerste-melding</meldingType><kenmerk>k-1</kenmerk><tijdstipBericht>TIME</tijdstipBericht></stuurgegevens><body><bsn>111222333</bsn><windowStart>2026-01-01</windowStart><windowEnd>2026-01-31</windowEnd><metricValue>16</metricValue></body></VerzuimloketMelding>\n",
+    "eerste-optional": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VerzuimloketMelding><stuurgegevens><meldingType>eerste-melding</meldingType><kenmerk>k-2</kenmerk><tijdstipBericht>TIME</tijdstipBericht></stuurgegevens><body><bsn>111222333</bsn><windowStart>2026-01-01</windowStart><windowEnd>2026-01-31</windowEnd><metricValue>16</metricValue><breachingRecords>[{\"dag\":\"2026-01-02\"}]</breachingRecords></body></VerzuimloketMelding>\n",
+    "herhaal": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VerzuimloketMelding><stuurgegevens><meldingType>herhaalmelding</meldingType><kenmerk>k-3</kenmerk><tijdstipBericht>TIME</tijdstipBericht></stuurgegevens><body><bsn>111222333</bsn><windowStart>2026-01-01</windowStart><windowEnd>2026-01-31</windowEnd><metricValue>0</metricValue><interventions>[\"gesprek &amp; brief\"]</interventions></body></VerzuimloketMelding>\n",
+    "lrv": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VerzuimloketMelding><stuurgegevens><meldingType>langdurig-relatief-verzuim</meldingType><kenmerk>k-4</kenmerk><tijdstipBericht>TIME</tijdstipBericht></stuurgegevens><body><bsn>111222333</bsn><startDate>2026-02-01</startDate><breachingRecords>\"&lt;x&gt;\"</breachingRecords></body></VerzuimloketMelding>\n",
+    "unknown": "refused: Unsupported Verzuimloket meldingType \"tweede-melding\".",
+    "blank-kenmerk": "refused: A Verzuimloket melding requires a non-empty kenmerk (correlation id).",
+    "missing": "refused: Required field \"startDate\" is missing or empty for a \"langdurig-relatief-verzuim\" melding — refusing to build an envelope with unresolved data.",
+    "null-field": "refused: Required field \"windowEnd\" is missing or empty for a \"eerste-melding\" melding — refusing to build an envelope with unresolved data.",
+    "placeholder": "refused: Rendered envelope still contains an unresolved template marker — refusing to send."
+}

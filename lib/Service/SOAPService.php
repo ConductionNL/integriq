@@ -61,6 +61,13 @@ class SOAPService {
 	private Client $client;
 
 	/**
+	 * The configured names of SOAP 1.1; every other name means SOAP 1.2.
+	 *
+	 * @var list<string>
+	 */
+	private const SOAP_1_1_NAMES = ['1.1', '1_1', 'soap1.1', 'soap1_1', 'soap_1_1', 'SOAP_1_1'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CookieJar $cookieJar A cookie jar to pass on cookies between SOAP requests.
@@ -83,35 +90,38 @@ class SOAPService {
 	 * @spec openspec/specs/http-call-engine/spec.md
 	 */
 	private function getSoapVersion(string|int|null $soapVersion): int {
-		if (is_int($soapVersion) === true && $soapVersion > 0 && $soapVersion < 3) {
+		if (is_int($soapVersion) === true) {
+			return $this->supportedSoapVersion(soapVersion: $soapVersion);
+		}
+
+		// Loose comparison, as the switch this replaced compared: `1.10` names SOAP 1.1 too.
+		if (in_array($soapVersion, self::SOAP_1_1_NAMES) === true) {
+			return SOAP_1_1;
+		}
+
+		return SOAP_1_2;
+
+	}//end getSoapVersion()
+
+	/**
+	 * A numeric SOAP version, when it is 1 or 2.
+	 *
+	 * @param int $soapVersion The configured number.
+	 *
+	 * @return int The same number.
+	 *
+	 * @throws BadRequestHttpException When it is neither 1 nor 2.
+	 */
+	private function supportedSoapVersion(int $soapVersion): int {
+		if ($soapVersion > 0 && $soapVersion < 3) {
 			return $soapVersion;
 		}
 
-		if (is_int($soapVersion) === true) {
-			throw new BadRequestHttpException(
-				message: 'improper configuration, only soap 1.1 and 1.2 are supported'
-			);
-		}
+		throw new BadRequestHttpException(
+			message: 'improper configuration, only soap 1.1 and 1.2 are supported'
+		);
 
-		switch ($soapVersion) {
-			case '1.1':
-			case '1_1':
-			case 'soap1.1':
-			case 'soap1_1':
-			case 'soap_1_1':
-			case 'SOAP_1_1':
-				return SOAP_1_1;
-			case '1.2':
-			case '1_2':
-			case 'soap1.2':
-			case 'soap1_2':
-			case 'soap_1_2':
-			case 'SOAP_1_2':
-			default:
-				return SOAP_1_2;
-		}
-
-	}//end getSoapVersion()
+	}//end supportedSoapVersion()
 
 	/**
 	 * Setup a SOAP engine for a source.

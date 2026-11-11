@@ -672,4 +672,77 @@ class IdpBrowserLoginTest extends TestCase {
 		}
 	}//end testADisabledOrUnresolvableConsumerCannotRedeem()
 
+	/**
+	 * The service with a logger that records every warning.
+	 *
+	 * @param GovernmentIdpAdapterInterface $adapter The adapter.
+	 * @param \ArrayObject<int, array{0: string, 1: array<string, mixed>}> $warnings Where warnings go.
+	 *
+	 * @return IdpLoginService The service.
+	 */
+	private function recordingService(GovernmentIdpAdapterInterface $adapter, \ArrayObject $warnings): IdpLoginService {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			static function (string $message, array $context = []) use ($warnings): void {
+				$warnings->append([$message, $context]);
+			}
+		);
+		$factory = $this->cacheFactory();
+		return new IdpLoginService(
+			config: $this->config(),
+			adapters: new IdpAdapterRegistry(boundAdapter: $adapter, logger: $this->createMock(LoggerInterface::class)),
+			states: new IdpLoginStateStore($factory),
+			assertionGuard: new AssertionGuard(replayGuard: new EnvelopeReplayGuard($factory)),
+			trustMapper: new TrustLevelMapper(),
+			pseudonyms: new SubjectPseudonymService(),
+			exchange: $this->exchange(),
+			logger: $logger
+		);
+	}//end recordingService()
+
+	/**
+	 * Each refusal at the callback logs its own reason, and a start hands the
+	 * adapter exactly the organisation, consumer, trust and a fresh nonce.
+	 *
+	 * @return void
+	 */
+	public function testEachCallbackRefusalLogsItsReason(): void {
+		$cases = [
+			'trust below the request' => [['assuranceLevel' => 'Basis'], 'The assurance level is below the trust the login asked for.'],
+			'wrong subject type' => [['subType' => 'kvk'], 'The assertion carries no subject this provider may deliver.'],
+			'empty subject' => [['subject' => '  '], 'The assertion carries no subject this provider may deliver.'],
+			'another organisation' => [['organisation' => 'Gemeente-Y'], 'The assertion names another organisation than the login started for.'],
+		];
+
+		foreach ($cases as $name => [$overrides, $reason]) {
+			$this->setUp();
+			$warnings = new \ArrayObject();
+			$adapter = $this->digid($overrides);
+			$service = $this->recordingService($adapter, $warnings);
+			$service->start(provider: 'digid', params: $this->startParams(['organisation' => ' Gemeente-X ', 'trust' => ' Substantial ']));
+
+			$this->assertCount(1, $adapter->begun, $name);
+			$begun = $adapter->begun[0];
+			$this->assertSame(['gemeente-x', 'portaliq', 'substantial'], [$begun['organisation'], $begun['consumer'], $begun['trust']], $name);
+			$this->assertNotSame('portal-relay-42', $begun['relayState'], $name);
+
+			$redirect = $service->callback(provider: 'digid', callback: ['inResponseTo' => $adapter->lastRequestId]);
+
+			$this->assertSame(['error' => 'login_failed', 'relayState' => 'portal-relay-42'], $this->queryOf($redirect), $name);
+			$this->assertSame(
+				[['Integriq idp-broker: a login was refused at the callback: ' . $reason, ['provider' => 'digid', 'consumer' => 'portaliq']]],
+				$warnings->getArrayCopy(),
+				$name
+			);
+		}
+
+		$this->setUp();
+		$warnings = new \ArrayObject();
+		$adapter = $this->digid(['organisation' => 'GEMEENTE-X']);
+		$service = $this->recordingService($adapter, $warnings);
+		$service->start(provider: 'digid', params: $this->startParams());
+		$redirect = $service->callback(provider: 'digid', callback: ['inResponseTo' => $adapter->lastRequestId]);
+		$this->assertSame(['code', 'relayState'], array_keys($this->queryOf($redirect)));
+		$this->assertSame([], $warnings->getArrayCopy());
+	}//end testEachCallbackRefusalLogsItsReason()
 }//end class

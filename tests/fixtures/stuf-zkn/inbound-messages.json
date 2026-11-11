@@ -1,0 +1,158 @@
+{
+    "zaak-T": {
+        "kind": "zaak",
+        "berichttype": "zakLk01",
+        "referentienummer": "REF-1",
+        "senderOrganisatie": "Gemeente X",
+        "verwerkingssoort": "T",
+        "entiteittype": "ZAK",
+        "fields": {
+            "identificatie": "ZAAK-1",
+            "omschrijving": "Kap",
+            "toelichting": null,
+            "zaaktypeCode": "B1",
+            "zaaktypeOmschrijving": "Kapvergunning",
+            "registratiedatum": "20260716",
+            "startdatum": "20260716",
+            "einddatumGepland": "20260801",
+            "einddatum": null,
+            "archiefnominatie": "J",
+            "betalingsIndicatie": "N.v.t."
+        }
+    },
+    "zaak-W": {
+        "kind": "zaak",
+        "berichttype": "zakLk01",
+        "referentienummer": "REF-1",
+        "senderOrganisatie": "Gemeente X",
+        "verwerkingssoort": "W",
+        "entiteittype": "ZAK",
+        "fields": {
+            "identificatie": "ZAAK-1",
+            "omschrijving": "Kap",
+            "toelichting": null,
+            "zaaktypeCode": "B1",
+            "zaaktypeOmschrijving": "Kapvergunning",
+            "registratiedatum": "20260716",
+            "startdatum": "20260716",
+            "einddatumGepland": "20260801",
+            "einddatum": null,
+            "archiefnominatie": "J",
+            "betalingsIndicatie": "N.v.t."
+        }
+    },
+    "zaak-I": {
+        "kind": "zaak",
+        "berichttype": "zakLk01",
+        "referentienummer": "REF-1",
+        "senderOrganisatie": "Gemeente X",
+        "verwerkingssoort": "I",
+        "entiteittype": "ZAK",
+        "fields": {
+            "identificatie": "ZAAK-1",
+            "omschrijving": "Kap",
+            "toelichting": null,
+            "zaaktypeCode": "B1",
+            "zaaktypeOmschrijving": "Kapvergunning",
+            "registratiedatum": "20260716",
+            "startdatum": "20260716",
+            "einddatumGepland": "20260801",
+            "einddatum": null,
+            "archiefnominatie": "J",
+            "betalingsIndicatie": "N.v.t."
+        }
+    },
+    "zaak-V-bare": "refused: StUF-ZKN envelope does not contain a recognised berichttype (expected `zakLk01` or `edcLk01`).",
+    "zaak-V-unwrapped": {
+        "kind": "zaak",
+        "berichttype": "zakLk01",
+        "referentienummer": "REF-1",
+        "senderOrganisatie": "Gemeente X",
+        "verwerkingssoort": "V",
+        "entiteittype": "ZAK",
+        "fields": {
+            "identificatie": "ZAAK-1",
+            "omschrijving": "Kap",
+            "toelichting": null,
+            "zaaktypeCode": "B1",
+            "zaaktypeOmschrijving": "Kapvergunning",
+            "registratiedatum": "20260716",
+            "startdatum": "20260716",
+            "einddatumGepland": "20260801",
+            "einddatum": null,
+            "archiefnominatie": "J",
+            "betalingsIndicatie": "N.v.t."
+        }
+    },
+    "zaak-minimal": {
+        "kind": "zaak",
+        "berichttype": "zakLk01",
+        "referentienummer": "R",
+        "senderOrganisatie": "",
+        "verwerkingssoort": "T",
+        "entiteittype": "ZAK",
+        "fields": {
+            "identificatie": "Z",
+            "omschrijving": "",
+            "toelichting": null,
+            "zaaktypeCode": "",
+            "zaaktypeOmschrijving": null,
+            "registratiedatum": null,
+            "startdatum": null,
+            "einddatumGepland": null,
+            "einddatum": null,
+            "archiefnominatie": null,
+            "betalingsIndicatie": null
+        }
+    },
+    "document": {
+        "kind": "document",
+        "berichttype": "edcLk01",
+        "referentienummer": "REF-1",
+        "senderOrganisatie": "Gemeente X",
+        "verwerkingssoort": "T",
+        "entiteittype": "EDC",
+        "fields": {
+            "identificatie": "DOC-1",
+            "titel": "Besluit",
+            "formaat": "application/pdf",
+            "language": "nl",
+            "creatiedatum": "20260716",
+            "ontvangstdatum": "20260717",
+            "vertrouwelijkAanduiding": "OPENBAAR",
+            "auteur": "Jan",
+            "versie": "1",
+            "bestandsnaam": null,
+            "zaakIdentificatie": "ZAAK-1"
+        }
+    },
+    "document-minimal": {
+        "kind": "document",
+        "berichttype": "edcLk01",
+        "referentienummer": "REF-1",
+        "senderOrganisatie": "Gemeente X",
+        "verwerkingssoort": "W",
+        "entiteittype": "EDC",
+        "fields": {
+            "identificatie": "D",
+            "titel": "",
+            "formaat": null,
+            "language": null,
+            "creatiedatum": null,
+            "ontvangstdatum": null,
+            "vertrouwelijkAanduiding": null,
+            "auteur": null,
+            "versie": null,
+            "bestandsnaam": null,
+            "zaakIdentificatie": null
+        }
+    },
+    "no-reference": "refused: StUF-ZKN envelope is missing stuurgegevens.referentienummer — refusing to process an unacknowledgeable, uncorrelatable message.",
+    "no-object": "refused: StUF-ZKN envelope is missing the `object` element.",
+    "bad-kind": "refused: StUF-ZKN object carries an unrecognised verwerkingssoort \"X\" (expected one of T/W/I/V).",
+    "blank-id": "refused: StUF-ZKN object is missing identificatie — refusing to upsert an unidentifiable document.",
+    "no-id": "refused: StUF-ZKN object is missing identificatie — refusing to upsert an unidentifiable zaak.",
+    "unknown-type": "refused: StUF-ZKN envelope does not contain a recognised berichttype (expected `zakLk01` or `edcLk01`).",
+    "empty": "refused: StUF-ZKN envelope is empty or not well-formed XML.",
+    "malformed": "refused: StUF-ZKN envelope is empty or not well-formed XML."
+}

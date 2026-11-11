@@ -236,17 +236,8 @@ class MigrateLegacyStorage implements IRepairStep {
 	 * @return void
 	 */
 	private function migrateRemainingRows(IOutput $output): void {
-		try {
-			$migrator = $this->container->get(LegacyToRegisterMigratorInterface::class);
-		} catch (\Throwable $e) {
-			$output->warning(
-				'Integriq: could not resolve the legacy migrator (' . $e->getMessage() . ').'
-				. ' Run `occ integriq:migrate-storage` once OpenRegister is enabled.'
-			);
-			$this->logger->error(
-				'Integriq: LegacyToRegisterMigrator resolution failed',
-				['exception' => $e->getMessage()]
-			);
+		$migrator = $this->resolveMigrator(output: $output);
+		if ($migrator === null) {
 			return;
 		}
 
@@ -261,6 +252,44 @@ class MigrateLegacyStorage implements IRepairStep {
 			return;
 		}
 
+		$this->reportResults(output: $output, results: $results);
+		$this->reportCutover(output: $output);
+
+	}//end migrateRemainingRows()
+
+	/**
+	 * The legacy migrator, or null after saying why it could not be resolved.
+	 *
+	 * @param IOutput $output Progress channel.
+	 *
+	 * @return LegacyToRegisterMigratorInterface|null The migrator.
+	 */
+	private function resolveMigrator(IOutput $output): ?LegacyToRegisterMigratorInterface {
+		try {
+			return $this->container->get(LegacyToRegisterMigratorInterface::class);
+		} catch (\Throwable $e) {
+			$output->warning(
+				'Integriq: could not resolve the legacy migrator (' . $e->getMessage() . ').'
+				. ' Run `occ integriq:migrate-storage` once OpenRegister is enabled.'
+			);
+			$this->logger->error(
+				'Integriq: LegacyToRegisterMigrator resolution failed',
+				['exception' => $e->getMessage()]
+			);
+			return null;
+		}
+
+	}//end resolveMigrator()
+
+	/**
+	 * One progress line per migrated entity.
+	 *
+	 * @param IOutput                         $output  Progress channel.
+	 * @param array<int, array<string,mixed>> $results The migrator's per-entity results.
+	 *
+	 * @return void
+	 */
+	private function reportResults(IOutput $output, array $results): void {
 		foreach ($results as $perEntity) {
 			$output->info(
 				sprintf(
@@ -273,6 +302,16 @@ class MigrateLegacyStorage implements IRepairStep {
 			);
 		}
 
+	}//end reportResults()
+
+	/**
+	 * Say whether the migrator completed the cutover; it sets the flag itself.
+	 *
+	 * @param IOutput $output Progress channel.
+	 *
+	 * @return void
+	 */
+	private function reportCutover(IOutput $output): void {
 		if ($this->appConfig->getValueString(AppIdentity::APP_ID, 'storage_migrated', 'false') === 'true') {
 			$output->info('Integriq: storage_migrated set to true — the cutover is complete.');
 			return;
@@ -283,5 +322,5 @@ class MigrateLegacyStorage implements IRepairStep {
 			. ' Use `occ integriq:migrate-storage` to retry per-entity.'
 		);
 
-	}//end migrateRemainingRows()
+	}//end reportCutover()
 }//end class

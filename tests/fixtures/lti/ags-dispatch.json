@@ -1,0 +1,148 @@
+[
+    {
+        "call": [
+            "lti-ags-adhoc",
+            {
+                "name": "LTI AGS call (ad-hoc, not persisted)",
+                "isEnabled": true,
+                "location": "https://lms.example.test:8443"
+            },
+            "/api/ags/lineitems/7/scores?type=x&y=1",
+            "POST",
+            {
+                "headers": {
+                    "Authorization": "Bearer tok-1",
+                    "Content-Type": "application/vnd.ims.lis.v1.score+json"
+                },
+                "json": {
+                    "scoreGiven": 1
+                }
+            },
+            [
+                false,
+                true,
+                false,
+                false,
+                false,
+                null,
+                null,
+                false,
+                false
+            ]
+        ]
+    },
+    {
+        "answer": {
+            "statusCode": 200,
+            "body": {
+                "ok": true
+            }
+        }
+    },
+    {
+        "call": [
+            "lti-ags-adhoc",
+            {
+                "name": "LTI AGS call (ad-hoc, not persisted)",
+                "isEnabled": true,
+                "location": "https://lms.example.test"
+            },
+            "/api/ags/lineitems",
+            "GET",
+            {
+                "headers": {
+                    "Authorization": "Bearer tok-2",
+                    "Content-Type": "application/vnd.ims.lis.v1.score+json"
+                }
+            },
+            [
+                false,
+                true,
+                false,
+                true,
+                false,
+                null,
+                null,
+                false,
+                false
+            ]
+        ]
+    },
+    {
+        "answer": {
+            "statusCode": 204,
+            "body": null
+        }
+    },
+    {
+        "call": [
+            "lti-ags-adhoc",
+            {
+                "name": "LTI AGS call (ad-hoc, not persisted)",
+                "isEnabled": true,
+                "location": "http://lms.example.test"
+            },
+            "",
+            "POST",
+            {
+                "headers": {
+                    "Authorization": "Bearer tok-3",
+                    "Content-Type": "application/vnd.ims.lis.v1.score+json"
+                },
+                "json": []
+            },
+            [
+                false,
+                true,
+                false,
+                false,
+                false,
+                null,
+                null,
+                false,
+                false
+            ]
+        ]
+    },
+    {
+        "answer": {
+            "statusCode": 0,
+            "body": null
+        }
+    },
+    {
+        "call": [
+            "lti-ags-adhoc",
+            {
+                "name": "LTI AGS call (ad-hoc, not persisted)",
+                "isEnabled": true,
+                "location": "https://"
+            },
+            "lms.example.test/path",
+            "GET",
+            {
+                "headers": {
+                    "Authorization": "Bearer ",
+                    "Content-Type": "application/vnd.ims.lis.v1.score+json"
+                }
+            },
+            [
+                false,
+                true,
+                false,
+                true,
+                false,
+                null,
+                null,
+                false,
+                false
+            ]
+        ]
+    },
+    {
+        "answer": {
+            "statusCode": 0,
+            "body": "text"
+        }
+    }
+]

@@ -22,6 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Exchange;
 
 use OCA\Integriq\Event\ExchangeJobConcludedEvent;
 use OCA\Integriq\Service\Exchange\ExchangeGateClient;
+use OCA\Integriq\Service\Exchange\ExchangeHandOff;
 use OCA\Integriq\Service\Exchange\ExchangeJobRunner;
 use OCA\Integriq\Service\Exchange\ExchangeJobService;
 use OCA\Integriq\Service\Exchange\ExchangeRejectionService;
@@ -211,9 +212,9 @@ class ExchangeJobRunnerTest extends TestCase {
 		);
 		$this->mappings->method('executeMapping')->willReturn(['voornamen' => 'Sanne']);
 		$this->dispatcher->expects($this->once())->method('dispatch')->willReturnCallback(
-			function (string $jobId, string $target, string $direction, array $scope, array $records): array {
-				$this->assertSame('job-1', $jobId);
-				$this->assertSame(['voornamen' => 'Sanne'], $records[0]['data'], 'The handler receives the mapped record.');
+			function (ExchangeHandOff $handOff): array {
+				$this->assertSame('job-1', $handOff->jobId);
+				$this->assertSame(['voornamen' => 'Sanne'], $handOff->records[0]['data'], 'The handler receives the mapped record.');
 				return ['accepted' => ['a'], 'rejected' => [], 'refusal' => null];
 			}
 		);
@@ -351,8 +352,8 @@ class ExchangeJobRunnerTest extends TestCase {
 			$this->decision('allow', [['recordId' => 'a', 'data' => []], ['recordId' => 'b', 'data' => []]])
 		);
 		$this->dispatcher->method('dispatch')->willReturnCallback(
-			function (string $jobId, string $target, string $direction, array $scope, array $records): array {
-				$this->assertSame(['b'], array_column($records, 'recordId'));
+			function (ExchangeHandOff $handOff): array {
+				$this->assertSame(['b'], array_column($handOff->records, 'recordId'));
 				return ['accepted' => [], 'rejected' => [['recordId' => 'b', 'errorCode' => 'BRON-101']], 'refusal' => null];
 			}
 		);
