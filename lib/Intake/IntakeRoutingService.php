@@ -197,10 +197,11 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 	 * @throws IntakeRoutingException When the channel, the target or a mapped field is unknown.
 	 */
 	public function validateRule(array $rule, IntakeChannelRegistryInterface $registry): void {
-		$this->assertKnownChannel(rule: $rule, registry: $registry);
-		$targetSchema = $this->requiredTargetSchema(rule: $rule);
+		$fields = new RoutingRuleFields(rule: $rule);
+		$fields->requireKnownChannel(registry: $registry);
+		$targetSchema = $fields->targetSchema();
 		$properties = $this->targetProperties(targetSchema: $targetSchema);
-		foreach ($this->mappedTargets(rule: $rule) as $field) {
+		foreach ($fields->targets() as $field) {
 			if (array_key_exists((string)$field, $properties) === false) {
 				throw new IntakeRoutingException(
 					message: 'Case type "' . $targetSchema . '" has no field "' . $field . '".'
@@ -209,70 +210,6 @@ class IntakeRoutingService implements IntakeRoutingServiceInterface {
 		}
 
 	}//end validateRule()
-
-	/**
-	 * Refuse a rule whose channel no adapter answers to.
-	 *
-	 * @param array<string,mixed>            $rule     The rule.
-	 * @param IntakeChannelRegistryInterface $registry The channels this instance has.
-	 *
-	 * @return void
-	 *
-	 * @throws IntakeRoutingException When the channel is unknown.
-	 */
-	private function assertKnownChannel(array $rule, IntakeChannelRegistryInterface $registry): void {
-		$channelId = trim((string)($rule['channelId'] ?? ''));
-		if ($registry->has($channelId) === false) {
-			throw new IntakeRoutingException(
-				message: 'No intake channel adapter answers to "' . $channelId . '".'
-			);
-		}
-
-	}//end assertKnownChannel()
-
-	/**
-	 * The case type a rule opens.
-	 *
-	 * @param array<string,mixed> $rule The rule.
-	 *
-	 * @return string The target schema.
-	 *
-	 * @throws IntakeRoutingException When the rule names none.
-	 */
-	private function requiredTargetSchema(array $rule): string {
-		$targetSchema = trim((string)($rule['targetSchema'] ?? ''));
-		if ($targetSchema === '') {
-			throw new IntakeRoutingException(message: 'A routing rule must name the case type it opens.');
-		}
-
-		return $targetSchema;
-
-	}//end requiredTargetSchema()
-
-	/**
-	 * The target fields a rule writes: its mapped fields, then its location field.
-	 *
-	 * @param array<string,mixed> $rule The rule.
-	 *
-	 * @return array<int,int|string> The field names.
-	 *
-	 * @throws IntakeRoutingException When the field mapping is not an object.
-	 */
-	private function mappedTargets(array $rule): array {
-		$mapped = ($rule['fieldMapping'] ?? []);
-		if (is_array($mapped) === false) {
-			throw new IntakeRoutingException(message: 'The field mapping must be an object of target field to source.');
-		}
-
-		$targets = array_keys($mapped);
-		$locationField = trim((string)($rule['locationField'] ?? ''));
-		if ($locationField !== '') {
-			$targets[] = $locationField;
-		}
-
-		return $targets;
-
-	}//end mappedTargets()
 
 	/**
 	 * The first enabled rule whose channel and condition match.
