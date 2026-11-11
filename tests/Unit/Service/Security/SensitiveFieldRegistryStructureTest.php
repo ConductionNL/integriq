@@ -218,6 +218,62 @@ class SensitiveFieldRegistryStructureTest extends TestCase {
 	}//end testSecretsInsideUrlsAreMasked()
 
 	/**
+	 * Secrets inside text: a JSON document held as a string, and header lines.
+	 *
+	 * @return void
+	 */
+	public function testSecretsInsideJsonTextAndHeaderLinesAreMasked(): void {
+		$result = $this->registry->redactConfiguration(
+			data: [
+				'body' => '{"client_secret":"CS","page":2,"nested":{"apiKey":"AK"}}',
+				'list' => '[{"password":"PW"},{"name":"n"}]',
+				'plainJson' => '{"page":2,"name":"n"}',
+				'notJson' => '{not json',
+				'raw' => "GET /x HTTP/1.1\nAuthorization: Bearer abc.def\nX-Session-Id: s-1\nAccept: text/plain",
+				'templated' => 'Authorization: {{ source.authorization }}',
+				'prose' => 'Note: call the desk',
+			]
+		);
+
+		$body = json_decode(json: $result['body'], associative: true);
+		$this->assertSame(expected: self::MASK, actual: $body['client_secret']);
+		$this->assertSame(expected: self::MASK, actual: $body['nested']['apiKey']);
+		$this->assertSame(expected: 2, actual: $body['page']);
+		$this->assertSame(expected: self::MASK, actual: json_decode(json: $result['list'], associative: true)[0]['password']);
+		$this->assertSame(expected: '{"page":2,"name":"n"}', actual: $result['plainJson']);
+		$this->assertSame(expected: '{not json', actual: $result['notJson']);
+		$this->assertSame(
+			expected: "GET /x HTTP/1.1\nAuthorization: " . self::MASK . "\nX-Session-Id: " . self::MASK . "\nAccept: text/plain",
+			actual: $result['raw']
+		);
+		$this->assertSame(expected: 'Authorization: {{ source.authorization }}', actual: $result['templated']);
+		$this->assertSame(expected: 'Note: call the desk', actual: $result['prose']);
+	}//end testSecretsInsideJsonTextAndHeaderLinesAreMasked()
+
+	/**
+	 * A client certificate and its passphrase are masked by name.
+	 *
+	 * @return void
+	 */
+	public function testCertificateNamesAreSecret(): void {
+		$result = $this->registry->redactConfiguration(
+			data: ['mtls' => ['certificate' => 'PEM', 'passphrase' => 'PP', 'pass_phrase' => 'PP', 'pkcs12' => 'P12', 'pfx' => 'PFX', 'host' => 'h']]
+		);
+
+		$this->assertSame(
+			expected: [
+				'certificate' => self::MASK,
+				'passphrase' => self::MASK,
+				'pass_phrase' => self::MASK,
+				'pkcs12' => self::MASK,
+				'pfx' => self::MASK,
+				'host' => 'h',
+			],
+			actual: $result['mtls']
+		);
+	}//end testCertificateNamesAreSecret()
+
+	/**
 	 * URL secrets in the forms a plain `user:password@` match misses: a password
 	 * with an `@`, a token written as the user, a token in the fragment, and a URL
 	 * that is itself percent-encoded, whole or as a query value.
