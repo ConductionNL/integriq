@@ -35,6 +35,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -105,59 +106,78 @@ class ExecutionTracesController extends Controller {
 		?string $dateFrom = null,
 		?string $dateTo = null,
 	): JSONResponse {
+		$user = $this->authorizedUser(action: 'execution-trace.index');
+		if ($user instanceof JSONResponse) {
+			return $user;
+		}
+
+		$filters = array_filter(
+			[
+				'entryPoint' => $entryPoint,
+				'status' => $status,
+				'date_from' => $dateFrom,
+				'date_to' => $dateTo,
+			],
+			static fn (?string $value): bool => $value !== null
+		);
+
+		$matches = $this->executionTraceService->list(filters: $filters, limit: $limit, offset: $offset);
+
+		return new JSONResponse(
+			[
+				'results' => $matches['results'],
+				'pagination' => $this->pagination(window: new TracePageWindow(limit: $limit, offset: $offset), matches: $matches),
+			]
+		);
+
+	}//end index()
+
+	/**
+	 * The session user when they may run the action, else the 401 or 403 answer.
+	 *
+	 * @param string $action The ADR-023 action.
+	 *
+	 * @return IUser|JSONResponse
+	 */
+	private function authorizedUser(string $action): IUser|JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
 		}
 
 		try {
-			$this->actionAuth->requireAction(user: $user, action: 'execution-trace.index');
+			$this->actionAuth->requireAction(user: $user, action: $action);
 		} catch (OCSForbiddenException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		}
 
-		$filters = [];
-		if ($entryPoint !== null) {
-			$filters['entryPoint'] = $entryPoint;
-		}
+		return $user;
+	}//end authorizedUser()
 
-		if ($status !== null) {
-			$filters['status'] = $status;
-		}
-
-		if ($dateFrom !== null) {
-			$filters['date_from'] = $dateFrom;
-		}
-
-		if ($dateTo !== null) {
-			$filters['date_to'] = $dateTo;
-		}
-
-		$matches = $this->executionTraceService->list(filters: $filters, limit: $limit, offset: $offset);
-		$results = $matches['results'];
+	/**
+	 * The pagination block of a listing: page, pages, results on this page and total.
+	 *
+	 * @param TracePageWindow                         $window  The limit and offset asked for.
+	 * @param array{results: array, total: int|float} $matches The listing.
+	 *
+	 * @return array{page: int|float, pages: int|float, results: int, total: int|float}
+	 */
+	private function pagination(TracePageWindow $window, array $matches): array {
 		$total = $matches['total'];
-
-		if ($limit > 0) {
-			$pages = ceil($total / $limit);
-			$currentPage = (floor($offset / $limit) + 1);
-		} else {
-			$pages = 1;
-			$currentPage = 1;
+		$pages = 1;
+		$currentPage = 1;
+		if ($window->limit > 0) {
+			$pages = ceil($total / $window->limit);
+			$currentPage = (floor($window->offset / $window->limit) + 1);
 		}
 
-		return new JSONResponse(
-			[
-				'results' => $results,
-				'pagination' => [
-					'page' => $currentPage,
-					'pages' => $pages,
-					'results' => count($results),
-					'total' => $total,
-				],
-			]
-		);
-
-	}//end index()
+		return [
+			'page' => $currentPage,
+			'pages' => $pages,
+			'results' => count($matches['results']),
+			'total' => $total,
+		];
+	}//end pagination()
 
 	/**
 	 * Get one execution trace, including its full ordered `steps` array.
@@ -174,15 +194,9 @@ class ExecutionTracesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'execution-trace.show');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$user = $this->authorizedUser(action: 'execution-trace.show');
+		if ($user instanceof JSONResponse) {
+			return $user;
 		}
 
 		// `find()` returns null for a miss and propagates everything else, so
@@ -218,15 +232,9 @@ class ExecutionTracesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function replay(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'execution-trace.replay');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$user = $this->authorizedUser(action: 'execution-trace.replay');
+		if ($user instanceof JSONResponse) {
+			return $user;
 		}
 
 		$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
