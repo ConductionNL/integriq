@@ -356,12 +356,12 @@ class UserController extends Controller {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function basicCredentials(): ?string {
-		$authHeader = $this->request->getHeader('Authorization');
-		if ($authHeader === '' || str_starts_with($authHeader, 'Basic ') === false) {
+		$payload = $this->basicAuthPayload();
+		if ($payload === null) {
 			return null;
 		}
 
-		$credentials = base64_decode(substr($authHeader, 6));
+		$credentials = base64_decode($payload);
 		if ($credentials === false || str_contains($credentials, ':') === false) {
 			return null;
 		}
@@ -369,6 +369,24 @@ class UserController extends Controller {
 		return $credentials;
 
 	}//end basicCredentials()
+
+	/**
+	 * The encoded part of a Basic Authorization header, or null when the
+	 * header is absent or not Basic.
+	 *
+	 * @return string|null The payload after `Basic `.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function basicAuthPayload(): ?string {
+		$authHeader = $this->request->getHeader('Authorization');
+		if ($authHeader === '' || str_starts_with($authHeader, 'Basic ') === false) {
+			return null;
+		}
+
+		return substr($authHeader, 6);
+
+	}//end basicAuthPayload()
 
 	/**
 	 * A response with the security headers, then the CORS headers.
