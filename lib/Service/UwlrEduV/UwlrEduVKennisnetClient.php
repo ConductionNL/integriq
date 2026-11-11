@@ -42,6 +42,9 @@ use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolverInterface;
 use OCA\Integriq\Adapters\Digikoppeling\SignedSoapProfileInterface;
 use OCA\Integriq\Exception\DigikoppelingException;
 use OCA\Integriq\Exception\UwlrEduVProviderException;
+use OCA\Integriq\Service\Stuf\SignedEnvelopeDelivery;
+use OCA\Integriq\Service\Stuf\SignedEnvelopeRefusals;
+use OCA\Integriq\Service\Stuf\SignedEnvelopeRequest;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
@@ -50,7 +53,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
  */
-class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface {
+class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface, SignedEnvelopeRefusals {
 
 	/**
 	 * Constructor.
@@ -90,22 +93,11 @@ class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface {
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-001-shared-provider-abstraction-with-log-and-uwlr-eduv-bindings
 	 */
 	public function getConfigSchema(): array {
-		return [
-			'type' => 'object',
-			'required' => ['endpoint', 'certificateRef'],
-			'properties' => [
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'description' => 'UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL.',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'description' => 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
-						. '(ADR-007). Required when provider=uwlr-eduv.',
-				],
-			],
-		];
+		return SignedEnvelopeDelivery::configSchema(
+			endpointDescription: 'UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL.',
+			certificateDescription: 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
+				. '(ADR-007). Required when provider=uwlr-eduv.'
+		);
 
 	}//end getConfigSchema()
 
@@ -125,57 +117,89 @@ class UwlrEduVKennisnetClient implements UwlrEduVProviderInterface {
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function send(array $sourceConfiguration, string $target, string $kenmerk, string $envelopeXml): string {
-		$certificateRef = (string)($sourceConfiguration['certificateRef'] ?? '');
+		$request = new SignedEnvelopeRequest(
+			sourceConfiguration: $sourceConfiguration,
+			kenmerk: $kenmerk,
+			envelopeXml: $envelopeXml,
+			pathSuffix: '/' . $target
+		);
 
-		try {
-			$this->credentialResolver->resolveSigningMaterial(certificateRef: $certificateRef);
-		} catch (DigikoppelingException $exception) {
-			throw new UwlrEduVProviderException(
-				message: $this->l->t('UWLR/Edu-V send refused') . ': ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}
-
-		$endpoint = rtrim((string)($sourceConfiguration['endpoint'] ?? ''), '/');
-		if ($endpoint === '') {
-			throw new UwlrEduVProviderException(
-				message: $this->l->t('UWLR/Edu-V endpoint missing') . ': `configuration.endpoint` is required.'
-			);
-		}
-
-		// Unreachable today: resolveSigningMaterial() above always throws
-		// until OpenRegister's credential broker can issue in-process
-		// signing material (see class docblock).
-		$signedXml = $this->wusProfileService->buildSignedRequest(certificateRef: $certificateRef, stufBodyXml: $envelopeXml);
-
-		try {
-			$response = $this->httpClient->request(
-				'POST',
-				$endpoint . '/' . $target,
-				[
-					'headers' => ['Content-Type' => 'application/xml'],
-					'body' => $signedXml,
-					'http_errors' => false,
-				]
-			);
-		} catch (GuzzleException $exception) {
-			$this->logger->warning('[UwlrEduVKennisnetClient] unexpected transport failure', ['exception' => $exception->getMessage()]);
-			throw new UwlrEduVProviderException(
-				message: 'The UWLR/Edu-V send request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}
-
-		$status = $response->getStatusCode();
-		if ($status < 200 || $status >= 300) {
-			throw new UwlrEduVProviderException(message: 'UWLR/Edu-V endpoint responded with HTTP ' . $status . '.');
-		}
-
-		$body = trim((string)$response->getBody());
-		if ($body === '') {
-			return $kenmerk;
-		}
-
-		return $this->wusProfileService->verifyResponse(responseXml: $body);
+		return $this->delivery()->deliver(request: $request);
 	}//end send()
+
+	/**
+	 * The delivery that signs and sends this client's envelopes.
+	 *
+	 * @return SignedEnvelopeDelivery The delivery.
+	 *
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+	 */
+	private function delivery(): SignedEnvelopeDelivery {
+		return new SignedEnvelopeDelivery(
+			httpClient: $this->httpClient,
+			credentialResolver: $this->credentialResolver,
+			profile: $this->wusProfileService,
+			refusals: $this
+		);
+	}//end delivery()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param DigikoppelingException $cause The resolver's refusal.
+	 *
+	 * @return UwlrEduVProviderException The refusal.
+	 *
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function signingRefused(DigikoppelingException $cause): UwlrEduVProviderException {
+		return new UwlrEduVProviderException(
+			message: $this->l->t('UWLR/Edu-V send refused') . ': ' . $cause->getMessage(),
+			previous: $cause
+		);
+	}//end signingRefused()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return UwlrEduVProviderException The refusal.
+	 *
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function endpointMissing(): UwlrEduVProviderException {
+		return new UwlrEduVProviderException(
+			message: $this->l->t('UWLR/Edu-V endpoint missing') . ': `configuration.endpoint` is required.'
+		);
+	}//end endpointMissing()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param GuzzleException $cause The transport failure.
+	 *
+	 * @return UwlrEduVProviderException The refusal.
+	 *
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function transportFailed(GuzzleException $cause): UwlrEduVProviderException {
+		$this->logger->warning('[UwlrEduVKennisnetClient] unexpected transport failure', ['exception' => $cause->getMessage()]);
+
+		return new UwlrEduVProviderException(
+			message: 'The UWLR/Edu-V send request failed unexpectedly: ' . $cause->getMessage(),
+			previous: $cause
+		);
+	}//end transportFailed()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param int $status The HTTP status.
+	 *
+	 * @return UwlrEduVProviderException The refusal.
+	 *
+	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#scenario-the-uwlr-eduv-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function statusRefused(int $status): UwlrEduVProviderException {
+		return new UwlrEduVProviderException(message: 'UWLR/Edu-V endpoint responded with HTTP ' . $status . '.');
+	}//end statusRefused()
 }//end class

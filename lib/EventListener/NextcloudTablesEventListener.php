@@ -76,15 +76,7 @@ class NextcloudTablesEventListener implements IEventListener {
 	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
 	 */
 	public function handle(Event $event): void {
-		$type = null;
-		if ($event instanceof RowAddedEvent) {
-			$type = 'com.nextcloud.tables.row.created';
-		} elseif ($event instanceof RowUpdatedEvent) {
-			$type = 'com.nextcloud.tables.row.updated';
-		} elseif ($event instanceof RowDeletedEvent) {
-			$type = 'com.nextcloud.tables.row.deleted';
-		}
-
+		$type = $this->typeOf(event: $event);
 		if ($type === null || method_exists($event, 'getRow') === false) {
 			return;
 		}
@@ -97,32 +89,73 @@ class NextcloudTablesEventListener implements IEventListener {
 				return;
 			}
 
-			$row = $event->getRow();
-
-			$this->eventService->handleNextcloudEvent(
-				type: $type,
-				payload: [
-					'source' => self::SOURCE,
-					'subject' => (string)$row->rowId,
-					'data' => [
-						'tableId' => $row->tableId,
-						'rowId' => $row->rowId,
-						'values' => $row->values,
-						'previousValues' => $row->previousValues,
-					],
-				]
-			);
+			$this->eventService->handleNextcloudEvent(type: $type, payload: $this->payloadOf(row: $event->getRow()));
 		} catch (\Throwable $e) {
 			// Broad catch is deliberate: this listener runs synchronously
 			// inside the Tables row operation that triggered it.
-			$this->logger->error(
-				'Failed to process Nextcloud Tables row event: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-					'event' => get_class($event),
-				]
-			);
-		}//end try
+			$this->logFailure(exception: $e, event: $event);
+		}
 
 	}//end handle()
+
+	/**
+	 * The CloudEvent type of a Tables row event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return string|null The type, or null for any other event.
+	 */
+	private function typeOf(Event $event): ?string {
+		if ($event instanceof RowAddedEvent) {
+			return 'com.nextcloud.tables.row.created';
+		}
+
+		if ($event instanceof RowUpdatedEvent) {
+			return 'com.nextcloud.tables.row.updated';
+		}
+
+		if ($event instanceof RowDeletedEvent) {
+			return 'com.nextcloud.tables.row.deleted';
+		}
+
+		return null;
+	}//end typeOf()
+
+	/**
+	 * The CloudEvent payload of a row.
+	 *
+	 * @param object $row The Tables row (its public tableId, rowId, values and previousValues).
+	 *
+	 * @return array<string,mixed> The payload.
+	 */
+	private function payloadOf(object $row): array {
+		return [
+			'source' => self::SOURCE,
+			'subject' => (string)$row->rowId,
+			'data' => [
+				'tableId' => $row->tableId,
+				'rowId' => $row->rowId,
+				'values' => $row->values,
+				'previousValues' => $row->previousValues,
+			],
+		];
+	}//end payloadOf()
+
+	/**
+	 * Log a row event that could not be processed.
+	 *
+	 * @param \Throwable $exception Why it failed.
+	 * @param Event      $event     The row event.
+	 *
+	 * @return void
+	 */
+	private function logFailure(\Throwable $exception, Event $event): void {
+		$this->logger->error(
+			'Failed to process Nextcloud Tables row event: ' . $exception->getMessage(),
+			[
+				'exception' => $exception,
+				'event' => get_class($event),
+			]
+		);
+	}//end logFailure()
 }//end class

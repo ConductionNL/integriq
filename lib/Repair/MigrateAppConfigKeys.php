@@ -163,54 +163,78 @@ class MigrateAppConfigKeys implements IRepairStep {
 			return;
 		}
 
-		$migrated = 0;
-		$alreadyPresent = 0;
-		$emptySource = 0;
-		$skippedReserved = 0;
-
+		$counts = ['migrated' => 0, 'present' => 0, 'empty' => 0, 'reserved' => 0, 'failed' => 0];
 		foreach ($keys as $key) {
-			if (in_array($key, self::RESERVED_KEYS, strict: true) === true) {
-				$skippedReserved++;
-				continue;
-			}
-
-			/* The two READS belong inside the try as much as the write does.
-			   A read that throws from outside it propagates out of run() and
-			   aborts `occ upgrade` — and because this step also runs under
-			   <install>, an app that cannot finish its repair steps does not
-			   enable at all, taking every route with it. That is the opposite
-			   of what this class's docblock promises ("every failure is logged
-			   and the loop continues"). One unreadable key is not worth an
-			   install. */
-			try {
-				$old = $this->appConfig->getValueString(self::OLD_APP_ID, $key, '');
-				if ($old === '') {
-					$emptySource++;
-					continue;
-				}
-
-				$existing = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
-				if ($existing !== '') {
-					$alreadyPresent++;
-					continue;
-				}
-
-				$this->appConfig->setValueString(AppIdentity::APP_ID, $key, $old);
-				$migrated++;
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					'Integriq: could not migrate one app config key; leaving it under the old namespace',
-					['key' => $key, 'exception' => $e->getMessage()]
-				);
-			}//end try
-		}//end foreach
+			$counts[$this->migrateKey(key: $key)]++;
+		}
 
 		$output->info(
-			'MigrateAppConfigKeys: ' . $migrated . ' key(s) migrated, ' . $alreadyPresent
-			. ' already present, ' . $emptySource . ' had no value to migrate, '
-			. $skippedReserved . ' skipped as Nextcloud-reserved.'
+			'MigrateAppConfigKeys: ' . $counts['migrated'] . ' key(s) migrated, ' . $counts['present']
+			. ' already present, ' . $counts['empty'] . ' had no value to migrate, '
+			. $counts['reserved'] . ' skipped as Nextcloud-reserved.'
 		);
 	}//end run()
+
+	/**
+	 * Migrate one key, logging a failure and leaving the key under the old namespace.
+	 *
+	 * @param string $key The app config key.
+	 *
+	 * @return string The outcome: `migrated`, `present`, `empty`, `reserved` or `failed`.
+	 *
+	 * @spec exclude One-off openconnector->integriq app-id rename plumbing; see run().
+	 */
+	private function migrateKey(string $key): string {
+		if (in_array($key, self::RESERVED_KEYS, strict: true) === true) {
+			return 'reserved';
+		}
+
+		/* The two READS belong inside the try as much as the write does.
+		   A read that throws from outside it propagates out of run() and
+		   aborts `occ upgrade` — and because this step also runs under
+		   <install>, an app that cannot finish its repair steps does not
+		   enable at all, taking every route with it. That is the opposite
+		   of what this class's docblock promises ("every failure is logged
+		   and the loop continues"). One unreadable key is not worth an
+		   install. */
+		try {
+			return $this->copyKey(key: $key);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Integriq: could not migrate one app config key; leaving it under the old namespace',
+				['key' => $key, 'exception' => $e->getMessage()]
+			);
+			return 'failed';
+		}
+
+	}//end migrateKey()
+
+	/**
+	 * Copy one key's value to the new namespace unless it is empty there or already set.
+	 *
+	 * @param string $key The app config key.
+	 *
+	 * @return string The outcome: `migrated`, `present` or `empty`.
+	 *
+	 * @throws Throwable When the app config cannot be read or written.
+	 *
+	 * @spec exclude One-off openconnector->integriq app-id rename plumbing; see run().
+	 */
+	private function copyKey(string $key): string {
+		$old = $this->appConfig->getValueString(self::OLD_APP_ID, $key, '');
+		if ($old === '') {
+			return 'empty';
+		}
+
+		$existing = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
+		if ($existing !== '') {
+			return 'present';
+		}
+
+		$this->appConfig->setValueString(AppIdentity::APP_ID, $key, $old);
+		return 'migrated';
+
+	}//end copyKey()
 
 	/**
 	 * Every key currently stored under the old app-config namespace.

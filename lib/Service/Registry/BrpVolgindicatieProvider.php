@@ -142,22 +142,9 @@ class BrpVolgindicatieProvider extends AbstractSourceSubscriptionProvider implem
 			return [];
 		}
 
-		$changes = [];
-		foreach (($outcome['body']['_embedded']['ingeschrevenpersonen'] ?? $outcome['body']['results'] ?? []) as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
+		$shape = new ChangeRowShape(identityKey: 'burgerservicenummer', referenceKey: 'volgindicatieId');
 
-			$bsn = (string)($row['burgerservicenummer'] ?? '');
-			$properties = ($row['gewijzigd'] ?? []);
-			if ($bsn === '' || is_array($properties) === false || $properties === []) {
-				continue;
-			}
-
-			$changes[] = new SubscriptionChange($bsn, $properties, (string)($row['volgindicatieId'] ?? $row['eventReference'] ?? ''));
-		}
-
-		return $changes;
+		return $shape->changesIn(rows: ($outcome['body']['_embedded']['ingeschrevenpersonen'] ?? $outcome['body']['results'] ?? []));
 	}//end pollChanges()
 
 	/**

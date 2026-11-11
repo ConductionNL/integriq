@@ -68,69 +68,6 @@ class NotuBizConnectorService {
 	}//end __construct()
 
 	/**
-	 * Extract and normalise the source configuration array.
-	 *
-	 * @param ObjectEntity $source The source entity.
-	 *
-	 * @return array<string,mixed> Normalised configuration.
-	 */
-	private function extractConfig(ObjectEntity $source): array {
-		$sourceData = $source->getObject();
-		$config = ($sourceData['configuration'] ?? []);
-		if (is_string($config) === true) {
-			$config = json_decode($config, true) ?? [];
-		}
-
-		if (is_array($config) === false) {
-			return [];
-		}
-
-		return $config;
-	}//end extractConfig()
-
-	/**
-	 * Get the HTTP status code from a call log ObjectEntity.
-	 *
-	 * @param ObjectEntity|null $callLog The entity returned by CallService::call().
-	 *
-	 * @return int HTTP status code, or 0 if absent.
-	 */
-	private function getStatusCode(?ObjectEntity $callLog): int {
-		if ($callLog === null) {
-			return 0;
-		}
-
-		$data = $callLog->getObject();
-		return (int)($data['statusCode'] ?? 0);
-	}//end getStatusCode()
-
-	/**
-	 * Get the decoded response body from a call log ObjectEntity.
-	 *
-	 * @param ObjectEntity|null $callLog The entity returned by CallService::call().
-	 *
-	 * @return mixed The decoded response body, or null.
-	 */
-	private function getResponseBody(?ObjectEntity $callLog): mixed {
-		if ($callLog === null) {
-			return null;
-		}
-
-		$data = $callLog->getObject();
-		$body = $data['response']['body'] ?? null;
-		if (is_string($body) === true) {
-			$decoded = json_decode($body, true);
-			if ($decoded !== null) {
-				return $decoded;
-			}
-
-			return $body;
-		}
-
-		return $body;
-	}//end getResponseBody()
-
-	/**
 	 * Test the connection to a NotuBiz API source.
 	 *
 	 * Makes a lightweight API call to fetch organisatie details from NotuBiz.
@@ -142,7 +79,7 @@ class NotuBizConnectorService {
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-6
 	 */
 	public function testConnection(ObjectEntity $source): array {
-		$config = $this->extractConfig(source: $source);
+		$config = (new CallLogReader())->sourceConfig(source: $source);
 		$organisationId = $config['organisatieId'] ?? null;
 		if ($organisationId === null) {
 			return [
@@ -159,9 +96,9 @@ class NotuBizConnectorService {
 				method: 'GET'
 			);
 
-			$statusCode = $this->getStatusCode(callLog: $callLog);
+			$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
 			if ($statusCode === 200) {
-				$body = $this->getResponseBody(callLog: $callLog);
+				$body = (new CallLogReader())->responseBody(callLog: $callLog);
 				$name = 'unknown';
 				if (is_array($body) === true) {
 					$name = $body['naam'] ?? $body['name'] ?? 'unknown';
@@ -207,7 +144,7 @@ class NotuBizConnectorService {
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-6
 	 */
 	public function refreshToken(ObjectEntity $source): bool {
-		$config = $this->extractConfig(source: $source);
+		$config = (new CallLogReader())->sourceConfig(source: $source);
 
 		$requiredKeys = ['clientId', 'clientSecret', 'tokenEndpoint'];
 		foreach ($requiredKeys as $key) {
@@ -257,84 +194,163 @@ class NotuBizConnectorService {
 		array $vergaderstuk,
 		?string $meetingId = null,
 	): array {
-		$config = $this->extractConfig(source: $source);
-		$organisationId = $config['organisatieId'] ?? null;
-		if ($organisationId === null) {
-			return [
-				'success' => false,
-				'message' => 'Organisation ID not configured',
-				'vergaderstukId' => null,
-			];
+		$config = (new CallLogReader())->sourceConfig(source: $source);
+		if (($config['organisatieId'] ?? null) === null) {
+			return $this->pushFailure(message: 'Organisation ID not configured');
 		}
 
+		$payload = $this->vergaderstukPayload(vergaderstuk: $vergaderstuk, config: $config) + ['vergaderingId' => $meetingId];
+
+		return $this->upload(source: $source, payload: $payload);
+
+	}//end pushVergaderstuk()
+
+	/**
+	 * Upload the vergaderstuk and turn NotuBiz's answer, or the exception, into the result.
+	 *
+	 * @param ObjectEntity        $source  The NotuBiz source configuration, with an `organisatieId`.
+	 * @param array<string,mixed> $payload The vergaderstuk as NotuBiz receives it.
+	 *
+	 * @return array{success: bool, message: string, vergaderstukId: mixed} The upload result.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-7
+	 */
+	private function upload(ObjectEntity $source, array $payload): array {
+		$this->logger->info(
+			'NotuBiz: Pushing vergaderstuk',
+			['onderwerp' => $payload['onderwerp'], 'vergadertype' => $payload['vergadertype']]
+		);
+
+		try {
+			$callLog = $this->postVergaderstuk(source: $source, payload: $payload);
+			return $this->pushResult(callLog: $callLog, onderwerp: $payload['onderwerp']);
+		} catch (\Exception $e) {
+			$this->logger->error('NotuBiz: push exception', ['exception' => $e->getMessage()]);
+			return $this->pushFailure(message: 'Push failed: ' . $e->getMessage());
+		}//end try
+
+	}//end upload()
+
+	/**
+	 * POST the vergaderstuk to the organisation's vergaderstukken endpoint.
+	 *
+	 * @param ObjectEntity        $source  The NotuBiz source configuration, with an `organisatieId`.
+	 * @param array<string,mixed> $payload The vergaderstuk as NotuBiz receives it.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-7
+	 */
+	private function postVergaderstuk(ObjectEntity $source, array $payload): ObjectEntity {
+		$organisationId = (new CallLogReader())->sourceConfig(source: $source)['organisatieId'];
+		$endpoint = '/api/v1/organisations/' . $organisationId . '/vergaderstukken';
+
+		return $this->callService->call(
+			source: $source,
+			endpoint: $endpoint,
+			method: 'POST',
+			config: ['json' => $payload]
+		);
+
+	}//end postVergaderstuk()
+
+	/**
+	 * The vergaderstuk as NotuBiz receives it, before the target meeting is added.
+	 *
+	 * @param array<string,mixed> $vergaderstuk The stuk data: onderwerp, vergadertype, zaaktype, geheimhouding.
+	 * @param array<string,mixed> $config       The source configuration, for `defaultVergaderType`.
+	 *
+	 * @return array{onderwerp: mixed, vergadertype: string, zaaktype: mixed, vertrouwelijk: bool} The payload.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-7
+	 */
+	private function vergaderstukPayload(array $vergaderstuk, array $config): array {
 		$vergadertype = $this->mapVergadertype(
 			caseType: $vergaderstuk['vergadertype'] ?? $config['defaultVergaderType'] ?? 'college'
 		);
 
-		$payload = [
+		return [
 			'onderwerp' => $vergaderstuk['onderwerp'] ?? '',
 			'vergadertype' => $vergadertype,
 			'zaaktype' => $vergaderstuk['zaaktype'] ?? '',
 			'vertrouwelijk' => (bool)($vergaderstuk['geheimhouding'] ?? false),
-			'vergaderingId' => $meetingId,
 		];
 
-		$this->logger->info(
-			'NotuBiz: Pushing vergaderstuk',
-			['onderwerp' => $payload['onderwerp'], 'vergadertype' => $vergadertype]
-		);
+	}//end vergaderstukPayload()
 
-		try {
-			$endpoint = '/api/v1/organisations/' . $organisationId . '/vergaderstukken';
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: $endpoint,
-				method: 'POST',
-				config: ['json' => $payload]
+	/**
+	 * The push result for the call log NotuBiz answered with.
+	 *
+	 * @param ObjectEntity $callLog   The call log of the upload.
+	 * @param mixed        $onderwerp The onderwerp pushed, for the failure log line.
+	 *
+	 * @return array{success: bool, message: string, vergaderstukId: mixed} The upload result.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-7
+	 */
+	private function pushResult(ObjectEntity $callLog, mixed $onderwerp): array {
+		$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
+		if ($statusCode < 200 || $statusCode >= 300) {
+			$message = $this->pushFailureMessage(statusCode: $statusCode);
+
+			$this->logger->error(
+				'NotuBiz: vergaderstuk push failed',
+				['status' => $statusCode, 'onderwerp' => $onderwerp]
 			);
 
-			$statusCode = $this->getStatusCode(callLog: $callLog);
-			if ($statusCode < 200 || $statusCode >= 300) {
-				$message = match ($statusCode) {
-					0 => 'API call failed — no response',
-					401 => 'Authentication failed — token may need refresh',
-					413 => 'Vergaderstuk too large',
-					default => 'Upload failed with status ' . $statusCode,
-				};
+			return $this->pushFailure(message: $message);
+		}
 
-				$this->logger->error(
-					'NotuBiz: vergaderstuk push failed',
-					['status' => $statusCode, 'onderwerp' => $payload['onderwerp']]
-				);
+		$body = (new CallLogReader())->responseBody(callLog: $callLog);
+		$vergaderstukId = null;
+		if (is_array($body) === true) {
+			$vergaderstukId = $body['id'] ?? $body['stukId'] ?? null;
+		}
 
-				return [
-					'success' => false,
-					'message' => $message,
-					'vergaderstukId' => null,
-				];
-			}//end if
+		return [
+			'success' => true,
+			'message' => 'Vergaderstuk pushed to NotuBiz',
+			'vergaderstukId' => $vergaderstukId,
+		];
 
-			$body = $this->getResponseBody(callLog: $callLog);
-			$vergaderstukId = null;
-			if (is_array($body) === true) {
-				$vergaderstukId = $body['id'] ?? $body['stukId'] ?? null;
-			}
+	}//end pushResult()
 
-			return [
-				'success' => true,
-				'message' => 'Vergaderstuk pushed to NotuBiz',
-				'vergaderstukId' => $vergaderstukId,
-			];
-		} catch (\Exception $e) {
-			$this->logger->error('NotuBiz: push exception', ['exception' => $e->getMessage()]);
-			return [
-				'success' => false,
-				'message' => 'Push failed: ' . $e->getMessage(),
-				'vergaderstukId' => null,
-			];
-		}//end try
+	/**
+	 * The message of a refused vergaderstuk upload.
+	 *
+	 * @param int $statusCode The HTTP status NotuBiz answered with (0 when there was no response).
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-7
+	 */
+	private function pushFailureMessage(int $statusCode): string {
+		return match ($statusCode) {
+			0 => 'API call failed — no response',
+			401 => 'Authentication failed — token may need refresh',
+			413 => 'Vergaderstuk too large',
+			default => 'Upload failed with status ' . $statusCode,
+		};
 
-	}//end pushVergaderstuk()
+	}//end pushFailureMessage()
+
+	/**
+	 * A failed push: the message and no vergaderstuk id.
+	 *
+	 * @param string $message Why the push failed.
+	 *
+	 * @return array{success: false, message: string, vergaderstukId: null} The upload result.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-7
+	 */
+	private function pushFailure(string $message): array {
+		return [
+			'success' => false,
+			'message' => $message,
+			'vergaderstukId' => null,
+		];
+
+	}//end pushFailure()
 
 	/**
 	 * Map a zaaktype or vergadertype string to the NotuBiz API vergadertype code.

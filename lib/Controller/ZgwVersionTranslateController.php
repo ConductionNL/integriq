@@ -56,6 +56,18 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/zgw-version-translation/spec.md
  */
 class ZgwVersionTranslateController extends Controller {
+
+	/**
+	 * The classified translation failures: error code and HTTP status, checked in this order.
+	 *
+	 * @var array<class-string<ZgwVersionTranslationException>, array{0: string, 1: int}>
+	 */
+	private const TRANSLATION_FAILURES = [
+		ZgwUnknownResourceException::class => ['unknown_resource', Http::STATUS_BAD_REQUEST],
+		ZgwUnknownVersionException::class => ['unknown_version', Http::STATUS_BAD_REQUEST],
+		ZgwVersionNotImplementedException::class => ['not_implemented', Http::STATUS_NOT_IMPLEMENTED],
+		ZgwLiteralLeakException::class => ['literal_leak', Http::STATUS_UNPROCESSABLE_ENTITY],
+	];
 	/**
 	 * Constructor.
 	 *
@@ -106,74 +118,127 @@ class ZgwVersionTranslateController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'zgw-version.translate');
 
 		$params = $this->request->getParams();
+		if ($this->hasResourceAndPayload(params: $params) === false) {
+			return $this->missingFields();
+		}
+
+		return $this->translateParams(params: $params);
+
+	}//end translate()
+
+	/**
+	 * The 400 answer for a body without a resource or an array payload.
+	 *
+	 * @return JSONResponse
+	 */
+	private function missingFields(): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => 'missing_fields',
+				'message' => $this->l->t('The "resource" and "payload" fields are required'),
+			],
+			Http::STATUS_BAD_REQUEST
+		);
+
+	}//end missingFields()
+
+	/**
+	 * Whether the body names a resource and carries an array payload.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return bool
+	 */
+	private function hasResourceAndPayload(array $params): bool {
 		$resource = (string)($params['resource'] ?? '');
 		$payload = ($params['payload'] ?? null);
 
-		if ($resource === '' || is_array($payload) === false) {
-			return new JSONResponse(
-				[
-					'error' => 'missing_fields',
-					'message' => $this->l->t('The "resource" and "payload" fields are required'),
-				],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
+		return $resource !== '' && is_array($payload) === true;
 
-		$fromVersion = $this->negotiationService->resolveVersion(
-			request: $this->request,
-			explicit: $this->stringParamOrNull(params: $params, key: 'fromVersion')
-		);
-		$toVersion = $this->negotiationService->resolveVersion(
-			request: $this->request,
-			explicit: $this->stringParamOrNull(params: $params, key: 'toVersion')
+	}//end hasResourceAndPayload()
+
+	/**
+	 * Resolve both versions and translate, answering a translation failure with its error envelope.
+	 *
+	 * @param array<string, mixed> $params The request parameters, with a resource and an array payload.
+	 *
+	 * @return JSONResponse The translation, or a 400/422/501 error envelope.
+	 */
+	private function translateParams(array $params): JSONResponse {
+		$versions = new ZgwVersionRange(
+			fromVersion: $this->resolveVersion(params: $params, key: 'fromVersion'),
+			toVersion: $this->resolveVersion(params: $params, key: 'toVersion')
 		);
 
 		try {
-			$translated = $this->translationService->translate(
-				resource: $resource,
-				fromVersion: $fromVersion,
-				toVersion: $toVersion,
-				payload: $payload
-			);
-
-			return new JSONResponse(
-				[
-					'resource' => $resource,
-					'fromVersion' => $fromVersion,
-					'toVersion' => $toVersion,
-					'payload' => $translated,
-				]
-			);
-		} catch (ZgwUnknownResourceException $exception) {
-			return new JSONResponse(
-				['error' => 'unknown_resource', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_REQUEST
-			);
-		} catch (ZgwUnknownVersionException $exception) {
-			return new JSONResponse(
-				['error' => 'unknown_version', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_REQUEST
-			);
-		} catch (ZgwVersionNotImplementedException $exception) {
-			return new JSONResponse(
-				['error' => 'not_implemented', 'message' => $exception->getMessage()],
-				Http::STATUS_NOT_IMPLEMENTED
-			);
-		} catch (ZgwLiteralLeakException $exception) {
-			return new JSONResponse(
-				['error' => 'literal_leak', 'message' => $exception->getMessage()],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			return $this->translatedResponse(params: $params, versions: $versions);
 		} catch (ZgwVersionTranslationException $exception) {
-			$this->logger->warning('[ZgwVersionTranslateController] translate failed: ' . $exception->getMessage());
+			return $this->translationFailure(exception: $exception);
+		}
 
-			return new JSONResponse(
-				['error' => 'translation_failed', 'message' => $exception->getMessage()],
-				Http::STATUS_BAD_REQUEST
-			);
-		}//end try
+	}//end translateParams()
 
-	}//end translate()
+	/**
+	 * The version a request parameter names, else the header or default one.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param string               $key    `fromVersion` or `toVersion`.
+	 *
+	 * @return string The resolved version.
+	 */
+	private function resolveVersion(array $params, string $key): string {
+		return $this->negotiationService->resolveVersion(
+			request: $this->request,
+			explicit: $this->stringParamOrNull(params: $params, key: $key)
+		);
+
+	}//end resolveVersion()
+
+	/**
+	 * Translate the payload and answer it with the resource and both versions.
+	 *
+	 * @param array<string, mixed> $params   The request parameters.
+	 * @param ZgwVersionRange      $versions The resolved versions.
+	 *
+	 * @return JSONResponse `{resource, fromVersion, toVersion, payload}`.
+	 *
+	 * @throws ZgwVersionTranslationException When the translator refuses.
+	 */
+	private function translatedResponse(array $params, ZgwVersionRange $versions): JSONResponse {
+		$resource = (string)($params['resource'] ?? '');
+		$translated = $this->translationService->translate(
+			resource: $resource,
+			fromVersion: $versions->fromVersion,
+			toVersion: $versions->toVersion,
+			payload: $params['payload']
+		);
+
+		return new JSONResponse(['resource' => $resource] + $versions->asResponseFields() + ['payload' => $translated]);
+
+	}//end translatedResponse()
+
+	/**
+	 * The error envelope for a translation failure; only an unclassified one is logged.
+	 *
+	 * @param ZgwVersionTranslationException $exception The failure.
+	 *
+	 * @return JSONResponse A 400, 422 or 501 error envelope.
+	 */
+	private function translationFailure(ZgwVersionTranslationException $exception): JSONResponse {
+		foreach (self::TRANSLATION_FAILURES as $class => [$error, $status]) {
+			if ($exception instanceof $class) {
+				return new JSONResponse(['error' => $error, 'message' => $exception->getMessage()], $status);
+			}
+		}
+
+		$this->logger->warning('[ZgwVersionTranslateController] translate failed: ' . $exception->getMessage());
+
+		return new JSONResponse(
+			['error' => 'translation_failed', 'message' => $exception->getMessage()],
+			Http::STATUS_BAD_REQUEST
+		);
+
+	}//end translationFailure()
 
 	/**
 	 * Return `$params[$key]` cast to string, or null when absent — lets the

@@ -114,11 +114,6 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 			);
 		}
 
-		$timestamp = ($payload['timestamp'] ?? null);
-		if ($timestamp !== null) {
-			$timestamp = (string)$timestamp;
-		}
-
 		return new InboundMessage(
 			channelId: self::CHANNEL_ID,
 			externalId: $externalId,
@@ -128,11 +123,14 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 				'name' => (string)($from['name'] ?? ''),
 			],
 			text: (string)($payload['text'] ?? ''),
-			attachments: $this->attachments(payload: $payload),
+			attachments: IntakePayloadReader::decodeFiles(
+				items: ($payload['attachments'] ?? []),
+				defaults: new IntakeFileNaming(nameFormat: 'attachment-%d', mime: 'application/octet-stream')
+			),
 			location: null,
 			media: [],
 			rawPayload: $payload,
-			receivedAt: $timestamp,
+			receivedAt: IntakePayloadReader::optionalString(value: ($payload['timestamp'] ?? null)),
 			fields: [
 				'text' => (string)($payload['text'] ?? ''),
 				'service' => (string)($payload['service'] ?? ''),
@@ -185,19 +183,30 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 			return ReplyResult::failed(self::CHANNEL_ID, 'The gateway refused the reply: ' . $exception->getMessage());
 		}
 
-		$reference = null;
-		if (is_array($decoded) === true) {
-			$reference = (string)($decoded['messageId'] ?? $decoded['id'] ?? '');
-		}
-
-		$sentReference = $reference;
-		if ($sentReference === '') {
-			$sentReference = null;
-		}
-
-		return ReplyResult::sent(self::CHANNEL_ID, $sentReference);
+		return ReplyResult::sent(self::CHANNEL_ID, $this->gatewayReference(decoded: $decoded));
 
 	}//end reply()
+
+	/**
+	 * The gateway's own id for the sent reply.
+	 *
+	 * @param mixed $decoded The decoded response body.
+	 *
+	 * @return string|null The reference, or null when the gateway gave none.
+	 */
+	private function gatewayReference(mixed $decoded): ?string {
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		$reference = (string)($decoded['messageId'] ?? $decoded['id'] ?? '');
+		if ($reference === '') {
+			return null;
+		}
+
+		return $reference;
+
+	}//end gatewayReference()
 
 	/**
 	 * The headers the reply is sent with.
@@ -216,32 +225,5 @@ class MessagingChannelAdapter implements IntakeChannelAdapterInterface {
 		return $headers;
 
 	}//end replyHeaders()
-
-	/**
-	 * The message's attachments.
-	 *
-	 * @param array<string,mixed> $payload The gateway's payload.
-	 *
-	 * @return array<int,array<string,mixed>> The attachments.
-	 */
-	private function attachments(array $payload): array {
-		$attachments = [];
-		foreach (($payload['attachments'] ?? []) as $index => $attachment) {
-			if (is_array($attachment) === false) {
-				continue;
-			}
-
-			$content = (string)base64_decode((string)($attachment['contentBase64'] ?? ''), false);
-			$attachments[] = [
-				'name' => (string)($attachment['name'] ?? ('attachment-' . ((int)$index + 1))),
-				'mime' => (string)($attachment['mime'] ?? 'application/octet-stream'),
-				'size' => strlen($content),
-				'content' => $content,
-			];
-		}
-
-		return $attachments;
-
-	}//end attachments()
 
 }//end class

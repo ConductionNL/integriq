@@ -1,0 +1,123 @@
+{
+    "both dates": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "Stationsplein LastModifiedTime>=2025-01-01 LastModifiedTime<=2026-06-30"
+                },
+                "from": 0,
+                "size": 10,
+                "region": "EUR"
+            }
+        ]
+    },
+    "from only": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "raad LastModifiedTime>=2025-01-01"
+                },
+                "from": 0,
+                "size": 1,
+                "region": "EUR"
+            }
+        ]
+    },
+    "to only, custom region": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "raad LastModifiedTime<=2026-06-30"
+                },
+                "from": 0,
+                "size": 25,
+                "region": "NAM"
+            }
+        ]
+    },
+    "malformed dates": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "raad"
+                },
+                "from": 0,
+                "size": 50,
+                "region": "EUR"
+            }
+        ]
+    },
+    "datetime is not a date": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "raad"
+                },
+                "from": 0,
+                "size": 50,
+                "region": "EUR"
+            }
+        ]
+    },
+    "zero limit": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "raad"
+                },
+                "from": 0,
+                "size": 1,
+                "region": "EUR"
+            }
+        ]
+    },
+    "negative limit": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "raad"
+                },
+                "from": 0,
+                "size": 1,
+                "region": "EUR"
+            }
+        ]
+    },
+    "huge limit": {
+        "requests": [
+            {
+                "entityTypes": [
+                    "driveItem"
+                ],
+                "query": {
+                    "queryString": "raad"
+                },
+                "from": 0,
+                "size": 500,
+                "region": "EUR"
+            }
+        ]
+    },
+    "blank terms": null
+}

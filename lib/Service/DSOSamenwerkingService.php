@@ -91,79 +91,118 @@ class DSOSamenwerkingService {
 		string $dsoSwfUrl,
 		?string $certPath = null,
 	): array {
-		$payload = $this->buildAdviesverzoekPayload(
-			case: $case,
-			partnerOin: $partnerOin,
-			term: $term
-		);
-		$adviesverzoekId = ($payload['adviesverzoekId'] ?? uniqid(prefix: 'avz-', more_entropy: true));
+		$payload = $this->buildAdviesverzoekPayload(case: $case, partnerOin: $partnerOin, term: $term);
+		$run = new AdviesverzoekRun(uri: $dsoSwfUrl . '/adviesverzoeken', payload: $payload);
 
-		$clientOptions = [
-			'json' => $payload,
-			'headers' => ['Content-Type' => 'application/json'],
-		];
-
-		if ($certPath !== null) {
-			$clientOptions['cert'] = $certPath;
-		}
-
-		try {
-			$client = $this->clientService->newClient();
-			$response = $client->post(
-				uri: $dsoSwfUrl . '/adviesverzoeken',
-				options: $clientOptions
-			);
-
-			$statusCode = $response->getStatusCode();
-
-			if ($statusCode >= 200 && $statusCode < 300) {
-				$this->logger->info(
-					'DSO-SWF: adviesverzoek sent successfully',
-					[
-						'adviesverzoekId' => $adviesverzoekId,
-						'partnerOin' => $partnerOin,
-						'caseId' => ($case['id'] ?? null),
-					]
-				);
-
-				return [
-					'success' => true,
-					'adviesverzoekId' => $adviesverzoekId,
-					'message' => 'Adviesverzoek succesvol verzonden naar ' . $partnerOin,
-				];
-			}
-
-			$this->logger->warning(
-				'DSO-SWF: adviesverzoek post returned non-2xx',
-				[
-					'adviesverzoekId' => $adviesverzoekId,
-					'statusCode' => $statusCode,
-				]
-			);
-
-			return [
-				'success' => false,
-				'adviesverzoekId' => $adviesverzoekId,
-				'message' => 'DSO-SWF responded with HTTP ' . $statusCode,
-			];
-		} catch (\Exception $e) {
-			$this->logger->error(
-				'DSO-SWF: failed to send adviesverzoek',
-				[
-					'adviesverzoekId' => $adviesverzoekId,
-					'partnerOin' => $partnerOin,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return [
-				'success' => false,
-				'adviesverzoekId' => $adviesverzoekId,
-				'message' => 'Send failed: ' . $e->getMessage(),
-			];
-		}//end try
+		return $this->deliver(run: $run, post: new MtlsJsonPost(clientService: $this->clientService, certPath: $certPath));
 
 	}//end sendAdviesverzoek()
+
+	/**
+	 * POST the adviesverzoek and turn the answer, or the exception, into the result.
+	 *
+	 * @param AdviesverzoekRun $run  The adviesverzoek.
+	 * @param MtlsJsonPost     $post The POST over the configured certificate.
+	 *
+	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function deliver(AdviesverzoekRun $run, MtlsJsonPost $post): array {
+		try {
+			$response = $post->post(uri: $run->uri, payload: $run->payload);
+			return $this->answered(run: $run, statusCode: $response->getStatusCode());
+		} catch (\Exception $e) {
+			return $this->failed(run: $run, exception: $e);
+		}
+
+	}//end deliver()
+
+	/**
+	 * Log and answer an adviesverzoek that could not be sent.
+	 *
+	 * @param AdviesverzoekRun $run       The adviesverzoek.
+	 * @param \Exception       $exception Why it could not be sent.
+	 *
+	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function failed(AdviesverzoekRun $run, \Exception $exception): array {
+		$this->logger->error(
+			'DSO-SWF: failed to send adviesverzoek',
+			[
+				'adviesverzoekId' => $run->adviesverzoekId,
+				'partnerOin' => $run->partnerOin(),
+				'error' => $exception->getMessage(),
+			]
+		);
+
+		return [
+			'success' => false,
+			'adviesverzoekId' => $run->adviesverzoekId,
+			'message' => 'Send failed: ' . $exception->getMessage(),
+		];
+
+	}//end failed()
+
+	/**
+	 * The result for the HTTP status DSO-SWF answered with.
+	 *
+	 * @param AdviesverzoekRun $run        The adviesverzoek.
+	 * @param int              $statusCode The HTTP status.
+	 *
+	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function answered(AdviesverzoekRun $run, int $statusCode): array {
+		if ($statusCode >= 200 && $statusCode < 300) {
+			return $this->accepted(run: $run);
+		}
+
+		$this->logger->warning(
+			'DSO-SWF: adviesverzoek post returned non-2xx',
+			[
+				'adviesverzoekId' => $run->adviesverzoekId,
+				'statusCode' => $statusCode,
+			]
+		);
+
+		return [
+			'success' => false,
+			'adviesverzoekId' => $run->adviesverzoekId,
+			'message' => 'DSO-SWF responded with HTTP ' . $statusCode,
+		];
+
+	}//end answered()
+
+	/**
+	 * Log and answer an adviesverzoek DSO-SWF accepted.
+	 *
+	 * @param AdviesverzoekRun $run The adviesverzoek.
+	 *
+	 * @return array Array with 'success', 'adviesverzoekId', and 'message' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function accepted(AdviesverzoekRun $run): array {
+		$this->logger->info(
+			'DSO-SWF: adviesverzoek sent successfully',
+			[
+				'adviesverzoekId' => $run->adviesverzoekId,
+				'partnerOin' => $run->partnerOin(),
+				'caseId' => $run->caseId(),
+			]
+		);
+
+		return [
+			'success' => true,
+			'adviesverzoekId' => $run->adviesverzoekId,
+			'message' => 'Adviesverzoek succesvol verzonden naar ' . $run->partnerOin(),
+		];
+
+	}//end accepted()
 
 	/**
 	 * Receive and store an advies from a partner organisation.
@@ -179,26 +218,74 @@ class DSOSamenwerkingService {
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
 	 */
 	public function receiveAdvies(array $adviesPayload, string $caseId): array {
-		// Validate required fields.
+		$field = $this->missingAdviesField(adviesPayload: $adviesPayload);
+		if ($field !== null) {
+			return $this->refuseAdvies(caseId: $caseId, field: $field);
+		}
+
+		return $this->storeAdvies(adviesPayload: $adviesPayload, caseId: $caseId);
+
+	}//end receiveAdvies()
+
+	/**
+	 * The first required advies field that is absent or empty, or null.
+	 *
+	 * @param array $adviesPayload The incoming advies payload.
+	 *
+	 * @return string|null The field.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function missingAdviesField(array $adviesPayload): ?string {
 		foreach (self::REQUIRED_ADVIES_FIELDS as $field) {
 			if (isset($adviesPayload[$field]) === false || $adviesPayload[$field] === '') {
-				$this->logger->warning(
-					'DSO-SWF: received advies missing required field',
-					[
-						'caseId' => $caseId,
-						'field' => $field,
-					]
-				);
-
-				return [
-					'stored' => false,
-					'adviesId' => null,
-					'caseId' => $caseId,
-					'error' => 'required_field_missing: ' . $field,
-				];
+				return $field;
 			}
-		}//end foreach
+		}
 
+		return null;
+
+	}//end missingAdviesField()
+
+	/**
+	 * Log and answer an advies that lacks a required field.
+	 *
+	 * @param string $caseId The zaak identifier.
+	 * @param string $field  The missing field.
+	 *
+	 * @return array Array with 'stored', 'adviesId', 'caseId' and 'error' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function refuseAdvies(string $caseId, string $field): array {
+		$this->logger->warning(
+			'DSO-SWF: received advies missing required field',
+			[
+				'caseId' => $caseId,
+				'field' => $field,
+			]
+		);
+
+		return [
+			'stored' => false,
+			'adviesId' => null,
+			'caseId' => $caseId,
+			'error' => 'required_field_missing: ' . $field,
+		];
+
+	}//end refuseAdvies()
+
+	/**
+	 * Log and answer a complete advies, linked to its zaak.
+	 *
+	 * @param array  $adviesPayload The advies payload.
+	 * @param string $caseId        The zaak identifier.
+	 *
+	 * @return array Array with 'stored', 'adviesId', and 'caseId' keys.
+	 *
+	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-10
+	 */
+	private function storeAdvies(array $adviesPayload, string $caseId): array {
 		$adviesId = $adviesPayload['adviesId'];
 
 		$this->logger->info(
@@ -216,7 +303,7 @@ class DSOSamenwerkingService {
 			'caseId' => $caseId,
 		];
 
-	}//end receiveAdvies()
+	}//end storeAdvies()
 
 	/**
 	 * Build the adviesverzoek payload for DSO-SWF.

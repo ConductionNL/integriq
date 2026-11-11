@@ -95,26 +95,18 @@ class ConfigurationController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function export(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'configuration.export');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$refusal = $this->refusal(action: 'configuration.export');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
 			$document = $this->configService->exportConfiguration(configurationId: $id);
 		} catch (\Throwable $e) {
-			return new JSONResponse(['error' => $this->l->t('Export failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->exportFailed(exception: $e);
 		}
 
-		$response = new JSONResponse($document);
-		$response->addHeader('Content-Disposition', 'attachment; filename="configuration-' . rawurlencode($id) . '.json"');
-		return $response;
+		return $this->attachment(document: $document, filename: 'configuration-' . rawurlencode($id) . '.json');
 	}//end export()
 
 	/**
@@ -139,26 +131,18 @@ class ConfigurationController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function exportRegister(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'configuration.export');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		$refusal = $this->refusal(action: 'configuration.export');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
 			$document = $this->configService->exportRegister(registerId: $id);
 		} catch (\Throwable $e) {
-			return new JSONResponse(['error' => $this->l->t('Export failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->exportFailed(exception: $e);
 		}
 
-		$response = new JSONResponse($document);
-		$response->addHeader('Content-Disposition', 'attachment; filename="register-' . rawurlencode($id) . '.json"');
-		return $response;
+		return $this->attachment(document: $document, filename: 'register-' . rawurlencode($id) . '.json');
 	}//end exportRegister()
 
 	/**
@@ -180,31 +164,14 @@ class ConfigurationController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function previewImport(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		$refusal = $this->refusal(action: 'configuration.import');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'configuration.import');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		}
-
-		$document = $this->extractDocument();
-		if ($document === null) {
-			return new JSONResponse(
-				['error' => $this->l->t('Request must carry a JSON configuration document under "document"')],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		try {
-			$preview = $this->previewService->preview(oas: $document);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return new JSONResponse(['error' => $this->l->t('Preview failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+		$preview = $this->previewOf(document: $this->extractDocument());
+		if ($preview instanceof JSONResponse) {
+			return $preview;
 		}
 
 		return new JSONResponse($preview);
@@ -232,58 +199,21 @@ class ConfigurationController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function import(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
-		}
-
-		try {
-			$this->actionAuth->requireAction(user: $user, action: 'configuration.import');
-		} catch (OCSForbiddenException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		}
-
-		$confirmed = $this->request->getParam('confirmed');
-		if ($confirmed !== true && $confirmed !== 'true') {
-			return new JSONResponse(
-				['error' => $this->l->t('Import requires explicit confirmation — preview first, then send confirmed: true')],
-				Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->importRefusal();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$document = $this->extractDocument();
-		if ($document === null) {
-			return new JSONResponse(
-				['error' => $this->l->t('Request must carry a JSON configuration document under "document"')],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
 
 		// Compute the preview BEFORE writing so the summary classifies
 		// against the pre-import state (what was created vs updated).
-		try {
-			$preview = $this->previewService->preview(oas: $document);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return new JSONResponse(['error' => $this->l->t('Preview failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+		$preview = $this->previewOf(document: $document);
+		if ($preview instanceof JSONResponse) {
+			return $preview;
 		}
 
-		try {
-			$imported = $this->configService->importConfiguration(oas: $document);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return new JSONResponse(['error' => $this->l->t('Import failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
-		}
-
-		// Summarise what importConfiguration() actually returned per type.
-		$written = [];
-		foreach ($imported as $type => $entities) {
-			$written[$type] = array_keys((array)$entities);
-		}
-
-		return new JSONResponse(array_merge($preview, ['written' => $written]));
+		return $this->importPreviewed(document: $document, preview: $preview);
 	}//end import()
 
 	/**
@@ -299,25 +229,163 @@ class ConfigurationController extends Controller {
 		}
 
 		if (is_string($document) === true && $document !== '') {
-			$decoded = json_decode($document, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-
-			return null;
+			return $this->decodedDocument(json: $document);
 		}
 
-		$upload = $this->request->getUploadedFile('file');
-		if (is_array($upload) === true && isset($upload['tmp_name']) === true && is_string($upload['tmp_name']) === true) {
-			$raw = file_get_contents($upload['tmp_name']);
-			if ($raw !== false) {
-				$decoded = json_decode($raw, true);
-				if (is_array($decoded) === true) {
-					return $decoded;
-				}
-			}
+		return $this->uploadedDocument();
+	}//end extractDocument()
+
+	/**
+	 * The 401 or 403 answer when the session user may not run the action, or null.
+	 *
+	 * @param string $action The ADR-023 action, `configuration.export` or `configuration.import`.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 */
+	private function refusal(string $action): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		try {
+			$this->actionAuth->requireAction(user: $user, action: $action);
+		} catch (OCSForbiddenException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		}
 
 		return null;
-	}//end extractDocument()
+	}//end refusal()
+
+	/**
+	 * The refusal of an import: the action gate, then the explicit confirmation.
+	 *
+	 * @return JSONResponse|null The 401, 403 or 400 answer, or null.
+	 */
+	private function importRefusal(): ?JSONResponse {
+		$refusal = $this->refusal(action: 'configuration.import');
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$confirmed = $this->request->getParam('confirmed');
+		if ($confirmed !== true && $confirmed !== 'true') {
+			return new JSONResponse(
+				['error' => $this->l->t('Import requires explicit confirmation — preview first, then send confirmed: true')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+	}//end importRefusal()
+
+	/**
+	 * An export served as a JSON download.
+	 *
+	 * @param array<string,mixed> $document The exported document.
+	 * @param string              $filename The download's file name.
+	 *
+	 * @return JSONResponse
+	 */
+	private function attachment(array $document, string $filename): JSONResponse {
+		$response = new JSONResponse($document);
+		$response->addHeader('Content-Disposition', 'attachment; filename="' . $filename . '"');
+		return $response;
+	}//end attachment()
+
+	/**
+	 * The 500 answer for a failed export.
+	 *
+	 * @param \Throwable $exception The failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private function exportFailed(\Throwable $exception): JSONResponse {
+		return new JSONResponse(['error' => $this->l->t('Export failed: %s', [$exception->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+	}//end exportFailed()
+
+	/**
+	 * The preview of a document, or the 400/500 answer when there is none or it fails.
+	 *
+	 * @param array<string,mixed>|null $document The decoded document, or null.
+	 *
+	 * @return array<string,mixed>|JSONResponse The preview classification, or the error answer.
+	 */
+	private function previewOf(?array $document): array|JSONResponse {
+		if ($document === null) {
+			return new JSONResponse(
+				['error' => $this->l->t('Request must carry a JSON configuration document under "document"')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			return $this->previewService->preview(oas: $document);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return new JSONResponse(['error' => $this->l->t('Preview failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+	}//end previewOf()
+
+	/**
+	 * Import a previewed document and answer the preview with what was written per type.
+	 *
+	 * @param array<string,mixed> $document The decoded document.
+	 * @param array<string,mixed> $preview  Its preview, computed before the write.
+	 *
+	 * @return JSONResponse The post-import summary, or the 400/500 answer.
+	 */
+	private function importPreviewed(array $document, array $preview): JSONResponse {
+		try {
+			$imported = $this->configService->importConfiguration(oas: $document);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return new JSONResponse(['error' => $this->l->t('Import failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		// Summarise what importConfiguration() actually returned per type.
+		$written = [];
+		foreach ($imported as $type => $entities) {
+			$written[$type] = array_keys((array)$entities);
+		}
+
+		return new JSONResponse(array_merge($preview, ['written' => $written]));
+	}//end importPreviewed()
+
+	/**
+	 * A JSON document decoded from a string, or null when it is not a JSON object or array.
+	 *
+	 * @param string $json The JSON text.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function decodedDocument(string $json): ?array {
+		$decoded = json_decode($json, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return null;
+	}//end decodedDocument()
+
+	/**
+	 * The document in the uploaded file named `file`, or null.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function uploadedDocument(): ?array {
+		$upload = $this->request->getUploadedFile('file');
+		if (is_array($upload) === false || isset($upload['tmp_name']) === false || is_string($upload['tmp_name']) === false) {
+			return null;
+		}
+
+		$raw = file_get_contents($upload['tmp_name']);
+		if ($raw === false) {
+			return null;
+		}
+
+		return $this->decodedDocument(json: $raw);
+	}//end uploadedDocument()
 }//end class

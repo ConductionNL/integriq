@@ -40,10 +40,10 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Oso;
 
-use DateTime;
-use DOMDocument;
-use DOMElement;
 use OCA\Integriq\Exception\OsoTranslationException;
+use OCA\Integriq\Service\Stuf\EnvelopeElement;
+use OCA\Integriq\Service\Stuf\ExportEnvelope;
+use OCA\Integriq\Service\Stuf\RequiredPayloadFields;
 use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 
 /**
@@ -92,6 +92,30 @@ class OsoExportEnvelopeTranslator {
 
 		$this->assertRequiredFieldsPresent(payload: $payload);
 
+		$categories = $this->requireCategories(payload: $payload);
+
+		$envelope = new ExportEnvelope(rootName: 'OsoOverstapdossier', kenmerk: $kenmerk);
+		$envelope->stampMessageTime();
+		$body = $envelope->addBody(fields: self::REQUIRED_FIELDS, payload: $payload);
+		$this->appendCategories(body: $body, categories: $categories);
+		$this->appendAttachmentRefs(body: $body, payload: $payload);
+
+		$xml = $envelope->toXml();
+		$this->assertNoUnresolvedPlaceholder(xml: $xml);
+
+		return $xml;
+	}//end translate()
+
+	/**
+	 * The payload's `categories`, refused when missing, not a list or empty.
+	 *
+	 * @param array $payload The export payload.
+	 *
+	 * @return array The categories.
+	 *
+	 * @throws OsoTranslationException When `categories` is missing, not an array or empty.
+	 */
+	private function requireCategories(array $payload): array {
 		$categories = ($payload['categories'] ?? []);
 		if (is_array($categories) === false || $categories === []) {
 			throw new OsoTranslationException(
@@ -99,65 +123,66 @@ class OsoExportEnvelopeTranslator {
 			);
 		}
 
-		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-		$root = $document->createElement('OsoOverstapdossier');
-		$document->appendChild($root);
+		return $categories;
 
-		$stuurgegevens = $document->createElement('stuurgegevens');
-		$root->appendChild($stuurgegevens);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'kenmerk', value: $kenmerk);
-		$this->appendText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'tijdstipBericht',
-			value: (new DateTime())->format('c')
-		);
+	}//end requireCategories()
 
-		$body = $document->createElement('body');
-		$root->appendChild($body);
-
-		foreach (self::REQUIRED_FIELDS as $field) {
-			$this->appendText(document: $document, parent: $body, name: $field, value: (string)$payload[$field]);
-		}
-
-		$categoriesElement = $document->createElement('categories');
-		$body->appendChild($categoriesElement);
+	/**
+	 * Append the `categories` element with one `category` per entry.
+	 *
+	 * @param EnvelopeElement $body       The envelope body.
+	 * @param array           $categories The validated categories.
+	 *
+	 * @return void
+	 */
+	private function appendCategories(EnvelopeElement $body, array $categories): void {
+		$categoriesElement = $body->addChild(name: 'categories');
 		foreach ($categories as $category) {
-			$categoryElement = $document->createElement('category');
-			$categoriesElement->appendChild($categoryElement);
-			$this->appendText(
-				document: $document,
-				parent: $categoryElement,
-				name: 'name',
-				value: (string)($category['category'] ?? '')
-			);
-			$included = 'false';
-			if (($category['included'] ?? false) === true) {
-				$included = 'true';
-			}
-
-			$this->appendText(document: $document, parent: $categoryElement, name: 'included', value: $included);
-			$this->appendText(
-				document: $document,
-				parent: $categoryElement,
-				name: 'data',
-				value: (string)json_encode($category['data'] ?? [])
-			);
+			$this->appendCategory(categoriesElement: $categoriesElement, category: $category);
 		}
 
-		if (empty($payload['attachmentRefs']) === false) {
-			$attachmentsElement = $document->createElement('attachmentRefs');
-			$body->appendChild($attachmentsElement);
-			foreach ((array)$payload['attachmentRefs'] as $ref) {
-				$this->appendText(document: $document, parent: $attachmentsElement, name: 'ref', value: (string)$ref);
-			}
+	}//end appendCategories()
+
+	/**
+	 * Append one `category`: its name, whether it is included, and its data as JSON.
+	 *
+	 * @param EnvelopeElement $categoriesElement The `categories` element.
+	 * @param mixed           $category          One category entry (normally an array; anything else renders as an empty category).
+	 *
+	 * @return void
+	 */
+	private function appendCategory(EnvelopeElement $categoriesElement, mixed $category): void {
+		$categoryElement = $categoriesElement->addChild(name: 'category');
+		$categoryElement->addText(name: 'name', value: (string)($category['category'] ?? ''));
+		$included = 'false';
+		if (($category['included'] ?? false) === true) {
+			$included = 'true';
 		}
 
-		$xml = (string)$document->saveXML();
-		$this->assertNoUnresolvedPlaceholder(xml: $xml);
+		$categoryElement->addText(name: 'included', value: $included);
+		$categoryElement->addText(name: 'data', value: (string)json_encode($category['data'] ?? []));
 
-		return $xml;
-	}//end translate()
+	}//end appendCategory()
+
+	/**
+	 * Append the `attachmentRefs` element when the payload carries any.
+	 *
+	 * @param EnvelopeElement $body    The envelope body.
+	 * @param array           $payload The export payload.
+	 *
+	 * @return void
+	 */
+	private function appendAttachmentRefs(EnvelopeElement $body, array $payload): void {
+		if (empty($payload['attachmentRefs']) === true) {
+			return;
+		}
+
+		$attachmentsElement = $body->addChild(name: 'attachmentRefs');
+		foreach ((array)$payload['attachmentRefs'] as $ref) {
+			$attachmentsElement->addText(name: 'ref', value: (string)$ref);
+		}
+
+	}//end appendAttachmentRefs()
 
 	/**
 	 * Assert every required field is present and non-empty — the
@@ -172,33 +197,15 @@ class OsoExportEnvelopeTranslator {
 	 * @spec openspec/specs/oso-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-envelope
 	 */
 	private function assertRequiredFieldsPresent(array $payload): void {
-		foreach (self::REQUIRED_FIELDS as $field) {
-			$value = ($payload[$field] ?? null);
-			$isEmptyString = (is_string($value) === true && trim($value) === '');
-			if ($value === null || $isEmptyString === true) {
-				throw new OsoTranslationException(
-					message: 'Required field "' . $field . '" is missing or empty for an OSO export — refusing '
-						. 'to build an envelope with unresolved data.'
-				);
-			}
+		$missing = RequiredPayloadFields::firstMissing(fields: self::REQUIRED_FIELDS, payload: $payload);
+		if ($missing !== null) {
+			throw new OsoTranslationException(
+				message: 'Required field "' . $missing . '" is missing or empty for an OSO export — refusing '
+					. 'to build an envelope with unresolved data.'
+			);
 		}
 
 	}//end assertRequiredFieldsPresent()
-
-	/**
-	 * Append a text-valued child element.
-	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $parent The parent element.
-	 * @param string $name The child element name.
-	 * @param string $value The text value.
-	 *
-	 * @return void
-	 */
-	private function appendText(DOMDocument $document, DOMElement $parent, string $name, string $value): void {
-		$parent->appendChild($document->createElement($name, htmlspecialchars($value, ENT_XML1 | ENT_QUOTES)));
-
-	}//end appendText()
 
 	/**
 	 * Scan the rendered envelope for leftover unresolved template markers.

@@ -110,7 +110,8 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function kennisgeving(array $source, string $operation, array $message, array $context): array {
-		$row      = $this->openRow(source: $source, operation: $operation, message: $message, context: $context, keepEnvelope: true);
+		$request  = new ZdsRequest(source: $source, operation: $operation, message: $message, context: $context);
+		$row      = $this->openRow(request: $request, keepEnvelope: true);
 		$response = $this->transmit(source: $source, operation: $operation, envelope: $message['xml']);
 
 		return $this->classify(source: $source, row: $row, response: $response, attempt: 1);
@@ -131,7 +132,8 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function question(array $source, string $operation, array $message, array $context): array {
-		$row      = $this->openRow(source: $source, operation: $operation, message: $message, context: $context, keepEnvelope: false);
+		$request  = new ZdsRequest(source: $source, operation: $operation, message: $message, context: $context);
+		$row      = $this->openRow(request: $request, keepEnvelope: false);
 		$response = $this->transmit(source: $source, operation: $operation, envelope: $message['xml']);
 
 		$fout   = null;
@@ -148,11 +150,10 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 			}
 		}
 
-		$row = $this->concludeRow(row: $row, sent: ($fout === null), attempt: 1, transport: $response, fout: $fout, caseIdentification: $caseId);
+		$conclusion = new ZdsConclusion(sent: ($fout === null), attempt: 1, transport: $response, fout: $fout, caseId: $caseId);
+		$row        = $this->concludeRow(row: $row, conclusion: $conclusion);
 
-		return (
-			$this->result(row: $row, success: ($fout === null), retrying: false, caseId: $caseId, fout: $fout) + ['answer' => $response['responseXml']]
-		);
+		return ($this->result(row: $row, conclusion: $conclusion) + ['answer' => $response['responseXml']]);
 	}//end question()
 
 	/**
@@ -176,31 +177,44 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 			$source = $this->log->source(sourceId: (string)($row['sourceId'] ?? ''));
 		} catch (StufZknProviderException $exception) {
 			$fout = ['code' => 'SOURCE_GONE', 'omschrijving' => $exception->getMessage(), 'details' => '', 'kind' => 'permanent'];
-			$this->conclude(row: $row, sent: false, attempt: $attempt, transport: [], fout: $fout, caseId: null);
+			$this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: [], fout: $fout, caseId: null));
 			return;
 		}
 
 		if (($source['configuration']['provider'] ?? 'log') !== 'rest') {
 			$fout = ['code' => 'SOURCE_NOT_REST', 'omschrijving' => 'The source left rest mode; nothing was sent', 'details' => '', 'kind' => 'permanent'];
-			$this->conclude(row: $row, sent: false, attempt: $attempt, transport: [], fout: $fout, caseId: null);
+			$this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: [], fout: $fout, caseId: null));
 			return;
 		}
 
 		// Fails open: a breaker that cannot be read must not strand the row with its job consumed.
 		$allowed = $this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->allows(sourceId: $sourceId), fallback: true);
 		if ($allowed === false) {
-			// Not an attempt: wait out the cooldown and try again.
-			if ($this->schedule(messageId: $messageId, delay: StufZdsCircuitBreaker::COOLDOWN_SECONDS) === false) {
-				$last = ['code' => (string)($row['faultCode'] ?? '')];
-				$this->conclude(row: $row, sent: false, attempt: ($attempt - 1), transport: [], fout: $this->unscheduledFout(previous: $last), caseId: null);
-			}
-
+			$this->waitOutCooldown(messageId: $messageId, row: $row);
 			return;
 		}
 
 		$response = $this->transmit(source: $source, operation: (string)($row['operation'] ?? ''), envelope: (string)$row['envelope']);
 		$this->classify(source: $source, row: $row, response: $response, attempt: $attempt);
 	}//end retry()
+
+	/**
+	 * Not an attempt: wait out the open breaker's cooldown and try again, or conclude the row when that cannot be scheduled.
+	 *
+	 * @param string $messageId The stuf_message uuid.
+	 * @param array  $row       The stuf_message row.
+	 *
+	 * @return void
+	 */
+	private function waitOutCooldown(string $messageId, array $row): void {
+		if ($this->schedule(messageId: $messageId, delay: StufZdsCircuitBreaker::COOLDOWN_SECONDS) === true) {
+			return;
+		}
+
+		$fout        = $this->unscheduledFout(previous: ['code' => (string)($row['faultCode'] ?? '')]);
+		$unscheduled = new ZdsConclusion(sent: false, attempt: (int)($row['attempts'] ?? 0), transport: [], fout: $fout, caseId: null);
+		$this->conclude(row: $row, conclusion: $unscheduled);
+	}//end waitOutCooldown()
 
 	/**
 	 * Classify the answer to a kennisgeving attempt: sent, retry later, or failed.
@@ -216,13 +230,13 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 		if ($this->isSuccess(response: $response) === true) {
 			$caseId = $this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
 			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
-			return $this->conclude(row: $row, sent: true, attempt: $attempt, transport: $response, fout: null, caseId: $caseId);
+			return $this->conclude(row: $row, conclusion: new ZdsConclusion(sent: true, attempt: $attempt, transport: $response, fout: null, caseId: $caseId));
 		}
 
 		$fout = $this->failureOf(response: $response);
 		$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		if ($this->isTransient(response: $response, fout: $fout) === false || $attempt > count(self::RETRY_BACKOFF_SECONDS)) {
-			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
+			return $this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null));
 		}
 
 		// A row that cannot be marked retrying, or a retry that cannot be
@@ -237,15 +251,17 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 				'StUF-ZDS message {id} could not be marked for a retry: {error}',
 				['id' => (string)($row['id'] ?? ''), 'error' => $exception->getMessage()]
 			);
-			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null);
+			return $this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null));
 		}
 
 		if ($this->schedule(messageId: (string)$row['id'], delay: $delay) === false) {
 			$unscheduled = $this->unscheduledFout(previous: $fout);
-			return $this->conclude(row: $row, sent: false, attempt: $attempt, transport: $response, fout: $unscheduled, caseId: null);
+			$failed      = new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $unscheduled, caseId: null);
+			return $this->conclude(row: $row, conclusion: $failed);
 		}
 
-		return $this->result(row: $row, success: false, retrying: true, caseId: null, fout: $fout);
+		$retrying = new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null, retrying: true);
+		return $this->result(row: $row, conclusion: $retrying);
 	}//end classify()
 
 	/**
@@ -275,19 +291,15 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	/**
 	 * Close a kennisgeving's row, announce the conclusion, and report it.
 	 *
-	 * @param array       $row       The row.
-	 * @param bool        $sent      Whether the case system confirmed it.
-	 * @param int         $attempt   The concluding attempt.
-	 * @param array       $transport The transport result.
-	 * @param array|null  $fout      The fout on failure.
-	 * @param string|null $caseId    The zaak identificatie the case system named.
+	 * @param array         $row        The row.
+	 * @param ZdsConclusion $conclusion How the attempt ended; a missing zaak identificatie falls back to the row's.
 	 *
 	 * @return array The result (ZdsResult).
 	 */
-	private function conclude(array $row, bool $sent, int $attempt, array $transport, ?array $fout, ?string $caseId): array {
-		$known  = ($caseId ?? (string)($row['caseIdentification'] ?? ''));
-		$row    = $this->concludeRow(row: $row, sent: $sent, attempt: $attempt, transport: $transport, fout: $fout, caseIdentification: $known);
-		$result = $this->result(row: $row, success: $sent, retrying: false, caseId: $known, fout: $fout);
+	private function conclude(array $row, ZdsConclusion $conclusion): array {
+		$known  = $this->withKnownCase(row: $row, conclusion: $conclusion);
+		$row    = $this->concludeRow(row: $row, conclusion: $known);
+		$result = $this->result(row: $row, conclusion: $known);
 
 		try {
 			$this->dispatcher->dispatchTyped(
@@ -295,7 +307,7 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 					sourceApp: (string)($row['sourceApp'] ?? ''),
 					correlationId: (string)($row['correlationId'] ?? ''),
 					operation: (string)($row['operation'] ?? ''),
-					attempts: $attempt,
+					attempts: $known->attempt,
 					result: $result
 				)
 			);
@@ -307,6 +319,25 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	}//end conclude()
 
 	/**
+	 * The conclusion with the zaak identificatie the case system named, else the one the row already holds.
+	 *
+	 * @param array         $row        The row.
+	 * @param ZdsConclusion $conclusion How the attempt ended.
+	 *
+	 * @return ZdsConclusion The conclusion with its known zaak identificatie.
+	 */
+	private function withKnownCase(array $row, ZdsConclusion $conclusion): ZdsConclusion {
+		return new ZdsConclusion(
+			sent: $conclusion->sent,
+			attempt: $conclusion->attempt,
+			transport: $conclusion->transport,
+			fout: $conclusion->fout,
+			caseId: ($conclusion->caseId ?? (string)($row['caseIdentification'] ?? ''))
+		);
+
+	}//end withKnownCase()
+
+	/**
 	 * Write a message's conclusion to its row, without letting a failed write undo the send.
 	 *
 	 * Once the case system answered, that answer is the outcome: a row that
@@ -314,29 +345,25 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 * caller would retry into a second zaak. The failure is logged and the
 	 * unsaved row is returned.
 	 *
-	 * @param array       $row                The row.
-	 * @param bool        $sent               Whether the case system confirmed it.
-	 * @param int         $attempt            The concluding attempt.
-	 * @param array       $transport          The transport result.
-	 * @param array|null  $fout               The fout on failure.
-	 * @param string|null $caseIdentification The zaak identificatie, if known.
+	 * @param array         $row        The row.
+	 * @param ZdsConclusion $conclusion How the attempt ended.
 	 *
 	 * @return array The saved row, or the row as it was when the save failed.
 	 */
-	private function concludeRow(array $row, bool $sent, int $attempt, array $transport, ?array $fout, ?string $caseIdentification): array {
+	private function concludeRow(array $row, ZdsConclusion $conclusion): array {
 		try {
 			return $this->log->conclude(
 				row: $row,
-				sent: $sent,
-				attempt: $attempt,
-				transport: $transport,
-				fout: $fout,
-				caseIdentification: $caseIdentification
+				sent: $conclusion->sent,
+				attempt: $conclusion->attempt,
+				transport: $conclusion->transport,
+				fout: $conclusion->fout,
+				caseIdentification: $conclusion->caseId
 			);
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				'StUF-ZDS message {id} was concluded (sent: {sent}) but its row could not be saved: {error}',
-				['id' => (string)($row['id'] ?? ''), 'sent' => json_encode($sent), 'error' => $exception->getMessage()]
+				['id' => (string)($row['id'] ?? ''), 'sent' => json_encode($conclusion->sent), 'error' => $exception->getMessage()]
 			);
 			return $row;
 		}
@@ -387,56 +414,51 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	/**
 	 * The result array of a request.
 	 *
-	 * @param array       $row      The row.
-	 * @param bool        $success  Whether the case system confirmed it.
-	 * @param bool        $retrying Whether a retry is scheduled.
-	 * @param string|null $caseId   The zaak identificatie, if known.
-	 * @param array|null  $fout     The fout, if any.
+	 * @param array         $row        The row.
+	 * @param ZdsConclusion $conclusion How the attempt ended, and whether a retry is scheduled.
 	 *
 	 * @return array The result (ZdsResult).
 	 */
-	private function result(array $row, bool $success, bool $retrying, ?string $caseId, ?array $fout): array {
+	private function result(array $row, ZdsConclusion $conclusion): array {
+		$caseId = $conclusion->caseId;
 		if ($caseId === '') {
 			$caseId = null;
 		}
 
 		return [
-			'success' => $success,
-			'retrying' => $retrying,
+			'success' => $conclusion->sent,
+			'retrying' => $conclusion->retrying,
 			'referentienummer' => (string)($row['referentienummer'] ?? ''),
 			'messageId' => (string)($row['id'] ?? ''),
 			'caseIdentification' => $caseId,
-			'fout' => $fout,
+			'fout' => $conclusion->fout,
 		];
 	}//end result()
 
 	/**
 	 * Open the audit row of a message.
 	 *
-	 * @param array  $source       The source.
-	 * @param string $operation    The operation.
-	 * @param array  $message      The built message.
-	 * @param array  $context      correlationId, sourceApp, caseIdentification.
-	 * @param bool   $keepEnvelope Keep the envelope for a retry (kennisgevingen only).
+	 * @param ZdsRequest $request      The source, operation, built message and context.
+	 * @param bool       $keepEnvelope Keep the envelope for a retry (kennisgevingen only).
 	 *
 	 * @return array The row.
 	 */
-	private function openRow(array $source, string $operation, array $message, array $context, bool $keepEnvelope): array {
+	private function openRow(ZdsRequest $request, bool $keepEnvelope): array {
 		$envelope = null;
 		if ($keepEnvelope === true) {
-			$envelope = $message['xml'];
+			$envelope = $request->message['xml'];
 		}
 
 		return $this->log->open(
 			fields: [
-				'berichttype' => self::OPERATIONS[$operation]['berichttype'],
-				'operation' => $operation,
+				'berichttype' => self::OPERATIONS[$request->operation]['berichttype'],
+				'operation' => $request->operation,
 				'entiteittype' => 'ZAK',
-				'referentienummer' => $message['referentienummer'],
-				'sourceId' => $source['id'],
-				'sourceApp' => (string)($context['sourceApp'] ?? ''),
-				'correlationId' => (string)($context['correlationId'] ?? ''),
-				'caseIdentification' => (string)($context['caseIdentification'] ?? ''),
+				'referentienummer' => $request->message['referentienummer'],
+				'sourceId' => $request->source['id'],
+				'sourceApp' => (string)($request->context['sourceApp'] ?? ''),
+				'correlationId' => (string)($request->context['correlationId'] ?? ''),
+				'caseIdentification' => (string)($request->context['caseIdentification'] ?? ''),
 				'envelope' => $envelope,
 			]
 		);

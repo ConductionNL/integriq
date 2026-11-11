@@ -71,44 +71,88 @@ class RecordOwnershipService implements RecordOwnershipServiceInterface {
 	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function forObject(string $targetId): OwnershipState {
-		$contract = $this->findContract(targetId: $targetId);
+		return $this->resolve(targetId: $targetId, strict: false);
+	}//end forObject()
+
+	/**
+	 * Who owns the object, throwing when the contracts cannot be read.
+	 *
+	 * @param string $targetId The object's OpenRegister uuid.
+	 *
+	 * @return OwnershipState The ownership answer.
+	 *
+	 * @throws OwnershipReadFailed When a contract or synchronisation read fails.
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 */
+	public function forObjectOrFail(string $targetId): OwnershipState {
+		return $this->resolve(targetId: $targetId, strict: true);
+	}//end forObjectOrFail()
+
+	/**
+	 * Derive the ownership answer, optionally throwing on a failed read.
+	 *
+	 * @param string $targetId The object's OpenRegister uuid.
+	 * @param bool   $strict   Whether a failed read throws instead of reading as absent.
+	 *
+	 * @return OwnershipState The ownership answer.
+	 *
+	 * @throws OwnershipReadFailed In strict mode, when a read fails.
+	 */
+	private function resolve(string $targetId, bool $strict): OwnershipState {
+		$contract = $this->findOne(
+			lookup: new OwnershipLookup(schema: 'synchronization_contract', matchKey: 'targetId', matchValue: $targetId),
+			strict: $strict
+		);
 		if ($contract === null) {
 			return OwnershipState::local();
 		}
 
-		$synchronization = $this->findSynchronization(synchronizationId: (string)($contract['synchronizationId'] ?? ''));
-		$mode = $this->readMode(synchronization: $synchronization);
+		try {
+			$synchronization = $this->findSynchronization(synchronizationId: (string)($contract['synchronizationId'] ?? ''), strict: $strict);
+		} catch (OwnershipReadFailed $failure) {
+			throw new OwnershipReadFailed(message: $failure->getMessage(), contractFound: true, previous: $failure);
+		}
 
+		$mode = $this->readMode(synchronization: $synchronization);
 		if ($mode === OwnershipState::MODE_LOCAL) {
 			return OwnershipState::local();
 		}
 
-		$lastSeenAt = ($contract['sourceLastSeen'] ?? null);
+		return self::stateOf(mode: $mode, read: new OwnershipRead(contract: $contract, synchronization: $synchronization));
+	}//end resolve()
 
-		// Each of these is an "empty means absent" narrowing, delegated to a
-		// helper rather than written out four times. Four inline `if`s here put
-		// forObject() at an NPath complexity of 256 against a threshold of 200 —
-		// the branches multiply, even though none of them is a decision worth
-		// reading. An absent source id stays a different fact from an empty one.
-		$sourceId = self::absentWhenEmpty(value: ($synchronization['sourceId'] ?? ''));
-		$originId = self::absentWhenEmpty(value: ($contract['originId'] ?? ''));
-		$synchronizationId = self::absentWhenEmpty(value: ($contract['synchronizationId'] ?? ''));
-		$synchronizationName = self::absentWhenEmpty(value: ($synchronization['name'] ?? ''));
-		$lastSeenText = self::textOrNull(value: $lastSeenAt);
-		$endedAtText = self::textOrNull(value: ($contract['endedAt'] ?? null));
+	/**
+	 * The ownership answer for a non-local mode.
+	 *
+	 * Each field is an "empty means absent" narrowing, delegated to a helper
+	 * rather than written out as an `if` per field: inline they multiply the
+	 * NPath complexity even though none of them is a decision worth reading.
+	 * An absent source id stays a different fact from an empty one.
+	 *
+	 * @param string        $mode The declared mode.
+	 * @param OwnershipRead $read The contract and its synchronisation.
+	 *
+	 * @return OwnershipState
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+	 */
+	private static function stateOf(string $mode, OwnershipRead $read): OwnershipState {
+		$contract = $read->contract;
+		$lastSeenAt = ($contract['sourceLastSeen'] ?? null);
 
 		return new OwnershipState(
 			$mode,
-			$sourceId,
-			$originId,
-			$lastSeenText,
+			self::absentWhenEmpty(value: ($read->synchronization['sourceId'] ?? '')),
+			self::absentWhenEmpty(value: ($contract['originId'] ?? '')),
+			self::textOrNull(value: $lastSeenAt),
 			($lastSeenAt === null),
 			((bool)($contract['absentAtSource'] ?? false)),
-			$endedAtText,
-			$synchronizationId,
-			$synchronizationName
+			self::textOrNull(value: ($contract['endedAt'] ?? null)),
+			self::absentWhenEmpty(value: ($contract['synchronizationId'] ?? '')),
+			self::absentWhenEmpty(value: ($read->synchronization['name'] ?? ''))
 		);
-	}//end forObject()
+	}//end stateOf()
 
 	/**
 	 * The ownership mode a synchronisation declares.
@@ -127,60 +171,84 @@ class RecordOwnershipService implements RecordOwnershipServiceInterface {
 			return OwnershipState::MODE_LOCAL;
 		}
 
-		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
-		$declared = null;
-		if (is_array($sourceConfig) === true) {
-			$declared = ($sourceConfig[self::MODE_KEY] ?? null);
-		}
-
-		if ($declared === null || $declared === '') {
+		$declared = self::declaredMode(synchronization: $synchronization);
+		if ($declared === null) {
 			return OwnershipState::MODE_SOURCE;
 		}
 
 		if (in_array($declared, OwnershipState::MODES, true) === false) {
-			$declaredText = gettype($declared);
-			if (is_scalar($declared) === true) {
-				$declaredText = (string)$declared;
-			}
-
-			$this->logger->warning(
-				'ownership.unknown-mode',
-				[
-					'declared' => $declaredText,
-					'synchronization' => ($synchronization['id'] ?? $synchronization['uuid'] ?? null),
-				]
-			);
-
-			return OwnershipState::MODE_LOCAL;
+			return $this->unknownMode(declared: $declared, synchronization: $synchronization);
 		}
 
 		return (string)$declared;
 	}//end readMode()
 
 	/**
-	 * The contract that maintains one target object, if there is one.
+	 * The mode the synchronisation's source config declares, null when none or empty.
 	 *
-	 * @param string $targetId The target object's id.
+	 * @param array<string, mixed> $synchronization The synchronisation.
 	 *
-	 * @return array<string,mixed>|null The contract data.
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
 	 */
-	private function findContract(string $targetId): ?array {
-		return $this->findOne(schema: 'synchronization_contract', filters: ['targetId' => $targetId], matchKey: 'targetId', matchValue: $targetId);
-	}//end findContract()
+	private static function declaredMode(array $synchronization): mixed {
+		$sourceConfig = ($synchronization['sourceConfig'] ?? []);
+		if (is_array($sourceConfig) === false) {
+			return null;
+		}
+
+		$declared = ($sourceConfig[self::MODE_KEY] ?? null);
+		if ($declared === '') {
+			return null;
+		}
+
+		return $declared;
+	}//end declaredMode()
+
+	/**
+	 * Log a mode nobody declared and read it as local, the safe answer.
+	 *
+	 * @param mixed                $declared        The declared value.
+	 * @param array<string, mixed> $synchronization The synchronisation.
+	 *
+	 * @return string OwnershipState::MODE_LOCAL.
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+	 */
+	private function unknownMode(mixed $declared, array $synchronization): string {
+		$declaredText = gettype($declared);
+		if (is_scalar($declared) === true) {
+			$declaredText = (string)$declared;
+		}
+
+		$this->logger->warning(
+			'ownership.unknown-mode',
+			[
+				'declared' => $declaredText,
+				'synchronization' => ($synchronization['id'] ?? $synchronization['uuid'] ?? null),
+			]
+		);
+
+		return OwnershipState::MODE_LOCAL;
+	}//end unknownMode()
 
 	/**
 	 * One synchronisation by id.
 	 *
 	 * @param string $synchronizationId The synchronisation id.
+	 * @param bool   $strict            Whether a failed read throws.
 	 *
 	 * @return array<string,mixed>|null The synchronisation data.
+	 *
+	 * @throws OwnershipReadFailed In strict mode, when the read fails.
 	 */
-	private function findSynchronization(string $synchronizationId): ?array {
+	private function findSynchronization(string $synchronizationId, bool $strict): ?array {
 		if ($synchronizationId === '') {
 			return null;
 		}
 
-		return $this->findOne(schema: 'synchronization', filters: ['uuid' => $synchronizationId], matchKey: 'uuid', matchValue: $synchronizationId);
+		return $this->findOne(lookup: new OwnershipLookup(schema: 'synchronization', matchKey: 'uuid', matchValue: $synchronizationId), strict: $strict);
 	}//end findSynchronization()
 
 	/**
@@ -188,46 +256,67 @@ class RecordOwnershipService implements RecordOwnershipServiceInterface {
 	 * filter: an endpoint that ignores an unknown filter would otherwise hand
 	 * back the whole schema and the first row would look like an answer.
 	 *
-	 * @param string $schema The schema slug.
-	 * @param array<string,mixed> $filters The filters to ask with.
-	 * @param string $matchKey The key to check on the way back.
-	 * @param string $matchValue The value that key must carry.
+	 * @param OwnershipLookup $lookup The schema, the field filtered on and checked, and its value.
+	 * @param bool            $strict Whether a failed read throws instead of reading as absent.
 	 *
 	 * @return array<string,mixed>|null The matching object's data.
+	 *
+	 * @throws OwnershipReadFailed In strict mode, when the read fails.
 	 */
-	private function findOne(string $schema, array $filters, string $matchKey, string $matchValue): ?array {
+	private function findOne(OwnershipLookup $lookup, bool $strict): ?array {
 		try {
 			$result = $this->objectService->findAll(
-				config: ['filters' => (['register' => self::REGISTER, 'schema' => $schema] + $filters)]
+				config: ['filters' => ['register' => self::REGISTER, 'schema' => $lookup->schema, $lookup->matchKey => $lookup->matchValue]]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'ownership.read-failed',
-				[
-					'schema' => $schema,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logger->warning('ownership.read-failed', ['schema' => $lookup->schema, 'error' => $e->getMessage()]);
+			if ($strict === true) {
+				throw new OwnershipReadFailed(message: 'the ' . $lookup->schema . ' read failed', contractFound: false, previous: $e);
+			}
 
 			return null;
 		}
 
-		foreach (($result['results'] ?? $result) as $entity) {
-			$data = $entity;
-			if ($entity instanceof ObjectEntity === true) {
-				$data = $entity->getObject();
-			}
-			if (is_array($data) === false) {
-				continue;
-			}
+		return self::firstMatch(result: $result, lookup: $lookup);
+	}//end findOne()
 
-			if ((string)($data[$matchKey] ?? '') === $matchValue) {
+	/**
+	 * The first object in a read whose field holds the looked-up value.
+	 *
+	 * @param array<mixed>    $result The read, with or without a `results` envelope.
+	 * @param OwnershipLookup $lookup The lookup.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+	 */
+	private static function firstMatch(array $result, OwnershipLookup $lookup): ?array {
+		foreach (($result['results'] ?? $result) as $entity) {
+			$data = self::dataOf(entity: $entity);
+			if (is_array($data) === true && (string)($data[$lookup->matchKey] ?? '') === $lookup->matchValue) {
 				return $data;
 			}
 		}
 
 		return null;
-	}//end findOne()
+	}//end firstMatch()
+
+	/**
+	 * An entity's object data; a plain row is returned as it is.
+	 *
+	 * @param mixed $entity An ObjectEntity or a row.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-record-maintained-from-a-source-says-who-owns-it-req-sor-001
+	 */
+	private static function dataOf(mixed $entity): mixed {
+		if ($entity instanceof ObjectEntity === true) {
+			return $entity->getObject();
+		}
+
+		return $entity;
+	}//end dataOf()
 	/**
 	 * The value as a string, or null when it is empty.
 	 *

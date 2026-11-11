@@ -92,9 +92,34 @@ class MigrateFlowStepsToGraph implements IRepairStep {
 			return;
 		}
 
+		$report = $this->migrationReport();
+		if ($report === null) {
+			return;
+		}
+
+		[$migrated, $refused] = $this->countOutcomes(report: $report);
+		if (($migrated + $refused) > 0) {
+			$output->info(sprintf(
+				'Flow steps-to-graph migration: %d migrated, %d refused (see the log), %d total.',
+				$migrated,
+				$refused,
+				count($report)
+			));
+		}
+
+	}//end run()
+
+	/**
+	 * Run the migration pass, or answer null after logging why it failed.
+	 *
+	 * @return array<int, array<string, mixed>>|null The per-flow report.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function migrationReport(): ?array {
 		try {
 			$migration = $this->container->get(FlowGraphMigrationServiceInterface::class);
-			$report = $migration->migrate(apply: true);
+			return $migration->migrate(apply: true);
 		} catch (Throwable $e) {
 			// Non-fatal by contract: the legacy runner still executes steps[],
 			// and the occ command re-runs the migration on demand.
@@ -103,9 +128,21 @@ class MigrateFlowStepsToGraph implements IRepairStep {
 				['exception' => $e]
 			);
 
-			return;
+			return null;
 		}
 
+	}//end migrationReport()
+
+	/**
+	 * Count the migrated and refused flows, logging each refusal.
+	 *
+	 * @param array<int, array<string, mixed>> $report The per-flow report.
+	 *
+	 * @return array{0: int, 1: int} Migrated and refused counts.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function countOutcomes(array $report): array {
 		$migrated = 0;
 		$refused = 0;
 		foreach ($report as $row) {
@@ -122,14 +159,7 @@ class MigrateFlowStepsToGraph implements IRepairStep {
 			}
 		}
 
-		if (($migrated + $refused) > 0) {
-			$output->info(sprintf(
-				'Flow steps-to-graph migration: %d migrated, %d refused (see the log), %d total.',
-				$migrated,
-				$refused,
-				count($report)
-			));
-		}
+		return [$migrated, $refused];
 
-	}//end run()
+	}//end countOutcomes()
 }//end class

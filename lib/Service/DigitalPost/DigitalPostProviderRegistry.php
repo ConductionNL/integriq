@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\DigitalPost;
 
+use OCA\Integriq\Service\Helper\ProviderIds;
 use RuntimeException;
 
 /**
@@ -79,16 +80,11 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 */
 	public function get(string $providerId): DigitalPostProviderInterface {
 		if (isset($this->providers[$providerId]) === false) {
-			$knownIds = '(none)';
-			if ($this->ids() !== []) {
-				$knownIds = implode(', ', $this->ids());
-			}
-
 			throw new RuntimeException(
 				sprintf(
 					'No digital post provider is registered under "%s". Registered providers: %s. Nothing was sent.',
 					$providerId,
-					$knownIds
+					ProviderIds::listed(ids: $this->ids())
 				)
 			);
 		}

@@ -69,6 +69,25 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	public const EARTH_RADIUS = 6371008.8;
 
 	/**
+	 * The 400 detail for a search without a "within" shape.
+	 *
+	 * @var string
+	 */
+	private const NO_WITHIN_DETAIL = 'A geometry search needs "geometry.within" naming a circle or a polygon.';
+
+	/**
+	 * The 400 detail for a "within" that is not a circle.
+	 *
+	 * Named rather than silently widened to "everything": a search shape this
+	 * facade cannot evaluate must not answer with the unfiltered set, which
+	 * would read as "nothing matched the filter" being the opposite of what
+	 * happened.
+	 *
+	 * @var string
+	 */
+	private const NOT_A_CIRCLE_DETAIL = 'Only a circular "within" is evaluated here: give "type": "Point" with "coordinates" and a "radius" in metres.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjecttypeRegistry      $objecttypes The declared mappings.
@@ -169,41 +188,58 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 		}
 
 		$within = ($body['geometry']['within'] ?? null);
+		$refusal = $this->withinRefusal(within: $within);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$matched = $this->objectsWithin(
+			objects: $this->readObjects(declaration: $declaration, principal: $principal),
+			within: (array)$within
+		);
+
+		return $this->page(objects: $matched, type: $type, query: $body, baseUrl: $baseUrl);
+	}//end search()
+
+	/**
+	 * The 400 answer for a "within" this facade cannot evaluate, or null for a circle.
+	 *
+	 * @param mixed $within The body's `geometry.within`.
+	 *
+	 * @return array{status: int, body: array<string, mixed>}|null
+	 */
+	private function withinRefusal(mixed $within): ?array {
 		if (is_array($within) === false) {
-			return $this->problem(
-				status: 400,
-				title: 'Bad request',
-				detail: 'A geometry search needs "geometry.within" naming a circle or a polygon.'
-			);
+			return $this->problem(status: 400, title: 'Bad request', detail: self::NO_WITHIN_DETAIL);
 		}
 
+		if ($this->circleOf(within: $within) !== null) {
+			return null;
+		}
+
+		return $this->problem(status: 400, title: 'Bad request', detail: self::NOT_A_CIRCLE_DETAIL);
+	}//end withinRefusal()
+
+	/**
+	 * The objects whose point lies inside the circle; an object without a point never matches.
+	 *
+	 * @param array<int, array<string, mixed>> $objects The readable objects.
+	 * @param array<string, mixed>             $within  A circle {@see self::withinRefusal()} accepted.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function objectsWithin(array $objects, array $within): array {
 		$circle = $this->circleOf(within: $within);
-		if ($circle === null) {
-			return $this->problem(
-				status: 400,
-				title: 'Bad request',
-				// Named rather than silently widened to "everything": a search
-				// shape this facade cannot evaluate must not answer with the
-				// unfiltered set, which would read as "nothing matched the
-				// filter" being the opposite of what happened.
-				detail: 'Only a circular "within" is evaluated here: give "type": "Point" with "coordinates" and a "radius" in metres.'
-			);
-		}
-
 		$matched = [];
-		foreach ($this->readObjects(declaration: $declaration, principal: $principal) as $object) {
+		foreach ($objects as $object) {
 			$point = $this->pointOf(geometry: ($object['geometry'] ?? null));
-			if ($point === null) {
-				continue;
-			}
-
-			if ($this->metresBetween(a: $circle['point'], b: $point) <= $circle['radius']) {
+			if ($circle !== null && $point !== null && $this->metresBetween(a: $circle['point'], b: $point) <= $circle['radius']) {
 				$matched[] = $object;
 			}
 		}
 
-		return $this->page(objects: $matched, type: $type, query: $body, baseUrl: $baseUrl);
-	}//end search()
+		return $matched;
+	}//end objectsWithin()
 
 	/**
 	 * Great-circle distance in metres between two lon/lat points.

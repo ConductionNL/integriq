@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Verzuimloket;
 
+use OCA\Integriq\Service\Helper\ProviderIds;
 use RuntimeException;
 
 /**
@@ -77,22 +78,13 @@ class VerzuimloketProviderRegistry {
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function get(string $providerId): VerzuimloketProviderInterface {
-		$resolved = $providerId;
-		if ($resolved === '') {
-			$resolved = 'log';
-		}
-
+		$resolved = ProviderIds::orLog(providerId: $providerId);
 		if (isset($this->providers[$resolved]) === false) {
-			$knownIds = '(none)';
-			if ($this->ids() !== []) {
-				$knownIds = implode(', ', $this->ids());
-			}
-
 			throw new RuntimeException(
 				sprintf(
 					'No Verzuimloket provider is registered under "%s". Registered providers: %s. Nothing was sent.',
 					$resolved,
-					$knownIds
+					ProviderIds::listed(ids: $this->ids())
 				)
 			);
 		}

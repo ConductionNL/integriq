@@ -60,30 +60,76 @@ class ChangeSetBuilder {
 	 * @spec openspec/changes/connectors-inavigator-case-types/specs/synchronization-engine/spec.md#requirement-a-gated-run-stores-its-change-set-on-the-approval-request-req-inav-003
 	 */
 	public function build(array $entries, array $removed, bool $removalsAllowed): array {
-		$created = [];
-		$changed = [];
-		$unchanged = 0;
+		$sets = $this->entryChanges(entries: $entries);
 
+		$created     = self::sortedByOrigin(list: $sets['created']);
+		$changed     = self::sortedByOrigin(list: $sets['changed']);
+		$removedList = self::sortedByOrigin(list: $this->removals(removed: $removed, removalsAllowed: $removalsAllowed));
+
+		return $this->changeSet(
+			sets: ['created' => $created, 'changed' => $changed, 'removed' => $removedList, 'unchanged' => $sets['unchanged']]
+		);
+	}//end build()
+
+	/**
+	 * Sort the fetched objects into created and changed, and count the unchanged.
+	 *
+	 * @param array $entries One entry per fetched object.
+	 *
+	 * @return array{created: array, changed: array, unchanged: int} The unsorted sets.
+	 */
+	private function entryChanges(array $entries): array {
+		$sets = ['created' => [], 'changed' => [], 'unchanged' => 0];
 		foreach ($entries as $entry) {
-			$mapped = $entry['mapped'];
-			if ($entry['existing'] === null) {
-				$created[] = ['originId' => (string)$entry['originId'], 'fields' => $mapped];
+			$change = $this->entryChange(entry: $entry);
+			if ($change === null) {
+				$sets['unchanged']++;
 				continue;
 			}
 
-			$fields = $this->diff(mapped: $mapped, existing: $entry['existing']);
-			if ($fields === []) {
-				$unchanged++;
-				continue;
-			}
+			$sets[$change['kind']][] = $change['item'];
+		}
 
-			$changed[] = [
+		return $sets;
+	}//end entryChanges()
+
+	/**
+	 * What one fetched object does to its target: create it, change it, or nothing.
+	 *
+	 * @param array $entry {originId, targetId, mapped, existing}.
+	 *
+	 * @return array{kind: string, item: array}|null The change, or null when nothing changes.
+	 */
+	private function entryChange(array $entry): ?array {
+		$mapped = $entry['mapped'];
+		if ($entry['existing'] === null) {
+			return ['kind' => 'created', 'item' => ['originId' => (string)$entry['originId'], 'fields' => $mapped]];
+		}
+
+		$fields = $this->diff(mapped: $mapped, existing: $entry['existing']);
+		if ($fields === []) {
+			return null;
+		}
+
+		return [
+			'kind' => 'changed',
+			'item' => [
 				'originId' => (string)$entry['originId'],
 				'targetId' => $entry['targetId'],
 				'fields' => $fields,
-			];
-		}//end foreach
+			],
+		];
+	}//end entryChange()
 
+	/**
+	 * The removals, when this run may delete at all (REQ-010).
+	 *
+	 * @param array $removed         Targets the source no longer carries.
+	 * @param bool  $removalsAllowed Whether this run may delete at all.
+	 *
+	 * @return array<int, array{originId: string, targetId: string}> The removals.
+	 */
+	private function removals(array $removed, bool $removalsAllowed): array {
 		$removedList = [];
 		if ($removalsAllowed === true) {
 			foreach ($removed as $target) {
@@ -91,36 +137,47 @@ class ChangeSetBuilder {
 			}
 		}
 
-		$byOrigin = static fn (array $one, array $two): int => strcmp($one['originId'], $two['originId']);
-		usort($created, $byOrigin);
-		usort($changed, $byOrigin);
-		usort($removedList, $byOrigin);
+		return $removedList;
+	}//end removals()
 
+	/**
+	 * A list ordered by originId.
+	 *
+	 * @param array $list Items with an originId.
+	 *
+	 * @return array The ordered list.
+	 */
+	private static function sortedByOrigin(array $list): array {
+		usort($list, static fn (array $one, array $two): int => strcmp($one['originId'], $two['originId']));
+		return $list;
+	}//end sortedByOrigin()
+
+	/**
+	 * The change set of the sorted sets: each list cut at the limit, the exact counts and the fingerprint.
+	 *
+	 * @param array{created: array, changed: array, removed: array, unchanged: int} $sets The sorted sets.
+	 *
+	 * @return array The change set.
+	 */
+	private function changeSet(array $sets): array {
 		$counts = [
-			'created' => count($created),
-			'changed' => count($changed),
-			'removed' => count($removedList),
-			'unchanged' => $unchanged,
+			'created' => count($sets['created']),
+			'changed' => count($sets['changed']),
+			'removed' => count($sets['removed']),
+			'unchanged' => $sets['unchanged'],
 		];
 
-		$fingerprint = hash(
-			'sha256',
-			(string)json_encode(
-				$this->canonical(value: ['created' => $created, 'changed' => $changed, 'removed' => $removedList, 'unchanged' => $unchanged])
-			)
-		);
-
 		return [
-			'created' => array_slice($created, 0, self::LIMIT),
-			'changed' => array_slice($changed, 0, self::LIMIT),
-			'removed' => array_slice($removedList, 0, self::LIMIT),
-			'unchanged' => $unchanged,
+			'created' => array_slice($sets['created'], 0, self::LIMIT),
+			'changed' => array_slice($sets['changed'], 0, self::LIMIT),
+			'removed' => array_slice($sets['removed'], 0, self::LIMIT),
+			'unchanged' => $sets['unchanged'],
 			'counts' => $counts,
 			'truncated' => max($counts['created'], $counts['changed'], $counts['removed']) > self::LIMIT,
 			'limit' => self::LIMIT,
-			'fingerprint' => $fingerprint,
+			'fingerprint' => hash('sha256', (string)json_encode($this->canonical(value: $sets))),
 		];
-	}//end build()
+	}//end changeSet()
 
 	/**
 	 * The fields a mapped object would change on its stored target.

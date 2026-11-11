@@ -180,13 +180,15 @@ class ExchangeJobRunner implements ExchangeJobRunnerInterface {
 		}//end foreach
 
 		$outcome = $this->dispatcher->dispatch(
-			jobId: $jobId,
-			target: $target,
-			direction: (string)$data['exchangeDirection'],
-			scope: $scope,
-			records: $mapped,
-			ownerApp: (string)($data['ownerApp'] ?? ''),
-			ownerRef: (string)($data['ownerRef'] ?? '')
+			handOff: new ExchangeHandOff(
+				jobId: $jobId,
+				target: $target,
+				direction: (string)$data['exchangeDirection'],
+				scope: $scope,
+				records: $mapped,
+				ownerApp: (string)($data['ownerApp'] ?? ''),
+				ownerRef: (string)($data['ownerRef'] ?? '')
+			)
 		);
 		if ($outcome['refusal'] !== null) {
 			return $this->fail(job: $job, data: $data, code: $outcome['refusal'], detail: $this->refusalDetail(code: $outcome['refusal']));

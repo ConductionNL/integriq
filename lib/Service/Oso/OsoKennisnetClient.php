@@ -41,6 +41,9 @@ use OCA\Integriq\Adapters\Digikoppeling\PkiOverheidCredentialResolverInterface;
 use OCA\Integriq\Adapters\Digikoppeling\SignedSoapProfileInterface;
 use OCA\Integriq\Exception\DigikoppelingException;
 use OCA\Integriq\Exception\OsoProviderException;
+use OCA\Integriq\Service\Stuf\SignedEnvelopeDelivery;
+use OCA\Integriq\Service\Stuf\SignedEnvelopeRefusals;
+use OCA\Integriq\Service\Stuf\SignedEnvelopeRequest;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
@@ -49,7 +52,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
  */
-class OsoKennisnetClient implements OsoProviderInterface {
+class OsoKennisnetClient implements OsoProviderInterface, SignedEnvelopeRefusals {
 
 	/**
 	 * Constructor.
@@ -89,22 +92,11 @@ class OsoKennisnetClient implements OsoProviderInterface {
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function getConfigSchema(): array {
-		return [
-			'type' => 'object',
-			'required' => ['endpoint', 'certificateRef'],
-			'properties' => [
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'description' => 'Kennisnet OSO export endpoint URL.',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'description' => 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
-						. '(ADR-007). Required when provider=kennisnet.',
-				],
-			],
-		];
+		return SignedEnvelopeDelivery::configSchema(
+			endpointDescription: 'Kennisnet OSO export endpoint URL.',
+			certificateDescription: 'Broker credentialRef for the PKIoverheid certificate. Never stored here '
+				. '(ADR-007). Required when provider=kennisnet.'
+		);
 
 	}//end getConfigSchema()
 
@@ -123,57 +115,88 @@ class OsoKennisnetClient implements OsoProviderInterface {
 	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
 	 */
 	public function sendExport(array $sourceConfiguration, string $kenmerk, string $envelopeXml): string {
-		$certificateRef = (string)($sourceConfiguration['certificateRef'] ?? '');
+		$request = new SignedEnvelopeRequest(
+			sourceConfiguration: $sourceConfiguration,
+			kenmerk: $kenmerk,
+			envelopeXml: $envelopeXml
+		);
 
-		try {
-			$this->credentialResolver->resolveSigningMaterial(certificateRef: $certificateRef);
-		} catch (DigikoppelingException $exception) {
-			throw new OsoProviderException(
-				message: $this->l->t('OSO export refused') . ': ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}
-
-		$endpoint = rtrim((string)($sourceConfiguration['endpoint'] ?? ''), '/');
-		if ($endpoint === '') {
-			throw new OsoProviderException(
-				message: $this->l->t('OSO endpoint missing') . ': `configuration.endpoint` is required.'
-			);
-		}
-
-		// Unreachable today: resolveSigningMaterial() above always throws
-		// until OpenRegister's credential broker can issue in-process
-		// signing material (see class docblock).
-		$signedXml = $this->wusProfileService->buildSignedRequest(certificateRef: $certificateRef, stufBodyXml: $envelopeXml);
-
-		try {
-			$response = $this->httpClient->request(
-				'POST',
-				$endpoint,
-				[
-					'headers' => ['Content-Type' => 'application/xml'],
-					'body' => $signedXml,
-					'http_errors' => false,
-				]
-			);
-		} catch (GuzzleException $exception) {
-			$this->logger->warning('[OsoKennisnetClient] unexpected transport failure', ['exception' => $exception->getMessage()]);
-			throw new OsoProviderException(
-				message: 'The OSO export request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}
-
-		$status = $response->getStatusCode();
-		if ($status < 200 || $status >= 300) {
-			throw new OsoProviderException(message: 'OSO endpoint responded with HTTP ' . $status . '.');
-		}
-
-		$body = trim((string)$response->getBody());
-		if ($body === '') {
-			return $kenmerk;
-		}
-
-		return $this->wusProfileService->verifyResponse(responseXml: $body);
+		return $this->delivery()->deliver(request: $request);
 	}//end sendExport()
+
+	/**
+	 * The delivery that signs and sends this client's envelopes.
+	 *
+	 * @return SignedEnvelopeDelivery The delivery.
+	 *
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 */
+	private function delivery(): SignedEnvelopeDelivery {
+		return new SignedEnvelopeDelivery(
+			httpClient: $this->httpClient,
+			credentialResolver: $this->credentialResolver,
+			profile: $this->wusProfileService,
+			refusals: $this
+		);
+	}//end delivery()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param DigikoppelingException $cause The resolver's refusal.
+	 *
+	 * @return OsoProviderException The refusal.
+	 *
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function signingRefused(DigikoppelingException $cause): OsoProviderException {
+		return new OsoProviderException(
+			message: $this->l->t('OSO export refused') . ': ' . $cause->getMessage(),
+			previous: $cause
+		);
+	}//end signingRefused()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return OsoProviderException The refusal.
+	 *
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function endpointMissing(): OsoProviderException {
+		return new OsoProviderException(
+			message: $this->l->t('OSO endpoint missing') . ': `configuration.endpoint` is required.'
+		);
+	}//end endpointMissing()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param GuzzleException $cause The transport failure.
+	 *
+	 * @return OsoProviderException The refusal.
+	 *
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function transportFailed(GuzzleException $cause): OsoProviderException {
+		$this->logger->warning('[OsoKennisnetClient] unexpected transport failure', ['exception' => $cause->getMessage()]);
+
+		return new OsoProviderException(
+			message: 'The OSO export request failed unexpectedly: ' . $cause->getMessage(),
+			previous: $cause
+		);
+	}//end transportFailed()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param int $status The HTTP status.
+	 *
+	 * @return OsoProviderException The refusal.
+	 *
+	 * @spec openspec/specs/oso-adapter/spec.md#scenario-the-kennisnet-provider-refuses-closed-without-a-certificate-reference
+	 */
+	public function statusRefused(int $status): OsoProviderException {
+		return new OsoProviderException(message: 'OSO endpoint responded with HTTP ' . $status . '.');
+	}//end statusRefused()
 }//end class

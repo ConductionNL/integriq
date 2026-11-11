@@ -100,6 +100,26 @@ class BerichtenboxHealth implements BerichtenboxHealthInterface {
 	 * @return array<string,array<string,mixed>>
 	 */
 	private function sources(): array {
+		$sources = [];
+		foreach ($this->sourceRows() as $source) {
+			if ($source instanceof ObjectEntity === true && self::isBerichtenbox(data: $source->getObject()) === true) {
+				$data = $source->getObject();
+				$raw = $this->connectionStore->readSourceRaw(source: $source)->getObject();
+				$sources[(string)($data['slug'] ?? $source->getUuid())] = (array)($raw['configuration'] ?? $data['configuration']);
+			}
+		}
+
+		return $sources;
+	}//end sources()
+
+	/**
+	 * The integriq sources, read without RBAC or multitenancy, or none when the read fails.
+	 *
+	 * @return array<mixed>
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	private function sourceRows(): array {
 		try {
 			$result = $this->objectService->findAll(
 				config: ['filters' => ['register' => ConnectionStore::REGISTER, 'schema' => 'source']],
@@ -110,24 +130,22 @@ class BerichtenboxHealth implements BerichtenboxHealthInterface {
 			return [];
 		}
 
-		$sources = [];
-		foreach (($result['results'] ?? $result) as $source) {
-			if ($source instanceof ObjectEntity === false) {
-				continue;
-			}
+		return ($result['results'] ?? $result);
+	}//end sourceRows()
 
-			$data = $source->getObject();
-			$config = ($data['configuration'] ?? []);
-			if (is_array($config) === false || (string)($config['providerId'] ?? '') !== BerichtenboxProvider::ID) {
-				continue;
-			}
-
-			$raw = $this->connectionStore->readSourceRaw(source: $source)->getObject();
-			$sources[(string)($data['slug'] ?? $source->getUuid())] = (array)($raw['configuration'] ?? $config);
-		}
-
-		return $sources;
-	}//end sources()
+	/**
+	 * Whether a source's configuration names the Berichtenbox provider.
+	 *
+	 * @param array<string, mixed> $data The source data.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	private static function isBerichtenbox(array $data): bool {
+		$config = ($data['configuration'] ?? []);
+		return is_array($config) === true && (string)($config['providerId'] ?? '') === BerichtenboxProvider::ID;
+	}//end isBerichtenbox()
 
 	/**
 	 * What is wrong with a source's certificate, or null.
@@ -165,34 +183,72 @@ class BerichtenboxHealth implements BerichtenboxHealthInterface {
 	 * @return int How many.
 	 */
 	private function lettersWaiting(DateTimeImmutable $now): int {
-		try {
-			$result = $this->objectService->findAll(
-				config: ['filters' => ['register' => DigitalPostService::REGISTER, 'schema' => DigitalPostService::SCHEMA], 'limit' => 1000]
-			);
-		} catch (Throwable) {
-			return 0;
-		}
-
 		$limit = $now->getTimestamp() - (self::RESULT_WAIT_HOURS * 3600);
 		$waiting = 0;
-		foreach (($result['results'] ?? $result) as $entity) {
-			$letter = (array)$entity;
-			if ($entity instanceof ObjectEntity) {
-				$letter = $entity->getObject();
-			}
-			if ((string)($letter['providerId'] ?? '') !== BerichtenboxProvider::ID
-				|| (string)($letter['status'] ?? '') !== DigitalPostResult::STATUS_SENT
-				|| ($letter['simulated'] ?? false) === true
-			) {
-				continue;
-			}
-
-			$created = strtotime((string)($letter['created'] ?? ''));
-			if ($created !== false && $created < $limit) {
+		foreach ($this->letterRows() as $entity) {
+			if (self::isWaiting(letter: self::dataOf(entity: $entity), limit: $limit) === true) {
 				$waiting++;
 			}
 		}
 
 		return $waiting;
 	}//end lettersWaiting()
+
+	/**
+	 * The digital-post letters (at most 1000), or none when the read fails.
+	 *
+	 * @return array<mixed>
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	private function letterRows(): array {
+		try {
+			$result = $this->objectService->findAll(
+				config: ['filters' => ['register' => DigitalPostService::REGISTER, 'schema' => DigitalPostService::SCHEMA], 'limit' => 1000]
+			);
+		} catch (Throwable) {
+			return [];
+		}
+
+		return ($result['results'] ?? $result);
+	}//end letterRows()
+
+	/**
+	 * Whether a letter is a real Berichtenbox send, still only sent, and created before the limit.
+	 *
+	 * @param array<string, mixed> $letter The letter.
+	 * @param int                  $limit  The latest creation time still waiting.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	private static function isWaiting(array $letter, int $limit): bool {
+		if ((string)($letter['providerId'] ?? '') !== BerichtenboxProvider::ID
+			|| (string)($letter['status'] ?? '') !== DigitalPostResult::STATUS_SENT
+			|| ($letter['simulated'] ?? false) === true
+		) {
+			return false;
+		}
+
+		$created = strtotime((string)($letter['created'] ?? ''));
+		return $created !== false && $created < $limit;
+	}//end isWaiting()
+
+	/**
+	 * An entity's object data, or the row itself cast to an array.
+	 *
+	 * @param mixed $entity An ObjectEntity or a row.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	private static function dataOf(mixed $entity): array {
+		if ($entity instanceof ObjectEntity) {
+			return $entity->getObject();
+		}
+
+		return (array)$entity;
+	}//end dataOf()
 }//end class

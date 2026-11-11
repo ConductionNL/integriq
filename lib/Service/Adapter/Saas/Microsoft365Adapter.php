@@ -274,7 +274,9 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 			method: 'POST',
 			path: '/v1.0/search/query',
 			headers: ['Content-Type' => 'application/json'],
-			body: $this->driveSearch->requestBody(terms: $terms, from: $from, to: $to, limit: $limit, region: $region),
+			body: $this->driveSearch->requestBody(
+				query: new DriveSearchQuery(terms: $terms, from: $from, to: $to, limit: $limit, region: $region)
+			),
 		);
 
 		return $this->driveSearch->answer(response: $response, sourceSlug: $this->getId(), limit: $limit, notices: $plan['notices']);

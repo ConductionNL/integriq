@@ -106,7 +106,10 @@ class ZgwDocumentDelivery {
 		}
 
 		try {
-			$this->uploadParts(created: $created, content: $content, filename: (string)($document['bestandsnaam'] ?? 'document'), documenten: $documenten);
+			$this->uploadParts(
+				created: $created,
+				file: new DocumentFile(sourceId: $documenten, content: $content, filename: (string)($document['bestandsnaam'] ?? 'document'))
+			);
 			$relation = $this->relateToCase(url: $url, settings: $settings, titel: (string)($document['titel'] ?? ''));
 		} catch (CaseSystemRefusal $refusal) {
 			$this->removeOrphan(documenten: $documenten, url: $url);
@@ -153,10 +156,8 @@ class ZgwDocumentDelivery {
 	 * Upload the content in the parts the create answer named, in volgnummer
 	 * order, then unlock the document. No parts means nothing to do.
 	 *
-	 * @param array<string,mixed> $created    The create answer (bestandsdelen, lock, url).
-	 * @param string              $content    The file's bytes.
-	 * @param string              $filename   The file name for each part.
-	 * @param string              $documenten The Documenten source uuid.
+	 * @param array<string,mixed> $created The create answer (url, lock, bestandsdelen).
+	 * @param DocumentFile        $file    The file, its source and its name.
 	 *
 	 * @return void
 	 *
@@ -164,56 +165,109 @@ class ZgwDocumentDelivery {
 	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
-	private function uploadParts(array $created, string $content, string $filename, string $documenten): void {
-		$parts = array_values(array_filter((array)($created['bestandsdelen'] ?? []), 'is_array'));
+	private function uploadParts(array $created, DocumentFile $file): void {
+		$parts = self::orderedParts(created: $created);
 		if ($parts === []) {
 			return;
 		}
 
+		$upload = new PartUpload(file: $file, lock: self::lockOf(created: $created));
+		$offset = 0;
+		foreach ($parts as $part) {
+			$size = (int)($part['omvang'] ?? 0);
+			$this->sendPart(upload: $upload, slice: ['address' => (string)($part['url'] ?? ''), 'contents' => substr($file->content, $offset, $size)]);
+			$offset += $size;
+		}
+
+		if ($offset !== strlen($file->content)) {
+			throw new CaseSystemRefusal(
+				status: 502,
+				message: 'The Documenten API parts add up to ' . $offset . ' bytes, the file has ' . strlen($file->content) . '.'
+			);
+		}
+
+		$this->unlock(upload: $upload, documentUrl: (string)$created['url']);
+	}//end uploadParts()
+
+	/**
+	 * The parts the create answer asks for, in volgnummer order.
+	 *
+	 * @param array<string,mixed> $created The create answer.
+	 *
+	 * @return array<int, array<string,mixed>> The parts.
+	 */
+	private static function orderedParts(array $created): array {
+		$parts = array_values(array_filter((array)($created['bestandsdelen'] ?? []), 'is_array'));
+		usort($parts, static fn (array $one, array $other): int => ((int)($one['volgnummer'] ?? 0)) <=> ((int)($other['volgnummer'] ?? 0)));
+		return $parts;
+	}//end orderedParts()
+
+	/**
+	 * The lock the create answer hands out for a part upload.
+	 *
+	 * @param array<string,mixed> $created The create answer.
+	 *
+	 * @return string The lock.
+	 *
+	 * @throws CaseSystemRefusal When the answer has parts but no lock.
+	 */
+	private static function lockOf(array $created): string {
 		$lock = (string)($created['lock'] ?? '');
 		if ($lock === '') {
 			throw new CaseSystemRefusal(status: 502, message: 'The Documenten API asked for the file in parts but sent no lock.');
 		}
 
-		usort($parts, static fn (array $one, array $other): int => ((int)($one['volgnummer'] ?? 0)) <=> ((int)($other['volgnummer'] ?? 0)));
+		return $lock;
+	}//end lockOf()
 
-		$offset = 0;
-		foreach ($parts as $part) {
-			$size = (int)($part['omvang'] ?? 0);
-			self::accepted(
-				answer: $this->transport->send(
-					sourceId: $documenten,
-					method: 'PUT',
-					address: (string)($part['url'] ?? ''),
-					options: [
-						'multipart' => [
-							['name' => 'inhoud', 'contents' => substr($content, $offset, $size), 'filename' => $filename],
-							['name' => 'lock', 'contents' => $lock],
-						],
-					]
-				),
-				api: 'Documenten API'
-			);
-			$offset += $size;
-		}
-
-		if ($offset !== strlen($content)) {
-			throw new CaseSystemRefusal(
-				status: 502,
-				message: 'The Documenten API parts add up to ' . $offset . ' bytes, the file has ' . strlen($content) . '.'
-			);
-		}
-
+	/**
+	 * PUT one part: its slice of the file and the lock.
+	 *
+	 * @param PartUpload                               $upload The file and its lock.
+	 * @param array{address: string, contents: string} $slice  The part's address and bytes.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseSystemRefusal When the API refuses the part.
+	 */
+	private function sendPart(PartUpload $upload, array $slice): void {
 		self::accepted(
 			answer: $this->transport->send(
-				sourceId: $documenten,
-				method: 'POST',
-				address: rtrim((string)$created['url'], '/') . '/unlock',
-				options: ['json' => ['lock' => $lock]]
+				sourceId: $upload->file->sourceId,
+				method: 'PUT',
+				address: $slice['address'],
+				options: [
+					'multipart' => [
+						['name' => 'inhoud', 'contents' => $slice['contents'], 'filename' => $upload->file->filename],
+						['name' => 'lock', 'contents' => $upload->lock],
+					],
+				]
 			),
 			api: 'Documenten API'
 		);
-	}//end uploadParts()
+	}//end sendPart()
+
+	/**
+	 * Unlock the document once every part is in.
+	 *
+	 * @param PartUpload $upload      The file and its lock.
+	 * @param string     $documentUrl The document's address.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseSystemRefusal When the API refuses the unlock.
+	 */
+	private function unlock(PartUpload $upload, string $documentUrl): void {
+		self::accepted(
+			answer: $this->transport->send(
+				sourceId: $upload->file->sourceId,
+				method: 'POST',
+				address: rtrim($documentUrl, '/') . '/unlock',
+				options: ['json' => ['lock' => $upload->lock]]
+			),
+			api: 'Documenten API'
+		);
+	}//end unlock()
 
 	/**
 	 * Relate the document to its case, when the delivery names one.

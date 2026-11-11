@@ -73,6 +73,17 @@ class InboundReturnTranslator {
 	private const RECOGNISED_CODES = ['302', '304', '305', '306', '307', '308', '322'];
 
 	/**
+	 * The update field a retour code fills from its body, and the body field it reads.
+	 *
+	 * @var array<int, array{update: string, field: string}>
+	 */
+	private const CODE_DETAIL_FIELDS = [
+		'305' => ['update' => 'careStartedAt', 'field' => 'startdatumWerkelijk'],
+		'307' => ['update' => 'careStoppedAt', 'field' => 'einddatumWerkelijk'],
+		'322' => ['update' => 'paymentReference', 'field' => 'betalingReferentie'],
+	];
+
+	/**
 	 * VNG-style "accepted" result marker (case-insensitive).
 	 *
 	 * @var string
@@ -95,24 +106,9 @@ class InboundReturnTranslator {
 	public function translate(string $xml): array {
 		$root = $this->parseXml(xml: $xml);
 
-		$berichtcode = trim((string)($root->stuurgegevens->berichtcode ?? ''));
-		if ($berichtcode === '') {
-			throw new IwmoIjwTranslationException(message: 'Retour envelope is missing stuurgegevens.berichtcode.');
-		}
-
-		$reference = trim((string)($root->stuurgegevens->kenmerk ?? ''));
-		if ($reference === '') {
-			throw new IwmoIjwTranslationException(
-				message: 'Retour envelope is missing stuurgegevens.kenmerk — refusing to update an unresolvable case.'
-			);
-		}
-
-		$code = $this->extractNumericCode(berichtcode: $berichtcode);
-		if (in_array($code, self::RECOGNISED_CODES, true) === false) {
-			throw new IwmoIjwTranslationException(
-				message: 'Retour berichtcode "' . $berichtcode . '" is not a recognised retour type.'
-			);
-		}
+		$berichtcode = $this->berichtcode(root: $root);
+		$reference   = $this->reference(root: $root);
+		$code        = $this->recognisedCode(berichtcode: $berichtcode);
 
 		$body = $root->body ?? new SimpleXMLElement('<body/>');
 
@@ -125,20 +121,71 @@ class InboundReturnTranslator {
 			'paymentReference' => null,
 		];
 
-		if ($code === '305') {
-			$update['careStartedAt'] = $this->nullableText(body: $body, field: 'startdatumWerkelijk');
-		}
-
-		if ($code === '307') {
-			$update['careStoppedAt'] = $this->nullableText(body: $body, field: 'einddatumWerkelijk');
-		}
-
-		if ($code === '322') {
-			$update['paymentReference'] = $this->nullableText(body: $body, field: 'betalingReferentie');
+		$detail = (self::CODE_DETAIL_FIELDS[$code] ?? null);
+		if ($detail !== null) {
+			$update[$detail['update']] = $this->nullableText(body: $body, field: $detail['field']);
 		}
 
 		return $update;
 	}//end translate()
+
+	/**
+	 * The retour's berichtcode, refused when absent.
+	 *
+	 * @param SimpleXMLElement $root The retour root.
+	 *
+	 * @return string The berichtcode.
+	 *
+	 * @throws IwmoIjwTranslationException When it is missing.
+	 */
+	private function berichtcode(SimpleXMLElement $root): string {
+		$berichtcode = trim((string)($root->stuurgegevens->berichtcode ?? ''));
+		if ($berichtcode === '') {
+			throw new IwmoIjwTranslationException(message: 'Retour envelope is missing stuurgegevens.berichtcode.');
+		}
+
+		return $berichtcode;
+	}//end berichtcode()
+
+	/**
+	 * The retour's kenmerk, refused when absent.
+	 *
+	 * @param SimpleXMLElement $root The retour root.
+	 *
+	 * @return string The kenmerk.
+	 *
+	 * @throws IwmoIjwTranslationException When it is missing.
+	 */
+	private function reference(SimpleXMLElement $root): string {
+		$reference = trim((string)($root->stuurgegevens->kenmerk ?? ''));
+		if ($reference === '') {
+			throw new IwmoIjwTranslationException(
+				message: 'Retour envelope is missing stuurgegevens.kenmerk — refusing to update an unresolvable case.'
+			);
+		}
+
+		return $reference;
+	}//end reference()
+
+	/**
+	 * The numeric retour code of a berichtcode, refused unless it is a recognised retour type.
+	 *
+	 * @param string $berichtcode The berichtcode.
+	 *
+	 * @return string The numeric code.
+	 *
+	 * @throws IwmoIjwTranslationException When the code is not recognised.
+	 */
+	private function recognisedCode(string $berichtcode): string {
+		$code = $this->extractNumericCode(berichtcode: $berichtcode);
+		if (in_array($code, self::RECOGNISED_CODES, true) === false) {
+			throw new IwmoIjwTranslationException(
+				message: 'Retour berichtcode "' . $berichtcode . '" is not a recognised retour type.'
+			);
+		}
+
+		return $code;
+	}//end recognisedCode()
 
 	/**
 	 * Resolve the OR-facing `status` value for a recognised retour code —

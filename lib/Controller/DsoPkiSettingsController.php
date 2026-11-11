@@ -98,31 +98,7 @@ class DsoPkiSettingsController extends Controller {
 			return $this->ambiguous();
 		}
 
-		$data = [];
-		if ($consumer !== null) {
-			$data = $consumer->getObject();
-		}
-
-		$trust = $data['authorizationConfiguration'] ?? [];
-		if (is_array($trust) === false) {
-			$trust = [];
-		}
-
-		$userId = (string)($data['userId'] ?? '');
-
-		return new JSONResponse(
-			[
-				'configured' => ($consumer !== null),
-				'mode' => $this->signatureVerifier->normalizeMode(mode: ($trust['mode'] ?? null)),
-				'hmacSecretConfigured' => ((string)($trust['hmacSecret'] ?? '') !== ''),
-				'signingCertificate' => (string)($trust['signingCertificate'] ?? ''),
-				'intermediateChain' => (string)($trust['intermediateChain'] ?? ''),
-				'rootCa' => (string)($trust['rootCa'] ?? ''),
-				'userId' => $userId,
-				'account' => $this->describeAccount(userId: $userId),
-				'handlerGroup' => $this->groups->describe(groupId: IntakeGroupsInterface::DSO_HANDLERS),
-			]
-		);
+		return $this->configResponse(stored: new StoredConsumer(consumer: $consumer), configured: ($consumer !== null));
 
 	}//end getConfig()
 
@@ -139,22 +115,77 @@ class DsoPkiSettingsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setConfig(): JSONResponse {
-		$mode = $this->signatureVerifier->normalizeMode(mode: $this->request->getParam('mode', SignedPayloadVerifierInterface::MODE_HMAC));
-		$trust = [
-			'mode' => $mode,
-			'hmacSecret' => (string)$this->request->getParam('hmacSecret', ''),
-			'signingCertificate' => (string)$this->request->getParam('signingCertificate', ''),
-			'intermediateChain' => (string)$this->request->getParam('intermediateChain', ''),
-			'rootCa' => (string)$this->request->getParam('rootCa', ''),
-		];
-		$userId = trim((string)$this->request->getParam('userId', ''));
+		$submitted = $this->submitted();
 
 		$warnings = [];
-		$refusal = $this->refusal(trust: $trust, userId: $userId, warnings: $warnings);
+		$refusal = $this->refusal(submitted: $submitted, warnings: $warnings);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
+		$failure = $this->save(submitted: $submitted);
+		if ($failure !== null) {
+			return $failure;
+		}
+
+		return $this->saved(submitted: $submitted, warnings: $warnings);
+
+	}//end setConfig()
+
+	/**
+	 * The DSO connection as the admin form reads it. Never returns the HMAC secret.
+	 *
+	 * @param StoredConsumer $stored     The consumer's trust configuration and account.
+	 * @param bool           $configured Whether the consumer exists.
+	 *
+	 * @return JSONResponse The mode, which trust is set, the PEM chain, and the account.
+	 */
+	private function configResponse(StoredConsumer $stored, bool $configured): JSONResponse {
+		$trust = $stored->trust;
+
+		return new JSONResponse(
+			[
+				'configured' => $configured,
+				'mode' => $this->signatureVerifier->normalizeMode(mode: ($trust['mode'] ?? null)),
+				'hmacSecretConfigured' => ((string)($trust['hmacSecret'] ?? '') !== ''),
+				'signingCertificate' => (string)($trust['signingCertificate'] ?? ''),
+				'intermediateChain' => (string)($trust['intermediateChain'] ?? ''),
+				'rootCa' => (string)($trust['rootCa'] ?? ''),
+				'userId' => $stored->userId,
+				'account' => $this->accountState()->describe(userId: $stored->userId),
+				'handlerGroup' => $this->groups->describe(groupId: IntakeGroupsInterface::DSO_HANDLERS),
+			]
+		);
+	}//end configResponse()
+
+	/**
+	 * The trust configuration and account the request submits.
+	 *
+	 * @return SubmittedConnection
+	 */
+	private function submitted(): SubmittedConnection {
+		$mode = $this->signatureVerifier->normalizeMode(mode: $this->request->getParam('mode', SignedPayloadVerifierInterface::MODE_HMAC));
+
+		return new SubmittedConnection(
+			trust: [
+				'mode' => $mode,
+				'hmacSecret' => (string)$this->request->getParam('hmacSecret', ''),
+				'signingCertificate' => (string)$this->request->getParam('signingCertificate', ''),
+				'intermediateChain' => (string)$this->request->getParam('intermediateChain', ''),
+				'rootCa' => (string)$this->request->getParam('rootCa', ''),
+			],
+			userId: trim((string)$this->request->getParam('userId', ''))
+		);
+	}//end submitted()
+
+	/**
+	 * Save the consumer, creating it when there is none, and release the previous account.
+	 *
+	 * @param SubmittedConnection $submitted The submitted trust configuration and account.
+	 *
+	 * @return JSONResponse|null The 409 or 400 answer when it was not saved, or null.
+	 */
+	private function save(SubmittedConnection $submitted): ?JSONResponse {
 		try {
 			$consumer = $this->connection->findConsumer();
 		} catch (DsoConnectionUnavailableException $exception) {
@@ -162,41 +193,69 @@ class DsoPkiSettingsController extends Controller {
 		}
 
 		try {
-			$this->connection->saveConsumer(
-				data: $this->consumerData(consumer: $consumer, trust: $trust, userId: $userId),
-				uuid: $consumer?->getUuid()
-			);
+			$this->connection->saveConsumer(data: $this->consumerData(consumer: $consumer, submitted: $submitted), uuid: $consumer?->getUuid());
 		} catch (Throwable $exception) {
-			$this->logger->error('[DsoPkiSettingsController] the DSO connection was not saved', ['exception' => $exception->getMessage()]);
-			return new JSONResponse(
-				['errors' => [$this->l->t('The DSO connection was not saved: %s', [$exception->getMessage()])]],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->saveFailed(exception: $exception);
 		}
 
-		$this->withdrawPrevious(consumer: $consumer, userId: $userId);
+		$this->withdrawPrevious(consumer: $consumer, userId: $submitted->userId);
+		return null;
+	}//end save()
 
+	/**
+	 * The 400 answer, logged, when the consumer could not be saved.
+	 *
+	 * @param Throwable $exception Why.
+	 *
+	 * @return JSONResponse
+	 */
+	private function saveFailed(Throwable $exception): JSONResponse {
+		$this->logger->error('[DsoPkiSettingsController] the DSO connection was not saved', ['exception' => $exception->getMessage()]);
+		return new JSONResponse(
+			['errors' => [$this->l->t('The DSO connection was not saved: %s', [$exception->getMessage()])]],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end saveFailed()
+
+	/**
+	 * The answer to a saved connection: the mode and account, with warnings.
+	 *
+	 * @param SubmittedConnection $submitted The saved trust configuration and account.
+	 * @param list<string>        $warnings  The warnings.
+	 *
+	 * @return JSONResponse
+	 */
+	private function saved(SubmittedConnection $submitted, array $warnings): JSONResponse {
 		return new JSONResponse(
 			[
-				'mode' => $mode,
-				'userId' => $userId,
-				'account' => $this->describeAccount(userId: $userId),
+				'mode' => $submitted->trust['mode'],
+				'userId' => $submitted->userId,
+				'account' => $this->accountState()->describe(userId: $submitted->userId),
 				'warnings' => $warnings,
 			]
 		);
+	}//end saved()
 
-	}//end setConfig()
+	/**
+	 * The state of the connection's account.
+	 *
+	 * @return IntakeAccountState
+	 */
+	private function accountState(): IntakeAccountState {
+		return new IntakeAccountState(connection: $this->connection, l: $this->l);
+	}//end accountState()
 
 	/**
 	 * The 400 answer for a trust chain or account that may not be saved, or null.
 	 *
-	 * @param array<string, string> $trust    The submitted trust configuration.
-	 * @param string                $userId   The chosen uid; empty clears the account.
-	 * @param list<string>          $warnings Warnings to add to; passed by reference.
+	 * @param SubmittedConnection $submitted The submitted trust configuration and account.
+	 * @param list<string>        $warnings  Warnings to add to; passed by reference.
 	 *
 	 * @return JSONResponse|null The refusal.
 	 */
-	private function refusal(array $trust, string $userId, array &$warnings): ?JSONResponse {
+	private function refusal(SubmittedConnection $submitted, array &$warnings): ?JSONResponse {
+		$trust = $submitted->trust;
+		$userId = $submitted->userId;
 		if ($trust['mode'] === SignedPayloadVerifierInterface::MODE_PKIOVERHEID) {
 			$errors = $this->signatureVerifier->validateChainConfig(
 				certPem: $trust['signingCertificate'],
@@ -228,13 +287,13 @@ class DsoPkiSettingsController extends Controller {
 	/**
 	 * The consumer as it will be saved.
 	 *
-	 * @param ObjectEntity|null     $consumer The existing consumer, or null for a new one.
-	 * @param array<string, string> $trust    The submitted trust configuration.
-	 * @param string                $userId   The chosen account.
+	 * @param ObjectEntity|null   $consumer  The existing consumer, or null for a new one.
+	 * @param SubmittedConnection $submitted The submitted trust configuration and account.
 	 *
 	 * @return array<string, mixed> The consumer data.
 	 */
-	private function consumerData(?ObjectEntity $consumer, array $trust, string $userId): array {
+	private function consumerData(?ObjectEntity $consumer, SubmittedConnection $submitted): array {
+		$trust = $submitted->trust;
 		$data = [
 			'name' => 'DSO-LV (STAM)',
 			'description' => 'The STAM koppelvlak of the Omgevingsloket (DSO-LV). Every push is stored as the account in userId.',
@@ -252,7 +311,7 @@ class DsoPkiSettingsController extends Controller {
 
 		$data['authorizationType'] = PortalConnectionInterface::AUTHORIZATION_TYPE;
 		$data['authorizationConfiguration'] = $trust;
-		$data['userId'] = $userId;
+		$data['userId'] = $submitted->userId;
 
 		return $data;
 
@@ -300,14 +359,9 @@ class DsoPkiSettingsController extends Controller {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/specs/dso-omgevingsloket/spec.md#scenario-an-account-without-rights-is-refused
 	 */
 	private function accountError(string $userId, array &$warnings): ?string {
-		try {
-			$this->connection->resolveAccount(userId: $userId);
-		} catch (DsoConnectionUnavailableException $exception) {
-			if ($exception->getReason() === DsoConnectionUnavailableException::ACCOUNT_DISABLED) {
-				return $this->l->t('Account %s is disabled.', [$userId]);
-			}
-
-			return $this->l->t('Account %s does not exist.', [$userId]);
+		$unresolvable = $this->accountState()->unresolvable(userId: $userId);
+		if ($unresolvable !== null) {
+			return $unresolvable;
 		}
 
 		// The authorization block grants the intake group, so the chosen
@@ -335,30 +389,4 @@ class DsoPkiSettingsController extends Controller {
 
 	}//end accountError()
 
-	/**
-	 * Describe the account for the admin section's one-line state.
-	 *
-	 * @param string $userId The uid on the consumer.
-	 *
-	 * @return array{state: string, displayName: string} `ok`, `none`, `unknown` or `disabled`.
-	 */
-	private function describeAccount(string $userId): array {
-		if ($userId === '') {
-			return ['state' => 'none', 'displayName' => ''];
-		}
-
-		try {
-			$account = $this->connection->resolveAccount(userId: $userId);
-		} catch (DsoConnectionUnavailableException $exception) {
-			$state = 'unknown';
-			if ($exception->getReason() === DsoConnectionUnavailableException::ACCOUNT_DISABLED) {
-				$state = 'disabled';
-			}
-
-			return ['state' => $state, 'displayName' => $userId];
-		}
-
-		return ['state' => 'ok', 'displayName' => $account->getDisplayName()];
-
-	}//end describeAccount()
 }//end class

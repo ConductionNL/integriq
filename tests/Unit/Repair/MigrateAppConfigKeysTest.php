@@ -251,4 +251,38 @@ class MigrateAppConfigKeysTest extends TestCase {
 			'the key after the unreadable one must still be migrated'
 		);
 	}//end testOneUnreadableKeyDoesNotAbortTheRest()
+
+	/**
+	 * The summary line counts each outcome, and an empty install says so.
+	 *
+	 * @return void
+	 */
+	public function testTheSummaryCountsEachOutcome(): void {
+		$writes = [];
+		$deletes = [];
+		$appConfig = $this->makeAppConfig(
+			['actions' => 'a', 'installed_version' => '1.0', 'empty' => '', 'kept' => 'old', 'copied' => 'c'],
+			['kept' => 'new'],
+			$writes,
+			$deletes
+		);
+		$infos = [];
+		$output = $this->createMock(\OCP\Migration\IOutput::class);
+		$output->method('info')->willReturnCallback(
+			static function (string $message) use (&$infos): void {
+				$infos[] = $message;
+			}
+		);
+
+		(new MigrateAppConfigKeys($appConfig, new NullLogger()))->run($output);
+		(new MigrateAppConfigKeys($this->makeAppConfig([], [], $writes, $deletes), new NullLogger()))->run($output);
+
+		$this->assertSame(
+			[
+				'MigrateAppConfigKeys: 2 key(s) migrated, 1 already present, 1 had no value to migrate, 1 skipped as Nextcloud-reserved.',
+				'MigrateAppConfigKeys: no stored openconnector configuration on this install; nothing to do.',
+			],
+			$infos
+		);
+	}//end testTheSummaryCountsEachOutcome()
 }//end class
