@@ -167,7 +167,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 	 * @return string
 	 */
 	private static function generateUuid(): string {
-		return RandomUuid::v4();
+		return RandomUuid::version4();
 	}//end generateUuid()
 
 	/**

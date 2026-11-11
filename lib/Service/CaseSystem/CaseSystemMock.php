@@ -245,6 +245,6 @@ class CaseSystemMock {
 	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-seeded-zgw-zaken-template-links-a-connection-at-once-req-cso-003
 	 */
 	private static function uuid(): string {
-		return RandomUuid::v4();
+		return RandomUuid::version4();
 	}//end uuid()
 }//end class

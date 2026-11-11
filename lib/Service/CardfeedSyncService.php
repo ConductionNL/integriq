@@ -584,6 +584,6 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 	 * @return string The generated UUID.
 	 */
 	private function generateUuid(): string {
-		return RandomUuid::v4();
+		return RandomUuid::version4();
 	}//end generateUuid()
 }//end class
