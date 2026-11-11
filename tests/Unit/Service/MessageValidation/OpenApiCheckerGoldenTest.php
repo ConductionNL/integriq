@@ -102,4 +102,22 @@ class OpenApiCheckerGoldenTest extends TestCase {
 
 		$this->assertSame(file_get_contents($path), $actual);
 	}//end testGoldenRecord()
+
+	/**
+	 * A body schema whose reference resolves to null is no schema: the body
+	 * holder is resolved in depth first, so the null never reaches the JSON
+	 * Schema check.
+	 *
+	 * @return void
+	 */
+	public function testABodySchemaResolvingToNullDeclaresNoSchema(): void {
+		$checker = new OpenApiChecker(new JsonSchemaChecker());
+		$document = json_encode([
+			'openapi' => '3.0.3',
+			'paths' => ['/x' => ['post' => ['operationId' => 'x', 'requestBody' => ['content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Nothing']]]]]]],
+			'components' => ['schemas' => ['Nothing' => null]],
+		]);
+
+		$this->assertTrue($checker->check($document, ['a' => 1], ['operationId' => 'x'])->isValid());
+	}//end testABodySchemaResolvingToNullDeclaresNoSchema()
 }//end class
