@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
@@ -32,6 +33,31 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
  */
 final class CommandConsole {
+	/**
+	 * Start a credential-custody run: styled output, the validated --limit and the --json mode.
+	 *
+	 * @param InputInterface  $input  Console input.
+	 * @param OutputInterface $output Console output.
+	 *
+	 * @return ConsoleRun|null The run, or null after reporting why --limit is invalid.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
+	 */
+	public static function startRun(InputInterface $input, OutputInterface $output): ?ConsoleRun {
+		$io = new SymfonyStyle($input, $output);
+
+		$limit = self::readLimit(input: $input, io: $io);
+		if ($limit === null) {
+			return null;
+		}
+
+		$run = new ConsoleRun(io: $io, output: $output);
+		$run->limit = $limit;
+		$run->json = (bool)$input->getOption('json');
+
+		return $run;
+	}//end startRun()
+
 	/**
 	 * Read and validate the --limit option: an integer in [1, 100000].
 	 *
