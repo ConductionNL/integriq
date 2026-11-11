@@ -31,6 +31,8 @@ use Psr\Log\LoggerInterface;
  * Extracts aanvrager, locatie, activiteiten, bijlagen, and projectbeschrijving
  * from DSO-LV STAM koppelvlak payloads (JSON or XML).
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) -- the total is the parser's rules, now one named step each
+ *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -101,14 +103,25 @@ class DSOParserService implements PortalRequestParserInterface {
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-3
 	 */
 	public function validatePayload(array $payload): array {
-		$errors = [];
+		return array_merge(
+			$this->missingFields(payload: $payload),
+			$this->typeErrors(payload: $payload),
+			$this->activiteitenErrors(payload: $payload),
+			$this->formatErrors(payload: $payload)
+		);
+	}//end validatePayload()
 
-		// Check required fields.
+	/**
+	 * One error per required field that is missing, empty or null.
+	 *
+	 * @param array $payload The request payload.
+	 *
+	 * @return array<int, array{field: string, error: string, message: string}> The errors.
+	 */
+	private function missingFields(array $payload): array {
+		$errors = [];
 		foreach (self::REQUIRED_FIELDS as $field) {
-			if (isset($payload[$field]) === false
-				|| $payload[$field] === ''
-				|| $payload[$field] === null
-			) {
+			if ($this->isMissing(payload: $payload, field: $field) === true) {
 				$errors[] = [
 					'field' => $field,
 					'error' => 'required_field_missing',
@@ -117,30 +130,64 @@ class DSOParserService implements PortalRequestParserInterface {
 			}
 		}
 
-		// Validate type enum.
-		if (isset($payload['type']) === true
-			&& in_array($payload['type'], self::VALID_TYPES, true) === false
-		) {
-			$errors[] = [
+		return $errors;
+	}//end missingFields()
+
+	/**
+	 * Whether a field is absent, empty or null.
+	 *
+	 * @param array  $payload The request payload.
+	 * @param string $field   The field.
+	 *
+	 * @return bool True when it is missing.
+	 */
+	private function isMissing(array $payload, string $field): bool {
+		return isset($payload[$field]) === false
+			|| $payload[$field] === ''
+			|| $payload[$field] === null;
+	}//end isMissing()
+
+	/**
+	 * The error for a type outside the enum, if any.
+	 *
+	 * @param array $payload The request payload.
+	 *
+	 * @return array<int, array{field: string, error: string, message: string}> The errors.
+	 */
+	private function typeErrors(array $payload): array {
+		if (isset($payload['type']) === false || in_array($payload['type'], self::VALID_TYPES, true) === true) {
+			return [];
+		}
+
+		return [
+			[
 				'field' => 'type',
 				'error' => 'invalid_enum_value',
 				'message' => 'Type must be one of: ' . implode(', ', self::VALID_TYPES),
-			];
+			],
+		];
+	}//end typeErrors()
+
+	/**
+	 * The error for activiteiten that is not an array, if any.
+	 *
+	 * @param array $payload The request payload.
+	 *
+	 * @return array<int, array{field: string, error: string, message: string}> The errors.
+	 */
+	private function activiteitenErrors(array $payload): array {
+		if (isset($payload['activiteiten']) === false || is_array($payload['activiteiten']) === true) {
+			return [];
 		}
 
-		// Validate activiteiten is an array.
-		if (isset($payload['activiteiten']) === true
-			&& is_array($payload['activiteiten']) === false
-		) {
-			$errors[] = [
+		return [
+			[
 				'field' => 'activiteiten',
 				'error' => 'invalid_type',
 				'message' => 'Activiteiten must be an array',
-			];
-		}
-
-		return array_merge($errors, $this->formatErrors(payload: $payload));
-	}//end validatePayload()
+			],
+		];
+	}//end activiteitenErrors()
 
 	/**
 	 * The BSN and submission date values whose format is wrong.
@@ -152,34 +199,53 @@ class DSOParserService implements PortalRequestParserInterface {
 	 * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-3
 	 */
 	private function formatErrors(array $payload): array {
-		$errors = [];
+		return array_merge($this->bsnErrors(payload: $payload), $this->dateErrors(payload: $payload));
+	}//end formatErrors()
 
-		// Validate BSN if aanvrager contains one.
-		if (isset($payload['aanvrager']['bsn']) === true) {
-			if ($this->validateBSN(bsn: $payload['aanvrager']['bsn']) === false) {
-				$errors[] = [
-					'field' => 'aanvrager.bsn',
-					'error' => 'invalid_bsn',
-					'message' => 'BSN does not pass the 11-proef validation',
-				];
-			}
+	/**
+	 * The error for an aanvrager BSN that fails the 11-proef, if any.
+	 *
+	 * @param array $payload The request payload.
+	 *
+	 * @return array<int, array{field: string, error: string, message: string}> The errors.
+	 */
+	private function bsnErrors(array $payload): array {
+		if (isset($payload['aanvrager']['bsn']) === false || $this->validateBSN(bsn: $payload['aanvrager']['bsn']) === true) {
+			return [];
 		}
 
-		// Validate the submission date's format (ISO 8601). Subscript and reported
-		// `field` are the DSO's own wire name, because the caller matches the error
-		// against the payload it sent.
-		if (isset($payload['indieningsdatum']) === true
-			&& $this->validateISODate(date: $payload['indieningsdatum']) === false
-		) {
-			$errors[] = [
+		return [
+			[
+				'field' => 'aanvrager.bsn',
+				'error' => 'invalid_bsn',
+				'message' => 'BSN does not pass the 11-proef validation',
+			],
+		];
+	}//end bsnErrors()
+
+	/**
+	 * The error for a submission date not in ISO 8601, if any.
+	 *
+	 * Subscript and reported `field` are the DSO's own wire name, because the
+	 * caller matches the error against the payload it sent.
+	 *
+	 * @param array $payload The request payload.
+	 *
+	 * @return array<int, array{field: string, error: string, message: string}> The errors.
+	 */
+	private function dateErrors(array $payload): array {
+		if (isset($payload['indieningsdatum']) === false || $this->validateISODate(date: $payload['indieningsdatum']) === true) {
+			return [];
+		}
+
+		return [
+			[
 				'field' => 'indieningsdatum',
 				'error' => 'invalid_date_format',
 				'message' => 'The submission date must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)',
-			];
-		}
-
-		return $errors;
-	}//end formatErrors()
+			],
+		];
+	}//end dateErrors()
 
 	/**
 	 * Parse a DSO-verzoek payload into structured data.
