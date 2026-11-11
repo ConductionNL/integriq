@@ -326,4 +326,38 @@ class DSOParserServiceTest extends TestCase {
 
 	}//end testTheOldCodeFieldStillParses()
 
+	/**
+	 * Attachment names: the given name trimmed, else the URL's file name, else
+	 * `bijlage-<position>` (positions counted over every entry, kept or not);
+	 * a bijlagen value that is not a list gives none.
+	 *
+	 * @return void
+	 */
+	public function testAttachmentNamesFallBackInOrder(): void {
+		$bijlagen = [
+			'x' => ['naam' => '  plan.pdf  ', 'url' => ' https://a.nl/p '],
+			'y' => 'skipped',
+			'z' => ['url' => 'https://a.nl/'],
+			['url' => 'https://a.nl'],
+			['naam' => '', 'url' => ''],
+			['naam' => '.', 'url' => 'https://a.nl/d/brief.txt'],
+			['url' => 'https://a.nl/d/.'],
+			[],
+		];
+
+		$this->assertSame(
+			[
+				['name' => 'plan.pdf', 'url' => 'https://a.nl/p'],
+				['name' => 'bijlage-3', 'url' => 'https://a.nl/'],
+				['name' => 'bijlage-4', 'url' => 'https://a.nl'],
+				['name' => 'bijlage-5', 'url' => ''],
+				['name' => 'bijlage-6', 'url' => 'https://a.nl/d/brief.txt'],
+				['name' => 'bijlage-7', 'url' => 'https://a.nl/d/.'],
+				['name' => 'bijlage-8', 'url' => ''],
+			],
+			$this->parser->parseRequest(['verzoekId' => 'v', 'type' => 'aanvraag', 'bijlagen' => $bijlagen])['bijlagen']
+		);
+		$this->assertSame([], $this->parser->parseRequest(['verzoekId' => 'v', 'bijlagen' => 'x'])['bijlagen']);
+
+	}//end testAttachmentNamesFallBackInOrder()
 }//end class
