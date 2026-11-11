@@ -1,0 +1,108 @@
+{
+    "case-query": {
+        "class": "StufCaseQueryEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "criteria": {
+            "identificatie": "Z-1",
+            "bronorganisatie": "123"
+        }
+    },
+    "case-query-empty": {
+        "class": "StufCaseQueryEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "criteria": []
+    },
+    "person-query": {
+        "class": "StufPersonQueryEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "bsn": "111222333"
+    },
+    "person-query-bsn": {
+        "class": "StufPersonQueryEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "bsn": "999"
+    },
+    "case-create": {
+        "class": "StufCaseMutationEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "mutatiesoort": "T",
+        "fields": {
+            "identificatie": "Z-1",
+            "omschrijving": "Kap",
+            "zaaktypeCode": "B1",
+            "zaaktypeOmschrijving": "Kapvergunning"
+        },
+        "operation": {
+            "action": "create",
+            "identifier": "Z-1",
+            "title": "Kap",
+            "caseTypeCode": "B1",
+            "caseTypeName": "Kapvergunning"
+        }
+    },
+    "case-update-w": {
+        "class": "StufCaseMutationEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "mutatiesoort": "W",
+        "fields": {
+            "identificatie": "Z-1",
+            "omschrijving": "Kap",
+            "zaaktypeCode": "B1",
+            "zaaktypeOmschrijving": "Kapvergunning"
+        },
+        "operation": {
+            "action": "update",
+            "identifier": "Z-1",
+            "title": "Kap",
+            "caseTypeCode": "B1",
+            "caseTypeName": "Kapvergunning"
+        }
+    },
+    "case-no-object": {
+        "class": "StufCaseMutationEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "mutatiesoort": "V",
+        "fields": [],
+        "operation": {
+            "action": "unsupported"
+        }
+    },
+    "document": {
+        "class": "StufDocumentMutationEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "mutatiesoort": "T",
+        "fields": {
+            "identificatie": "D-1",
+            "titel": "Besluit",
+            "zaakidentificatie": "Z-1"
+        },
+        "operation": {
+            "action": "add-document",
+            "identifier": "D-1",
+            "title": "Besluit",
+            "caseIdentifier": "Z-1",
+            "content": "ABC"
+        }
+    },
+    "document-no-relation": {
+        "class": "StufDocumentMutationEvent",
+        "sourceId": "source-1",
+        "referentienummer": "REF-1",
+        "mutatiesoort": "W",
+        "fields": {
+            "identificatie": "D-2"
+        },
+        "operation": {
+            "action": "unsupported",
+            "identifier": "D-2"
+        }
+    }
+}
