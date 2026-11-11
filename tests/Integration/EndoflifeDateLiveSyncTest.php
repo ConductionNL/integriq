@@ -234,6 +234,21 @@ class EndoflifeDateLiveSyncTest extends TestCase {
 			}
 		);
 
+		// A non-test run buffers its target writes and flushes them through
+		// saveObjects(), so the eol_cycle rows land here.
+		$orObjectService->method('saveObjects')->willReturnCallback(
+			function (array $objects, ?string $register = null, ?string $schema = null, ...$rest): array {
+				if ($schema === 'eol_cycle') {
+					foreach ($objects as $object) {
+						$key = ($object['uuid'] ?? ($object['@self']['id'] ?? ('eolcycle-' . (count($this->targetStore) + 1))));
+						$this->targetStore[(string)$key] = $object;
+					}
+				}
+
+				return ['statistics' => ['saved' => count($objects), 'updated' => 0, 'invalid' => 0, 'errors' => 0]];
+			}
+		);
+
 		$orObjectService->method('findAll')->willReturnCallback(
 			function (array $config = [], ...$rest) {
 				$filters = ($config['filters'] ?? []);
