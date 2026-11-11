@@ -27,6 +27,8 @@ namespace OCA\Integriq\Controller;
  * One checked promotion request: the configuration, the target environment
  * and the credential bindings it carries (none unless it sends a list).
  *
+ * @SuppressWarnings(PHPMD.LongVariable) -- targetEnvironmentSlug is the service's own parameter name
+ *
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-promotion-requires-explicit-confirmation-and-the-same-action-matrix-authorization-as-exportimport-req-005
  */
 final class PromotionRequest {
