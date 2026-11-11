@@ -270,10 +270,16 @@ class EventEmitNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptySubjectIsNullAndOutputKeyIsAuthored(): void {
-		$this->eventService->expects($this->once())
+		$calls = [];
+		$this->eventService->expects($this->exactly(2))
 			->method('emitCloudEvent')
-			->with('nl.example.object.updated', 'https://example.org/integriq', null, ['a' => 1])
-			->willReturn([['message' => 'm1'], ['message' => 'm2']]);
+			->willReturnCallback(
+				static function (string $type, string $source, ?string $subject, array $data) use (&$calls): array {
+					$calls[] = [$type, $source, $subject, $data];
+
+					return [['message' => 'm1'], ['message' => 'm2']];
+				}
+			);
 
 		$out = $this->node->execute(new FlowNodeCall(
 			items: [['json' => ['a' => 1]], 'not-an-array'],
@@ -281,6 +287,8 @@ class EventEmitNodeTest extends TestCase {
 			context: []
 		));
 
+		$this->assertSame(['nl.example.object.updated', 'https://example.org/integriq', null, ['a' => 1]], $calls[0]);
+		$this->assertSame([], $calls[1][3]);
 		$this->assertSame(['a' => 1, 'announced' => ['emitted' => true, 'messageCount' => 2]], $out[0]['json']);
 		$this->assertSame(['item' => 0], $out[0]['pairedItem']);
 		$this->assertSame(['json', 'pairedItem'], array_keys($out[1]));
