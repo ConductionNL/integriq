@@ -177,7 +177,7 @@ class XMLResponse extends Response {
 		$dom->appendChild($root);
 
 		// Build XML structure.
-		$this->buildXmlElement(dom: $dom, element: $root, data: $data);
+		$this->buildXmlElement(element: $root, data: $data);
 
 		// Get XML output.
 		$xmlOutput = $dom->saveXML();
@@ -197,20 +197,39 @@ class XMLResponse extends Response {
 	/**
 	 * Build an XML element with attributes and children in order.
 	 *
-	 * @param DOMDocument $dom The document.
-	 * @param DOMElement $element The element to populate.
-	 * @param array<string, mixed> $data The data to convert.
+	 * @param DOMElement           $element The element to populate; its owner document creates the children.
+	 * @param array<string, mixed> $data    The data to convert.
 	 *
 	 * @return void
 	 *
-	 * @psalm-param DOMDocument $dom
 	 * @psalm-param DOMElement $element
 	 * @psalm-param array<string, mixed> $data
 	 *
 	 * @spec openspec/specs/xml-response/spec.md
 	 */
-	private function buildXmlElement(DOMDocument $dom, DOMElement $element, array $data): void {
-		// Process attributes first and maintain their order.
+	private function buildXmlElement(DOMElement $element, array $data): void {
+		$data = $this->appendAttributes(element: $element, data: $data);
+		$data = $this->appendText(element: $element, data: $data);
+
+		// Process child elements.
+		foreach ($data as $key => $value) {
+			$tagName = $this->tagName(key: $key);
+			foreach ($this->occurrences(value: $value) as $item) {
+				$this->fillElement(element: $this->addChild(parent: $element, tagName: $tagName), data: $item);
+			}
+		}
+
+	}//end buildXmlElement()
+
+	/**
+	 * Set the `@attributes` of the data on the element, in order.
+	 *
+	 * @param DOMElement           $element The element.
+	 * @param array<string, mixed> $data    The data.
+	 *
+	 * @return array<string, mixed> The data without its attributes.
+	 */
+	private function appendAttributes(DOMElement $element, array $data): array {
 		if (isset($data['@attributes']) === true && is_array($data['@attributes']) === true) {
 			foreach ($data['@attributes'] as $attrKey => $attrValue) {
 				// Convert attribute value to string and set it.
@@ -220,84 +239,126 @@ class XMLResponse extends Response {
 			unset($data['@attributes']);
 		}
 
-		// Process text content.
+		return $data;
+
+	}//end appendAttributes()
+
+	/**
+	 * Append the `#text` of the data to the element.
+	 *
+	 * @param DOMElement           $element The element.
+	 * @param array<string, mixed> $data    The data.
+	 *
+	 * @return array<string, mixed> The data without its text.
+	 */
+	private function appendText(DOMElement $element, array $data): array {
 		if (isset($data['#text']) === true) {
-			$element->appendChild($this->createSafeTextNode(dom: $dom, text: (string)$data['#text']));
+			$element->appendChild($this->createSafeTextNode(dom: $element->ownerDocument, text: (string)$data['#text']));
 			unset($data['#text']);
 		}
 
-		// Process child elements.
-		foreach ($data as $key => $value) {
-			// Normalize key name.
-			$key = ltrim($key, '@');
-			if (is_numeric($key) === true) {
-				$key = "item$key";
-			}
+		return $data;
 
-			if (is_array($value) === true) {
-				// Handle indexed arrays (multiple elements with same name).
-				if (isset($value[0]) === true && is_array($value[0]) === true) {
-					foreach ($value as $item) {
-						$this->createChildElement(dom: $dom, parentElement: $element, tagName: $key, data: $item);
-					}
-
-					continue;
-				}
-
-				// Handle associative arrays (complex elements).
-				$this->createChildElement(dom: $dom, parentElement: $element, tagName: $key, data: $value);
-				continue;
-			}
-
-			// Handle simple value elements.
-			$this->createChildElement(dom: $dom, parentElement: $element, tagName: $key, data: $value);
-		}//end foreach
-
-	}//end buildXmlElement()
+	}//end appendText()
 
 	/**
-	 * Create a child element and populate it.
+	 * The tag name of a data key: without a leading `@`, and `item{n}` for a numeric key.
 	 *
-	 * @param DOMDocument $dom The document.
-	 * @param DOMElement $parentElement The parent element.
-	 * @param string $tagName The tag name for the child element.
-	 * @param array<string, mixed>|string|object $data The data for the child element.
+	 * @param int|string $key The data key.
+	 *
+	 * @return string
+	 */
+	private function tagName($key): string {
+		$key = ltrim($key, '@');
+		if (is_numeric($key) === true) {
+			$key = "item$key";
+		}
+
+		return $key;
+
+	}//end tagName()
+
+	/**
+	 * The elements one value renders as: one per item of an indexed array of arrays, else one.
+	 *
+	 * @param mixed $value The value under a key.
+	 *
+	 * @return array<mixed> The data of each element.
+	 */
+	private function occurrences($value): array {
+		if (is_array($value) === true && isset($value[0]) === true && is_array($value[0]) === true) {
+			return $value;
+		}
+
+		return [$value];
+
+	}//end occurrences()
+
+	/**
+	 * Append a child element to the parent.
+	 *
+	 * @param DOMElement $parent  The parent element.
+	 * @param string     $tagName The tag name for the child element.
+	 *
+	 * @return DOMElement|null The child, or null when it could not be created.
+	 */
+	private function addChild(DOMElement $parent, string $tagName): ?DOMElement {
+		$childElement = $parent->ownerDocument->createElement($tagName);
+		if ($childElement === false) {
+			return null;
+		}
+
+		$parent->appendChild($childElement);
+
+		return $childElement;
+
+	}//end addChild()
+
+	/**
+	 * Populate a child element: recurse into an array, else write its text.
+	 *
+	 * @param DOMElement|null                    $element The child element, or null to skip.
+	 * @param array<string, mixed>|string|object $data    The data for the child element.
 	 *
 	 * @return void
 	 *
-	 * @psalm-param DOMDocument $dom
-	 * @psalm-param DOMElement $parentElement
-	 * @psalm-param string $tagName
-	 * @psalm-param array<string, mixed>|string|object $data
-	 *
 	 * @spec openspec/specs/xml-response/spec.md
 	 */
-	private function createChildElement(DOMDocument $dom, DOMElement $parentElement, string $tagName, $data): void {
-		$childElement = $dom->createElement($tagName);
-		if ($childElement === false) {
+	private function fillElement(?DOMElement $element, $data): void {
+		if ($element === null) {
 			return;
 		}
-
-		$parentElement->appendChild($childElement);
 
 		if (is_array($data) === true) {
-			$this->buildXmlElement(dom: $dom, element: $childElement, data: $data);
+			$this->buildXmlElement(element: $element, data: $data);
 			return;
 		}
 
-		// Handle objects that might not be convertible to string directly.
-		if (is_object($data) === true) {
-			// For QueryBuilder objects or objects without __toString(), create a placeholder.
-			if (method_exists($data, '__toString') === true && ($data instanceof IQueryBuilder) === false) {
-				$data = (string)$data;
-			} else {
-				$data = '[Object of class ' . get_class($data) . ']';
-			}
+		$element->appendChild($this->createSafeTextNode(dom: $element->ownerDocument, text: $this->textOf(data: $data)));
+
+	}//end fillElement()
+
+	/**
+	 * The text of a scalar or object value.
+	 *
+	 * Objects without __toString(), and QueryBuilder objects, become a placeholder.
+	 *
+	 * @param string|object|null|bool|int|float $data The value.
+	 *
+	 * @return string
+	 */
+	private function textOf($data): string {
+		if (is_object($data) === false) {
+			return (string)$data;
 		}
 
-		$childElement->appendChild($this->createSafeTextNode(dom: $dom, text: (string)$data));
+		if (method_exists($data, '__toString') === true && ($data instanceof IQueryBuilder) === false) {
+			return (string)$data;
+		}
 
-	}//end createChildElement()
+		return '[Object of class ' . get_class($data) . ']';
+
+	}//end textOf()
 
 	/**
 	 * Process text content safely.

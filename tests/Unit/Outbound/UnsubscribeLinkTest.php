@@ -469,7 +469,7 @@ class UnsubscribeLinkTest extends TestCase {
 	 *
 	 * @return SenderIdentityController The controller.
 	 */
-	private function controller(): SenderIdentityController {
+	private function controller(?IRequest $request = null): SenderIdentityController {
 		$l = $this->createMock(IL10N::class);
 		$l->method('t')->willReturnCallback(static fn (string $text): string => $text);
 		$session = $this->createMock(IUserSession::class);
@@ -482,7 +482,7 @@ class UnsubscribeLinkTest extends TestCase {
 
 		return new SenderIdentityController(
 			'integriq',
-			$this->createMock(IRequest::class),
+			($request ?? $this->createMock(IRequest::class)),
 			$session,
 			$this->createMock(ActionAuthService::class),
 			$this->createMock(SenderIdentityService::class),
@@ -566,4 +566,30 @@ class UnsubscribeLinkTest extends TestCase {
 
 	}//end clock()
 
+	/**
+	 * A mail provider's one-click POST is recorded as one-click, for a v3 link
+	 * and for stopping everything, and the page says what was stopped.
+	 *
+	 * @return void
+	 */
+	public function testAOneClickPostIsRecordedAsOneClick(): void {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'List-Unsubscribe' ? 'One-Click' : $default)
+		);
+		$token = $this->tokens()->mintScoped('piet@example.org', 'channel', 'email', '', 'marketing');
+
+		$done = $this->controller(request: $request)->unsubscribeConfirm($token);
+		$row = array_values($this->table->rows)[0];
+		$this->assertSame(['one-click', 'channel', 'email', 'marketing'], [$row->getSource(), $row->getScope(), $row->getChannel(), $row->getPurpose()]);
+		$this->assertSame(Http::STATUS_OK, $done->getStatus());
+		$this->assertStringEndsWith(' Statutory notices, such as a besluit, are still sent.', $done->getParams()['message']);
+
+		$all = $this->controller(request: $request)->unsubscribeConfirm($this->tokens()->mint('jan@example.org', 'zaak/1'), 'all');
+		$everything = array_values($this->table->rows)[1];
+		$this->assertSame(['one-click', 'instance', 'jan@example.org'], [$everything->getSource(), $everything->getScope(), $everything->getAddress()]);
+		$this->assertSame('Done. You will no longer receive messages from us, except statutory notices such as a besluit.', $all->getParams()['message']);
+		$this->assertSame(2, $this->table->countAll());
+
+	}//end testAOneClickPostIsRecordedAsOneClick()
 }//end class

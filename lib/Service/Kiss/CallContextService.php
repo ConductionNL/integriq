@@ -65,8 +65,31 @@ class CallContextService {
 	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	public function resolve(string $e164, array $sourceConfiguration = []): array {
-		if ($this->lookup->isUsable(e164: $e164) === false) {
+		$caller = $this->callerFor(e164: $e164, sourceConfiguration: $sourceConfiguration);
+		if ($caller === null) {
 			return $this->unknown();
+		}
+
+		return [
+			'caller'    => $caller,
+			'openCases' => $this->openCasesOf(caller: $caller, sourceConfiguration: $sourceConfiguration),
+		];
+
+	}//end resolve()
+
+	/**
+	 * The one party the number identifies, or null when it identifies nobody.
+	 *
+	 * @param string               $e164                The caller's number.
+	 * @param array<string, mixed> $sourceConfiguration The CTI source's configuration.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 */
+	private function callerFor(string $e164, array $sourceConfiguration): ?array {
+		if ($this->lookup->isUsable(e164: $e164) === false) {
+			return null;
 		}
 
 		try {
@@ -76,33 +99,37 @@ class CallContextService {
 			// failed call. The phone is still ringing.
 			$this->logger->warning('[CallContextService] caller directory unavailable: '.$e->getMessage());
 
-			return $this->unknown();
+			return null;
 		}
 
-		$caller = $this->lookup->match(e164: $e164, parties: $candidates);
-		if ($caller === null) {
-			return $this->unknown();
-		}
+		return $this->lookup->match(e164: $e164, parties: $candidates);
 
+	}//end callerFor()
+
+	/**
+	 * The caller's open cases; none when the second lookup fails.
+	 *
+	 * The caller is known and the cases are not. Say so by naming the caller
+	 * with an empty case list, rather than discarding a good identification
+	 * because a second lookup failed.
+	 *
+	 * @param array<string, mixed> $caller              The identified party.
+	 * @param array<string, mixed> $sourceConfiguration The CTI source's configuration.
+	 *
+	 * @return array<int, mixed>
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 */
+	private function openCasesOf(array $caller, array $sourceConfiguration): array {
 		try {
-			$openCases = $this->directory->openCasesFor(
-				party: $caller,
-				sourceConfiguration: $sourceConfiguration
-			);
+			return $this->directory->openCasesFor(party: $caller, sourceConfiguration: $sourceConfiguration);
 		} catch (Throwable $e) {
-			// The caller is known and the cases are not. Say so by naming the
-			// caller with an empty case list, rather than discarding a good
-			// identification because a second lookup failed.
 			$this->logger->warning('[CallContextService] open cases unavailable: '.$e->getMessage());
-			$openCases = [];
+
+			return [];
 		}
 
-		return [
-			'caller'    => $caller,
-			'openCases' => $openCases,
-		];
-
-	}//end resolve()
+	}//end openCasesOf()
 
 	/**
 	 * The context for a caller nobody could place.

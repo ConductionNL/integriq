@@ -94,19 +94,32 @@ class IntegriqConsumerSource implements ConsumerSource {
 		}
 
 		foreach ($this->consumers(filters: []) as $consumer) {
-			$data = $consumer->getObject();
-			if (strtolower((string)($data['authorizationType'] ?? '')) !== 'apikey') {
-				continue;
-			}
-
-			$storedKey = ($data['authorizationConfiguration']['apiKey'] ?? '');
-			if (is_string($storedKey) === true && $storedKey !== '' && hash_equals($storedKey, $apiKey) === true) {
+			if (self::holdsApiKey(data: $consumer->getObject(), apiKey: $apiKey) === true) {
 				return $this->resolve(consumer: $consumer);
 			}
 		}
 
 		return null;
 	}//end findByApiKey()
+
+	/**
+	 * Whether an API-key consumer stores exactly this key (compared in constant time).
+	 *
+	 * @param array<string, mixed> $data   The consumer data.
+	 * @param string               $apiKey The presented key, not empty.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	private static function holdsApiKey(array $data, string $apiKey): bool {
+		if (strtolower((string)($data['authorizationType'] ?? '')) !== 'apikey') {
+			return false;
+		}
+
+		$storedKey = ($data['authorizationConfiguration']['apiKey'] ?? '');
+		return is_string($storedKey) === true && $storedKey !== '' && hash_equals($storedKey, $apiKey) === true;
+	}//end holdsApiKey()
 
 	/**
 	 * Read consumer objects, outside RBAC and multitenancy: the caller is not signed in yet.
@@ -137,34 +150,84 @@ class IntegriqConsumerSource implements ConsumerSource {
 	private function resolve(ObjectEntity $consumer): ResolvedConsumer {
 		$data = $consumer->getObject();
 
-		$uuid = $consumer->getUuid();
-		if ($uuid === null || $uuid === '') {
-			$uuid = ($data['uuid'] ?? null);
-		}
-
-		$userId = ($data['userId'] ?? null);
-		if (is_string($userId) === false) {
-			$userId = null;
-		}
-
-		$authorizationType = null;
-		if (isset($data['authorizationType']) === true) {
-			$authorizationType = (string)$data['authorizationType'];
-		}
-
-		$configuration = ($data['authorizationConfiguration'] ?? []);
-		if (is_array($configuration) === false) {
-			$configuration = [];
-		}
-
 		return new ResolvedConsumer(
 			source: self::SOURCE,
-			uuid: $uuid,
+			uuid: self::uuidOf(consumer: $consumer, data: $data),
 			name: (string)($data['name'] ?? ''),
-			userId: $userId,
-			authorizationType: $authorizationType,
-			configuration: $configuration,
+			userId: self::stringOrNull(value: ($data['userId'] ?? null)),
+			authorizationType: self::typeOf(data: $data),
+			configuration: self::arrayOrEmpty(value: ($data['authorizationConfiguration'] ?? [])),
 			record: $consumer,
 		);
 	}//end resolve()
+
+	/**
+	 * The consumer's uuid: the entity's own, else the one in its data.
+	 *
+	 * @param ObjectEntity         $consumer The consumer entity.
+	 * @param array<string, mixed> $data     Its data.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	private static function uuidOf(ObjectEntity $consumer, array $data): ?string {
+		$uuid = $consumer->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return ($data['uuid'] ?? null);
+		}
+
+		return $uuid;
+	}//end uuidOf()
+
+	/**
+	 * A string value, or null for anything else.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	private static function stringOrNull(mixed $value): ?string {
+		if (is_string($value) === false) {
+			return null;
+		}
+
+		return $value;
+	}//end stringOrNull()
+
+	/**
+	 * The authorization type as text, or null when the consumer names none.
+	 *
+	 * @param array<string, mixed> $data The consumer data.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	private static function typeOf(array $data): ?string {
+		if (isset($data['authorizationType']) === false) {
+			return null;
+		}
+
+		return (string)$data['authorizationType'];
+	}//end typeOf()
+
+	/**
+	 * An array value, or an empty array for anything else.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed>
+	 *
+	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 */
+	private static function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOrEmpty()
 }//end class

@@ -52,31 +52,49 @@ class JsonPathLiteEvaluator {
 	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
 	 */
 	public function evaluate(mixed $data, string $expr): mixed {
-		$expr = trim($expr);
-		if ($expr === '' || $expr === '$') {
+		$path = self::relativePath(expr: $expr);
+		if ($path === null) {
 			return $data;
 		}
 
-		if (str_starts_with($expr, '$') === true) {
-			$expr = substr($expr, 1);
+		return self::walk(data: $data, tokens: $this->tokenize(path: $path));
+	}//end evaluate()
+
+	/**
+	 * The path below the root, or null when the expression names the root itself.
+	 *
+	 * @param string $expr The expression (`$`, `$.a.b`, `$[0]`, `a.b`).
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
+	 */
+	private static function relativePath(string $expr): ?string {
+		$expr = trim($expr);
+		if ($expr === '' || $expr === '$') {
+			return null;
 		}
 
-		// Strip a single leading '.' left after removing the '$' (the
-		// canonical `$.a.b` form); a bracket-first expression like `$[0]`
-		// has no leading dot to strip.
-		if (str_starts_with($expr, '.') === true) {
-			$expr = substr($expr, 1);
-		}
+		// Strip one leading '$', then a single leading '.' (the canonical
+		// `$.a.b` form); a bracket-first expression like `$[0]` has no
+		// leading dot to strip.
+		return (string)preg_replace('/^\$?\.?/', '', $expr, 1);
+	}//end relativePath()
 
-		$tokens = $this->tokenize(path: $expr);
-
+	/**
+	 * Follow the tokens down the data; null as soon as one is missing.
+	 *
+	 * @param mixed                  $data   The data.
+	 * @param array<int, int|string> $tokens The path tokens.
+	 *
+	 * @return mixed
+	 *
+	 * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
+	 */
+	private static function walk(mixed $data, array $tokens): mixed {
 		$current = $data;
 		foreach ($tokens as $token) {
-			if (is_array($current) === false) {
-				return null;
-			}
-
-			if (array_key_exists($token, $current) === false) {
+			if (is_array($current) === false || array_key_exists($token, $current) === false) {
 				return null;
 			}
 
@@ -84,7 +102,7 @@ class JsonPathLiteEvaluator {
 		}
 
 		return $current;
-	}//end evaluate()
+	}//end walk()
 
 	/**
 	 * Tokenize a dotted-key / bracket-index path into an ordered list of

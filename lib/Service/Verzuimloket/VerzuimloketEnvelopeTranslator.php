@@ -115,6 +115,36 @@ class VerzuimloketEnvelopeTranslator {
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#scenario-a-complete-eerste-melding-translates-to-a-valid-envelope
 	 */
 	public function translate(string $meldingType, string $kenmerk, array $payload): string {
+		$this->assertTranslatable(meldingType: $meldingType, kenmerk: $kenmerk);
+		$this->assertRequiredFieldsPresent(payload: $payload, meldingType: $meldingType);
+		$melding = new VerzuimloketMelding(meldingType: $meldingType, kenmerk: $kenmerk, payload: $payload);
+
+		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
+		$root = $document->createElement('VerzuimloketMelding');
+		$document->appendChild($root);
+		$this->appendStuurgegevens(root: $root, melding: $melding);
+
+		$body = $document->createElement('body');
+		$root->appendChild($body);
+		$this->appendBody(body: $body, melding: $melding);
+
+		$xml = (string)$document->saveXML();
+		$this->assertNoUnresolvedPlaceholder(xml: $xml);
+
+		return $xml;
+	}//end translate()
+
+	/**
+	 * Refuse an unsupported meldingType or a blank kenmerk.
+	 *
+	 * @param string $meldingType The melding kind.
+	 * @param string $kenmerk     The caller-supplied correlation id.
+	 *
+	 * @return void
+	 *
+	 * @throws VerzuimloketTranslationException When either is unusable.
+	 */
+	private function assertTranslatable(string $meldingType, string $kenmerk): void {
 		if (isset(self::REQUIRED_FIELDS[$meldingType]) === false) {
 			throw new VerzuimloketTranslationException(message: 'Unsupported Verzuimloket meldingType "' . $meldingType . '".');
 		}
@@ -122,28 +152,37 @@ class VerzuimloketEnvelopeTranslator {
 		if (trim($kenmerk) === '') {
 			throw new VerzuimloketTranslationException(message: 'A Verzuimloket melding requires a non-empty kenmerk (correlation id).');
 		}
+	}//end assertTranslatable()
 
-		$this->assertRequiredFieldsPresent(payload: $payload, meldingType: $meldingType);
-
-		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-		$root = $document->createElement('VerzuimloketMelding');
-		$document->appendChild($root);
-
+	/**
+	 * Append the stuurgegevens: meldingType, kenmerk and tijdstipBericht.
+	 *
+	 * @param DOMElement          $root    The VerzuimloketMelding element.
+	 * @param VerzuimloketMelding $melding The melding.
+	 *
+	 * @return void
+	 */
+	private function appendStuurgegevens(DOMElement $root, VerzuimloketMelding $melding): void {
+		$document      = $root->ownerDocument;
 		$stuurgegevens = $document->createElement('stuurgegevens');
 		$root->appendChild($stuurgegevens);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'meldingType', value: $meldingType);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'kenmerk', value: $kenmerk);
-		$this->appendText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'tijdstipBericht',
-			value: (new DateTime())->format('c')
-		);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'meldingType', value: $melding->meldingType);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'kenmerk', value: $melding->kenmerk);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'tijdstipBericht', value: (new DateTime())->format('c'));
+	}//end appendStuurgegevens()
 
-		$body = $document->createElement('body');
-		$root->appendChild($body);
-
-		foreach (self::REQUIRED_FIELDS[$meldingType] as $field) {
+	/**
+	 * Append the required fields, then the optional ones that are set (as JSON).
+	 *
+	 * @param DOMElement          $body    The body element.
+	 * @param VerzuimloketMelding $melding The melding.
+	 *
+	 * @return void
+	 */
+	private function appendBody(DOMElement $body, VerzuimloketMelding $melding): void {
+		$document = $body->ownerDocument;
+		$payload  = $melding->payload;
+		foreach (self::REQUIRED_FIELDS[$melding->meldingType] as $field) {
 			$this->appendText(document: $document, parent: $body, name: $field, value: (string)$payload[$field]);
 		}
 
@@ -153,12 +192,7 @@ class VerzuimloketEnvelopeTranslator {
 				$this->appendText(document: $document, parent: $body, name: $field, value: $encoded);
 			}
 		}
-
-		$xml = (string)$document->saveXML();
-		$this->assertNoUnresolvedPlaceholder(xml: $xml);
-
-		return $xml;
-	}//end translate()
+	}//end appendBody()
 
 	/**
 	 * Assert every required field for `$meldingType` is present and

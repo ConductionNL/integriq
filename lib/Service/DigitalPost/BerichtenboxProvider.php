@@ -169,34 +169,13 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-subscription-is-checked-before-every-send-req-dpa-009
 	 */
 	public function send(array $message, array $config = []): DigitalPostResult {
-		$refusals = $this->activationRefusals(config: $config);
-		if ($refusals !== []) {
-			return DigitalPostResult::refused(implode(' ', $refusals), BerichtenboxException::CODE_NOT_CONFIGURED);
+		$refusal = $this->unsendable(message: $message, config: $config);
+		if ($refusal !== null) {
+			return $refusal;
 		}
-
-		$category = (string)($message['category'] ?? 'service');
-		$berichtType = $this->berichtType(category: $category, config: $config);
-		if ($berichtType === '') {
-			return DigitalPostResult::refused(
-				sprintf('No BerichtType is configured for letters of category "%s". Map it under "berichtTypes". Nothing was sent.', $category),
-				BerichtenboxException::CODE_NOT_CONFIGURED
-			);
-		}
-
-		$simulated = ($this->client->flavour() === 'mock');
-		$bsn = (string)($message['recipient'] ?? '');
 
 		try {
-			$subscribed = $this->client->checkSubscriptions([$bsn], $berichtType, $config);
-			if (($subscribed[$bsn] ?? false) !== true) {
-				return DigitalPostResult::refused(
-					'This citizen does not take Berichtenbox letters from this organisation, or has no active Berichtenbox. Nothing was sent.',
-					self::CODE_NOT_SUBSCRIBED
-				);
-			}
-
-			$batch = $this->letters->build(message: $message, senderOin: (string)$config['senderOin'], berichtType: $berichtType);
-			$transportMessageId = $this->client->deliver($batch, $config);
+			return $this->deliverLetter(message: $message, config: $config);
 		} catch (BerichtenboxException $e) {
 			$this->logger->warning('digital-post.berichtenbox.send-refused', ['code' => $e->getReason(), 'error' => $e->getMessage()]);
 
@@ -206,6 +185,71 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 
 			return DigitalPostResult::refused($e->getMessage(), BerichtenboxException::CODE_TRANSPORT);
 		}//end try
+	}//end send()
+
+	/**
+	 * Why a letter cannot be sent from this source at all: it is not activated, or the letter's category has no BerichtType.
+	 *
+	 * @param array<string,mixed> $message The letter.
+	 * @param array<string,mixed> $config  The source configuration.
+	 *
+	 * @return DigitalPostResult|null The refusal, or null when the letter may be sent.
+	 */
+	private function unsendable(array $message, array $config): ?DigitalPostResult {
+		$refusals = $this->activationRefusals(config: $config);
+		if ($refusals !== []) {
+			return DigitalPostResult::refused(implode(' ', $refusals), BerichtenboxException::CODE_NOT_CONFIGURED);
+		}
+
+		$category = $this->letterCategory(message: $message);
+		if ($this->berichtType(category: $category, config: $config) === '') {
+			return DigitalPostResult::refused(
+				sprintf('No BerichtType is configured for letters of category "%s". Map it under "berichtTypes". Nothing was sent.', $category),
+				BerichtenboxException::CODE_NOT_CONFIGURED
+			);
+		}
+
+		return null;
+
+	}//end unsendable()
+
+	/**
+	 * The letter's category; `service` when it names none.
+	 *
+	 * @param array<string,mixed> $message The letter.
+	 *
+	 * @return string The category.
+	 */
+	private function letterCategory(array $message): string {
+		return (string)($message['category'] ?? 'service');
+
+	}//end letterCategory()
+
+	/**
+	 * Check the citizen's subscription, then build and deliver the letter.
+	 *
+	 * @param array<string,mixed> $message The letter.
+	 * @param array<string,mixed> $config  The source configuration.
+	 *
+	 * @return DigitalPostResult Sent, or refused when the citizen takes no Berichtenbox letters from this organisation.
+	 *
+	 * @throws BerichtenboxException When the subscription check, the letter or the delivery is refused.
+	 */
+	private function deliverLetter(array $message, array $config): DigitalPostResult {
+		$berichtType = $this->berichtType(category: $this->letterCategory(message: $message), config: $config);
+		$simulated = ($this->client->flavour() === 'mock');
+		$bsn = (string)($message['recipient'] ?? '');
+
+		$subscribed = $this->client->checkSubscriptions([$bsn], $berichtType, $config);
+		if (($subscribed[$bsn] ?? false) !== true) {
+			return DigitalPostResult::refused(
+				'This citizen does not take Berichtenbox letters from this organisation, or has no active Berichtenbox. Nothing was sent.',
+				self::CODE_NOT_SUBSCRIBED
+			);
+		}
+
+		$batch = $this->letters->build(message: $message, senderOin: (string)$config['senderOin'], berichtType: $berichtType);
+		$transportMessageId = $this->client->deliver($batch, $config);
 
 		return DigitalPostResult::accepted(
 			DigitalPostResult::STATUS_SENT,
@@ -213,7 +257,8 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 			$simulated,
 			['batchId' => $batch->batchId, 'transportMessageId' => $transportMessageId, 'berichtType' => $berichtType]
 		);
-	}//end send()
+
+	}//end deliverLetter()
 
 	/**
 	 * What Logius answered for this letter, so far.
@@ -226,56 +271,104 @@ class BerichtenboxProvider implements DigitalPostProviderInterface {
 	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
 	 */
 	public function status(string $providerReference, array $config = []): DigitalPostResult {
-		$simulated = ($this->client->flavour() === 'mock');
-		$reference = strtolower($providerReference);
-
-		$transportMessageId = $this->client->transportMessageIdFor(berichtId: $reference);
-		$result = ($this->client->results($config)[$reference] ?? null);
+		$letter = new LetterStatusLookup(providerReference: $providerReference, config: $config);
+		$result = ($this->client->results($config)[$letter->reference()] ?? null);
 		if ($result !== null) {
-			$this->pendingAcks[$reference] = ['kind' => 'result', 'id' => $result['resultMessageId']];
-			if (isset($this->client->transportEvents($config)[$transportMessageId]) === true) {
-				// The transport event for this letter goes with its result, so
-				// nothing is left waiting at the adapter.
-				$this->pendingAcks[$reference]['event'] = $transportMessageId;
-			}
-			$extra = ['resultCode' => $result['code'], 'resultStage' => $result['stadium']];
-
-			if ($result['code'] === 'Verwerkt') {
-				return DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, $providerReference, $simulated, $extra);
-			}
-
-			$stage = $result['stadium'];
-			if ($stage === '') {
-				$stage = 'unknown';
-			}
-
-			return DigitalPostResult::refused(
-				sprintf('Logius did not place the letter: %s (stage %s).', $result['code'], $stage),
-				'logius_' . $result['code'],
-				$providerReference,
-				$extra
-			);
+			$this->holdResultAck(letter: $letter, result: $result);
+			return $this->resultStatus(letter: $letter, result: $result);
 		}
 
-		$event = ($this->client->transportEvents($config)[$transportMessageId] ?? null);
+		return $this->transportStatus(letter: $letter);
+	}//end status()
+
+	/**
+	 * Remember to acknowledge the result once the status is stored, and its transport event with it when there is one.
+	 *
+	 * The transport event for this letter goes with its result, so nothing is
+	 * left waiting at the adapter.
+	 *
+	 * @param LetterStatusLookup  $letter The letter.
+	 * @param array<string,mixed> $result Logius' result for it.
+	 *
+	 * @return void
+	 */
+	private function holdResultAck(LetterStatusLookup $letter, array $result): void {
+		$reference = $letter->reference();
+		$transportMessageId = $this->client->transportMessageIdFor(berichtId: $reference);
+		$this->pendingAcks[$reference] = ['kind' => 'result', 'id' => $result['resultMessageId']];
+		if (isset($this->client->transportEvents($letter->config)[$transportMessageId]) === true) {
+			$this->pendingAcks[$reference]['event'] = $transportMessageId;
+		}
+
+	}//end holdResultAck()
+
+	/**
+	 * The status Logius' result decides: delivered when processed, else failed with its code and stage.
+	 *
+	 * @param LetterStatusLookup  $letter The letter.
+	 * @param array<string,mixed> $result Logius' result for it.
+	 *
+	 * @return DigitalPostResult The status.
+	 */
+	private function resultStatus(LetterStatusLookup $letter, array $result): DigitalPostResult {
+		$extra = ['resultCode' => $result['code'], 'resultStage' => $result['stadium']];
+		if ($result['code'] === 'Verwerkt') {
+			return DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, $letter->providerReference, $this->isSimulated(), $extra);
+		}
+
+		$stage = $result['stadium'];
+		if ($stage === '') {
+			$stage = 'unknown';
+		}
+
+		return DigitalPostResult::refused(
+			sprintf('Logius did not place the letter: %s (stage %s).', $result['code'], $stage),
+			'logius_' . $result['code'],
+			$letter->providerReference,
+			$extra
+		);
+
+	}//end resultStatus()
+
+	/**
+	 * The status while Logius has not decided: failed when the transport failed or expired, else still sent.
+	 *
+	 * @param LetterStatusLookup $letter The letter.
+	 *
+	 * @return DigitalPostResult The status.
+	 */
+	private function transportStatus(LetterStatusLookup $letter): DigitalPostResult {
+		$transportMessageId = $this->client->transportMessageIdFor(berichtId: $letter->reference());
+		$event = ($this->client->transportEvents($letter->config)[$transportMessageId] ?? null);
 		if ($event === 'FAILED' || $event === 'EXPIRED') {
-			$this->pendingAcks[$reference] = ['kind' => 'event', 'id' => $transportMessageId];
+			$this->pendingAcks[$letter->reference()] = ['kind' => 'event', 'id' => $transportMessageId];
 
 			return DigitalPostResult::refused(
 				sprintf('The letter was not delivered to Logius: the ebMS adapter reports %s.', $event),
 				'transport_' . strtolower($event),
-				$providerReference
+				$letter->providerReference
 			);
 		}
 
 		if ($event === 'DELIVERED') {
 			// Logius acknowledged the batch; the letter stays `sent` until a
 			// result arrives, so the event can go now.
-			$this->client->eventProcessed($transportMessageId, $config);
+			$this->client->eventProcessed($transportMessageId, $letter->config);
 		}
 
-		return DigitalPostResult::accepted(DigitalPostResult::STATUS_SENT, $providerReference, $simulated);
-	}//end status()
+		return DigitalPostResult::accepted(DigitalPostResult::STATUS_SENT, $letter->providerReference, $this->isSimulated());
+
+	}//end transportStatus()
+
+	/**
+	 * Whether this source runs against the mock: its letters are simulated.
+	 *
+	 * @return bool True for the mock.
+	 */
+	private function isSimulated(): bool {
+		return ($this->client->flavour() === 'mock');
+
+	}//end isSimulated()
 
 	/**
 	 * The status for this letter is stored: let the adapter drop what it reported.

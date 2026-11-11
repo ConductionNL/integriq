@@ -356,11 +356,6 @@ class UwlrEduVController extends Controller {
 	 * @return string The raw request body.
 	 */
 	private function getRawContent(): string {
-		$content = file_get_contents(filename: 'php://input');
-		if ($content === false) {
-			return '';
-		}
-
-		return $content;
+		return (new RawRequestBody())->read();
 	}//end getRawContent()
 }//end class

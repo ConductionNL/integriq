@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Digikoppeling;
 
+use OCA\Integriq\Adapters\CatalogueAdapter;
+
 /**
  * Catalogue descriptor for the Digikoppeling transport adapter (ADR-017 Rule 1).
  *
@@ -37,7 +39,7 @@ namespace OCA\Integriq\Adapters\Digikoppeling;
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
-final class DigikoppelingAdapter {
+final class DigikoppelingAdapter extends CatalogueAdapter {
 
 	/**
 	 * Stable adapter id.
@@ -83,39 +85,6 @@ final class DigikoppelingAdapter {
 	}//end label()
 
 	/**
-	 * Adapters catalogue category (Dutch government M2M transport).
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/digikoppeling-adapter/spec.md
-	 */
-	public function category(): string {
-		return 'government';
-	}//end category()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO top-level menu.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/digikoppeling-adapter/spec.md
-	 */
-	public function addsTopLevelMenu(): bool {
-		return false;
-	}//end addsTopLevelMenu()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO per-adapter /beheer route.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/digikoppeling-adapter/spec.md
-	 */
-	public function addsManagementRoute(): bool {
-		return false;
-	}//end addsManagementRoute()
-
-	/**
 	 * The transport profiles this adapter offers.
 	 *
 	 * @return array<int, string>
@@ -143,66 +112,95 @@ final class DigikoppelingAdapter {
 			'type' => 'object',
 			'title' => 'Digikoppeling',
 			'required' => ['profile', 'oin', 'endpoint', 'certificateRef'],
-			'properties' => [
-				'profile' => [
-					'type' => 'string',
-					'enum' => [self::PROFILE_WUS, self::PROFILE_EBMS2],
-					'title' => 'Transport profile',
-					'description' => 'WUS (synchronous bevragingen) or ebMS2 (asynchronous reliable meldingen).',
-				],
-				'oin' => [
-					'type' => 'string',
-					'title' => 'Partner OIN',
-					'description' => 'Partner organisation identifier (OIN).',
-				],
-				'service' => [
-					'type' => 'string',
-					'title' => 'Service',
-					'description' => 'Digikoppeling service name.',
-				],
-				'action' => [
-					'type' => 'string',
-					'title' => 'Action',
-					'description' => 'Digikoppeling action name.',
-				],
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'title' => 'Endpoint URL',
-					'description' => 'Partner endpoint URL (two-way TLS).',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'title' => 'PKIoverheid certificate reference',
-					'description' => 'Broker credentialRef for the PKIoverheid certificate + key. Never stored here (ADR-007).',
-				],
-				'reliableMessaging' => [
-					'type' => 'object',
-					'title' => 'Reliable messaging (ebMS2)',
-					'description' => 'ebMS2 reliable-messaging parameters.',
-					'properties' => [
-						'retryBudget' => [
-							'type' => 'integer',
-							'minimum' => 0,
-							'title' => 'Retry budget',
-							'description' => 'Maximum retransmissions before the message is dead-lettered.',
-						],
-						'retryIntervalSeconds' => [
-							'type' => 'integer',
-							'minimum' => 1,
-							'title' => 'Retry interval (seconds)',
-							'description' => 'Seconds between retransmission attempts.',
-						],
-					],
-				],
-				'groteBerichtenThresholdBytes' => [
-					'type' => 'integer',
-					'minimum' => 1,
-					'title' => 'Grote Berichten threshold (bytes)',
-					'description' => 'Payloads larger than this are transferred out-of-band by reference (URL + checksum).',
-				],
-			],
+			'properties' => $this->partnerSettings() + $this->transportSettings(),
 		];
 
 	}//end configSchema()
+
+	/**
+	 * The settings that name the partner and the service: profile, OIN, service and action.
+	 *
+	 * @return array<string, array<string, mixed>> JSON-schema properties.
+	 */
+	private function partnerSettings(): array {
+		return [
+			'profile' => [
+				'type' => 'string',
+				'enum' => [self::PROFILE_WUS, self::PROFILE_EBMS2],
+				'title' => 'Transport profile',
+				'description' => 'WUS (synchronous bevragingen) or ebMS2 (asynchronous reliable meldingen).',
+			],
+			'oin' => $this->textSetting(title: 'Partner OIN', description: 'Partner organisation identifier (OIN).'),
+			'service' => $this->textSetting(title: 'Service', description: 'Digikoppeling service name.'),
+			'action' => $this->textSetting(title: 'Action', description: 'Digikoppeling action name.'),
+		];
+
+	}//end partnerSettings()
+
+	/**
+	 * The settings of the transport: endpoint, certificate, reliable messaging and the Grote Berichten threshold.
+	 *
+	 * @return array<string, array<string, mixed>> JSON-schema properties.
+	 */
+	private function transportSettings(): array {
+		return [
+			'endpoint' => $this->endpointSetting(description: 'Partner endpoint URL (two-way TLS).'),
+			'certificateRef' => $this->certificateSetting(
+				description: 'Broker credentialRef for the PKIoverheid certificate + key. Never stored here (ADR-007).'
+			),
+			'reliableMessaging' => [
+				'type' => 'object',
+				'title' => 'Reliable messaging (ebMS2)',
+				'description' => 'ebMS2 reliable-messaging parameters.',
+				'properties' => $this->retrySettings(),
+			],
+			'groteBerichtenThresholdBytes' => [
+				'type' => 'integer',
+				'minimum' => 1,
+				'title' => 'Grote Berichten threshold (bytes)',
+				'description' => 'Payloads larger than this are transferred out-of-band by reference (URL + checksum).',
+			],
+		];
+
+	}//end transportSettings()
+
+	/**
+	 * The ebMS2 retry budget and interval.
+	 *
+	 * @return array<string, array<string, mixed>> JSON-schema properties.
+	 */
+	private function retrySettings(): array {
+		return [
+			'retryBudget' => [
+				'type' => 'integer',
+				'minimum' => 0,
+				'title' => 'Retry budget',
+				'description' => 'Maximum retransmissions before the message is dead-lettered.',
+			],
+			'retryIntervalSeconds' => [
+				'type' => 'integer',
+				'minimum' => 1,
+				'title' => 'Retry interval (seconds)',
+				'description' => 'Seconds between retransmission attempts.',
+			],
+		];
+
+	}//end retrySettings()
+
+	/**
+	 * A plain text setting.
+	 *
+	 * @param string $title       The setting's title.
+	 * @param string $description What the setting holds.
+	 *
+	 * @return array<string, string> A JSON-schema fragment.
+	 */
+	private function textSetting(string $title, string $description): array {
+		return [
+			'type' => 'string',
+			'title' => $title,
+			'description' => $description,
+		];
+
+	}//end textSetting()
 }//end class

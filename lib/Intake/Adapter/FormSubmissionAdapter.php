@@ -94,24 +94,11 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 			);
 		}
 
-		$data = ($payload['data'] ?? []);
-		if (is_array($data) === false) {
-			$data = [];
-		}
+		$submitter = IntakePayloadReader::mapOrEmpty(value: ($payload['submitter'] ?? []));
 
-		$submitter = ($payload['submitter'] ?? []);
-		if (is_array($submitter) === false) {
-			$submitter = [];
-		}
-
-		$fields = $data;
+		$fields = IntakePayloadReader::mapOrEmpty(value: ($payload['data'] ?? []));
 		$fields['formId'] = $formId;
 		$fields['submissionId'] = $submissionId;
-
-		$submittedAt = ($payload['submittedAt'] ?? null);
-		if ($submittedAt !== null) {
-			$submittedAt = (string)$submittedAt;
-		}
 
 		return new InboundMessage(
 			channelId: self::CHANNEL_ID,
@@ -123,11 +110,14 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 				'phone' => (string)($submitter['phone'] ?? ''),
 			],
 			text: (string)($payload['summary'] ?? ''),
-			attachments: $this->attachments(payload: $payload),
+			attachments: IntakePayloadReader::decodeFiles(
+				items: ($payload['attachments'] ?? []),
+				defaults: new IntakeFileNaming(nameFormat: 'bijlage-%d', mime: 'application/octet-stream')
+			),
 			location: null,
 			media: [],
 			rawPayload: $payload,
-			receivedAt: $submittedAt,
+			receivedAt: IntakePayloadReader::optionalString(value: ($payload['submittedAt'] ?? null)),
 			fields: $fields);
 
 	}//end receive()
@@ -147,32 +137,5 @@ class FormSubmissionAdapter implements IntakeChannelAdapterInterface {
 		);
 
 	}//end reply()
-
-	/**
-	 * The submission's uploaded files.
-	 *
-	 * @param array<string,mixed> $payload The submission.
-	 *
-	 * @return array<int,array<string,mixed>> The attachments.
-	 */
-	private function attachments(array $payload): array {
-		$attachments = [];
-		foreach (($payload['attachments'] ?? []) as $index => $attachment) {
-			if (is_array($attachment) === false) {
-				continue;
-			}
-
-			$content = (string)base64_decode((string)($attachment['contentBase64'] ?? ''), false);
-			$attachments[] = [
-				'name' => (string)($attachment['name'] ?? ('bijlage-' . ((int)$index + 1))),
-				'mime' => (string)($attachment['mime'] ?? 'application/octet-stream'),
-				'size' => strlen($content),
-				'content' => $content,
-			];
-		}
-
-		return $attachments;
-
-	}//end attachments()
 
 }//end class

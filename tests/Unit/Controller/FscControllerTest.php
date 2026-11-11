@@ -292,4 +292,81 @@ class FscControllerTest extends TestCase {
 		$this->assertSame('fsc_call_failed', $response->getData()['error']);
 
 	}//end testCallMapsProviderFailureTo502()
+
+	/**
+	 * Each endpoint asks for its own action, and a caller refused it never
+	 * reaches the call service.
+	 *
+	 * @return array<string,array{0:string,1:string}>
+	 */
+	public static function endpointActions(): array {
+		return [
+			'listServices' => ['listServices', 'fsc.list'],
+			'call'         => ['call', 'fsc.call'],
+		];
+
+	}//end endpointActions()
+
+	/**
+	 * A caller refused the endpoint's action never reaches the call service.
+	 *
+	 * @param string $endpoint The controller method.
+	 * @param string $action   The action it asks for.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider endpointActions
+	 */
+	public function testEachEndpointStopsACallerRefusedItsAction(string $endpoint, string $action): void {
+		$this->request->method('getParams')->willReturn(['organisation' => 'org-a', 'service' => 'svc-a']);
+		$this->actionAuth->expects($this->once())->method('requireAction')
+			->with($this->anything(), $action)
+			->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException('no'));
+		$this->callService->expects($this->never())->method('callService');
+		$this->callService->expects($this->never())->method('listResolvableServices');
+
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->$endpoint();
+
+	}//end testEachEndpointStopsACallerRefusedItsAction()
+
+	/**
+	 * A missing organisation is refused like a missing service, and the whole
+	 * request reaches the call service once both are there.
+	 *
+	 * @return void
+	 */
+	public function testCallNeedsBothFieldsAndPassesTheWholeRequest(): void {
+		$params = ['organisation' => 'org-a', 'service' => 'svc-a', 'method' => 'POST', 'payload' => ['a' => 1]];
+		$this->request->method('getParams')->willReturnOnConsecutiveCalls(['service' => 'svc-a'], $params);
+		$this->callService->expects($this->once())->method('callService')->with($params)->willReturn(['ref' => 'r']);
+
+		$this->assertSame(
+			['error' => 'missing_fields', 'message' => 'The "organisation" and "service" fields are required'],
+			$this->controller->call()->getData()
+		);
+		$this->assertSame(['ref' => 'r'], $this->controller->call()->getData());
+
+	}//end testCallNeedsBothFieldsAndPassesTheWholeRequest()
+
+	/**
+	 * The failure envelopes carry the exception's message, and only a
+	 * connectivity failure is logged.
+	 *
+	 * @return void
+	 */
+	public function testCallFailureEnvelopes(): void {
+		$this->request->method('getParams')->willReturn(['organisation' => 'org-a', 'service' => 'svc-a']);
+		$this->callService->method('callService')->willReturnOnConsecutiveCalls(
+			$this->throwException(new FscDirectoryException(message: 'unknown org')),
+			$this->throwException(new FscConnectivityException(message: 'No active FSC source here')),
+			$this->throwException(new FscConnectivityException(message: 'HTTP 500'))
+		);
+		$this->logger->expects($this->exactly(2))->method('warning');
+
+		$this->assertSame(['error' => 'unknown_service', 'message' => 'unknown org'], $this->controller->call()->getData());
+		$this->assertSame(['error' => 'not_configured', 'message' => 'No active FSC source here'], $this->controller->call()->getData());
+		$this->assertSame(['error' => 'fsc_call_failed', 'message' => 'HTTP 500'], $this->controller->call()->getData());
+
+	}//end testCallFailureEnvelopes()
 }//end class

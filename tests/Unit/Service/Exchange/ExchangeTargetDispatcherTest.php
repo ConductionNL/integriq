@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service\Exchange;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
 use OCA\Integriq\Exception\RodProviderException;
 use OCA\Integriq\Exception\VerzuimloketTranslationException;
+use OCA\Integriq\Service\Exchange\ExchangeHandOff;
 use OCA\Integriq\Service\Exchange\ExchangeTargetDispatcher;
 use OCA\Integriq\Service\OsoService;
 use OCA\Integriq\Service\RodService;
@@ -132,7 +133,7 @@ class ExchangeTargetDispatcherTest extends TestCase {
 			}
 		);
 
-		$outcome = $this->dispatcher->dispatch('job-1', 'bron-rod', 'export', ['berichtsoort' => 'inschrijving'], $this->records());
+		$outcome = $this->dispatcher->dispatch(new ExchangeHandOff('job-1', 'bron-rod', 'export', ['berichtsoort' => 'inschrijving'], $this->records()));
 
 		$this->assertSame(['a', 'b'], $outcome['accepted']);
 		$this->assertSame([], $outcome['rejected']);
@@ -150,13 +151,13 @@ class ExchangeTargetDispatcherTest extends TestCase {
 			->with('uitschrijving', 'job-1:a', $this->anything())
 			->willReturn(['status' => 'sent']);
 
-		$this->dispatcher->dispatch(
+		$this->dispatcher->dispatch(new ExchangeHandOff(
 			'job-1',
 			'bron-rod',
 			'export',
 			['berichtsoort' => 'inschrijving'],
 			[['recordId' => 'a', 'sourceKind' => 'learner-profile', 'data' => ['berichtsoort' => 'uitschrijving']]]
-		);
+		));
 
 	}//end testARecordParameterBeatsTheScope()
 
@@ -176,7 +177,7 @@ class ExchangeTargetDispatcherTest extends TestCase {
 			}
 		);
 
-		$outcome = $this->dispatcher->dispatch('job-2', 'leerplicht', 'export', [], $this->records());
+		$outcome = $this->dispatcher->dispatch(new ExchangeHandOff('job-2', 'leerplicht', 'export', [], $this->records()));
 
 		$this->assertSame(['a'], $outcome['accepted']);
 		$this->assertCount(1, $outcome['rejected']);
@@ -194,7 +195,7 @@ class ExchangeTargetDispatcherTest extends TestCase {
 	public function testATransportFailureIsSendFailed(): void {
 		$this->rod->method('sendBericht')->willThrowException(new RodProviderException('No active ROD source'));
 
-		$outcome = $this->dispatcher->dispatch('job-3', 'bron-rod', 'export', [], $this->records());
+		$outcome = $this->dispatcher->dispatch(new ExchangeHandOff('job-3', 'bron-rod', 'export', [], $this->records()));
 
 		$this->assertSame([], $outcome['accepted']);
 		$this->assertSame('send-failed', $outcome['rejected'][0]['errorCode']);
@@ -216,11 +217,11 @@ class ExchangeTargetDispatcherTest extends TestCase {
 		$this->uwlr->expects($this->once())->method('syncEntreeContent')->willReturn([]);
 		$this->oso->expects($this->once())->method('sendExport')->with('j:a', ['eckId' => 'x'])->willReturn([]);
 
-		$this->assertSame(['a'], $this->dispatcher->dispatch('j', 'uwlr', 'export', ['subtype' => 'group'], $record)['accepted']);
-		$this->assertSame(['a'], $this->dispatcher->dispatch('j', 'edu-v', 'export', [], $record)['accepted']);
-		$this->assertSame(['a'], $this->dispatcher->dispatch('j', 'basispoort', 'sync', [], $record)['accepted']);
-		$this->assertSame(['a'], $this->dispatcher->dispatch('j', 'entree-content', 'sync', [], $record)['accepted']);
-		$this->assertSame(['a'], $this->dispatcher->dispatch('j', 'oso', 'export', [], $record)['accepted']);
+		$this->assertSame(['a'], $this->dispatcher->dispatch(new ExchangeHandOff('j', 'uwlr', 'export', ['subtype' => 'group'], $record))['accepted']);
+		$this->assertSame(['a'], $this->dispatcher->dispatch(new ExchangeHandOff('j', 'edu-v', 'export', [], $record))['accepted']);
+		$this->assertSame(['a'], $this->dispatcher->dispatch(new ExchangeHandOff('j', 'basispoort', 'sync', [], $record))['accepted']);
+		$this->assertSame(['a'], $this->dispatcher->dispatch(new ExchangeHandOff('j', 'entree-content', 'sync', [], $record))['accepted']);
+		$this->assertSame(['a'], $this->dispatcher->dispatch(new ExchangeHandOff('j', 'oso', 'export', [], $record))['accepted']);
 
 	}//end testTheOtherHandledTargetsCallTheirAdapters()
 
@@ -232,11 +233,11 @@ class ExchangeTargetDispatcherTest extends TestCase {
 	public function testAnSwvHandOffNeedsAReceiver(): void {
 		$record = [['recordId' => 's', 'sourceKind' => 'support-request', 'data' => ['hulpvraagDomein' => 'gedrag']]];
 
-		$this->assertSame('source-missing', $this->dispatcher->dispatch('j', 'swv', 'export', [], $record)['refusal']);
+		$this->assertSame('source-missing', $this->dispatcher->dispatch(new ExchangeHandOff('j', 'swv', 'export', [], $record))['refusal']);
 
 		$this->swvClient->expects($this->once())->method('handOff')->with('swv-kindkans', ['hulpvraagDomein' => 'gedrag'])
 			->willReturn(['acceptedStatus' => 'received']);
-		$outcome = $this->dispatcher->dispatch('j', 'swv', 'export', ['receiverId' => 'swv-kindkans'], $record);
+		$outcome = $this->dispatcher->dispatch(new ExchangeHandOff('j', 'swv', 'export', ['receiverId' => 'swv-kindkans'], $record));
 		$this->assertSame(['s'], $outcome['accepted']);
 
 	}//end testAnSwvHandOffNeedsAReceiver()
@@ -251,7 +252,7 @@ class ExchangeTargetDispatcherTest extends TestCase {
 	public function testATargetWithoutAnAdapter(): void {
 		$this->assertFalse($this->dispatcher->supports('surfconext', 'sync'));
 		$this->assertFalse($this->dispatcher->supports('uwlr', 'import'));
-		$this->assertSame('no-handler', $this->dispatcher->dispatch('j', 'hr', 'import', [], [])['refusal']);
+		$this->assertSame('no-handler', $this->dispatcher->dispatch(new ExchangeHandOff('j', 'hr', 'import', [], []))['refusal']);
 		foreach (['lvs-results', 'oso', 'migration-import'] as $target) {
 			$this->assertTrue($this->dispatcher->supports($target, 'import'), $target);
 		}

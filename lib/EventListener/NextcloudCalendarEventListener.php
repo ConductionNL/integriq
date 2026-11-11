@@ -77,6 +77,30 @@ class NextcloudCalendarEventListener implements IEventListener {
 	private const SOURCE = '/nextcloud/calendar';
 
 	/**
+	 * The recognised event classes, OCP and OCA, and their CloudEvents type.
+	 *
+	 * @var array<class-string, string>
+	 */
+	private const TYPES = [
+		CalendarObjectCreatedEvent::class => 'com.nextcloud.calendar.object.created',
+		CachedCalendarObjectCreatedEvent::class => 'com.nextcloud.calendar.object.created',
+		CalendarObjectUpdatedEvent::class => 'com.nextcloud.calendar.object.updated',
+		CachedCalendarObjectUpdatedEvent::class => 'com.nextcloud.calendar.object.updated',
+		CalendarObjectDeletedEvent::class => 'com.nextcloud.calendar.object.deleted',
+		CachedCalendarObjectDeletedEvent::class => 'com.nextcloud.calendar.object.deleted',
+	];
+
+	/**
+	 * The provenance per id accessor: an own calendar, or a cached subscription.
+	 *
+	 * @var array<string, string>
+	 */
+	private const PROVENANCE = [
+		'getCalendarId' => 'own',
+		'getSubscriptionId' => 'cached-subscription',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param EventServiceInterface $eventService Service for managing CloudEvents.
@@ -96,25 +120,10 @@ class NextcloudCalendarEventListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) -- the branching IS the
-	 * feature: six recognised event classes across two API families (OCP +
-	 * OCA) plus the mandated defensive OCA-stability accessor checks (REQ-002)
-	 * are inherently multi-branch; splitting them would obscure the one
-	 * normalize-and-forward flow.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-calendar-events-must-be-normalized-to-cloudevents-with-an-oca-stability-caveat-req-002
 	 */
 	public function handle(Event $event): void {
-		$type = null;
-		if ($event instanceof CalendarObjectCreatedEvent || $event instanceof CachedCalendarObjectCreatedEvent) {
-			$type = 'com.nextcloud.calendar.object.created';
-		} elseif ($event instanceof CalendarObjectUpdatedEvent || $event instanceof CachedCalendarObjectUpdatedEvent) {
-			$type = 'com.nextcloud.calendar.object.updated';
-		} elseif ($event instanceof CalendarObjectDeletedEvent || $event instanceof CachedCalendarObjectDeletedEvent) {
-			$type = 'com.nextcloud.calendar.object.deleted';
-		}
-
+		$type = $this->eventType(event: $event);
 		if ($type === null) {
 			return;
 		}
@@ -123,14 +132,7 @@ class NextcloudCalendarEventListener implements IEventListener {
 		// to expose getCalendarId()/getSubscriptionId() + getObjectData();
 		// a shape mismatch (e.g. an NC-major DAV signature change) logs and
 		// skips rather than throwing into the NC event dispatcher.
-		$idMethod = null;
-		if (method_exists($event, 'getCalendarId') === true) {
-			$idMethod = 'getCalendarId';
-		} elseif (method_exists($event, 'getSubscriptionId') === true) {
-			$idMethod = 'getSubscriptionId';
-		}
-
-		if ($idMethod === null || method_exists($event, 'getObjectData') === false) {
+		if ($this->idAccessor(event: $event) === null || method_exists($event, 'getObjectData') === false) {
 			$this->logger->warning(
 				'Skipped Nextcloud calendar event: unexpected event shape (missing calendar/subscription id or object data accessor).',
 				['event' => get_class($event)]
@@ -138,6 +140,57 @@ class NextcloudCalendarEventListener implements IEventListener {
 			return;
 		}
 
+		$this->forward(event: $event, type: $type);
+
+	}//end handle()
+
+	/**
+	 * The CloudEvents type of a recognised calendar object event, or null.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return string|null
+	 */
+	private function eventType(Event $event): ?string {
+		foreach (self::TYPES as $class => $type) {
+			if ($event instanceof $class) {
+				return $type;
+			}
+		}
+
+		return null;
+
+	}//end eventType()
+
+	/**
+	 * The accessor of the event's calendar (own) or subscription (cached) id, or null.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return string|null `getCalendarId`, `getSubscriptionId`, or null.
+	 */
+	private function idAccessor(Event $event): ?string {
+		if (method_exists($event, 'getCalendarId') === true) {
+			return 'getCalendarId';
+		}
+
+		if (method_exists($event, 'getSubscriptionId') === true) {
+			return 'getSubscriptionId';
+		}
+
+		return null;
+
+	}//end idAccessor()
+
+	/**
+	 * Forward the event as a CloudEvent, never unwinding into the CalDAV operation.
+	 *
+	 * @param Event  $event The calendar object event, of the expected shape.
+	 * @param string $type  Its CloudEvents type.
+	 *
+	 * @return void
+	 */
+	private function forward(Event $event, string $type): void {
 		try {
 			// Firehose gate: no configured subscriptions anywhere on this
 			// instance means the outbound-webhooks capability is unused — do
@@ -147,27 +200,7 @@ class NextcloudCalendarEventListener implements IEventListener {
 				return;
 			}
 
-			$calendarId = $event->{$idMethod}();
-			$objectData = $event->getObjectData();
-			$objectUri = ($objectData['uri'] ?? null);
-			$provenance = 'cached-subscription';
-			if ($idMethod === 'getCalendarId') {
-				$provenance = 'own';
-			}
-
-			$this->eventService->handleNextcloudEvent(
-				type: $type,
-				payload: [
-					'source' => self::SOURCE,
-					'subject' => $objectUri,
-					'data' => [
-						'calendarId' => $calendarId,
-						'objectUri' => $objectUri,
-						'provenance' => $provenance,
-						'etag' => ($objectData['etag'] ?? null),
-					],
-				]
-			);
+			$this->eventService->handleNextcloudEvent(type: $type, payload: $this->payload(event: $event));
 		} catch (\Throwable $e) {
 			// Broad catch is deliberate: this listener runs synchronously
 			// inside the CalDAV operation that triggered it. A failure here
@@ -181,5 +214,38 @@ class NextcloudCalendarEventListener implements IEventListener {
 			);
 		}//end try
 
-	}//end handle()
+	}//end forward()
+
+	/**
+	 * The CloudEvent payload: source, subject and the calendar object's data.
+	 *
+	 * The caller has checked the event's shape; the accessor check here only
+	 * keeps the OCA-stability guard local to the read.
+	 *
+	 * @param Event $event The calendar object event, of the expected shape.
+	 *
+	 * @return array<string,mixed> The payload.
+	 */
+	private function payload(Event $event): array {
+		$idMethod = $this->idAccessor(event: $event);
+		$calendarId = $event->{$idMethod}();
+		$objectData = [];
+		if (method_exists($event, 'getObjectData') === true) {
+			$objectData = $event->getObjectData();
+		}
+
+		$objectUri = ($objectData['uri'] ?? null);
+
+		return [
+			'source' => self::SOURCE,
+			'subject' => $objectUri,
+			'data' => [
+				'calendarId' => $calendarId,
+				'objectUri' => $objectUri,
+				'provenance' => self::PROVENANCE[$idMethod],
+				'etag' => ($objectData['etag'] ?? null),
+			],
+		];
+
+	}//end payload()
 }//end class

@@ -399,4 +399,102 @@ class ZgwCaseSystemTest extends TestCase {
 			$this->assertStringNotContainsString('urn:uuid:secret', $refusal->getMessage());
 		}
 	}//end testAZgwErrorAnswersItsStatusAndDetailOnly()
+	/**
+	 * Golden: the exact requests add-document sends for each confidentiality and author case,
+	 * and every refusal in check order with its status and message.
+	 *
+	 * @return void
+	 */
+	public function testGoldenAddDocument(): void {
+		$base = ['case' => self::ZAAK_URL, 'name' => str_repeat('N', 210), 'kind' => 'decision', 'content' => base64_encode('pdf')];
+		$cases = [
+			'public, configured author' => [$base + ['confidential' => 'yes', 'ground' => 'g'], ['auteur' => 'Griffie', 'publicAs' => 'beperkt openbaar'], 'Bron'],
+			'confidential with ground' => [$base + ['confidential' => true, 'ground' => str_repeat('G', 1100)], ['confidentialAs' => 'geheim'], 'Bron'],
+			'confidential without ground' => [$base + ['confidential' => true], [], ''],
+			'source name as author' => [$base, ['auteur' => null], 'Bron'],
+		];
+		$transcript = [];
+		foreach ($cases as $name => [$body, $extra, $sourceName]) {
+			$this->sent = [];
+			$this->answers = ['POST /enkelvoudiginformatieobjecten' => ['status' => 201, 'data' => ['url' => self::EIO_URL], 'raw' => '{}']];
+			$answer = $this->mapping()->run('add-document', $body, array_merge($this->configuration(), $extra), $sourceName);
+			$sent = $this->sent;
+			$this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\d$/', $sent[0]['options']['json']['creatiedatum']);
+			$sent[0]['options']['json']['creatiedatum'] = 'DATE';
+			$transcript[$name] = ['answer' => $answer, 'sent' => $sent];
+		}
+
+		$this->assertSame(
+			[
+				'public, configured author' => ['beperkt openbaar', 'Griffie', null],
+				'confidential with ground' => ['geheim', 'Bron', 1000],
+				'confidential without ground' => ['vertrouwelijk', 'Integriq', null],
+				'source name as author' => ['openbaar', 'Bron', null],
+			],
+			array_map(
+				static fn (array $entry): array => [
+					$entry['sent'][0]['options']['json']['vertrouwelijkheidaanduiding'],
+					$entry['sent'][0]['options']['json']['auteur'],
+					(isset($entry['sent'][0]['options']['json']['beschrijving']) === true ? mb_strlen($entry['sent'][0]['options']['json']['beschrijving']) : null),
+				],
+				$transcript
+			)
+		);
+		$this->assertSame(
+			[
+				'source' => self::DOCUMENTEN,
+				'method' => 'POST',
+				'address' => '/enkelvoudiginformatieobjecten',
+				'options' => ['json' => [
+					'bronorganisatie' => '002220647',
+					'creatiedatum' => 'DATE',
+					'titel' => str_repeat('N', 200),
+					'auteur' => 'Bron',
+					'taal' => 'dut',
+					'informatieobjecttype' => self::DECISION_TYPE,
+					'vertrouwelijkheidaanduiding' => 'openbaar',
+					'bestandsnaam' => str_repeat('N', 210),
+					'inhoud' => base64_encode('pdf'),
+				]],
+			],
+			$transcript['source name as author']['sent'][0]
+		);
+		$this->assertSame(
+			['source' => self::ZAKEN, 'method' => 'POST', 'address' => '/zaakinformatieobjecten', 'options' => ['json' => ['informatieobject' => self::EIO_URL, 'zaak' => self::ZAAK_URL, 'titel' => str_repeat('N', 200)]]],
+			$transcript['source name as author']['sent'][1]
+		);
+		$this->assertSame(['url' => self::EIO_URL], $transcript['source name as author']['answer']);
+
+		$refusal = function (array $body, array $configuration): array {
+			try {
+				$this->mapping()->run('add-document', $body, $configuration, 'Bron');
+			} catch (CaseSystemRefusal $exception) {
+				return [$exception->getStatus(), $exception->getMessage()];
+			}
+
+			return ['none'];
+		};
+		$configuration = $this->configuration();
+		$this->assertSame([422, 'add-document needs "case".'], $refusal([], []));
+		$this->assertSame([422, 'add-document needs "name".'], $refusal(['case' => 'c'], []));
+		$this->assertSame([422, 'The kind "x" has no document type in this case system\'s kinds table.'], $refusal(['case' => 'c', 'name' => 'n', 'kind' => 'x'], $configuration));
+		$this->assertSame([422, 'add-document needs its content in base64.'], $refusal(['case' => 'c', 'name' => 'n', 'kind' => 'decision', 'content' => '%%%'], $configuration));
+		$this->assertSame(
+			[409, 'The case system is not set up yet: an administrator has to fill in zakenSource on its source.'],
+			$refusal(['case' => 'c', 'name' => 'n', 'kind' => 'decision', 'content' => ''], ['kinds' => ['decision' => 't']])
+		);
+		$this->assertSame(
+			[409, 'The case system is not set up yet: an administrator has to fill in documentenSource on its source.'],
+			$refusal(['case' => 'c', 'name' => 'n', 'kind' => 'decision', 'content' => ''], ['kinds' => ['decision' => 't'], 'zakenSource' => 'z'])
+		);
+		$this->assertSame(
+			[409, 'The case system is not set up yet: an administrator has to fill in bronorganisatie on its source.'],
+			$refusal(['case' => 'c', 'name' => 'n', 'kind' => 'decision', 'content' => ''], ['kinds' => ['decision' => 't'], 'zakenSource' => 'z', 'documentenSource' => 'd'])
+		);
+		$this->sent = [];
+		$this->answers = ['POST /enkelvoudiginformatieobjecten' => ['status' => 201, 'data' => [], 'raw' => '{}']];
+		$this->assertSame([502, 'The Documenten API created the document without an address.'], $refusal($base, $configuration));
+		$this->assertCount(1, $this->sent);
+
+	}//end testGoldenAddDocument()
 }//end class

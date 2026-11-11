@@ -43,6 +43,19 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  */
 class UserService implements UserServiceInterface {
+
+	/**
+	 * The permission-guarded user properties the API may update, in this order: the
+	 * request key, the backend permission method and the setter. canChangeMailAddress()
+	 * is not part of IUser, so only backends that implement it are asked.
+	 *
+	 * @var array<string, array{permission: string, setter: string}>
+	 */
+	private const STANDARD_PROPERTY_SETTERS = [
+		'displayName' => ['permission' => 'canChangeDisplayName', 'setter' => 'setDisplayName'],
+		'email' => ['permission' => 'canChangeMailAddress', 'setter' => 'setEMailAddress'],
+		'password' => ['permission' => 'canChangePassword', 'setter' => 'setPassword'],
+	];
 	/**
 	 * UserService constructor
 	 *
@@ -762,28 +775,37 @@ class UserService implements UserServiceInterface {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function updateStandardUserProperties(IUser $user, array $data): void {
-		// Update display name if provided and user can change it.
-		if (isset($data['displayName']) === true
-			&& $user->canChangeDisplayName() === true
-		) {
-			$user->setDisplayName($data['displayName']);
+		foreach (self::STANDARD_PROPERTY_SETTERS as $key => $methods) {
+			if (isset($data[$key]) === true && $this->mayChange(user: $user, permission: $methods['permission']) === true) {
+				$setter = $methods['setter'];
+				$user->$setter($data[$key]);
+			}
 		}
 
-		// Update email address if provided and user can change it.
-		if (isset($data['email']) === true
-			&& method_exists($user, 'canChangeMailAddress') === true
-			&& $user->canChangeMailAddress() === true
-		) {
-			$user->setEMailAddress($data['email']);
-		}
+		$this->updateLanguageAndLocale(user: $user, data: $data);
+	}//end updateStandardUserProperties()
 
-		// Update password if provided and user can change it.
-		if (isset($data['password']) === true
-			&& $user->canChangePassword() === true
-		) {
-			$user->setPassword($data['password']);
-		}
+	/**
+	 * Whether the user's backend implements this permission method and it answers true.
+	 *
+	 * @param IUser  $user       The user object to update.
+	 * @param string $permission The permission method, such as `canChangeDisplayName`.
+	 *
+	 * @return bool
+	 */
+	private function mayChange(IUser $user, string $permission): bool {
+		return method_exists($user, $permission) === true && $user->$permission() === true;
+	}//end mayChange()
 
+	/**
+	 * Update the language and the locale, where the backend can store them.
+	 *
+	 * @param IUser $user The user object to update.
+	 * @param array $data The data array containing updates.
+	 *
+	 * @return void
+	 */
+	private function updateLanguageAndLocale(IUser $user, array $data): void {
 		// Update language if provided.
 		if (isset($data['language']) === true && method_exists($user, 'setLanguage') === true) {
 			$user->setLanguage($data['language']);
@@ -793,7 +815,7 @@ class UserService implements UserServiceInterface {
 		if (isset($data['locale']) === true && method_exists($user, 'setLocale') === true) {
 			$user->setLocale($data['locale']);
 		}
-	}//end updateStandardUserProperties()
+	}//end updateLanguageAndLocale()
 
 	/**
 	 * Update profile properties via AccountManager and custom fields

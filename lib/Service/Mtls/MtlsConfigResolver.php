@@ -113,36 +113,13 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
 	 */
 	public function resolve(array $authConfig): MtlsCertificateBundle {
-		$mtls = ($authConfig['mtls'] ?? []);
-		if (is_array($mtls) === false) {
-			$mtls = [];
-		}
+		$mtls = self::mtlsSection(authConfig: $authConfig);
+		self::assertMaterialPresent(mtls: $mtls);
 
-		$encryptedCertificate = (string)($mtls['encryptedCertificate'] ?? '');
-		$encryptedPrivateKey = (string)($mtls['encryptedPrivateKey'] ?? '');
-		if ($encryptedCertificate === '' || $encryptedPrivateKey === '') {
-			throw new MtlsConfigurationException(
-				message: 'mTLS is configured (`authentication.mode=mtls`) but '
-					. '`authentication.mtls.encryptedCertificate`/`encryptedPrivateKey` are missing. '
-					. 'No plaintext-certificate fallback is permitted.',
-				errorCode: MtlsTransportException::ERROR_MATERIAL_MISSING
-			);
-		}
-
-		$certificatePem = $this->decrypt(label: 'certificate', encrypted: $encryptedCertificate);
-		$privateKeyPem = $this->decrypt(label: 'private key', encrypted: $encryptedPrivateKey);
-
-		$passphrase = null;
-		$encryptedPassphrase = (string)($mtls['encryptedPassphrase'] ?? '');
-		if ($encryptedPassphrase !== '') {
-			$passphrase = $this->decrypt(label: 'passphrase', encrypted: $encryptedPassphrase);
-		}
-
-		$caBundlePem = null;
-		$encryptedCaBundle = (string)($mtls['encryptedCaBundle'] ?? '');
-		if ($encryptedCaBundle !== '') {
-			$caBundlePem = $this->decrypt(label: 'CA bundle', encrypted: $encryptedCaBundle);
-		}
+		$certificatePem = $this->decrypt(label: 'certificate', encrypted: (string)$mtls['encryptedCertificate']);
+		$privateKeyPem = $this->decrypt(label: 'private key', encrypted: (string)$mtls['encryptedPrivateKey']);
+		$passphrase = $this->decryptOptional(label: 'passphrase', encrypted: (string)($mtls['encryptedPassphrase'] ?? ''));
+		$caBundlePem = $this->decryptOptional(label: 'CA bundle', encrypted: (string)($mtls['encryptedCaBundle'] ?? ''));
 
 		$this->assertCertificateShape(certificatePem: $certificatePem);
 		$this->assertPrivateKeyShape(privateKeyPem: $privateKeyPem);
@@ -157,6 +134,63 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 		);
 
 	}//end resolve()
+
+	/**
+	 * The `mtls` section of an authentication config, or an empty one.
+	 *
+	 * @param array<string, mixed> $authConfig The authentication config.
+	 *
+	 * @return array<string, mixed> The section.
+	 */
+	private static function mtlsSection(array $authConfig): array {
+		$mtls = ($authConfig['mtls'] ?? []);
+		if (is_array($mtls) === false) {
+			return [];
+		}
+
+		return $mtls;
+
+	}//end mtlsSection()
+
+	/**
+	 * Refuse a section without both the encrypted certificate and the encrypted private key.
+	 *
+	 * @param array<string, mixed> $mtls The `mtls` section.
+	 *
+	 * @return void
+	 *
+	 * @throws MtlsConfigurationException When either is missing.
+	 */
+	private static function assertMaterialPresent(array $mtls): void {
+		if ((string)($mtls['encryptedCertificate'] ?? '') === '' || (string)($mtls['encryptedPrivateKey'] ?? '') === '') {
+			throw new MtlsConfigurationException(
+				message: 'mTLS is configured (`authentication.mode=mtls`) but '
+					. '`authentication.mtls.encryptedCertificate`/`encryptedPrivateKey` are missing. '
+					. 'No plaintext-certificate fallback is permitted.',
+				errorCode: MtlsTransportException::ERROR_MATERIAL_MISSING
+			);
+		}
+
+	}//end assertMaterialPresent()
+
+	/**
+	 * Decrypt an optional value, or null when it is not set.
+	 *
+	 * @param string $label     What the value is, for the refusal.
+	 * @param string $encrypted The encrypted value, '' when not set.
+	 *
+	 * @return string|null The plaintext, or null.
+	 *
+	 * @throws MtlsConfigurationException When the value does not decrypt.
+	 */
+	private function decryptOptional(string $label, string $encrypted): ?string {
+		if ($encrypted === '') {
+			return null;
+		}
+
+		return $this->decrypt(label: $label, encrypted: $encrypted);
+
+	}//end decryptOptional()
 
 	/**
 	 * The expiry of the stored, encrypted mTLS certificate, without validating the rest.

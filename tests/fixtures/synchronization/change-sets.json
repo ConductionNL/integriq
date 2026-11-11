@@ -1,0 +1,152 @@
+{
+    "mixed": {
+        "created": [
+            {
+                "originId": "a",
+                "fields": {
+                    "name": "A"
+                }
+            }
+        ],
+        "changed": [
+            {
+                "originId": "b",
+                "targetId": "t-b",
+                "fields": [
+                    {
+                        "field": "name",
+                        "before": "B",
+                        "after": "B2"
+                    }
+                ]
+            },
+            {
+                "originId": "c",
+                "targetId": "t-c",
+                "fields": [
+                    {
+                        "field": "list",
+                        "before": [
+                            1,
+                            2
+                        ],
+                        "after": [
+                            2,
+                            1
+                        ]
+                    }
+                ]
+            }
+        ],
+        "removed": [
+            {
+                "originId": "y",
+                "targetId": "t-y"
+            },
+            {
+                "originId": "z",
+                "targetId": "9"
+            }
+        ],
+        "unchanged": 2,
+        "counts": {
+            "created": 1,
+            "changed": 2,
+            "removed": 2,
+            "unchanged": 2
+        },
+        "truncated": false,
+        "limit": 500,
+        "fingerprint": "733cc8816a31bb6fa78f2b2575eea2f2a53d7f92015243fc947c9c8d7a74eeb6"
+    },
+    "mixed-no-removals": {
+        "created": [
+            {
+                "originId": "a",
+                "fields": {
+                    "name": "A"
+                }
+            }
+        ],
+        "changed": [
+            {
+                "originId": "b",
+                "targetId": "t-b",
+                "fields": [
+                    {
+                        "field": "name",
+                        "before": "B",
+                        "after": "B2"
+                    }
+                ]
+            },
+            {
+                "originId": "c",
+                "targetId": "t-c",
+                "fields": [
+                    {
+                        "field": "list",
+                        "before": [
+                            1,
+                            2
+                        ],
+                        "after": [
+                            2,
+                            1
+                        ]
+                    }
+                ]
+            }
+        ],
+        "removed": [],
+        "unchanged": 2,
+        "counts": {
+            "created": 1,
+            "changed": 2,
+            "removed": 0,
+            "unchanged": 2
+        },
+        "truncated": false,
+        "limit": 500,
+        "fingerprint": "0c9bf87446928aa3c8062c6efef08408cd7c0e15b4b17fbeebdb7a6835527374"
+    },
+    "empty": {
+        "created": [],
+        "changed": [],
+        "removed": [],
+        "unchanged": 0,
+        "counts": {
+            "created": 0,
+            "changed": 0,
+            "removed": 0,
+            "unchanged": 0
+        },
+        "truncated": false,
+        "limit": 500,
+        "fingerprint": "396c95999f6ad57540c3ea8b0d67fbbf40dc9250378d43e2a01dbb3187abe20b"
+    },
+    "large": {
+        "counts": {
+            "created": 502,
+            "changed": 0,
+            "removed": 0,
+            "unchanged": 0
+        },
+        "truncated": true,
+        "limit": 500,
+        "first": {
+            "originId": "o-0000",
+            "fields": {
+                "n": 501
+            }
+        },
+        "last": {
+            "originId": "o-0499",
+            "fields": {
+                "n": 2
+            }
+        },
+        "listed": 500,
+        "fingerprint": "b4e27cb497cb398f5dcbc46544c4e614ba814b47f0fb52deb4b0ecd03c10b180"
+    }
+}

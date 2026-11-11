@@ -1,0 +1,81 @@
+{
+    "valid": {
+        "valid": true,
+        "errors": [],
+        "internalErrorsRestored": true
+    },
+    "invalid": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "Line …"
+            }
+        ],
+        "internalErrorsRestored": true
+    },
+    "remote": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The XSD refers to https://example.org/a.xsd, which is not fetched: store that schema as its own message schema"
+            },
+            {
+                "path": "/",
+                "message": "The XSD refers to http://example.org/b.xsd, which is not fetched: store that schema as its own message schema"
+            }
+        ],
+        "internalErrorsRestored": true
+    },
+    "bad-schema": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The XSD document does not parse: Line …"
+            }
+        ],
+        "internalErrorsRestored": true
+    },
+    "bad-message": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The XML message does not parse: Line …"
+            }
+        ],
+        "internalErrorsRestored": true
+    },
+    "unusable-schema": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "Line …"
+            }
+        ],
+        "internalErrorsRestored": true
+    },
+    "array": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "An XML message must be text"
+            }
+        ],
+        "internalErrorsRestored": true
+    },
+    "null": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "An XML message must be text"
+            }
+        ],
+        "internalErrorsRestored": true
+    }
+}

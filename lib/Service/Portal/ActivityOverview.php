@@ -79,26 +79,51 @@ class ActivityOverview implements ActivityOverviewInterface {
 		}
 
 		foreach ($this->unmapped->list()['activities'] as $activity) {
-			$key = 'imowId:' . $activity['imowId'];
-			if ($activity['imowId'] === '') {
-				$key = 'activityId:' . $activity['activityId'];
-			}
-
-			$rows[] = [
-				'id' => 'unmapped:' . $key,
-				'imowId' => $activity['imowId'],
-				'activityId' => $activity['activityId'],
-				'activityName' => $activity['activityName'],
-				'caseTypes' => [],
-				'unmapped' => true,
-				'waiting' => $activity['count'],
-				'lastReceivedAt' => $activity['lastSeen'],
-			];
+			$rows[] = self::unmappedRow(activity: $activity);
 		}
 
 		return ['results' => $rows];
 
 	}//end rows()
+
+	/**
+	 * An activity no row maps yet, as an overview row.
+	 *
+	 * @param array<string, mixed> $activity One unmapped activity.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/dso-activity-overview/specs/dso-omgevingsloket/spec.md#requirement-administrators-read-the-activities-with-when-each-last-arrived-req-dso-014
+	 */
+	private static function unmappedRow(array $activity): array {
+		return [
+			'id' => 'unmapped:' . self::unmappedKey(activity: $activity),
+			'imowId' => $activity['imowId'],
+			'activityId' => $activity['activityId'],
+			'activityName' => $activity['activityName'],
+			'caseTypes' => [],
+			'unmapped' => true,
+			'waiting' => $activity['count'],
+			'lastReceivedAt' => $activity['lastSeen'],
+		];
+	}//end unmappedRow()
+
+	/**
+	 * An unmapped activity's key: its imowId, else its activityId.
+	 *
+	 * @param array<string, mixed> $activity One unmapped activity.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/dso-activity-overview/specs/dso-omgevingsloket/spec.md#requirement-administrators-read-the-activities-with-when-each-last-arrived-req-dso-014
+	 */
+	private static function unmappedKey(array $activity): string {
+		if ($activity['imowId'] === '') {
+			return 'activityId:' . $activity['activityId'];
+		}
+
+		return 'imowId:' . $activity['imowId'];
+	}//end unmappedKey()
 
 	/**
 	 * Per mapping row uuid, the newest `receivedAt` of a verzoek one of whose
@@ -107,6 +132,31 @@ class ActivityOverview implements ActivityOverviewInterface {
 	 * @return array<string, string> The arrivals by row uuid.
 	 */
 	private function lastReceivedByRow(): array {
+		$lastReceived = [];
+		foreach ($this->recentVerzoeken() as $entity) {
+			$verzoek = (array)$entity->getObject();
+			$receivedAt = (string)($verzoek['receivedAt'] ?? '');
+			foreach (self::mappedRowIds(verzoek: $verzoek) as $rowId) {
+				if (strcmp($receivedAt, (string)($lastReceived[$rowId] ?? '')) > 0) {
+					$lastReceived[$rowId] = $receivedAt;
+				}
+			}
+		}
+
+		return $lastReceived;
+
+	}//end lastReceivedByRow()
+
+	/**
+	 * The most recent verzoeken, newest first, read without RBAC or multitenancy.
+	 *
+	 * Anything in the answer that is not an ObjectEntity is left out.
+	 *
+	 * @return array<ObjectEntity>
+	 *
+	 * @spec openspec/changes/dso-activity-overview/specs/dso-omgevingsloket/spec.md#requirement-administrators-read-the-activities-with-when-each-last-arrived-req-dso-014
+	 */
+	private function recentVerzoeken(): array {
 		$result = $this->objectService->findAll(
 			config: [
 				'filters' => ['register' => ActivityMappingTableInterface::REGISTER, 'schema' => 'dso_verzoek'],
@@ -117,27 +167,30 @@ class ActivityOverview implements ActivityOverviewInterface {
 			_multitenancy: false
 		);
 
-		$lastReceived = [];
-		foreach ((array)($result['results'] ?? $result) as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
-				continue;
-			}
+		return array_filter(
+			(array)($result['results'] ?? $result),
+			static fn (mixed $entity): bool => $entity instanceof ObjectEntity
+		);
+	}//end recentVerzoeken()
 
-			$verzoek = (array)$entity->getObject();
-			$receivedAt = (string)($verzoek['receivedAt'] ?? '');
-			foreach ((array)($verzoek['mappedActivities'] ?? []) as $entry) {
-				$rowId = (string)($entry['mappingRow'] ?? '');
-				if (is_array($entry) === false || ($entry['mapped'] ?? false) !== true || $rowId === '') {
-					continue;
-				}
-
-				if (strcmp($receivedAt, (string)($lastReceived[$rowId] ?? '')) > 0) {
-					$lastReceived[$rowId] = $receivedAt;
-				}
+	/**
+	 * The mapping row ids a verzoek's mapped activities point at, in order.
+	 *
+	 * @param array<string, mixed> $verzoek The verzoek.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/dso-activity-overview/specs/dso-omgevingsloket/spec.md#requirement-administrators-read-the-activities-with-when-each-last-arrived-req-dso-014
+	 */
+	private static function mappedRowIds(array $verzoek): array {
+		$rowIds = [];
+		foreach ((array)($verzoek['mappedActivities'] ?? []) as $entry) {
+			$rowId = (string)($entry['mappingRow'] ?? '');
+			if (is_array($entry) === true && ($entry['mapped'] ?? false) === true && $rowId !== '') {
+				$rowIds[] = $rowId;
 			}
 		}
 
-		return $lastReceived;
-
-	}//end lastReceivedByRow()
+		return $rowIds;
+	}//end mappedRowIds()
 }//end class

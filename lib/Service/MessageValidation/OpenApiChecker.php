@@ -84,24 +84,44 @@ class OpenApiChecker {
 
 		$references = new OpenApiReferenceResolver(openApi: $openApi);
 		try {
-			$holder = $references->resolve(node: self::bodyHolder(operation: $operation, context: $context));
-			$content = null;
-			if ($holder instanceof stdClass === true) {
-				$content = ($holder->content ?? null);
-			}
-
-			$schema = self::jsonSchemaOf(content: $content);
-			if ($schema === null) {
-				return ValidationOutcome::valid();
-			}
-
-			$schema = self::toJsonSchema(schema: $references->resolve(node: $schema));
+			$schema = self::schemaOf(references: $references, holder: self::bodyHolder(operation: $operation, context: $context));
 		} catch (InvalidArgumentException $e) {
 			return ValidationOutcome::failure(message: $e->getMessage());
 		}
 
+		if ($schema === null) {
+			return ValidationOutcome::valid();
+		}
+
 		return $this->jsonSchema->check(schema: $schema, payload: $payload);
 	}//end check()
+
+	/**
+	 * The JSON Schema of a request body or response, references resolved; null when it declares none.
+	 *
+	 * @param OpenApiReferenceResolver $references The document's reference resolver.
+	 * @param mixed                    $holder     The request body or response, possibly a reference.
+	 *
+	 * @return mixed
+	 *
+	 * @throws InvalidArgumentException When a reference cannot be resolved.
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 */
+	private static function schemaOf(OpenApiReferenceResolver $references, mixed $holder): mixed {
+		$holder = $references->resolve(node: $holder);
+		$content = null;
+		if ($holder instanceof stdClass === true) {
+			$content = ($holder->content ?? null);
+		}
+
+		$schema = self::jsonSchemaOf(content: $content);
+		if ($schema === null) {
+			return null;
+		}
+
+		return self::toJsonSchema(schema: $references->resolve(node: $schema));
+	}//end schemaOf()
 
 	/**
 	 * Why an OpenAPI document cannot be stored, or null when it parses.
@@ -164,12 +184,7 @@ class OpenApiChecker {
 	private static function findOperation(stdClass $openApi, array $context): ?stdClass {
 		$pathItems = array_filter(get_object_vars(($openApi->paths ?? new stdClass())), static fn ($item): bool => $item instanceof stdClass);
 		foreach ($pathItems as $template => $pathItem) {
-			foreach (self::METHODS as $method) {
-				$operation = ($pathItem->{$method} ?? null);
-				if ($operation instanceof stdClass === false) {
-					continue;
-				}
-
+			foreach (self::operationsOf(pathItem: $pathItem) as $method => $operation) {
 				if (self::isNamed(operation: $operation, method: $method, template: (string)$template, context: $context) === true) {
 					return $operation;
 				}
@@ -178,6 +193,26 @@ class OpenApiChecker {
 
 		return null;
 	}//end findOperation()
+
+	/**
+	 * A path item's operations by method, in the order of self::METHODS.
+	 *
+	 * @param stdClass $pathItem The path item.
+	 *
+	 * @return array<string, stdClass>
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 */
+	private static function operationsOf(stdClass $pathItem): array {
+		$operations = [];
+		foreach (self::METHODS as $method) {
+			if (($pathItem->{$method} ?? null) instanceof stdClass === true) {
+				$operations[$method] = $pathItem->{$method};
+			}
+		}
+
+		return $operations;
+	}//end operationsOf()
 
 	/**
 	 * Whether an operation is the one the context names.
@@ -245,13 +280,12 @@ class OpenApiChecker {
 		}
 
 		$media = array_filter(get_object_vars($content), static fn ($entry): bool => $entry instanceof stdClass && isset($entry->schema));
-		foreach ($media as $type => $entry) {
-			if (str_contains((string)$type, 'json') === true) {
-				return $entry->schema;
-			}
+		$json = array_filter($media, static fn (string|int $type): bool => str_contains((string)$type, 'json'), ARRAY_FILTER_USE_KEY);
+		$first = reset($json);
+		if ($first === false) {
+			$first = reset($media);
 		}
 
-		$first = reset($media);
 		if ($first === false) {
 			return null;
 		}
@@ -278,21 +312,33 @@ class OpenApiChecker {
 			return $schema;
 		}
 
-		$copy = new stdClass();
-		foreach (get_object_vars($schema) as $key => $value) {
-			if ($key === 'nullable') {
-				continue;
-			}
-
-			$copy->{$key} = self::toJsonSchema(schema: $value);
-		}
-
+		$copy = self::withoutNullable(schema: $schema);
 		if (($schema->nullable ?? false) === true) {
 			return self::withNull(schema: $copy);
 		}
 
 		return $copy;
 	}//end toJsonSchema()
+
+	/**
+	 * A converted copy of an object schema without its OpenAPI `nullable` keyword.
+	 *
+	 * @param stdClass $schema The OpenAPI schema object.
+	 *
+	 * @return stdClass
+	 *
+	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 */
+	private static function withoutNullable(stdClass $schema): stdClass {
+		$copy = new stdClass();
+		foreach (get_object_vars($schema) as $key => $value) {
+			if ($key !== 'nullable') {
+				$copy->{$key} = self::toJsonSchema(schema: $value);
+			}
+		}
+
+		return $copy;
+	}//end withoutNullable()
 
 	/**
 	 * A schema that also accepts null.
