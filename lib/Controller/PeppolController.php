@@ -49,6 +49,8 @@ use Throwable;
 /**
  * Peppol participant lookup + signed inbound receive webhook.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) -- a controller wires its services, gate, session, l10n and log
+ *
  * @spec openspec/specs/peppol-access-point-connector/spec.md
  * @spec openspec/changes/peppol-inbound-on-the-consumer-model/specs/peppol-access-point-connector/spec.md#requirement-the-inbound-webhook-acts-as-the-peppol-connections-account-req-020
  *
