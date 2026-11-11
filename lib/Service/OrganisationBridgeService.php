@@ -41,6 +41,18 @@ use Psr\Log\LoggerInterface;
  */
 class OrganisationBridgeService {
 	/**
+	 * The stats answered when OpenRegister cannot give them.
+	 *
+	 * @var array{total: int, active: null, results: array, available: false}
+	 */
+	private const NO_STATS = [
+		'total' => 0,
+		'active' => null,
+		'results' => [],
+		'available' => false,
+	];
+
+	/**
 	 * Constructor for the OrganisationBridgeService
 	 *
 	 * @param IAppManager $appManager The app manager to check if OpenRegister is installed
@@ -73,20 +85,24 @@ class OrganisationBridgeService {
 			return null;
 		}
 
+		return $this->serviceFromContainer();
+	}//end getOrganisationService()
+
+	/**
+	 * OpenRegister's OrganisationService from the container, or null when it is not there.
+	 *
+	 * @return \OCA\OpenRegister\Service\OrganisationService|null The service.
+	 */
+	private function serviceFromContainer(): ?\OCA\OpenRegister\Service\OrganisationService {
 		try {
 			// Attempt to get the OrganisationService from the container.
 			return $this->container->get('OCA\OpenRegister\Service\OrganisationService');
 		} catch (ContainerExceptionInterface|NotFoundExceptionInterface $e) {
 			// Log the error but don't fail the application.
-			$this->logger->warning(
-				'OpenRegister OrganisationService not available',
-				[
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->logger->warning('OpenRegister OrganisationService not available', ['exception' => $e->getMessage()]);
 			return null;
 		}
-	}//end getOrganisationService()
+	}//end serviceFromContainer()
 
 	/**
 	 * Check if organization functionality is available
@@ -120,12 +136,7 @@ class OrganisationBridgeService {
 
 		if ($organisationService === null) {
 			// Return empty stats if service not available.
-			return [
-				'total' => 0,
-				'active' => null,
-				'results' => [],
-				'available' => false,
-			];
+			return self::NO_STATS;
 		}
 
 		try {
@@ -133,20 +144,8 @@ class OrganisationBridgeService {
 			$stats['available'] = true;
 			return $stats;
 		} catch (\Exception $e) {
-			$this->logger->error(
-				'Failed to get user organization stats',
-				[
-					'exception' => $e->getMessage(),
-				]
-			);
-
-			return [
-				'total' => 0,
-				'active' => null,
-				'results' => [],
-				'available' => false,
-				'error' => 'Failed to retrieve organization data',
-			];
+			$this->logFailure(message: 'Failed to get user organization stats', context: ['exception' => $e->getMessage()]);
+			return self::NO_STATS + ['error' => 'Failed to retrieve organization data'];
 		}
 	}//end getUserOrganisationStats()
 
@@ -173,34 +172,47 @@ class OrganisationBridgeService {
 		}
 
 		try {
-			$result = $organisationService->setActiveOrganisation(organisationUuid: $organisationUuid);
-
-			$message = 'Failed to update active organization';
-			if ($result === true) {
-				$message = 'Active organization updated successfully';
-			}
-
-			return [
-				'success' => $result,
-				'message' => $message,
-				'available' => true,
-			];
+			return $this->activationAnswer(result: $organisationService->setActiveOrganisation(organisationUuid: $organisationUuid));
 		} catch (\Exception $e) {
-			$this->logger->error(
-				'Failed to set active organization',
-				[
-					'organisationUuid' => $organisationUuid,
-					'exception' => $e->getMessage(),
-				]
-			);
-
-			return [
-				'success' => false,
-				'message' => $e->getMessage(),
-				'available' => true,
-			];
-		}//end try
+			return $this->activationFailed(organisationUuid: $organisationUuid, exception: $e);
+		}
 	}//end setActiveOrganisation()
+
+	/**
+	 * Log an activation OpenRegister failed and answer it.
+	 *
+	 * @param string     $organisationUuid The organisation asked for.
+	 * @param \Exception $exception        Why it failed.
+	 *
+	 * @return array{success: false, message: string, available: true} The answer.
+	 */
+	private function activationFailed(string $organisationUuid, \Exception $exception): array {
+		$this->logFailure(
+			message: 'Failed to set active organization',
+			context: ['organisationUuid' => $organisationUuid, 'exception' => $exception->getMessage()]
+		);
+		return ['success' => false, 'message' => $exception->getMessage(), 'available' => true];
+	}//end activationFailed()
+
+	/**
+	 * The answer to an activation OpenRegister carried out or declined.
+	 *
+	 * @param bool $result Whether OpenRegister switched the active organisation.
+	 *
+	 * @return array{success: bool, message: string, available: true} The answer.
+	 */
+	private function activationAnswer(bool $result): array {
+		$message = 'Failed to update active organization';
+		if ($result === true) {
+			$message = 'Active organization updated successfully';
+		}
+
+		return [
+			'success' => $result,
+			'message' => $message,
+			'available' => true,
+		];
+	}//end activationAnswer()
 
 	/**
 	 * Get the active organization for the current user
@@ -220,19 +232,9 @@ class OrganisationBridgeService {
 		}
 
 		try {
-			$activeOrg = $organisationService->getActiveOrganisation();
-			if ($activeOrg === null) {
-				return null;
-			}
-
-			return $activeOrg->jsonSerialize();
+			return $organisationService->getActiveOrganisation()?->jsonSerialize();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				'Failed to get active organization',
-				[
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->logFailure(message: 'Failed to get active organization', context: ['exception' => $e->getMessage()]);
 			return null;
 		}
 	}//end getActiveOrganisation()
@@ -258,13 +260,20 @@ class OrganisationBridgeService {
 			$organisations = $organisationService->getUserOrganisations();
 			return array_map(fn ($org) => $org->jsonSerialize(), $organisations);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				'Failed to get user organizations',
-				[
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->logFailure(message: 'Failed to get user organizations', context: ['exception' => $e->getMessage()]);
 			return [];
 		}
 	}//end getUserOrganisations()
+
+	/**
+	 * Log a call OpenRegister failed; the bridge answers its empty value instead.
+	 *
+	 * @param string               $message What failed.
+	 * @param array<string, mixed> $context The organisation asked for, if any, and the error.
+	 *
+	 * @return void
+	 */
+	private function logFailure(string $message, array $context): void {
+		$this->logger->error($message, $context);
+	}//end logFailure()
 }//end class
