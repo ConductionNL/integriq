@@ -343,6 +343,7 @@ class DSOParserServiceTest extends TestCase {
 			['naam' => '.', 'url' => 'https://a.nl/d/brief.txt'],
 			['url' => 'https://a.nl/d/.'],
 			[],
+			['naam' => ' / ', 'url' => 'https://a.nl/d/x.pdf'],
 		];
 
 		$this->assertSame(
@@ -354,6 +355,7 @@ class DSOParserServiceTest extends TestCase {
 				['name' => 'bijlage-6', 'url' => 'https://a.nl/d/brief.txt'],
 				['name' => 'bijlage-7', 'url' => 'https://a.nl/d/.'],
 				['name' => 'bijlage-8', 'url' => ''],
+				['name' => 'bijlage-9', 'url' => 'https://a.nl/d/x.pdf'],
 			],
 			$this->parser->parseRequest(['verzoekId' => 'v', 'type' => 'aanvraag', 'bijlagen' => $bijlagen])['bijlagen']
 		);
