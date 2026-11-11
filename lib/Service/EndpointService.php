@@ -3571,10 +3571,7 @@ class EndpointService implements EndpointServiceInterface {
 					groups: ($configuration['authentication']['groups'] ?? [])
 				);
 			} catch (AuthenticationException $exception) {
-				return new JSONResponse(
-					data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
-					statusCode: 401
-				);
+				return $this->unauthenticated(exception: $exception);
 			}
 
 			return $data;
@@ -3599,10 +3596,7 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeApiKey(header: $header, keys: $configuration['authentication']['keys']);
 				} catch (AuthenticationException $exception) {
-					return new JSONResponse(
-						data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
-						statusCode: 401
-					);
+					return $this->unauthenticated(exception: $exception);
 				}
 				break;
 			case 'jwt':
@@ -3610,10 +3604,7 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeJwt(authorization: $header);
 				} catch (AuthenticationException $exception) {
-					return new JSONResponse(
-						data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
-						statusCode: 401
-					);
+					return $this->unauthenticated(exception: $exception);
 				}
 				break;
 			case 'basic':
@@ -3624,10 +3615,7 @@ class EndpointService implements EndpointServiceInterface {
 						$configuration['authentication']['groups']
 					);
 				} catch (AuthenticationException $exception) {
-					return new JSONResponse(
-						data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
-						statusCode: 401
-					);
+					return $this->unauthenticated(exception: $exception);
 				}
 				break;
 			case 'oauth':
@@ -3638,10 +3626,7 @@ class EndpointService implements EndpointServiceInterface {
 						$configuration['authentication']['groups']
 					);
 				} catch (AuthenticationException $exception) {
-					return new JSONResponse(
-						data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
-						statusCode: 401
-					);
+					return $this->unauthenticated(exception: $exception);
 				}
 				break;
 			default:
@@ -3650,6 +3635,22 @@ class EndpointService implements EndpointServiceInterface {
 
 		return $data;
 	}//end processAuthenticationRule()
+
+	/**
+	 * The 401 answer to a refused credential, with the refusal's message and details.
+	 *
+	 * @param AuthenticationException $exception The refusal.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function unauthenticated(AuthenticationException $exception): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
+			statusCode: 401
+		);
+	}//end unauthenticated()
 
 	/**
 	 * Processes an error rule.
