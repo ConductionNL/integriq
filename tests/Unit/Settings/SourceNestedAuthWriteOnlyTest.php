@@ -508,14 +508,22 @@ class SourceNestedAuthWriteOnlyTest extends TestCase {
 
 		foreach ($services as $service) {
 			$code = (string)file_get_contents($root . '/' . $service);
-			$this->assertStringContainsString(
-				'resolveRaw',
+			$this->assertMatchesRegularExpression(
+				'/resolveRaw|new ActiveSourceLookup\(/',
 				$code,
-				"$service must route its active source through RawSourceResolver::resolveRaw() so the client "
-				. 'reads the credential via `_render: false` (ocon#244). Without it the ocon#242 write-only strip '
-				. 'would take this bridge down.'
+				"$service must route its active source through RawSourceResolver::resolveRaw(), directly or through "
+				. 'ActiveSourceLookup, so the client reads the credential via `_render: false` (ocon#244). Without it '
+				. 'the ocon#242 write-only strip would take this bridge down.'
 			);
 		}
+
+		// The shared lookup those bridges use re-reads the located source raw.
+		$lookup = (string)file_get_contents($root . '/lib/Service/Security/ActiveSourceLookup.php');
+		$this->assertStringContainsString(
+			'$this->rawSourceResolver->resolveRaw(',
+			$lookup,
+			'ActiveSourceLookup must hand the located source to RawSourceResolver::resolveRaw() (ocon#244).'
+		);
 
 		// The resolver itself reads with `_render: false` — the load-bearing argument.
 		$resolver = (string)file_get_contents($root . '/lib/Service/Security/RawSourceResolver.php');
