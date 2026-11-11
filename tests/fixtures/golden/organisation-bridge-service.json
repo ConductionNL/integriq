@@ -1,0 +1,241 @@
+{
+    "not installed isOrganisationServiceAvailable": {
+        "answer": false,
+        "logged": []
+    },
+    "not installed getUserOrganisationStats": {
+        "answer": {
+            "total": 0,
+            "active": null,
+            "results": [],
+            "available": false
+        },
+        "logged": []
+    },
+    "not installed setActiveOrganisation": {
+        "answer": {
+            "success": false,
+            "message": "Organization service not available",
+            "available": false
+        },
+        "logged": []
+    },
+    "not installed getActiveOrganisation": {
+        "answer": null,
+        "logged": []
+    },
+    "not installed getUserOrganisations": {
+        "answer": [],
+        "logged": []
+    },
+    "not in the container isOrganisationServiceAvailable": {
+        "answer": false,
+        "logged": [
+            [
+                "warning",
+                "OpenRegister OrganisationService not available",
+                {
+                    "exception": "no such service"
+                }
+            ]
+        ]
+    },
+    "not in the container getUserOrganisationStats": {
+        "answer": {
+            "total": 0,
+            "active": null,
+            "results": [],
+            "available": false
+        },
+        "logged": [
+            [
+                "warning",
+                "OpenRegister OrganisationService not available",
+                {
+                    "exception": "no such service"
+                }
+            ]
+        ]
+    },
+    "not in the container setActiveOrganisation": {
+        "answer": {
+            "success": false,
+            "message": "Organization service not available",
+            "available": false
+        },
+        "logged": [
+            [
+                "warning",
+                "OpenRegister OrganisationService not available",
+                {
+                    "exception": "no such service"
+                }
+            ]
+        ]
+    },
+    "not in the container getActiveOrganisation": {
+        "answer": null,
+        "logged": [
+            [
+                "warning",
+                "OpenRegister OrganisationService not available",
+                {
+                    "exception": "no such service"
+                }
+            ]
+        ]
+    },
+    "not in the container getUserOrganisations": {
+        "answer": [],
+        "logged": [
+            [
+                "warning",
+                "OpenRegister OrganisationService not available",
+                {
+                    "exception": "no such service"
+                }
+            ]
+        ]
+    },
+    "answers isOrganisationServiceAvailable": {
+        "answer": true,
+        "logged": []
+    },
+    "answers getUserOrganisationStats": {
+        "answer": {
+            "total": 2,
+            "active": "org-1",
+            "results": [
+                {
+                    "uuid": "org-1"
+                }
+            ],
+            "available": true
+        },
+        "logged": []
+    },
+    "answers setActiveOrganisation": {
+        "answer": {
+            "success": true,
+            "message": "Active organization updated successfully",
+            "available": true
+        },
+        "logged": []
+    },
+    "answers getActiveOrganisation": {
+        "answer": {
+            "uuid": "org-1",
+            "name": "Gemeente"
+        },
+        "logged": []
+    },
+    "answers getUserOrganisations": {
+        "answer": [
+            {
+                "uuid": "org-1",
+                "name": "Gemeente"
+            },
+            {
+                "uuid": "org-1",
+                "name": "Gemeente"
+            }
+        ],
+        "logged": []
+    },
+    "refuses isOrganisationServiceAvailable": {
+        "answer": true,
+        "logged": []
+    },
+    "refuses getUserOrganisationStats": {
+        "answer": {
+            "total": 2,
+            "active": "org-1",
+            "results": [
+                {
+                    "uuid": "org-1"
+                }
+            ],
+            "available": true
+        },
+        "logged": []
+    },
+    "refuses setActiveOrganisation": {
+        "answer": {
+            "success": false,
+            "message": "Failed to update active organization",
+            "available": true
+        },
+        "logged": []
+    },
+    "refuses getActiveOrganisation": {
+        "answer": null,
+        "logged": []
+    },
+    "refuses getUserOrganisations": {
+        "answer": [],
+        "logged": []
+    },
+    "fails isOrganisationServiceAvailable": {
+        "answer": true,
+        "logged": []
+    },
+    "fails getUserOrganisationStats": {
+        "answer": {
+            "total": 0,
+            "active": null,
+            "results": [],
+            "available": false,
+            "error": "Failed to retrieve organization data"
+        },
+        "logged": [
+            [
+                "error",
+                "Failed to get user organization stats",
+                {
+                    "exception": "database gone"
+                }
+            ]
+        ]
+    },
+    "fails setActiveOrganisation": {
+        "answer": {
+            "success": false,
+            "message": "database gone",
+            "available": true
+        },
+        "logged": [
+            [
+                "error",
+                "Failed to set active organization",
+                {
+                    "organisationUuid": "org-1",
+                    "exception": "database gone"
+                }
+            ]
+        ]
+    },
+    "fails getActiveOrganisation": {
+        "answer": null,
+        "logged": [
+            [
+                "error",
+                "Failed to get active organization",
+                {
+                    "exception": "database gone"
+                }
+            ]
+        ]
+    },
+    "fails getUserOrganisations": {
+        "answer": [],
+        "logged": [
+            [
+                "error",
+                "Failed to get user organizations",
+                {
+                    "exception": "database gone"
+                }
+            ]
+        ]
+    }
+}
