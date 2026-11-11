@@ -98,41 +98,60 @@ class DemoDataService implements DemoDataServiceInterface {
 	 * @spec exclude Demo-data choice list; ADR-111 rule 1 has no per-app behavioural spec.
 	 */
 	public function listChoices(): array {
-		$choices = [
-			[
-				'id'          => self::NONE_DATASET,
-				'label'       => 'None, I will set this up myself',
-				'description' => 'Nothing is imported. You start with an empty app and add your own data.',
-				'objectCount' => 0,
-				'icon'        => 'CloseCircleOutline',
-			],
-		];
+		$choices = [$this->noneChoice()];
 
 		$objects = $this->shippedObjectCount();
 		if ($objects !== null) {
-			$choices[] = [
-				'id'    => self::DEMO_DATASET,
-				'label' => 'Example data',
-				// 🔴 NO NUMBER IN THIS SENTENCE. The wizard runs a card's
-				// description through the app's translation function, which is a
-				// literal lookup, so an interpolated count would make the string
-				// untranslatable and leave a Dutch operator reading English. The
-				// count travels as `objectCount` and the card renders it as a
-				// stat, with a label the library translates.
-				'description' => (
-					'Sample values for every schema this app supplies, generated from the schemas '
-					. 'themselves. It shows the lists, detail pages and dashboards working rather '
-					. 'than telling a story. Safe to run more than once, and you can delete it '
-					. 'afterwards.'
-				),
-				'objectCount' => $objects,
-				'icon'        => 'DatabaseOutline',
-			];
+			$choices[] = $this->demoChoice(objects: $objects);
 		}
 
 		return $choices;
 
 	}//end listChoices()
+
+
+	/**
+	 * The card for starting empty, always offered.
+	 *
+	 * @return array{id: string, label: string, description: string, objectCount: integer, icon: string}
+	 */
+	private function noneChoice(): array {
+		return [
+			'id'          => self::NONE_DATASET,
+			'label'       => 'None, I will set this up myself',
+			'description' => 'Nothing is imported. You start with an empty app and add your own data.',
+			'objectCount' => 0,
+			'icon'        => 'CloseCircleOutline',
+		];
+	}//end noneChoice()
+
+	/**
+	 * The card for the shipped example dataset.
+	 *
+	 * @param integer $objects The number of objects it carries.
+	 *
+	 * @return array{id: string, label: string, description: string, objectCount: integer, icon: string}
+	 */
+	private function demoChoice(int $objects): array {
+		return [
+			'id'    => self::DEMO_DATASET,
+			'label' => 'Example data',
+			// 🔴 NO NUMBER IN THIS SENTENCE. The wizard runs a card's
+			// description through the app's translation function, which is a
+			// literal lookup, so an interpolated count would make the string
+			// untranslatable and leave a Dutch operator reading English. The
+			// count travels as `objectCount` and the card renders it as a
+			// stat, with a label the library translates.
+			'description' => (
+				'Sample values for every schema this app supplies, generated from the schemas '
+				. 'themselves. It shows the lists, detail pages and dashboards working rather '
+				. 'than telling a story. Safe to run more than once, and you can delete it '
+				. 'afterwards.'
+			),
+			'objectCount' => $objects,
+			'icon'        => 'DatabaseOutline',
+		];
+	}//end demoChoice()
 
 	/**
 	 * How many objects the shipped descriptor carries, or null when it ships none.
@@ -144,27 +163,11 @@ class DemoDataService implements DemoDataServiceInterface {
 	 * @return integer|null The object count, or null when there is no usable descriptor.
 	 */
 	private function shippedObjectCount(): ?int {
-		$path = $this->descriptorPath();
-		if (is_file($path) === false) {
+		try {
+			return $this->objectCount(data: $this->descriptorData());
+		} catch (RuntimeException) {
 			return null;
 		}
-
-		$raw = file_get_contents($path);
-		if ($raw === false) {
-			return null;
-		}
-
-		$data = json_decode($raw, true);
-		if (is_array($data) === false) {
-			return null;
-		}
-
-		$components = ($data['components'] ?? []);
-		if (is_array($components) === false || is_array(($components['objects'] ?? null)) === false) {
-			return 0;
-		}
-
-		return count($components['objects']);
 
 	}//end shippedObjectCount()
 
@@ -182,6 +185,49 @@ class DemoDataService implements DemoDataServiceInterface {
 	 * @spec exclude Demo-data import; ADR-111 rule 1 has no per-app behavioural spec.
 	 */
 	public function install(): array {
+		$data = $this->descriptorData();
+		// Counted from the FILE, not the importer's reply, so the number reported
+		// is the number ASKED FOR. An object whose schema does not resolve is
+		// SKIPPED rather than errored, so a discrepancy here is a real condition
+		// an operator should be able to see.
+		$objects = $this->objectCount(data: $data);
+
+		$result = $this->importDescriptor(data: $data);
+
+		$imported = [
+			'objects'   => $objects,
+			'registers' => count((array)($result['registers'] ?? [])),
+			'schemas'   => count((array)($result['schemas'] ?? [])),
+		];
+		$this->logImported(imported: $imported);
+
+		return $imported;
+	}//end install()
+
+	/**
+	 * Hand the dataset to OpenRegister's importer under the demo namespace, forced.
+	 *
+	 * @param array $data The descriptor's data.
+	 *
+	 * @return array The importer's reply.
+	 */
+	private function importDescriptor(array $data): array {
+		return $this->configurationService()->importFromApp(
+			appId: self::CONFIG_APP_ID,
+			data: $data,
+			version: $this->appManager->getAppVersion(AppIdentity::APP_ID),
+			force: true
+		);
+	}//end importDescriptor()
+
+	/**
+	 * The shipped demo dataset, decoded.
+	 *
+	 * @return array The descriptor's data.
+	 *
+	 * @throws RuntimeException When the descriptor is missing, unreadable or not valid JSON.
+	 */
+	private function descriptorData(): array {
 		$path = $this->descriptorPath();
 		if (is_file($path) === false) {
 			throw new RuntimeException('No demo dataset ships with this app (' . self::DESCRIPTOR . ' not found).');
@@ -197,29 +243,33 @@ class DemoDataService implements DemoDataServiceInterface {
 			throw new RuntimeException('The demo dataset is not valid JSON: ' . $path);
 		}
 
-		// Counted from the FILE, not the importer's reply, so the number reported
-		// is the number ASKED FOR. An object whose schema does not resolve is
-		// SKIPPED rather than errored, so a discrepancy here is a real condition
-		// an operator should be able to see.
-		$objects = 0;
+		return $data;
+	}//end descriptorData()
+
+	/**
+	 * The number of objects the dataset carries.
+	 *
+	 * @param array $data The descriptor's data.
+	 *
+	 * @return integer The objects in its components, or 0 without an objects list.
+	 */
+	private function objectCount(array $data): int {
 		$components = ($data['components'] ?? []);
-		if (is_array($components) === true && is_array(($components['objects'] ?? null)) === true) {
-			$objects = count($components['objects']);
+		if (is_array($components) === false || is_array(($components['objects'] ?? null)) === false) {
+			return 0;
 		}
 
-		$result = $this->configurationService()->importFromApp(
-			appId: self::CONFIG_APP_ID,
-			data: $data,
-			version: $this->appManager->getAppVersion(AppIdentity::APP_ID),
-			force: true
-		);
+		return count($components['objects']);
+	}//end objectCount()
 
-		$imported = [
-			'objects'   => $objects,
-			'registers' => count((array)($result['registers'] ?? [])),
-			'schemas'   => count((array)($result['schemas'] ?? [])),
-		];
-
+	/**
+	 * Log what the import brought in.
+	 *
+	 * @param array{objects: integer, registers: integer, schemas: integer} $imported The counts.
+	 *
+	 * @return void
+	 */
+	private function logImported(array $imported): void {
 		$this->logger->info(
 			'[DemoDataService] imported demo data: '
 			. $imported['objects'] . ' object(s), '
@@ -227,9 +277,7 @@ class DemoDataService implements DemoDataServiceInterface {
 			. $imported['schemas'] . ' schema(s).',
 			['app' => AppIdentity::APP_ID]
 		);
-
-		return $imported;
-	}//end install()
+	}//end logImported()
 
 	/**
 	 * Absolute path to the shipped descriptor.

@@ -167,19 +167,7 @@ class TablesSyncAdapter implements TablesSyncAdapterInterface {
 				break;
 			}
 
-			foreach ($batch as $row) {
-				// `id` and `data` are guaranteed by TablesClientInterface's
-				// return shape (the client normalises every row).
-				$data = $row['data'];
-
-				// Union (not array_merge()): the row `data` is keyed by
-				// numeric-string columnId ('7', '8', ...); PHP casts numeric
-				// string keys to int, and array_merge() RE-INDEXES integer
-				// keys as a list, which would silently drop the columnId
-				// association. The `+` union operator preserves every key.
-				$flattened = ['id' => (string)$row['id']] + $data;
-				$rows[] = $flattened;
-			}
+			$rows = array_merge($rows, $this->flattenedRows(batch: $batch));
 
 			if (count($batch) < $pageSize) {
 				break;
@@ -190,6 +178,33 @@ class TablesSyncAdapter implements TablesSyncAdapterInterface {
 
 		return $rows;
 	}//end fetchAllRows()
+
+	/**
+	 * One page of rows flattened to `{id, <columnId>: value, ...}`.
+	 *
+	 * @param array<int, array{id: int|string, data: array}> $batch The page.
+	 *
+	 * @return array<int, array<string|int, mixed>> The flattened rows.
+	 */
+	private function flattenedRows(array $batch): array {
+		$rows = [];
+		foreach ($batch as $row) {
+			// `id` and `data` are guaranteed by TablesClientInterface's
+			// return shape (the client normalises every row).
+			$data = $row['data'];
+
+			// Union (not array_merge()): the row `data` is keyed by
+			// numeric-string columnId ('7', '8', ...); PHP casts numeric
+			// string keys to int, and array_merge() RE-INDEXES integer
+			// keys as a list, which would silently drop the columnId
+			// association. The `+` union operator preserves every key.
+			$flattened = ['id' => (string)$row['id']] + $data;
+			$rows[] = $flattened;
+		}
+
+		return $rows;
+
+	}//end flattenedRows()
 
 	/**
 	 * Create or update a row from a mapped object, resolving the title-keyed
@@ -220,31 +235,17 @@ class TablesSyncAdapter implements TablesSyncAdapterInterface {
 		array $mappedObject,
 		array $columnMapping,
 	): ?array {
-		$columns = $this->getColumns(source: $target, tableId: $tableId);
-
-		$payload = [];
-		foreach ($columnMapping as $mapEntry) {
-			$columnTitle = ($mapEntry['column'] ?? null);
-			if (is_string($columnTitle) === false || $columnTitle === '') {
-				continue;
-			}
-
-			$resolved = $this->resolveMappingEntry(
-				mapEntry: $mapEntry,
-				columnTitle: $columnTitle,
-				columns: $columns,
-				mappedObject: $mappedObject,
-				tableId: $tableId
-			);
-
-			if ($resolved === null) {
-				// A per-row skip (ambiguous/unresolved title, coercion
-				// failure) was already logged by resolveMappingEntry().
-				return null;
-			}
-
-			$payload[$resolved['columnId']] = $resolved['value'];
-		}//end foreach
+		$run = new RowWriteRun(
+			columns: $this->getColumns(source: $target, tableId: $tableId),
+			mappedObject: $mappedObject,
+			tableId: $tableId
+		);
+		$payload = $this->rowPayload(columnMapping: $columnMapping, run: $run);
+		if ($payload === null) {
+			// A per-row skip (ambiguous/unresolved title, coercion
+			// failure) was already logged by resolveMappingEntry().
+			return null;
+		}
 
 		if ($existingRowId === null || $existingRowId === '') {
 			$row = $this->client->createRow(source: $target, tableId: $tableId, data: $payload);
@@ -257,16 +258,41 @@ class TablesSyncAdapter implements TablesSyncAdapterInterface {
 	}//end writeRow()
 
 	/**
+	 * The `{columnId: value}` payload of a column mapping; entries without a column title are ignored.
+	 *
+	 * @param array       $columnMapping `[{"column": "<title>", "value": "<dot-path>"}, ...]`.
+	 * @param RowWriteRun $run           The row write.
+	 *
+	 * @return array<string, mixed>|null The payload, or null when any entry skips the row (already logged).
+	 */
+	private function rowPayload(array $columnMapping, RowWriteRun $run): ?array {
+		$payload = [];
+		foreach ($columnMapping as $mapEntry) {
+			$columnTitle = ($mapEntry['column'] ?? null);
+			if (is_string($columnTitle) === false || $columnTitle === '') {
+				continue;
+			}
+
+			$resolved = $this->resolveMappingEntry(mapEntry: $mapEntry, run: $run);
+			if ($resolved === null) {
+				return null;
+			}
+
+			$payload[$resolved['columnId']] = $resolved['value'];
+		}
+
+		return $payload;
+
+	}//end rowPayload()
+
+	/**
 	 * Resolve one `columnMapping` entry to a `{columnId: value}` payload pair:
 	 * looks up the mapped column title (failing on zero or >1 matches — never
 	 * a first-match guess), extracts the mapped-object value via its dot-path,
 	 * and coerces it per the column's declared type.
 	 *
-	 * @param array $mapEntry The `{"column": "<title>", "value": "<dot-path>"}` entry.
-	 * @param string $columnTitle The entry's `column` value (pre-validated non-empty string).
-	 * @param array $columns The cached column list for this table.
-	 * @param array $mappedObject The already-mapped object to read the value from.
-	 * @param int $tableId The Tables table id (logging context only).
+	 * @param array       $mapEntry The `{"column": "<title>", "value": "<dot-path>"}` entry, its title a non-empty string.
+	 * @param RowWriteRun $run      The row write.
 	 *
 	 * @return array{columnId: string, value: mixed}|null The resolved pair, or null on any
 	 *                                                    per-row-skip condition (already logged).
@@ -274,15 +300,43 @@ class TablesSyncAdapter implements TablesSyncAdapterInterface {
 	 * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
 	 * @spec openspec/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
 	 */
-	private function resolveMappingEntry(array $mapEntry, string $columnTitle, array $columns, array $mappedObject, int $tableId): ?array {
+	private function resolveMappingEntry(array $mapEntry, RowWriteRun $run): ?array {
+		$columnTitle = $mapEntry['column'];
+		$column = $this->matchingColumn(columnTitle: $columnTitle, run: $run);
+		if ($column === null) {
+			return null;
+		}
+
+		try {
+			$coerced = $this->coercer->coerce(column: $column, value: $this->mappedValue(mapEntry: $mapEntry, run: $run));
+		} catch (TablesConfigException $exception) {
+			$this->logger->warning(
+				'TablesSyncAdapter: value coercion failed for column — skipping row write',
+				['column' => $columnTitle, 'tableId' => $run->tableId, 'reason' => $exception->getMessage()]
+			);
+			return null;
+		}
+
+		return ['columnId' => (string)$column['id'], 'value' => $coerced];
+	}//end resolveMappingEntry()
+
+	/**
+	 * The one column with this title; none or several is logged and skips the row.
+	 *
+	 * @param string      $columnTitle The mapped column title.
+	 * @param RowWriteRun $run         The row write.
+	 *
+	 * @return array|null The column, or null when the title matches no column or more than one.
+	 */
+	private function matchingColumn(string $columnTitle, RowWriteRun $run): ?array {
 		$matches = array_values(
-			array_filter($columns, static fn (array $column) => $column['title'] === $columnTitle)
+			array_filter($run->columns, static fn (array $column) => $column['title'] === $columnTitle)
 		);
 
 		if (count($matches) === 0) {
 			$this->logger->warning(
 				'TablesSyncAdapter: column mapping title does not resolve to any column — skipping row write',
-				['column' => $columnTitle, 'tableId' => $tableId]
+				['column' => $columnTitle, 'tableId' => $run->tableId]
 			);
 			return null;
 		}
@@ -290,34 +344,32 @@ class TablesSyncAdapter implements TablesSyncAdapterInterface {
 		if (count($matches) > 1) {
 			$this->logger->error(
 				'TablesSyncAdapter: ambiguous column title in mapping — refusing to guess, skipping row write',
-				['column' => $columnTitle, 'matchCount' => count($matches), 'tableId' => $tableId]
+				['column' => $columnTitle, 'matchCount' => count($matches), 'tableId' => $run->tableId]
 			);
 			return null;
 		}
 
-		$column = $matches[0];
+		return $matches[0];
+
+	}//end matchingColumn()
+
+	/**
+	 * The mapped object's value at the entry's dot-path; null without a path.
+	 *
+	 * @param array       $mapEntry The mapping entry.
+	 * @param RowWriteRun $run      The row write.
+	 *
+	 * @return mixed The value.
+	 */
+	private function mappedValue(array $mapEntry, RowWriteRun $run): mixed {
 		$valuePath = ($mapEntry['value'] ?? null);
-		$rawValue = null;
 		if (is_string($valuePath) === true && $valuePath !== '') {
-			$rawValue = (new Dot($mappedObject))->get($valuePath);
+			return (new Dot($run->mappedObject))->get($valuePath);
 		}
 
-		try {
-			$coerced = $this->coercer->coerce(column: $column, value: $rawValue);
-		} catch (TablesConfigException $exception) {
-			$this->logger->warning(
-				'TablesSyncAdapter: value coercion failed for column — skipping row write',
-				[
-					'column' => $columnTitle,
-					'tableId' => $tableId,
-					'reason' => $exception->getMessage(),
-				]
-			);
-			return null;
-		}
+		return null;
 
-		return ['columnId' => (string)$column['id'], 'value' => $coerced];
-	}//end resolveMappingEntry()
+	}//end mappedValue()
 
 	/**
 	 * Delete a row, tolerating an upstream 404 (already gone) as a no-op.

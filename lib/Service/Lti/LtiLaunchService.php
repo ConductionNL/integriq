@@ -25,6 +25,7 @@ namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
 use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\PS256;
@@ -33,6 +34,7 @@ use Jose\Component\Signature\Algorithm\PS512;
 use Jose\Component\Signature\Algorithm\RS256;
 use Jose\Component\Signature\Algorithm\RS384;
 use Jose\Component\Signature\Algorithm\RS512;
+use Jose\Component\Signature\JWS;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
@@ -249,53 +251,146 @@ class LtiLaunchService implements LtiLaunchServiceInterface {
 		?string $cookieState,
 		?string $presentedState,
 	): array {
+		$deployment = $this->requireDeployment(deploymentUuid: $deploymentUuid);
+		$this->assertStatePresent(cookieState: $cookieState, presentedState: $presentedState);
+		$this->assertStateMatches(cookieState: $cookieState, presentedState: $presentedState);
+
+		[$payload, $platform] = $this->verifyIdTokenSignature(idToken: $idToken, registrationType: 'lti_platform');
+		$this->assertTimingAndAudience(payload: $payload, platform: $platform);
+
+		$run = new LaunchValidationRun(payload: $payload, platform: $platform, deployment: $deployment);
+		$this->consumeNonce(run: $run);
+		$matchedDeployment = $this->matchDeploymentClaim(run: $run);
+		$this->assertMessageTypeAndVersion(payload: $payload);
+
+		return $this->issueLaunchReference(run: $run, matchedDeployment: $matchedDeployment);
+	}//end validateLaunch()
+
+	/**
+	 * The deployment the launch was posted to.
+	 *
+	 * @param string $deploymentUuid The `lti_deployment` route parameter.
+	 *
+	 * @return ObjectEntity The deployment.
+	 *
+	 * @throws LtiValidationException When no such deployment exists (400).
+	 */
+	private function requireDeployment(string $deploymentUuid): ObjectEntity {
 		$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
 		if ($deployment === null) {
 			throw new LtiValidationException(message: 'Unknown LTI deployment', details: [], httpStatus: 400);
 		}
 
-		// State is mandatory: it binds the launch to the browser that started the login (OIDC login-CSRF).
-		if ($cookieState === null || $cookieState === '' || $presentedState === null || $presentedState === '') {
+		return $deployment;
+
+	}//end requireDeployment()
+
+	/**
+	 * State is mandatory: it binds the launch to the browser that started the login (OIDC login-CSRF).
+	 *
+	 * @param string|null $cookieState    The `state` round-tripped via the login cookie.
+	 * @param string|null $presentedState The `state` posted alongside the `id_token`.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When either is missing (401).
+	 */
+	private function assertStatePresent(?string $cookieState, ?string $presentedState): void {
+		if ($this->isBlankState(state: $cookieState) === true || $this->isBlankState(state: $presentedState) === true) {
 			throw new LtiValidationException(message: 'Missing state', details: [], httpStatus: 401);
 		}
 
-		if (hash_equals($cookieState, $presentedState) === false) {
+	}//end assertStatePresent()
+
+	/**
+	 * The cookie state and the posted state must be the same value.
+	 *
+	 * @param string|null $cookieState    The `state` round-tripped via the login cookie (present).
+	 * @param string|null $presentedState The `state` posted alongside the `id_token` (present).
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When they differ (401).
+	 */
+	private function assertStateMatches(?string $cookieState, ?string $presentedState): void {
+		if (hash_equals((string)$cookieState, (string)$presentedState) === false) {
 			throw new LtiValidationException(message: 'State mismatch', details: [], httpStatus: 401);
 		}
 
-		[$payload, $platform] = $this->verifyIdTokenSignature(idToken: $idToken, registrationType: 'lti_platform');
+	}//end assertStateMatches()
 
-		// Iat/exp/nbf/jti: OpenRegister's check through the bridge, no reimplementation (design.md D6).
+	/**
+	 * Iat/exp/nbf/jti: OpenRegister's check through the bridge, no reimplementation (design.md D6);
+	 * then the audience must name the platform registration's client id.
+	 *
+	 * @param array        $payload  The verified id_token payload.
+	 * @param ObjectEntity $platform The platform registration the token was verified against.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When the timing or the audience is refused.
+	 */
+	private function assertTimingAndAudience(array $payload, ObjectEntity $platform): void {
 		$this->validateTiming(payload: $payload);
 
 		$platformData = $platform->getObject();
 		$this->assertAudience(payload: $payload, expectedClientId: ($platformData['clientId'] ?? ''));
 
-		// Nonce: present + atomic single-use consume (get-then-delete).
-		$nonce = ($payload['nonce'] ?? null);
+	}//end assertTimingAndAudience()
+
+	/**
+	 * Whether a state value is absent.
+	 *
+	 * @param string|null $state The state value.
+	 *
+	 * @return boolean True when null or empty.
+	 */
+	private function isBlankState(?string $state): bool {
+		return ($state === null || $state === '');
+
+	}//end isBlankState()
+
+	/**
+	 * Nonce: present + atomic single-use consume (get-then-delete).
+	 *
+	 * @param LaunchValidationRun $run The launch being validated.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When the nonce is missing (400) or unknown/already consumed (401).
+	 */
+	private function consumeNonce(LaunchValidationRun $run): void {
+		$nonce = ($run->payload['nonce'] ?? null);
 		if (empty($nonce) === true) {
 			throw new LtiValidationException(message: 'Missing nonce claim', details: [], httpStatus: 400);
 		}
 
-		$nonceKey = 'nonce:' . $platform->getUuid() . ':' . $nonce;
+		$nonceKey = 'nonce:' . $run->platform->getUuid() . ':' . $nonce;
 		if ($this->nonceCache->get($nonceKey) === null) {
 			throw new LtiValidationException(message: 'Nonce already consumed or unknown (replay)', details: [], httpStatus: 401);
 		}
 
 		$this->nonceCache->remove($nonceKey);
 
-		// Deployment_id claim must match a registered lti_deployment under this platform.
-		$deploymentIdClaim = ($payload[self::CLAIM_DEPLOYMENT_ID] ?? null);
-		if (empty($deploymentIdClaim) === true) {
-			throw new LtiValidationException(message: 'Missing deployment_id claim', details: [], httpStatus: 400);
-		}
+	}//end consumeNonce()
 
+	/**
+	 * Deployment_id claim must match a registered lti_deployment under this platform.
+	 *
+	 * @param LaunchValidationRun $run The launch being validated.
+	 *
+	 * @return ObjectEntity The matched deployment (the one the launch was posted to).
+	 *
+	 * @throws LtiValidationException When the claim is missing or names another or no deployment (400).
+	 */
+	private function matchDeploymentClaim(LaunchValidationRun $run): ObjectEntity {
+		$deploymentIdClaim = $this->requireDeploymentIdClaim(payload: $run->payload);
 		$matchedDeployment = $this->resolver->findDeployment(
 			registrationType: 'lti_platform',
-			registrationUuid: $platform->getUuid(),
+			registrationUuid: $run->platform->getUuid(),
 			deploymentIdClaim: $deploymentIdClaim
 		);
-		if ($matchedDeployment === null || $matchedDeployment->getUuid() !== $deployment->getUuid()) {
+		if ($matchedDeployment === null || $matchedDeployment->getUuid() !== $run->deployment->getUuid()) {
 			throw new LtiValidationException(
 				message: 'deployment_id claim not registered under the resolved platform',
 				details: ['deploymentId' => $deploymentIdClaim],
@@ -303,33 +398,76 @@ class LtiLaunchService implements LtiLaunchServiceInterface {
 			);
 		}
 
-		$this->assertMessageTypeAndVersion(payload: $payload);
+		return $matchedDeployment;
 
+	}//end matchDeploymentClaim()
+
+	/**
+	 * The payload's deployment_id claim; it is required.
+	 *
+	 * @param array $payload The verified id_token payload.
+	 *
+	 * @return mixed The claim value.
+	 *
+	 * @throws LtiValidationException When the claim is missing or empty (400).
+	 */
+	private function requireDeploymentIdClaim(array $payload): mixed {
+		$deploymentIdClaim = ($payload[self::CLAIM_DEPLOYMENT_ID] ?? null);
+		if (empty($deploymentIdClaim) === true) {
+			throw new LtiValidationException(message: 'Missing deployment_id claim', details: [], httpStatus: 400);
+		}
+
+		return $deploymentIdClaim;
+
+	}//end requireDeploymentIdClaim()
+
+	/**
+	 * Mint the single-use launch reference and build the consuming app's redirect URL.
+	 *
+	 * @param LaunchValidationRun $run               The validated launch.
+	 * @param ObjectEntity        $matchedDeployment The deployment the claim matched.
+	 *
+	 * @return array{launchReference: string, redirectUrl: string}
+	 */
+	private function issueLaunchReference(LaunchValidationRun $run, ObjectEntity $matchedDeployment): array {
 		$deploymentData = $matchedDeployment->getObject();
 		$launchReference = bin2hex(random_bytes(24));
 		$this->launchCache->set(
 			'launch:' . $launchReference,
-			json_encode(['claims' => $payload, 'deploymentUuid' => $matchedDeployment->getUuid()]),
+			json_encode(['claims' => $run->payload, 'deploymentUuid' => $matchedDeployment->getUuid()]),
 			self::LAUNCH_REFERENCE_TTL_SECONDS
 		);
 
 		$this->logger->info(
 			'LtiLaunchService: launch validated',
-			['registrationUuid' => $platform->getUuid(), 'deploymentUuid' => $matchedDeployment->getUuid()]
+			['registrationUuid' => $run->platform->getUuid(), 'deploymentUuid' => $matchedDeployment->getUuid()]
 		);
 
-		if (str_contains(($deploymentData['launchTargetUrl'] ?? ''), '?') === true) {
+		return [
+			'launchReference' => $launchReference,
+			'redirectUrl' => $this->launchRedirectUrl(launchTargetUrl: ($deploymentData['launchTargetUrl'] ?? ''), launchReference: $launchReference),
+		];
+
+	}//end issueLaunchReference()
+
+	/**
+	 * The launch target URL with the `lti_launch` reference appended.
+	 *
+	 * @param string $launchTargetUrl The deployment's launch target URL.
+	 * @param string $launchReference The minted launch reference.
+	 *
+	 * @return string The redirect URL.
+	 */
+	private function launchRedirectUrl(string $launchTargetUrl, string $launchReference): string {
+		if (str_contains($launchTargetUrl, '?') === true) {
 			$separator = '&';
 		} else {
 			$separator = '?';
 		}
 
-		return [
-			'launchReference' => $launchReference,
-			'redirectUrl' => ($deploymentData['launchTargetUrl'] ?? '') . $separator . 'lti_launch=' . $launchReference,
-		];
+		return $launchTargetUrl . $separator . 'lti_launch=' . $launchReference;
 
-	}//end validateLaunch()
+	}//end launchRedirectUrl()
 
 	/**
 	 * Resolve a previously-validated launch reference to its claims (single use).
@@ -602,43 +740,96 @@ class LtiLaunchService implements LtiLaunchServiceInterface {
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
 	public function verifyIdTokenSignature(string $idToken, string $registrationType): array {
+		$run = new IdTokenVerificationRun(jws: $this->unserializeIdToken(idToken: $idToken), registrationType: $registrationType);
+		$this->readKidAndAlg(run: $run);
+		$this->readUnverifiedPayload(run: $run);
+		$this->resolveIssuerRegistration(run: $run);
+		$jwk = $this->resolvePresentedKey(run: $run);
+		$this->assertAlgorithmAllowed(run: $run, jwk: $jwk);
+		$this->assertSignatureVerifies(run: $run, jwk: $jwk);
+
+		return [$run->payload, $run->registration];
+	}//end verifyIdTokenSignature()
+
+	/**
+	 * Parse the compact-serialized id_token.
+	 *
+	 * @param string $idToken The posted id_token/client_assertion JWS.
+	 *
+	 * @return JWS The parsed token.
+	 *
+	 * @throws LtiValidationException When the token is not a compact JWS (400).
+	 */
+	private function unserializeIdToken(string $idToken): JWS {
 		$serializerManager = new JWSSerializerManager([new CompactSerializer()]);
 
 		try {
-			$jws = $serializerManager->unserialize(input: $idToken);
+			return $serializerManager->unserialize(input: $idToken);
 		} catch (Throwable $exception) {
 			throw new LtiValidationException(message: 'Malformed id_token', details: [], httpStatus: 400);
 		}
 
-		$header = $jws->getSignature(0)->getProtectedHeader();
-		$kid = ($header['kid'] ?? null);
-		$alg = ($header['alg'] ?? null);
+	}//end unserializeIdToken()
 
-		if ($kid === null || $alg === null) {
+	/**
+	 * Read the protected header's `kid` and `alg`; both are required.
+	 *
+	 * @param IdTokenVerificationRun $run The verification in progress.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When either is missing (400).
+	 */
+	private function readKidAndAlg(IdTokenVerificationRun $run): void {
+		$header = $run->jws->getSignature(0)->getProtectedHeader();
+		$run->kid = ($header['kid'] ?? null);
+		$run->alg = ($header['alg'] ?? null);
+
+		if ($run->kid === null || $run->alg === null) {
 			throw new LtiValidationException(message: 'id_token header missing kid/alg', details: [], httpStatus: 400);
 		}
 
-		$payload = json_decode((string)$jws->getPayload(), true);
+	}//end readKidAndAlg()
+
+	/**
+	 * Decode the (not yet verified) payload JSON.
+	 *
+	 * @param IdTokenVerificationRun $run The verification in progress.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When the payload is not a JSON object (400).
+	 */
+	private function readUnverifiedPayload(IdTokenVerificationRun $run): void {
+		$payload = json_decode((string)$run->jws->getPayload(), true);
 		if (is_array($payload) === false) {
 			throw new LtiValidationException(message: 'id_token payload is not valid JSON', details: [], httpStatus: 400);
 		}
 
-		// Unverified `iss` used ONLY to select which registration's JWKS to
-		// check against — no authorization decision is made on it.
-		$issuer = ($payload['iss'] ?? null);
+		$run->payload = $payload;
+
+	}//end readUnverifiedPayload()
+
+	/**
+	 * Resolve the registration whose JWKS the token is checked against.
+	 *
+	 * The unverified `iss` is used ONLY to select which registration's JWKS to
+	 * check against — no authorization decision is made on it.
+	 *
+	 * @param IdTokenVerificationRun $run The verification in progress.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When `iss` is missing or not registered (400).
+	 */
+	private function resolveIssuerRegistration(IdTokenVerificationRun $run): void {
+		$issuer = ($run->payload['iss'] ?? null);
 		if (empty($issuer) === true) {
 			throw new LtiValidationException(message: 'id_token missing iss claim', details: [], httpStatus: 400);
 		}
 
-		if ($registrationType === 'lti_platform') {
-			$registration = $this->resolver->findPlatformByIssuer(issuer: (string)$issuer);
-		} else {
-			// Deep Linking responses from a launched tool: the tool's `iss`
-			// is the clientId we assigned it.
-			$registration = $this->resolver->findToolByClientId(clientId: (string)$issuer);
-		}
-
-		if ($registration === null) {
+		$run->registration = $this->findIssuerRegistration(run: $run, issuer: (string)$issuer);
+		if ($run->registration === null) {
 			throw new LtiValidationException(
 				message: 'Unregistered id_token issuer',
 				details: ['iss' => $issuer],
@@ -646,31 +837,91 @@ class LtiLaunchService implements LtiLaunchServiceInterface {
 			);
 		}
 
+	}//end resolveIssuerRegistration()
+
+	/**
+	 * Look the issuer up as a platform, or as a tool for `lti_tool` verification.
+	 *
+	 * @param IdTokenVerificationRun $run    The verification in progress.
+	 * @param string                 $issuer The token's `iss` claim.
+	 *
+	 * @return ObjectEntity|null The registration, or null when none matches.
+	 */
+	private function findIssuerRegistration(IdTokenVerificationRun $run, string $issuer): ?ObjectEntity {
+		if ($run->registrationType === 'lti_platform') {
+			return $this->resolver->findPlatformByIssuer(issuer: $issuer);
+		}
+
+		// Deep Linking responses from a launched tool: the tool's `iss`
+		// is the clientId we assigned it.
+		return $this->resolver->findToolByClientId(clientId: $issuer);
+
+	}//end findIssuerRegistration()
+
+	/**
+	 * Resolve the JWK for the presented `kid` from the registration's JWKS.
+	 *
+	 * @param IdTokenVerificationRun $run The verification in progress.
+	 *
+	 * @return JWK The resolved key.
+	 *
+	 * @throws LtiValidationException When no jwks_uri is configured (400) or no key matches the kid (401).
+	 */
+	private function resolvePresentedKey(IdTokenVerificationRun $run): JWK {
+		$jwk = $this->jwksResolver->resolveKey(
+			registrationType: $run->registrationType,
+			registrationUuid: $run->registration->getUuid(),
+			jwksUri: $this->requireJwksUri(registration: $run->registration),
+			kid: (string)$run->kid
+		);
+		if ($jwk === null) {
+			throw new LtiValidationException(
+				message: 'Could not resolve a JWK for the presented kid',
+				details: ['kid' => $run->kid],
+				httpStatus: 401
+			);
+		}
+
+		return $jwk;
+
+	}//end resolvePresentedKey()
+
+	/**
+	 * The registration's configured `jwksUri`.
+	 *
+	 * @param ObjectEntity $registration The resolved registration.
+	 *
+	 * @return string The JWKS URI.
+	 *
+	 * @throws LtiValidationException When none is configured (400).
+	 */
+	private function requireJwksUri(ObjectEntity $registration): string {
 		$registrationData = $registration->getObject();
 		$jwksUri = ($registrationData['jwksUri'] ?? '');
 		if ($jwksUri === '') {
 			throw new LtiValidationException(message: 'Registration has no jwks_uri configured', details: [], httpStatus: 400);
 		}
 
-		$jwk = $this->jwksResolver->resolveKey(
-			registrationType: $registrationType,
-			registrationUuid: $registration->getUuid(),
-			jwksUri: $jwksUri,
-			kid: (string)$kid
-		);
+		return $jwksUri;
 
-		if ($jwk === null) {
-			throw new LtiValidationException(
-				message: 'Could not resolve a JWK for the presented kid',
-				details: ['kid' => $kid],
-				httpStatus: 401
-			);
-		}
+	}//end requireJwksUri()
 
-		// Algorithm-confusion guard: the resolved JWK's own `alg` (when
-		// present) must match the token header's `alg` exactly — mirrors
-		// AuthorizationService::authorizeJwt()'s pinned-algorithm check.
-		if ($jwk->has('alg') === true && $jwk->get('alg') !== $alg) {
+	/**
+	 * Refuse algorithm confusion and any algorithm outside the RSA families.
+	 *
+	 * The resolved JWK's own `alg` (when present) must match the token header's
+	 * `alg` exactly — mirrors AuthorizationService::authorizeJwt()'s
+	 * pinned-algorithm check.
+	 *
+	 * @param IdTokenVerificationRun $run The verification in progress.
+	 * @param JWK                    $jwk The resolved key.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When the algorithms differ or the algorithm is not supported (401).
+	 */
+	private function assertAlgorithmAllowed(IdTokenVerificationRun $run, JWK $jwk): void {
+		if ($jwk->has('alg') === true && $jwk->get('alg') !== $run->alg) {
 			throw new LtiValidationException(
 				message: 'Token algorithm does not match the resolved key\'s algorithm',
 				details: [],
@@ -678,20 +929,32 @@ class LtiLaunchService implements LtiLaunchServiceInterface {
 			);
 		}
 
-		if (in_array(needle: $alg, haystack: ['RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512'], strict: true) === false) {
-			throw new LtiValidationException(message: 'Unsupported id_token algorithm', details: ['alg' => $alg], httpStatus: 401);
+		if (in_array(needle: $run->alg, haystack: ['RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512'], strict: true) === false) {
+			throw new LtiValidationException(message: 'Unsupported id_token algorithm', details: ['alg' => $run->alg], httpStatus: 401);
 		}
 
+	}//end assertAlgorithmAllowed()
+
+	/**
+	 * Verify the token's signature against the resolved key.
+	 *
+	 * @param IdTokenVerificationRun $run The verification in progress.
+	 * @param JWK                    $jwk The resolved key.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When the signature does not verify (401).
+	 */
+	private function assertSignatureVerifies(IdTokenVerificationRun $run, JWK $jwk): void {
 		$algorithmManager = new AlgorithmManager([new RS256(), new RS384(), new RS512(), new PS256(), new PS384(), new PS512()]);
 		$verifier = new JWSVerifier($algorithmManager);
 		$jwkSet = new JWKSet([$jwk]);
 
-		if ($verifier->verifyWithKeySet(jws: $jws, jwkset: $jwkSet, signatureIndex: 0) === false) {
+		if ($verifier->verifyWithKeySet(jws: $run->jws, jwkset: $jwkSet, signatureIndex: 0) === false) {
 			throw new LtiValidationException(message: 'id_token signature verification failed', details: [], httpStatus: 401);
 		}
 
-		return [$payload, $registration];
-	}//end verifyIdTokenSignature()
+	}//end assertSignatureVerifies()
 
 	/**
 	 * Delegate `iat`/`exp`/`nbf`/`jti`-replay validation to the existing

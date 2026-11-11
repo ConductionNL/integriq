@@ -175,4 +175,98 @@ class DirectorySourceTest extends TestCase {
 		}
 
 	}//end testNoCredentialIsPersistedForASynchronisedAccount()
+
+	/**
+	 * Read a SCIM directory whose pages answer as scripted, recording the
+	 * snapshot, the queries sent and the warnings logged.
+	 *
+	 * @param array<int, mixed>   $pages         One answer per call: a call-log object, or 'throw'.
+	 * @param array<string,mixed> $configuration The connection configuration.
+	 *
+	 * @return array<string,mixed> The users read, completeness, failures, queries and warnings.
+	 */
+	private function readScimPages(array $pages, array $configuration): array {
+		$queries = [];
+		$calls = $this->getMockBuilder(CallService::class)->disableOriginalConstructor()->onlyMethods(['call'])->getMock();
+		$calls->method('call')->willReturnCallback(
+			function (ObjectEntity $source, string $endpoint = '', string $method = 'GET', array $config = []) use (&$queries, &$pages): ObjectEntity {
+				$queries[] = [$endpoint, $method, $config];
+				$answer = array_shift($pages);
+				if ($answer === 'throw' || $answer === null) {
+					throw new \RuntimeException('directory down');
+				}
+
+				$log = new ObjectEntity();
+				$log->setObject($answer);
+				return $log;
+			}
+		);
+		$warnings = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$warnings): void {
+				unset($context['exception']);
+				$warnings[] = [$message, $context];
+			}
+		);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text): string => $text);
+		$source = new DirectorySource(orObjectService: $this->createMock(OrObjectService::class), callService: $calls, l10n: $l10n, logger: $logger);
+
+		$connection = new ObjectEntity();
+		$connection->setObject(['type' => 'directory', 'configuration' => $configuration]);
+		$snapshot = $source->read(connection: $connection);
+
+		return [
+			'users' => array_map(static fn ($entry): string => $entry->getUserId(), $snapshot->getEntries()),
+			'complete' => $snapshot->isComplete(),
+			'failures' => count($snapshot->getFailures()),
+			'queries' => $queries,
+			'warnings' => $warnings,
+		];
+	}//end readScimPages()
+
+	/**
+	 * A SCIM read pages until the total, stops on an empty page, and is
+	 * incomplete when a page fails, answers non-2xx or an unreadable body.
+	 *
+	 * @return void
+	 */
+	public function testAScimReadPagesAndReportsCompleteness(): void {
+		$page = static fn (array $users, int $total, mixed $body = null): array => [
+			'response' => ['statusCode' => 200, 'body' => ($body ?? json_encode(['totalResults' => $total, 'Resources' => array_map(static fn (string $u): array => ['userName' => $u], $users)]))],
+		];
+
+		$this->assertSame(
+			[
+				'users' => ['anja', 'bram', 'cees'],
+				'complete' => true,
+				'failures' => 0,
+				'queries' => [
+					['/scim/Users', 'GET', ['query' => ['startIndex' => 1, 'count' => 2]]],
+					['/scim/Users', 'GET', ['query' => ['startIndex' => 3, 'count' => 2]]],
+				],
+				'warnings' => [],
+			],
+			$this->readScimPages(pages: [$page(['anja', 'bram'], 3), $page(['cees'], 3)], configuration: ['usersEndpoint' => '/scim/Users', 'pageSize' => 2])
+		);
+
+		$this->assertSame(
+			['users' => ['anja'], 'complete' => true, 'failures' => 0, 'queries' => [['/Users', 'GET', ['query' => ['startIndex' => 1, 'count' => 200]]], ['/Users', 'GET', ['query' => ['startIndex' => 2, 'count' => 200]]]], 'warnings' => []],
+			$this->readScimPages(pages: [$page(['anja'], 9), $page([], 9)], configuration: ['pageSize' => 0])
+		);
+
+		$arrayBody = ['response' => ['statusCode' => 201, 'body' => ['Resources' => [['userName' => 'dana']]]]];
+		$this->assertSame(['dana'], $this->readScimPages(pages: [$arrayBody], configuration: [])['users']);
+
+		$failed = $this->readScimPages(pages: [$page(['anja'], 5), 'throw'], configuration: []);
+		$this->assertSame([['anja'], false], [$failed['users'], $failed['complete']]);
+		$this->assertSame([['[DirectorySource] directory read failed: directory down', []]], $failed['warnings']);
+
+		$status = $this->readScimPages(pages: [['response' => ['statusCode' => 503]]], configuration: []);
+		$this->assertSame([[], false, [['[DirectorySource] directory answered status 503', ['startIndex' => 1]]]], [$status['users'], $status['complete'], $status['warnings']]);
+
+		$this->assertSame([[], false, []], array_values(array_intersect_key($this->readScimPages(pages: [$page([], 0, 'not json')], configuration: []), ['users' => 1, 'complete' => 1, 'warnings' => 1])));
+		$this->assertSame(false, $this->readScimPages(pages: [['response' => ['statusCode' => 200, 'body' => 42]]], configuration: [])['complete']);
+	}//end testAScimReadPagesAndReportsCompleteness()
 }//end class

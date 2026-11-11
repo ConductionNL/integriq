@@ -53,6 +53,42 @@ use Twig\Sandbox\SecurityPolicy;
  */
 class AuthenticationService implements AuthenticationServiceInterface {
 
+	/**
+	 * The refusal of a token URL on an RFC-1918 private address.
+	 *
+	 * @var string
+	 */
+	private const SSRF_PRIVATE = 'Token URL resolves to an RFC-1918 private address - SSRF blocked';
+
+	/**
+	 * Token endpoint hosts refused by exact name (C4: SSRF guard): loopback,
+	 * cloud metadata endpoints and the unroutable any-address.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BLOCKED_TOKEN_HOSTS = [
+		'localhost' => 'Token URL resolves to a loopback address - SSRF blocked',
+		'::1' => 'Token URL resolves to a loopback address - SSRF blocked',
+		// GCP metadata; AWS IMDS and Azure sit on the link-local prefix below.
+		'metadata.google.internal' => 'Token URL resolves to a cloud metadata endpoint - SSRF blocked',
+		'metadata' => 'Token URL resolves to a cloud metadata endpoint - SSRF blocked',
+		'0.0.0.0' => 'Token URL resolves to an unroutable address - SSRF blocked',
+		'::' => 'Token URL resolves to an unroutable address - SSRF blocked',
+	];
+
+	/**
+	 * Token endpoint host prefixes refused (C4: SSRF guard): loopback, link-local
+	 * (AWS IMDS / Azure 169.254.169.254) and the RFC-1918 10/8 and 192.168/16 ranges.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BLOCKED_TOKEN_HOST_PREFIXES = [
+		'127.' => 'Token URL resolves to a loopback address - SSRF blocked',
+		'169.254.' => 'Token URL resolves to a link-local address - SSRF blocked',
+		'10.' => self::SSRF_PRIVATE,
+		'192.168.' => self::SSRF_PRIVATE,
+	];
+
 	public const REQUIRED_PARAMETERS_CLIENT_CREDENTIALS = [
 		'grant_type',
 		'scope',
@@ -138,44 +174,62 @@ class AuthenticationService implements AuthenticationServiceInterface {
 			throw new BadRequestException(message: 'Token URL does not contain a valid host');
 		}
 
-		// Block loopback.
-		if ($host === 'localhost' || $host === '::1' || str_starts_with($host, '127.') === true) {
-			throw new BadRequestException(message: 'Token URL resolves to a loopback address - SSRF blocked');
-		}
-
-		// Block link-local (AWS IMDS: 169.254.169.254, Azure: 169.254.169.254, GCP: metadata.google.internal).
-		if (str_starts_with($host, '169.254.') === true) {
-			throw new BadRequestException(message: 'Token URL resolves to a link-local address - SSRF blocked');
-		}
-
-		if ($host === 'metadata.google.internal' || $host === 'metadata') {
-			throw new BadRequestException(message: 'Token URL resolves to a cloud metadata endpoint - SSRF blocked');
-		}
-
-		// Block RFC-1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
-		if (str_starts_with($host, '10.') === true || str_starts_with($host, '192.168.') === true) {
-			throw new BadRequestException(message: 'Token URL resolves to an RFC-1918 private address - SSRF blocked');
-		}
-
-		// 172.16.0.0 – 172.31.255.255 (second octet 16..31).
-		if (str_starts_with($host, '172.') === true) {
-			$parts = explode('.', $host);
-			if (count($parts) >= 2) {
-				$secondOctet = (int)$parts[1];
-				if ($secondOctet >= 16 && $secondOctet <= 31) {
-					throw new BadRequestException(
-						message: 'Token URL resolves to an RFC-1918 private address - SSRF blocked'
-					);
-				}
-			}
-		}
-
-		// Block the unroutable 0.0.0.0 address.
-		if ($host === '0.0.0.0' || $host === '::') {
-			throw new BadRequestException(message: 'Token URL resolves to an unroutable address - SSRF blocked');
+		$blocked = $this->blockedTokenHost(host: $host);
+		if ($blocked !== null) {
+			throw new BadRequestException(message: $blocked);
 		}
 
 	}//end assertSafeTokenUrl()
+
+	/**
+	 * Why a token endpoint host is refused, or null when it may be called.
+	 *
+	 * The categories do not overlap, so the first match is the only one.
+	 *
+	 * @param string $host The lower-cased host, without IPv6 brackets.
+	 *
+	 * @return string|null The refusal message.
+	 */
+	private function blockedTokenHost(string $host): ?string {
+		if (isset(self::BLOCKED_TOKEN_HOSTS[$host]) === true) {
+			return self::BLOCKED_TOKEN_HOSTS[$host];
+		}
+
+		foreach (self::BLOCKED_TOKEN_HOST_PREFIXES as $prefix => $reason) {
+			if (str_starts_with($host, $prefix) === true) {
+				return $reason;
+			}
+		}
+
+		if ($this->isPrivate172(host: $host) === true) {
+			return self::SSRF_PRIVATE;
+		}
+
+		return null;
+
+	}//end blockedTokenHost()
+
+	/**
+	 * Whether a host lies in 172.16.0.0 – 172.31.255.255 (second octet 16..31).
+	 *
+	 * @param string $host The lower-cased host.
+	 *
+	 * @return bool
+	 */
+	private function isPrivate172(string $host): bool {
+		if (str_starts_with($host, '172.') === false) {
+			return false;
+		}
+
+		$parts = explode('.', $host);
+		if (count($parts) < 2) {
+			return false;
+		}
+
+		$secondOctet = (int)$parts[1];
+		return $secondOctet >= 16 && $secondOctet <= 31;
+
+	}//end isPrivate172()
 
 	/**
 	 * Create call options for OAuth with Client Credentials
@@ -187,17 +241,7 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
 	private function createClientCredentialConfig(array $configuration): array {
-		$diff = array_diff(self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, array_keys(array: $configuration));
-		if ($diff !== []) {
-			throw new BadRequestException(message: 'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']');
-		}
-
-		$callConfig = [
-			'form_params' => [
-				'grant_type' => $configuration['grant_type'],
-				'scope' => $configuration['scope'],
-			],
-		];
+		$callConfig = $this->grantForm(configuration: $configuration, required: self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS);
 
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['client_id'] = $configuration['client_id'];
@@ -229,6 +273,32 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	}//end createClientCredentialConfig()
 
 	/**
+	 * The grant form every OAuth call starts from, once the required parameters are present.
+	 *
+	 * @param array<string,mixed> $configuration Configuration array for authentication.
+	 * @param list<string>        $required      The parameters the grant needs.
+	 *
+	 * @return array{form_params: array{grant_type: mixed, scope: mixed}} The call options so far.
+	 *
+	 * @throws BadRequestException When a required parameter is missing.
+	 *
+	 * @spec openspec/specs/authentication-twig/spec.md
+	 */
+	private function grantForm(array $configuration, array $required): array {
+		$diff = array_diff($required, array_keys(array: $configuration));
+		if ($diff !== []) {
+			throw new BadRequestException(message: 'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']');
+		}
+
+		return [
+			'form_params' => [
+				'grant_type' => $configuration['grant_type'],
+				'scope' => $configuration['scope'],
+			],
+		];
+	}//end grantForm()
+
+	/**
 	 * Create call options for OAuth with Password Credentials
 	 *
 	 * @param array $configuration Configuration array for authentication.
@@ -238,17 +308,7 @@ class AuthenticationService implements AuthenticationServiceInterface {
 	 * @spec openspec/specs/authentication-twig/spec.md
 	 */
 	private function createPasswordConfig(array $configuration): array {
-		$diff = array_diff(self::REQUIRED_PARAMETERS_PASSWORD, array_keys(array: $configuration));
-		if ($diff !== []) {
-			throw new BadRequestException(message: 'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']');
-		}
-
-		$callConfig = [
-			'form_params' => [
-				'grant_type' => $configuration['grant_type'],
-				'scope' => $configuration['scope'],
-			],
-		];
+		$callConfig = $this->grantForm(configuration: $configuration, required: self::REQUIRED_PARAMETERS_PASSWORD);
 
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['username'] = $configuration['username'];

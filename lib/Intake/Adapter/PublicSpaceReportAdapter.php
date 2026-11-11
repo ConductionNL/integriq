@@ -90,15 +90,7 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 			);
 		}
 
-		$reporter = ($payload['reporter'] ?? []);
-		if (is_array($reporter) === false) {
-			$reporter = [];
-		}
-
-		$reportedAt = ($payload['reportedAt'] ?? null);
-		if ($reportedAt !== null) {
-			$reportedAt = (string)$reportedAt;
-		}
+		$reporter = IntakePayloadReader::mapOrEmpty(value: ($payload['reporter'] ?? []));
 
 		return new InboundMessage(
 			channelId: self::CHANNEL_ID,
@@ -111,9 +103,12 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 			text: (string)($payload['description'] ?? ''),
 			attachments: [],
 			location: $this->location(payload: $payload),
-			media: $this->media(payload: $payload),
+			media: IntakePayloadReader::decodeFiles(
+				items: ($payload['photos'] ?? []),
+				defaults: new IntakeFileNaming(nameFormat: 'photo-%d.jpg', mime: 'image/jpeg')
+			),
 			rawPayload: $payload,
-			receivedAt: $reportedAt,
+			receivedAt: IntakePayloadReader::optionalString(value: ($payload['reportedAt'] ?? null)),
 			fields: [
 				'category' => (string)($payload['category'] ?? ''),
 				'description' => (string)($payload['description'] ?? ''),
@@ -168,32 +163,5 @@ class PublicSpaceReportAdapter implements IntakeChannelAdapterInterface {
 		];
 
 	}//end location()
-
-	/**
-	 * The report's photos, in the order they were sent.
-	 *
-	 * @param array<string,mixed> $payload The report.
-	 *
-	 * @return array<int,array<string,mixed>> The media.
-	 */
-	private function media(array $payload): array {
-		$media = [];
-		foreach (($payload['photos'] ?? []) as $index => $photo) {
-			if (is_array($photo) === false) {
-				continue;
-			}
-
-			$content = (string)base64_decode((string)($photo['contentBase64'] ?? ''), false);
-			$media[] = [
-				'name' => (string)($photo['name'] ?? ('photo-' . ((int)$index + 1) . '.jpg')),
-				'mime' => (string)($photo['mime'] ?? 'image/jpeg'),
-				'size' => strlen($content),
-				'content' => $content,
-			];
-		}
-
-		return $media;
-
-	}//end media()
 
 }//end class

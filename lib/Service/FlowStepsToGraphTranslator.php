@@ -133,57 +133,94 @@ class FlowStepsToGraphTranslator {
 			);
 		}
 
-		$nodes = [
-			['id' => self::TRIGGER_ID, 'type' => 'openregister.trigger-manual', 'config' => []],
-		];
-		$edges = [];
+		return $this->graphFor(steps: $steps);
+
+	}//end translate()
+
+	/**
+	 * The graph of steps that are known to be migratable, in order.
+	 *
+	 * @param array $steps The steps, sorted by `order`.
+	 *
+	 * @return array{nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>} The graph.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function graphFor(array $steps): array {
+		$graph = new FlowGraph();
+		$graph->nodes[] = ['id' => self::TRIGGER_ID, 'type' => 'openregister.trigger-manual', 'config' => []];
+		$graph->previousId = self::TRIGGER_ID;
 
 		$orders = array_map(static fn (array $step): int => (int)$step['order'], $steps);
-		$previousId = self::TRIGGER_ID;
-
 		foreach ($steps as $index => $step) {
-			$id = (string)((int)$step['order']);
-			$nodes[] = $this->nodeFor(step: $step, id: $id);
+			$graph->nextId = $this->nextIdAfter(orders: $orders, index: $index);
+			$this->addStep(graph: $graph, step: $step);
+		}
 
-			// The edge INTO this step from the sequential predecessor. A
-			// branch's own outgoing edges are conditioned below; every other
-			// step chains to the next order, which is exactly the runner's
-			// sequential walk.
-			if ($previousId !== null) {
-				$edges[] = ['id' => $previousId . '-' . $id, 'from' => $previousId, 'to' => $id];
-			}
+		$graph->nodes[] = ['id' => self::END_ID, 'type' => 'openregister.end', 'config' => []];
 
-			$nextId = self::END_ID;
-			if (isset($orders[($index + 1)]) === true) {
-				$nextId = (string)$orders[($index + 1)];
-			}
-
-			if ((string)($step['type'] ?? '') === 'branch') {
-				foreach ($this->branchEdges(step: $step, id: $id, nextId: $nextId) as $edge) {
-					$edges[] = $edge;
-				}
-
-				// The branch's outgoing edges are complete; nothing chains
-				// sequentially out of it.
-				$previousId = null;
-				continue;
-			}
-
-			$previousId = $id;
-		}//end foreach
-
-		$nodes[] = ['id' => self::END_ID, 'type' => 'openregister.end', 'config' => []];
-
-		if ($previousId !== null) {
-			$edges[] = ['id' => $previousId . '-' . self::END_ID, 'from' => $previousId, 'to' => self::END_ID];
+		if ($graph->previousId !== null) {
+			$graph->edges[] = ['id' => $graph->previousId . '-' . self::END_ID, 'from' => $graph->previousId, 'to' => self::END_ID];
 		}
 
 		return [
-			'nodes' => $nodes,
-			'edges' => $edges,
+			'nodes' => $graph->nodes,
+			'edges' => $graph->edges,
 		];
 
-	}//end translate()
+	}//end graphFor()
+
+	/**
+	 * The node a step falls through to: the next step's, or the end node.
+	 *
+	 * @param array<int, int> $orders Every step's order, sorted.
+	 * @param int             $index  The step's position.
+	 *
+	 * @return string The node id.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function nextIdAfter(array $orders, int $index): string {
+		if (isset($orders[($index + 1)]) === true) {
+			return (string)$orders[($index + 1)];
+		}
+
+		return self::END_ID;
+
+	}//end nextIdAfter()
+
+	/**
+	 * Add one step's node and the edges into and out of it.
+	 *
+	 * @param FlowGraph $graph The graph so far.
+	 * @param array     $step  The step definition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function addStep(FlowGraph $graph, array $step): void {
+		$id = (string)((int)$step['order']);
+		$graph->nodes[] = $this->nodeFor(step: $step, id: $id);
+
+		// The edge INTO this step from the sequential predecessor. A
+		// branch's own outgoing edges are conditioned below; every other
+		// step chains to the next order, which is exactly the runner's
+		// sequential walk.
+		if ($graph->previousId !== null) {
+			$graph->edges[] = ['id' => $graph->previousId . '-' . $id, 'from' => $graph->previousId, 'to' => $id];
+		}
+
+		$graph->previousId = $id;
+		if ((string)($step['type'] ?? '') === 'branch') {
+			array_push($graph->edges, ...$this->branchEdges(step: $step, graph: $graph));
+
+			// The branch's outgoing edges are complete; nothing chains
+			// sequentially out of it.
+			$graph->previousId = null;
+		}
+
+	}//end addStep()
 
 	/**
 	 * Every feature of this flow the graph translation cannot express.
@@ -205,8 +242,29 @@ class FlowStepsToGraphTranslator {
 			$reasons[] = 'The flow has no steps; there is nothing to migrate.';
 		}
 
+		$reasons = array_merge($reasons, $this->duplicateOrderRefusals(steps: $steps));
+
+		$orders = array_map(static fn (array $step): int => (int)($step['order'] ?? 0), $steps);
+		foreach ($steps as $step) {
+			$reasons = array_merge($reasons, $this->stepFeatureRefusals(step: new FlowStep(step: $step), orders: $orders));
+		}
+
+		return $reasons;
+
+	}//end refusalsFor()
+
+	/**
+	 * The refusals for step orders that occur more than once.
+	 *
+	 * @param array $steps The steps, sorted by `order`.
+	 *
+	 * @return array<int, string> One sentence per repeated order.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function duplicateOrderRefusals(array $steps): array {
+		$reasons = [];
 		$seen = [];
-		$orders = [];
 		foreach ($steps as $step) {
 			$order = (int)($step['order'] ?? 0);
 			if (isset($seen[$order]) === true) {
@@ -217,51 +275,54 @@ class FlowStepsToGraphTranslator {
 			}
 
 			$seen[$order] = true;
-			$orders[] = $order;
 		}
-
-		foreach ($steps as $step) {
-			$order = (int)($step['order'] ?? 0);
-			$type = (string)($step['type'] ?? '');
-
-			if (isset(self::TYPE_MAP[$type]) === false) {
-				$reasons[] = sprintf('Step %d has unsupported type "%s".', $order, $type);
-				continue;
-			}
-
-			if (empty($step['condition']) === false) {
-				$reasons[] = sprintf(
-					'Step %d carries a run-if `condition`; the graph expresses conditions on branch edges, not as step skips, so this flow needs a manual re-model.',
-					$order
-				);
-			}
-
-			$reasons = array_merge($reasons, $this->stepRefusals(step: $step, order: $order, type: $type, orders: $orders));
-		}//end foreach
 
 		return $reasons;
 
-	}//end refusalsFor()
+	}//end duplicateOrderRefusals()
 
 	/**
-	 * Per-type refusals for one step.
+	 * Every feature of one step the graph cannot express: its type, a run-if condition, and the per-type refusals.
 	 *
-	 * @param array $step The step definition.
-	 * @param int $order The step's order.
-	 * @param string $type The step's (supported) type.
+	 * @param FlowStep        $step   The step.
 	 * @param array<int, int> $orders Every declared order, for branch-target checks.
 	 *
 	 * @return array<int, string> One sentence per unsupported feature.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function stepRefusals(array $step, int $order, string $type, array $orders): array {
-		$config = (array)($step['config'] ?? []);
+	private function stepFeatureRefusals(FlowStep $step, array $orders): array {
+		if (isset(self::TYPE_MAP[$step->type()]) === false) {
+			return [sprintf('Step %d has unsupported type "%s".', $step->order(), $step->type())];
+		}
 
+		$reasons = [];
+		if (empty($step->step['condition']) === false) {
+			$reasons[] = sprintf(
+				'Step %d carries a run-if `condition`; the graph expresses conditions on branch edges, not as step skips, so this flow needs a manual re-model.',
+				$step->order()
+			);
+		}
+
+		return array_merge($reasons, $this->stepRefusals(step: $step, orders: $orders));
+
+	}//end stepFeatureRefusals()
+
+	/**
+	 * Per-type refusals for one step.
+	 *
+	 * @param FlowStep        $step   The step.
+	 * @param array<int, int> $orders Every declared order, for branch-target checks.
+	 *
+	 * @return array<int, string> One sentence per unsupported feature.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function stepRefusals(FlowStep $step, array $orders): array {
 		return array_merge(
-			$this->referenceRefusals(step: $step, order: $order, type: $type),
-			$this->configRefusals(config: $config, order: $order, type: $type),
-			$this->branchRefusals(step: $step, order: $order, type: $type, orders: $orders)
+			$this->referenceRefusals(step: $step),
+			$this->configRefusals(step: $step),
+			$this->branchRefusals(step: $step, orders: $orders)
 		);
 
 	}//end stepRefusals()
@@ -269,44 +330,40 @@ class FlowStepsToGraphTranslator {
 	/**
 	 * The refusal for a step whose node requires a `configRef` it lacks.
 	 *
-	 * @param array $step The step definition.
-	 * @param int $order The step's order.
-	 * @param string $type The step's (supported) type.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return array<int, string> Zero or one sentence.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function referenceRefusals(array $step, int $order, string $type): array {
-		if (in_array($type, ['call', 'mapping', 'synchronization'], true) === false) {
+	private function referenceRefusals(FlowStep $step): array {
+		if (in_array($step->type(), ['call', 'mapping', 'synchronization'], true) === false) {
 			return [];
 		}
 
-		if (trim((string)($step['configRef'] ?? '')) !== '') {
+		if ($step->configRef() !== '') {
 			return [];
 		}
 
-		return [sprintf('Step %d (%s) names no `configRef`; the node it maps to requires the referenced entity.', $order, $type)];
+		return [sprintf('Step %d (%s) names no `configRef`; the node it maps to requires the referenced entity.', $step->order(), $step->type())];
 
 	}//end referenceRefusals()
 
 	/**
 	 * The per-type refusals living in a step's `config` block.
 	 *
-	 * @param array $config The step's config block.
-	 * @param int $order The step's order.
-	 * @param string $type The step's (supported) type.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return array<int, string> One sentence per unsupported feature.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function configRefusals(array $config, int $order, string $type): array {
-		return match ($type) {
-			'call' => $this->callRefusals(config: $config, order: $order),
-			'synchronization' => $this->synchronizationRefusals(config: $config, order: $order),
-			'event' => $this->eventRefusals(config: $config, order: $order),
-			'approval' => $this->approvalRefusals(config: $config, order: $order),
+	private function configRefusals(FlowStep $step): array {
+		return match ($step->type()) {
+			'call' => $this->callRefusals(step: $step),
+			'synchronization' => $this->synchronizationRefusals(step: $step),
+			'event' => $this->eventRefusals(step: $step),
+			'approval' => $this->approvalRefusals(step: $step),
 			default => [],
 		};
 
@@ -315,15 +372,14 @@ class FlowStepsToGraphTranslator {
 	/**
 	 * The `call` step features the source-call node cannot express.
 	 *
-	 * @param array $config The step's config block.
-	 * @param int $order The step's order.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return array<int, string> Zero or one sentence.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function callRefusals(array $config, int $order): array {
-		if (empty($config['requestConfig']) === true) {
+	private function callRefusals(FlowStep $step): array {
+		if (empty($step->config()['requestConfig']) === true) {
 			return [];
 		}
 
@@ -331,7 +387,7 @@ class FlowStepsToGraphTranslator {
 			sprintf(
 				'Step %d (call) carries a raw `requestConfig`; the source-call node expresses requests as '
 				. 'endpoint/method/query/body/headers, so this step needs a manual re-model.',
-				$order
+				$step->order()
 			),
 		];
 
@@ -340,22 +396,22 @@ class FlowStepsToGraphTranslator {
 	/**
 	 * The `synchronization` step features the synchronization-run node lacks.
 	 *
-	 * @param array $config The step's config block.
-	 * @param int $order The step's order.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return array<int, string> One sentence per unsupported feature.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function synchronizationRefusals(array $config, int $order): array {
+	private function synchronizationRefusals(FlowStep $step): array {
+		$config = $step->config();
 		$reasons = [];
 
 		if (($config['isTest'] ?? false) === true) {
-			$reasons[] = sprintf('Step %d (synchronization) runs in `isTest` mode, which the synchronization-run node does not offer.', $order);
+			$reasons[] = sprintf('Step %d (synchronization) runs in `isTest` mode, which the synchronization-run node does not offer.', $step->order());
 		}
 
 		if (trim((string)($config['mutationType'] ?? '')) !== '') {
-			$reasons[] = sprintf('Step %d (synchronization) sets a `mutationType`, which the synchronization-run node does not offer.', $order);
+			$reasons[] = sprintf('Step %d (synchronization) sets a `mutationType`, which the synchronization-run node does not offer.', $step->order());
 		}
 
 		return $reasons;
@@ -365,34 +421,32 @@ class FlowStepsToGraphTranslator {
 	/**
 	 * The `event` step configuration the event-emit node would reject.
 	 *
-	 * @param array $config The step's config block.
-	 * @param int $order The step's order.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return array<int, string> Zero or one sentence.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function eventRefusals(array $config, int $order): array {
-		if (trim((string)($config['type'] ?? '')) !== '') {
+	private function eventRefusals(FlowStep $step): array {
+		if (trim((string)($step->config()['type'] ?? '')) !== '') {
 			return [];
 		}
 
-		return [sprintf('Step %d (event) names no event `type`.', $order)];
+		return [sprintf('Step %d (event) names no event `type`.', $step->order())];
 
 	}//end eventRefusals()
 
 	/**
 	 * The `approval` step configuration the approval-request node would reject.
 	 *
-	 * @param array $config The step's config block.
-	 * @param int $order The step's order.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return array<int, string> Zero or one sentence.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function approvalRefusals(array $config, int $order): array {
-		if (trim((string)($config['approverGroup'] ?? '')) !== '') {
+	private function approvalRefusals(FlowStep $step): array {
+		if (trim((string)($step->config()['approverGroup'] ?? '')) !== '') {
 			return [];
 		}
 
@@ -400,7 +454,7 @@ class FlowStepsToGraphTranslator {
 			sprintf(
 				'Step %d (approval) names no `approverGroup`; the approval-request node requires an audience, '
 				. 'because a request nobody owns never resolves.',
-				$order
+				$step->order()
 			),
 		];
 
@@ -409,24 +463,22 @@ class FlowStepsToGraphTranslator {
 	/**
 	 * The refusals for branch targets that resolve to no step.
 	 *
-	 * @param array $step The step definition.
-	 * @param int $order The step's order.
-	 * @param string $type The step's (supported) type.
+	 * @param FlowStep        $step   The step.
 	 * @param array<int, int> $orders Every declared order.
 	 *
 	 * @return array<int, string> One sentence per dangling target.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function branchRefusals(array $step, int $order, string $type, array $orders): array {
-		if ($type !== 'branch') {
+	private function branchRefusals(FlowStep $step, array $orders): array {
+		if ($step->type() !== 'branch') {
 			return [];
 		}
 
 		$reasons = [];
-		foreach ($this->branchTargets(step: $step) as $target) {
+		foreach ($this->branchTargets(step: $step->step) as $target) {
 			if (in_array($target, $orders, true) === false) {
-				$reasons[] = sprintf('Step %d (branch) targets step order %d, which does not exist.', $order, $target);
+				$reasons[] = sprintf('Step %d (branch) targets step order %d, which does not exist.', $step->order(), $target);
 			}
 		}
 
@@ -449,7 +501,7 @@ class FlowStepsToGraphTranslator {
 		$node = [
 			'id' => $id,
 			'type' => self::TYPE_MAP[$type],
-			'config' => $this->configFor(step: $step, type: $type),
+			'config' => $this->configFor(step: new FlowStep(step: $step)),
 		];
 
 		// The engine reads the policy from the STEP definition
@@ -466,85 +518,136 @@ class FlowStepsToGraphTranslator {
 	/**
 	 * The node config standing in for one step's `configRef`/`config`.
 	 *
-	 * @param array $step The step definition.
-	 * @param string $type The step's type.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return array<string, mixed> The node config.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function configFor(array $step, string $type): array {
-		$config = (array)($step['config'] ?? []);
-		$configRef = trim((string)($step['configRef'] ?? ''));
-
-		switch ($type) {
-			case 'call':
-				return [
-					'source' => $configRef,
-					'endpoint' => (string)($config['endpoint'] ?? ''),
-					'method' => (string)($config['method'] ?? 'GET'),
-					'output' => 'response',
-				];
-			case 'mapping':
-				// No `input`/`output`: the node then maps the whole item and
-				// replaces it with the result, which is exactly the runner's
-				// output-becomes-next-input threading.
-				return ['mapping' => $configRef];
-			case 'synchronization':
-				$node = [
-					'synchronization' => $configRef,
-					'output' => 'syncResult',
-				];
-				if (array_key_exists('force', $config) === true) {
-					$node['force'] = (bool)$config['force'];
-				}
-
-				return $node;
-			case 'event':
-				$node = [
-					'type' => (string)($config['type'] ?? ''),
-					'source' => (string)($config['source'] ?? ''),
-				];
-				if (trim((string)($config['subject'] ?? '')) !== '') {
-					$node['subject'] = (string)$config['subject'];
-				}
-
-				return $node;
-			case 'approval':
-				return [
-					'question' => $this->approvalQuestion(step: $step, config: $config),
-					'approverGroup' => (string)($config['approverGroup'] ?? ''),
-					'ttlSeconds' => (int)($config['ttlSeconds'] ?? ApprovalService::DEFAULT_TTL_SECONDS),
-					// The runner's `onReject` vocabulary: anything but `skip`
-					// (error, dead_letter) ended the run, so it maps to the
-					// node failing on rejection.
-					'failOnReject' => ((string)($config['onReject'] ?? 'error')) !== 'skip',
-				];
-			default:
-				// The branch case: the switch anchor carries no config — its
-				// routing lives on the conditioned edges.
-				return [];
-		}//end switch
+	private function configFor(FlowStep $step): array {
+		return match ($step->type()) {
+			'call' => $this->callConfig(step: $step),
+			// No `input`/`output`: the node then maps the whole item and
+			// replaces it with the result, which is exactly the runner's
+			// output-becomes-next-input threading.
+			'mapping' => ['mapping' => $step->configRef()],
+			'synchronization' => $this->synchronizationConfig(step: $step),
+			'event' => $this->eventConfig(step: $step),
+			'approval' => $this->approvalConfig(step: $step),
+			// The branch case: the switch anchor carries no config — its
+			// routing lives on the conditioned edges.
+			default => [],
+		};
 
 	}//end configFor()
 
 	/**
+	 * The source-call node config of a `call` step.
+	 *
+	 * @param FlowStep $step The step.
+	 *
+	 * @return array<string, mixed> The node config.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function callConfig(FlowStep $step): array {
+		$config = $step->config();
+
+		return [
+			'source' => $step->configRef(),
+			'endpoint' => (string)($config['endpoint'] ?? ''),
+			'method' => (string)($config['method'] ?? 'GET'),
+			'output' => 'response',
+		];
+
+	}//end callConfig()
+
+	/**
+	 * The synchronization-run node config of a `synchronization` step.
+	 *
+	 * @param FlowStep $step The step.
+	 *
+	 * @return array<string, mixed> The node config.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function synchronizationConfig(FlowStep $step): array {
+		$config = $step->config();
+		$node = [
+			'synchronization' => $step->configRef(),
+			'output' => 'syncResult',
+		];
+		if (array_key_exists('force', $config) === true) {
+			$node['force'] = (bool)$config['force'];
+		}
+
+		return $node;
+
+	}//end synchronizationConfig()
+
+	/**
+	 * The event-emit node config of an `event` step.
+	 *
+	 * @param FlowStep $step The step.
+	 *
+	 * @return array<string, mixed> The node config.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function eventConfig(FlowStep $step): array {
+		$config = $step->config();
+		$node = [
+			'type' => (string)($config['type'] ?? ''),
+			'source' => (string)($config['source'] ?? ''),
+		];
+		if (trim((string)($config['subject'] ?? '')) !== '') {
+			$node['subject'] = (string)$config['subject'];
+		}
+
+		return $node;
+
+	}//end eventConfig()
+
+	/**
+	 * The approval-request node config of an `approval` step.
+	 *
+	 * @param FlowStep $step The step.
+	 *
+	 * @return array<string, mixed> The node config.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function approvalConfig(FlowStep $step): array {
+		$config = $step->config();
+
+		return [
+			'question' => $this->approvalQuestion(step: $step),
+			'approverGroup' => (string)($config['approverGroup'] ?? ''),
+			'ttlSeconds' => (int)($config['ttlSeconds'] ?? ApprovalService::DEFAULT_TTL_SECONDS),
+			// The runner's `onReject` vocabulary: anything but `skip`
+			// (error, dead_letter) ended the run, so it maps to the
+			// node failing on rejection.
+			'failOnReject' => ((string)($config['onReject'] ?? 'error')) !== 'skip',
+		];
+
+	}//end approvalConfig()
+
+	/**
 	 * The question an approval step asks, synthesised when the step has none.
 	 *
-	 * @param array $step The step definition.
-	 * @param array $config The step's config block.
+	 * @param FlowStep $step The step.
 	 *
 	 * @return string The question.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function approvalQuestion(array $step, array $config): string {
-		$question = trim((string)($config['question'] ?? ''));
+	private function approvalQuestion(FlowStep $step): string {
+		$question = trim((string)($step->config()['question'] ?? ''));
 		if ($question !== '') {
 			return $question;
 		}
 
-		return sprintf('Approve step %d of this flow.', (int)($step['order'] ?? 0));
+		return sprintf('Approve step %d of this flow.', $step->order());
 
 	}//end approvalQuestion()
 
@@ -557,19 +660,19 @@ class FlowStepsToGraphTranslator {
 	 * to `defaultNextStepOrder` when declared and otherwise to the next
 	 * sequential step, which is the runner's own fallthrough.
 	 *
-	 * @param array $step The branch step definition.
-	 * @param string $id The branch node's id.
-	 * @param string $nextId The sequential successor's node id (or the end node).
+	 * @param array     $step  The branch step definition.
+	 * @param FlowGraph $graph The graph so far, with the step's sequential successor.
 	 *
 	 * @return array<int, array<string, mixed>> The edges.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
 	 */
-	private function branchEdges(array $step, string $id, string $nextId): array {
+	private function branchEdges(array $step, FlowGraph $graph): array {
+		$id = (string)((int)$step['order']);
 		$edges = [];
 
 		foreach ((array)($step['branches'] ?? []) as $index => $branch) {
-			if (is_array($branch) === false || empty($branch['condition']) === true || isset($branch['nextStepOrder']) === false) {
+			if ($this->isConditionedBranch(branch: $branch) === false) {
 				continue;
 			}
 
@@ -582,7 +685,7 @@ class FlowStepsToGraphTranslator {
 			];
 		}
 
-		$defaultTarget = $nextId;
+		$defaultTarget = $graph->nextId;
 		if (isset($step['defaultNextStepOrder']) === true) {
 			$defaultTarget = (string)((int)$step['defaultNextStepOrder']);
 		}
@@ -596,6 +699,20 @@ class FlowStepsToGraphTranslator {
 		return $edges;
 
 	}//end branchEdges()
+
+	/**
+	 * Whether a `branches[]` entry is a condition with a target.
+	 *
+	 * @param mixed $branch The entry.
+	 *
+	 * @return boolean True when it becomes a conditioned edge.
+	 *
+	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+	 */
+	private function isConditionedBranch(mixed $branch): bool {
+		return is_array($branch) === true && empty($branch['condition']) === false && isset($branch['nextStepOrder']) === true;
+
+	}//end isConditionedBranch()
 
 	/**
 	 * The branch targets a branch step declares, for existence checks.

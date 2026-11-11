@@ -94,42 +94,24 @@ class DsoActivityMapper {
 	public function mapRequest(array $activiteiten): array {
 		$index = $this->index(rows: $this->table->activeRows());
 
-		$entries = [];
+		$entries     = [];
 		$matchedRows = [];
-		$caseTypes = [];
-		$unmapped = false;
 		foreach ($activiteiten as $activity) {
 			if (is_array($activity) === false) {
 				continue;
 			}
 
-			$entry = $this->identifiers(activity: $activity);
-			$match = $this->match(activity: $activity, index: $index);
-			if ($match === null) {
-				$entry['mapped'] = false;
-				$unmapped = true;
-				$entries[] = $entry;
-				continue;
+			$mapped    = $this->mappedEntry(activity: $activity, index: $index);
+			$entries[] = $mapped['entry'];
+			if ($mapped['row'] !== null) {
+				$matchedRows[] = $mapped['row'];
 			}
-
-			[$row, $matchedOn] = $match;
-			$entry['mapped'] = true;
-			$entry['matchedOn'] = $matchedOn;
-			$entry['mappingRow'] = (string)$row['id'];
-			$entry['caseTypes'] = $this->caseTypes(row: $row);
-			$entry['samenloopStrategy'] = $this->samenloop->rowStrategy(row: $row);
-			foreach ($entry['caseTypes'] as $caseType) {
-				$caseTypes[$caseType['reference']] = true;
-			}
-
-			$matchedRows[] = $row;
-			$entries[] = $entry;
-		}//end foreach
+		}
 
 		$fields = [
 			'mappedActivities' => $entries,
-			'mappedCaseTypes' => array_map('strval', array_keys($caseTypes)),
-			'activityUnmapped' => $unmapped,
+			'mappedCaseTypes' => self::caseTypeReferences(entries: $entries),
+			'activityUnmapped' => self::anyUnmapped(entries: $entries),
 		];
 		if (count($matchedRows) > 0) {
 			$fields['samenloopStrategy'] = $this->samenloop->decide(rows: $matchedRows);
@@ -138,6 +120,70 @@ class DsoActivityMapper {
 		return $fields;
 
 	}//end mapRequest()
+
+	/**
+	 * One activiteit's entry: its identifiers and, when a row matches, its mapping.
+	 *
+	 * @param array<string, mixed>                               $activity The activiteit.
+	 * @param array<string, array<string, array<string, mixed>>> $index    The rows by key.
+	 *
+	 * @return array{entry: array<string, mixed>, row: array<string, mixed>|null} The entry and the matched row.
+	 */
+	private function mappedEntry(array $activity, array $index): array {
+		$entry = $this->identifiers(activity: $activity);
+		$match = $this->match(activity: $activity, index: $index);
+		if ($match === null) {
+			$entry['mapped'] = false;
+			return ['entry' => $entry, 'row' => null];
+		}
+
+		[$row, $matchedOn] = $match;
+		$entry['mapped']            = true;
+		$entry['matchedOn']         = $matchedOn;
+		$entry['mappingRow']        = (string)$row['id'];
+		$entry['caseTypes']         = $this->caseTypes(row: $row);
+		$entry['samenloopStrategy'] = $this->samenloop->rowStrategy(row: $row);
+
+		return ['entry' => $entry, 'row' => $row];
+
+	}//end mappedEntry()
+
+	/**
+	 * Every case type reference of the mapped entries, once, in first-seen order.
+	 *
+	 * @param array<int, array<string, mixed>> $entries The entries.
+	 *
+	 * @return array<int, string> The references.
+	 */
+	private static function caseTypeReferences(array $entries): array {
+		$caseTypes = [];
+		foreach ($entries as $entry) {
+			foreach (($entry['caseTypes'] ?? []) as $caseType) {
+				$caseTypes[$caseType['reference']] = true;
+			}
+		}
+
+		return array_map('strval', array_keys($caseTypes));
+
+	}//end caseTypeReferences()
+
+	/**
+	 * Whether any activiteit stayed unmapped.
+	 *
+	 * @param array<int, array<string, mixed>> $entries The entries.
+	 *
+	 * @return bool True when one is unmapped.
+	 */
+	private static function anyUnmapped(array $entries): bool {
+		foreach ($entries as $entry) {
+			if ($entry['mapped'] === false) {
+				return true;
+			}
+		}
+
+		return false;
+
+	}//end anyUnmapped()
 
 	/**
 	 * Whether an activiteit, in the parser's shape, matches one of the active rows.

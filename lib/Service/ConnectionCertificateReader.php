@@ -75,53 +75,94 @@ class ConnectionCertificateReader {
 	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007
 	 */
 	public function certificate(array $data, DateTimeImmutable $now): array {
-		$configuration = ($data['configuration'] ?? []);
-		if (is_array($configuration) === false) {
-			$configuration = [];
+		$expiry = $this->findExpiry(data: $data);
+		if ($expiry === null) {
+			return ['configured' => false, 'none' => true];
 		}
 
-		$authentication = ($configuration['authentication'] ?? []);
-		if (is_array($authentication) === false) {
-			$authentication = [];
-		}
+		return $this->certificateBlock(expiry: $expiry, now: $now);
+	}//end certificate()
+
+	/**
+	 * Find the source's certificate expiry: from keepiq for a reference, else on the source.
+	 *
+	 * @param array<string, mixed> $data The source object.
+	 *
+	 * @return CertificateExpiry|null The expiry, or null when the source has no certificate.
+	 */
+	private function findExpiry(array $data): ?CertificateExpiry {
+		$configuration = $this->arrayOrEmpty(value: ($data['configuration'] ?? []));
+		$authentication = $this->arrayOrEmpty(value: ($configuration['authentication'] ?? []));
 
 		$reference = $this->certificateReference(authentication: $authentication);
 		if ($reference !== null) {
-			$organisation = ($data['organisation'] ?? '');
-			if (is_string($organisation) === false) {
-				$organisation = '';
-			}
-
-			$answer = $this->askKeepiq(credentialId: $reference, organisation: $organisation);
-			if ($answer === null) {
-				return $this->certificateBlock(
-					keptIn: 'keepiq',
-					notAfter: null,
-					renewUrl: null,
-					now: $now,
-					unknownReason: $this->l10n->t('Expiry unknown: keepiq did not answer.')
-				);
-			}
-
-			return $this->certificateBlock(keptIn: 'keepiq', notAfter: $answer['notAfter'], renewUrl: $answer['renewUrl'], now: $now);
+			return $this->keepiqExpiry(credentialId: $reference, data: $data);
 		}
 
+		return $this->sourceExpiry(configuration: $configuration, authentication: $authentication);
+	}//end findExpiry()
+
+	/**
+	 * A value when it is an array, else an empty array.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<string, mixed> The array.
+	 */
+	private function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOrEmpty()
+
+	/**
+	 * The expiry keepiq answers for a referenced certificate, or an unknown one when it does not.
+	 *
+	 * @param string               $credentialId The keepiq credential id.
+	 * @param array<string, mixed> $data         The source object.
+	 *
+	 * @return CertificateExpiry The expiry.
+	 */
+	private function keepiqExpiry(string $credentialId, array $data): CertificateExpiry {
+		$organisation = ($data['organisation'] ?? '');
+		if (is_string($organisation) === false) {
+			$organisation = '';
+		}
+
+		$answer = $this->askKeepiq(credentialId: $credentialId, organisation: $organisation);
+		if ($answer === null) {
+			$expiry = new CertificateExpiry(keptIn: 'keepiq', notAfter: null);
+			$expiry->unknownReason = $this->l10n->t('Expiry unknown: keepiq did not answer.');
+			return $expiry;
+		}
+
+		$expiry = new CertificateExpiry(keptIn: 'keepiq', notAfter: $answer['notAfter']);
+		$expiry->renewUrl = $answer['renewUrl'];
+		return $expiry;
+	}//end keepiqExpiry()
+
+	/**
+	 * The expiry of the certificate kept on the source: the mTLS material, else a plain PEM.
+	 *
+	 * @param array<string, mixed> $configuration  The source configuration.
+	 * @param array<string, mixed> $authentication The source's authentication block.
+	 *
+	 * @return CertificateExpiry|null The expiry, or null when the source keeps no certificate.
+	 */
+	private function sourceExpiry(array $configuration, array $authentication): ?CertificateExpiry {
 		$notAfter = $this->mtls->certificateNotAfter(authConfig: $authentication);
 		if ($notAfter === null) {
 			$notAfter = $this->pemNotAfter(pem: ($configuration['cert'] ?? null));
 		}
 
 		if ($notAfter === null) {
-			return ['configured' => false, 'none' => true];
+			return null;
 		}
 
-		return $this->certificateBlock(
-			keptIn: 'source',
-			notAfter: (new DateTimeImmutable())->setTimestamp($notAfter)->format('c'),
-			renewUrl: null,
-			now: $now
-		);
-	}//end certificate()
+		return new CertificateExpiry(keptIn: 'source', notAfter: (new DateTimeImmutable())->setTimestamp($notAfter)->format('c'));
+	}//end sourceExpiry()
 
 	/**
 	 * The keepiq credential id of the source's mTLS certificate, when it is a reference.
@@ -160,10 +201,7 @@ class ConnectionCertificateReader {
 
 		try {
 			$event = new $class($credentialId, $organisation);
-			if ($event instanceof Event === false
-				|| method_exists($event, 'getNotAfter') === false
-				|| method_exists($event, 'getRenewUrl') === false
-			) {
+			if ($this->asksExpiry(event: $event) === false) {
 				return null;
 			}
 
@@ -175,6 +213,31 @@ class ConnectionCertificateReader {
 			return null;
 		}
 
+		return $this->keepiqAnswer(notAfter: $notAfter, renewUrl: $renewUrl);
+	}//end askKeepiq()
+
+	/**
+	 * Whether an object is keepiq's expiry event, able to carry an answer.
+	 *
+	 * @param object $event The constructed event.
+	 *
+	 * @return boolean True when it is an event with an expiry and a renew url.
+	 */
+	private function asksExpiry(object $event): bool {
+		return $event instanceof Event
+			&& method_exists($event, 'getNotAfter') === true
+			&& method_exists($event, 'getRenewUrl') === true;
+	}//end asksExpiry()
+
+	/**
+	 * Shape keepiq's answer: an expiry is required, a renew url only when it is text.
+	 *
+	 * @param mixed $notAfter The expiry keepiq gave.
+	 * @param mixed $renewUrl The renew url keepiq gave.
+	 *
+	 * @return array{notAfter: string, renewUrl: string|null}|null The answer, or null when keepiq gave none.
+	 */
+	private function keepiqAnswer(mixed $notAfter, mixed $renewUrl): ?array {
 		if (is_string($notAfter) === false || $notAfter === '') {
 			return null;
 		}
@@ -184,7 +247,7 @@ class ConnectionCertificateReader {
 		}
 
 		return ['notAfter' => $notAfter, 'renewUrl' => $renewUrl];
-	}//end askKeepiq()
+	}//end keepiqAnswer()
 
 	/**
 	 * The expiry of a plain PEM certificate kept on the source.
@@ -209,38 +272,28 @@ class ConnectionCertificateReader {
 	/**
 	 * Shape the certificate block the page shows.
 	 *
-	 * @param string            $keptIn        `keepiq` or `source`.
-	 * @param string|null       $notAfter      The expiry, ISO 8601.
-	 * @param string|null       $renewUrl      Where to renew it.
-	 * @param DateTimeImmutable $now           Now.
-	 * @param string|null       $unknownReason Why the expiry is unknown.
+	 * @param CertificateExpiry $expiry Where the certificate is kept and when it expires.
+	 * @param DateTimeImmutable $now    Now.
 	 *
 	 * @return array<string, mixed> The block.
 	 */
-	private function certificateBlock(
-		string $keptIn,
-		?string $notAfter,
-		?string $renewUrl,
-		DateTimeImmutable $now,
-		?string $unknownReason=null,
-	): array {
+	private function certificateBlock(CertificateExpiry $expiry, DateTimeImmutable $now): array {
 		$block = [
 			'configured' => true,
-			'keptIn' => $keptIn,
-			'expiresAt' => $notAfter,
+			'keptIn' => $expiry->keptIn,
+			'expiresAt' => $expiry->notAfter,
 			'daysLeft' => null,
 			'status' => 'unknown',
 			'statusLabel' => $this->l10n->t('Expiry unknown'),
-			'notice' => $unknownReason,
-			'renewUrl' => $renewUrl,
+			'notice' => $expiry->unknownReason,
+			'renewUrl' => $expiry->renewUrl,
 		];
-		if ($notAfter === null) {
+		if ($expiry->notAfter === null) {
 			return $block;
 		}
 
-		try {
-			$expires = new DateTimeImmutable($notAfter);
-		} catch (\Exception) {
+		$expires = $this->parseExpiry(notAfter: $expiry->notAfter);
+		if ($expires === null) {
 			// An unparseable expiry from keepiq is an unknown expiry, not a failed report.
 			$block['expiresAt'] = null;
 			return $block;
@@ -249,25 +302,55 @@ class ConnectionCertificateReader {
 		$days = (int)floor(($expires->getTimestamp() - $now->getTimestamp()) / 86400);
 		$block['daysLeft'] = max(0, $days);
 
+		return array_merge($block, $this->expiryStatus(days: $days, expires: $expires));
+	}//end certificateBlock()
+
+	/**
+	 * Parse an ISO 8601 expiry.
+	 *
+	 * @param string $notAfter The expiry.
+	 *
+	 * @return DateTimeImmutable|null The expiry, or null when it does not parse.
+	 */
+	private function parseExpiry(string $notAfter): ?DateTimeImmutable {
+		try {
+			return new DateTimeImmutable($notAfter);
+		} catch (\Exception) {
+			return null;
+		}
+	}//end parseExpiry()
+
+	/**
+	 * The status, label and (when there is one to give) notice for a known expiry.
+	 *
+	 * @param integer           $days    Whole days until the expiry; negative once expired.
+	 * @param DateTimeImmutable $expires The expiry.
+	 *
+	 * @return array<string, mixed> The fields of the block that the expiry decides.
+	 */
+	private function expiryStatus(int $days, DateTimeImmutable $expires): array {
 		if ($days < 0) {
-			$block['status'] = 'expired';
-			$block['statusLabel'] = $this->l10n->t('Expired');
-			$block['notice'] = $this->l10n->t('The certificate has expired, so calls to this connection fail. Replace it now.');
-			return $block;
+			return [
+				'status' => 'expired',
+				'statusLabel' => $this->l10n->t('Expired'),
+				'notice' => $this->l10n->t('The certificate has expired, so calls to this connection fail. Replace it now.'),
+			];
 		}
 
 		if ($days <= self::WARN_DAYS) {
-			$block['status'] = 'expiring';
-			$block['statusLabel'] = $this->l10n->t('Expires soon');
-			$block['notice'] = $this->l10n->t(
-				'Replace the certificate before %s, or calls to this connection stop working.',
-				[(string)$this->l10n->l('date', $expires, ['width' => 'long'])]
-			);
-			return $block;
+			return [
+				'status' => 'expiring',
+				'statusLabel' => $this->l10n->t('Expires soon'),
+				'notice' => $this->l10n->t(
+					'Replace the certificate before %s, or calls to this connection stop working.',
+					[(string)$this->l10n->l('date', $expires, ['width' => 'long'])]
+				),
+			];
 		}
 
-		$block['status'] = 'valid';
-		$block['statusLabel'] = $this->l10n->t('Valid');
-		return $block;
-	}//end certificateBlock()
+		return [
+			'status' => 'valid',
+			'statusLabel' => $this->l10n->t('Valid'),
+		];
+	}//end expiryStatus()
 }//end class

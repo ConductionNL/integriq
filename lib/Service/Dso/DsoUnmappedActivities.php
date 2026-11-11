@@ -85,16 +85,7 @@ class DsoUnmappedActivities implements UnmappedActivitiesInterface {
 		$withoutIdentifier = 0;
 		foreach ($verzoeken as $verzoek) {
 			$seenAt = (string)($verzoek['receivedAt'] ?? '');
-			foreach ((array)($verzoek['mappedActivities'] ?? []) as $entry) {
-				if (is_array($entry) === false || ($entry['mapped'] ?? false) === true) {
-					continue;
-				}
-
-				$activity = $this->activity(entry: $entry);
-				if ($this->mapper->isMapped(activity: $activity, index: $index) === true) {
-					continue;
-				}
-
+			foreach ($this->stillUnmapped(verzoek: $verzoek, index: $index) as $activity) {
 				$key = $this->key(activity: $activity);
 				if ($key === null) {
 					$withoutIdentifier++;
@@ -103,22 +94,59 @@ class DsoUnmappedActivities implements UnmappedActivitiesInterface {
 
 				$groups[$key] = $this->count(group: ($groups[$key] ?? null), activity: $activity, seenAt: $seenAt);
 			}
-		}//end foreach
-
-		$activities = array_values($groups);
-		usort(
-			$activities,
-			static fn (array $one, array $other): int => [$other['count'], $other['lastSeen']] <=> [$one['count'], $one['lastSeen']]
-		);
+		}
 
 		return [
-			'activities' => $activities,
+			'activities' => self::mostSeenFirst(groups: $groups),
 			'withoutIdentifier' => $withoutIdentifier,
 			'scanned' => count($verzoeken),
 			'limit' => self::SCAN_LIMIT,
 		];
 
 	}//end list()
+
+	/**
+	 * The activities of a verzoek that intake left unmapped and that no row matches yet.
+	 *
+	 * @param array<string, mixed>                               $verzoek The verzoek.
+	 * @param array<string, array<string, array<string, mixed>>> $index   The active rows by key.
+	 *
+	 * @return array<int, array<string, mixed>> The activities, in the verzoek's order.
+	 */
+	private function stillUnmapped(array $verzoek, array $index): array {
+		$activities = [];
+		foreach ((array)($verzoek['mappedActivities'] ?? []) as $entry) {
+			if (is_array($entry) === false || ($entry['mapped'] ?? false) === true) {
+				continue;
+			}
+
+			$activity = $this->activity(entry: $entry);
+			if ($this->mapper->isMapped(activity: $activity, index: $index) === false) {
+				$activities[] = $activity;
+			}
+		}
+
+		return $activities;
+
+	}//end stillUnmapped()
+
+	/**
+	 * The groups, most seen first, then the most recently seen.
+	 *
+	 * @param array<string, array<string, mixed>> $groups The groups by key.
+	 *
+	 * @return array<int, array<string, mixed>> The ordered groups.
+	 */
+	private static function mostSeenFirst(array $groups): array {
+		$activities = array_values($groups);
+		usort(
+			$activities,
+			static fn (array $one, array $other): int => [$other['count'], $other['lastSeen']] <=> [$one['count'], $one['lastSeen']]
+		);
+
+		return $activities;
+
+	}//end mostSeenFirst()
 
 	/**
 	 * The latest verzoeken flagged `activityUnmapped`, newest first.

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Adapter\DocumentCms;
 
 use OCA\Integriq\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
 use OCP\IL10N;
@@ -193,9 +194,8 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-3
 	 */
 	public function fetchDocument(string $siteId, string $itemId, string $name): ?array {
-		$path = sprintf('/v1.0/sites/%s/drive/items/%s/content', rawurlencode($siteId), rawurlencode($itemId));
-		$response = $this->brokeredRequest(method: 'GET', path: $path);
-		if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
+		$body = $this->downloadedBody(siteId: $siteId, itemId: $itemId);
+		if ($body === null) {
 			return null;
 		}
 
@@ -206,16 +206,7 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 
 		try {
 			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-			if ($userFolder->nodeExists(self::TARGET_FOLDER) === false) {
-				$userFolder->newFolder(self::TARGET_FOLDER);
-			}
-
-			$target = self::TARGET_FOLDER . '/' . basename($name);
-			if ($userFolder->nodeExists($target) === true) {
-				$userFolder->get($target)->delete();
-			}
-
-			$file = $userFolder->newFile($target, $response['body']);
+			$file       = $userFolder->newFile($this->freshTarget(userFolder: $userFolder, name: $name), $body);
 
 			return [
 				'path' => $file->getPath(),
@@ -229,6 +220,49 @@ class SharePointOnlineAdapter extends AbstractCategoryAdapterProvider {
 		}//end try
 
 	}//end fetchDocument()
+
+	/**
+	 * The content of a drive item, or null when Graph does not hand it over.
+	 *
+	 * @param string $siteId The site id.
+	 * @param string $itemId The drive item id.
+	 *
+	 * @return string|null The bytes.
+	 */
+	private function downloadedBody(string $siteId, string $itemId): ?string {
+		$path = sprintf('/v1.0/sites/%s/drive/items/%s/content', rawurlencode($siteId), rawurlencode($itemId));
+		$response = $this->brokeredRequest(method: 'GET', path: $path);
+		if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
+			return null;
+		}
+
+		return $response['body'];
+
+	}//end downloadedBody()
+
+	/**
+	 * The path the document lands at in the target folder, with the folder made and an older copy removed.
+	 *
+	 * @param Folder $userFolder The user's Files folder.
+	 * @param string $name       The document name; only its base name is used.
+	 *
+	 * @return string The path, relative to the user folder.
+	 *
+	 * @throws NotPermittedException When the folder or the older copy cannot be changed.
+	 */
+	private function freshTarget(Folder $userFolder, string $name): string {
+		if ($userFolder->nodeExists(self::TARGET_FOLDER) === false) {
+			$userFolder->newFolder(self::TARGET_FOLDER);
+		}
+
+		$target = self::TARGET_FOLDER . '/' . basename($name);
+		if ($userFolder->nodeExists($target) === true) {
+			$userFolder->get($target)->delete();
+		}
+
+		return $target;
+
+	}//end freshTarget()
 
 	/**
 	 * {@inheritDoc}

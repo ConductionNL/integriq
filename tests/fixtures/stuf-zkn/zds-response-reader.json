@@ -1,0 +1,115 @@
+{
+    "confirmation": {
+        "antwoord object": {
+            "crossRefnummer": "REF-1",
+            "caseIdentification": "Z-1"
+        },
+        "zaak": {
+            "crossRefnummer": "",
+            "caseIdentification": "Z-2"
+        },
+        "any identificatie": {
+            "crossRefnummer": "",
+            "caseIdentification": null
+        },
+        "nothing": {
+            "crossRefnummer": "",
+            "caseIdentification": null
+        },
+        "bad empty": {
+            "crossRefnummer": "",
+            "caseIdentification": null
+        },
+        "bad blank": {
+            "crossRefnummer": "",
+            "caseIdentification": null
+        },
+        "bad doctype": {
+            "crossRefnummer": "",
+            "caseIdentification": null
+        },
+        "bad xml": {
+            "crossRefnummer": "",
+            "caseIdentification": null
+        }
+    },
+    "caseDetails": {
+        "full": {
+            "identificatie": "Z-9",
+            "omschrijving": "Kapvergunning",
+            "startdatum": "20260101",
+            "einddatum": "",
+            "zaaktype": {
+                "omschrijving": "Kappen"
+            },
+            "statussen": [
+                {
+                    "datumStatusGezet": "20260102",
+                    "statustype": "Ontvangen"
+                },
+                {
+                    "datumStatusGezet": "20260103",
+                    "statustype": ""
+                }
+            ],
+            "betrokkenen": [
+                {
+                    "role": "heeftAlsInitiator",
+                    "bsn": "999993653"
+                },
+                {
+                    "role": "heeftAlsBelanghebbende",
+                    "bsn": ""
+                },
+                {
+                    "role": "heeftAlsGemachtigde",
+                    "bsn": "111222333"
+                }
+            ]
+        },
+        "empty envelope": {
+            "identificatie": "",
+            "omschrijving": "",
+            "startdatum": "",
+            "einddatum": "",
+            "zaaktype": {
+                "omschrijving": ""
+            },
+            "statussen": [],
+            "betrokkenen": []
+        },
+        "bad doctype": []
+    },
+    "fault": {
+        "transient": {
+            "code": "StUF067",
+            "omschrijving": "Te druk",
+            "details": "later",
+            "kind": "transient"
+        },
+        "permanent fout": {
+            "code": "StUF055",
+            "omschrijving": "Server",
+            "details": "",
+            "kind": "permanent"
+        },
+        "any code, faultstring": {
+            "code": "StUF019",
+            "omschrijving": "Onbekend",
+            "details": "",
+            "kind": "transient"
+        },
+        "empty fault": {
+            "code": "",
+            "omschrijving": "",
+            "details": "",
+            "kind": "permanent"
+        },
+        "bad xml": {
+            "code": "PARSE_ERROR",
+            "omschrijving": "The answer could not be read",
+            "details": "",
+            "kind": "permanent"
+        }
+    }
+}

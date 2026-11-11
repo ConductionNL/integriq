@@ -127,24 +127,32 @@ class MigrateInlineSecrets extends Command {
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io = new SymfonyStyle($input, $output);
 
-		$limitRaw = (string)$input->getOption('limit');
-		if (preg_match('/^\d+$/', $limitRaw) !== 1) {
-			$io->error(sprintf('limit must be an integer, got "%s"', $limitRaw));
+		$limit = CommandConsole::readLimit(input: $input, io: $io);
+		if ($limit === null) {
 			return Command::FAILURE;
 		}
 
-		$limit = (int)$limitRaw;
-		if ($limit < 1 || $limit > 100000) {
-			$io->error(sprintf('limit must be in [1, 100000], got %d', $limit));
-			return Command::FAILURE;
-		}
-
-		$json = (bool)$input->getOption('json');
+		$run = new ConsoleRun(io: $io, output: $output);
+		$run->limit = $limit;
+		$run->json = (bool)$input->getOption('json');
 
 		if ((bool)$input->getOption('dry-run') === false) {
-			return $this->runMigrate(io: $io, output: $output, limit: $limit, json: $json);
+			return $this->runMigrate(run: $run);
 		}
 
+		return $this->runDryRun(run: $run);
+	}//end execute()
+
+	/**
+	 * Report the plan of every migratable schema. Writes NOTHING.
+	 *
+	 * @param ConsoleRun $run The run: output, limit and output mode.
+	 *
+	 * @return integer Command::SUCCESS, or Command::FAILURE when the plan could not be built.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 */
+	private function runDryRun(ConsoleRun $run): int {
 		try {
 			// Deliberately planEverything() rather than planAll(): the Phase D gate
 			// must be true only when NO migratable schema holds an unmigrated
@@ -152,21 +160,21 @@ class MigrateInlineSecrets extends Command {
 			// remains the SOURCE-only gate that RemoveMigratedSourceSecretFields
 			// reads, because source's property removal must not be blocked by an
 			// unrelated schema's state.
-			$plan = $this->planner->planEverything(limit: $limit);
+			$plan = $this->planner->planEverything(limit: $run->limit);
 		} catch (Throwable $e) {
 			// Log-friendly, no stack trace to stdout per ADR-005. The message is
 			// not interpolated with any object data.
-			$io->error('Could not build the migration plan: ' . $e->getMessage());
+			$run->io->error('Could not build the migration plan: ' . $e->getMessage());
 			return Command::FAILURE;
 		}
 
-		if ($json === true) {
-			$output->writeln((string)json_encode($plan, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)));
+		if ($run->json === true) {
+			CommandConsole::writeJson(run: $run, payload: $plan);
 			return Command::SUCCESS;
 		}
 
-		return $this->renderEstate(io: $io, estate: $plan);
-	}//end execute()
+		return $this->renderEstate(io: $run->io, estate: $plan);
+	}//end runDryRun()
 
 	/**
 	 * Render one dry-run plan per migratable schema.
@@ -206,26 +214,23 @@ class MigrateInlineSecrets extends Command {
 	 * successful drive the true post-run Phase D gate is persisted to appconfig
 	 * so the repair-step signal stays honest.
 	 *
-	 * @param SymfonyStyle $io Styled console I/O.
-	 * @param OutputInterface $output Raw console output (for the --json payload).
-	 * @param integer $limit Maximum sources to inspect.
-	 * @param boolean $json Whether to emit the machine-readable result.
+	 * @param ConsoleRun $run The run: output, limit and output mode.
 	 *
 	 * @return integer Command::SUCCESS on a completed run, Command::FAILURE when refused or if a field failed.
 	 *
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
-	private function runMigrate(SymfonyStyle $io, OutputInterface $output, int $limit, bool $json): int {
+	private function runMigrate(ConsoleRun $run): int {
 		try {
 			// Drives migrateEverything(), NOT migrateAll(): the dry-run above plans every
 			// schema in MIGRATABLE, and a real run that only drove `source` made
 			// `--dry-run` report `wouldMigrate: N` for `sender_identity` while the
 			// real run migrated 0 (integriq#2104 review 5264751700, blocker 2).
-			$estate = $this->executor->migrateEverything(limit: $limit);
+			$estate = $this->executor->migrateEverything(limit: $run->limit);
 		} catch (Throwable $e) {
 			// Fail closed: broker unavailable/too old, or the run could not start.
 			// Nothing was rewritten; the message carries the upgrade hint.
-			$io->error('Refusing to migrate: ' . $e->getMessage());
+			$run->io->error('Refusing to migrate: ' . $e->getMessage());
 			return Command::FAILURE;
 		}
 
@@ -235,30 +240,19 @@ class MigrateInlineSecrets extends Command {
 		$sourceRun = (array)($estate['schemas'][InlineSecretMigrationPlannerInterface::SCHEMA] ?? []);
 		$this->recordPhaseDGate(result: $sourceRun);
 
-		// Keep the source-shaped keys the renderer and the exit code speak, and
-		// carry the per-schema runs alongside them for --json.
-		$result = [
-			'sources' => ($sourceRun['objects'] ?? []),
-			'totalSources' => ($sourceRun['totalObjects'] ?? 0),
-			'migrated' => $estate['migrated'],
-			'failed' => $estate['failed'],
-			'blocked' => $estate['blocked'],
-			'skipped' => $estate['skipped'],
-			'postRun' => ($sourceRun['postRun'] ?? []),
-			'schemas' => $estate['schemas'],
-		];
+		$result = $this->migrationResult(estate: $estate, sourceRun: $sourceRun);
 
-		if ($json === true) {
-			$output->writeln((string)json_encode($result, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)));
+		if ($run->json === true) {
+			CommandConsole::writeJson(run: $run, payload: $result);
 		}
 
-		if ($json === false) {
-			$this->renderResult(io: $io, result: $result);
+		if ($run->json === false) {
+			$this->renderResult(io: $run->io, result: $result);
 			// The renderer above speaks the `source` vocabulary and prints per-object
 			// rows for `source` alone, so without this a sender_identity failure
 			// reached the operator as a non-zero exit next to a table showing
 			// nothing wrong (integriq#2104 review 5266971176).
-			$this->renderSchemaOutcomes(io: $io, schemas: (array)$result['schemas']);
+			$this->renderSchemaOutcomes(io: $run->io, schemas: (array)$result['schemas']);
 		}
 
 		// A field that failed to migrate is a non-zero exit so an operator/CI notices.
@@ -268,6 +262,30 @@ class MigrateInlineSecrets extends Command {
 
 		return Command::SUCCESS;
 	}//end runMigrate()
+
+	/**
+	 * The result of a real run: the source-shaped keys the renderer and the exit
+	 * code speak, with the per-schema runs carried alongside them for --json.
+	 *
+	 * @param array<string, mixed> $estate    The executor's estate.
+	 * @param array<string, mixed> $sourceRun The `source` schema's run.
+	 *
+	 * @return array<string, mixed> The result.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 */
+	private function migrationResult(array $estate, array $sourceRun): array {
+		return [
+			'sources' => ($sourceRun['objects'] ?? []),
+			'totalSources' => ($sourceRun['totalObjects'] ?? 0),
+			'migrated' => $estate['migrated'],
+			'failed' => $estate['failed'],
+			'blocked' => $estate['blocked'],
+			'skipped' => $estate['skipped'],
+			'postRun' => ($sourceRun['postRun'] ?? []),
+			'schemas' => $estate['schemas'],
+		];
+	}//end migrationResult()
 
 	/**
 	 * Print one line per migrated schema, so no schema's outcome is invisible.
@@ -347,19 +365,7 @@ class MigrateInlineSecrets extends Command {
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
 	private function renderResult(SymfonyStyle $io, array $result): void {
-		$rows = [];
-		foreach ((array)($result['sources'] ?? []) as $source) {
-			foreach ((array)($source['fields'] ?? []) as $field) {
-				$rows[] = [
-					(string)($source['name'] ?? '?'),
-					(string)($source['uuid'] ?? '?'),
-					(string)($field['field'] ?? '?'),
-					(string)($field['outcome'] ?? '?'),
-					(string)($field['reason'] ?? '-'),
-				];
-			}
-		}
-
+		$rows = $this->fieldRows(sources: (array)($result['sources'] ?? []), columns: ['outcome' => '?', 'reason' => '-']);
 		if ($rows !== []) {
 			$io->table(['source', 'uuid', 'field', 'outcome', 'reason'], $rows);
 		}
@@ -371,7 +377,20 @@ class MigrateInlineSecrets extends Command {
 		$io->writeln(sprintf('Skipped           : %d', (int)($result['skipped'] ?? 0)));
 		$io->newLine();
 
-		$postRun = (array)($result['postRun'] ?? []);
+		$this->renderPostRunGate(io: $io, postRun: (array)($result['postRun'] ?? []));
+	}//end renderResult()
+
+	/**
+	 * Say whether the post-run Phase D gate is clean.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 * @param array<string, mixed> $postRun The post-run re-plan.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 */
+	private function renderPostRunGate(SymfonyStyle $io, array $postRun): void {
 		if ((bool)($postRun['clean'] ?? false) === true) {
 			$io->success('Phase D gate: CLEAN — no source holds an inline secret. The schema properties may be removed.');
 			return;
@@ -386,7 +405,33 @@ class MigrateInlineSecrets extends Command {
 				(int)($postRun['manual'] ?? 0)
 			)
 		);
-	}//end renderResult()
+	}//end renderPostRunGate()
+
+	/**
+	 * One table row per field of every source: name, uuid, field and two field columns.
+	 *
+	 * @param array<int|string, mixed> $sources The sources, each with its `fields`.
+	 * @param array<string, string>    $columns The two field columns, each with the text shown when absent.
+	 *
+	 * @return array<int, array<int, string>> The rows.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
+	 */
+	private function fieldRows(array $sources, array $columns): array {
+		$rows = [];
+		foreach ($sources as $source) {
+			foreach ((array)($source['fields'] ?? []) as $field) {
+				$row = [(string)($source['name'] ?? '?'), (string)($source['uuid'] ?? '?'), (string)($field['field'] ?? '?')];
+				foreach ($columns as $column => $absent) {
+					$row[] = (string)($field[$column] ?? $absent);
+				}
+
+				$rows[] = $row;
+			}
+		}
+
+		return $rows;
+	}//end fieldRows()
 
 	/**
 	 * Render the human-readable plan.
@@ -409,19 +454,7 @@ class MigrateInlineSecrets extends Command {
 			return Command::SUCCESS;
 		}
 
-		$rows = [];
-		foreach ($sources as $source) {
-			foreach ((array)($source['fields'] ?? []) as $field) {
-				$rows[] = [
-					(string)($source['name'] ?? '?'),
-					(string)($source['uuid'] ?? '?'),
-					(string)($field['field'] ?? '?'),
-					(string)($field['state'] ?? '?'),
-					(string)($field['provider'] ?? '-'),
-				];
-			}
-		}
-
+		$rows = $this->fieldRows(sources: $sources, columns: ['state' => '?', 'provider' => '-']);
 		$io->table(['source', 'uuid', 'field', 'state', 'would mint as'], $rows);
 
 		$io->writeln(sprintf('Sources inspected : %d', (int)($plan['totalSources'] ?? 0)));

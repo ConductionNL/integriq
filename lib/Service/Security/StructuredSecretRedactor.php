@@ -38,12 +38,13 @@ final class StructuredSecretRedactor {
 	private const HEADER_SHAPED_NAME = '/^[A-Za-z0-9]+(-[A-Za-z0-9]+)+$/';
 
 	/**
-	 * The `scheme://user:password@` part of a URL anywhere in a text; group 1 is
-	 * everything before the password, group 2 the password.
+	 * The `scheme://userinfo@` part of a URL anywhere in a text; group 1 is the
+	 * scheme with its `://`, group 2 the userinfo up to the last `@` of the
+	 * authority, so a password that holds an `@` is taken whole.
 	 *
 	 * @var string
 	 */
-	private const URL_USERINFO = '#([a-z][a-z0-9+.\-]*://[^/@:?\#\s]*):([^/@?\#\s]*)@#i';
+	private const URL_USERINFO = '#([a-z][a-z0-9+.\-]*://)([^/?\#\s]*)@#i';
 
 	/**
 	 * One `name=value` pair of a query string, separated by `&` or `;`.
@@ -51,6 +52,21 @@ final class StructuredSecretRedactor {
 	 * @var string
 	 */
 	private const QUERY_PAIR = '/(^|[&;])([^=&;#]+)=([^&;#]*)/';
+
+	/**
+	 * A `Name: value` header line in a text; group 1 is everything before the
+	 * value, group 2 the name, group 3 the value up to the end of the line.
+	 *
+	 * @var string
+	 */
+	private const HEADER_LINE = '/^([ \t]*([A-Za-z0-9][A-Za-z0-9_\-]*)[ \t]*:[ \t]*)([^\r\n]*?)[ \t]*$/m';
+
+	/**
+	 * How deep a JSON text inside a value is decoded.
+	 *
+	 * @var integer
+	 */
+	private const JSON_TEXT_DEPTH = 64;
 
 	/**
 	 * Constructor.
@@ -75,24 +91,145 @@ final class StructuredSecretRedactor {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function redactUrl(string $url): string {
+		$encoded = $this->redactEncodedUrl(value: $url);
+		if ($encoded !== null) {
+			return $encoded;
+		}
+
 		$url = (string)preg_replace_callback(
 			self::URL_USERINFO,
 			fn (array $userinfo): string => $this->maskedUserinfo(userinfo: $userinfo),
 			$url
 		);
-		$queryStart = strpos($url, '?');
-		if ($queryStart === false) {
-			return $url;
+
+		foreach (['#', '?'] as $separator) {
+			$start = strpos($url, $separator);
+			if ($start !== false) {
+				$url = substr($url, 0, ($start + 1)) . $this->maskedPairs(pairs: substr($url, ($start + 1)));
+			}
 		}
 
-		$query = (string)preg_replace_callback(
+		return $url;
+	}//end redactUrl()
+
+	/**
+	 * The pairs of a query string or fragment, each secret-named value masked.
+	 *
+	 * Text from a `#` on is left to the fragment pass.
+	 *
+	 * @param string $pairs The text after `?` or `#`.
+	 *
+	 * @return string The pairs.
+	 */
+	private function maskedPairs(string $pairs): string {
+		$fragment = strpos($pairs, '#');
+		$tail = '';
+		if ($fragment !== false) {
+			$tail = substr($pairs, $fragment);
+			$pairs = substr($pairs, 0, $fragment);
+		}
+
+		return (string)preg_replace_callback(
 			self::QUERY_PAIR,
 			fn (array $pair): string => $this->maskedQueryPair(pair: $pair),
-			substr($url, ($queryStart + 1))
+			$pairs
+		) . $tail;
+	}//end maskedPairs()
+
+	/**
+	 * A percent-encoded URL with its secrets masked, encoded again; null when the
+	 * value is not an encoded URL or holds no secret.
+	 *
+	 * @param string $value The text.
+	 *
+	 * @return string|null The masked text, or null.
+	 */
+	private function redactEncodedUrl(string $value): ?string {
+		if (str_contains($value, '://') === true || stripos($value, '%3A%2F%2F') === false) {
+			return null;
+		}
+
+		$decoded = rawurldecode($value);
+		$masked = $this->redactUrl(url: $decoded);
+		if ($masked === $decoded) {
+			return null;
+		}
+
+		return rawurlencode($masked);
+	}//end redactEncodedUrl()
+
+	/**
+	 * Masks the secrets a text shows: a JSON document by its names, header lines
+	 * whose name is a secret header, and URL secrets.
+	 *
+	 * @param string $text The text.
+	 *
+	 * @return string The text with its secrets masked.
+	 */
+	private function redactText(string $text): string {
+		$json = $this->redactJsonText(text: $text);
+		if ($json !== null) {
+			return $json;
+		}
+
+		$text = (string)preg_replace_callback(
+			self::HEADER_LINE,
+			fn (array $line): string => $this->maskedHeaderLine(line: $line),
+			$text
 		);
 
-		return substr($url, 0, ($queryStart + 1)) . $query;
-	}//end redactUrl()
+		return $this->redactUrl(url: $text);
+	}//end redactText()
+
+	/**
+	 * A JSON object or list held as text, masked like a configuration and encoded
+	 * again; null when the text is not one or holds no secret.
+	 *
+	 * @param string $text The text.
+	 *
+	 * @return string|null The masked JSON text, or null.
+	 */
+	private function redactJsonText(string $text): ?string {
+		$start = substr(ltrim($text), 0, 1);
+		if ($start !== '{' && $start !== '[') {
+			return null;
+		}
+
+		try {
+			$decoded = json_decode($text, true, self::JSON_TEXT_DEPTH, JSON_THROW_ON_ERROR);
+		} catch (\JsonException $e) {
+			return null;
+		}
+
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		$masked = $this->registry->redactConfiguration(data: $decoded);
+		if ($masked === $decoded) {
+			return null;
+		}
+
+		return (string)json_encode($masked, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+	}//end redactJsonText()
+
+	/**
+	 * One header line as text, its value masked when the name is a secret header.
+	 *
+	 * @param array<int, string> $line The match: the line, everything before the value, the name and the value.
+	 *
+	 * @return string The line.
+	 */
+	private function maskedHeaderLine(array $line): string {
+		if ($line[3] === ''
+			|| $this->registry->isSensitiveHeaderName(name: $line[2]) === false
+			|| $this->registry->isPureTemplate(value: $line[3]) === true
+		) {
+			return $line[0];
+		}
+
+		return $line[1] . SensitiveFieldRegistry::PLACEHOLDER;
+	}//end maskedHeaderLine()
 
 	/**
 	 * One query pair as text, its value masked when its name is secret-shaped.
@@ -102,7 +239,16 @@ final class StructuredSecretRedactor {
 	 * @return string The pair.
 	 */
 	private function maskedQueryPair(array $pair): string {
-		if ($this->registry->isSensitiveName(name: urldecode($pair[2])) === false || $this->registry->isPureTemplate(value: urldecode($pair[3])) === true) {
+		if ($this->registry->isSensitiveName(name: urldecode($pair[2])) === false) {
+			$nested = $this->redactEncodedUrl(value: $pair[3]);
+			if ($nested === null) {
+				return $pair[0];
+			}
+
+			return $pair[1] . $pair[2] . '=' . $nested;
+		}
+
+		if ($this->registry->isPureTemplate(value: urldecode($pair[3])) === true) {
 			return $pair[0];
 		}
 
@@ -110,18 +256,28 @@ final class StructuredSecretRedactor {
 	}//end maskedQueryPair()
 
 	/**
-	 * A URL's `scheme://user:password@` part with the password masked, unless it is a template.
+	 * A URL's `scheme://userinfo@` part with the password masked, or the whole
+	 * userinfo when it has no password (a token written as the user), unless the
+	 * masked part is a template.
 	 *
-	 * @param array<int, string> $userinfo The match: the part, everything before the password, and the password.
+	 * @param array<int, string> $userinfo The match: the part, the scheme with `://`, and the userinfo.
 	 *
 	 * @return string The part.
 	 */
 	private function maskedUserinfo(array $userinfo): string {
-		if ($this->registry->isPureTemplate(value: $userinfo[2]) === true) {
+		$colon = strpos($userinfo[2], ':');
+		$user = '';
+		$secret = $userinfo[2];
+		if ($colon !== false) {
+			$user = substr($userinfo[2], 0, $colon) . ':';
+			$secret = substr($userinfo[2], ($colon + 1));
+		}
+
+		if ($secret === '' || $this->registry->isPureTemplate(value: $secret) === true) {
 			return $userinfo[0];
 		}
 
-		return $userinfo[1] . ':' . SensitiveFieldRegistry::PLACEHOLDER . '@';
+		return $userinfo[1] . $user . SensitiveFieldRegistry::PLACEHOLDER . '@';
 	}//end maskedUserinfo()
 
 	/**
@@ -156,7 +312,7 @@ final class StructuredSecretRedactor {
 		}
 
 		if (is_string($value) === true) {
-			return $this->redactUrl(url: $value);
+			return $this->redactText(text: $value);
 		}
 
 		if (is_array($value) === false) {

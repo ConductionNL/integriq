@@ -135,9 +135,8 @@ class FormFieldMapper {
 
 		foreach ($fieldMapping as $field => $expression) {
 			$value = $this->resolveExpression(
-				field: (string)$field,
 				expression: (array)$expression,
-				submittedValues: $submittedValues
+				resolution: new FieldResolution(field: (string)$field, submittedValues: $submittedValues)
 			);
 
 			$property = 'mapped' . ucfirst((string)$field);
@@ -181,18 +180,19 @@ class FormFieldMapper {
 	}//end validateExpressionShape()
 
 	/**
-	 * Resolve one field's expression against the submitted values.
+	 * Resolve one mapping expression against the submission.
 	 *
-	 * @param string $field The target field name.
-	 * @param array<string, mixed> $expression `{type: from|const|template, value: string}`.
-	 * @param array<string, mixed> $submittedValues The raw submitted values.
+	 * @param array<string, mixed> $expression The expression (`type`, `value`).
+	 * @param FieldResolution      $resolution The field and the submission.
 	 *
 	 * @return string The resolved value.
 	 *
-	 * @throws MappingResolutionException When a `from`/`template` reference cannot resolve.
+	 * @throws MappingResolutionException When the expression is malformed or reads an absent key.
+	 *
+	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
 	 */
-	private function resolveExpression(string $field, array $expression, array $submittedValues): string {
-		$this->validateExpressionShape(field: $field, expression: $expression);
+	private function resolveExpression(array $expression, FieldResolution $resolution): string {
+		$this->validateExpressionShape(field: $resolution->field, expression: $expression);
 
 		$type = (string)$expression['type'];
 		$value = (string)$expression['value'];
@@ -202,58 +202,82 @@ class FormFieldMapper {
 		}
 
 		if ($type === 'from') {
-			if (array_key_exists($value, $submittedValues) === false) {
-				throw new MappingResolutionException(
-					message: 'Form mapping field "' . $field . '" references submitted key "' . $value
-					. '" which is absent from this submission — refusing to leak the literal '
-					. 'key name as the resolved value.'
-				);
-			}
-
-			return (string)$submittedValues[$value];
+			return $this->submitted(key: $value, resolution: $resolution);
 		}
 
 		// $type === 'template'.
-		return $this->interpolateTemplate(field: $field, template: $value, submittedValues: $submittedValues);
+		return $this->interpolateTemplate(template: $value, resolution: $resolution);
 	}//end resolveExpression()
 
 	/**
-	 * Interpolate a `{{key}}` template. EVERY placeholder MUST resolve —
-	 * refusing to leak an unexpanded template as the resolved value.
+	 * The submitted value under a key; an absent key is refused rather than leaking the key name.
 	 *
-	 * @param string $field The target field name (for error messages).
-	 * @param string $template The template string.
-	 * @param array<string, mixed> $submittedValues The raw submitted values.
+	 * @param string          $key        The submitted key.
+	 * @param FieldResolution $resolution The field and the submission.
 	 *
-	 * @return string The fully-interpolated string.
+	 * @return string
 	 *
-	 * @throws MappingResolutionException When any placeholder is absent from the submitted values.
+	 * @throws MappingResolutionException When the key is absent.
+	 *
+	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
 	 */
-	private function interpolateTemplate(string $field, string $template, array $submittedValues): string {
-		$missing = [];
-
-		$interpolated = preg_replace_callback(
-			self::TEMPLATE_PLACEHOLDER_PATTERN,
-			function (array $matches) use ($submittedValues, &$missing): string {
-				$key = $matches[1];
-				if (array_key_exists($key, $submittedValues) === false) {
-					$missing[] = $key;
-					return '';
-				}
-
-				return (string)$submittedValues[$key];
-			},
-			$template
-		);
-
-		if (empty($missing) === false) {
+	private function submitted(string $key, FieldResolution $resolution): string {
+		if (array_key_exists($key, $resolution->submittedValues) === false) {
 			throw new MappingResolutionException(
-				message: 'Form mapping field "' . $field . '" template references placeholder(s) "'
+				message: 'Form mapping field "' . $resolution->field . '" references submitted key "' . $key
+				. '" which is absent from this submission — refusing to leak the literal '
+				. 'key name as the resolved value.'
+			);
+		}
+
+		return (string)$resolution->submittedValues[$key];
+	}//end submitted()
+
+	/**
+	 * Expand the `{{ key }}` placeholders; any absent key is refused rather than leaking the template.
+	 *
+	 * @param string          $template   The template.
+	 * @param FieldResolution $resolution The field and the submission.
+	 *
+	 * @return string
+	 *
+	 * @throws MappingResolutionException When a placeholder is absent.
+	 *
+	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+	 */
+	private function interpolateTemplate(string $template, FieldResolution $resolution): string {
+		$submittedValues = $resolution->submittedValues;
+		$missing = self::missingPlaceholders(template: $template, submittedValues: $submittedValues);
+		if ($missing !== []) {
+			throw new MappingResolutionException(
+				message: 'Form mapping field "' . $resolution->field . '" template references placeholder(s) "'
 				. implode('", "', $missing) . '" which are absent from this submission — '
 				. 'refusing to leak the unexpanded template as the resolved value.'
 			);
 		}
 
-		return (string)$interpolated;
+		return (string)preg_replace_callback(
+			self::TEMPLATE_PLACEHOLDER_PATTERN,
+			static fn (array $matches): string => (string)$submittedValues[$matches[1]],
+			$template
+		);
 	}//end interpolateTemplate()
+
+	/**
+	 * The template's placeholder keys the submission lacks, in order (a repeated key repeats).
+	 *
+	 * @param string               $template        The template.
+	 * @param array<string, mixed> $submittedValues The submission's values.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+	 */
+	private static function missingPlaceholders(string $template, array $submittedValues): array {
+		preg_match_all(self::TEMPLATE_PLACEHOLDER_PATTERN, $template, $matches);
+
+		return array_values(
+			array_filter($matches[1], static fn (string $key): bool => array_key_exists($key, $submittedValues) === false)
+		);
+	}//end missingPlaceholders()
 }//end class

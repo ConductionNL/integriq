@@ -1,0 +1,8 @@
+{
+    "both": "<body><AanleverenAdviesVO_Request xmlns=\"http://duo.nl/contract/DUO_PO_AdviesVO_V1\"><persoonsgebondenNummer><bsn>111222333</bsn></persoonsgebondenNummer><adviesvolgnummer>1</adviesvolgnummer><onderwijsaanbieder>123A456</onderwijsaanbieder><onderwijslocatie>123X456</onderwijslocatie><vestigingscode>AB12CD</vestigingscode><adviesjaar>2026</adviesjaar><advies1><advies>HAVO_VWO</advies><adviesdatum>2026-02-01</adviesdatum></advies1><advies2><advies>VWO</advies><adviesdatum>2026-05-01</adviesdatum></advies2></AanleverenAdviesVO_Request></body>",
+    "first": "<body><AanleverenAdviesVO_Request xmlns=\"http://duo.nl/contract/DUO_PO_AdviesVO_V1\"><persoonsgebondenNummer><bsn>111222333</bsn></persoonsgebondenNummer><adviesvolgnummer>1</adviesvolgnummer><vestigingscode>AB12CD</vestigingscode><adviesjaar>2026</adviesjaar><advies1><advies>VMBO_GL_TL</advies><adviesdatum>2026-02-01</adviesdatum></advies1></AanleverenAdviesVO_Request></body>",
+    "second": "<body><AanleverenAdviesVO_Request xmlns=\"http://duo.nl/contract/DUO_PO_AdviesVO_V1\"><persoonsgebondenNummer><bsn>111222333</bsn></persoonsgebondenNummer><adviesvolgnummer>1</adviesvolgnummer><onderwijslocatie>999X001</onderwijslocatie><vestigingscode>AB12CD</vestigingscode><adviesjaar>2026</adviesjaar><advies2><advies>HAVO</advies><adviesdatum>2026-05-01</adviesdatum></advies2></AanleverenAdviesVO_Request></body>",
+    "none": "refused: At least one of \"advies1\" and \"advies2\" is required (DUO 103_advies_ontbreekt).",
+    "bad-aanbieder": "refused: Field \"onderwijsaanbieder\" does not match the DUO format.",
+    "bad-advies": "refused: Field \"advies1\" is not an AdviesVO value."
+}

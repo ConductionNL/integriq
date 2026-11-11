@@ -164,34 +164,8 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 			$this->runMigration(objectService: $objectService, planner: $planner, output: $output);
 
 			$plan = $planner->planAll();
-
-			$clean = (bool)$plan['clean'];
-			$pending = (int)$plan['wouldMigrate'];
-			$manual = (int)$plan['needsReview'];
-			$cleanFlag = '0';
-			if ($clean === true) {
-				$cleanFlag = '1';
-			}
-
-			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_CLEAN, value: $cleanFlag);
-			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_PENDING, value: (string)$pending);
-			$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_MANUAL, value: (string)$manual);
-
-			if ($clean === true) {
-				$output->info('Integriq: no source holds an inline secret — Phase D gate is CLEAN.');
-				return;
-			}
-
-			// Secret-free: counts and field names only, never a value.
-			$output->warning(
-				sprintf(
-					'Integriq: %d inline source secret(s) awaiting migration, %d need manual review. '
-					. 'Phase D must NOT remove the schema properties. Run '
-					. '`occ integriq:migrate-inline-secrets --dry-run` for the per-source breakdown.',
-					$pending,
-					$manual
-				)
-			);
+			$this->recordGate(plan: $plan);
+			$this->reportGate(output: $output, plan: $plan);
 		} catch (Throwable $e) {
 			// Never fatal. A failure here must not brick an upgrade — but it MUST
 			// fail the gate closed: an unknown status is not a clean status.
@@ -203,6 +177,56 @@ class RecordInlineSecretMigrationStatus implements IRepairStep {
 			);
 		}//end try
 	}//end run()
+
+	/**
+	 * Persist the Phase D gate the plan describes: clean, pending and manual counts.
+	 *
+	 * @param array<string,mixed> $plan The planner's source-only plan.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
+	 */
+	private function recordGate(array $plan): void {
+		$cleanFlag = '0';
+		if ((bool)$plan['clean'] === true) {
+			$cleanFlag = '1';
+		}
+
+		$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_CLEAN, value: $cleanFlag);
+		$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_PENDING, value: (string)(int)$plan['wouldMigrate']);
+		$this->appConfig->setValueString(app: AppIdentity::APP_ID, key: self::KEY_MANUAL, value: (string)(int)$plan['needsReview']);
+
+	}//end recordGate()
+
+	/**
+	 * Say whether the gate is clean, or how many secrets still wait.
+	 *
+	 * @param IOutput             $output The output interface.
+	 * @param array<string,mixed> $plan   The planner's source-only plan.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
+	 */
+	private function reportGate(IOutput $output, array $plan): void {
+		if ((bool)$plan['clean'] === true) {
+			$output->info('Integriq: no source holds an inline secret — Phase D gate is CLEAN.');
+			return;
+		}
+
+		// Secret-free: counts and field names only, never a value.
+		$output->warning(
+			sprintf(
+				'Integriq: %d inline source secret(s) awaiting migration, %d need manual review. '
+				. 'Phase D must NOT remove the schema properties. Run '
+				. '`occ integriq:migrate-inline-secrets --dry-run` for the per-source breakdown.',
+				(int)$plan['wouldMigrate'],
+				(int)$plan['needsReview']
+			)
+		);
+
+	}//end reportGate()
 
 	/**
 	 * Execute the inline-secret migration. Fail-closed and NON-FATAL.

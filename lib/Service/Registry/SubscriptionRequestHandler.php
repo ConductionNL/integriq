@@ -66,6 +66,37 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
 	 */
 	public function handle(array $request): ?SubscriptionResult {
+		$subscription = $this->requestOf(request: $request);
+		if ($subscription === null) {
+			return null;
+		}
+
+		$provider = $this->registry->get($subscription->registryId);
+		if ($provider === null) {
+			$this->logger->warning('registry-subscription.request.unknown-registry', ['registry' => $subscription->registryId]);
+			return null;
+		}
+
+		$result = $provider->subscribe($subscription->identity);
+		if ($result->isActive() === true) {
+			$this->remember(subscription: $subscription, result: $result);
+		}
+
+		$this->confirm(subscription: $subscription, result: $result);
+
+		return $result;
+	}//end handle()
+
+	/**
+	 * The request's registry, identity and schema, or null (logged) when one of the first two is missing.
+	 *
+	 * @param array<string, mixed> $request The event payload.
+	 *
+	 * @return SubscriptionRequest|null
+	 *
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
+	 */
+	private function requestOf(array $request): ?SubscriptionRequest {
 		$registryId = (string)($request['registry'] ?? $request['registryId'] ?? '');
 		$identity = (string)($request['identity'] ?? $request['identityValue'] ?? '');
 
@@ -74,43 +105,58 @@ class SubscriptionRequestHandler implements SubscriptionRequestHandlerInterface 
 			return null;
 		}
 
-		$provider = $this->registry->get($registryId);
-		if ($provider === null) {
-			$this->logger->warning('registry-subscription.request.unknown-registry', ['registry' => $registryId]);
-			return null;
+		return new SubscriptionRequest(registryId: $registryId, identity: $identity, schema: (string)($request['schema'] ?? ''));
+	}//end requestOf()
+
+	/**
+	 * Add the live subscription to the roster, with its target schema when one is named.
+	 *
+	 * @param SubscriptionRequest $subscription The request.
+	 * @param SubscriptionResult  $result       The active result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
+	 */
+	private function remember(SubscriptionRequest $subscription, SubscriptionResult $result): void {
+		$this->roster->add($subscription->registryId, $subscription->identity, $result->getReference());
+		if ($subscription->schema === '') {
+			return;
 		}
 
-		$result = $provider->subscribe($identity);
+		$this->roster->addTarget(
+			registryId: $subscription->registryId,
+			identity: $subscription->identity,
+			targetSchema: $this->schemaSlug(schema: $subscription->schema)
+		);
+	}//end remember()
 
-		if ($result->isActive() === true) {
-			$this->roster->add($registryId, $identity, $result->getReference());
-
-			$schema = (string)($request['schema'] ?? '');
-			if ($schema !== '') {
-				$this->roster->addTarget(
-					registryId: $registryId,
-					identity: $identity,
-					targetSchema: $this->schemaSlug(schema: $schema)
-				);
-			}
-		}
-
-		// A zero-property update carrying only the state is how the connector
-		// confirms, per design D2, until OpenRegister names a dedicated
-		// endpoint for it.
+	/**
+	 * Confirm the outcome to the registry.
+	 *
+	 * A zero-property update carrying only the state is how the connector
+	 * confirms, per design D2, until OpenRegister names a dedicated endpoint
+	 * for it.
+	 *
+	 * @param SubscriptionRequest $subscription The request.
+	 * @param SubscriptionResult  $result       The result, active or not.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-subscription-request-is-turned-into-a-live-subscription-req-rsc-002
+	 */
+	private function confirm(SubscriptionRequest $subscription, SubscriptionResult $result): void {
 		$this->updateClient->postUpdate(
-			$registryId,
+			$subscription->registryId,
 			[
-				'identity' => $identity,
+				'identity' => $subscription->identity,
 				'properties' => [],
 				'eventReference' => $result->getReference(),
 				'subscriptionState' => $result->getState(),
 				'error' => $result->getError(),
 			]
 		);
-
-		return $result;
-	}//end handle()
+	}//end confirm()
 
 	/**
 	 * The slug of the requesting object's schema, which is what a provider's

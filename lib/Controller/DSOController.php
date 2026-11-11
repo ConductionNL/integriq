@@ -457,11 +457,6 @@ class DSOController extends Controller {
 	 * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
 	 */
 	private function getRawContent(): string {
-		$content = file_get_contents(filename: 'php://input');
-		if ($content === false) {
-			return '';
-		}
-
-		return $content;
+		return (new RawRequestBody())->read();
 	}//end getRawContent()
 }//end class

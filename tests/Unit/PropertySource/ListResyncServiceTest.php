@@ -167,4 +167,89 @@ class ListResyncServiceTest extends TestCase {
 			'The previous list must still be served after a failed resync.'
 		);
 	}//end testAFailedResyncLeavesThePreviousListInPlace()
+
+	/**
+	 * Lists before and after, and how many entries changed.
+	 *
+	 * @return array<string,array{0:array<int,array<string,mixed>>,1:array<int,array<string,mixed>>,2:int}>
+	 */
+	public static function listChanges(): array {
+		$a = ['identifier' => 'a', 'label' => 'A'];
+		$b = ['identifier' => 'b', 'label' => 'B'];
+		return [
+			'nothing before or after' => [[], [], 0],
+			'unchanged'               => [[$a, $b], [$b, $a], 0],
+			'one added'               => [[$a], [$a, $b], 1],
+			'one removed'             => [[$a, $b], [$a], 1],
+			'one relabelled'          => [[$a], [['identifier' => 'a', 'label' => 'Z']], 1],
+			'replaced'                => [[$a], [$b], 2],
+			'a later duplicate wins'  => [[$a, ['identifier' => 'a', 'label' => 'Y']], [$a], 1],
+			'no identifier or label'  => [[['x' => 1]], [['identifier' => '', 'label' => '']], 0],
+			'numbers as strings'      => [[['identifier' => 1, 'label' => 2]], [['identifier' => '1', 'label' => '2']], 0],
+		];
+
+	}//end listChanges()
+
+	/**
+	 * A resync counts the added, removed and relabelled entries, serves the
+	 * fetched list, stores it and reports it, asking the provider with the config.
+	 *
+	 * @param array<int,array<string,mixed>> $before  The list served before.
+	 * @param array<int,array<string,mixed>> $after   The list fetched.
+	 * @param int                            $changed The changes reported.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider listChanges
+	 */
+	public function testAResyncCountsEachChange(array $before, array $after, int $changed): void {
+		$provider = $this->provider();
+		$provider->expects($this->once())->method('suggest')->with('', ['token' => 't'])->willReturn($after);
+		$this->seedList($before);
+		$started = time();
+
+		$report = $this->service($provider)->resync('classificatie', ['token' => 't']);
+
+		$this->assertGreaterThanOrEqual($started, $report['lastResyncAt']);
+		unset($report['lastResyncAt']);
+		$this->assertSame(['changed' => $changed, 'succeeded' => true, 'message' => '', 'served' => count($after)], $report);
+		$this->assertSame(json_encode($after), $this->config[ListResyncService::LIST_KEY_PREFIX . 'classificatie']);
+
+	}//end testAResyncCountsEachChange()
+
+	/**
+	 * A failed resync logs the provider and the error, keeps the previous
+	 * timestamp and reports what is still served.
+	 *
+	 * @return void
+	 */
+	public function testAFailedResyncKeepsThePreviousTimestamp(): void {
+		$provider = $this->provider();
+		$provider->method('suggest')->willReturnOnConsecutiveCalls(
+			[['identifier' => '1.1', 'label' => 'Bestuur'], ['identifier' => '1.2', 'label' => 'B']],
+			$this->throwException(new SourceUnreachableException('classificatie', 'down'))
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = '') => ($this->config[$key] ?? $default)
+		);
+		$appConfig->method('setValueString')->willReturnCallback(
+			function (string $app, string $key, string $value): bool {
+				$this->config[$key] = $value;
+				return true;
+			}
+		);
+		$service = new ListResyncService(new PropertySourceRegistry([$provider]), $appConfig, $logger);
+		$first = $service->resync('classificatie');
+		$logger->expects($this->once())->method('warning')->with('property-source.resync.failed', ['provider' => 'classificatie', 'error' => 'down']);
+
+		$failed = $service->resync('classificatie');
+
+		$this->assertSame($first['lastResyncAt'], $failed['lastResyncAt']);
+		unset($failed['lastResyncAt']);
+		$this->assertSame(['changed' => 0, 'succeeded' => false, 'message' => 'down', 'served' => 2], $failed);
+		$this->assertSame($service->lastReport('classificatie')['served'], 2);
+
+	}//end testAFailedResyncKeepsThePreviousTimestamp()
 }//end class

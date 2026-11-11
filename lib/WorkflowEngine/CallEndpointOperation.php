@@ -129,46 +129,71 @@ class CallEndpointOperation implements ISpecificOperation {
 	 */
 	public function onEvent(string $eventName, Event $event, IRuleMatcher $ruleMatcher): void {
 		foreach ($ruleMatcher->getFlows(false) as $flow) {
-			try {
-				$settings = $this->decodeSettings(operation: (string)($flow['operation'] ?? ''));
-				if ($settings === null) {
-					continue;
-				}
-
-				$endpointId = $settings['endpointId'];
-				$endpoint = $this->endpointService->getEndpointById($endpointId);
-				if ($endpoint === null) {
-					// A missing endpoint at onEvent() time means it was
-					// deleted after the rule was configured — log and skip
-					// rather than throw (design.md Decision 5).
-					$this->logger->warning(
-						'WorkflowEngine "Call endpoint" operation could not resolve endpoint: ' . $endpointId,
-						['eventName' => $eventName]
-					);
-					continue;
-				}
-
-				$parameters = [];
-				if (is_array(($settings['parameters'] ?? null)) === true) {
-					$parameters = $settings['parameters'];
-				}
-
-				$this->endpointService->triggerFromFlow(endpoint: $endpoint, parameters: $parameters);
-			} catch (Throwable $e) {
-				// Deliberately swallowed — one bad flow must not stop the
-				// remaining matched flows or propagate into the NC event
-				// dispatcher that invoked onEvent() (design.md Risk 1).
-				$this->logger->warning(
-					'WorkflowEngine "Call endpoint" operation dispatch failed: ' . $e->getMessage(),
-					[
-						'exception' => $e,
-						'eventName' => $eventName,
-					]
-				);
-			}//end try
-		}//end foreach
+			$this->runFlow(flow: $flow, eventName: $eventName);
+		}
 
 	}//end onEvent()
+
+	/**
+	 * Run one matched flow. Failures are deliberately swallowed — one bad
+	 * flow must not stop the remaining matched flows or propagate into the NC
+	 * event dispatcher that invoked onEvent() (design.md Risk 1).
+	 *
+	 * @param array  $flow      The matched flow.
+	 * @param string $eventName The event that matched it.
+	 *
+	 * @return void
+	 */
+	private function runFlow(array $flow, string $eventName): void {
+		try {
+			$settings = $this->decodeSettings(operation: (string)($flow['operation'] ?? ''));
+			if ($settings === null) {
+				return;
+			}
+
+			$this->callEndpoint(settings: $settings, eventName: $eventName);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'WorkflowEngine "Call endpoint" operation dispatch failed: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'eventName' => $eventName,
+				]
+			);
+		}//end try
+
+	}//end runFlow()
+
+	/**
+	 * Call the configured endpoint with the configured parameters.
+	 *
+	 * A missing endpoint at onEvent() time means it was deleted after the rule
+	 * was configured — log and skip rather than throw (design.md Decision 5).
+	 *
+	 * @param array  $settings  The decoded operation settings.
+	 * @param string $eventName The event that matched the flow.
+	 *
+	 * @return void
+	 */
+	private function callEndpoint(array $settings, string $eventName): void {
+		$endpointId = $settings['endpointId'];
+		$endpoint = $this->endpointService->getEndpointById($endpointId);
+		if ($endpoint === null) {
+			$this->logger->warning(
+				'WorkflowEngine "Call endpoint" operation could not resolve endpoint: ' . $endpointId,
+				['eventName' => $eventName]
+			);
+			return;
+		}
+
+		$parameters = [];
+		if (is_array(($settings['parameters'] ?? null)) === true) {
+			$parameters = $settings['parameters'];
+		}
+
+		$this->endpointService->triggerFromFlow(endpoint: $endpoint, parameters: $parameters);
+
+	}//end callEndpoint()
 
 	/**
 	 * Decode a flow's raw `operation` JSON and extract its `endpointId`, defensively.

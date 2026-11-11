@@ -108,12 +108,8 @@ class DigitalPostInboundJob extends TimedJob {
 	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function pollSource(array $source): int {
-		$config = ($source['configuration'] ?? []);
-		if (is_string($config) === true) {
-			$config = json_decode($config, true);
-		}
-
-		if (is_array($config) === false) {
+		$config = $this->configurationOf(source: $source);
+		if ($config === null) {
 			return 0;
 		}
 
@@ -122,40 +118,85 @@ class DigitalPostInboundJob extends TimedJob {
 			return 0;
 		}
 
-		try {
-			$items = $this->providers->get($providerId)->pollInbound($config);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'digital-post.inbound.failed',
-				['source' => (string)($source['slug'] ?? ''), 'error' => $e->getMessage()]
-			);
-
-			return 0;
-		}
+		$items = $this->receivedItems(source: $source, config: $config);
 
 		$offered = 0;
 		foreach ($items as $item) {
-			$accepted = $this->intake->dispatch(
-				[
-					'channel' => self::CHANNEL,
-					'subject' => (string)($item['subject'] ?? ''),
-					'receivedAt' => (string)($item['receivedAt'] ?? gmdate('c')),
-					'files' => [($item['document'] ?? [])],
-					'metadata' => [
-						'sender' => (string)($item['sender'] ?? ''),
-						'source' => (string)($source['slug'] ?? ''),
-						'provider' => $providerId,
-					],
-				]
-			);
-
-			if ($accepted === true) {
+			$metadata = ['sender' => (string)($item['sender'] ?? ''), 'source' => (string)($source['slug'] ?? ''), 'provider' => $providerId];
+			if ($this->offer(item: $item, metadata: $metadata) === true) {
 				$offered++;
 			}
 		}
 
 		return $offered;
 	}//end pollSource()
+
+	/**
+	 * What the source's provider received; nothing, after a logged warning, when polling fails.
+	 *
+	 * @param array<string,mixed> $source The source's data.
+	 * @param array<string,mixed> $config The source's configuration, naming a known provider.
+	 *
+	 * @return iterable<array<string,mixed>> The received items.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
+	 */
+	private function receivedItems(array $source, array $config): iterable {
+		try {
+			return $this->providers->get((string)($config['providerId'] ?? ''))->pollInbound($config);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'digital-post.inbound.failed',
+				['source' => (string)($source['slug'] ?? ''), 'error' => $e->getMessage()]
+			);
+
+			return [];
+		}
+	}//end receivedItems()
+
+	/**
+	 * The source's configuration, decoded when it is stored as JSON text.
+	 *
+	 * @param array<string,mixed> $source The source's data.
+	 *
+	 * @return array<string,mixed>|null The configuration, or null when it is not a map.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
+	 */
+	private function configurationOf(array $source): ?array {
+		$config = ($source['configuration'] ?? []);
+		if (is_string($config) === true) {
+			$config = json_decode($config, true);
+		}
+
+		if (is_array($config) === false) {
+			return null;
+		}
+
+		return $config;
+	}//end configurationOf()
+
+	/**
+	 * Offer one received item to the intake inbox.
+	 *
+	 * @param array<string,mixed>  $item     The received item.
+	 * @param array<string,string> $metadata Its sender, source and provider.
+	 *
+	 * @return boolean Whether the intake accepted it.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
+	 */
+	private function offer(array $item, array $metadata): bool {
+		return $this->intake->dispatch(
+			[
+				'channel' => self::CHANNEL,
+				'subject' => (string)($item['subject'] ?? ''),
+				'receivedAt' => (string)($item['receivedAt'] ?? gmdate('c')),
+				'files' => [($item['document'] ?? [])],
+				'metadata' => $metadata,
+			]
+		) === true;
+	}//end offer()
 
 	/**
 	 * Every enabled digital post source.
@@ -177,29 +218,50 @@ class DigitalPostInboundJob extends TimedJob {
 
 		$sources = [];
 		foreach (($result['results'] ?? $result) as $entity) {
-			$data = $entity;
-		if ($entity instanceof ObjectEntity === true) {
-			$data = $entity->getObject();
-		}
-			if (is_array($data) === false || ($data['isEnabled'] ?? false) !== true) {
-				continue;
+			$data = $this->enabledSourceData(entity: $entity);
+			if ($data !== null && $this->namesProvider(source: $data) === true) {
+				$sources[] = $data;
 			}
-
-			$config = ($data['configuration'] ?? []);
-			if (is_string($config) === true) {
-				$config = json_decode($config, true);
-			}
-
-			// Only a source that names a digital post provider is polled. The
-			// check is made here, on the row, rather than trusted to a filter
-			// a backend may ignore.
-			if (is_array($config) === false || $this->providers->has((string)($config['providerId'] ?? '')) === false) {
-				continue;
-			}
-
-			$sources[] = $data;
 		}
 
 		return $sources;
 	}//end activeSources()
+
+	/**
+	 * A source row's data when the source is enabled.
+	 *
+	 * @param mixed $entity The row: an ObjectEntity or its data.
+	 *
+	 * @return array<string,mixed>|null The data, or null when the source is not enabled.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
+	 */
+	private function enabledSourceData(mixed $entity): ?array {
+		$data = $entity;
+		if ($entity instanceof ObjectEntity === true) {
+			$data = $entity->getObject();
+		}
+
+		if (is_array($data) === false || ($data['isEnabled'] ?? false) !== true) {
+			return null;
+		}
+
+		return $data;
+	}//end enabledSourceData()
+
+	/**
+	 * Whether a source names a digital post provider. The check is made here,
+	 * on the row, rather than trusted to a filter a backend may ignore.
+	 *
+	 * @param array<string,mixed> $source The source's data.
+	 *
+	 * @return boolean True when it is polled.
+	 *
+	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
+	 */
+	private function namesProvider(array $source): bool {
+		$config = $this->configurationOf(source: $source);
+
+		return $config !== null && $this->providers->has((string)($config['providerId'] ?? '')) === true;
+	}//end namesProvider()
 }//end class
