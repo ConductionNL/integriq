@@ -12572,6 +12572,42 @@
         "agentId": "demo-agent",
         "at": "2026-03-01T09:04:20+00:00",
         "durationSeconds": 252
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "exchange_rate",
+          "slug": "exchange-rate-eur-usd"
+        },
+        "baseCurrency": "EUR",
+        "currency": "USD",
+        "rateDate": "2026-03-01",
+        "rate": 1.0842,
+        "source": "ecb"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "exchange_rate",
+          "slug": "exchange-rate-eur-gbp"
+        },
+        "baseCurrency": "EUR",
+        "currency": "GBP",
+        "rateDate": "2026-03-02",
+        "rate": 0.8356,
+        "source": "ecb"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "exchange_rate",
+          "slug": "exchange-rate-eur-chf"
+        },
+        "baseCurrency": "EUR",
+        "currency": "CHF",
+        "rateDate": "2026-03-03",
+        "rate": 0.9391,
+        "source": "ecb"
       }
     ]
   }
