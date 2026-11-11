@@ -45,7 +45,6 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Push (register a ROD bericht) + signed inbound DUO retour receiver.
@@ -169,28 +168,16 @@ class RodController extends Controller {
 	#[PublicPage]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function retour(): JSONResponse {
-		$rawBody = $this->getRawContent();
-
-		$identity = $this->gate->identify(profile: WebhookProfilesInterface::ROD, rawBody: $rawBody, request: $this->request);
-		if ($identity instanceof JSONResponse) {
-			return $identity;
-		}
+		$receipt = new SignedWebhookReceipt(gate: $this->gate, request: $this->request, profile: WebhookProfilesInterface::ROD);
 
 		// Signature verification runs over the exact raw bytes; the retour
 		// is XML (not JSON), so the body is passed to the service verbatim.
-		try {
-			$this->gate->deliver(
-				identity: $identity,
-				operation: function () use ($rawBody): void {
-					$this->rodService->receiveReturn(rawXml: $rawBody);
-				}
-			);
-		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so ROD delivers again.
-			return $this->gate->notStored(profile: WebhookProfilesInterface::ROD, reason: $exception->getMessage());
-		}//end try
-
-		return new JSONResponse(['received' => true]);
+		return $receipt->receive(
+			rawBody: $this->getRawContent(),
+			handler: function (string $rawBody): void {
+				$this->rodService->receiveReturn(rawXml: $rawBody);
+			}
+		);
 	}//end retour()
 
 	/**

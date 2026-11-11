@@ -46,7 +46,6 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Four push/sync endpoints + one shared signed acknowledgement/retour receiver.
@@ -328,26 +327,9 @@ class UwlrEduVController extends Controller {
 	 * @spec openspec/changes/uwlr-eduv-retour-on-the-consumer-model/specs/uwlr-eduv-adapter/spec.md#requirement-the-retour-acts-as-the-uwlr-and-edu-v-connections-account-req-020
 	 */
 	private function handleSignedInbound(callable $handler): JSONResponse {
-		$rawBody = $this->getRawContent();
+		$receipt = new SignedWebhookReceipt(gate: $this->gate, request: $this->request, profile: WebhookProfilesInterface::UWLR_EDUV);
 
-		$identity = $this->gate->identify(profile: WebhookProfilesInterface::UWLR_EDUV, rawBody: $rawBody, request: $this->request);
-		if ($identity instanceof JSONResponse) {
-			return $identity;
-		}
-
-		try {
-			$this->gate->deliver(
-				identity: $identity,
-				operation: function () use ($handler, $rawBody): void {
-					$handler($rawBody);
-				}
-			);
-		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so the UWLR/Edu-V partner delivers again.
-			return $this->gate->notStored(profile: WebhookProfilesInterface::UWLR_EDUV, reason: $exception->getMessage());
-		}//end try
-
-		return new JSONResponse(['received' => true]);
+		return $receipt->receive(rawBody: $this->getRawContent(), handler: $handler);
 	}//end handleSignedInbound()
 
 	/**

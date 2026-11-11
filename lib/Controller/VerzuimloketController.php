@@ -45,7 +45,6 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Push (register a Verzuimloket melding) + signed inbound DUO retour receiver.
@@ -165,26 +164,14 @@ class VerzuimloketController extends Controller {
 	#[PublicPage]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function retour(): JSONResponse {
-		$rawBody = $this->getRawContent();
+		$receipt = new SignedWebhookReceipt(gate: $this->gate, request: $this->request, profile: WebhookProfilesInterface::VERZUIMLOKET);
 
-		$identity = $this->gate->identify(profile: WebhookProfilesInterface::VERZUIMLOKET, rawBody: $rawBody, request: $this->request);
-		if ($identity instanceof JSONResponse) {
-			return $identity;
-		}
-
-		try {
-			$this->gate->deliver(
-				identity: $identity,
-				operation: function () use ($rawBody): void {
-					$this->verzuimloketService->receiveReturn(rawXml: $rawBody);
-				}
-			);
-		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so Verzuimloket delivers again.
-			return $this->gate->notStored(profile: WebhookProfilesInterface::VERZUIMLOKET, reason: $exception->getMessage());
-		}//end try
-
-		return new JSONResponse(['received' => true]);
+		return $receipt->receive(
+			rawBody: $this->getRawContent(),
+			handler: function (string $rawBody): void {
+				$this->verzuimloketService->receiveReturn(rawXml: $rawBody);
+			}
+		);
 	}//end retour()
 
 	/**
