@@ -1713,15 +1713,16 @@ HTML;
 
 		$ownership = $this->getMockBuilder(\OCA\Integriq\Service\Ownership\RecordOwnershipService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['forObject'])
+			->onlyMethods(['forObjectOrFail'])
 			->getMock();
-		$ownership->method('forObject')->willReturn(
+		$ownership->method('forObjectOrFail')->willReturn(
 			new \OCA\Integriq\Service\Ownership\OwnershipState('source', 'source-uuid-brp', '999993653', null, true, false, null, 'sync-uuid-brp', 'BRP personen')
 		);
 		$listener = new \OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener(
 			$ownership,
 			new \OCA\Integriq\Service\Ownership\LocalDeleteGuard(),
-			new \Psr\Log\NullLogger()
+			new \Psr\Log\NullLogger(),
+			$this->createMock(\OCA\Integriq\Service\ListenerSchemaResolver::class)
 		);
 
 		$stopped = [];
