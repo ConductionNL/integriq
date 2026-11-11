@@ -310,7 +310,7 @@ class UserController extends Controller {
 	public function me(): JSONResponse {
 		try {
 			// First try to get user from session; without one, try basic authentication.
-			$currentUser = ($this->userService->getCurrentUser() ?? $this->basicAuthUser());
+			$currentUser = ($this->userService->getCurrentUser() ?? (new BasicAuthCredentials(request: $this->request, users: $this->userManager))->user());
 			if ($currentUser === null) {
 				return $this->corsResponse(data: ['message' => $this->l->t('Current user is not logged in')], statusCode: Http::STATUS_UNAUTHORIZED);
 			}
@@ -323,70 +323,6 @@ class UserController extends Controller {
 		}//end try
 
 	}//end me()
-
-	/**
-	 * The user a Basic Authorization header authenticates, or null.
-	 *
-	 * @return IUser|null The user, or null without valid Basic credentials.
-	 *
-	 * @spec openspec/specs/user-management-and-login/spec.md
-	 */
-	private function basicAuthUser(): ?IUser {
-		$credentials = $this->basicCredentials();
-		if ($credentials === null) {
-			return null;
-		}
-
-		[$username, $password] = explode(':', $credentials, 2);
-		$checked = $this->userManager->checkPassword($username, $password);
-		if ($checked === false) {
-			return null;
-		}
-
-		return $checked;
-
-	}//end basicAuthUser()
-
-	/**
-	 * The decoded `user:password` of a Basic Authorization header, or null
-	 * when the header is absent, not Basic, not decodable or has no colon.
-	 *
-	 * @return string|null The credentials.
-	 *
-	 * @spec openspec/specs/user-management-and-login/spec.md
-	 */
-	private function basicCredentials(): ?string {
-		$payload = $this->basicAuthPayload();
-		if ($payload === null) {
-			return null;
-		}
-
-		$credentials = base64_decode($payload);
-		if ($credentials === false || str_contains($credentials, ':') === false) {
-			return null;
-		}
-
-		return $credentials;
-
-	}//end basicCredentials()
-
-	/**
-	 * The encoded part of a Basic Authorization header, or null when the
-	 * header is absent or not Basic.
-	 *
-	 * @return string|null The payload after `Basic `.
-	 *
-	 * @spec openspec/specs/user-management-and-login/spec.md
-	 */
-	private function basicAuthPayload(): ?string {
-		$authHeader = $this->request->getHeader('Authorization');
-		if ($authHeader === '' || str_starts_with($authHeader, 'Basic ') === false) {
-			return null;
-		}
-
-		return substr($authHeader, 6);
-
-	}//end basicAuthPayload()
 
 	/**
 	 * A response with the security headers, then the CORS headers.
