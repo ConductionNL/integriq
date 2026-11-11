@@ -425,16 +425,40 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @throws AuthenticationException When the issuer claim is not a string or a number, or the issuer's HMAC secret is too short.
 	 */
 	private function refuseWeakHmacSecret(string $authorization, ConsumerSource $source): void {
+		$issuer = $this->issuerOf(authorization: $authorization);
+		if ($issuer === null) {
+			return;
+		}
+
+		$consumer = $source->findByIssuer(issuer: $issuer);
+		if ($consumer === null) {
+			return;
+		}
+
+		$this->assertHmacSecretLength(configuration: $consumer->configuration);
+	}//end refuseWeakHmacSecret()
+
+	/**
+	 * The token's issuer as OpenRegister reads it, or null when it is empty.
+	 *
+	 * Read `iss` exactly as OpenRegister does — with a string cast — so a
+	 * numeric issuer (`"iss": 12345`) reaches this guard too; it resolves to
+	 * the consumer named "12345" there. An empty `iss` is skipped: OpenRegister
+	 * refuses it itself ("No issuer mentioned"). Any other non-scalar is
+	 * refused here: OpenRegister only checks `empty()` and would cast `["x"]`
+	 * to the consumer named "Array".
+	 *
+	 * @param string $authorization The Authorization header value.
+	 *
+	 * @return string|null The issuer.
+	 *
+	 * @throws AuthenticationException When the issuer claim is not a string or a number.
+	 */
+	private function issuerOf(string $authorization): ?string {
 		$payload = $this->payloadOf(token: substr(string: $authorization, offset: strlen('Bearer ')));
-		// Read `iss` exactly as OpenRegister does — with a string cast — so a
-		// numeric issuer (`"iss": 12345`) reaches this guard too; it resolves
-		// to the consumer named "12345" there. An empty `iss` is skipped:
-		// OpenRegister refuses it itself ("No issuer mentioned"). Any other
-		// non-scalar is refused here: OpenRegister only checks `empty()` and
-		// would cast `["x"]` to the consumer named "Array".
 		$raw = ($payload['iss'] ?? null);
 		if (empty($raw) === true) {
-			return;
+			return null;
 		}
 
 		if (is_scalar($raw) === false) {
@@ -444,30 +468,34 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 			);
 		}
 
-		$issuer = (string)$raw;
+		return (string)$raw;
+	}//end issuerOf()
 
-		$consumer = $source->findByIssuer(issuer: $issuer);
-		if ($consumer === null) {
+	/**
+	 * Refuse an HMAC secret below the algorithm's hash output; other algorithms pass.
+	 *
+	 * @param array<string, mixed> $configuration The consumer's authorization configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the HMAC secret is too short.
+	 */
+	private function assertHmacSecretLength(array $configuration): void {
+		$algorithm = (string)($configuration['algorithm'] ?? '');
+		$minimum = (self::HMAC_MIN_SECRET_BYTES[$algorithm] ?? 0);
+		if (strlen((string)($configuration['publicKey'] ?? '')) >= $minimum) {
 			return;
 		}
 
-		$algorithm = (string)($consumer->configuration['algorithm'] ?? '');
-		if (isset(self::HMAC_MIN_SECRET_BYTES[$algorithm]) === false) {
-			return;
-		}
-
-		$secret = (string)($consumer->configuration['publicKey'] ?? '');
-		if (strlen($secret) < self::HMAC_MIN_SECRET_BYTES[$algorithm]) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: [
-					'reason' => 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output',
-					'algorithm' => $algorithm,
-					'minimum_bytes' => self::HMAC_MIN_SECRET_BYTES[$algorithm],
-				]
-			);
-		}
-	}//end refuseWeakHmacSecret()
+		throw new AuthenticationException(
+			message: 'The token could not be validated',
+			details: [
+				'reason' => 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output',
+				'algorithm' => $algorithm,
+				'minimum_bytes' => $minimum,
+			]
+		);
+	}//end assertHmacSecretLength()
 
 	/**
 	 * Carry OpenRegister's refusal over as integriq's, which every caller catches.
