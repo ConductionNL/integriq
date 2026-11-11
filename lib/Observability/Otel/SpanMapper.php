@@ -30,6 +30,8 @@ namespace OCA\Integriq\Observability\Otel;
 /**
  * Maps an `execution_trace` object to an OTLP JSON `resourceSpans` payload.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) -- the complexity sits in the URL masking, kept as one guarded step
+ *
  * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-spans-carry-no-message-content-req-otel-003
  */
 class SpanMapper implements SpanMapperInterface {
