@@ -560,6 +560,30 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function listUuids(string $schema, int $limit): array {
+		$uuids = [];
+		foreach ($this->listedItems(schema: $schema, limit: $limit) as $item) {
+			$uuid = $this->uuidOf(item: $item);
+			if ($uuid === '') {
+				continue;
+			}
+
+			$data = $item->getObject();
+			$uuids[$uuid] = (string)($data['name'] ?? $uuid);
+		}
+
+		return $uuids;
+	}//end listSourceUuids()
+
+	/**
+	 * The rows of one rendered listing; none when it fails (logged, secret-free)
+	 * or answers no list.
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int    $limit  Maximum number of objects to list.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function listedItems(string $schema, int $limit): array {
 		try {
 			$result = $this->objectService->findAll(
 				config: [
@@ -575,26 +599,37 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 			return [];
 		}
 
+		return $this->listOf(result: $result);
+	}//end listedItems()
+
+	/**
+	 * The uuid of a listed object; '' for a row that is no object.
+	 *
+	 * @param mixed $item The listed row.
+	 *
+	 * @return string
+	 */
+	private function uuidOf(mixed $item): string {
+		if ($item instanceof ObjectEntity === false) {
+			return '';
+		}
+
+		return (string)$item->getUuid();
+	}//end uuidOf()
+
+	/**
+	 * The items of a findAll() answer, enveloped or bare; none when it is no list.
+	 *
+	 * @param mixed $result What findAll() answered.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function listOf(mixed $result): array {
 		$items = ($result['results'] ?? $result);
 		if (is_array($items) === false) {
 			return [];
 		}
 
-		$uuids = [];
-		foreach ($items as $item) {
-			if ($item instanceof ObjectEntity === false) {
-				continue;
-			}
-
-			$uuid = (string)$item->getUuid();
-			if ($uuid === '') {
-				continue;
-			}
-
-			$data = $item->getObject();
-			$uuids[$uuid] = (string)($data['name'] ?? $uuid);
-		}
-
-		return $uuids;
-	}//end listSourceUuids()
+		return $items;
+	}//end listOf()
 }//end class
