@@ -26,6 +26,7 @@ use OCA\Integriq\Flow\ApprovalRequestNode;
 use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Service\ApprovalService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowStop;
@@ -221,7 +222,7 @@ class ApprovalRequestNodeTest extends TestCase {
 		$context = $this->context(state: $state);
 
 		try {
-			$this->node->execute(items: [['json' => []]], config: $this->config(), context: $context);
+			$this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $context));
 			$this->fail('Expected a FlowSuspension');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt(), 'The suspension must carry a heartbeat, not wait forever on a signal');
@@ -248,7 +249,7 @@ class ApprovalRequestNodeTest extends TestCase {
 
 		$this->expectException(FlowNodeException::class);
 
-		$this->node->execute(items: [['json' => []]], config: $this->config(), context: $context);
+		$this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $context));
 
 	}//end testUnaddressableRunRefuses()
 
@@ -270,11 +271,11 @@ class ApprovalRequestNodeTest extends TestCase {
 			]
 		);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [['json' => ['a' => 1]], ['json' => ['a' => 2]]],
 			config: $this->config(),
 			context: $context
-		);
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertSame('approved', $out[0]['json']['approval']['decision']);
@@ -296,7 +297,7 @@ class ApprovalRequestNodeTest extends TestCase {
 			overrides: ['signal' => ['decision' => 'rejected', 'comment' => 'not like this']]
 		);
 
-		$out = $this->node->execute(items: [['json' => []]], config: $this->config(), context: $context);
+		$out = $this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $context));
 
 		$this->assertSame('rejected', $out[0]['json']['approval']['decision']);
 
@@ -315,11 +316,11 @@ class ApprovalRequestNodeTest extends TestCase {
 		);
 
 		try {
-			$this->node->execute(
+			$this->node->execute(new FlowNodeCall(
 				items: [['json' => []]],
 				config: $this->config(overrides: ['failOnReject' => true]),
 				context: $context
-			);
+			));
 			$this->fail('Expected a FlowStop');
 		} catch (FlowStop $stop) {
 			$this->assertTrue($stop->isError(), 'A rejection under failOnReject is a failure, not a clean stop');
@@ -347,7 +348,7 @@ class ApprovalRequestNodeTest extends TestCase {
 
 		$this->expectException(FlowSuspension::class);
 
-		$this->node->execute(items: [['json' => []]], config: $this->config(), context: $context);
+		$this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $context));
 
 	}//end testDecisionlessSignalKeepsWaiting()
 
@@ -375,7 +376,7 @@ class ApprovalRequestNodeTest extends TestCase {
 			values: ['approvalRequestId' => 'req-1', 'askedAt' => '2026-01-01T00:00:00+00:00']
 		);
 
-		$out = $this->node->execute(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state));
+		$out = $this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state)));
 
 		$this->assertSame('approved', $out[0]['json']['approval']['decision']);
 		$this->assertSame('bob', $out[0]['json']['approval']['decidedBy']);
@@ -399,7 +400,7 @@ class ApprovalRequestNodeTest extends TestCase {
 		);
 
 		try {
-			$this->node->execute(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state));
+			$this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state)));
 			$this->fail('Expected a FlowStop');
 		} catch (FlowStop $stop) {
 			$this->assertTrue($stop->isError(), 'An expired approval is a failure, not a clean stop');
@@ -427,7 +428,7 @@ class ApprovalRequestNodeTest extends TestCase {
 
 		$this->expectException(FlowStop::class);
 
-		$this->node->execute(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state));
+		$this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state)));
 
 	}//end testPendingPastDeadlineFailsClosed()
 
@@ -450,7 +451,7 @@ class ApprovalRequestNodeTest extends TestCase {
 			values: ['approvalRequestId' => 'req-1', 'askedAt' => '2026-01-01T00:00:00+00:00']
 		);
 
-		$out = $this->node->execute(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state));
+		$out = $this->node->execute(new FlowNodeCall(items: [['json' => []]], config: $this->config(), context: $this->context(state: $state)));
 
 		$this->assertSame('rejected', $out[0]['json']['approval']['decision']);
 
