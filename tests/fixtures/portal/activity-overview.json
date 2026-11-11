@@ -1,0 +1,131 @@
+{
+    "overview": {
+        "findAll": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "dso_verzoek"
+                    },
+                    "limit": 500,
+                    "sort": {
+                        "receivedAt": "DESC"
+                    }
+                },
+                false,
+                false
+            ]
+        ],
+        "rows": {
+            "results": [
+                {
+                    "id": "r-1",
+                    "imowId": "nl.imow-gm0363.activiteit.1",
+                    "activityName": "Bouwen",
+                    "lastReceivedAt": "2026-03-01T10:00:00+00:00",
+                    "unmapped": false
+                },
+                {
+                    "id": 2,
+                    "imowId": "",
+                    "activityId": "a-2",
+                    "activityName": "Slopen",
+                    "lastReceivedAt": "2026-01-02T10:00:00+00:00",
+                    "unmapped": false
+                },
+                {
+                    "id": "r-3",
+                    "imowId": "x",
+                    "activityName": "Kappen",
+                    "lastReceivedAt": null,
+                    "unmapped": false
+                },
+                {
+                    "id": "unmapped:imowId:nl.imow.x",
+                    "imowId": "nl.imow.x",
+                    "activityId": "ax",
+                    "activityName": "Graven",
+                    "caseTypes": [],
+                    "unmapped": true,
+                    "waiting": 3,
+                    "lastReceivedAt": "2026-02-02"
+                },
+                {
+                    "id": "unmapped:activityId:ay",
+                    "imowId": "",
+                    "activityId": "ay",
+                    "activityName": "Dempen",
+                    "caseTypes": [],
+                    "unmapped": true,
+                    "waiting": 1,
+                    "lastReceivedAt": null
+                }
+            ]
+        }
+    },
+    "plain list answer": {
+        "findAll": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "dso_verzoek"
+                    },
+                    "limit": 500,
+                    "sort": {
+                        "receivedAt": "DESC"
+                    }
+                },
+                false,
+                false
+            ]
+        ],
+        "rows": {
+            "results": [
+                {
+                    "id": "r-1",
+                    "imowId": "nl.imow-gm0363.activiteit.1",
+                    "activityName": "Bouwen",
+                    "lastReceivedAt": null,
+                    "unmapped": false
+                },
+                {
+                    "id": 2,
+                    "imowId": "",
+                    "activityId": "a-2",
+                    "activityName": "Slopen",
+                    "lastReceivedAt": null,
+                    "unmapped": false
+                },
+                {
+                    "id": "r-3",
+                    "imowId": "x",
+                    "activityName": "Kappen",
+                    "lastReceivedAt": "2026-01-01",
+                    "unmapped": false
+                }
+            ]
+        }
+    },
+    "nothing": {
+        "findAll": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "dso_verzoek"
+                    },
+                    "limit": 500,
+                    "sort": {
+                        "receivedAt": "DESC"
+                    }
+                },
+                false,
+                false
+            ]
+        ],
+        "rows": {
+            "results": []
+        }
+    }
+}
