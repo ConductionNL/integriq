@@ -156,48 +156,43 @@ class AuthenticationConfigAuditor implements AuthenticationConfigAuditorInterfac
 		$uuids = $this->planner->listSourceUuids(limit: $limit);
 
 		$sources = [];
-		$holdValue = 0;
-		$referenced = 0;
-		$clear = 0;
-		$unreadable = 0;
-
 		foreach ($uuids as $uuid => $name) {
-			$record = $this->auditSource(uuid: (string)$uuid, name: (string)$name);
-			$sources[] = $record;
-
-			if ($record['state'] === self::STATE_HOLDS_VALUE) {
-				$holdValue++;
-			}
-
-			if ($record['state'] === self::STATE_CLEAR) {
-				$clear++;
-			}
-
-			if ($record['state'] === self::STATE_UNREADABLE) {
-				$unreadable++;
-			}
-
-			if ($record['referenced'] === true) {
-				$referenced++;
-			}
+			$sources[] = $this->auditSource(uuid: (string)$uuid, name: (string)$name);
 		}
 
-		// The schema property may only be dropped when the whole fleet is clear,
-		// nothing still references it from a Twig template, and every source was
-		// actually READABLE (an unreadable source's state is unknown — fail closed).
-		$removable = ($holdValue === 0 && $referenced === 0 && $unreadable === 0);
+		$counts = $this->countsOf(sources: $sources);
 
 		return [
 			'field' => self::FIELD,
 			'totalSources' => count($uuids),
-			'holdValue' => $holdValue,
-			'clear' => $clear,
-			'unreadable' => $unreadable,
-			'referenced' => $referenced,
-			'schemaPropertyRemovable' => $removable,
+			'holdValue' => $counts[self::STATE_HOLDS_VALUE],
+			'clear' => $counts[self::STATE_CLEAR],
+			'unreadable' => $counts[self::STATE_UNREADABLE],
+			'referenced' => $counts['referenced'],
+			// The schema property may only be dropped when the whole fleet is clear,
+			// nothing still references it from a Twig template, and every source was
+			// actually READABLE (an unreadable source's state is unknown — fail closed).
+			'schemaPropertyRemovable' => ($counts[self::STATE_HOLDS_VALUE] === 0 && $counts['referenced'] === 0 && $counts[self::STATE_UNREADABLE] === 0),
 			'sources' => $sources,
 		];
 	}//end auditAll()
+
+	/**
+	 * How many sources are in each state, and how many are referenced from a template.
+	 *
+	 * @param list<array<string, mixed>> $sources The per-source records.
+	 *
+	 * @return array<string, int>
+	 */
+	private function countsOf(array $sources): array {
+		$counts = array_count_values(array_column($sources, 'state'));
+		return [
+			self::STATE_HOLDS_VALUE => ($counts[self::STATE_HOLDS_VALUE] ?? 0),
+			self::STATE_CLEAR => ($counts[self::STATE_CLEAR] ?? 0),
+			self::STATE_UNREADABLE => ($counts[self::STATE_UNREADABLE] ?? 0),
+			'referenced' => count(array_keys(array_column($sources, 'referenced'), true, true)),
+		];
+	}//end countsOf()
 
 	/**
 	 * Audit ONE source.
@@ -220,24 +215,12 @@ class AuthenticationConfigAuditor implements AuthenticationConfigAuditorInterfac
 		$rawData = $this->planner->readRawSource(uuid: $uuid);
 		if ($rawData === []) {
 			// Unknown, NOT clear. readRawSource() has already logged (secret-free).
-			return [
-				'uuid' => $uuid,
-				'name' => $name,
-				'state' => self::STATE_UNREADABLE,
-				'keys' => [],
-				'shapes' => [],
-				'referenced' => false,
-				'references' => [],
-			];
+			return $this->unreadableRecord(uuid: $uuid, name: $name);
 		}
 
 		$value = ($rawData[self::FIELD] ?? null);
 		$references = $this->findTwigReferences(configuration: ($rawData['configuration'] ?? []));
-
-		$state = self::STATE_HOLDS_VALUE;
-		if ($value === null || $value === [] || $value === '') {
-			$state = self::STATE_CLEAR;
-		}
+		$state = $this->stateOf(value: $value);
 
 		$described = ['keys' => [], 'shapes' => []];
 		if ($state === self::STATE_HOLDS_VALUE) {
@@ -254,6 +237,41 @@ class AuthenticationConfigAuditor implements AuthenticationConfigAuditorInterfac
 			'references' => $references,
 		];
 	}//end auditSource()
+
+	/**
+	 * The record of a source whose raw row could not be read: unknown, never clear.
+	 *
+	 * @param string $uuid The source UUID.
+	 * @param string $name The source name.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function unreadableRecord(string $uuid, string $name): array {
+		return [
+			'uuid' => $uuid,
+			'name' => $name,
+			'state' => self::STATE_UNREADABLE,
+			'keys' => [],
+			'shapes' => [],
+			'referenced' => false,
+			'references' => [],
+		];
+	}//end unreadableRecord()
+
+	/**
+	 * Whether the field holds a value: null, an empty array and an empty string are clear.
+	 *
+	 * @param mixed $value The raw field value.
+	 *
+	 * @return string self::STATE_CLEAR or self::STATE_HOLDS_VALUE.
+	 */
+	private function stateOf(mixed $value): string {
+		if ($value === null || $value === [] || $value === '') {
+			return self::STATE_CLEAR;
+		}
+
+		return self::STATE_HOLDS_VALUE;
+	}//end stateOf()
 
 	/**
 	 * Describe a non-empty `authenticationConfig` bag: key NAMES + per-key shapes.
