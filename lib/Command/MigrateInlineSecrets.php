@@ -125,16 +125,10 @@ class MigrateInlineSecrets extends Command {
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$io = new SymfonyStyle($input, $output);
-
-		$limit = CommandConsole::readLimit(input: $input, io: $io);
-		if ($limit === null) {
+		$run = CommandConsole::startRun(input: $input, output: $output);
+		if ($run === null) {
 			return Command::FAILURE;
 		}
-
-		$run = new ConsoleRun(io: $io, output: $output);
-		$run->limit = $limit;
-		$run->json = (bool)$input->getOption('json');
 
 		if ((bool)$input->getOption('dry-run') === false) {
 			return $this->runMigrate(run: $run);
