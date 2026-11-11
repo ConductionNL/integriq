@@ -21,7 +21,6 @@
 
 namespace OCA\Integriq\Service;
 
-use OC\Files\Node\Node;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\GenericFileException;
@@ -126,55 +125,89 @@ class StorageService {
 	 * @spec openspec/specs/storage-uploads/spec.md
 	 */
 	public function createUpload(string $path, string $fileName, int $size, ?string $objectId = null): array {
-		$user = $this->userManager->get(self::APP_USER);
-		// $userFolder = $this->rootFolder->getUserFolder(userId: $user ? $user->getUID() : 'Guest');.
+		$this->userManager->get(self::APP_USER);
 		$uploadFolder = $this->rootFolder->get($path);
-
 		$partSize = $this->config->getValueInt('integriq', 'part-size', 1000000);
-
 		$numParts = ceil($size / $partSize);
 
-		$remainingSize = $size;
+		$plan = new UploadPlan(target: $uploadFolder->newFile($fileName), partsFolder: $uploadFolder->newFolder("{$fileName}_parts"));
+		$plan->numParts = $numParts;
+		$plan->objectId = $objectId;
+
 		$parts = [];
+		foreach ($this->partSizes(size: $size, partSize: $partSize) as $i => $reportedPartSize) {
+			$parts[] = $this->registerPart(plan: $plan, part: ['size' => $reportedPartSize, 'order' => ($i + 1)]);
+		}
 
-		/*
-		 * @var File $target
-		 */
+		return $parts;
+	}//end createUpload()
 
-		$target = $uploadFolder->newFile($fileName);
-
-		$partsFolder = $uploadFolder->newFolder("{$fileName}_parts");
-
+	/**
+	 * The size each part reports: the part size, and what remains for the last one.
+	 *
+	 * @param int $size     The total size of the file.
+	 * @param int $partSize The configured part size.
+	 *
+	 * @return list<int> One size per part, in order.
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function partSizes(int $size, int $partSize): array {
+		$numParts = ceil($size / $partSize);
+		$remainingSize = $size;
+		$sizes = [];
 		for ($i = 0; $i < $numParts; $i++) {
-			$partNumber = $i + 1;
-			$partUuid = Uuid::v4();
-
-			$this->cache->set(
-				"upload_$partUuid",
-				[
-					self::UPLOAD_TARGET_ID => $target->getId(),
-					self::UPLOAD_TARGET_PATH => $partsFolder->getPath(),
-					self::NUMBER_OF_PARTS => $numParts,
-				]
-			);
-
 			$reportedPartSize = $partSize;
 			if ($partSize >= $remainingSize) {
 				$reportedPartSize = $remainingSize;
 			}
 
-			$parts[] = [
-				'id' => $partUuid,
-				'size' => $reportedPartSize,
-				'order' => $partNumber,
-				'object' => $objectId,
-				'successful' => false,
-			];
+			$sizes[] = $reportedPartSize;
 			$remainingSize -= $partSize;
-		}//end for
+		}
 
-		return $parts;
-	}//end createUpload()
+		return $sizes;
+	}//end partSizes()
+
+	/**
+	 * Cache where one part goes and describe it for the client.
+	 *
+	 * @param UploadPlan               $plan The upload.
+	 * @param array{size:int,order:int} $part The part's reported size and order number.
+	 *
+	 * @return array The file part object: id, size, order, object and whether it was written.
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function registerPart(UploadPlan $plan, array $part): array {
+		$partUuid = Uuid::v4();
+		$this->cache->set("upload_$partUuid", $this->cacheEntry(plan: $plan));
+
+		return [
+			'id' => $partUuid,
+			'size' => $part['size'],
+			'order' => $part['order'],
+			'object' => $plan->objectId,
+			'successful' => false,
+		];
+	}//end registerPart()
+
+	/**
+	 * What the cache keeps for every part of an upload.
+	 *
+	 * @param UploadPlan $plan The upload.
+	 *
+	 * @return array The target file id, the parts folder path and the number of parts.
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function cacheEntry(UploadPlan $plan): array {
+		return [
+			self::UPLOAD_TARGET_ID => $plan->target->getId(),
+			self::UPLOAD_TARGET_PATH => $plan->partsFolder->getPath(),
+			self::NUMBER_OF_PARTS => $plan->numParts,
+		];
+	}//end cacheEntry()
 
 	/**
 	 * Write a file to a specified path.
@@ -215,7 +248,7 @@ class StorageService {
 	/**
 	 * Reconcile partial files into one file if all parts of a file are present.
 	 *
-	 * @param Node[] $folderContents The contents of the folder containing the partial files.
+	 * @param \OCP\Files\Node[] $folderContents The contents of the folder containing the partial files.
 	 * @param File $target The file to write the contents to.
 	 * @param int $numParts Total number of parts expected.
 	 *
@@ -230,50 +263,12 @@ class StorageService {
 	 * @spec openspec/specs/storage-uploads/spec.md
 	 */
 	private function attemptCloseUpload(array $folderContents, File $target, int $numParts): bool {
-		$contentFilenames = array_map(
-			function ($node) {
-				return $node->getName();
-			},
-			$folderContents
-		);
-
 		$folder = $folderContents[0]->getParent();
-
-		$files = array_combine($contentFilenames, $folderContents);
-		ksort($files);
-
-		$contentFilenames = array_filter(
-			$contentFilenames,
-			function ($string) use ($target) {
-				$result = preg_match("#^[0-9]+\.part\.{$target->getExtension()}$#", $string);
-				return $result !== false && $result > 0;
-			}
-		);
-		asort($contentFilenames);
-		$sortedFilenames = array_values($contentFilenames);
-
-		$contentFilenamesWithoutExtensions = array_map(
-			function ($filename) use ($target) {
-				return intval(str_replace(search: ".part.{$target->getExtension()}", replace: '', subject: $filename));
-			},
-			$contentFilenames
-		);
-
-		if ($contentFilenamesWithoutExtensions !== range(start: 1, end: $numParts)) {
+		if ($this->partNumbers(folderContents: $folderContents, target: $target) !== range(start: 1, end: $numParts)) {
 			return false;
 		}
 
-		$totalContent = '';
-		foreach ($files as $filePart) {
-			if ($filePart instanceof File === false) {
-				continue;
-			}
-
-			$totalContent .= $filePart->getContent();
-
-			$filePart->delete();
-		}
-
+		$totalContent = $this->takeContents(folderContents: $folderContents);
 		if ($folder->getDirectoryListing() === []) {
 			$folder->delete();
 		}
@@ -282,6 +277,95 @@ class StorageService {
 
 		return true;
 	}//end attemptCloseUpload()
+
+	/**
+	 * The part numbers of the part files in the folder.
+	 *
+	 * The numbers are in name order and keep their listing keys, so they only
+	 * equal 1..n when the listing already holds exactly those parts in order.
+	 *
+	 * @param \OCP\Files\Node[] $folderContents The contents of the folder containing the partial files.
+	 * @param File               $target         The target file; its extension names the parts.
+	 *
+	 * @return array<int,int> Listing key => part number.
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function partNumbers(array $folderContents, File $target): array {
+		$partNames = $this->partNames(folderContents: $folderContents, target: $target);
+		asort($partNames);
+
+		return array_map(
+			function ($filename) use ($target) {
+				return intval(str_replace(search: ".part.{$target->getExtension()}", replace: '', subject: $filename));
+			},
+			$partNames
+		);
+	}//end partNumbers()
+
+	/**
+	 * The names in the folder that are part files of the target.
+	 *
+	 * @param \OCP\Files\Node[] $folderContents The contents of the folder containing the partial files.
+	 * @param File               $target         The target file; its extension names the parts.
+	 *
+	 * @return array<int,string> Listing key => `<n>.part.<extension>` name.
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function partNames(array $folderContents, File $target): array {
+		return array_filter(
+			$this->namesOf(folderContents: $folderContents),
+			function ($string) use ($target) {
+				$result = preg_match("#^[0-9]+\.part\.{$target->getExtension()}$#", $string);
+				return $result !== false && $result > 0;
+			}
+		);
+	}//end partNames()
+
+	/**
+	 * Read every file in the folder, in name order, and delete it.
+	 *
+	 * @param \OCP\Files\Node[] $folderContents The contents of the folder containing the partial files.
+	 *
+	 * @return string The files' contents, joined.
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function takeContents(array $folderContents): string {
+		$files = array_combine($this->namesOf(folderContents: $folderContents), $folderContents);
+		ksort($files);
+
+		$totalContent = '';
+		foreach ($files as $filePart) {
+			if ($filePart instanceof File === false) {
+				continue;
+			}
+
+			$totalContent .= $filePart->getContent();
+			$filePart->delete();
+		}
+
+		return $totalContent;
+	}//end takeContents()
+
+	/**
+	 * The names of the nodes, by listing key.
+	 *
+	 * @param \OCP\Files\Node[] $folderContents The nodes.
+	 *
+	 * @return array<int,string> The names.
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function namesOf(array $folderContents): array {
+		return array_map(
+			function ($node) {
+				return $node->getName();
+			},
+			$folderContents
+		);
+	}//end namesOf()
 
 	/**
 	 * Write a partial file to a temporary file and try to reconcile them if all file parts are uploaded.
@@ -307,14 +391,7 @@ class StorageService {
 		$partsFolder = $this->rootFolder->get($partData[self::UPLOAD_TARGET_PATH]);
 		$numParts = $partData[self::NUMBER_OF_PARTS];
 
-		if ($partsFolder instanceof Folder === false) {
-			throw new NotFoundException('target folder is not a folder');
-		}
-
-		if ($targetFile instanceof File === false) {
-			throw new NotFoundException('target file is not a file');
-		}
-
+		$this->assertUploadNodes(partsFolder: $partsFolder, targetFile: $targetFile);
 		$partsFolder->newFile("$partId.part.{$targetFile->getExtension()}", $data);
 
 		$this->rootFolder->get($partsFolder->getPath());
@@ -327,4 +404,29 @@ class StorageService {
 
 		return true;
 	}//end writePart()
+
+	/**
+	 * Refuse a part whose cached folder or target is not a folder and a file.
+	 *
+	 * @param mixed $partsFolder The node at the parts folder path.
+	 * @param mixed $targetFile  The node with the target file id.
+	 *
+	 * @return void
+	 *
+	 * @throws NotFoundException When either is not what the upload created.
+	 *
+	 * @phpstan-assert Folder $partsFolder
+	 * @phpstan-assert File $targetFile
+	 *
+	 * @spec openspec/specs/storage-uploads/spec.md
+	 */
+	private function assertUploadNodes(mixed $partsFolder, mixed $targetFile): void {
+		if ($partsFolder instanceof Folder === false) {
+			throw new NotFoundException('target folder is not a folder');
+		}
+
+		if ($targetFile instanceof File === false) {
+			throw new NotFoundException('target file is not a file');
+		}
+	}//end assertUploadNodes()
 }//end class

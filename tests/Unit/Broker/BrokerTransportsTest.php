@@ -398,4 +398,76 @@ class BrokerTransportsTest extends TestCase {
 
 		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
 	}//end testEveryRabbitMqPublishMatchesTheGoldenFile()
+
+	/**
+	 * Every Kafka produce, recorded: the result and what was sent, for each
+	 * configuration, answer and record outcome.
+	 *
+	 * Regenerate with KAFKA_PUBLISH_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryKafkaPublishMatchesTheGoldenFile(): void {
+		$config = ['baseUrl' => ' https://kafka-rest.example.nl/ ', 'token' => ' t ', 'username' => ' u ', 'password' => 'p'];
+		$clean = '{"offsets":[{"partition":2,"offset":41,"error_code":null,"error":null}]}';
+		$cases = [
+			'no-base-url' => [[], 200, $clean, null],
+			'blank-base-url' => [['baseUrl' => '  '], 200, $clean, null],
+			'no-topic' => [$config, 200, $clean, 'no-topic'],
+			'clean' => [$config, 200, $clean, null],
+			'no-credentials' => [['baseUrl' => 'https://k.example'], 200, $clean, null],
+			'blank-token-and-user' => [['baseUrl' => 'https://k.example', 'token' => ' ', 'username' => ' '], 200, $clean, null],
+			'user-without-password' => [['baseUrl' => 'https://k.example', 'username' => 'u'], 200, $clean, null],
+			'ordering-key-and-headers' => [$config, 200, $clean, 'keyed'],
+			'blank-ordering-key' => [$config, 200, $clean, 'blank-key'],
+			'topic-needs-encoding' => [$config, 200, $clean, 'odd-topic'],
+			'error-code' => [$config, 200, '{"offsets":[{"partition":null,"offset":null,"error_code":40403,"error":"topic not found"}]}', null],
+			'error-code-without-reason' => [$config, 200, '{"offsets":[{"error_code":1}]}', null],
+			'error-code-zero' => [$config, 200, '{"offsets":[{"partition":0,"offset":1,"error_code":0}]}', null],
+			'no-offset' => [$config, 200, '{"offsets":[{"partition":1}]}', null],
+			'offset-without-partition' => [$config, 200, '{"offsets":[{"offset":7}]}', null],
+			'first-not-an-object' => [$config, 200, '{"offsets":["x"]}', null],
+			'offsets-not-a-list' => [$config, 200, '{"offsets":"x"}', null],
+			'empty-offsets' => [$config, 200, '{"offsets":[]}', null],
+			'no-offsets-key' => [$config, 200, '{}', null],
+			'not-json' => [$config, 200, 'nope', null],
+			'status-199' => [$config, 199, $clean, null],
+			'status-299' => [$config, 299, $clean, null],
+			'status-300' => [$config, 300, $clean, null],
+			'status-500' => [$config, 500, $clean, null],
+			'transport-throws' => [$config, 0, '', null],
+		];
+
+		$actual = [];
+		foreach ($cases as $name => [$configuration, $status, $body, $variant]) {
+			$this->seen = [];
+			$clientService = $this->clientAnswering($status, $body);
+			if ($status === 0) {
+				$client = $this->createMock(IClient::class);
+				$client->method('post')->willThrowException(new \RuntimeException('connection refused'));
+				$clientService = $this->createMock(IClientService::class);
+				$clientService->method('newClient')->willReturn($client);
+			}
+
+			$event = $this->publication()->getCloudEvent();
+			$publication = match ($variant) {
+				'no-topic' => new BrokerPublication(cloudEvent: $event, topic: ''),
+				'keyed' => new BrokerPublication(cloudEvent: $event, topic: 'zaken', orderingKey: 'zaak-42', headers: ['X-Trace' => 't-1', 'Accept' => 'text/plain']),
+				'blank-key' => new BrokerPublication(cloudEvent: $event, topic: 'zaken', orderingKey: ''),
+				'odd-topic' => new BrokerPublication(cloudEvent: $event, topic: 'zaken/2026 a'),
+				default => $this->publication(),
+			};
+
+			$result = (new KafkaRestTransport(clientService: $clientService))->publish(publication: $publication, configuration: $configuration);
+			$actual[$name] = ['result' => $result->toArray(), 'sent' => $this->seen];
+		}//end foreach
+
+		$golden = __DIR__ . '/../../fixtures/broker/kafka-publish.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (getenv('KAFKA_PUBLISH_GOLDEN') === '1') {
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryKafkaPublishMatchesTheGoldenFile()
 }//end class

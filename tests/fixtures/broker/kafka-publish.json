@@ -1,0 +1,873 @@
+{
+    "no-base-url": {
+        "result": {
+            "status": "not configured",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The subscription names no Kafka REST Proxy baseUrl.",
+            "statusCode": null
+        },
+        "sent": []
+    },
+    "blank-base-url": {
+        "result": {
+            "status": "not configured",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The subscription names no Kafka REST Proxy baseUrl.",
+            "statusCode": null
+        },
+        "sent": []
+    },
+    "no-topic": {
+        "result": {
+            "status": "not configured",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The subscription names no topic, and Kafka produces into one.",
+            "statusCode": null
+        },
+        "sent": []
+    },
+    "clean": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "no-credentials": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://k.example/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "blank-token-and-user": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://k.example/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30
+            }
+        }
+    },
+    "user-without-password": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://k.example/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    ""
+                ]
+            }
+        }
+    },
+    "ordering-key-and-headers": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "text/plain",
+                    "Authorization": "Bearer t",
+                    "X-Trace": "t-1"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            },
+                            "key": "zaak-42"
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "blank-ordering-key": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "topic-needs-encoding": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken/2026 a@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken%2F2026%20a",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "error-code": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy reported error_code 40403 on the record: topic not found",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "error-code-without-reason": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy reported error_code 1 on the record: no reason given",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "error-code-zero": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy reported error_code 0 on the record: no reason given",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "no-offset": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "b9b6b0a2",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "offset-without-partition": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@0:7",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "first-not-an-object": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "b9b6b0a2",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "offsets-not-a-list": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy answered 200 with no offsets, so no record was produced.",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "empty-offsets": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy answered 200 with no offsets, so no record was produced.",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "no-offsets-key": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy answered 200 with no offsets, so no record was produced.",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "not-json": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy answered 200 with a body that is not a produce response.",
+            "statusCode": 200
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "status-199": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy answered 199 to the produce.",
+            "statusCode": 199
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "status-299": {
+        "result": {
+            "status": "published",
+            "brokerId": "kafka-rest",
+            "reference": "zaken@2:41",
+            "detail": null,
+            "statusCode": null
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "status-300": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy answered 300 to the produce.",
+            "statusCode": 300
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "status-500": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy answered 500 to the produce.",
+            "statusCode": 500
+        },
+        "sent": {
+            "url": "https://kafka-rest.example.nl/topics/zaken",
+            "options": {
+                "headers": {
+                    "Content-Type": "application/vnd.kafka.json.v2+json",
+                    "Accept": "application/vnd.kafka.v2+json",
+                    "Authorization": "Bearer t"
+                },
+                "json": {
+                    "records": [
+                        {
+                            "value": {
+                                "specversion": "1.0",
+                                "id": "b9b6b0a2",
+                                "source": "/integriq/zaken",
+                                "type": "nl.conduction.zaak.created",
+                                "datacontenttype": "application/json",
+                                "data": {
+                                    "zaak": "ZAAK-2026-0042"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": 30,
+                "auth": [
+                    "u",
+                    "p"
+                ]
+            }
+        }
+    },
+    "transport-throws": {
+        "result": {
+            "status": "refused",
+            "brokerId": "kafka-rest",
+            "reference": null,
+            "detail": "The Kafka REST Proxy refused the produce: connection refused",
+            "statusCode": null
+        },
+        "sent": []
+    }
+}

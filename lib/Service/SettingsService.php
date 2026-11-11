@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCP\IAppConfig;
+use OCP\DB\IPreparedStatement;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -169,29 +170,56 @@ class SettingsService implements SettingsServiceInterface {
 	 */
 	private function columnExists(string $unprefixedTable, string $column): bool {
 		try {
-			if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES) {
-				$stmt = $this->db->prepare(
-					'SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1'
-				);
-				$stmt->execute(['oc_' . $unprefixedTable, $column]);
-			} else {
-				$sql = sprintf(
-					'SHOW COLUMNS FROM `*PREFIX*%s` LIKE %s',
-					$unprefixedTable,
-					$this->db->quote($column)
-				);
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute();
-			}
-
-			$row = $stmt->fetch();
-			return $row !== false;
+			return $this->columnProbe(unprefixedTable: $unprefixedTable, column: $column)->fetch() !== false;
 		} catch (\Throwable) {
 			// If the table itself doesn't exist (legacy table dropped post #820),
 			// the column doesn't exist either.
 			return false;
-		}//end try
+		}
 	}//end columnExists()
+
+	/**
+	 * Run the platform's column probe: one row when the column exists.
+	 *
+	 * @param string $unprefixedTable The Nextcloud table name without the `oc_` prefix.
+	 * @param string $column          The column name to check.
+	 *
+	 * @return IPreparedStatement The executed probe.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function columnProbe(string $unprefixedTable, string $column): IPreparedStatement {
+		if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES) {
+			return $this->postgresColumnProbe(unprefixedTable: $unprefixedTable, column: $column);
+		}
+
+		$sql = sprintf(
+			'SHOW COLUMNS FROM `*PREFIX*%s` LIKE %s',
+			$unprefixedTable,
+			$this->db->quote($column)
+		);
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute();
+		return $stmt;
+	}//end columnProbe()
+
+	/**
+	 * The column probe on PostgreSQL, which has no `SHOW COLUMNS`.
+	 *
+	 * @param string $unprefixedTable The Nextcloud table name without the `oc_` prefix.
+	 * @param string $column          The column name to check.
+	 *
+	 * @return IPreparedStatement The executed probe.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function postgresColumnProbe(string $unprefixedTable, string $column): IPreparedStatement {
+		$stmt = $this->db->prepare(
+			'SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1'
+		);
+		$stmt->execute(['oc_' . $unprefixedTable, $column]);
+		return $stmt;
+	}//end postgresColumnProbe()
 
 	/**
 	 * Retrieve the current retention settings from app configuration.
@@ -204,15 +232,7 @@ class SettingsService implements SettingsServiceInterface {
 	 */
 	public function getSettings(): array {
 		try {
-			$retentionConfig = $this->config->getValueString('integriq', 'retention', '');
-			$retentionData = [];
-			if (empty($retentionConfig) === false) {
-				$retentionData = json_decode($retentionConfig, true);
-			}
-
-			if (is_array($retentionData) === false) {
-				$retentionData = [];
-			}
+			$retentionData = $this->storedRetention();
 
 			// The same table the log writers fall back to, so what this read
 			// reports is what the logs get (integriq#2210).
@@ -230,6 +250,28 @@ class SettingsService implements SettingsServiceInterface {
 	}//end getSettings()
 
 	/**
+	 * The retention settings as stored, decoded.
+	 *
+	 * @return array The stored settings, or none when nothing (or no JSON object) is stored.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function storedRetention(): array {
+		$retentionConfig = $this->config->getValueString('integriq', 'retention', '');
+		$retentionData = [];
+		if (empty($retentionConfig) === false) {
+			$retentionData = json_decode($retentionConfig, true);
+		}
+
+		if (is_array($retentionData) === false) {
+			return [];
+		}
+
+		return $retentionData;
+
+	}//end storedRetention()
+
+	/**
 	 * Rebase all logs with current retention settings.
 	 *
 	 * This method sets expiry dates for all logs based on current retention settings,
@@ -242,51 +284,7 @@ class SettingsService implements SettingsServiceInterface {
 	 */
 	public function rebase(): array {
 		try {
-			$startTime = new \DateTime();
-			$results = [
-				'startTime' => $startTime,
-				'retentionResults' => [],
-				'errors' => [],
-			];
-
-			// Get current settings.
-			$settings = $this->getSettings();
-			$retention = $settings['retention'] ?? [];
-
-			// Platform-portable `expires = <createdCol> + <microseconds>` SQL fragments.
-			// MySQL uses DATE_ADD; PostgreSQL uses native interval arithmetic.
-			// See {@see expiresExpression()} — fixes GH #822.
-			$expires = [
-				'created' => $this->expiresExpression(createdColumn: 'created'),
-				'createdOrNow' => $this->expiresExpression(createdColumn: 'COALESCE(created, NOW())'),
-			];
-
-			// **DATABASE-OPTIMIZED REBASE**: Use direct SQL UPDATE queries for maximum performance.
-			foreach (self::REBASE_TABLES as $table) {
-				$table['expires'] = $expires[$table['expiresFrom']];
-				foreach ($table['settings'] as $setting) {
-					if (isset($retention[$setting]) === true && $retention[$setting] > 0) {
-						$table['retentionMs'] = $retention[$setting];
-						$this->rebaseTable(table: $table, results: $results);
-					}
-				}
-			}
-
-			$results['endTime'] = new \DateTime();
-			$results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
-			$results['success'] = empty($results['errors']) === true;
-
-			$this->logger->info(
-				'Rebase operation completed',
-				[
-					'duration' => $results['duration'],
-					'success' => $results['success'],
-					'results' => $results['retentionResults'],
-					'errors' => $results['errors'],
-				]
-			);
-
-			return $results;
+			return $this->rebaseWithCurrentRetention();
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'Rebase operation failed',
@@ -296,9 +294,94 @@ class SettingsService implements SettingsServiceInterface {
 				]
 			);
 			throw new \RuntimeException('Rebase operation failed: ' . $e->getMessage());
-		}//end try
+		}
 
 	}//end rebase()
+
+	/**
+	 * Rebase every log table on the retention settings as they are now.
+	 *
+	 * @return array The rebase results: start and end time, duration, the
+	 *               count per table, the errors and whether there were none.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function rebaseWithCurrentRetention(): array {
+		$startTime = new \DateTime();
+		$results = [
+			'startTime' => $startTime,
+			'retentionResults' => [],
+			'errors' => [],
+		];
+
+		$settings = $this->getSettings();
+		$this->rebaseTables(retention: ($settings['retention'] ?? []), results: $results);
+
+		return $this->finishRebase(results: $results, startTime: $startTime);
+
+	}//end rebaseWithCurrentRetention()
+
+	/**
+	 * Rebase each table once for every one of its settings that has a positive retention.
+	 *
+	 * **DATABASE-OPTIMIZED REBASE**: direct SQL UPDATE queries for maximum performance.
+	 *
+	 * @param array $retention The retention per setting, in milliseconds.
+	 * @param array $results   The rebase results, updated in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function rebaseTables(array $retention, array &$results): void {
+		// Platform-portable `expires = <createdCol> + <microseconds>` SQL fragments.
+		// MySQL uses DATE_ADD; PostgreSQL uses native interval arithmetic.
+		// See {@see expiresExpression()} — fixes GH #822.
+		$expires = [
+			'created' => $this->expiresExpression(createdColumn: 'created'),
+			'createdOrNow' => $this->expiresExpression(createdColumn: 'COALESCE(created, NOW())'),
+		];
+
+		foreach (self::REBASE_TABLES as $table) {
+			$table['expires'] = $expires[$table['expiresFrom']];
+			foreach ($table['settings'] as $setting) {
+				if (isset($retention[$setting]) === true && $retention[$setting] > 0) {
+					$table['retentionMs'] = $retention[$setting];
+					$this->rebaseTable(table: $table, results: $results);
+				}
+			}
+		}
+
+	}//end rebaseTables()
+
+	/**
+	 * Close the results with the end time, duration and outcome, and log them.
+	 *
+	 * @param array     $results   The rebase results.
+	 * @param \DateTime $startTime When the rebase started.
+	 *
+	 * @return array The closed results.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function finishRebase(array $results, \DateTime $startTime): array {
+		$results['endTime'] = new \DateTime();
+		$results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
+		$results['success'] = empty($results['errors']) === true;
+
+		$this->logger->info(
+			'Rebase operation completed',
+			[
+				'duration' => $results['duration'],
+				'success' => $results['success'],
+				'results' => $results['retentionResults'],
+				'errors' => $results['errors'],
+			]
+		);
+
+		return $results;
+
+	}//end finishRebase()
 
 	/**
 	 * Set the expiry date of every row in one log table that has none.
@@ -323,16 +406,29 @@ class SettingsService implements SettingsServiceInterface {
 				}
 			}
 
-			$stmt = $this->db->prepare(
-				'UPDATE `*PREFIX*' . $table['table'] . '` SET expires = ' . $table['expires'] . ' WHERE ' . $table['where']
-			);
-			// Convert ms to microseconds.
-			$stmt->execute([$table['retentionMs'] * 1000]);
-			$results['retentionResults'][$table['result']] = $stmt->rowCount();
+			$results['retentionResults'][$table['result']] = $this->updateExpiry(table: $table);
 		} catch (\Exception $e) {
 			$error = 'Failed to set ' . $table['label'] . ' expiry dates: ' . $e->getMessage();
 			$results['errors'][] = $error;
 			$this->logger->error($error);
 		}//end try
 	}//end rebaseTable()
+
+	/**
+	 * Set the expiry date of the table's rows without one.
+	 *
+	 * @param array $table One entry of REBASE_TABLES, with its `retentionMs` and `expires` expression.
+	 *
+	 * @return int The number of rows updated.
+	 *
+	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 */
+	private function updateExpiry(array $table): int {
+		$stmt = $this->db->prepare(
+			'UPDATE `*PREFIX*' . $table['table'] . '` SET expires = ' . $table['expires'] . ' WHERE ' . $table['where']
+		);
+		// Convert ms to microseconds.
+		$stmt->execute([$table['retentionMs'] * 1000]);
+		return $stmt->rowCount();
+	}//end updateExpiry()
 }//end class

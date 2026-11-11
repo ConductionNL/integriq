@@ -90,13 +90,14 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	];
 
 	/**
-	 * Secret-name regex pattern, lifted verbatim from
-	 * CallService::isSecretKeyName().
+	 * Secret-name regex pattern: CallService::isSecretKeyName()'s names, plus the
+	 * names a client certificate and its passphrase are stored under.
 	 *
 	 * @var string
 	 */
 	private const SECRET_NAME_PATTERN = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
-		. '|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret)/i';
+		. '|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret'
+		. '|pass[-_]?phrase|certificate|pkcs12|pfx)/i';
 
 	/**
 	 * Extra pattern for header names only: a session header under its own name

@@ -1,0 +1,191 @@
+{
+    "resolve, nothing configured": {
+        "answer": "refused: No Digikoppeling broker is selected. Set \"digikoppeling.broker\" to one of: (no brokers configured). Nothing was sent.",
+        "stored": [],
+        "logged": []
+    },
+    "resolve, none selected": {
+        "answer": "refused: No Digikoppeling broker is selected. Set \"digikoppeling.broker\" to one of: logius, gemma. Nothing was sent.",
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"endpoint\":\"https:\\/\\/a.test\\/wus\",\"label\":\"A\"},\"gemma\":{\"endpoint\":\"https:\\/\\/b.test\\/wus\"}}"
+        },
+        "logged": []
+    },
+    "resolve, brokers not json": {
+        "answer": "refused: The selected Digikoppeling broker \"logius\" is not configured. Configured brokers: (none). Nothing was sent.",
+        "stored": {
+            "digikoppeling.brokers": "x",
+            "digikoppeling.broker": "logius"
+        },
+        "logged": []
+    },
+    "resolve, unknown, none configured": {
+        "answer": "refused: The selected Digikoppeling broker \"logius\" is not configured. Configured brokers: (none). Nothing was sent.",
+        "stored": {
+            "digikoppeling.broker": "logius"
+        },
+        "logged": []
+    },
+    "resolve, unknown": {
+        "answer": "refused: The selected Digikoppeling broker \"x\" is not configured. Configured brokers: logius, gemma. Nothing was sent.",
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"endpoint\":\"https:\\/\\/a.test\\/wus\",\"label\":\"A\"},\"gemma\":{\"endpoint\":\"https:\\/\\/b.test\\/wus\"}}",
+            "digikoppeling.broker": "x"
+        },
+        "logged": []
+    },
+    "resolve, no endpoint": {
+        "answer": "refused: The Digikoppeling broker \"logius\" has no endpoint configured. Nothing was sent.",
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"label\":\"A\"},\"gemma\":{\"endpoint\":\"\"}}",
+            "digikoppeling.broker": "logius"
+        },
+        "logged": []
+    },
+    "resolve, empty endpoint": {
+        "answer": "refused: The Digikoppeling broker \"gemma\" has no endpoint configured. Nothing was sent.",
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"label\":\"A\"},\"gemma\":{\"endpoint\":\"\"}}",
+            "digikoppeling.broker": "gemma"
+        },
+        "logged": []
+    },
+    "resolve, selected": {
+        "answer": {
+            "id": "logius",
+            "endpoint": "https://a.test/wus",
+            "label": "A"
+        },
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"endpoint\":\"https:\\/\\/a.test\\/wus\",\"label\":\"A\"},\"gemma\":{\"endpoint\":\"https:\\/\\/b.test\\/wus\"}}",
+            "digikoppeling.broker": "logius"
+        },
+        "logged": []
+    },
+    "select, none configured": {
+        "answer": "refused: \"logius\" is not a configured Digikoppeling broker. Configured brokers: (none).",
+        "stored": [],
+        "logged": []
+    },
+    "select, unknown": {
+        "answer": "refused: \"x\" is not a configured Digikoppeling broker. Configured brokers: logius, gemma.",
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"endpoint\":\"https:\\/\\/a.test\\/wus\",\"label\":\"A\"},\"gemma\":{\"endpoint\":\"https:\\/\\/b.test\\/wus\"}}"
+        },
+        "logged": []
+    },
+    "select, first time": {
+        "answer": [
+            {
+                "from": null,
+                "to": "gemma",
+                "by": "u",
+                "at": "(now)"
+            }
+        ],
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"endpoint\":\"https:\\/\\/a.test\\/wus\",\"label\":\"A\"},\"gemma\":{\"endpoint\":\"https:\\/\\/b.test\\/wus\"}}",
+            "digikoppeling.broker": "gemma",
+            "digikoppeling.broker_audit": {
+                "json": [
+                    {
+                        "from": null,
+                        "to": "gemma",
+                        "by": "u",
+                        "at": "(now)"
+                    }
+                ]
+            }
+        },
+        "logged": [
+            [
+                "digikoppeling.broker.changed",
+                {
+                    "from": "",
+                    "to": "gemma",
+                    "by": "u"
+                }
+            ]
+        ]
+    },
+    "select, a change with history": {
+        "answer": [
+            {
+                "from": null,
+                "to": "logius",
+                "by": "a",
+                "at": "t"
+            },
+            {
+                "from": "logius",
+                "to": "gemma",
+                "by": "",
+                "at": "(now)"
+            }
+        ],
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"endpoint\":\"https:\\/\\/a.test\\/wus\",\"label\":\"A\"},\"gemma\":{\"endpoint\":\"https:\\/\\/b.test\\/wus\"}}",
+            "digikoppeling.broker": "gemma",
+            "digikoppeling.broker_audit": {
+                "json": [
+                    {
+                        "from": null,
+                        "to": "logius",
+                        "by": "a",
+                        "at": "t"
+                    },
+                    {
+                        "from": "logius",
+                        "to": "gemma",
+                        "by": "",
+                        "at": "(now)"
+                    }
+                ]
+            }
+        },
+        "logged": [
+            [
+                "digikoppeling.broker.changed",
+                {
+                    "from": "logius",
+                    "to": "gemma",
+                    "by": ""
+                }
+            ]
+        ]
+    },
+    "select, audit not json": {
+        "answer": [
+            {
+                "from": null,
+                "to": "logius",
+                "by": "u",
+                "at": "(now)"
+            }
+        ],
+        "stored": {
+            "digikoppeling.brokers": "{\"logius\":{\"endpoint\":\"https:\\/\\/a.test\\/wus\",\"label\":\"A\"},\"gemma\":{\"endpoint\":\"https:\\/\\/b.test\\/wus\"}}",
+            "digikoppeling.broker_audit": {
+                "json": [
+                    {
+                        "from": null,
+                        "to": "logius",
+                        "by": "u",
+                        "at": "(now)"
+                    }
+                ]
+            },
+            "digikoppeling.broker": "logius"
+        },
+        "logged": [
+            [
+                "digikoppeling.broker.changed",
+                {
+                    "from": "",
+                    "to": "logius",
+                    "by": "u"
+                }
+            ]
+        ]
+    }
+}

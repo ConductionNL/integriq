@@ -258,4 +258,117 @@ class PromotionControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->preview()->getStatus());
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->confirm()->getStatus());
 	}//end testUnauthenticatedReturns401()
+
+	/**
+	 * Preview requests and what the preview endpoint answers and hands on.
+	 *
+	 * @return array<string,array{0:array<string,mixed>,1:mixed,2:int,3:array<string,mixed>,4:array<int,mixed>|null}>
+	 */
+	public static function previewRequests(): array {
+		$target = ['configurationId' => 'cfg-1', 'targetEnvironmentSlug' => 'acceptance'];
+		$missing = ['error' => 'Request must carry "configurationId" and "targetEnvironmentSlug"'];
+		return [
+			'bindings passed through'   => [$target + ['credentialBindings' => [['ref' => 'a']]], ['ok' => 1], 200, ['ok' => 1], [['ref' => 'a']]],
+			'non-list bindings dropped' => [$target + ['credentialBindings' => 'x'], ['ok' => 1], 200, ['ok' => 1], []],
+			'unknown target'            => [$target, new InvalidArgumentException('no target'), 400, ['error' => 'no target'], []],
+			'remote failure'            => [$target, new RuntimeException('HTTP 500'), 502, ['error' => 'Promotion preview failed: HTTP 500'], []],
+			'missing configuration'     => [['targetEnvironmentSlug' => 'acceptance'], null, 400, $missing, null],
+			'blank target'              => [['configurationId' => 'cfg-1', 'targetEnvironmentSlug' => ''], null, 400, $missing, null],
+			'non-string configuration'  => [['configurationId' => 5, 'targetEnvironmentSlug' => 'acceptance'], null, 400, $missing, null],
+		];
+
+	}//end previewRequests()
+
+	/**
+	 * The preview endpoint's answer for each request.
+	 *
+	 * @param array<string,mixed>   $params   The request params.
+	 * @param mixed                 $outcome  What the service returns or throws (null: not called).
+	 * @param int                   $status   The expected status.
+	 * @param array<string,mixed>   $data     The expected body.
+	 * @param array<int,mixed>|null $bindings The bindings the service sees (null: not called).
+	 *
+	 * @return void
+	 *
+	 * @dataProvider previewRequests
+	 */
+	public function testPreviewAnswers(array $params, mixed $outcome, int $status, array $data, ?array $bindings): void {
+		$mock = $this->promotionService->expects($bindings === null ? $this->never() : $this->once())->method('preview');
+		if ($bindings !== null) {
+			$mock->with(configurationId: 'cfg-1', targetEnvironmentSlug: 'acceptance', credentialBindings: $bindings);
+			$outcome instanceof \Throwable ? $mock->willThrowException($outcome) : $mock->willReturn($outcome);
+		}
+
+		$response = $this->makeController($params)->preview();
+
+		$this->assertSame([$status, $data], [$response->getStatus(), $response->getData()]);
+
+	}//end testPreviewAnswers()
+
+	/**
+	 * Confirm requests and what the confirm endpoint answers and hands on.
+	 *
+	 * @return array<string,array{0:array<string,mixed>,1:mixed,2:int,3:array<string,mixed>,4:string|null}>
+	 */
+	public static function confirmRequests(): array {
+		$target = ['configurationId' => 'cfg-1', 'targetEnvironmentSlug' => 'acceptance', 'credentialBindings' => [['ref' => 'a']]];
+		$unconfirmed = ['error' => 'Promotion requires explicit confirmation — preview first, then send confirmed: true'];
+		return [
+			'confirmed as a string'     => [$target + ['confirmed' => 'true'], ['ok' => 1], 200, ['ok' => 1], 'local'],
+			'named origin'              => [$target + ['confirmed' => true, 'fromEnvironmentSlug' => 'test'], ['ok' => 1], 200, ['ok' => 1], 'test'],
+			'blank origin'              => [$target + ['confirmed' => true, 'fromEnvironmentSlug' => ''], ['ok' => 1], 200, ['ok' => 1], 'local'],
+			'non-string origin'         => [$target + ['confirmed' => true, 'fromEnvironmentSlug' => 3], ['ok' => 1], 200, ['ok' => 1], 'local'],
+			'remote failure'            => [$target + ['confirmed' => true], new RuntimeException('HTTP 500'), 502, ['error' => 'Promotion failed: HTTP 500'], 'local'],
+			'unknown target'            => [$target + ['confirmed' => true], new InvalidArgumentException('no target'), 400, ['error' => 'no target'], 'local'],
+			'confirmed as 1'            => [$target + ['confirmed' => '1'], null, 400, $unconfirmed, null],
+			'confirmed but no target'   => [['configurationId' => 'cfg-1', 'confirmed' => true], null, 400, ['error' => 'Request must carry "configurationId" and "targetEnvironmentSlug"'], null],
+		];
+
+	}//end confirmRequests()
+
+	/**
+	 * The confirm endpoint's answer for each request.
+	 *
+	 * @param array<string,mixed> $params  The request params.
+	 * @param mixed               $outcome What the service returns or throws (null: not called).
+	 * @param int                 $status  The expected status.
+	 * @param array<string,mixed> $data    The expected body.
+	 * @param string|null         $origin  The origin slug the service sees (null: not called).
+	 *
+	 * @return void
+	 *
+	 * @dataProvider confirmRequests
+	 */
+	public function testConfirmAnswers(array $params, mixed $outcome, int $status, array $data, ?string $origin): void {
+		$mock = $this->promotionService->expects($origin === null ? $this->never() : $this->once())->method('promote');
+		if ($origin !== null) {
+			$mock->with(
+				configurationId: 'cfg-1',
+				targetEnvironmentSlug: 'acceptance',
+				credentialBindings: [['ref' => 'a']],
+				actorUid: 'tester',
+				fromEnvironmentSlug: $origin
+			);
+			$outcome instanceof \Throwable ? $mock->willThrowException($outcome) : $mock->willReturn($outcome);
+		}
+
+		$response = $this->makeController($params)->confirm();
+
+		$this->assertSame([$status, $data], [$response->getStatus(), $response->getData()]);
+
+	}//end testConfirmAnswers()
+
+	/**
+	 * A refused caller's 403 carries the action service's refusal message.
+	 *
+	 * @return void
+	 */
+	public function testARefusedPromoterHearsWhy(): void {
+		$controller = $this->makeController(['configurationId' => 'cfg-1', 'targetEnvironmentSlug' => 'acceptance', 'confirmed' => true], isAdmin: false);
+
+		$preview = $controller->preview()->getData();
+		$this->assertNotSame('', (string)($preview['error'] ?? ''));
+		$this->assertSame($preview, $controller->confirm()->getData());
+
+	}//end testARefusedPromoterHearsWhy()
 }//end class
