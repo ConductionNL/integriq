@@ -1561,7 +1561,7 @@ defineOptions({
 						:label="t('integriq', 'JavaScript Code')"
 						class="code-editor"
 						:placeholder="
-							t('integriq', 'Enter your JavaScript code here…')
+							t('integriq', 'Enter your JavaScript code here...')
 						"
 						rows="10" />
 				</template>
