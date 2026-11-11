@@ -112,8 +112,8 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 			return;
 		}
 
-		$entity = $this->savedObject(event: $event);
-		if ($this->isPushSubscription(entity: $entity) === false) {
+		$entity = $this->pushSubscriptionSavedBy(event: $event);
+		if ($entity === null) {
 			return;
 		}
 
@@ -160,22 +160,27 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 	}//end storedObject()
 
 	/**
-	 * Whether the object is an integriq event_subscription of the push style.
+	 * The object the event saves when it is an integriq event_subscription
+	 * of the push style; null for any other object.
 	 *
-	 * @param ObjectEntity $entity The object being saved.
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
 	 *
-	 * @return bool
+	 * @return ObjectEntity|null
 	 */
-	private function isPushSubscription(ObjectEntity $entity): bool {
+	private function pushSubscriptionSavedBy(ObjectCreatingEvent|ObjectUpdatingEvent $event): ?ObjectEntity {
+		$entity = $this->savedObject(event: $event);
 		if ($this->isSubscription(object: $entity) === false) {
-			return false;
+			return null;
 		}
 
 		$data = (array)$entity->getObject();
+		if ((string)($data['style'] ?? '') !== SubscriptionSigningPolicyInterface::STYLE_PUSH) {
+			return null;
+		}
 
-		return (string)($data['style'] ?? '') === SubscriptionSigningPolicyInterface::STYLE_PUSH;
+		return $entity;
 
-	}//end isPushSubscription()
+	}//end pushSubscriptionSavedBy()
 
 	/**
 	 * Refuse a save that turns signing off without a reason.
