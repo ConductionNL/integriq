@@ -4,7 +4,7 @@
  * The four education acknowledgement events carry what their translator read.
  *
  * Pins the constructor and every getter of the ROD, Verzuimloket, OSO and
- * UWLR/Edu-V acknowledgement events, positional and named, so their shared
+ * UWLR/Edu-V acknowledgement events, built with named arguments, so their shared
  * body can move without changing what a listener reads.
  *
  * @category Test
@@ -61,7 +61,7 @@ class AcknowledgementReceivedEventsTest extends TestCase {
 	 */
 	#[DataProvider('eventClasses')]
 	public function testARejectionCarriesItsSignal(string $class): void {
-		$event = new $class('job-1:lp-1', 'BRON-102', 'Onbekend BSN', false);
+		$event = new $class(kenmerk: 'job-1:lp-1', signaalcode: 'BRON-102', signaalOmschrijving: 'Onbekend BSN', accepted: false);
 
 		self::assertInstanceOf(Event::class, $event);
 		self::assertSame('job-1:lp-1', $event->getKenmerk());
@@ -73,7 +73,7 @@ class AcknowledgementReceivedEventsTest extends TestCase {
 	}//end testARejectionCarriesItsSignal()
 
 	/**
-	 * An acceptance built with named arguments carries no description.
+	 * An acceptance carries no description.
 	 *
 	 * @param class-string $class The event class.
 	 *
@@ -97,7 +97,7 @@ class AcknowledgementReceivedEventsTest extends TestCase {
 	 */
 	public function testRodCarriesItsBerichtsoort(): void {
 		$named = new RodAcknowledgementReceivedEvent(kenmerk: 'k', signaalcode: 'c', signaalOmschrijving: 'o', accepted: true, berichtsoort: 'inschrijving');
-		$bare = new RodAcknowledgementReceivedEvent('k', 'c', null, false);
+		$bare = new RodAcknowledgementReceivedEvent(kenmerk: 'k', signaalcode: 'c', signaalOmschrijving: null, accepted: false);
 
 		self::assertSame('inschrijving', $named->getBerichtsoort());
 		self::assertSame('k', $named->getKenmerk());
@@ -112,7 +112,7 @@ class AcknowledgementReceivedEventsTest extends TestCase {
 	 */
 	public function testVerzuimloketCarriesItsMeldingType(): void {
 		$named = new VerzuimloketAcknowledgementReceivedEvent(kenmerk: 'k', signaalcode: 'c', signaalOmschrijving: 'o', accepted: true, meldingType: 'eerste-melding');
-		$bare = new VerzuimloketAcknowledgementReceivedEvent('k', 'c', null, false);
+		$bare = new VerzuimloketAcknowledgementReceivedEvent(kenmerk: 'k', signaalcode: 'c', signaalOmschrijving: null, accepted: false);
 
 		self::assertSame('eerste-melding', $named->getMeldingType());
 		self::assertSame('o', $named->getSignaalOmschrijving());
