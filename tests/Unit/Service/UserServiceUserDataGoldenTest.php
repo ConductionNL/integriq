@@ -35,6 +35,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\L10N\IFactory;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -199,8 +200,12 @@ class UserServiceUserDataGoldenTest extends TestCase {
 	/**
 	 * Every case against the recorded fixture.
 	 *
+	 * Run in its own process: the quota lookup refuses above 128MB of process
+	 * memory, so inside a long suite the recorded log lines would differ.
+	 *
 	 * @return void
 	 */
+	#[RunInSeparateProcess]
 	public function testTheUserDataMatchesTheRecording(): void {
 		$cases = [
 			'plain-numeric-quota-db-down' => [fn () => $this->plainUser(quota: '1073741824'), []],
