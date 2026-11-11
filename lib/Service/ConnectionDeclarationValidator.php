@@ -159,19 +159,32 @@ class ConnectionDeclarationValidator {
 			$path = '/connections/' . $index;
 			$errors = array_merge($errors, $this->validateEntry(entry: $entry, path: $path));
 			$key = $this->entryKey(entry: $entry);
-			if ($key === null) {
-				continue;
-			}
-
-			if (isset($seen[$key]) === true) {
+			if ($this->isRepeatedKey(key: $key, seen: $seen) === true) {
 				$errors[] = $path . '/key: duplicates key "' . $key . '"';
 			}
-
-			$seen[$key] = true;
 		}
 
 		return $errors;
 	}//end validateConnections()
+
+	/**
+	 * Whether an entry key was seen before; records it as seen.
+	 *
+	 * @param string|null         $key  The entry key, null when it has none.
+	 * @param array<string,bool> $seen The keys seen so far.
+	 *
+	 * @return bool True for a key seen before.
+	 */
+	private function isRepeatedKey(?string $key, array &$seen): bool {
+		if ($key === null) {
+			return false;
+		}
+
+		$repeated = isset($seen[$key]);
+		$seen[$key] = true;
+
+		return $repeated;
+	}//end isRepeatedKey()
 
 	/**
 	 * Validate one connection entry.
@@ -206,10 +219,10 @@ class ConnectionDeclarationValidator {
 	 * @return string[] Messages per failing path.
 	 */
 	private function checkObject(array $data, array $fields, string $path): array {
-		$errors = [];
-		foreach ($this->unknownFields(data: $data, fields: $fields) as $name) {
-			$errors[] = $path . '/' . $name . ': is not allowed';
-		}
+		$errors = array_map(
+			static fn (int|string $name): string => $path . '/' . $name . ': is not allowed',
+			$this->unknownFields(data: $data, fields: $fields)
+		);
 
 		foreach ($fields as $name => [$required, $type]) {
 			if (array_key_exists($name, $data) === false) {
