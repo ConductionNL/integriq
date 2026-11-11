@@ -1,6 +1,6 @@
 # Legacy modals — extraction reference
 
-The three SFCs in the *Files preserved* table below are **dead at runtime** —
+The two SFCs in the *Files preserved* table below are **dead at runtime** —
 `src/modals/Modals.vue` (the dispatcher that imported all 47 pre-chain-C
 modals) was deleted along with the 30+ modal files whose UX is covered by
 nc-vue primitives (`CnFormDialog`, `CnDeleteDialog`, `CnDetailPage`,
@@ -42,7 +42,6 @@ own change rather than riding along with a feature.
 | File | LoC | Replacement plan |
 |---|---|---|
 | `Rule/EditRule.vue` | 1919 | **Partly extracted.** Its basic-field surface — name, description, conditions, timing, order, action, type and the `configuration.error.*` block — is reborn as `src/modals/v2/RuleEditorModal.vue`, wired to the Rules index through `pages[Rules].slots["form-dialog"]`. The file stays because the remaining 14 per-action-type blocks are not extracted from *here*: their bespoke forms live under `src/views/Rule/actionForms/` and are hosted by `RuleActionConfig` on the rule detail page, and only the `authentication`/API-key half still has behaviour with no v2 home — `buildAuthenticationConfiguration.js` (covered by `tests/vitest/buildAuthenticationConfiguration.spec.js`) is imported from nowhere else. Remove both once API-key authoring moves into `AuthenticationForm`. |
-| `Endpoint/AddEndpointRule.vue` | 172 | Bespoke endpoint-rule relation picker |
 | `Endpoint/EditEndpoint.vue` | 451 | Bespoke endpoint create/edit modal |
 
 ## Removed
@@ -58,4 +57,5 @@ own change rather than riding along with a feature.
 | `Synchronization/TestSynchronization.vue` | — | `src/modals/v2/RunActionModal.vue` (`synchronization/test` descriptor). Nothing was carried over: it rendered an HTTP status/headers/body table copied from `TestSource`, which does not match the run-log payload `POST /api/synchronizations/{id}/test` actually returns, so it would have shown an empty table even had it been wired up. |
 | `TestSource/TestSource.vue` | #f5af2cac | `src/modals/v2/TestSourceModal.vue`. |
 | `Job/RunJob.vue` | — | `src/modals/v2/RunActionModal.vue` (`job/run` descriptor). |
+| `Endpoint/AddEndpointRule.vue` | — | `src/modals/v2/AddEndpointRuleModal.vue` (#836), opened through `ModalHost` on `EVENT_OPEN_ADD_ENDPOINT_RULE`: the same rule picker over OR objects, with multi-select. |
 | `Job/TestJob.vue` | — | `src/modals/v2/RunActionModal.vue` (`job/test` descriptor) — under the honest name. `JobsController::test()` is `run()` with `forceRun` forced on, not a dry run, so the modal and the row-action label both say "Force run". |
