@@ -27,7 +27,6 @@ use DateTime;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
-use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\PS256;
 use Jose\Component\Signature\Algorithm\PS384;
 use Jose\Component\Signature\Algorithm\PS512;
@@ -41,6 +40,8 @@ use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OCA\Integriq\Exception\LtiValidationException;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\PemKeyFile;
+use OCA\Integriq\Service\PemKeyFileRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -1076,25 +1077,9 @@ class LtiLaunchService implements LtiLaunchServiceInterface {
 		$algorithm = ($keyEntry['algorithm'] ?? 'RS256');
 		$kid = ($keyEntry['kid'] ?? '');
 
-		$filename = tempnam(sys_get_temp_dir(), 'oc-lti-sign-');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(request: new PemKeyFileRequest(prefix: 'oc-lti-sign-', pem: $pem, kid: $kid, algorithm: $algorithm));
+		if ($jwk === null) {
 			throw new LtiValidationException(message: 'Could not allocate temp file for LTI signing', details: [], httpStatus: 500);
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, $pem);
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['kid' => $kid, 'alg' => $algorithm, 'use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		$algorithmManager = new AlgorithmManager([new RS256(), new RS384(), new RS512(), new PS256(), new PS384(), new PS512()]);
