@@ -168,4 +168,43 @@ class DocumentSearchAndFetchListenerTest extends TestCase {
 
 		self::assertFalse($event->isHandled());
 	}//end testAnotherEventIsIgnoredAndAFailureLeavesTheEventUnhandled()
+
+	/**
+	 * The guard is asked for the app and key, and each outcome is logged
+	 * with the search's audit: refused, answered and failed.
+	 *
+	 * @return void
+	 */
+	public function testEverySearchOutcomeIsAudited(): void {
+		$guard = $this->createMock(DocumentConnectionGuard::class);
+		$guard->expects(self::exactly(3))->method('isLinked')->with('dossiq', 'conn-1')->willReturnOnConsecutiveCalls(false, true, true);
+		$adapter = $this->createMock(Microsoft365Adapter::class);
+		$adapter->method('isConnected')->willReturn(true);
+		$adapter->method('search')->willReturnOnConsecutiveCalls(['hits' => [], 'moreCount' => 0, 'notices' => []], $this->throwException(new \RuntimeException('graph down')));
+		$logged = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		foreach (['info', 'warning'] as $level) {
+			$logger->method($level)->willReturnCallback(function (string $message, array $context) use (&$logged, $level): void {
+				$logged[] = [$level, $message, $context];
+			});
+		}
+		$listener = new DocumentSearchRequestedListener($adapter, $guard, $logger);
+
+		$refused = new DocumentSearchRequestedEvent('dossiq', 'conn-1', 'pjansen', 'x');
+		$listener->handle($refused);
+		$listener->handle(new DocumentSearchRequestedEvent('dossiq', 'conn-1', 'pjansen', 'x'));
+		$listener->handle(new DocumentSearchRequestedEvent('dossiq', 'conn-1', 'pjansen', 'x'));
+
+		$audit = ['sourceApp' => 'dossiq', 'connectionKey' => 'conn-1', 'userId' => 'pjansen', 'terms' => 'x'];
+		self::assertSame(['hits' => [], 'moreCount' => 0, 'notices' => ['not-linked']], $refused->getResult());
+		self::assertSame(
+			[
+				['warning', 'Integriq: a document search was refused, the app has no linked connection', $audit],
+				['info', 'Integriq: a document search was answered', $audit],
+				['warning', 'Integriq: a document search failed', $audit + ['error' => 'graph down']],
+			],
+			$logged
+		);
+
+	}//end testEverySearchOutcomeIsAudited()
 }//end class
