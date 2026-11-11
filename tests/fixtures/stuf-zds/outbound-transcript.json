@@ -1,0 +1,385 @@
+{
+    "confirmed": {
+        "result": {
+            "success": true,
+            "retrying": false,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": "0363-Z-1",
+            "fout": null
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "sent",
+                "attempts": 1,
+                "syncedAt": "TIME",
+                "berichttype": "zakLk01",
+                "operation": "creeerZaak",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "sourceApp": "dossiq",
+                "correlationId": "c-1",
+                "httpStatus": 200,
+                "durationMs": "MS",
+                "caseIdentification": "0363-Z-1"
+            }
+        ],
+        "events": [
+            [
+                "dossiq",
+                "c-1",
+                "creeerZaak",
+                1,
+                {
+                    "success": true,
+                    "retrying": false,
+                    "referentienummer": "REF",
+                    "messageId": "msg-1",
+                    "caseIdentification": "0363-Z-1",
+                    "fout": null
+                }
+            ]
+        ],
+        "scheduled": []
+    },
+    "transient then retry ok": {
+        "result": {
+            "success": false,
+            "retrying": true,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": null,
+            "fout": {
+                "code": "HTTP_503",
+                "omschrijving": "The case system answered without a body",
+                "details": "",
+                "kind": "permanent"
+            }
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "sent",
+                "attempts": 2,
+                "syncedAt": "TIME",
+                "berichttype": "zakLk02",
+                "operation": "actualiseerZaak",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "sourceApp": "dossiq",
+                "correlationId": "c-2",
+                "caseIdentification": "0363-Z-2",
+                "httpStatus": 200,
+                "durationMs": "MS"
+            }
+        ],
+        "events": [
+            [
+                "dossiq",
+                "c-2",
+                "actualiseerZaak",
+                2,
+                {
+                    "success": true,
+                    "retrying": false,
+                    "referentienummer": "REF",
+                    "messageId": "msg-1",
+                    "caseIdentification": "0363-Z-2",
+                    "fout": null
+                }
+            ]
+        ],
+        "scheduled": [
+            [
+                "OCA\\Integriq\\BackgroundJob\\StufZdsRetryJob",
+                {
+                    "messageId": "msg-1"
+                }
+            ]
+        ]
+    },
+    "permanent fout": {
+        "result": {
+            "success": false,
+            "retrying": false,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": null,
+            "fout": {
+                "code": "StUF055",
+                "omschrijving": "Fout",
+                "details": "",
+                "kind": "permanent"
+            }
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "failed",
+                "attempts": 1,
+                "syncedAt": "TIME",
+                "berichttype": "zakLk01",
+                "operation": "creeerZaak",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "faultCode": "StUF055",
+                "error": "Fout",
+                "httpStatus": 500,
+                "durationMs": "MS"
+            }
+        ],
+        "events": [
+            [
+                "",
+                "",
+                "creeerZaak",
+                1,
+                {
+                    "success": false,
+                    "retrying": false,
+                    "referentienummer": "REF",
+                    "messageId": "msg-1",
+                    "caseIdentification": null,
+                    "fout": {
+                        "code": "StUF055",
+                        "omschrijving": "Fout",
+                        "details": "",
+                        "kind": "permanent"
+                    }
+                }
+            ]
+        ],
+        "scheduled": []
+    },
+    "retries exhausted": {
+        "result": {
+            "success": false,
+            "retrying": true,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": null,
+            "fout": {
+                "code": "HTTP_502",
+                "omschrijving": "The case system answered without a body",
+                "details": "",
+                "kind": "permanent"
+            }
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "retrying",
+                "attempts": 4,
+                "syncedAt": "TIME",
+                "berichttype": "zakLk01",
+                "operation": "creeerZaak",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "correlationId": "c-3",
+                "expires": "TIME",
+                "httpStatus": 502,
+                "durationMs": "MS",
+                "faultCode": "HTTP_502",
+                "error": "The case system answered without a body",
+                "nextAttemptAt": "TIME"
+            }
+        ],
+        "events": [],
+        "scheduled": [
+            [
+                "OCA\\Integriq\\BackgroundJob\\StufZdsRetryJob",
+                {
+                    "messageId": "msg-1"
+                }
+            ],
+            [
+                "OCA\\Integriq\\BackgroundJob\\StufZdsRetryJob",
+                {
+                    "messageId": "msg-1"
+                }
+            ],
+            [
+                "OCA\\Integriq\\BackgroundJob\\StufZdsRetryJob",
+                {
+                    "messageId": "msg-1"
+                }
+            ],
+            [
+                "OCA\\Integriq\\BackgroundJob\\StufZdsRetryJob",
+                {
+                    "messageId": "msg-1"
+                }
+            ],
+            [
+                "OCA\\Integriq\\BackgroundJob\\StufZdsRetryJob",
+                {
+                    "messageId": "msg-1"
+                }
+            ]
+        ]
+    },
+    "question answered": {
+        "result": {
+            "success": true,
+            "retrying": false,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": "0363-Z-9",
+            "fout": null
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "sent",
+                "attempts": 1,
+                "syncedAt": "TIME",
+                "berichttype": "genereerZaakIdentificatie_Di02",
+                "operation": "genereerZaakIdentificatie",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "sourceApp": "dossiq",
+                "httpStatus": 200,
+                "durationMs": "MS",
+                "caseIdentification": "0363-Z-9"
+            }
+        ],
+        "events": [],
+        "scheduled": []
+    },
+    "question failed": {
+        "result": {
+            "success": false,
+            "retrying": false,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": null,
+            "fout": {
+                "code": "PARSE_ERROR",
+                "omschrijving": "The answer could not be read",
+                "details": "",
+                "kind": "permanent"
+            }
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "failed",
+                "attempts": 1,
+                "syncedAt": "TIME",
+                "berichttype": "genereerZaakIdentificatie_Di02",
+                "operation": "genereerZaakIdentificatie",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "faultCode": "PARSE_ERROR",
+                "error": "The answer could not be read",
+                "httpStatus": 500,
+                "durationMs": "MS"
+            }
+        ],
+        "events": [],
+        "scheduled": []
+    },
+    "retry not scheduled": {
+        "result": {
+            "success": false,
+            "retrying": false,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": null,
+            "fout": {
+                "code": "RETRY_NOT_SCHEDULED",
+                "omschrijving": "The retry could not be scheduled, so the message is concluded as failed",
+                "details": "HTTP_503",
+                "kind": "permanent"
+            }
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "failed",
+                "attempts": 1,
+                "syncedAt": "TIME",
+                "berichttype": "zakLk01",
+                "operation": "creeerZaak",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "httpStatus": 503,
+                "durationMs": "MS",
+                "faultCode": "RETRY_NOT_SCHEDULED",
+                "error": "The retry could not be scheduled, so the message is concluded as failed HTTP_503"
+            }
+        ],
+        "events": [
+            [
+                "",
+                "",
+                "creeerZaak",
+                1,
+                {
+                    "success": false,
+                    "retrying": false,
+                    "referentienummer": "REF",
+                    "messageId": "msg-1",
+                    "caseIdentification": null,
+                    "fout": {
+                        "code": "RETRY_NOT_SCHEDULED",
+                        "omschrijving": "The retry could not be scheduled, so the message is concluded as failed",
+                        "details": "HTTP_503",
+                        "kind": "permanent"
+                    }
+                }
+            ]
+        ],
+        "scheduled": []
+    },
+    "row not saved": {
+        "result": {
+            "success": true,
+            "retrying": false,
+            "referentienummer": "REF",
+            "messageId": "msg-1",
+            "caseIdentification": "0363-Z-5",
+            "fout": null
+        },
+        "rows": [
+            {
+                "direction": "outbound",
+                "status": "retrying",
+                "attempts": 0,
+                "syncedAt": "TIME",
+                "berichttype": "zakLk01",
+                "operation": "creeerZaak",
+                "entiteittype": "ZAK",
+                "referentienummer": "REF",
+                "sourceId": "zsh",
+                "caseIdentification": "Z-known",
+                "expires": "TIME"
+            }
+        ],
+        "events": [
+            [
+                "",
+                "",
+                "creeerZaak",
+                1,
+                {
+                    "success": true,
+                    "retrying": false,
+                    "referentienummer": "REF",
+                    "messageId": "msg-1",
+                    "caseIdentification": "0363-Z-5",
+                    "fout": null
+                }
+            ]
+        ],
+        "scheduled": []
+    }
+}

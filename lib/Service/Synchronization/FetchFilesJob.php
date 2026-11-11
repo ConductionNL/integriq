@@ -78,39 +78,77 @@ class FetchFilesJob extends QueuedJob {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
 	 */
 	protected function run($argument): void {
+		$dropped = self::droppedReason(argument: $argument);
+		if ($dropped !== null) {
+			$this->logger->warning($dropped);
+
+			return;
+		}
+
+		$this->fetch(argument: $argument);
+	}//end run()
+
+	/**
+	 * Why a job argument is dropped, or null when it carries config, endpoint and objectId.
+	 *
+	 * @param mixed $argument The job argument.
+	 *
+	 * @return string|null The warning.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+	 */
+	private static function droppedReason(mixed $argument): ?string {
 		if (is_array($argument) === false) {
-			$this->logger->warning('[FetchFilesJob] dropped: argument was not an array');
-
-			return;
+			return '[FetchFilesJob] dropped: argument was not an array';
 		}
 
-		$config = ($argument['config'] ?? null);
-		$endpoint = ($argument['endpoint'] ?? null);
-		$objectId = ($argument['objectId'] ?? null);
-
-		if (is_array($config) === false || $endpoint === null || $objectId === null) {
-			$this->logger->warning(
-				'[FetchFilesJob] dropped: incomplete arguments (config/endpoint/objectId required)'
-			);
-
-			return;
+		if (self::isComplete(argument: $argument) === false) {
+			return '[FetchFilesJob] dropped: incomplete arguments (config/endpoint/objectId required)';
 		}
 
+		return null;
+	}//end droppedReason()
+
+	/**
+	 * Whether the argument carries a config array, an endpoint and an objectId.
+	 *
+	 * @param array<string, mixed> $argument The job argument.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+	 */
+	private static function isComplete(array $argument): bool {
+		return is_array($argument['config'] ?? null) === true
+			&& ($argument['endpoint'] ?? null) !== null
+			&& ($argument['objectId'] ?? null) !== null;
+	}//end isComplete()
+
+	/**
+	 * Fetch the object's files; a failure is logged, never thrown.
+	 *
+	 * A deferred fetch that throws must not take the worker down with it; the
+	 * next job in the queue is someone else's object.
+	 *
+	 * @param array<string, mixed> $argument A complete job argument.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+	 */
+	private function fetch(array $argument): void {
 		try {
 			$this->syncService->fetchFilesForObject(
-				config: $config,
-				endpoint: $endpoint,
-				objectId: (string)$objectId,
+				config: $argument['config'],
+				endpoint: $argument['endpoint'],
+				objectId: (string)$argument['objectId'],
 				ruleId: (int)($argument['ruleId'] ?? 0)
 			);
 		} catch (\Throwable $exception) {
-			// A deferred fetch that throws must not take the worker down with
-			// it; the next job in the queue is someone else's object.
 			$this->logger->error(
-				'[FetchFilesJob] deferred file fetch failed for object ' . $objectId . ': '
-				. $exception->getMessage(),
+				'[FetchFilesJob] deferred file fetch failed for object ' . $argument['objectId'] . ': ' . $exception->getMessage(),
 				['exception' => $exception]
 			);
-		}//end try
-	}//end run()
+		}
+	}//end fetch()
 }//end class

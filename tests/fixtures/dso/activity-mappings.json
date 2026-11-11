@@ -1,0 +1,124 @@
+{
+    "mixed": {
+        "mappedActivities": [
+            {
+                "imowId": "nl.imow-gm0001.activiteit.A",
+                "activityName": "Bouwen",
+                "volgnr": "1",
+                "mapped": true,
+                "matchedOn": "imowId",
+                "mappingRow": "1",
+                "caseTypes": [
+                    {
+                        "reference": "ZT-1",
+                        "title": "Bouw",
+                        "department": "VTH"
+                    },
+                    {
+                        "reference": "42"
+                    }
+                ],
+                "samenloopStrategy": "gecombineerd"
+            },
+            {
+                "activityId": "ACT-X",
+                "activityName": "Onbekend",
+                "underlying": {
+                    "activityId": "ACT-B",
+                    "activityName": "Onder"
+                },
+                "mapped": true,
+                "matchedOn": "underlying.activityId",
+                "mappingRow": "2",
+                "caseTypes": [
+                    {
+                        "reference": "ZT-2",
+                        "variant": "licht"
+                    },
+                    {
+                        "reference": "ZT-1"
+                    }
+                ],
+                "samenloopStrategy": "deelzaken"
+            },
+            {
+                "activityId": "ACT-Y",
+                "mapped": false
+            },
+            {
+                "activityId": "ACT-C",
+                "mapped": true,
+                "matchedOn": "activityId",
+                "mappingRow": "3",
+                "caseTypes": [],
+                "samenloopStrategy": "deelzaken"
+            }
+        ],
+        "mappedCaseTypes": [
+            "ZT-1",
+            "42",
+            "ZT-2"
+        ],
+        "activityUnmapped": true,
+        "samenloopStrategy": "deelzaken"
+    },
+    "all-mapped": {
+        "mappedActivities": [
+            {
+                "activityId": "ACT-B",
+                "mapped": true,
+                "matchedOn": "activityId",
+                "mappingRow": "2",
+                "caseTypes": [
+                    {
+                        "reference": "ZT-2",
+                        "variant": "licht"
+                    },
+                    {
+                        "reference": "ZT-1"
+                    }
+                ],
+                "samenloopStrategy": "deelzaken"
+            },
+            {
+                "imowId": "nl.imow-gm0001.activiteit.A",
+                "mapped": true,
+                "matchedOn": "imowId",
+                "mappingRow": "1",
+                "caseTypes": [
+                    {
+                        "reference": "ZT-1",
+                        "title": "Bouw",
+                        "department": "VTH"
+                    },
+                    {
+                        "reference": "42"
+                    }
+                ],
+                "samenloopStrategy": "gecombineerd"
+            }
+        ],
+        "mappedCaseTypes": [
+            "ZT-2",
+            "ZT-1",
+            "42"
+        ],
+        "activityUnmapped": false,
+        "samenloopStrategy": "deelzaken"
+    },
+    "none-mapped": {
+        "mappedActivities": [
+            {
+                "activityId": "NOPE",
+                "mapped": false
+            }
+        ],
+        "mappedCaseTypes": [],
+        "activityUnmapped": true
+    },
+    "empty": {
+        "mappedActivities": [],
+        "mappedCaseTypes": [],
+        "activityUnmapped": false
+    }
+}

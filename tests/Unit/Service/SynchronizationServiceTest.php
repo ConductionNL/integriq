@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
@@ -1712,15 +1713,16 @@ HTML;
 
 		$ownership = $this->getMockBuilder(\OCA\Integriq\Service\Ownership\RecordOwnershipService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['forObject'])
+			->onlyMethods(['forObjectOrFail'])
 			->getMock();
-		$ownership->method('forObject')->willReturn(
+		$ownership->method('forObjectOrFail')->willReturn(
 			new \OCA\Integriq\Service\Ownership\OwnershipState('source', 'source-uuid-brp', '999993653', null, true, false, null, 'sync-uuid-brp', 'BRP personen')
 		);
 		$listener = new \OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener(
 			$ownership,
 			new \OCA\Integriq\Service\Ownership\LocalDeleteGuard(),
-			new \Psr\Log\NullLogger()
+			new \Psr\Log\NullLogger(),
+			$this->createMock(\OCA\Integriq\Service\ListenerSchemaResolver::class)
 		);
 
 		$stopped = [];
@@ -2122,14 +2124,8 @@ HTML;
 		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$fileService->method('getFiles')->willReturn([]);
 		$fileService->method('saveFile')->willReturnCallback(
-			function (...$args) use ($onSave) {
-				$fileName = null;
-				foreach ($args as $arg) {
-					if (is_string($arg) === true && $arg !== '') {
-						$fileName = $arg;
-						break;
-					}
-				}
+			function ($objectEntity, FileUpload $upload) use ($onSave) {
+				$fileName = $upload->fileName;
 
 				$this->fetchRun['saved'][] = $fileName;
 				$this->fetchRun['timeline'][] = 'save:' . $fileName;

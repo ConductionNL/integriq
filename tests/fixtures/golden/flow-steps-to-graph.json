@@ -1,0 +1,398 @@
+{
+    "every-type": {
+        "graph": {
+            "nodes": [
+                {
+                    "id": "trigger",
+                    "type": "openregister.trigger-manual",
+                    "config": []
+                },
+                {
+                    "id": "10",
+                    "type": "openconnector.source-call",
+                    "config": {
+                        "source": "src",
+                        "endpoint": "/x",
+                        "method": "POST",
+                        "output": "response"
+                    }
+                },
+                {
+                    "id": "20",
+                    "type": "openconnector.apply-mapping",
+                    "config": {
+                        "mapping": "m"
+                    }
+                },
+                {
+                    "id": "30",
+                    "type": "openconnector.synchronization-run",
+                    "config": {
+                        "synchronization": "s",
+                        "output": "syncResult",
+                        "force": true
+                    }
+                },
+                {
+                    "id": "40",
+                    "type": "openconnector.event-emit",
+                    "config": {
+                        "type": "nl.x",
+                        "source": "integriq",
+                        "subject": "abc"
+                    }
+                },
+                {
+                    "id": "50",
+                    "type": "openconnector.approval-request",
+                    "config": {
+                        "question": "Approve step 50 of this flow.",
+                        "approverGroup": "admin",
+                        "ttlSeconds": 60,
+                        "failOnReject": false
+                    },
+                    "onError": "continue"
+                },
+                {
+                    "id": "60",
+                    "type": "openconnector.approval-request",
+                    "config": {
+                        "question": "Mag dit?",
+                        "approverGroup": "g",
+                        "ttlSeconds": 86400,
+                        "failOnReject": true
+                    }
+                },
+                {
+                    "id": "end",
+                    "type": "openregister.end",
+                    "config": []
+                }
+            ],
+            "edges": [
+                {
+                    "id": "trigger-10",
+                    "from": "trigger",
+                    "to": "10"
+                },
+                {
+                    "id": "10-20",
+                    "from": "10",
+                    "to": "20"
+                },
+                {
+                    "id": "20-30",
+                    "from": "20",
+                    "to": "30"
+                },
+                {
+                    "id": "30-40",
+                    "from": "30",
+                    "to": "40"
+                },
+                {
+                    "id": "40-50",
+                    "from": "40",
+                    "to": "50"
+                },
+                {
+                    "id": "50-60",
+                    "from": "50",
+                    "to": "60"
+                },
+                {
+                    "id": "60-end",
+                    "from": "60",
+                    "to": "end"
+                }
+            ]
+        }
+    },
+    "defaults": {
+        "graph": {
+            "nodes": [
+                {
+                    "id": "trigger",
+                    "type": "openregister.trigger-manual",
+                    "config": []
+                },
+                {
+                    "id": "1",
+                    "type": "openconnector.source-call",
+                    "config": {
+                        "source": "src",
+                        "endpoint": "",
+                        "method": "GET",
+                        "output": "response"
+                    }
+                },
+                {
+                    "id": "2",
+                    "type": "openconnector.synchronization-run",
+                    "config": {
+                        "synchronization": "s",
+                        "output": "syncResult"
+                    }
+                },
+                {
+                    "id": "3",
+                    "type": "openconnector.event-emit",
+                    "config": {
+                        "type": "nl.y",
+                        "source": ""
+                    }
+                },
+                {
+                    "id": "end",
+                    "type": "openregister.end",
+                    "config": []
+                }
+            ],
+            "edges": [
+                {
+                    "id": "trigger-1",
+                    "from": "trigger",
+                    "to": "1"
+                },
+                {
+                    "id": "1-2",
+                    "from": "1",
+                    "to": "2"
+                },
+                {
+                    "id": "2-3",
+                    "from": "2",
+                    "to": "3"
+                },
+                {
+                    "id": "3-end",
+                    "from": "3",
+                    "to": "end"
+                }
+            ]
+        }
+    },
+    "branch-middle": {
+        "graph": {
+            "nodes": [
+                {
+                    "id": "trigger",
+                    "type": "openregister.trigger-manual",
+                    "config": []
+                },
+                {
+                    "id": "1",
+                    "type": "openconnector.apply-mapping",
+                    "config": {
+                        "mapping": "m"
+                    }
+                },
+                {
+                    "id": "2",
+                    "type": "openregister.switch",
+                    "config": []
+                },
+                {
+                    "id": "3",
+                    "type": "openconnector.apply-mapping",
+                    "config": {
+                        "mapping": "m3"
+                    }
+                },
+                {
+                    "id": "4",
+                    "type": "openconnector.apply-mapping",
+                    "config": {
+                        "mapping": "m4"
+                    }
+                },
+                {
+                    "id": "end",
+                    "type": "openregister.end",
+                    "config": []
+                }
+            ],
+            "edges": [
+                {
+                    "id": "trigger-1",
+                    "from": "trigger",
+                    "to": "1"
+                },
+                {
+                    "id": "1-2",
+                    "from": "1",
+                    "to": "2"
+                },
+                {
+                    "id": "2-4-0",
+                    "from": "2",
+                    "to": "4",
+                    "condition": {
+                        "==": [
+                            1,
+                            1
+                        ]
+                    }
+                },
+                {
+                    "id": "2-3-4",
+                    "from": "2",
+                    "to": "3",
+                    "condition": {
+                        "!": {
+                            "var": "y"
+                        }
+                    }
+                },
+                {
+                    "id": "2-3-default",
+                    "from": "2",
+                    "to": "3"
+                },
+                {
+                    "id": "3-4",
+                    "from": "3",
+                    "to": "4"
+                },
+                {
+                    "id": "4-end",
+                    "from": "4",
+                    "to": "end"
+                }
+            ]
+        }
+    },
+    "branch-last-with-default": {
+        "graph": {
+            "nodes": [
+                {
+                    "id": "trigger",
+                    "type": "openregister.trigger-manual",
+                    "config": []
+                },
+                {
+                    "id": "1",
+                    "type": "openconnector.apply-mapping",
+                    "config": {
+                        "mapping": "m"
+                    }
+                },
+                {
+                    "id": "2",
+                    "type": "openregister.switch",
+                    "config": []
+                },
+                {
+                    "id": "end",
+                    "type": "openregister.end",
+                    "config": []
+                }
+            ],
+            "edges": [
+                {
+                    "id": "trigger-1",
+                    "from": "trigger",
+                    "to": "1"
+                },
+                {
+                    "id": "1-2",
+                    "from": "1",
+                    "to": "2"
+                },
+                {
+                    "id": "2-1-0",
+                    "from": "2",
+                    "to": "1",
+                    "condition": {
+                        "var": "a"
+                    }
+                },
+                {
+                    "id": "2-1-default",
+                    "from": "2",
+                    "to": "1"
+                }
+            ]
+        }
+    },
+    "branch-first": {
+        "graph": {
+            "nodes": [
+                {
+                    "id": "trigger",
+                    "type": "openregister.trigger-manual",
+                    "config": []
+                },
+                {
+                    "id": "5",
+                    "type": "openregister.switch",
+                    "config": []
+                },
+                {
+                    "id": "6",
+                    "type": "openconnector.apply-mapping",
+                    "config": {
+                        "mapping": "m"
+                    }
+                },
+                {
+                    "id": "end",
+                    "type": "openregister.end",
+                    "config": []
+                }
+            ],
+            "edges": [
+                {
+                    "id": "trigger-5",
+                    "from": "trigger",
+                    "to": "5"
+                },
+                {
+                    "id": "5-6-default",
+                    "from": "5",
+                    "to": "6"
+                },
+                {
+                    "id": "6-end",
+                    "from": "6",
+                    "to": "end"
+                }
+            ]
+        }
+    },
+    "no-steps": {
+        "refused": "The flow \"Leeg\" cannot be migrated to a graph yet: 1 unsupported feature(s).",
+        "reasons": [
+            "The flow has no steps; there is nothing to migrate."
+        ]
+    },
+    "no-steps-key": {
+        "refused": "The flow \"unnamed\" cannot be migrated to a graph yet: 1 unsupported feature(s).",
+        "reasons": [
+            "The flow has no steps; there is nothing to migrate."
+        ]
+    },
+    "duplicates-and-unsupported": {
+        "refused": "The flow \"Fout\" cannot be migrated to a graph yet: 4 unsupported feature(s).",
+        "reasons": [
+            "Duplicate step order 1 — FlowRunnerService::run() rejects this flow today, and a graph would silently lose one of the two nodes.",
+            "Step 0 carries a run-if `condition`; the graph expresses conditions on branch edges, not as step skips, so this flow needs a manual re-model.",
+            "Step 1 (call) names no `configRef`; the node it maps to requires the referenced entity.",
+            "Step 1 has unsupported type \"webhook\"."
+        ]
+    },
+    "every-config-refusal": {
+        "refused": "The flow \"unnamed\" cannot be migrated to a graph yet: 9 unsupported feature(s).",
+        "reasons": [
+            "Step 1 (call) carries a raw `requestConfig`; the source-call node expresses requests as endpoint/method/query/body/headers, so this step needs a manual re-model.",
+            "Step 2 (synchronization) names no `configRef`; the node it maps to requires the referenced entity.",
+            "Step 2 (synchronization) runs in `isTest` mode, which the synchronization-run node does not offer.",
+            "Step 2 (synchronization) sets a `mutationType`, which the synchronization-run node does not offer.",
+            "Step 3 (event) names no event `type`.",
+            "Step 4 (approval) names no `approverGroup`; the approval-request node requires an audience, because a request nobody owns never resolves.",
+            "Step 5 (branch) targets step order 9, which does not exist.",
+            "Step 5 (branch) targets step order 8, which does not exist.",
+            "Step 6 (mapping) names no `configRef`; the node it maps to requires the referenced entity."
+        ]
+    }
+}

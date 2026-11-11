@@ -1,0 +1,257 @@
+{
+    "brp no identities": {
+        "calls": [],
+        "changes": []
+    },
+    "brp embedded": {
+        "calls": [
+            {
+                "call": [
+                    "/ingeschrevenpersonen",
+                    "GET",
+                    {
+                        "query": {
+                            "volgindicatie": "true",
+                            "burgerservicenummer": "999993653,999993654"
+                        }
+                    }
+                ]
+            }
+        ],
+        "changes": [
+            {
+                "identity": "999993653",
+                "properties": {
+                    "naam": "Jansen"
+                },
+                "eventReference": "vi-1"
+            },
+            {
+                "identity": "999993654",
+                "properties": {
+                    "adres": "Dorpsstraat 1"
+                },
+                "eventReference": "ev-2"
+            },
+            {
+                "identity": "999993655",
+                "properties": {
+                    "a": 1
+                },
+                "eventReference": ""
+            }
+        ]
+    },
+    "brp results": {
+        "calls": [
+            {
+                "call": [
+                    "/ingeschrevenpersonen",
+                    "GET",
+                    {
+                        "query": {
+                            "volgindicatie": "true",
+                            "burgerservicenummer": "1"
+                        }
+                    }
+                ]
+            }
+        ],
+        "changes": [
+            {
+                "identity": "999993653",
+                "properties": {
+                    "naam": "Jansen"
+                },
+                "eventReference": "vi-1"
+            },
+            {
+                "identity": "999993654",
+                "properties": {
+                    "adres": "Dorpsstraat 1"
+                },
+                "eventReference": "ev-2"
+            },
+            {
+                "identity": "999993655",
+                "properties": {
+                    "a": 1
+                },
+                "eventReference": ""
+            }
+        ]
+    },
+    "brp embedded wins": {
+        "calls": [
+            {
+                "call": [
+                    "/ingeschrevenpersonen",
+                    "GET",
+                    {
+                        "query": {
+                            "volgindicatie": "true",
+                            "burgerservicenummer": "1"
+                        }
+                    }
+                ]
+            }
+        ],
+        "changes": [
+            {
+                "identity": "999993653",
+                "properties": {
+                    "naam": "Jansen"
+                },
+                "eventReference": "vi-1"
+            },
+            {
+                "identity": "999993654",
+                "properties": {
+                    "adres": "Dorpsstraat 1"
+                },
+                "eventReference": "ev-2"
+            },
+            {
+                "identity": "999993655",
+                "properties": {
+                    "a": 1
+                },
+                "eventReference": ""
+            }
+        ]
+    },
+    "brp empty": {
+        "calls": [
+            {
+                "call": [
+                    "/ingeschrevenpersonen",
+                    "GET",
+                    {
+                        "query": {
+                            "volgindicatie": "true",
+                            "burgerservicenummer": "1"
+                        }
+                    }
+                ]
+            }
+        ],
+        "changes": []
+    },
+    "brp refused": {
+        "calls": [
+            {
+                "call": [
+                    "/ingeschrevenpersonen",
+                    "GET",
+                    {
+                        "query": {
+                            "volgindicatie": "true",
+                            "burgerservicenummer": "1"
+                        }
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "registry-subscription.brp.poll-failed",
+                    {
+                        "error": "Geen abonnement"
+                    }
+                ]
+            }
+        ],
+        "changes": []
+    },
+    "kvk no identities": {
+        "calls": [],
+        "changes": []
+    },
+    "kvk mutaties": {
+        "calls": [
+            {
+                "call": [
+                    "/mutaties",
+                    "GET",
+                    {
+                        "query": {
+                            "kvkNummer": "69599084,12345678"
+                        }
+                    }
+                ]
+            }
+        ],
+        "changes": [
+            {
+                "identity": "69599084",
+                "properties": {
+                    "handelsnaam": "Conduction"
+                },
+                "eventReference": "m-1"
+            },
+            {
+                "identity": "12345678",
+                "properties": {
+                    "adres": "X"
+                },
+                "eventReference": "ev-9"
+            }
+        ]
+    },
+    "kvk results": {
+        "calls": [
+            {
+                "call": [
+                    "/mutaties",
+                    "GET",
+                    {
+                        "query": {
+                            "kvkNummer": "1"
+                        }
+                    }
+                ]
+            }
+        ],
+        "changes": [
+            {
+                "identity": "69599084",
+                "properties": {
+                    "handelsnaam": "Conduction"
+                },
+                "eventReference": "m-1"
+            },
+            {
+                "identity": "12345678",
+                "properties": {
+                    "adres": "X"
+                },
+                "eventReference": "ev-9"
+            }
+        ]
+    },
+    "kvk refused": {
+        "calls": [
+            {
+                "call": [
+                    "/mutaties",
+                    "GET",
+                    {
+                        "query": {
+                            "kvkNummer": "1"
+                        }
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "registry-subscription.kvk.poll-failed",
+                    {
+                        "error": "down"
+                    }
+                ]
+            }
+        ],
+        "changes": []
+    }
+}

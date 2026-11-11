@@ -154,6 +154,36 @@ class RodEnvelopeTranslator {
 	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-007-the-persoonsgebonden-nummer-goes-in-duos-choice-element
 	 */
 	public function translate(string $berichtsoort, string $kenmerk, array $payload): string {
+		$this->assertTranslatable(berichtsoort: $berichtsoort, kenmerk: $kenmerk);
+		$bericht = new RodBericht(berichtsoort: $berichtsoort, kenmerk: $kenmerk, payload: $payload, number: $this->personalNumber(payload: $payload));
+		$this->assertRequiredFieldsPresent(payload: $payload, berichtsoort: $berichtsoort);
+
+		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
+		$root     = $document->createElement('RodBericht');
+		$document->appendChild($root);
+		$this->appendStuurgegevens(root: $root, bericht: $bericht);
+
+		$body = $document->createElement('body');
+		$root->appendChild($body);
+		$this->appendBody(body: $body, bericht: $bericht);
+
+		$xml = (string) $document->saveXML();
+		$this->assertNoUnresolvedPlaceholder(xml: $xml);
+
+		return $xml;
+	}//end translate()
+
+	/**
+	 * Refuse an unsupported berichtsoort or a blank kenmerk.
+	 *
+	 * @param string $berichtsoort The ROD berichtsoort kind.
+	 * @param string $kenmerk      The caller-supplied correlation id.
+	 *
+	 * @return void
+	 *
+	 * @throws RodTranslationException When either is unusable.
+	 */
+	private function assertTranslatable(string $berichtsoort, string $kenmerk): void {
 		if (isset(self::REQUIRED_FIELDS[$berichtsoort]) === false) {
 			throw new RodTranslationException(message: 'Unsupported ROD berichtsoort "'.$berichtsoort.'".');
 		}
@@ -161,35 +191,24 @@ class RodEnvelopeTranslator {
 		if (trim($kenmerk) === '') {
 			throw new RodTranslationException(message: 'A ROD bericht requires a non-empty kenmerk (correlation id).');
 		}
+	}//end assertTranslatable()
 
-		$number = $this->personalNumber(payload: $payload);
-		$this->assertRequiredFieldsPresent(payload: $payload, berichtsoort: $berichtsoort);
-
-		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-		$root     = $document->createElement('RodBericht');
-		$document->appendChild($root);
-
+	/**
+	 * Append the stuurgegevens: berichtsoort, kenmerk and tijdstipBericht.
+	 *
+	 * @param DOMElement $root    The RodBericht element.
+	 * @param RodBericht $bericht The bericht.
+	 *
+	 * @return void
+	 */
+	private function appendStuurgegevens(DOMElement $root, RodBericht $bericht): void {
+		$document      = $root->ownerDocument;
 		$stuurgegevens = $document->createElement('stuurgegevens');
 		$root->appendChild($stuurgegevens);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtsoort', value: $berichtsoort);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'kenmerk', value: $kenmerk);
-		$this->appendText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'tijdstipBericht',
-			value: (new DateTime())->format('c')
-		);
-
-		$body = $document->createElement('body');
-		$root->appendChild($body);
-
-		$this->appendBody(document: $document, body: $body, payload: $payload, number: $number, berichtsoort: $berichtsoort);
-
-		$xml = (string) $document->saveXML();
-		$this->assertNoUnresolvedPlaceholder(xml: $xml);
-
-		return $xml;
-	}//end translate()
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'berichtsoort', value: $bericht->berichtsoort);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'kenmerk', value: $bericht->kenmerk);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'tijdstipBericht', value: (new DateTime())->format('c'));
+	}//end appendStuurgegevens()
 
 	/**
 	 * Resolve and check the persoonsgebonden nummer and its type.
@@ -234,50 +253,41 @@ class RodEnvelopeTranslator {
 	/**
 	 * Append the body the berichtsoort needs.
 	 *
-	 * @param DOMDocument                        $document     The owning document.
-	 * @param DOMElement                         $body         The body element.
-	 * @param array                              $payload      The field payload.
-	 * @param array{type: string, value: string} $number       The persoonsgebonden nummer.
-	 * @param string                             $berichtsoort The ROD berichtsoort kind.
+	 * @param DOMElement $body    The body element.
+	 * @param RodBericht $bericht The bericht.
 	 *
 	 * @return void
 	 */
-	private function appendBody(DOMDocument $document, DOMElement $body, array $payload, array $number, string $berichtsoort): void {
-		if ($berichtsoort === self::KIND_SCHOOLADVIES) {
-			$wrapper = $document->createElement('persoonsgebondenNummer');
-			$this->appendText(document: $document, parent: $wrapper, name: $number['type'], value: $number['value']);
-			$this->adviesVoBuilder->append(document: $document, body: $body, payload: $payload, personalNumber: $wrapper);
+	private function appendBody(DOMElement $body, RodBericht $bericht): void {
+		if ($bericht->berichtsoort === self::KIND_SCHOOLADVIES) {
+			$document = $body->ownerDocument;
+			$wrapper  = $document->createElement('persoonsgebondenNummer');
+			$this->appendText(document: $document, parent: $wrapper, name: $bericht->number['type'], value: $bericht->number['value']);
+			$this->adviesVoBuilder->append(document: $document, body: $body, payload: $bericht->payload, personalNumber: $wrapper);
 			return;
 		}
 
-		$this->appendRegistration(document: $document, body: $body, payload: $payload, number: $number, berichtsoort: $berichtsoort);
+		$this->appendRegistration(body: $body, bericht: $bericht);
 	}//end appendBody()
 
 	/**
 	 * Append the body of an inschrijving, uitschrijving or verblijfsgegevens.
 	 *
-	 * @param DOMDocument                       $document     The owning document.
-	 * @param DOMElement                        $body         The body element.
-	 * @param array                             $payload      The field payload.
-	 * @param array{type: string, value: string} $number       The persoonsgebonden nummer.
-	 * @param string                            $berichtsoort The ROD berichtsoort kind.
+	 * @param DOMElement $body    The body element.
+	 * @param RodBericht $bericht The bericht.
 	 *
 	 * @return void
 	 */
-	private function appendRegistration(
-		DOMDocument $document,
-		DOMElement $body,
-		array $payload,
-		array $number,
-		string $berichtsoort
-	): void {
-		$this->appendPersonalNumber(document: $document, parent: $body, number: $number);
+	private function appendRegistration(DOMElement $body, RodBericht $bericht): void {
+		$document = $body->ownerDocument;
+		$payload  = $bericht->payload;
+		$this->appendPersonalNumber(document: $document, parent: $body, number: $bericht->number);
 
-		foreach (self::REQUIRED_FIELDS[$berichtsoort] as $field) {
+		foreach (self::REQUIRED_FIELDS[$bericht->berichtsoort] as $field) {
 			$this->appendText(document: $document, parent: $body, name: $field, value: (string) $payload[$field]);
 		}
 
-		foreach ((self::OPTIONAL_FIELDS[$berichtsoort] ?? []) as $field) {
+		foreach ((self::OPTIONAL_FIELDS[$bericht->berichtsoort] ?? []) as $field) {
 			if (empty($payload[$field]) === false) {
 				$this->appendText(document: $document, parent: $body, name: $field, value: (string) $payload[$field]);
 			}

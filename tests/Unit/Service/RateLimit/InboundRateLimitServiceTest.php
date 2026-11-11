@@ -270,4 +270,55 @@ class InboundRateLimitServiceTest extends TestCase {
 		$this->assertTrue($service->enforce('ip:10.0.0.2', $rateLimit, null)->allowed);
 		$this->assertFalse($service->enforce('ip:10.0.0.1', $rateLimit, null)->allowed);
 	}//end testDistinctKeysAreIndependent()
+	/**
+	 * Golden: every decision enforce() returns, with its fields, and the counters it keeps.
+	 *
+	 * The reset seconds depend on the clock; they are checked to lie inside the window or period.
+	 *
+	 * @return void
+	 */
+	public function testGoldenDecisions(): void {
+		$fields = static fn (\OCA\Integriq\Service\RateLimit\RateLimitDecision $d): array => [$d->allowed, $d->hasRateLimit, $d->limit, $d->remaining, $d->reason];
+		$rate = ['requestsPerWindow' => 2, 'windowSeconds' => 3600];
+		$quota = ['limit' => 3, 'period' => 'day'];
+
+		$service = $this->makeService();
+		$this->assertSame([true, false, null, null, null], $fields($service->enforce('k', null, null)));
+		$this->assertSame([true, false, null, null, null], $fields($service->enforce('k', ['requestsPerWindow' => 0, 'windowSeconds' => 60], ['limit' => 1, 'period' => 'week'])));
+		$this->assertSame([], $this->cache->store);
+
+		$first = $service->enforce('k', $rate, $quota);
+		$this->assertSame([true, true, 2, 1, null], $fields($first));
+		$this->assertGreaterThanOrEqual(1, $first->resetSeconds);
+		$this->assertLessThanOrEqual(3600, $first->resetSeconds);
+		$this->assertNull($first->retryAfter);
+		$this->assertSame([true, true, 2, 0, null], $fields($service->enforce('k', $rate, $quota)));
+		$burst = $service->enforce('k', $rate, $quota);
+		$this->assertSame([false, true, 2, 0, 'rate_limit'], $fields($burst));
+		$this->assertSame(max(1, $burst->resetSeconds), $burst->retryAfter);
+		$keys = array_keys($this->cache->store);
+		sort($keys);
+		$this->assertCount(2, $keys, 'one window counter and one quota counter');
+		$this->assertSame([2, 3], [$this->cache->store[$keys[0]], $this->cache->store[$keys[1]]], 'a burst refusal does not count against the quota');
+		$this->assertMatchesRegularExpression('/^oc_q_[0-9a-f]{32}_day_\d{4}-\d\d-\d\d$/', $keys[0]);
+		$this->assertMatchesRegularExpression('/^oc_rl_[0-9a-f]{32}_\d+$/', $keys[1]);
+		$this->assertSame(3600, $this->cache->ttls[$keys[1]]);
+
+		$service = $this->makeService();
+		$this->assertSame([true, false, null, null, null], $fields($service->enforce('q', null, $quota)));
+		$service->enforce('q', null, $quota);
+		$service->enforce('q', null, $quota);
+		$over = $service->enforce('q', null, $quota);
+		$this->assertSame([false, false, null, 0, 'quota'], $fields($over));
+		$this->assertSame($over->resetSeconds, $over->retryAfter);
+		$this->assertLessThanOrEqual(86400, $over->resetSeconds);
+
+		$service = $this->makeService();
+		$service->enforce('r', $rate, ['limit' => 1, 'period' => 'hour']);
+		$overWithRate = $service->enforce('r', $rate, ['limit' => 1, 'period' => 'hour']);
+		$this->assertSame([false, true, 2, 0, 'quota'], $fields($overWithRate));
+		$this->assertLessThanOrEqual(3600, $overWithRate->resetSeconds);
+		$this->assertSame(1, $service->enforce('m', $rate, ['limit' => 5, 'period' => 'month'])->remaining);
+
+	}//end testGoldenDecisions()
 }//end class

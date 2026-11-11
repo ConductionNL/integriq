@@ -1,0 +1,179 @@
+{
+    "uppercase id": {
+        "exit": 1,
+        "output": "A consumer id is lowercase letters, digits, dashes and underscores.\n",
+        "stored": null
+    },
+    "empty id": {
+        "exit": 1,
+        "output": "A consumer id is lowercase letters, digits, dashes and underscores.\n",
+        "stored": null
+    },
+    "id too long": {
+        "exit": 1,
+        "output": "A consumer id is lowercase letters, digits, dashes and underscores.\n",
+        "stored": null
+    },
+    "id starting with a dash": {
+        "exit": 1,
+        "output": "A consumer id is lowercase letters, digits, dashes and underscores.\n",
+        "stored": null
+    },
+    "longest id": {
+        "exit": 0,
+        "output": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa is enabled with 0 return address(es).\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa cannot sign anybody in until it has a return address and a secret reference.\n",
+        "stored": {
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
+                "enabled": true,
+                "returnUrls": [],
+                "secretRef": "c",
+                "secretOrganisation": ""
+            }
+        }
+    },
+    "new, nothing given": {
+        "exit": 0,
+        "output": "portaliq is enabled with 0 return address(es).\nportaliq cannot sign anybody in until it has a return address and a secret reference.\n",
+        "stored": {
+            "portaliq": {
+                "enabled": true,
+                "returnUrls": [],
+                "secretRef": "",
+                "secretOrganisation": ""
+            }
+        }
+    },
+    "new, disabled": {
+        "exit": 0,
+        "output": "portaliq is disabled with 0 return address(es).\n",
+        "stored": {
+            "portaliq": {
+                "enabled": false,
+                "returnUrls": [],
+                "secretRef": "",
+                "secretOrganisation": ""
+            }
+        }
+    },
+    "new, return url only": {
+        "exit": 0,
+        "output": "portaliq is enabled with 1 return address(es).\nportaliq cannot sign anybody in until it has a return address and a secret reference.\n",
+        "stored": {
+            "portaliq": {
+                "enabled": true,
+                "returnUrls": [
+                    "https://portal.example.nl/portal/api/session/broker/callback"
+                ],
+                "secretRef": "",
+                "secretOrganisation": ""
+            }
+        }
+    },
+    "new, secret only": {
+        "exit": 0,
+        "output": "portaliq is enabled with 0 return address(es).\nportaliq cannot sign anybody in until it has a return address and a secret reference.\n",
+        "stored": {
+            "portaliq": {
+                "enabled": true,
+                "returnUrls": [],
+                "secretRef": "cred-1",
+                "secretOrganisation": ""
+            }
+        }
+    },
+    "new, everything": {
+        "exit": 0,
+        "output": "portal_iq-2 is enabled with 2 return address(es).\n",
+        "stored": {
+            "portal_iq-2": {
+                "enabled": true,
+                "returnUrls": [
+                    "https://portal.example.nl/portal/api/session/broker/callback",
+                    "https://other.example.nl/cb"
+                ],
+                "secretRef": "cred-1",
+                "secretOrganisation": "org-1"
+            }
+        }
+    },
+    "new, one unsafe url": {
+        "exit": 1,
+        "output": "http://x.example.nl/cb is not an https address with a host, so it is not registered.\n",
+        "stored": null
+    },
+    "stored, nothing given": {
+        "exit": 0,
+        "output": "portaliq is enabled with 1 return address(es).\n",
+        "stored": {
+            "portaliq": {
+                "enabled": true,
+                "returnUrls": [
+                    "https://portal.example.nl/portal/api/session/broker/callback"
+                ],
+                "secretRef": "cred-0",
+                "secretOrganisation": "org-0"
+            }
+        }
+    },
+    "stored, disabled": {
+        "exit": 0,
+        "output": "portaliq is disabled with 1 return address(es).\n",
+        "stored": {
+            "portaliq": {
+                "enabled": false,
+                "returnUrls": [
+                    "https://portal.example.nl/portal/api/session/broker/callback"
+                ],
+                "secretRef": "cred-0",
+                "secretOrganisation": "org-0"
+            }
+        }
+    },
+    "stored, blank options keep": {
+        "exit": 0,
+        "output": "portaliq is enabled with 1 return address(es).\n",
+        "stored": {
+            "portaliq": {
+                "enabled": true,
+                "returnUrls": [
+                    "https://portal.example.nl/portal/api/session/broker/callback"
+                ],
+                "secretRef": "cred-0",
+                "secretOrganisation": "org-0"
+            }
+        }
+    },
+    "stored, new url": {
+        "exit": 0,
+        "output": "portaliq is enabled with 1 return address(es).\n",
+        "stored": {
+            "portaliq": {
+                "enabled": true,
+                "returnUrls": [
+                    "https://new.example.nl/cb"
+                ],
+                "secretRef": "cred-0",
+                "secretOrganisation": "org-0"
+            }
+        }
+    },
+    "legacy, no reference": {
+        "exit": 1,
+        "output": "legacyapp holds its secret inline. Give --secret-ref with a credential broker reference to move it.\n",
+        "stored": {
+            "legacyapp": "inline-secret-0123456789abcdef0123"
+        }
+    },
+    "legacy, moved": {
+        "exit": 0,
+        "output": "legacyapp is enabled with 0 return address(es).\nlegacyapp cannot sign anybody in until it has a return address and a secret reference.\n",
+        "stored": {
+            "legacyapp": {
+                "enabled": true,
+                "returnUrls": [],
+                "secretRef": "cred-9",
+                "secretOrganisation": ""
+            }
+        }
+    }
+}

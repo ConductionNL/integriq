@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Oso;
 
+use OCA\Integriq\Adapters\CatalogueAdapter;
+
 /**
  * Catalogue descriptor for the OSO adapter (ADR-017 Rule 1).
  *
@@ -37,7 +39,7 @@ namespace OCA\Integriq\Adapters\Oso;
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
-final class OsoAdapter {
+final class OsoAdapter extends CatalogueAdapter {
 
 	/**
 	 * Stable adapter id.
@@ -45,13 +47,6 @@ final class OsoAdapter {
 	 * @var string
 	 */
 	public const ID = 'oso';
-
-	/**
-	 * Sandbox/mock provider binding.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_LOG = 'log';
 
 	/**
 	 * Live Kennisnet provider binding.
@@ -83,39 +78,6 @@ final class OsoAdapter {
 	}//end label()
 
 	/**
-	 * Adapters catalogue category.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/oso-adapter/spec.md
-	 */
-	public function category(): string {
-		return 'government';
-	}//end category()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO top-level menu.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/oso-adapter/spec.md
-	 */
-	public function addsTopLevelMenu(): bool {
-		return false;
-	}//end addsTopLevelMenu()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO per-adapter /beheer route.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/oso-adapter/spec.md
-	 */
-	public function addsManagementRoute(): bool {
-		return false;
-	}//end addsManagementRoute()
-
-	/**
 	 * The provider bindings this adapter offers.
 	 *
 	 * @return array<int, string>
@@ -138,38 +100,23 @@ final class OsoAdapter {
 			'type' => 'object',
 			'title' => 'OSO',
 			'properties' => [
-				'provider' => [
-					'type' => 'string',
-					'enum' => [self::PROVIDER_LOG, self::PROVIDER_KENNISNET],
-					'default' => self::PROVIDER_LOG,
-					'title' => 'Provider binding',
-					'description' => '`log` (default) simulates every export. `kennisnet` dispatches over the '
+				'provider' => $this->providerSetting(
+					providers: $this->providers(),
+					description: '`log` (default) simulates every export. `kennisnet` dispatches over the '
 						. 'live OSO koppelvlak. It requires a certificate reference and Kennisnet OSO '
-						. 'aansluiting approval (see decisions.md M3(c)).',
-				],
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'title' => 'Endpoint URL',
-					'description' => 'Kennisnet OSO export endpoint URL. Required when provider=kennisnet.',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'title' => 'PKIoverheid certificate reference',
-					'description' => 'Broker credentialRef for the certificate. Never stored here (ADR-007). '
-						. 'Required when provider=kennisnet.',
-				],
-				'webhookSignature' => [
-					'type' => 'object',
-					'title' => 'Inbound signature',
-					'description' => 'HMAC verification settings for the inbound import and export-retour endpoints.',
-					'properties' => [
-						'scheme' => ['type' => 'string', 'default' => 'openconnector'],
-						'secret' => ['type' => 'string'],
-						'header' => ['type' => 'string', 'default' => 'X-OpenConnector-Signature'],
-						'toleranceSeconds' => ['type' => 'integer'],
-					],
-				],
+						. 'aansluiting approval (see decisions.md M3(c)).'
+				),
+				'endpoint' => $this->endpointSetting(
+					description: 'Kennisnet OSO export endpoint URL. Required when provider=kennisnet.'
+				),
+				'certificateRef' => $this->certificateSetting(
+					description: 'Broker credentialRef for the certificate. Never stored here (ADR-007). '
+						. 'Required when provider=kennisnet.'
+				),
+				'webhookSignature' => $this->signatureSetting(
+					title: 'Inbound signature',
+					description: 'HMAC verification settings for the inbound import and export-retour endpoints.'
+				),
 			],
 		];
 

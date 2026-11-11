@@ -1,0 +1,224 @@
+{
+    "status no result": {
+        "result": {
+            "status": "sent",
+            "providerReference": "B1",
+            "lastError": "",
+            "simulated": false,
+            "code": ""
+        },
+        "before": [],
+        "after": []
+    },
+    "status processed": {
+        "result": {
+            "resultCode": "Verwerkt",
+            "resultStage": "NA",
+            "status": "delivered",
+            "providerReference": "B1",
+            "lastError": "",
+            "simulated": false,
+            "code": ""
+        },
+        "before": [],
+        "after": [
+            [
+                "resultProcessed",
+                "r1"
+            ]
+        ]
+    },
+    "status processed with event": {
+        "result": {
+            "resultCode": "Verwerkt",
+            "resultStage": "NA",
+            "status": "delivered",
+            "providerReference": "B1",
+            "lastError": "",
+            "simulated": false,
+            "code": ""
+        },
+        "before": [],
+        "after": [
+            [
+                "resultProcessed",
+                "r1"
+            ],
+            [
+                "eventProcessed",
+                "b1@integriq.berichtenbox"
+            ]
+        ]
+    },
+    "status refused": {
+        "result": {
+            "resultCode": "Afgewezen",
+            "resultStage": "Bezorging",
+            "status": "failed",
+            "providerReference": "B1",
+            "lastError": "Logius did not place the letter: Afgewezen (stage Bezorging).",
+            "simulated": false,
+            "code": "logius_Afgewezen"
+        },
+        "before": [],
+        "after": [
+            [
+                "resultProcessed",
+                "r2"
+            ],
+            [
+                "eventProcessed",
+                "b1@integriq.berichtenbox"
+            ]
+        ]
+    },
+    "status refused without stage": {
+        "result": {
+            "resultCode": "Fout",
+            "resultStage": "",
+            "status": "failed",
+            "providerReference": "B1",
+            "lastError": "Logius did not place the letter: Fout (stage unknown).",
+            "simulated": false,
+            "code": "logius_Fout"
+        },
+        "before": [],
+        "after": [
+            [
+                "resultProcessed",
+                "r3"
+            ]
+        ]
+    },
+    "status failed event": {
+        "result": {
+            "status": "failed",
+            "providerReference": "B1",
+            "lastError": "The letter was not delivered to Logius: the ebMS adapter reports FAILED.",
+            "simulated": false,
+            "code": "transport_failed"
+        },
+        "before": [],
+        "after": [
+            [
+                "eventProcessed",
+                "b1@integriq.berichtenbox"
+            ]
+        ]
+    },
+    "status expired event": {
+        "result": {
+            "status": "failed",
+            "providerReference": "B1",
+            "lastError": "The letter was not delivered to Logius: the ebMS adapter reports EXPIRED.",
+            "simulated": false,
+            "code": "transport_expired"
+        },
+        "before": [],
+        "after": [
+            [
+                "eventProcessed",
+                "b1@integriq.berichtenbox"
+            ]
+        ]
+    },
+    "status delivered event": {
+        "result": {
+            "status": "sent",
+            "providerReference": "B1",
+            "lastError": "",
+            "simulated": false,
+            "code": ""
+        },
+        "before": [
+            [
+                "eventProcessed",
+                "b1@integriq.berichtenbox"
+            ]
+        ],
+        "after": []
+    },
+    "status other event": {
+        "result": {
+            "status": "sent",
+            "providerReference": "B1",
+            "lastError": "",
+            "simulated": false,
+            "code": ""
+        },
+        "before": [],
+        "after": []
+    },
+    "send subscribed": {
+        "result": {
+            "batchId": "GENERATED",
+            "transportMessageId": "GENERATED",
+            "berichtType": "BESLUIT",
+            "status": "sent",
+            "providerReference": "GENERATED",
+            "lastError": "",
+            "simulated": false,
+            "code": ""
+        },
+        "calls": [
+            "checkSubscriptions",
+            "deliver"
+        ]
+    },
+    "send not subscribed": {
+        "result": {
+            "status": "failed",
+            "providerReference": null,
+            "lastError": "This citizen does not take Berichtenbox letters from this organisation, or has no active Berichtenbox. Nothing was sent.",
+            "simulated": false,
+            "code": "not_subscribed"
+        },
+        "calls": [
+            "checkSubscriptions"
+        ]
+    },
+    "send fault": {
+        "result": {
+            "status": "failed",
+            "providerReference": null,
+            "lastError": "WUS fault",
+            "simulated": false,
+            "code": "wus_fault"
+        },
+        "calls": [
+            "checkSubscriptions"
+        ]
+    },
+    "send no bericht type": {
+        "result": {
+            "status": "failed",
+            "providerReference": null,
+            "lastError": "No BerichtType is configured for letters of category \"reminder\". Map it under \"berichtTypes\". Nothing was sent.",
+            "simulated": false,
+            "code": "not_configured"
+        },
+        "calls": []
+    },
+    "send not configured": {
+        "result": {
+            "status": "failed",
+            "providerReference": null,
+            "lastError": "Berichtenbox needs a PKIoverheid certificate. Upload it under Administration settings, Integriq, Berichtenbox; it is stored encrypted and named here by its fingerprint. Berichtenbox needs a sender OIN. Configure \"senderOin\" with the number this instance is registered under.",
+            "simulated": false,
+            "code": "not_configured"
+        },
+        "calls": []
+    },
+    "send subject too long": {
+        "result": {
+            "status": "failed",
+            "providerReference": null,
+            "lastError": "Onderwerp has 300 characters; the Berichtenbox takes at most 50. Nothing was cut to fit.",
+            "simulated": false,
+            "code": "invalid_letter"
+        },
+        "calls": [
+            "checkSubscriptions"
+        ]
+    }
+}

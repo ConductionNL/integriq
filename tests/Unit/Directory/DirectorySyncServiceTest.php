@@ -440,4 +440,187 @@ class DirectorySyncServiceTest extends TestCase {
 		$this->assertStringContainsString('no account name', $record['failures'][0]['reason']);
 
 	}//end testOneBadRecordDoesNotStopTheRun()
+
+	/**
+	 * Capture the guard event the run dispatches, if any.
+	 *
+	 * @return \ArrayObject<int,SynchronizationDeletionGuardedEvent> The captured events.
+	 */
+	private function captureGuardEvents(): \ArrayObject {
+		$events = new \ArrayObject();
+		$this->eventDispatcher->method('dispatchTyped')->willReturnCallback(
+			static function ($event) use ($events): void {
+				if ($event instanceof SynchronizationDeletionGuardedEvent) {
+					$events->append($event);
+				}
+			}
+		);
+
+		return $events;
+
+	}//end captureGuardEvents()
+
+	/**
+	 * The connection, with its removal ratio threshold set.
+	 *
+	 * @param array<int,array<string,mixed>> $users     The fixture users.
+	 * @param float                          $threshold The deletion ratio threshold.
+	 *
+	 * @return ObjectEntity The connection.
+	 */
+	private function connectionWithThreshold(array $users, float $threshold): ObjectEntity {
+		$connection = $this->connection(users: $users);
+		$object = $connection->getObject();
+		$object['configuration']['deletionRatioThreshold'] = $threshold;
+		$connection->setObject($object);
+
+		return $connection;
+
+	}//end connectionWithThreshold()
+
+	/**
+	 * The incomplete-read guard: the whole guard record and the event it dispatches.
+	 *
+	 * @return void
+	 */
+	public function testTheIncompleteReadGuardRecordAndEventAreExact(): void {
+		$service = $this->service(currentMembers: ['anja', 'bram', 'cees', 'dana']);
+		$events = $this->captureGuardEvents();
+
+		$record = $service->run(
+			connection: $this->connection(users: [['userName' => 'anja', 'groups' => ['OU=Vergunningen']]], complete: false)
+		);
+
+		$this->assertSame(
+			[
+				'reason' => DirectorySyncService::GUARD_FETCH_INCOMPLETE,
+				'message' => 'The directory did not answer completely, so nothing was removed. Run it again, or confirm the removals to continue.',
+				'ratio' => null,
+				'threshold' => null,
+				'heldBack' => 3,
+				'resumable' => true,
+			],
+			$record['guard']
+		);
+		$this->assertCount(1, $events);
+		$event = $events[0];
+		$this->assertSame(
+			['conn-1', DirectorySyncService::GUARD_FETCH_INCOMPLETE, null, null, 3, 4],
+			[$event->getSynchronizationId(), $event->getReason(), $event->getRatio(), $event->getThreshold(), $event->getCandidateCount(), $event->getTotalContracts()]
+		);
+		$this->assertSame(['guarded', 0, 0], [$record['status'], $record['membershipsAdded'], $record['membershipsRemoved']]);
+
+	}//end testTheIncompleteReadGuardRecordAndEventAreExact()
+
+	/**
+	 * The ratio guard: the whole guard record and the event it dispatches.
+	 *
+	 * @return void
+	 */
+	public function testTheRatioGuardRecordAndEventAreExact(): void {
+		$service = $this->service(currentMembers: ['anja', 'bram', 'cees', 'dana']);
+		$events = $this->captureGuardEvents();
+
+		$record = $service->run(
+			connection: $this->connectionWithThreshold(users: [['userName' => 'anja', 'groups' => ['OU=Vergunningen']]], threshold: 0.5)
+		);
+
+		$this->assertSame(
+			[
+				'reason' => DirectorySyncService::GUARD_RATIO_EXCEEDED,
+				'message' => 'This run would remove 3 of 4 memberships, over the 50% limit for this connection. Nothing was removed. Confirm the removals to continue.',
+				'ratio' => 0.75,
+				'threshold' => 0.5,
+				'heldBack' => 3,
+				'resumable' => true,
+			],
+			$record['guard']
+		);
+		$this->assertCount(1, $events);
+		$event = $events[0];
+		$this->assertSame(
+			['conn-1', DirectorySyncService::GUARD_RATIO_EXCEEDED, 0.75, 0.5, 3, 4],
+			[$event->getSynchronizationId(), $event->getReason(), $event->getRatio(), $event->getThreshold(), $event->getCandidateCount(), $event->getTotalContracts()]
+		);
+		$this->assertSame('guarded', $record['status']);
+
+	}//end testTheRatioGuardRecordAndEventAreExact()
+
+	/**
+	 * A confirmed run removes even past the ratio, and dispatches no guard.
+	 *
+	 * @return void
+	 */
+	public function testAConfirmedRunRemovesPastTheRatio(): void {
+		$service = $this->service(currentMembers: ['anja', 'bram', 'cees', 'dana']);
+		$events = $this->captureGuardEvents();
+		$this->group->expects($this->exactly(3))->method('removeUser');
+
+		$record = $service->run(
+			connection: $this->connection(users: [['userName' => 'anja', 'groups' => ['OU=Vergunningen']]], complete: false),
+			confirmRemovals: true
+		);
+
+		$this->assertNull($record['guard']);
+		$this->assertSame(['success', 3], [$record['status'], $record['membershipsRemoved']]);
+		$this->assertCount(0, $events);
+
+	}//end testAConfirmedRunRemovesPastTheRatio()
+
+	/**
+	 * Removals at or under the threshold go through without a guard.
+	 *
+	 * @return void
+	 */
+	public function testRemovalsUnderTheThresholdAreNotGuarded(): void {
+		$service = $this->service(currentMembers: ['anja', 'bram', 'cees', 'dana']);
+		$events = $this->captureGuardEvents();
+		$this->group->expects($this->exactly(3))->method('removeUser');
+
+		$record = $service->run(
+			connection: $this->connectionWithThreshold(users: [['userName' => 'anja', 'groups' => ['OU=Vergunningen']]], threshold: 0.75)
+		);
+
+		$this->assertNull($record['guard']);
+		$this->assertSame(['success', 3], [$record['status'], $record['membershipsRemoved']]);
+		$this->assertCount(0, $events);
+
+	}//end testRemovalsUnderTheThresholdAreNotGuarded()
+
+	/**
+	 * Under the membership floor no ratio is computed, so removals go through.
+	 *
+	 * @return void
+	 */
+	public function testRemovalsUnderTheMembershipFloorAreNotGuarded(): void {
+		$service = $this->service(currentMembers: ['anja', 'bram']);
+		$events = $this->captureGuardEvents();
+		$this->group->expects($this->exactly(2))->method('removeUser');
+
+		$record = $service->run(connection: $this->connection(users: []));
+
+		$this->assertNull($record['guard']);
+		$this->assertSame(['success', 2], [$record['status'], $record['membershipsRemoved']]);
+		$this->assertCount(0, $events);
+
+	}//end testRemovalsUnderTheMembershipFloorAreNotGuarded()
+
+	/**
+	 * A preview of a guarded run is guarded too and writes nothing.
+	 *
+	 * @return void
+	 */
+	public function testAGuardedPreviewWritesNothing(): void {
+		$service = $this->service(currentMembers: ['anja', 'bram', 'cees', 'dana']);
+		$this->captureGuardEvents();
+		$this->group->expects($this->never())->method('removeUser');
+
+		$record = $service->run(
+			connection: $this->connection(users: [['userName' => 'anja', 'groups' => ['OU=Vergunningen']]]),
+			dryRun: true
+		);
+
+		$this->assertSame(['guarded', DirectorySyncService::GUARD_RATIO_EXCEEDED], [$record['status'], $record['guard']['reason']]);
+
+	}//end testAGuardedPreviewWritesNothing()
 }//end class

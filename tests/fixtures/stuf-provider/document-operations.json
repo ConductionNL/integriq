@@ -1,0 +1,52 @@
+{
+    "full create": {
+        "action": "add-document",
+        "identifier": "DOC-1",
+        "title": "Brief",
+        "description": "Een brief",
+        "documentTypeName": "Besluit",
+        "format": "pdf",
+        "language": "nld",
+        "author": "Jan",
+        "caseIdentifier": "ZAAK-9",
+        "creationDate": "2026-01-02",
+        "receivedDate": "2026-02-03",
+        "confidentiality": "zaakvertrouwelijk_beperkt",
+        "fileName": "brief.pdf",
+        "content": "base64:aGVsbG8gZG9jdW1lbnQ="
+    },
+    "update is unsupported": {
+        "action": "unsupported",
+        "identifier": "DOC-1",
+        "title": "Brief",
+        "description": "Een brief",
+        "documentTypeName": "Besluit",
+        "format": "pdf",
+        "language": "nld",
+        "author": "Jan",
+        "caseIdentifier": "ZAAK-9",
+        "creationDate": "2026-01-02",
+        "receivedDate": "2026-02-03",
+        "confidentiality": "zaakvertrouwelijk_beperkt",
+        "fileName": "brief.pdf",
+        "content": "base64:aGVsbG8gZG9jdW1lbnQ="
+    },
+    "no object": {
+        "action": "add-document"
+    },
+    "last object wins": {
+        "action": "add-document",
+        "title": "Nieuw"
+    },
+    "invalid content": {
+        "action": "add-document",
+        "contentError": "inhoud is geen geldige base64"
+    },
+    "empty content": {
+        "action": "add-document",
+        "fileName": "leeg.txt"
+    },
+    "bare object": {
+        "action": "unsupported"
+    }
+}

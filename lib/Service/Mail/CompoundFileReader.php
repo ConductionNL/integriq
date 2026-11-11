@@ -273,42 +273,83 @@ final class CompoundFileReader {
 	 * @return void
 	 */
 	private function readFat(): void {
-		$fatSectors = [];
-		for ($index = 0; $index < 109; $index++) {
-			$sector = $this->uint32(offset: (76 + ($index * 4)));
-			if ($sector === self::END_OF_CHAIN || $sector === 0xFFFFFFFF) {
-				continue;
-			}
-
-			$fatSectors[] = $sector;
+		$fatSectors = array_merge($this->sectorIdsAt(base: 76, count: 109), $this->difatSectorIds());
+		foreach ($fatSectors as $fatSector) {
+			$this->appendFatSector(fatSector: $fatSector);
 		}
 
+	}//end readFat()
+
+	/**
+	 * The FAT sector ids listed in the DIFAT sector chain beyond the header's 109.
+	 *
+	 * @return array<int, int> The sector ids, in chain order.
+	 */
+	private function difatSectorIds(): array {
+		$sectorIds = [];
 		$difatSector = $this->uint32(offset: 68);
 		$perSector = (int)(($this->sectorSize / 4) - 1);
 		$guard = 1024;
-		while ($difatSector !== self::END_OF_CHAIN && $difatSector !== 0xFFFFFFFF && $guard > 0) {
+		while ($this->isSectorId(sector: $difatSector) === true && $guard > 0) {
 			$base = (($difatSector + 1) * $this->sectorSize);
-			for ($index = 0; $index < $perSector; $index++) {
-				$sector = $this->uint32(offset: ($base + ($index * 4)));
-				if ($sector === self::END_OF_CHAIN || $sector === 0xFFFFFFFF) {
-					continue;
-				}
-
-				$fatSectors[] = $sector;
-			}
-
+			$sectorIds = array_merge($sectorIds, $this->sectorIdsAt(base: $base, count: $perSector));
 			$difatSector = $this->uint32(offset: ($base + ($perSector * 4)));
 			$guard--;
 		}
 
-		foreach ($fatSectors as $fatSector) {
-			$base = (($fatSector + 1) * $this->sectorSize);
-			for ($index = 0; $index < ($this->sectorSize / 4); $index++) {
-				$this->fat[] = $this->uint32(offset: ($base + ($index * 4)));
+		return $sectorIds;
+
+	}//end difatSectorIds()
+
+	/**
+	 * The sector ids in a run of 32-bit entries, skipping end-of-chain and free entries.
+	 *
+	 * @param int $base  The offset of the first entry.
+	 * @param int $count The number of entries.
+	 *
+	 * @return array<int, int> The sector ids.
+	 */
+	private function sectorIdsAt(int $base, int $count): array {
+		$sectorIds = [];
+		for ($index = 0; $index < $count; $index++) {
+			$sector = $this->uint32(offset: ($base + ($index * 4)));
+			if ($this->isSectorId(sector: $sector) === false) {
+				continue;
 			}
+
+			$sectorIds[] = $sector;
 		}
 
-	}//end readFat()
+		return $sectorIds;
+
+	}//end sectorIdsAt()
+
+	/**
+	 * Whether a DIFAT entry names a sector rather than end-of-chain or a free slot.
+	 *
+	 * @param int $sector The entry.
+	 *
+	 * @return bool True for a sector id.
+	 */
+	private function isSectorId(int $sector): bool {
+		return ($sector !== self::END_OF_CHAIN && $sector !== 0xFFFFFFFF);
+
+	}//end isSectorId()
+
+	/**
+	 * Append one FAT sector's entries to the file allocation table.
+	 *
+	 * @param int $fatSector The FAT sector id.
+	 *
+	 * @return void
+	 */
+	private function appendFatSector(int $fatSector): void {
+		$base = (($fatSector + 1) * $this->sectorSize);
+		for ($index = 0; $index < ($this->sectorSize / 4); $index++) {
+			$this->fat[] = $this->uint32(offset: ($base + ($index * 4)));
+		}
+
+	}//end appendFatSector()
 
 	/**
 	 * Build the mini file allocation table.

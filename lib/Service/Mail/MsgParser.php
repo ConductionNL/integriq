@@ -28,9 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Mail;
 
-use DateTimeImmutable;
-use Throwable;
-
 /**
  * Parses `.msg` compound files into a {@see ParsedMessage}.
  *
@@ -98,7 +95,7 @@ class MsgParser {
 			$from,
 			$this->recipients(displayTo: $this->property(properties: $properties, propertyId: '0E04'), headers: $headers),
 			$subject,
-			$this->parseDate(header: (string)($headers['date'] ?? '')),
+			MailHeaders::date(header: (string)($headers['date'] ?? '')),
 			$this->property(properties: $properties, propertyId: '1000'),
 			HtmlSanitizer::sanitize($html),
 			$this->readAttachments(reader: $reader),
@@ -227,33 +224,7 @@ class MsgParser {
 			return [];
 		}
 
-		$headers = [];
-		$lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $block));
-		$current = null;
-		foreach ($lines as $line) {
-			if ($line === '') {
-				continue;
-			}
-
-			if (($line[0] === ' ' || $line[0] === "\t") && $current !== null) {
-				$headers[$current] .= ' ' . trim($line);
-				continue;
-			}
-
-			$colon = strpos($line, ':');
-			if ($colon === false) {
-				continue;
-			}
-
-			$name = strtolower(trim(substr($line, 0, $colon)));
-			if (isset($headers[$name]) === false) {
-				$headers[$name] = trim(substr($line, ($colon + 1)));
-			}
-
-			$current = $name;
-		}
-
-		return $headers;
+		return MailHeaders::parse(headerBlock: str_replace(["\r\n", "\r"], "\n", $block));
 
 	}//end parseTransportHeaders()
 
@@ -293,25 +264,5 @@ class MsgParser {
 		return $recipients;
 
 	}//end recipients()
-
-	/**
-	 * Parse a `Date` header into an ISO 8601 timestamp.
-	 *
-	 * @param string $header The header value.
-	 *
-	 * @return string|null The timestamp, or null when absent or unreadable.
-	 */
-	private function parseDate(string $header): ?string {
-		if (trim($header) === '') {
-			return null;
-		}
-
-		try {
-			return (new DateTimeImmutable($header))->format('c');
-		} catch (Throwable) {
-			return null;
-		}
-
-	}//end parseDate()
 
 }//end class

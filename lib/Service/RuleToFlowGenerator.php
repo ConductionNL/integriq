@@ -272,6 +272,25 @@ class RuleToFlowGenerator implements RuleToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function scopeRefusals(array $rule, array $endpoint): array {
+		return array_merge(
+			$this->referenceRefusals(rule: $rule, endpoint: $endpoint),
+			$this->listingRefusals(rule: $rule, endpoint: $endpoint),
+			$this->targetRefusals(endpoint: $endpoint),
+			$this->eventRefusals(endpoint: $endpoint)
+		);
+	}//end scopeRefusals()
+
+	/**
+	 * Refusals about recording what the flow was generated from and for.
+	 *
+	 * @param array $rule     The rule's serialised record.
+	 * @param array $endpoint The serialised record of the endpoint that runs it.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function referenceRefusals(array $rule, array $endpoint): array {
 		$reasons = [];
 
 		if ($this->subject->referenceOf(entity: $rule) === '') {
@@ -287,45 +306,106 @@ class RuleToFlowGenerator implements RuleToFlowGeneratorInterface {
 			);
 		}
 
-		if ($this->scope->runsRule(rule: $rule, endpoint: $endpoint) === false) {
-			$reasons[] = $this->l10n->t(
+		return $reasons;
+	}//end referenceRefusals()
+
+	/**
+	 * The refusal when the endpoint does not run the rule at all.
+	 *
+	 * @param array $rule     The rule's serialised record.
+	 * @param array $endpoint The serialised record of the endpoint that runs it.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function listingRefusals(array $rule, array $endpoint): array {
+		if ($this->scope->runsRule(rule: $rule, endpoint: $endpoint) === true) {
+			return [];
+		}
+
+		return [
+			$this->l10n->t(
 				'The endpoint "%1$s" does not list this rule, so it never runs there and the trigger would '
 				. 'be derived from a scope the rule has nothing to do with.',
 				[$this->subject->labelOf(entity: $endpoint)]
-			);
-		}
+			),
+		];
+	}//end listingRefusals()
 
+	/**
+	 * Refusals about the register and schema the trigger would be scoped to.
+	 *
+	 * @param array $endpoint The serialised record of the endpoint that runs it.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function targetRefusals(array $endpoint): array {
 		$targetType = $this->scope->targetTypeOf(endpoint: $endpoint);
 		if ($targetType !== RuleEndpointScope::SUPPORTED_TARGET_TYPE) {
-			$reasons[] = $this->l10n->t(
-				'The endpoint\'s targetType is "%1$s": an object trigger needs a register and a schema, and '
-				. 'only a "register/schema" endpoint has them.',
-				[$targetType]
-			);
+			return [
+				$this->l10n->t(
+					'The endpoint\'s targetType is "%1$s": an object trigger needs a register and a schema, and '
+					. 'only a "register/schema" endpoint has them.',
+					[$targetType]
+				),
+			];
 		}
 
+		return $this->targetPairRefusals(endpoint: $endpoint);
+	}//end targetRefusals()
+
+	/**
+	 * The refusal when a "register/schema" endpoint's targetId is not such a pair.
+	 *
+	 * @param array $endpoint The serialised record of the endpoint that runs it.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function targetPairRefusals(array $endpoint): array {
 		[$register] = $this->scope->targetPairOf(endpoint: $endpoint);
-		if ($targetType === RuleEndpointScope::SUPPORTED_TARGET_TYPE && $register === '') {
-			$reasons[] = $this->l10n->t(
+		if ($register !== '') {
+			return [];
+		}
+
+		return [
+			$this->l10n->t(
 				'The endpoint\'s targetId "%1$s" is not a "register/schema" pair, so the trigger has no '
 				. 'register and schema to name.',
 				[trim((string)($endpoint['targetId'] ?? ''))]
-			);
+			),
+		];
+	}//end targetPairRefusals()
+
+	/**
+	 * The refusal when the endpoint's method changes no object, so no event fires.
+	 *
+	 * @param array $endpoint The serialised record of the endpoint that runs it.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function eventRefusals(array $endpoint): array {
+		if ($this->scope->eventOf(endpoint: $endpoint) !== null) {
+			return [];
 		}
 
-		if ($this->scope->eventOf(endpoint: $endpoint) === null) {
-			$reasons[] = $this->l10n->t(
+		return [
+			$this->l10n->t(
 				'The endpoint\'s method is "%1$s": it changes no object, so no object event ever fires and '
 				. 'the generated flow would never start. Object triggers exist for %2$s.',
 				[
 					$this->scope->methodOf(endpoint: $endpoint),
 					implode(', ', $this->scope->writeMethods()),
 				]
-			);
-		}
-
-		return $reasons;
-	}//end scopeRefusals()
+			),
+		];
+	}//end eventRefusals()
 
 	/**
 	 * Refusals about WHEN in the pipeline the rule runs.
@@ -379,27 +459,59 @@ class RuleToFlowGenerator implements RuleToFlowGeneratorInterface {
 
 		$found = $this->conditions->problemsIn(conditions: $conditions);
 
-		$reasons = [];
-		if ($found['scopes'] !== []) {
-			$reasons[] = $this->l10n->t(
+		return array_merge(
+			$this->subScopeRefusals(operators: $found['scopes']),
+			$this->requestPathRefusals(paths: $found['paths'])
+		);
+	}//end conditionRefusals()
+
+	/**
+	 * The refusal when the conditions use operators that rebind "var".
+	 *
+	 * @param array<int, string> $operators The sub-scope operators found.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function subScopeRefusals(array $operators): array {
+		if ($operators === []) {
+			return [];
+		}
+
+		return [
+			$this->l10n->t(
 				'conditions use the sub-scope operator(s) %1$s, which rebind what "var" means inside them. '
 				. 'Rewriting request paths to item paths through one of those would be wrong exactly where '
 				. 'it looked right, so it is refused rather than guessed.',
-				[implode(', ', $found['scopes'])]
-			);
+				[implode(', ', $operators)]
+			),
+		];
+	}//end subScopeRefusals()
+
+	/**
+	 * The refusal when the conditions read request parts an object event does not carry.
+	 *
+	 * @param array<int, string> $paths The paths without an object-event equivalent.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function requestPathRefusals(array $paths): array {
+		if ($paths === []) {
+			return [];
 		}
 
-		if ($found['paths'] !== []) {
-			$reasons[] = $this->l10n->t(
+		return [
+			$this->l10n->t(
 				'conditions read %1$s: an object event carries the object and nothing else — no request, no '
 				. 'headers, no query — so only "body" paths have an equivalent. Dropping the rest would make '
 				. 'this rule fire on every object instead of some.',
-				[implode(', ', $found['paths'])]
-			);
-		}
-
-		return $reasons;
-	}//end conditionRefusals()
+				[implode(', ', $paths)]
+			),
+		];
+	}//end requestPathRefusals()
 
 	/**
 	 * Refusals about WHAT the rule does.
@@ -465,48 +577,113 @@ class RuleToFlowGenerator implements RuleToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function synchronizationRuleRefusals(array $configuration): array {
-		$reasons = [];
+		return array_merge(
+			$this->unnamedSynchronizationRefusals(configuration: $configuration),
+			$this->unreadSynchronizationKeyRefusals(configuration: $configuration),
+			$this->testModeRefusals(configuration: $configuration),
+			$this->synchronizationConfigRefusals(configuration: $configuration)
+		);
+	}//end synchronizationRuleRefusals()
 
-		if ($this->synchronizationOf(configuration: $configuration) === '') {
-			// `openconnector.synchronization-run` stays on the old id: flow node `type`
-			// values are written into stored flow documents (OpenRegister objects), so
-			// renaming them makes every existing flow point at a node type nothing
-			// answers to. Same convention as OpenRegister's own `openregister.*` ids.
-			$reasons[] = $this->l10n->t(
+	/**
+	 * The refusal when the rule names no configured synchronization.
+	 *
+	 * @param array $configuration The rule's configuration block.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function unnamedSynchronizationRefusals(array $configuration): array {
+		if ($this->synchronizationOf(configuration: $configuration) !== '') {
+			return [];
+		}
+
+		// `openconnector.synchronization-run` stays on the old id: flow node `type`
+		// values are written into stored flow documents (OpenRegister objects), so
+		// renaming them makes every existing flow point at a node type nothing
+		// answers to. Same convention as OpenRegister's own `openregister.*` ids.
+		return [
+			$this->l10n->t(
 				'configuration.synchronization is not set: "openconnector.synchronization-run" must name a '
 				. 'configured synchronization, and this step never creates one.'
-			);
-		}
+			),
+		];
+	}//end unnamedSynchronizationRefusals()
 
+	/**
+	 * The refusal when the synchronization block carries keys the run step does not read.
+	 *
+	 * @param array $configuration The rule's configuration block.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function unreadSynchronizationKeyRefusals(array $configuration): array {
 		$block = ($configuration['synchronization'] ?? null);
-		if (is_array($block) === true) {
-			$unread = array_intersect(self::UNSUPPORTED_SYNC_KEYS, array_keys($block));
-			if ($unread !== []) {
-				$reasons[] = $this->l10n->t(
-					'configuration.synchronization.%1$s: the run step reads none of these — it takes a '
-					. 'synchronization and a force flag and nothing else — so the pre/post handling around '
-					. 'the run would silently disappear.',
-					[implode(', ', array_map('strval', $unread))]
-				);
-			}
+		if (is_array($block) === false) {
+			return [];
 		}
 
-		if (filter_var(($configuration['isTest'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
-			$reasons[] = $this->l10n->t(
+		$unread = array_intersect(self::UNSUPPORTED_SYNC_KEYS, array_keys($block));
+		if ($unread === []) {
+			return [];
+		}
+
+		return [
+			$this->l10n->t(
+				'configuration.synchronization.%1$s: the run step reads none of these — it takes a '
+				. 'synchronization and a force flag and nothing else — so the pre/post handling around '
+				. 'the run would silently disappear.',
+				[implode(', ', array_map('strval', $unread))]
+			),
+		];
+	}//end unreadSynchronizationKeyRefusals()
+
+	/**
+	 * The refusal when the rule ran in test mode, which the run step does not have.
+	 *
+	 * @param array $configuration The rule's configuration block.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function testModeRefusals(array $configuration): array {
+		if (filter_var(($configuration['isTest'] ?? false), FILTER_VALIDATE_BOOLEAN) === false) {
+			return [];
+		}
+
+		return [
+			$this->l10n->t(
 				'configuration.isTest: the run step has no test mode, so a rule that deliberately performed '
 				. 'no writes would become one that does.'
-			);
+			),
+		];
+	}//end testModeRefusals()
+
+	/**
+	 * The refusal when the rule merges the run result into the request body.
+	 *
+	 * @param array $configuration The rule's configuration block.
+	 *
+	 * @return array<int, string> The refusal reasons.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	private function synchronizationConfigRefusals(array $configuration): array {
+		if ((array)($configuration['synchronizationConfig'] ?? []) === []) {
+			return [];
 		}
 
-		if ((array)($configuration['synchronizationConfig'] ?? []) !== []) {
-			$reasons[] = $this->l10n->t(
+		return [
+			$this->l10n->t(
 				'configuration.synchronizationConfig: merging or overwriting the request body with the run '
 				. 'result happens inside the endpoint pipeline and has no step.'
-			);
-		}
-
-		return $reasons;
-	}//end synchronizationRuleRefusals()
+			),
+		];
+	}//end synchronizationConfigRefusals()
 
 	/**
 	 * Build the flow's nodes, in pipeline order.

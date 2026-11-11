@@ -105,21 +105,40 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 	 * @spec openspec/specs/endpoint-runtime/spec.md
 	 */
 	public function findByPathRegex(string $path, string $method, bool $isRetry = false): ?ObjectEntity {
-		$endpoints = $this->getAllEndpoints();
+		$matches = $this->matchingEndpoints(path: $path, method: $method);
 
-		$matches = array_filter(
-			$endpoints,
+		// Smart fallback: if no matches found and we haven't retried yet, refresh cache once and try again.
+		if (empty($matches) === true && $isRetry === false) {
+			$this->logger->info("No endpoint matches found for {$method} {$path}, refreshing cache and retrying");
+			$this->refreshCache();
+			return $this->findByPathRegex(path: $path, method: $method, isRetry: true);
+		}
+
+		// Multiple matches are an ambiguous routing situation.
+		if (count($matches) > 1) {
+			throw $this->ambiguousRouting(matches: $matches, route: "{$path} {$method}");
+		}
+
+		if (empty($matches) === true) {
+			return null;
+		}
+
+		return $this->matchedEntity(matchedEndpoint: reset($matches));
+	}//end findByPathRegex()
+
+	/**
+	 * The cached endpoints whose regex matches the path and whose method is the method.
+	 *
+	 * @param string $path   The request path.
+	 * @param string $method The HTTP method.
+	 *
+	 * @return array The matching cached endpoints, keys kept.
+	 */
+	private function matchingEndpoints(string $path, string $method): array {
+		return array_filter(
+			$this->getAllEndpoints(),
 			function ($endpoint) use ($path, $method) {
-				// Work with arrays directly - much faster than object reconstruction.
-				if ($endpoint instanceof ObjectEntity) {
-					$endpointData = $endpoint->getObject();
-				} elseif (is_array($endpoint) === true) {
-					$endpointData = $endpoint;
-				} else {
-					$endpointData = [];
-				}
-
-				$endpointData = $this->withRouting(endpointData: $endpointData);
+				$endpointData = $this->withRouting(endpointData: $this->endpointData(endpoint: $endpoint));
 				$pattern = ($endpointData['endpointRegex'] ?? null);
 				$endpointMethod = ($endpointData['method'] ?? null);
 
@@ -128,50 +147,59 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 					return false;
 				}
 
-				// Check if both path matches the regex pattern and method matches.
 				return (preg_match($pattern, $path) === 1 && $endpointMethod === $method);
 			}
 		);
+	}//end matchingEndpoints()
 
-		// Smart fallback: if no matches found and we haven't retried yet, refresh cache once and try again.
-		if (empty($matches) === true && $isRetry === false) {
-			$this->logger->info("No endpoint matches found for {$method} {$path}, refreshing cache and retrying");
-
-			// Force refresh the cache.
-			$this->refreshCache();
-
-			// Try once more with fresh data.
-			return $this->findByPathRegex(path: $path, method: $method, isRetry: true);
+	/**
+	 * A cached endpoint's object data: the entity's object, the cached array, or nothing.
+	 *
+	 * Works with arrays directly - much faster than object reconstruction.
+	 *
+	 * @param mixed $endpoint An ObjectEntity or its cached array.
+	 *
+	 * @return array The endpoint data.
+	 */
+	private function endpointData(mixed $endpoint): array {
+		if ($endpoint instanceof ObjectEntity) {
+			return $endpoint->getObject();
 		}
 
-		// Handle multiple matches - this is an ambiguous routing situation.
-		if (count($matches) > 1) {
-			$endpointNames = array_map(
-				function ($ep) {
-					if ($ep instanceof ObjectEntity) {
-						$data = $ep->getObject();
-					} elseif (is_array($ep) === true) {
-						$data = $ep;
-					} else {
-						$data = [];
-					}
-
-					return ($data['name'] ?? 'unnamed');
-				},
-				$matches
-			);
-			throw new \Exception(
-				"Multiple endpoints found for path and method: {$path} {$method}. Matching endpoints: " . implode(', ', $endpointNames)
-			);
+		if (is_array($endpoint) === true) {
+			return $endpoint;
 		}
 
-		// Return null if no matches.
-		if (empty($matches) === true) {
-			return null;
-		}
+		return [];
+	}//end endpointData()
 
-		// Return the matched ObjectEntity endpoint.
-		$matchedEndpoint = reset($matches);
+	/**
+	 * The refusal for a path and method that more than one endpoint matches.
+	 *
+	 * @param array  $matches The matching endpoints.
+	 * @param string $route   The path and method, as `{path} {method}`.
+	 *
+	 * @return \Exception The ambiguity, naming every match (`unnamed` for one without a name).
+	 */
+	private function ambiguousRouting(array $matches, string $route): \Exception {
+		$endpointNames = array_map(
+			fn ($endpoint) => ($this->endpointData(endpoint: $endpoint)['name'] ?? 'unnamed'),
+			$matches
+		);
+
+		return new \Exception(
+			"Multiple endpoints found for path and method: {$route}. Matching endpoints: " . implode(', ', $endpointNames)
+		);
+	}//end ambiguousRouting()
+
+	/**
+	 * The matched endpoint as an entity carrying its derived routing.
+	 *
+	 * @param mixed $matchedEndpoint The ObjectEntity, or its cached array.
+	 *
+	 * @return ObjectEntity|null The endpoint, or null when it is neither.
+	 */
+	private function matchedEntity(mixed $matchedEndpoint): ?ObjectEntity {
 		if ($matchedEndpoint instanceof ObjectEntity) {
 			// In memory only: the request sees the derived segments; the row is not written.
 			$matchedEndpoint->setObject($this->withRouting(endpointData: (array)$matchedEndpoint->getObject()));
@@ -192,7 +220,7 @@ class EndpointCacheService implements EndpointCacheServiceInterface {
 		}
 
 		return null;
-	}//end findByPathRegex()
+	}//end matchedEntity()
 
 	/**
 	 * Get all endpoints from cache or database as ObjectEntity arrays (for performance).

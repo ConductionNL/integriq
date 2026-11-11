@@ -192,4 +192,53 @@ class DemoDataServiceTest extends TestCase {
 		$this->assertSame('integriq.demo', $importer->seen['appId']);
 		$this->assertTrue($importer->seen['force']);
 	}
+
+	/**
+	 * The refusals name what is wrong, a descriptor without an objects list
+	 * imports zero objects, and the import is logged with its counts.
+	 *
+	 * @return void
+	 */
+	public function testInstallRefusalsAndTheLoggedImport(): void {
+		$messages = [];
+		try {
+			$this->service()->install();
+		} catch (\RuntimeException $e) {
+			$messages[] = $e->getMessage();
+		}
+
+		file_put_contents($this->descriptor(), '[1');
+		try {
+			$this->service()->install();
+		} catch (\RuntimeException $e) {
+			$messages[] = str_replace($this->appPath, '(app)', $e->getMessage());
+		}
+
+		$this->assertSame(
+			[
+				'No demo dataset ships with this app (/lib/Settings/integriq_mock_register.json not found).',
+				'The demo dataset is not valid JSON: (app)/lib/Settings/integriq_mock_register.json',
+			],
+			$messages
+		);
+
+		file_put_contents($this->descriptor(), json_encode(['components' => ['objects' => 'not a list']]));
+		$importer = new class {
+			public array $seen = [];
+
+			public function importFromApp(string $appId, array $data, string $version, bool $force): array {
+				$this->seen = [$appId, $data, $version, $force];
+				return ['registers' => 'x', 'schemas' => null];
+			}
+		};
+		$this->container->method('get')->willReturn($importer);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('info')
+			->with('[DemoDataService] imported demo data: 0 object(s), 1 register(s), 0 schema(s).', ['app' => 'integriq']);
+
+		$result = (new DemoDataService($this->appManager, $this->container, $logger))->install();
+
+		$this->assertSame(['objects' => 0, 'registers' => 1, 'schemas' => 0], $result);
+		$this->assertSame(['integriq.demo', ['components' => ['objects' => 'not a list']], '1.2.3', true], $importer->seen);
+	}//end testInstallRefusalsAndTheLoggedImport()
 }

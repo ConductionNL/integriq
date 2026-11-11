@@ -137,11 +137,7 @@ class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 			return;
 		}
 
-		[$deploymentData, $toolData] = $tool;
-		$loginUrl = (string)($toolData['oidcLoginUrl'] ?? '');
-		$clientId = (string)($toolData['clientId'] ?? '');
-		$launchUrl = (string)($toolData['launchUrl'] ?? '');
-		if ($loginUrl === '' || $clientId === '' || $launchUrl === '') {
+		if (self::isIncomplete(toolData: $tool[1]) === true) {
 			$event->refuse(
 				code: 'tool-incomplete',
 				reason: 'The tool registration has no OIDC login URL, client id or launch URL'
@@ -149,7 +145,32 @@ class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 			return;
 		}
 
-		$hint = $this->hint->issue(
+		$hint = $this->loginHint(event: $event);
+		$event->setLoginInitiation(loginInitiation: $this->loginForm(tool: $tool, hint: $hint));
+	}//end initiateLogin()
+
+	/**
+	 * Whether a tool registration lacks its OIDC login URL, client id or launch URL.
+	 *
+	 * @param array $toolData The tool registration.
+	 *
+	 * @return bool True when one is missing.
+	 */
+	private static function isIncomplete(array $toolData): bool {
+		return (string)($toolData['oidcLoginUrl'] ?? '') === ''
+			|| (string)($toolData['clientId'] ?? '') === ''
+			|| (string)($toolData['launchUrl'] ?? '') === '';
+	}//end isIncomplete()
+
+	/**
+	 * Issue the signed login hint that carries the launch to the authorize step.
+	 *
+	 * @param LtiLaunchRequestedEvent $event The request.
+	 *
+	 * @return string The hint.
+	 */
+	private function loginHint(LtiLaunchRequestedEvent $event): string {
+		return $this->hint->issue(
 			context: [
 				'userId' => $event->getUserId(),
 				'placementId' => $event->getPlacementId(),
@@ -161,22 +182,31 @@ class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 				'returnUrl' => $event->getReturnUrl(),
 			]
 		);
+	}//end loginHint()
 
-		$event->setLoginInitiation(
-			loginInitiation: [
-				'formActionUrl' => $loginUrl,
-				'method' => 'POST',
-				'fields' => [
-					'iss' => $this->platformIssuer(),
-					'login_hint' => $hint,
-					'lti_message_hint' => $hint,
-					'target_link_uri' => $launchUrl,
-					'client_id' => $clientId,
-					'lti_deployment_id' => (string)($deploymentData['deploymentId'] ?? ''),
-				],
-			]
-		);
-	}//end initiateLogin()
+	/**
+	 * The login initiation form that sends the browser to the tool's OIDC login URL.
+	 *
+	 * @param array{0: array, 1: array} $tool The deployment and tool data.
+	 * @param string                    $hint The signed login hint.
+	 *
+	 * @return array{formActionUrl: string, method: string, fields: array<string, string>} The form.
+	 */
+	private function loginForm(array $tool, string $hint): array {
+		[$deploymentData, $toolData] = $tool;
+		return [
+			'formActionUrl' => (string)($toolData['oidcLoginUrl'] ?? ''),
+			'method' => 'POST',
+			'fields' => [
+				'iss' => $this->platformIssuer(),
+				'login_hint' => $hint,
+				'lti_message_hint' => $hint,
+				'target_link_uri' => (string)($toolData['launchUrl'] ?? ''),
+				'client_id' => (string)($toolData['clientId'] ?? ''),
+				'lti_deployment_id' => (string)($deploymentData['deploymentId'] ?? ''),
+			],
+		];
+	}//end loginForm()
 
 	/**
 	 * The refusal for a request that fails before any lookup, or null.

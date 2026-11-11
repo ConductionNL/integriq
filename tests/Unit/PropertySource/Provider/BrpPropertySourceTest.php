@@ -124,4 +124,79 @@ class BrpPropertySourceTest extends TestCase {
 		$this->assertSame('burgerservicenummer', $described['identifier']);
 		$this->assertSame(BrpPropertySource::STALENESS_BUDGET, $described['stalenessBudget']);
 	}//end testDescribeNamesTheIdentifierItKeysOn()
+
+	/**
+	 * The fields a property asks for, and the fields the read asks the registry for.
+	 *
+	 * @return array<string,array{0:mixed,1:list<string>}>
+	 */
+	public static function fieldRequests(): array {
+		$defaults = BrpPropertySource::DEFAULT_FIELDS;
+		return [
+			'none'                       => [null, $defaults],
+			'empty list'                 => [[], $defaults],
+			'not a list'                 => ['naam', $defaults],
+			'own fields, keyed'          => [['a' => 'naam', 'b' => 7], ['naam', '7']],
+			'relations dropped'          => [['naam', 'partners', 'ouders.naam', 'kinderen'], ['naam']],
+			'only relations'             => [['partners.naam', 'ouders'], $defaults],
+			'look-alike kept'            => [['partnerschap', 'kinderenAantal', 'naam.partners'], ['partnerschap', 'kinderenAantal', 'naam.partners']],
+		];
+
+	}//end fieldRequests()
+
+	/**
+	 * The read asks for the fields the property asked for, without relations.
+	 *
+	 * @param mixed        $fields   The property's fields.
+	 * @param list<string> $expected The fields read.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider fieldRequests
+	 */
+	public function testTheReadAsksForThePropertysFields(mixed $fields, array $expected): void {
+		$gateway = $this->gateway();
+		$gateway->expects($this->once())->method('read')
+			->with(
+				$this->identicalTo('brp'),
+				$this->identicalTo('brp-haalcentraal'),
+				$this->identicalTo('/personen'),
+				$this->identicalTo([]),
+				$this->identicalTo(['type' => 'RaadpleegMetBurgerservicenummer', 'burgerservicenummer' => ['999993653'], 'fields' => $expected])
+			)
+			->willReturn(['personen' => [['burgerservicenummer' => '999993653']]]);
+		$config = [];
+		if ($fields !== null) {
+			$config['fields'] = $fields;
+		}
+
+		(new BrpPropertySource($gateway))->resolve('999993653', $config);
+
+	}//end testTheReadAsksForThePropertysFields()
+
+	/**
+	 * The first record that is an object is the person; none is a refusal with this message.
+	 *
+	 * @return void
+	 */
+	public function testTheFirstObjectRecordIsThePerson(): void {
+		$gateway = $this->gateway();
+		$gateway->method('read')->willReturnOnConsecutiveCalls(
+			['personen' => ['x', ['id' => 1], ['id' => 2]]],
+			['personen' => 'x'],
+			['personen' => ['x']]
+		);
+		$source = new BrpPropertySource($gateway);
+
+		$this->assertSame(['id' => 1], $source->resolve('999993653'));
+		foreach ([1, 2] as $attempt) {
+			try {
+				$source->resolve('999993653');
+				$this->fail('no record must be a refusal');
+			} catch (SourceUnreachableException $exception) {
+				$this->assertSame('The brp registry returned no record for the burgerservicenummer asked.', $exception->getMessage(), (string)$attempt);
+			}
+		}
+
+	}//end testTheFirstObjectRecordIsThePerson()
 }//end class

@@ -67,6 +67,24 @@ class RecipientResolver {
 	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
 	 */
 	public function refusals(array $standing, array $suppressions): array {
+		$byAddress = $this->recipientsByAddress(standing: $standing);
+
+		$refusals = [];
+		foreach ($suppressions as $suppression) {
+			$refusals = array_merge($refusals, $this->suppressionRefusals(suppression: $suppression, byAddress: $byAddress));
+		}
+
+		return $refusals;
+	}//end refusals()
+
+	/**
+	 * The standing recipients by trimmed address; a recipient without an address is left out.
+	 *
+	 * @param array<int, array<string, mixed>> $standing The standing recipients.
+	 *
+	 * @return array<string, array<string, mixed>> The recipients by address.
+	 */
+	private function recipientsByAddress(array $standing): array {
 		$byAddress = [];
 		foreach ($standing as $recipient) {
 			$address = trim((string)($recipient['address'] ?? ''));
@@ -75,46 +93,99 @@ class RecipientResolver {
 			}
 		}
 
-		$refusals = [];
-		foreach ($suppressions as $suppression) {
-			$address = trim((string)($suppression['address'] ?? ''));
+		return $byAddress;
 
-			if ($address === '' || isset($byAddress[$address]) === false) {
-				$named = $address;
-				if ($named === '') {
-					$named = '(no address)';
-				}
+	}//end recipientsByAddress()
 
-				$refusals[] = sprintf(
-					'"%s" is not on this message\'s recipient list, so suppressing it would record a decision '
-					.'that changed nothing.',
-					$named
-				);
-				continue;
-			}
+	/**
+	 * What is wrong with one suppression: it names nobody on the list, or it has no reason, or it names a required recipient.
+	 *
+	 * @param array<string, mixed>                $suppression The suppression.
+	 * @param array<string, array<string, mixed>> $byAddress   The standing recipients by address.
+	 *
+	 * @return array<int, string> The refusals, in that order.
+	 */
+	private function suppressionRefusals(array $suppression, array $byAddress): array {
+		$address = trim((string)($suppression['address'] ?? ''));
+		if ($address === '' || isset($byAddress[$address]) === false) {
+			return [$this->notOnTheListRefusal(address: $address)];
+		}
 
-			if (trim((string)($suppression['reason'] ?? '')) === '') {
-				$refusals[] = sprintf(
-					'Keeping "%s" off this message needs a reason. A year from now the record has to say why '
-					.'they did not receive it, and an empty reason reads the same as a mis-click.',
-					$address
-				);
-			}
+		$refusals = [
+			$this->missingReasonRefusal(suppression: $suppression, address: $address),
+			$this->requiredRecipientRefusal(recipient: $byAddress[$address], address: $address),
+		];
 
-			$requirement = trim((string)($byAddress[$address]['requiredBecause'] ?? ''));
-			if ($requirement !== '') {
-				// The caller's own words, repeated. A handler who meets "this
-				// recipient is required" has nothing to argue with or escalate.
-				$refusals[] = sprintf(
-					'"%s" cannot be kept off this message: %s',
-					$address,
-					$requirement
-				);
-			}
-		}//end foreach
+		return array_values(array_filter($refusals, static fn (?string $refusal): bool => $refusal !== null));
 
-		return $refusals;
-	}//end refusals()
+	}//end suppressionRefusals()
+
+	/**
+	 * The refusal of a suppression that names nobody on the list.
+	 *
+	 * @param string $address The suppressed address, '' when it names none.
+	 *
+	 * @return string The refusal.
+	 */
+	private function notOnTheListRefusal(string $address): string {
+		$named = $address;
+		if ($named === '') {
+			$named = '(no address)';
+		}
+
+		return sprintf(
+			'"%s" is not on this message\'s recipient list, so suppressing it would record a decision '
+			.'that changed nothing.',
+			$named
+		);
+
+	}//end notOnTheListRefusal()
+
+	/**
+	 * The refusal of a suppression without a reason, or null when it has one.
+	 *
+	 * @param array<string, mixed> $suppression The suppression.
+	 * @param string               $address     The suppressed address.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function missingReasonRefusal(array $suppression, string $address): ?string {
+		if (trim((string)($suppression['reason'] ?? '')) !== '') {
+			return null;
+		}
+
+		return sprintf(
+			'Keeping "%s" off this message needs a reason. A year from now the record has to say why '
+			.'they did not receive it, and an empty reason reads the same as a mis-click.',
+			$address
+		);
+
+	}//end missingReasonRefusal()
+
+	/**
+	 * The refusal of suppressing a recipient the caller marked required, or null when it is not.
+	 *
+	 * The caller's own words, repeated. A handler who meets "this recipient is
+	 * required" has nothing to argue with or escalate.
+	 *
+	 * @param array<string, mixed> $recipient The standing recipient.
+	 * @param string               $address   Its address.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function requiredRecipientRefusal(array $recipient, string $address): ?string {
+		$requirement = trim((string)($recipient['requiredBecause'] ?? ''));
+		if ($requirement === '') {
+			return null;
+		}
+
+		return sprintf(
+			'"%s" cannot be kept off this message: %s',
+			$address,
+			$requirement
+		);
+
+	}//end requiredRecipientRefusal()
 
 	/**
 	 * Resolve a request into its three recorded parts.
@@ -143,53 +214,113 @@ class RecipientResolver {
 			throw new RecipientRefusedException(message: implode(' ', $refusals), refusals: $refusals);
 		}
 
-		$moment = ($now ?? new DateTimeImmutable());
+		$resolution = new RecipientResolution(
+			user: $user,
+			moment: ($now ?? new DateTimeImmutable()),
+			suppressions: $this->suppressionsByAddress(suppressions: $suppressions)
+		);
+		[$standingPart, $suppressedPart] = $this->splitStanding(standing: $standing, resolution: $resolution);
+
+		$addedPart = $this->addedPart(additions: $additions, resolution: $resolution);
+
+		return new RecipientDecision(standing: $standingPart, added: $addedPart, suppressed: $suppressedPart);
+	}//end resolve()
+
+	/**
+	 * The suppressions by trimmed address; a later suppression of the same address wins.
+	 *
+	 * @param array<int, array<string, mixed>> $suppressions The suppressions.
+	 *
+	 * @return array<string, array<string, mixed>> The suppressions by address.
+	 */
+	private function suppressionsByAddress(array $suppressions): array {
 		$suppressedAddresses = [];
 		foreach ($suppressions as $suppression) {
 			$suppressedAddresses[trim((string)($suppression['address'] ?? ''))] = $suppression;
 		}
 
+		return $suppressedAddresses;
+
+	}//end suppressionsByAddress()
+
+	/**
+	 * Split the standing recipients into those that stay and those kept off this message.
+	 *
+	 * @param array<int, array<string, mixed>> $standing   The standing recipients.
+	 * @param RecipientResolution              $resolution The resolution.
+	 *
+	 * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>} The standing and the suppressed part.
+	 */
+	private function splitStanding(array $standing, RecipientResolution $resolution): array {
 		$standingPart = [];
 		$suppressedPart = [];
-
 		foreach ($standing as $recipient) {
-			$address = trim((string)($recipient['address'] ?? ''));
-			$suppression = ($suppressedAddresses[$address] ?? null);
-
+			$suppression = ($resolution->suppressions[trim((string)($recipient['address'] ?? ''))] ?? null);
 			if ($suppression === null) {
 				$standingPart[] = array_merge($recipient, ['part' => RecipientDecision::STANDING]);
 				continue;
 			}
 
-			// 🔴 IT STAYS IN THE RECORD, AND IT CARRIES NO DELIVERY STATE. Not
-			// failed, not pending, and above all not "not reported": that reads
-			// as a transport that never answered, and sends somebody chasing a
-			// provider about a message nobody sent.
-			$suppressedPart[] = array_merge(
-				$recipient,
-				[
-					'part' => RecipientDecision::SUPPRESSED,
-					'reason' => trim((string)($suppression['reason'] ?? '')),
-					'suppressedBy' => ($suppression['user'] ?? $user),
-					'suppressedAt' => $moment->format(DATE_ATOM),
-					'deliveryState' => null,
-				]
-			);
-		}//end foreach
+			$suppressedPart[] = $this->suppressedRecipient(recipient: $recipient, resolution: $resolution);
+		}
 
+		return [$standingPart, $suppressedPart];
+
+	}//end splitStanding()
+
+	/**
+	 * A standing recipient kept off this message, with the suppression's reason, user and time.
+	 *
+	 * 🔴 IT STAYS IN THE RECORD, AND IT CARRIES NO DELIVERY STATE. Not failed,
+	 * not pending, and above all not "not reported": that reads as a transport
+	 * that never answered, and sends somebody chasing a provider about a
+	 * message nobody sent.
+	 *
+	 * @param array<string, mixed> $recipient  The standing recipient.
+	 * @param RecipientResolution  $resolution The resolution.
+	 *
+	 * @return array<string, mixed> The suppressed entry.
+	 */
+	private function suppressedRecipient(array $recipient, RecipientResolution $resolution): array {
+		$suppression = $resolution->suppressions[trim((string)($recipient['address'] ?? ''))];
+
+		return array_merge(
+			$recipient,
+			[
+				'part' => RecipientDecision::SUPPRESSED,
+				'reason' => trim((string)($suppression['reason'] ?? '')),
+				'suppressedBy' => ($suppression['user'] ?? $resolution->user),
+				'suppressedAt' => $resolution->at(),
+				'deliveryState' => null,
+			]
+		);
+
+	}//end suppressedRecipient()
+
+	/**
+	 * The recipients added for this message only.
+	 *
+	 * An addition is scoped to this message by construction: it lands in the
+	 * returned decision and nowhere else, because this class has nothing to
+	 * write to.
+	 *
+	 * @param array<int, array<string, mixed>> $additions  The additions.
+	 * @param RecipientResolution              $resolution The resolution.
+	 *
+	 * @return array<int, array<string, mixed>> The added part.
+	 */
+	private function addedPart(array $additions, RecipientResolution $resolution): array {
 		$addedPart = [];
 		foreach ($additions as $addition) {
-			// An addition is scoped to this message by construction: it lands in
-			// the returned decision and nowhere else, because this class has
-			// nothing to write to.
 			$addedPart[] = array_merge(
 				$addition,
-				['part' => RecipientDecision::ADDED, 'addedBy' => ($addition['user'] ?? $user), 'addedAt' => $moment->format(DATE_ATOM)]
+				['part' => RecipientDecision::ADDED, 'addedBy' => ($addition['user'] ?? $resolution->user), 'addedAt' => $resolution->at()]
 			);
 		}
 
-		return new RecipientDecision(standing: $standingPart, added: $addedPart, suppressed: $suppressedPart);
-	}//end resolve()
+		return $addedPart;
+
+	}//end addedPart()
 
 	/**
 	 * The same answer the send would record, written nowhere.

@@ -169,88 +169,110 @@ class SecurityService implements SecurityServiceInterface {
 	 */
 	public function checkLoginRateLimit(string $username, string $ipAddress): array {
 		// Sanitize inputs to prevent cache key injection.
-		$username = $this->sanitizeForCacheKey(input:$username);
-		$ipAddress = $this->sanitizeForCacheKey(input:$ipAddress);
+		$attempt = $this->loginAttempt(username: $username, ipAddress: $ipAddress);
 
-		// Check if user is currently locked out.
-		$userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT . $username;
-		$userLockoutUntil = $this->cache->get($userLockoutKey);
-		if ($userLockoutUntil !== null && $userLockoutUntil > time()) {
-			$this->logSecurityEvent(
-				event: 'login_attempt_during_lockout',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'lockout_until' => $userLockoutUntil,
-				]
-			);
-
-			return [
-				'allowed' => false,
-				'lockout_until' => $userLockoutUntil,
-				'reason' => 'Account temporarily locked due to too many failed login attempts',
-			];
+		$lockout = ($this->userLockout(attempt: $attempt) ?? $this->ipLockout(attempt: $attempt));
+		if ($lockout !== null) {
+			return $lockout;
 		}
 
-		// Check if IP is currently locked out.
-		$ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT . $ipAddress;
-		$ipLockoutUntil = $this->cache->get($ipLockoutKey);
-		if ($ipLockoutUntil !== null && $ipLockoutUntil > time()) {
-			$this->logSecurityEvent(
-				event: 'login_attempt_from_blocked_ip',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'lockout_until' => $ipLockoutUntil,
-				]
-			);
-
-			return [
-				'allowed' => false,
-				'lockout_until' => $ipLockoutUntil,
-				'reason' => 'IP address temporarily blocked due to suspicious activity',
-			];
-		}
-
-		// Check user-specific rate limit.
-		$userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS . $username;
-		$userAttempts = ($this->cache->get($userAttemptsKey) ?? 0);
-
-		// Check IP-specific rate limit.
-		$ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS . $ipAddress;
-		$ipAttempts = ($this->cache->get($ipAttemptsKey) ?? 0);
+		$counts = new LoginAttemptCounts(
+			user: ($this->cache->get(self::CACHE_PREFIX_LOGIN_ATTEMPTS . $attempt->username) ?? 0),
+			ipAddress: ($this->cache->get(self::CACHE_PREFIX_IP_ATTEMPTS . $attempt->ipAddress) ?? 0)
+		);
 
 		// Check if either user or IP has exceeded rate limit.
-		if ($userAttempts >= self::RATE_LIMIT_ATTEMPTS || $ipAttempts >= self::RATE_LIMIT_ATTEMPTS) {
-			// Implement progressive delay for repeated attempts.
-			$delayKey = self::CACHE_PREFIX_PROGRESSIVE_DELAY . $username . '_' . $ipAddress;
-			$currentDelay = ($this->cache->get($delayKey) ?? self::PROGRESSIVE_DELAY_BASE);
-
-			// Calculate next delay with exponential backoff.
-			$nextDelay = min(($currentDelay * 2), self::MAX_PROGRESSIVE_DELAY);
-			$this->cache->set($delayKey, $nextDelay, self::RATE_LIMIT_WINDOW);
-
-			$this->logSecurityEvent(
-				event: 'rate_limit_exceeded',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'user_attempts' => $userAttempts,
-					'ip_attempts' => $ipAttempts,
-					'delay' => $currentDelay,
-				]
-			);
-
-			return [
-				'allowed' => false,
-				'delay' => $currentDelay,
-				'reason' => 'Too many login attempts. Please wait before trying again.',
-			];
-		}//end if
+		if ($counts->user >= self::RATE_LIMIT_ATTEMPTS || $counts->ipAddress >= self::RATE_LIMIT_ATTEMPTS) {
+			return $this->delayed(attempt: $attempt, counts: $counts);
+		}
 
 		// Login attempt is allowed.
 		return ['allowed' => true];
 	}//end checkLoginRateLimit()
+
+	/**
+	 * The sanitised attempt of a user name from an IP address.
+	 *
+	 * @param string $username  The user name as given.
+	 * @param string $ipAddress The IP address as given.
+	 *
+	 * @return LoginAttempt
+	 */
+	private function loginAttempt(string $username, string $ipAddress): LoginAttempt {
+		return new LoginAttempt(
+			username: $this->sanitizeForCacheKey(input:$username),
+			ipAddress: $this->sanitizeForCacheKey(input:$ipAddress)
+		);
+	}//end loginAttempt()
+
+	/**
+	 * The refusal while the user is locked out, or null.
+	 *
+	 * @param LoginAttempt $attempt The attempt.
+	 *
+	 * @return array|null
+	 */
+	private function userLockout(LoginAttempt $attempt): ?array {
+		$userLockoutUntil = $this->cache->get(self::CACHE_PREFIX_USER_LOCKOUT . $attempt->username);
+		if (($userLockoutUntil !== null && $userLockoutUntil > time()) === false) {
+			return null;
+		}
+
+		$this->logSecurityEvent(event: 'login_attempt_during_lockout', context: $attempt->context() + ['lockout_until' => $userLockoutUntil]);
+
+		return [
+			'allowed' => false,
+			'lockout_until' => $userLockoutUntil,
+			'reason' => 'Account temporarily locked due to too many failed login attempts',
+		];
+	}//end userLockout()
+
+	/**
+	 * The refusal while the IP address is blocked, or null.
+	 *
+	 * @param LoginAttempt $attempt The attempt.
+	 *
+	 * @return array|null
+	 */
+	private function ipLockout(LoginAttempt $attempt): ?array {
+		$ipLockoutUntil = $this->cache->get(self::CACHE_PREFIX_IP_LOCKOUT . $attempt->ipAddress);
+		if (($ipLockoutUntil !== null && $ipLockoutUntil > time()) === false) {
+			return null;
+		}
+
+		$this->logSecurityEvent(event: 'login_attempt_from_blocked_ip', context: $attempt->context() + ['lockout_until' => $ipLockoutUntil]);
+
+		return [
+			'allowed' => false,
+			'lockout_until' => $ipLockoutUntil,
+			'reason' => 'IP address temporarily blocked due to suspicious activity',
+		];
+	}//end ipLockout()
+
+	/**
+	 * The refusal of a rate-limited attempt, raising its progressive delay.
+	 *
+	 * @param LoginAttempt       $attempt The attempt.
+	 * @param LoginAttemptCounts $counts  The user's and the IP's attempts.
+	 *
+	 * @return array
+	 */
+	private function delayed(LoginAttempt $attempt, LoginAttemptCounts $counts): array {
+		// Implement progressive delay for repeated attempts.
+		$delayKey = self::CACHE_PREFIX_PROGRESSIVE_DELAY . $attempt->username . '_' . $attempt->ipAddress;
+		$currentDelay = ($this->cache->get($delayKey) ?? self::PROGRESSIVE_DELAY_BASE);
+
+		// Calculate next delay with exponential backoff.
+		$this->cache->set($delayKey, min(($currentDelay * 2), self::MAX_PROGRESSIVE_DELAY), self::RATE_LIMIT_WINDOW);
+
+		$this->logSecurityEvent(event: 'rate_limit_exceeded', context: $attempt->context() + $counts->context() + ['delay' => $currentDelay]);
+
+		return [
+			'allowed' => false,
+			'delay' => $currentDelay,
+			'reason' => 'Too many login attempts. Please wait before trying again.',
+		];
+	}//end delayed()
 
 	/**
 	 * Record a failed login attempt.
@@ -268,65 +290,69 @@ class SecurityService implements SecurityServiceInterface {
 	 */
 	public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason = 'invalid_credentials'): void {
 		// Sanitize inputs.
-		$username = $this->sanitizeForCacheKey(input:$username);
-		$ipAddress = $this->sanitizeForCacheKey(input:$ipAddress);
+		$attempt = $this->loginAttempt(username: $username, ipAddress: $ipAddress);
 
-		// Increment user attempt counter.
-		$userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS . $username;
-		$userAttempts = (($this->cache->get($userAttemptsKey) ?? 0) + 1);
-		$this->cache->set($userAttemptsKey, $userAttempts, self::RATE_LIMIT_WINDOW);
+		// Increment the user and the IP attempt counters.
+		$counts = new LoginAttemptCounts(
+			user: $this->incremented(key: self::CACHE_PREFIX_LOGIN_ATTEMPTS . $attempt->username),
+			ipAddress: $this->incremented(key: self::CACHE_PREFIX_IP_ATTEMPTS . $attempt->ipAddress)
+		);
 
-		// Increment IP attempt counter.
-		$ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS . $ipAddress;
-		$ipAttempts = (($this->cache->get($ipAttemptsKey) ?? 0) + 1);
-		$this->cache->set($ipAttemptsKey, $ipAttempts, self::RATE_LIMIT_WINDOW);
-
-		// Check if user should be locked out.
-		if ($userAttempts >= self::RATE_LIMIT_ATTEMPTS) {
-			$lockoutUntil = (time() + self::LOCKOUT_DURATION);
-			$userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT . $username;
-			$this->cache->set($userLockoutKey, $lockoutUntil, self::LOCKOUT_DURATION);
-
-			$this->logSecurityEvent(
-				event: 'user_locked_out',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'attempts' => $userAttempts,
-					'lockout_until' => $lockoutUntil,
-				]
-			);
+		if ($counts->user >= self::RATE_LIMIT_ATTEMPTS) {
+			$this->lockOutUser(attempt: $attempt, attempts: $counts->user);
 		}
 
-		// Check if IP should be locked out.
-		if ($ipAttempts >= self::RATE_LIMIT_ATTEMPTS) {
-			$lockoutUntil = (time() + self::LOCKOUT_DURATION);
-			$ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT . $ipAddress;
-			$this->cache->set($ipLockoutKey, $lockoutUntil, self::LOCKOUT_DURATION);
-
-			$this->logSecurityEvent(
-				event: 'ip_locked_out',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'attempts' => $ipAttempts,
-					'lockout_until' => $lockoutUntil,
-				]
-			);
+		if ($counts->ipAddress >= self::RATE_LIMIT_ATTEMPTS) {
+			$this->lockOutIp(attempt: $attempt, attempts: $counts->ipAddress);
 		}
 
 		// Log the failed attempt.
-		$this->logSecurityEvent(
-			event: 'failed_login_attempt',
-			context: [
-				'username' => $username,
-				'ip_address' => $ipAddress,
-				'reason' => $reason,
-				'user_attempts' => $userAttempts,
-				'ip_attempts' => $ipAttempts,
-			]
-		);
+		$this->logSecurityEvent(event: 'failed_login_attempt', context: $attempt->context() + ['reason' => $reason] + $counts->context());
 	}//end recordFailedLoginAttempt()
+
+	/**
+	 * Add one to a failed-attempt counter for the rate-limit window.
+	 *
+	 * @param string $key The counter's cache key.
+	 *
+	 * @return int The new count.
+	 */
+	private function incremented(string $key): int {
+		$attempts = (($this->cache->get($key) ?? 0) + 1);
+		$this->cache->set($key, $attempts, self::RATE_LIMIT_WINDOW);
+
+		return $attempts;
+	}//end incremented()
+
+	/**
+	 * Lock the user out for the lockout duration.
+	 *
+	 * @param LoginAttempt $attempt  The attempt.
+	 * @param int          $attempts The user's failed attempts.
+	 *
+	 * @return void
+	 */
+	private function lockOutUser(LoginAttempt $attempt, int $attempts): void {
+		$lockoutUntil = (time() + self::LOCKOUT_DURATION);
+		$this->cache->set(self::CACHE_PREFIX_USER_LOCKOUT . $attempt->username, $lockoutUntil, self::LOCKOUT_DURATION);
+
+		$this->logSecurityEvent(event: 'user_locked_out', context: $attempt->context() + ['attempts' => $attempts, 'lockout_until' => $lockoutUntil]);
+	}//end lockOutUser()
+
+	/**
+	 * Block the IP address for the lockout duration.
+	 *
+	 * @param LoginAttempt $attempt  The attempt.
+	 * @param int          $attempts The IP address's failed attempts.
+	 *
+	 * @return void
+	 */
+	private function lockOutIp(LoginAttempt $attempt, int $attempts): void {
+		$lockoutUntil = (time() + self::LOCKOUT_DURATION);
+		$this->cache->set(self::CACHE_PREFIX_IP_LOCKOUT . $attempt->ipAddress, $lockoutUntil, self::LOCKOUT_DURATION);
+
+		$this->logSecurityEvent(event: 'ip_locked_out', context: $attempt->context() + ['attempts' => $attempts, 'lockout_until' => $lockoutUntil]);
+	}//end lockOutIp()
 
 	/**
 	 * Record a successful login attempt.

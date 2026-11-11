@@ -96,6 +96,34 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 	];
 
 	/**
+	 * Fields that would carry a literal key, which a declaration may not have.
+	 *
+	 * @var array<int, string>
+	 */
+	private const LITERAL_KEY_FIELDS = ['key', 'secret', 'token'];
+
+	/**
+	 * The refusal of a declaration carrying a literal key, by field name.
+	 *
+	 * @var string
+	 */
+	private const LITERAL_KEY_REFUSAL = 'a token declaration may not carry "%s": the key is resolved through the credential broker by reference, '
+		. 'so it never reaches a configuration export';
+
+	/**
+	 * The refusal of a declaration without a required field, in checking order.
+	 *
+	 * Without a principal the audit trail names an anonymous caller, which is
+	 * the thing REQ-OAF-004's third scenario exists to prevent.
+	 *
+	 * @var array<string, string>
+	 */
+	private const REQUIRED_FIELD_REFUSALS = [
+		'credential' => 'a token declaration must name the credential reference its key is resolved from',
+		'principal' => 'a token declaration must name the principal its writes are attributed to',
+	];
+
+	/**
 	 * The declared tokens: reference, principal and per-objecttype permissions.
 	 *
 	 * @var array<int, array<string, mixed>>
@@ -133,46 +161,81 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 		$refusals = [];
 
 		foreach ($declarations as $declaration) {
-			if (is_array($declaration) === false) {
-				$refusals[] = 'a token declaration must be an object';
-				continue;
-			}
-
-			foreach (['key', 'secret', 'token'] as $forbidden) {
-				if (array_key_exists($forbidden, $declaration) === true) {
-					$refusals[] = sprintf(
-						'a token declaration may not carry "%s": the key is resolved through the credential broker by reference, '
-						. 'so it never reaches a configuration export',
-						$forbidden
-					);
-					continue 2;
-				}
-			}
-
-			$reference = trim((string)($declaration['credential'] ?? ''));
-			if ($reference === '') {
-				$refusals[] = 'a token declaration must name the credential reference its key is resolved from';
-				continue;
-			}
-
-			$principal = trim((string)($declaration['principal'] ?? ''));
-			if ($principal === '') {
-				// Without a principal the audit trail names an anonymous
-				// caller, which is the thing REQ-OAF-004's third scenario
-				// exists to prevent.
-				$refusals[] = 'a token declaration must name the principal its writes are attributed to';
+			$refusal = $this->refusalOf(declaration: $declaration);
+			if ($refusal !== null) {
+				$refusals[] = $refusal;
 				continue;
 			}
 
 			$this->tokens[] = [
-				'credential' => $reference,
-				'principal' => $principal,
+				'credential' => trim((string)$declaration['credential']),
+				'principal' => trim((string)$declaration['principal']),
 				'permissions' => $this->permissionsOf(declaration: $declaration),
 			];
-		}//end foreach
+		}
 
 		return $refusals;
 	}//end load()
+
+	/**
+	 * Why a token declaration is refused, or null when it loads.
+	 *
+	 * @param mixed $declaration One token declaration.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	private function refusalOf(mixed $declaration): ?string {
+		if (is_array($declaration) === false) {
+			return 'a token declaration must be an object';
+		}
+
+		$literal = $this->literalKeyIn(declaration: $declaration);
+		if ($literal !== null) {
+			return sprintf(self::LITERAL_KEY_REFUSAL, $literal);
+		}
+
+		return $this->missingFieldRefusal(declaration: $declaration);
+	}//end refusalOf()
+
+	/**
+	 * The refusal for the first required field a declaration leaves empty, or null.
+	 *
+	 * @param array<string, mixed> $declaration One token declaration.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	private function missingFieldRefusal(array $declaration): ?string {
+		foreach (self::REQUIRED_FIELD_REFUSALS as $field => $refusal) {
+			if (trim((string)($declaration[$field] ?? '')) === '') {
+				return $refusal;
+			}
+		}
+
+		return null;
+	}//end missingFieldRefusal()
+
+	/**
+	 * The first literal-key field a declaration carries, or null.
+	 *
+	 * @param array<string, mixed> $declaration One token declaration.
+	 *
+	 * @return string|null The field name.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
+	 */
+	private function literalKeyIn(array $declaration): ?string {
+		foreach (self::LITERAL_KEY_FIELDS as $forbidden) {
+			if (array_key_exists($forbidden, $declaration) === true) {
+				return $forbidden;
+			}
+		}
+
+		return null;
+	}//end literalKeyIn()
 
 	/**
 	 * The objecttype uuid a caller's `type` names, from a bare uuid or the standard's objecttype URL.

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Rod;
 
+use OCA\Integriq\Service\Helper\ProviderIds;
 use RuntimeException;
 
 /**
@@ -79,22 +80,13 @@ class RodProviderRegistry {
 	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
 	 */
 	public function get(string $providerId): RodProviderInterface {
-		$resolved = $providerId;
-		if ($resolved === '') {
-			$resolved = 'log';
-		}
-
+		$resolved = ProviderIds::orLog(providerId: $providerId);
 		if (isset($this->providers[$resolved]) === false) {
-			$knownIds = '(none)';
-			if ($this->ids() !== []) {
-				$knownIds = implode(', ', $this->ids());
-			}
-
 			throw new RuntimeException(
 				sprintf(
 					'No ROD provider is registered under "%s". Registered providers: %s. Nothing was sent.',
 					$resolved,
-					$knownIds
+					ProviderIds::listed(ids: $this->ids())
 				)
 			);
 		}
