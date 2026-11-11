@@ -131,13 +131,14 @@ class OutboundNotificationTranslator {
 		$zakLk01 = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:zakLk01');
 		$body->appendChild($zakLk01);
 
-		$this->appendStuurgegevens(
-			document: $document,
-			parent: $zakLk01,
-			referenceNumber: $referenceNumber,
-			zenderOrganisation: $zenderOrganisation,
-			ontvangerOrg: $ontvangerOrg
+		$header = new Stuurgegevens(
+			berichtcode: 'Lk01',
+			referentienummer: $referenceNumber,
+			zender: ['organisatie' => $zenderOrganisation],
+			ontvanger: ['organisatie' => $ontvangerOrg],
+			tail: ['entiteittype' => 'ZAK']
 		);
+		$this->appendStuurgegevens(parent: $zakLk01, header: $header);
 
 		$parameters = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:parameters');
 		$zakLk01->appendChild($parameters);
@@ -189,49 +190,42 @@ class OutboundNotificationTranslator {
 	/**
 	 * Append the `stuurgegevens` block.
 	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $parent The `zakLk01` element to append into.
-	 * @param string $referenceNumber The generated correlation reference.
-	 * @param string $zenderOrganisation This bridge's own organisatie code.
-	 * @param string $ontvangerOrg The subscribed consumer's organisatie code.
+	 * @param DOMElement    $parent The `zakLk01` element to append into.
+	 * @param Stuurgegevens $header What the block carries.
 	 *
 	 * @return void
 	 */
-	private function appendStuurgegevens(
-		DOMDocument $document,
-		DOMElement $parent,
-		string $referenceNumber,
-		string $zenderOrganisation,
-		string $ontvangerOrg,
-	): void {
+	private function appendStuurgegevens(DOMElement $parent, Stuurgegevens $header): void {
+		$document      = $parent->ownerDocument;
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
 
-		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: 'Lk01');
+		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: $header->berichtcode);
+		$this->appendOrganisations(stuurgegevens: $stuurgegevens, header: $header);
 
-		$zender = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:zender');
-		$stuurgegevens->appendChild($zender);
-		$this->appendStufText(document: $document, parent: $zender, name: 'organisatie', value: $zenderOrganisation);
-
-		$ontvanger = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:ontvanger');
-		$stuurgegevens->appendChild($ontvanger);
-		$this->appendStufText(document: $document, parent: $ontvanger, name: 'organisatie', value: $ontvangerOrg);
-
-		$this->appendStufText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'referentienummer',
-			value: $referenceNumber
-		);
-		$this->appendStufText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'tijdstipBericht',
-			value: (new DateTime())->format('YmdHis')
-		);
-		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'entiteittype', value: 'ZAK');
-
+		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'referentienummer', value: $header->referentienummer);
+		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'tijdstipBericht', value: (new DateTime())->format('YmdHis'));
+		foreach ($header->tail as $name => $value) {
+			$this->appendStufText(document: $document, parent: $stuurgegevens, name: $name, value: $value);
+		}
 	}//end appendStuurgegevens()
+
+	/**
+	 * Append zender and ontvanger, each with its organisatie code, empty or not.
+	 *
+	 * @param DOMElement    $stuurgegevens The stuurgegevens element.
+	 * @param Stuurgegevens $header        What the block carries.
+	 *
+	 * @return void
+	 */
+	private function appendOrganisations(DOMElement $stuurgegevens, Stuurgegevens $header): void {
+		$document = $stuurgegevens->ownerDocument;
+		foreach (['zender' => $header->zender, 'ontvanger' => $header->ontvanger] as $role => $system) {
+			$element = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:' . $role);
+			$stuurgegevens->appendChild($element);
+			$this->appendStufText(document: $document, parent: $element, name: 'organisatie', value: (string)$system['organisatie']);
+		}
+	}//end appendOrganisations()
 
 	/**
 	 * Append the ZAK object's domain fields.
