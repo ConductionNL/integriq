@@ -167,6 +167,19 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 			return false;
 		}
 
+		return $this->decodeDescriptor(run: $run, descriptorPath: $descriptorPath);
+
+	}//end loadDescriptor()
+
+	/**
+	 * Decode the register descriptor file into the run.
+	 *
+	 * @param RegisterImportRun $run            The import run.
+	 * @param string            $descriptorPath Absolute path of the descriptor.
+	 *
+	 * @return bool False when the JSON does not parse.
+	 */
+	private function decodeDescriptor(RegisterImportRun $run, string $descriptorPath): bool {
 		try {
 			$run->descriptor = json_decode((string)file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
 		} catch (\Throwable $e) {
@@ -180,7 +193,7 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 
 		return true;
 
-	}//end loadDescriptor()
+	}//end decodeDescriptor()
 
 	/**
 	 * Merge every modular register fragment from Settings/register.d/*.json (ADR-037).
@@ -280,12 +293,7 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 	 */
 	private function importDescriptor(object $configurationService, RegisterImportRun $run): void {
 		try {
-			$configurationService->importFromApp(
-				appId: AppIdentity::APP_ID,
-				data: $run->descriptor,
-				version: $run->version
-			);
-			$run->output->info('Integriq: register descriptor imported (existing schemas reused).');
+			$this->callImportFromApp(configurationService: $configurationService, run: $run);
 		} catch (\Throwable $e) {
 			$run->output->warning('Integriq: register import failed: ' . $e->getMessage());
 			$this->logger->error(
@@ -295,6 +303,24 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 		}
 
 	}//end importDescriptor()
+
+	/**
+	 * Call importFromApp with the run's descriptor and version, then report success.
+	 *
+	 * @param object            $configurationService OpenRegister's ConfigurationService.
+	 * @param RegisterImportRun $run                  The import run.
+	 *
+	 * @return void
+	 */
+	private function callImportFromApp(object $configurationService, RegisterImportRun $run): void {
+		$configurationService->importFromApp(
+			appId: AppIdentity::APP_ID,
+			data: $run->descriptor,
+			version: $run->version
+		);
+		$run->output->info('Integriq: register descriptor imported (existing schemas reused).');
+
+	}//end callImportFromApp()
 
 	/**
 	 * Deep-merge a register fragment onto the base config (ADR-037).
@@ -310,22 +336,43 @@ class InitializeRegister implements IRepairStep, InitializeRegisterInterface {
 	 */
 	private static function deepMergeConfig(array $base, array $overlay): array {
 		foreach ($overlay as $key => $value) {
-			if (is_array($value) === true
-				&& isset($base[$key]) === true
-				&& is_array($base[$key]) === true
-			) {
-				$baseIsList = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
-				$overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
-				if ($baseIsList === true && $overlayIsList === true) {
-					$base[$key] = array_merge($base[$key], $value);
-				} else {
-					$base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
-				}
-			} else {
-				$base[$key] = $value;
-			}
+			$base[$key] = self::mergeConfigValue(base: ($base[$key] ?? null), overlay: $value);
 		}
 
 		return $base;
 	}//end deepMergeConfig()
+
+	/**
+	 * Merge one fragment value onto the base value at the same key.
+	 *
+	 * Two lists concatenate, two other arrays merge recursively, anything else
+	 * takes the fragment's value.
+	 *
+	 * @param mixed $base    The accumulated value, null when the key is absent.
+	 * @param mixed $overlay The fragment's value.
+	 *
+	 * @return mixed The merged value.
+	 */
+	private static function mergeConfigValue(mixed $base, mixed $overlay): mixed {
+		if (is_array($overlay) === false || is_array($base) === false) {
+			return $overlay;
+		}
+
+		if (self::isList(value: $base) === true && self::isList(value: $overlay) === true) {
+			return array_merge($base, $overlay);
+		}
+
+		return self::deepMergeConfig(base: $base, overlay: $overlay);
+	}//end mergeConfigValue()
+
+	/**
+	 * Whether an array is a list (empty, or keyed 0..n-1 in order).
+	 *
+	 * @param array<mixed> $value The array to inspect.
+	 *
+	 * @return bool
+	 */
+	private static function isList(array $value): bool {
+		return ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
+	}//end isList()
 }//end class
