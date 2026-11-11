@@ -112,42 +112,92 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 			return;
 		}
 
-		$isCreate = $event instanceof ObjectCreatingEvent;
-		$old = null;
-		$entity = null;
-		if ($event instanceof ObjectCreatingEvent) {
-			$entity = $event->getObject();
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$entity = $event->getNewObject();
-			$old = $event->getOldObject();
-		}
-
-		if ($this->isSubscription(object: $entity) === false) {
-			return;
-		}
-
-		$data = (array)$entity->getObject();
-		if ((string)($data['style'] ?? '') !== SubscriptionSigningPolicyInterface::STYLE_PUSH) {
+		$data = $this->pushSubscriptionData(entity: $this->newObjectOf(event: $event));
+		if ($data === null) {
 			return;
 		}
 
 		if ($this->policy->refuse(subscription: $data) !== null) {
-			$event->setErrors(
-				[
-					'code' => 'unsigned_without_reason',
-					'message' => $this->l10n->t('Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.'),
-					'status' => 400,
-				]
-			);
-			$event->stopPropagation();
+			$this->refuseUnsigned(event: $event);
 			return;
 		}
 
-		$event->setModifiedData($this->modifiedData(data: $data, old: $old, isCreate: $isCreate));
+		$isCreate = ($event instanceof ObjectCreatingEvent);
+		$event->setModifiedData($this->modifiedData(data: $data, old: $this->oldObjectOf(event: $event), isCreate: $isCreate));
 
 	}//end handle()
+
+	/**
+	 * The object being written: the new one on a create or an update.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write.
+	 *
+	 * @return mixed The object.
+	 */
+	private function newObjectOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): mixed {
+		if ($event instanceof ObjectCreatingEvent) {
+			return $event->getObject();
+		}
+
+		return $event->getNewObject();
+
+	}//end newObjectOf()
+
+	/**
+	 * The object as stored before an update; none on a create.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write.
+	 *
+	 * @return ObjectEntity|null The stored object.
+	 */
+	private function oldObjectOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): ?ObjectEntity {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $event->getOldObject();
+		}
+
+		return null;
+
+	}//end oldObjectOf()
+
+	/**
+	 * The data of a push subscription being written; null for any other object.
+	 *
+	 * @param mixed $entity The object being written.
+	 *
+	 * @return array|null The subscription's data.
+	 */
+	private function pushSubscriptionData(mixed $entity): ?array {
+		if ($this->isSubscription(object: $entity) === false) {
+			return null;
+		}
+
+		$data = (array)$entity->getObject();
+		if ((string)($data['style'] ?? '') !== SubscriptionSigningPolicyInterface::STYLE_PUSH) {
+			return null;
+		}
+
+		return $data;
+
+	}//end pushSubscriptionData()
+
+	/**
+	 * Refuse a write that turns signing off without saying why.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write.
+	 *
+	 * @return void
+	 */
+	private function refuseUnsigned(ObjectCreatingEvent|ObjectUpdatingEvent $event): void {
+		$event->setErrors(
+			[
+				'code' => 'unsigned_without_reason',
+				'message' => $this->l10n->t('Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.'),
+				'status' => 400,
+			]
+		);
+		$event->stopPropagation();
+
+	}//end refuseUnsigned()
 
 	/**
 	 * The fields this save writes: settings (when they change) and the readable posture.
