@@ -884,4 +884,65 @@ class StufZdsCaseClientTest extends TestCase {
 		);
 
 	}//end testGoldenTranscriptOfOutcomes()
+
+	/**
+	 * A retry of a message that is not waiting for one sends nothing and concludes nothing.
+	 *
+	 * @return void
+	 */
+	public function testARetryOfAMessageNotWaitingForOneDoesNothing(): void {
+		$sent = $this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', [], 'M');
+		$this->outbound->retry($sent['messageId']);
+		$this->outbound->retry('msg-unknown');
+
+		$this->assertCount(1, $this->history);
+		$this->assertCount(1, $this->events);
+		$this->assertSame('sent', $this->rows[$sent['messageId']]['status']);
+	}//end testARetryOfAMessageNotWaitingForOneDoesNothing()
+
+	/**
+	 * A retry whose source is gone, or left rest mode, concludes the message as failed without sending.
+	 *
+	 * @return void
+	 */
+	public function testARetryWhoseSourceIsGoneOrNotRestConcludesAsFailed(): void {
+		$outcomes = [];
+		foreach (['gone', 'log'] as $change) {
+			$this->setUp();
+			$first = $this->client([new Response(503, [], '')])->creeerZaak('zsh', [], 'M');
+			if ($change === 'gone') {
+				unset($this->sources['zsh']);
+			} else {
+				$this->sources['zsh']['configuration']['provider'] = 'log';
+			}
+
+			$this->outbound->retry($first['messageId']);
+			$this->assertCount(1, $this->history, 'Nothing is sent for a source that cannot take the retry');
+			$result = $this->events[0]->getResult();
+			$outcomes[$change] = [$this->events[0]->getAttempts(), $result['success'], $result['retrying'], $result['fout']['code'], $result['fout']['kind'], $this->rows[$first['messageId']]['status']];
+		}
+
+		$this->assertSame([2, false, false, 'SOURCE_GONE', 'permanent', 'failed'], $outcomes['gone']);
+		$this->assertSame([2, false, false, 'SOURCE_NOT_REST', 'permanent', 'failed'], $outcomes['log']);
+	}//end testARetryWhoseSourceIsGoneOrNotRestConcludesAsFailed()
+
+	/**
+	 * A retry whose WS-Security password is gone is refused before sending and concluded as a permanent failure.
+	 *
+	 * @return void
+	 */
+	public function testARetryWithoutUsableCredentialsIsRefusedBeforeSending(): void {
+		$first = $this->client([new Response(503, [], ''), self::bevestiging('0363-Z-1')])->creeerZaak('zsh', [], 'M');
+		unset($this->sources['zsh']['configuration']['authentication']['wsse']['encryptedPassword']);
+
+		$this->outbound->retry($first['messageId']);
+
+		$this->assertCount(1, $this->history, 'Nothing is sent without the token');
+		$result = $this->events[0]->getResult();
+		$this->assertFalse($result['success']);
+		$this->assertFalse($result['retrying']);
+		$this->assertSame('CREDENTIALS', $result['fout']['code']);
+		$this->assertStringContainsString('encryptedPassword', $result['fout']['omschrijving']);
+		$this->assertSame('failed', $this->rows[$first['messageId']]['status']);
+	}//end testARetryWithoutUsableCredentialsIsRefusedBeforeSending()
 }//end class
