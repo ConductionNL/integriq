@@ -434,4 +434,65 @@ class BerichtenboxProviderTest extends TestCase {
 		$this->assertSame([], $this->provider(new RecordingBerichtenboxClient())->pollInbound($config));
 		$this->assertCount(1, (new BerichtenboxProvider(new BerichtenboxClientMock(), $this->createMock(LoggerInterface::class), new BerichtenboxLetterBuilder()))->pollInbound($config));
 	}//end testALiveSourceHasNoInboundPost()
+	/**
+	 * Golden transcript: every send() and status() outcome as a full result, with the adapter calls
+	 * made before and after the status is recorded, pinned against a fixture.
+	 *
+	 * @return void
+	 */
+	public function testGoldenTranscriptOfSendAndStatus(): void {
+		$id = EbmsAdapterClient::messageIdFor('b1');
+		$statusCases = [
+			'no result' => [[], []],
+			'processed' => [['b1' => ['code' => 'Verwerkt', 'stadium' => 'NA', 'resultMessageId' => 'r1']], []],
+			'processed with event' => [['b1' => ['code' => 'Verwerkt', 'stadium' => 'NA', 'resultMessageId' => 'r1']], [$id => 'DELIVERED']],
+			'refused' => [['b1' => ['code' => 'Afgewezen', 'stadium' => 'Bezorging', 'resultMessageId' => 'r2']], [$id => 'FAILED']],
+			'refused without stage' => [['b1' => ['code' => 'Fout', 'stadium' => '', 'resultMessageId' => 'r3']], []],
+			'failed event' => [[], [$id => 'FAILED']],
+			'expired event' => [[], [$id => 'EXPIRED']],
+			'delivered event' => [[], [$id => 'DELIVERED']],
+			'other event' => [[], [$id => 'WAITING']],
+		];
+		$transcript = [];
+		foreach ($statusCases as $name => [$results, $events]) {
+			$client = new RecordingBerichtenboxClient();
+			$client->results = $results;
+			$client->events = $events;
+			$provider = $this->provider($client);
+			$answer = $provider->status('B1', $this->config());
+			$result = ($answer->toArray() + ['code' => $answer->getCode()]);
+			$before = $client->calls;
+			$provider->statusRecorded('B1', $this->config());
+			$transcript['status ' . $name] = ['result' => $result, 'before' => $before, 'after' => array_slice($client->calls, count($before))];
+		}
+
+		$sendCases = [
+			'subscribed' => [[self::BSN => true], null, $this->letter(), $this->config()],
+			'not subscribed' => [[self::BSN => false], null, $this->letter(), $this->config()],
+			'fault' => [[], new BerichtenboxException('WUS fault', 'wus_fault'), $this->letter(), $this->config()],
+			'no bericht type' => [[self::BSN => true], null, $this->letter(['category' => 'reminder']), $this->config()],
+			'not configured' => [[self::BSN => true], null, $this->letter(), ['providerId' => 'berichtenbox']],
+			'subject too long' => [[self::BSN => true], null, $this->letter(['subject' => str_repeat('x', 300)]), $this->config()],
+		];
+		foreach ($sendCases as $name => [$subscriptions, $fault, $letter, $config]) {
+			$client = new RecordingBerichtenboxClient();
+			$client->subscriptions = $subscriptions;
+			$client->subscriptionFault = $fault;
+			$answer = $this->provider($client)->send($letter, $config);
+			$result = ($answer->toArray() + ['code' => $answer->getCode()]);
+			foreach (['providerReference', 'batchId', 'transportMessageId'] as $volatile) {
+				if (isset($result[$volatile]) === true) {
+					$result[$volatile] = 'GENERATED';
+				}
+			}
+
+			$transcript['send ' . $name] = ['result' => $result, 'calls' => $client->callNames()];
+		}
+
+		$this->assertSame(
+			(string)file_get_contents(__DIR__ . '/../../../fixtures/berichtenbox/provider-transcript.json'),
+			json_encode($transcript, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n"
+		);
+
+	}//end testGoldenTranscriptOfSendAndStatus()
 }//end class

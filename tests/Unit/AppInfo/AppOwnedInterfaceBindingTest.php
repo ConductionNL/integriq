@@ -135,8 +135,8 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 	 * one `::class` away from a false green (integriq#2127 review 5280620536).
 	 * Today's result was right; the assertion was not.
 	 *
-	 * Matches the two forms the file uses: an alias to a concrete class, and an
-	 * explicit factory registration.
+	 * Matches the forms the files use: an alias to a concrete class, an
+	 * explicit factory registration, and an entry of an alias map.
 	 *
 	 * @param string $application The contents of Application.php.
 	 * @param string $interface The short interface name.
@@ -146,12 +146,45 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 	private function isAliased(string $application, string $interface): bool {
 		$quoted = preg_quote($interface, '/');
 
-		return (bool)preg_match(
+		if (preg_match(
 			'/register(?:ServiceAlias|Service)\s*\(\s*(?:[A-Za-z0-9_\\\\]*\\\\)?' . $quoted . '::class/',
+			$application
+		) === 1
+		) {
+			return true;
+		}
+
+		// An entry of an alias map a registrar binds in a loop: `Foo::class => FooImpl::class,`.
+		return (bool)preg_match(
+			'/^\s*(?:[A-Za-z0-9_\\\\]*\\\\)?' . $quoted . '::class\s*=>\s*[A-Za-z0-9_\\\\]+::class\s*,/m',
 			$application
 		);
 
 	}//end isAliased()
+
+	/**
+	 * The classes the app only ever builds itself: constructed with `new`
+	 * somewhere in lib/ and injected into no constructor, so the container
+	 * never resolves them and their parameters need no binding.
+	 *
+	 * @param array<int, string> $files The lib/ files.
+	 *
+	 * @return array<int, string> The short class names.
+	 */
+	private function handBuiltClasses(array $files): array {
+		$newed = [];
+		$injected = [];
+		foreach ($files as $file) {
+			$source = (string)file_get_contents($file);
+			preg_match_all('/\bnew\s+(?:[A-Za-z0-9_\\\\]*\\\\)?([A-Z][A-Za-z0-9_]*)\s*\(/', $source, $news);
+			$newed = array_merge($newed, $news[1]);
+			preg_match_all('/([A-Za-z_][A-Za-z0-9_]*)\s+\$\w+/', $this->constructorParams($source), $types);
+			$injected = array_merge($injected, $types[1]);
+		}
+
+		return array_values(array_diff(array_unique($newed), $injected));
+
+	}//end handBuiltClasses()
 
 	/**
 	 * No app-owned interface is injected bare without a container binding.
@@ -172,10 +205,12 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 			}
 		}
 
+		$handBuilt = $this->handBuiltClasses($files);
+
 		$unbound = [];
 		foreach ($files as $file) {
 			$params = $this->constructorParams((string)file_get_contents($file));
-			if ($params === '') {
+			if ($params === '' || in_array(basename($file, '.php'), $handBuilt, true) === true) {
 				continue;
 			}
 

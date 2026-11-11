@@ -75,10 +75,7 @@ class SynchronizationAction {
 		// If we do not have a synchronization id then everything is wrong.
 		$response['message'] = $response['stackTrace'][] = 'Check for a valid synchronization ID';
 		if (isset($argument['synchronizationId']) === false) {
-			$response['level'] = 'ERROR';
-			$response['stackTrace'][] = $response['message'] = 'No synchronization ID provided';
-
-			return $response;
+			return $this->failed(response: $response, message: 'No synchronization ID provided');
 		}
 
 		// Resolve the synchronization (OpenRegister ids are UUID strings).
@@ -86,65 +83,153 @@ class SynchronizationAction {
 		try {
 			$synchronization = $this->synchronizationService->getSynchronization(id: (string)$argument['synchronizationId']);
 		} catch (DoesNotExistException $e) {
-			$response['level'] = 'WARNING';
-			$response['stackTrace'][] = $response['message'] = 'Synchronization not found: ' . $argument['synchronizationId'];
-
-			return $response;
+			return $this->warned(response: $response, message: 'Synchronization not found: ' . $argument['synchronizationId']);
 		}
 
-		$force = filter_var(($argument['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
+		return $this->synchronizeFound(response: $response, job: new SynchronizationJob(synchronization: $synchronization, argument: $argument));
+	}//end run()
+
+	/**
+	 * Run the found synchronization and report how it ended.
+	 *
+	 * @param array              $response The response so far.
+	 * @param SynchronizationJob $job      The synchronization and the job arguments.
+	 *
+	 * @return array The response.
+	 */
+	private function synchronizeFound(array $response, SynchronizationJob $job): array {
+		$force = filter_var(($job->argument['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
 		if ($force === true) {
 			$response['stackTrace'][] = 'Force enabled for synchronization job';
 		}
 
-		// Execution-trace REQ-001: JobService::executeJob() threads the
-		// active `job`-entryPoint trace context via this internal argument
-		// key (never part of the job's own persisted `arguments`). Only
-		// JobService populates this key, always with an ExecutionTraceContext
-		// or nothing — `synchronize(trace:)`'s own `?ExecutionTraceContext`
-		// type hint is the single source of truth for this contract.
-		$trace = ($argument['_executionTrace'] ?? null);
-
 		// Run the synchronization.
 		$response['stackTrace'][] = 'Doing the synchronization';
 		try {
-			$objects = $this->synchronizationService->synchronize(
-				synchronization: $synchronization,
-				force: $force,
-				trace: $trace
-			);
+			$objects = $this->synchronize(job: $job, force: $force);
 		} catch (TooManyRequestsHttpException $e) {
-			$response['level'] = 'WARNING';
-			$response['stackTrace'][] = $response['message'] = 'Stopped synchronization: ' . $e->getMessage();
-			if (isset($e->getHeaders()['X-RateLimit-Reset']) === true) {
-				$response['nextRun'] = $e->getHeaders()['X-RateLimit-Reset'];
-				$response['stackTrace'][] = 'Returning X-RateLimit-Reset header to update Job nextRun: ' . $response['nextRun'];
-			}
-
-			return $response;
+			return $this->rateLimited(response: $response, exception: $e);
 		} catch (Exception $e) {
-			$response['level'] = 'ERROR';
-			$response['stackTrace'][] = $response['message'] = 'Failed to synchronize: ' . $e->getMessage();
+			return $this->failed(response: $response, message: 'Failed to synchronize: ' . $e->getMessage());
+		}
 
-			return $response;
-		}//end try
+		return $this->synchronized(response: $response, objects: $objects);
 
+	}//end synchronizeFound()
+
+	/**
+	 * Hand the synchronization to the service, with the job's execution trace.
+	 *
+	 * Execution-trace REQ-001: JobService::executeJob() threads the
+	 * active `job`-entryPoint trace context via this internal argument
+	 * key (never part of the job's own persisted `arguments`). Only
+	 * JobService populates this key, always with an ExecutionTraceContext
+	 * or nothing — `synchronize(trace:)`'s own `?ExecutionTraceContext`
+	 * type hint is the single source of truth for this contract.
+	 *
+	 * @param SynchronizationJob $job   The synchronization and the job arguments.
+	 * @param bool               $force Whether to force the run.
+	 *
+	 * @return array|null The synchronization log result.
+	 */
+	private function synchronize(SynchronizationJob $job, bool $force): ?array {
+		return $this->synchronizationService->synchronize(
+			synchronization: $job->synchronization,
+			force: $force,
+			trace: ($job->argument['_executionTrace'] ?? null)
+		);
+
+	}//end synchronize()
+
+	/**
+	 * A run stopped by the source's rate limit: a warning, and the next run time when the source sent one.
+	 *
+	 * @param array                        $response  The response so far.
+	 * @param TooManyRequestsHttpException $exception The rate-limit stop.
+	 *
+	 * @return array The response.
+	 */
+	private function rateLimited(array $response, TooManyRequestsHttpException $exception): array {
+		$response = $this->warned(response: $response, message: 'Stopped synchronization: ' . $exception->getMessage());
+		if (isset($exception->getHeaders()['X-RateLimit-Reset']) === true) {
+			$response['nextRun'] = $exception->getHeaders()['X-RateLimit-Reset'];
+			$response['stackTrace'][] = 'Returning X-RateLimit-Reset header to update Job nextRun: ' . $response['nextRun'];
+		}
+
+		return $response;
+
+	}//end rateLimited()
+
+	/**
+	 * A finished run: how many objects it synchronized, and whether more batches remain.
+	 *
+	 * @param array      $response The response so far.
+	 * @param array|null $objects  The synchronization log result.
+	 *
+	 * @return array The response.
+	 */
+	private function synchronized(array $response, ?array $objects): array {
 		$response['level'] = 'INFO';
 
 		$objectCount = 0;
 		if (is_array($objects) === true) {
-			if (empty($objects['result']['contracts']) === false) {
-				$objectCount = count($objects['result']['contracts']);
-			} else {
-				$objectCount = $objects['result']['objects']['found'];
-			}
+			$objectCount = $this->objectCount(objects: $objects);
 		}
 
 		$response['stackTrace'][] = $response['message'] = 'Synchronized ' . $objectCount . ' successfully';
 
 		// Report back about what we have just done.
 		return $this->withResume(response: $response, objects: $objects);
-	}//end run()
+
+	}//end synchronized()
+
+	/**
+	 * The number of synchronized objects: the contracts when there are any, else the objects found.
+	 *
+	 * @param array $objects The synchronization log result.
+	 *
+	 * @return mixed The count.
+	 */
+	private function objectCount(array $objects): mixed {
+		if (empty($objects['result']['contracts']) === false) {
+			return count($objects['result']['contracts']);
+		}
+
+		return $objects['result']['objects']['found'];
+
+	}//end objectCount()
+
+	/**
+	 * End the run as an error with a message.
+	 *
+	 * @param array  $response The response so far.
+	 * @param string $message  The message.
+	 *
+	 * @return array The response.
+	 */
+	private function failed(array $response, string $message): array {
+		$response['level'] = 'ERROR';
+		$response['stackTrace'][] = $response['message'] = $message;
+
+		return $response;
+
+	}//end failed()
+
+	/**
+	 * End the run as a warning with a message.
+	 *
+	 * @param array  $response The response so far.
+	 * @param string $message  The message.
+	 *
+	 * @return array The response.
+	 */
+	private function warned(array $response, string $message): array {
+		$response['level'] = 'WARNING';
+		$response['stackTrace'][] = $response['message'] = $message;
+
+		return $response;
+
+	}//end warned()
 
 	/**
 	 * Ask the scheduler to run this job again on the next cron tick when the

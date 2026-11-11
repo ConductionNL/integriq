@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Oso;
 
+use OCA\Integriq\Service\Helper\ProviderIds;
 use RuntimeException;
 
 /**
@@ -77,22 +78,13 @@ class OsoProviderRegistry {
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-001-oso-export-provider-abstraction-with-log-and-kennisnet-bindings
 	 */
 	public function get(string $providerId): OsoProviderInterface {
-		$resolved = $providerId;
-		if ($resolved === '') {
-			$resolved = 'log';
-		}
-
+		$resolved = ProviderIds::orLog(providerId: $providerId);
 		if (isset($this->providers[$resolved]) === false) {
-			$knownIds = '(none)';
-			if ($this->ids() !== []) {
-				$knownIds = implode(', ', $this->ids());
-			}
-
 			throw new RuntimeException(
 				sprintf(
 					'No OSO provider is registered under "%s". Registered providers: %s. Nothing was sent.',
 					$resolved,
-					$knownIds
+					ProviderIds::listed(ids: $this->ids())
 				)
 			);
 		}

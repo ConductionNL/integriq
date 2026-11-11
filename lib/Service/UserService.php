@@ -43,6 +43,19 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  */
 class UserService implements UserServiceInterface {
+
+	/**
+	 * The permission-guarded user properties the API may update, in this order: the
+	 * request key, the backend permission method and the setter. canChangeMailAddress()
+	 * is not part of IUser, so only backends that implement it are asked.
+	 *
+	 * @var array<string, array{permission: string, setter: string}>
+	 */
+	private const STANDARD_PROPERTY_SETTERS = [
+		'displayName' => ['permission' => 'canChangeDisplayName', 'setter' => 'setDisplayName'],
+		'email' => ['permission' => 'canChangeMailAddress', 'setter' => 'setEMailAddress'],
+		'password' => ['permission' => 'canChangePassword', 'setter' => 'setPassword'],
+	];
 	/**
 	 * UserService constructor
 	 *
@@ -116,64 +129,108 @@ class UserService implements UserServiceInterface {
 		// Get additional profile information from AccountManager and custom fields.
 		$additionalInfo = $this->getAdditionalProfileInfo(user: $user);
 
-		// Resolve optional user-object methods with explicit fallbacks (Nextcloud
-		// backends differ in which IUser methods they implement, so feature-detect).
-		if (method_exists($user, 'getEmailVerified') === true) {
-			$emailVerified = $user->getEmailVerified();
-		} else {
-			$emailVerified = null;
-		}
-
-		if (method_exists($user, 'getAvatarScope') === true) {
-			$avatarScope = $user->getAvatarScope();
-		} else {
-			$avatarScope = 'contacts';
-		}
-
-		// OCP\IUser declares getLastLogin(), getBackendClassName(),
-		// canChangeDisplayName(), canChangePassword() and canChangeAvatar(), so
-		// the method_exists() probes that used to wrap these could never be
-		// false and their else-branch defaults were unreachable. The two probes
-		// that remain (getAvatarScope above, canChangeMailAddress below) are NOT
-		// decoration: those methods are absent from the interface and only
-		// present on some implementations.
-		$lastLogin = $user->getLastLogin();
-		$backend = $user->getBackendClassName();
-		$canChangeDisplayName = $user->canChangeDisplayName();
-
-		if (method_exists($user, 'canChangeMailAddress') === true) {
-			$canChangeMailAddress = $user->canChangeMailAddress();
-		} else {
-			$canChangeMailAddress = false;
-		}
-
-		$canChangePassword = $user->canChangePassword();
-		$canChangeAvatar = $user->canChangeAvatar();
-
 		// Build comprehensive user data array with all available information.
 		// Subadmin info would require an additional service, so it is left empty.
 		$result = [
 			'uid' => $user->getUID(),
 			'displayName' => $user->getDisplayName(),
 			'email' => $user->getEMailAddress(),
-			'emailVerified' => $emailVerified,
+			'emailVerified' => $this->emailVerifiedOf(user: $user),
 			'enabled' => $user->isEnabled(),
 			'quota' => $quota,
-			'avatarScope' => $avatarScope,
-			'lastLogin' => $lastLogin,
-			'backend' => $backend,
+			'avatarScope' => $this->avatarScopeOf(user: $user),
+			'lastLogin' => $user->getLastLogin(),
+			'backend' => $user->getBackendClassName(),
 			'subadmin' => [],
 			'groups' => $groupNames,
 			'language' => $language,
 			'locale' => $locale,
-			'backendCapabilities' => [
-				'displayName' => $canChangeDisplayName,
-				'email' => $canChangeMailAddress,
-				'password' => $canChangePassword,
-				'avatar' => $canChangeAvatar,
-			],
+			'backendCapabilities' => $this->backendCapabilitiesOf(user: $user),
 		];
 
+		return $this->withProfileAndOrganisations(result: $result, additionalInfo: $additionalInfo);
+	}//end buildUserDataArray()
+
+	/**
+	 * Whether the user's email address is verified, when the backend says.
+	 *
+	 * Nextcloud backends differ in which IUser methods they implement, so this
+	 * one is feature-detected: it is absent from the interface.
+	 *
+	 * @param IUser $user The user object
+	 *
+	 * @return mixed The backend's answer, or null when it has none.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function emailVerifiedOf(IUser $user): mixed {
+		if (method_exists($user, 'getEmailVerified') === true) {
+			return $user->getEmailVerified();
+		}
+
+		return null;
+	}//end emailVerifiedOf()
+
+	/**
+	 * The user's avatar scope, feature-detected like emailVerifiedOf().
+	 *
+	 * @param IUser $user The user object
+	 *
+	 * @return mixed The backend's answer, or `contacts` when it has none.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function avatarScopeOf(IUser $user): mixed {
+		if (method_exists($user, 'getAvatarScope') === true) {
+			return $user->getAvatarScope();
+		}
+
+		return 'contacts';
+	}//end avatarScopeOf()
+
+	/**
+	 * What the user's backend lets them change.
+	 *
+	 * OCP\IUser declares getLastLogin(), getBackendClassName(),
+	 * canChangeDisplayName(), canChangePassword() and canChangeAvatar(), so
+	 * the method_exists() probes that used to wrap these could never be
+	 * false and their else-branch defaults were unreachable. The two probes
+	 * that remain (getAvatarScope in avatarScopeOf(), canChangeMailAddress
+	 * here) are NOT decoration: those methods are absent from the interface
+	 * and only present on some implementations.
+	 *
+	 * @param IUser $user The user object
+	 *
+	 * @return array<string, mixed> The backend capabilities.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function backendCapabilitiesOf(IUser $user): array {
+		$canChangeMailAddress = false;
+		if (method_exists($user, 'canChangeMailAddress') === true) {
+			$canChangeMailAddress = $user->canChangeMailAddress();
+		}
+
+		return [
+			'displayName' => $user->canChangeDisplayName(),
+			'email' => $canChangeMailAddress,
+			'password' => $user->canChangePassword(),
+			'avatar' => $user->canChangeAvatar(),
+		];
+	}//end backendCapabilitiesOf()
+
+	/**
+	 * Merge the profile information in, make sure the name fields are present
+	 * and add the user's organisations.
+	 *
+	 * @param array<string, mixed> $result         The user data so far.
+	 * @param array<string, mixed> $additionalInfo The additional profile information.
+	 *
+	 * @return array<string, mixed> The complete user data.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function withProfileAndOrganisations(array $result, array $additionalInfo): array {
 		// Merge additional profile information with result.
 		$result = array_merge($result, $additionalInfo);
 
@@ -186,15 +243,13 @@ class UserService implements UserServiceInterface {
 		// Guard against the OpenRegister-side OrganisationService being absent on
 		// single-tenant instances — the bridge service exposes
 		// isOrganisationServiceAvailable() exactly for this gating call.
+		$result['organisations'] = [];
 		if ($this->organisationBridgeService->isOrganisationServiceAvailable() === true) {
-			$organisationStats = $this->organisationBridgeService->getUserOrganisationStats();
-			$result['organisations'] = $organisationStats;
-		} else {
-			$result['organisations'] = [];
+			$result['organisations'] = $this->organisationBridgeService->getUserOrganisationStats();
 		}
 
 		return $result;
-	}//end buildUserDataArray()
+	}//end withProfileAndOrganisations()
 
 	/**
 	 * Update user properties based on provided data
@@ -342,50 +397,14 @@ class UserService implements UserServiceInterface {
 		try {
 			// OCP\IUser declares getQuota(), so the 'none' default was dead.
 			$userQuota = $user->getQuota();
+			$usedSpace = $this->usedSpaceOf(user: $user);
 
-			$usedSpace = 0;
-
-			// MEMORY FIX: Use NextCloud's built-in quota system instead of recursive folder size calculation.
-			// This prevents memory exhaustion when users have large amounts of data.
-			$userId = $user->getUID();
-
-			// Try to get used space from NextCloud's user object first.
-			try {
-				// Fallback 1: Try user object method if available.
-				if (method_exists($user, 'getUsedSpace') === true) {
-					$usedSpace = $user->getUsedSpace();
-				} else {
-					// Fallback 2: Use a memory-safe approach with timeout protection.
-					$usedSpace = $this->getUsedSpaceMemorySafe(userId: $userId);
-				}
-			} catch (\Exception $quotaException) {
-				// If quota calculation fails, use memory-safe approach.
-				$this->logger->debug(
-					'User quota calculation failed for user: ' . $userId,
-					[
-						'exception' => $quotaException->getMessage(),
-					]
-				);
-
-				$usedSpace = $this->getUsedSpaceMemorySafe(userId: $userId);
-			}
-
-			$quota = [
+			return [
 				'free' => $userQuota,
 				'used' => $usedSpace,
 				'total' => $userQuota,
-				'relative' => 0,
+				'relative' => $this->relativeUse(quota: $userQuota, usedSpace: $usedSpace),
 			];
-
-			// Calculate relative percentage if quota is not unlimited.
-			if ($userQuota !== 'none' && $userQuota !== 'unlimited' && is_numeric($userQuota) === true) {
-				$totalBytes = (int)$userQuota;
-				if ($totalBytes > 0) {
-					$quota['relative'] = round((($usedSpace / $totalBytes) * 100), 2);
-				}
-			}
-
-			return $quota;
 		} catch (\Exception $e) {
 			// Log error and return fallback quota information.
 			$this->logger->warning(
@@ -403,6 +422,67 @@ class UserService implements UserServiceInterface {
 			];
 		}//end try
 	}//end buildQuotaInformation()
+
+	/**
+	 * The space the user uses: from the user object when its backend counts
+	 * it, else (or when counting fails) the memory-safe lookup.
+	 *
+	 * MEMORY FIX: Use NextCloud's built-in quota system instead of recursive folder size calculation.
+	 * This prevents memory exhaustion when users have large amounts of data.
+	 *
+	 * @param IUser $user The user object
+	 *
+	 * @return mixed The used space in bytes.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function usedSpaceOf(IUser $user): mixed {
+		$userId = $user->getUID();
+
+		// Try to get used space from NextCloud's user object first.
+		try {
+			// Fallback 1: Try user object method if available.
+			if (method_exists($user, 'getUsedSpace') === true) {
+				return $user->getUsedSpace();
+			}
+
+			// Fallback 2: Use a memory-safe approach with timeout protection.
+			return $this->getUsedSpaceMemorySafe(userId: $userId);
+		} catch (\Exception $quotaException) {
+			// If quota calculation fails, use memory-safe approach.
+			$this->logger->debug(
+				'User quota calculation failed for user: ' . $userId,
+				[
+					'exception' => $quotaException->getMessage(),
+				]
+			);
+
+			return $this->getUsedSpaceMemorySafe(userId: $userId);
+		}
+	}//end usedSpaceOf()
+
+	/**
+	 * The used space as a percentage of a numeric, non-zero quota; 0 otherwise.
+	 *
+	 * @param mixed $quota     The user's quota.
+	 * @param mixed $usedSpace The used space in bytes.
+	 *
+	 * @return int|float The percentage, rounded to two decimals.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function relativeUse(mixed $quota, mixed $usedSpace): int|float {
+		if ($quota === 'none' || $quota === 'unlimited' || is_numeric($quota) === false) {
+			return 0;
+		}
+
+		$totalBytes = (int)$quota;
+		if ($totalBytes <= 0) {
+			return 0;
+		}
+
+		return round((($usedSpace / $totalBytes) * 100), 2);
+	}//end relativeUse()
 
 	/**
 	 * Get used space in a memory-safe way
@@ -423,38 +503,13 @@ class UserService implements UserServiceInterface {
 	 */
 	private function getUsedSpaceMemorySafe(string $userId): int {
 		try {
-			// Check current memory usage for safety.
-			$currentMemoryUsage = memory_get_usage(true);
-
-			// If we're already using too much memory, return 0 to prevent OOM.
-			if ($currentMemoryUsage > 128 * 1024 * 1024) {
-				// 128MB threshold.
-				$this->logger->warning(
-					'Memory usage too high for quota calculation',
-					[
-						'user' => $userId,
-						'memory_usage' => $currentMemoryUsage,
-					]
-				);
+			if ($this->memoryTooHighForQuota(userId: $userId) === true) {
 				return 0;
 			}
 
-			// Try to get size from database if available (NextCloud stores this).
-			$query = $this->db->getQueryBuilder();
-
-			// Check if NextCloud has cached storage stats.
-			$query->select('size')
-				->from('storages')
-				->join('storages', 'mounts', 'm', 'storages.id = m.storage_id')
-				->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
-				->setMaxResults(1);
-
-			$result = $query->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
-
-			if ($row !== false && isset($row['size']) === true && is_numeric($row['size']) === true) {
-				return (int)$row['size'];
+			$size = $this->storedStorageSize(userId: $userId);
+			if ($size !== null) {
+				return $size;
 			}
 
 			// If database lookup fails, return 0 to prevent memory issues.
@@ -472,6 +527,68 @@ class UserService implements UserServiceInterface {
 			return 0;
 		}//end try
 	}//end getUsedSpaceMemorySafe()
+
+	/**
+	 * Whether this process already uses too much memory to compute a quota.
+	 *
+	 * @param string $userId The user ID, for the warning.
+	 *
+	 * @return bool True above the 128MB threshold, after logging it.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function memoryTooHighForQuota(string $userId): bool {
+		// Check current memory usage for safety.
+		$currentMemoryUsage = memory_get_usage(true);
+
+		// If we're already using too much memory, return 0 to prevent OOM.
+		if ($currentMemoryUsage > 128 * 1024 * 1024) {
+			// 128MB threshold.
+			$this->logger->warning(
+				'Memory usage too high for quota calculation',
+				[
+					'user' => $userId,
+					'memory_usage' => $currentMemoryUsage,
+				]
+			);
+			return true;
+		}
+
+		return false;
+	}//end memoryTooHighForQuota()
+
+	/**
+	 * The storage size NextCloud has cached for the user's mount, when numeric.
+	 *
+	 * @param string $userId The user ID.
+	 *
+	 * @return int|null The size in bytes, or null when there is no usable row.
+	 *
+	 * @throws \Exception When the query fails.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function storedStorageSize(string $userId): ?int {
+		// Try to get size from database if available (NextCloud stores this).
+		$query = $this->db->getQueryBuilder();
+
+		// Check if NextCloud has cached storage stats.
+		$query->select('size')
+			->from('storages')
+			->join('storages', 'mounts', 'm', 'storages.id = m.storage_id')
+			->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
+			->setMaxResults(1);
+
+		$result = $query->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row !== false && isset($row['size']) === true && is_numeric($row['size']) === true) {
+			return (int)$row['size'];
+		}
+
+		return null;
+	}//end storedStorageSize()
 
 	/**
 	 * Get language and locale with proper fallbacks
@@ -658,28 +775,37 @@ class UserService implements UserServiceInterface {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function updateStandardUserProperties(IUser $user, array $data): void {
-		// Update display name if provided and user can change it.
-		if (isset($data['displayName']) === true
-			&& $user->canChangeDisplayName() === true
-		) {
-			$user->setDisplayName($data['displayName']);
+		foreach (self::STANDARD_PROPERTY_SETTERS as $key => $methods) {
+			if (isset($data[$key]) === true && $this->mayChange(user: $user, permission: $methods['permission']) === true) {
+				$setter = $methods['setter'];
+				$user->$setter($data[$key]);
+			}
 		}
 
-		// Update email address if provided and user can change it.
-		if (isset($data['email']) === true
-			&& method_exists($user, 'canChangeMailAddress') === true
-			&& $user->canChangeMailAddress() === true
-		) {
-			$user->setEMailAddress($data['email']);
-		}
+		$this->updateLanguageAndLocale(user: $user, data: $data);
+	}//end updateStandardUserProperties()
 
-		// Update password if provided and user can change it.
-		if (isset($data['password']) === true
-			&& $user->canChangePassword() === true
-		) {
-			$user->setPassword($data['password']);
-		}
+	/**
+	 * Whether the user's backend implements this permission method and it answers true.
+	 *
+	 * @param IUser  $user       The user object to update.
+	 * @param string $permission The permission method, such as `canChangeDisplayName`.
+	 *
+	 * @return bool
+	 */
+	private function mayChange(IUser $user, string $permission): bool {
+		return method_exists($user, $permission) === true && $user->$permission() === true;
+	}//end mayChange()
 
+	/**
+	 * Update the language and the locale, where the backend can store them.
+	 *
+	 * @param IUser $user The user object to update.
+	 * @param array $data The data array containing updates.
+	 *
+	 * @return void
+	 */
+	private function updateLanguageAndLocale(IUser $user, array $data): void {
 		// Update language if provided.
 		if (isset($data['language']) === true && method_exists($user, 'setLanguage') === true) {
 			$user->setLanguage($data['language']);
@@ -689,7 +815,7 @@ class UserService implements UserServiceInterface {
 		if (isset($data['locale']) === true && method_exists($user, 'setLocale') === true) {
 			$user->setLocale($data['locale']);
 		}
-	}//end updateStandardUserProperties()
+	}//end updateLanguageAndLocale()
 
 	/**
 	 * Update profile properties via AccountManager and custom fields

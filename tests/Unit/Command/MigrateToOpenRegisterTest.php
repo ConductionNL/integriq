@@ -244,4 +244,88 @@ class MigrateToOpenRegisterTest extends TestCase {
 		$this->assertStringContainsString('batchSize MUST be', $this->tester->getDisplay());
 
 	}//end testMigratorInvalidArgumentSurfaced()
+
+	/**
+	 * Every run, recorded: the options, what the migrator was asked and
+	 * answered, the exit code and the output.
+	 *
+	 * Regenerate with MIGRATE_COMMAND_GOLDEN=1.
+	 *
+	 * @return void
+	 */
+	public function testEveryRunMatchesTheGoldenFile(): void {
+		$clean = [['slug' => 'source', 'legacyCount' => 3, 'migratedCount' => 3, 'skipped' => 0, 'fkRewrites' => 1, 'elapsedMs' => 12]];
+		$skipped = [['slug' => 'source', 'legacyCount' => 3, 'migratedCount' => 2, 'skipped' => 1], ['slug' => 'job', 'error' => 'boom']];
+		$parity = [['slug' => 'source', 'legacy' => 3, 'register' => 3, 'skipped' => 0, 'equal' => true]];
+		$mismatch = [['slug' => 'source', 'legacy' => 3, 'register' => 2, 'skipped' => 1, 'equal' => false], ['slug' => 'job', 'legacy' => 1, 'register' => 1, 'skipped' => 0, 'equal' => true]];
+		$cases = [
+			'full run' => [[], $clean],
+			'full run with skips' => [[], $skipped],
+			'empty results' => [[], []],
+			'dry run' => [['--dry-run' => true], $clean],
+			'one entity' => [['--entity' => 'source'], $clean],
+			'one entity, dry run' => [['--entity' => 'source', '--dry-run' => true], $clean],
+			'unknown entity' => [['--entity' => 'nope'], $clean],
+			'batch size not a number' => [['--batch-size' => '1e3'], $clean],
+			'batch size negative' => [['--batch-size' => '-5'], $clean],
+			'batch size 99' => [['--batch-size' => '99'], $clean],
+			'batch size 100' => [['--batch-size' => '100'], $clean],
+			'batch size 100000' => [['--batch-size' => '100000'], $clean],
+			'batch size 100001' => [['--batch-size' => '100001'], $clean],
+			'migrator refuses' => [[], new InvalidArgumentException('bad slug')],
+			'migrator fails' => [[], new \RuntimeException('db gone')],
+			'verify, parity' => [['--verify-only' => true], $parity],
+			'verify, mismatch' => [['--verify-only' => true], $mismatch],
+			'verify, fails' => [['--verify-only' => true], new \RuntimeException('db gone')],
+			'verify wins over dry run' => [['--verify-only' => true, '--dry-run' => true, '--entity' => 'source'], $parity],
+			'unknown entity before verify' => [['--verify-only' => true, '--entity' => 'nope'], $parity],
+		];
+
+		$columns = getenv('COLUMNS');
+		putenv('COLUMNS=120');
+		try {
+			$actual = $this->recordRuns(cases: $cases);
+		} finally {
+			putenv($columns === false ? 'COLUMNS' : 'COLUMNS=' . $columns);
+		}
+
+		$golden = __DIR__ . '/../../fixtures/golden/migrate-to-openregister-command.json';
+		$encoded = json_encode($actual, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n";
+		if (getenv('MIGRATE_COMMAND_GOLDEN') === '1') {
+			file_put_contents($golden, $encoded);
+		}
+
+		$this->assertSame(json_decode((string)file_get_contents($golden), true), json_decode($encoded, true));
+	}//end testEveryRunMatchesTheGoldenFile()
+
+	/**
+	 * Run each case on a fresh command and record it.
+	 *
+	 * @param array<string,array{0:array,1:mixed}> $cases The options and the migrator's answer.
+	 *
+	 * @return array<string,array<string,mixed>> The recording.
+	 */
+	private function recordRuns(array $cases): array {
+		$actual = [];
+		foreach ($cases as $name => [$options, $answer]) {
+			$asked = [];
+			$migrator = $this->createMock(LegacyToRegisterMigrator::class);
+			foreach (['migrateAll', 'verifyRowCounts'] as $method) {
+				$migrator->method($method)->willReturnCallback(function (...$args) use ($method, $answer, &$asked) {
+					$asked[] = [$method, $args];
+					if ($answer instanceof \Throwable) {
+						throw $answer;
+					}
+
+					return $answer;
+				});
+			}
+
+			$tester = new CommandTester(new MigrateToOpenRegister($migrator));
+			$exit = $tester->execute($options);
+			$actual[$name] = ['exit' => $exit, 'asked' => $asked, 'output' => preg_split('/\R/', rtrim($tester->getDisplay()))];
+		}
+
+		return $actual;
+	}//end recordRuns()
 }//end class

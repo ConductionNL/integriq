@@ -89,78 +89,122 @@ class InboundRateLimitService {
 	 * @spec openspec/specs/consumer-management/spec.md — Requirement: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)
 	 */
 	public function enforce(string $consumerKey, ?array $rateLimit, ?array $quota): RateLimitDecision {
-		$hasRateLimit = $this->isRateLimitConfigured(rateLimit: $rateLimit);
-		$windowLimit = null;
-
-		// Short-window burst limiter.
-		if ($hasRateLimit === true) {
-			$windowLimit = (int)$rateLimit['requestsPerWindow'];
-			$window = (int)$rateLimit['windowSeconds'];
-			$now = time();
-			$windowStart = (intdiv($now, $window) * $window);
-			$resetSeconds = (($windowStart + $window) - $now);
-			$key = 'oc_rl_' . $this->hashKey(consumerKey: $consumerKey) . '_' . $windowStart;
-
-			$count = $this->increment(key: $key, ttl: $window);
-
-			if ($count > $windowLimit) {
-				return new RateLimitDecision(
-					allowed: false,
-					hasRateLimit: true,
-					limit: $windowLimit,
-					remaining: 0,
-					resetSeconds: $resetSeconds,
-					retryAfter: max(1, $resetSeconds),
-					reason: RateLimitDecision::REASON_RATE_LIMIT
-				);
-			}
-		}//end if
-
-		// Longer-horizon quota.
-		if ($this->isQuotaConfigured(quota: $quota) === true) {
-			$quotaLimit = (int)$quota['limit'];
-			$period = (string)$quota['period'];
-			$bucket = $this->periodBucket(period: $period);
-			$quotaTtl = $this->secondsUntilPeriodRollover(period: $period);
-			$quotaKey = 'oc_q_' . $this->hashKey(consumerKey: $consumerKey) . '_' . $period . '_' . $bucket;
-
-			$quotaCount = $this->increment(key: $quotaKey, ttl: $quotaTtl);
-
-			if ($quotaCount > $quotaLimit) {
-				return new RateLimitDecision(
-					allowed: false,
-					hasRateLimit: $hasRateLimit,
-					limit: $windowLimit,
-					remaining: 0,
-					resetSeconds: $quotaTtl,
-					retryAfter: max(1, $quotaTtl),
-					reason: RateLimitDecision::REASON_QUOTA
-				);
-			}
-		}//end if
-
-		// Allowed. When a rateLimit is configured, expose the remaining window
-		// budget (reflecting the increment above) in the response headers.
-		if ($hasRateLimit === true) {
-			$window = (int)$rateLimit['windowSeconds'];
-			$now = time();
-			$windowStart = (intdiv($now, $window) * $window);
-			$resetSeconds = (($windowStart + $window) - $now);
-			$key = 'oc_rl_' . $this->hashKey(consumerKey: $consumerKey) . '_' . $windowStart;
-			$current = (int)($this->cache->get($key) ?? 0);
-
-			return new RateLimitDecision(
-				allowed: true,
-				hasRateLimit: true,
-				limit: $windowLimit,
-				remaining: max(0, ($windowLimit - $current)),
-				resetSeconds: $resetSeconds
-			);
+		$check = new RateLimitCheck(consumerKey: $consumerKey, rateLimit: $rateLimit, quota: $quota);
+		$refusal = ($this->burstRefusal(check: $check) ?? $this->quotaRefusal(check: $check));
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// Unlimited consumer — no headers.
-		return new RateLimitDecision(allowed: true, hasRateLimit: false);
+		return $this->allowed(check: $check);
 	}//end enforce()
+
+	/**
+	 * Short-window burst limiter: count the request, refuse it past the window's limit.
+	 *
+	 * @param RateLimitCheck $check The request's limits.
+	 *
+	 * @return RateLimitDecision|null The refusal, or null when within the limit or unlimited.
+	 */
+	private function burstRefusal(RateLimitCheck $check): ?RateLimitDecision {
+		if ($check->hasRateLimit() === false) {
+			return null;
+		}
+
+		$window = $this->currentWindow(check: $check);
+		$count = $this->increment(key: $window['key'], ttl: (int)$check->rateLimit['windowSeconds']);
+		if ($count <= $check->windowLimit()) {
+			return null;
+		}
+
+		return new RateLimitDecision(
+			allowed: false,
+			hasRateLimit: true,
+			limit: $check->windowLimit(),
+			remaining: 0,
+			resetSeconds: $window['resetSeconds'],
+			retryAfter: max(1, $window['resetSeconds']),
+			reason: RateLimitDecision::REASON_RATE_LIMIT
+		);
+
+	}//end burstRefusal()
+
+	/**
+	 * Longer-horizon quota: count the request, refuse it past the period's limit.
+	 *
+	 * @param RateLimitCheck $check The request's limits.
+	 *
+	 * @return RateLimitDecision|null The refusal, or null when within the quota or none is configured.
+	 */
+	private function quotaRefusal(RateLimitCheck $check): ?RateLimitDecision {
+		if ($check->hasQuota() === false) {
+			return null;
+		}
+
+		$period = (string)$check->quota['period'];
+		$bucket = $this->periodBucket(period: $period);
+		$quotaTtl = $this->secondsUntilPeriodRollover(period: $period);
+		$quotaKey = 'oc_q_' . $this->hashKey(consumerKey: $check->consumerKey) . '_' . $period . '_' . $bucket;
+		if ($this->increment(key: $quotaKey, ttl: $quotaTtl) <= (int)$check->quota['limit']) {
+			return null;
+		}
+
+		return new RateLimitDecision(
+			allowed: false,
+			hasRateLimit: $check->hasRateLimit(),
+			limit: $check->windowLimit(),
+			remaining: 0,
+			resetSeconds: $quotaTtl,
+			retryAfter: max(1, $quotaTtl),
+			reason: RateLimitDecision::REASON_QUOTA
+		);
+
+	}//end quotaRefusal()
+
+	/**
+	 * An allowed request. When a rateLimit is configured, expose the remaining window
+	 * budget (reflecting the increment above) in the response headers; an unlimited
+	 * consumer gets no headers.
+	 *
+	 * @param RateLimitCheck $check The request's limits.
+	 *
+	 * @return RateLimitDecision The decision.
+	 */
+	private function allowed(RateLimitCheck $check): RateLimitDecision {
+		if ($check->hasRateLimit() === false) {
+			return new RateLimitDecision(allowed: true, hasRateLimit: false);
+		}
+
+		$window = $this->currentWindow(check: $check);
+		$current = (int)($this->cache->get($window['key']) ?? 0);
+
+		return new RateLimitDecision(
+			allowed: true,
+			hasRateLimit: true,
+			limit: $check->windowLimit(),
+			remaining: max(0, ($check->windowLimit() - $current)),
+			resetSeconds: $window['resetSeconds']
+		);
+
+	}//end allowed()
+
+	/**
+	 * The current burst window: its counter key and the seconds until it resets.
+	 *
+	 * @param RateLimitCheck $check The request's limits, with a burst limit configured.
+	 *
+	 * @return array{key: string, resetSeconds: int} The window.
+	 */
+	private function currentWindow(RateLimitCheck $check): array {
+		$window = (int)$check->rateLimit['windowSeconds'];
+		$now = time();
+		$windowStart = (intdiv($now, $window) * $window);
+
+		return [
+			'key' => 'oc_rl_' . $this->hashKey(consumerKey: $check->consumerKey) . '_' . $windowStart,
+			'resetSeconds' => (($windowStart + $window) - $now),
+		];
+
+	}//end currentWindow()
 
 	/**
 	 * Atomically increment a counter key, seeding it with the given TTL.
@@ -193,34 +237,6 @@ class InboundRateLimitService {
 		$this->cache->set($key, $value, $ttl);
 		return $value;
 	}//end increment()
-
-	/**
-	 * Whether a rateLimit configuration is present and valid.
-	 *
-	 * @param array|null $rateLimit The consumer's rateLimit config.
-	 *
-	 * @return boolean
-	 */
-	private function isRateLimitConfigured(?array $rateLimit): bool {
-		return is_array($rateLimit) === true
-			&& (int)($rateLimit['requestsPerWindow'] ?? 0) > 0
-			&& (int)($rateLimit['windowSeconds'] ?? 0) > 0;
-
-	}//end isRateLimitConfigured()
-
-	/**
-	 * Whether a quota configuration is present and valid.
-	 *
-	 * @param array|null $quota The consumer's quota config.
-	 *
-	 * @return boolean
-	 */
-	private function isQuotaConfigured(?array $quota): bool {
-		return is_array($quota) === true
-			&& (int)($quota['limit'] ?? 0) > 0
-			&& in_array(($quota['period'] ?? ''), ['hour', 'day', 'month'], true) === true;
-
-	}//end isQuotaConfigured()
 
 	/**
 	 * The current calendar bucket identifier for a quota period.

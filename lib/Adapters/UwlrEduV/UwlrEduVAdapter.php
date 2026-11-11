@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\UwlrEduV;
 
+use OCA\Integriq\Adapters\CatalogueAdapter;
+
 /**
  * Catalogue descriptor for the UWLR/Edu-V/Basispoort/Entree-content adapter (ADR-017 Rule 1).
  *
@@ -39,7 +41,7 @@ namespace OCA\Integriq\Adapters\UwlrEduV;
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
-final class UwlrEduVAdapter {
+final class UwlrEduVAdapter extends CatalogueAdapter {
 
 	/**
 	 * Stable adapter id.
@@ -47,13 +49,6 @@ final class UwlrEduVAdapter {
 	 * @var string
 	 */
 	public const ID = 'uwlr-eduv';
-
-	/**
-	 * Sandbox/mock provider binding.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_LOG = 'log';
 
 	/**
 	 * Live Kennisnet-adjacent provider binding.
@@ -83,39 +78,6 @@ final class UwlrEduVAdapter {
 	public function label(): string {
 		return 'UWLR / Edu-V / Basispoort';
 	}//end label()
-
-	/**
-	 * Adapters catalogue category.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
-	 */
-	public function category(): string {
-		return 'government';
-	}//end category()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO top-level menu.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
-	 */
-	public function addsTopLevelMenu(): bool {
-		return false;
-	}//end addsTopLevelMenu()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO per-adapter /beheer route.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md
-	 */
-	public function addsManagementRoute(): bool {
-		return false;
-	}//end addsManagementRoute()
 
 	/**
 	 * The provider bindings this adapter offers.
@@ -151,39 +113,24 @@ final class UwlrEduVAdapter {
 			'type' => 'object',
 			'title' => 'UWLR / Edu-V / Basispoort',
 			'properties' => [
-				'provider' => [
-					'type' => 'string',
-					'enum' => [self::PROVIDER_LOG, self::PROVIDER_UWLR_EDUV],
-					'default' => self::PROVIDER_LOG,
-					'title' => 'Provider binding',
-					'description' => '`log` (default) simulates every send. `uwlr-eduv` dispatches over the '
+				'provider' => $this->providerSetting(
+					providers: $this->providers(),
+					description: '`log` (default) simulates every send. `uwlr-eduv` dispatches over the '
 						. 'live koppelvlak. It requires a certificate reference and, per target, its own '
-						. 'certification/aansluiting (see decisions.md M3(c)).',
-				],
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'title' => 'Endpoint URL',
-					'description' => 'UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL. Required '
-						. 'when provider=uwlr-eduv.',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'title' => 'PKIoverheid certificate reference',
-					'description' => 'Broker credentialRef for the certificate. Never stored here (ADR-007). '
-						. 'Required when provider=uwlr-eduv.',
-				],
-				'webhookSignature' => [
-					'type' => 'object',
-					'title' => 'Inbound signature',
-					'description' => 'HMAC verification settings for the shared inbound acknowledgement/retour endpoint.',
-					'properties' => [
-						'scheme' => ['type' => 'string', 'default' => 'openconnector'],
-						'secret' => ['type' => 'string'],
-						'header' => ['type' => 'string', 'default' => 'X-OpenConnector-Signature'],
-						'toleranceSeconds' => ['type' => 'integer'],
-					],
-				],
+						. 'certification/aansluiting (see decisions.md M3(c)).'
+				),
+				'endpoint' => $this->endpointSetting(
+					description: 'UWLR/Edu-V/Basispoort/Entree-content koppelvlak endpoint URL. Required '
+						. 'when provider=uwlr-eduv.'
+				),
+				'certificateRef' => $this->certificateSetting(
+					description: 'Broker credentialRef for the certificate. Never stored here (ADR-007). '
+						. 'Required when provider=uwlr-eduv.'
+				),
+				'webhookSignature' => $this->signatureSetting(
+					title: 'Inbound signature',
+					description: 'HMAC verification settings for the shared inbound acknowledgement/retour endpoint.'
+				),
 			],
 		];
 

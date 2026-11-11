@@ -68,6 +68,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\IwmoIjwProviderException;
 use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\ClientAuthenticationSchema;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
@@ -90,7 +91,7 @@ class IStandardsClient implements IwmoIjwProviderInterface {
 	 *
 	 * @var string
 	 */
-	private const DEFAULT_AUTH_SCHEME = 'Bearer';
+	private const DEFAULT_AUTH_SCHEME = ClientAuthenticationSchema::DEFAULT_SCHEME;
 
 	/**
 	 * Default berichten path (relative to `configuration.baseUrl`).
@@ -147,40 +148,13 @@ class IStandardsClient implements IwmoIjwProviderInterface {
 					'type' => 'string',
 					'description' => 'iStandaarden (GGk/VECOZO-fronted) endpoint base URL (no trailing slash)',
 				],
-				'authentication' => [
-					'type' => 'object',
-					'properties' => [
-						'mode' => [
-							'type' => 'string',
-							'enum' => ['token', 'mtls'],
-							'default' => 'token',
-							'description' => '`token` (default) sends a Bearer Authorization header from '
-								. '`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
-								. '`mtls.*` — closes the real GGk/VECOZO transport gap.',
-						],
-						'encryptedToken' => [
-							'type' => 'string',
-							'description' => 'Required when `mode=token` (the default). The iStandaarden API token, '
-								. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.',
-						],
-						'scheme' => [
-							'type' => 'string',
-							'description' => 'Authorization header scheme, used only when `mode=token`.',
-							'default' => self::DEFAULT_AUTH_SCHEME,
-						],
-						'mtls' => [
-							'type' => 'object',
-							'description' => 'Required when `mode=mtls`. Client certificate material, each field '
-								. 'individually encrypted at rest via OCP\\Security\\ICrypto.',
-							'properties' => [
-								'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
-								'encryptedPrivateKey' => ['type' => 'string', 'description' => 'PEM private key.'],
-								'encryptedPassphrase' => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
-								'encryptedCaBundle' => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
-							],
-						],
-					],
-				],
+				'authentication' => ClientAuthenticationSchema::tokenOrMtls(
+					modeDescription: '`token` (default) sends a Bearer Authorization header from '
+						. '`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
+						. '`mtls.*` — closes the real GGk/VECOZO transport gap.',
+					tokenDescription: 'Required when `mode=token` (the default). The iStandaarden API token, '
+						. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.'
+				),
 				'gemeentecode' => [
 					'type' => 'string',
 					'description' => 'Sending municipality code (stuurgegevens.zender.code default).',

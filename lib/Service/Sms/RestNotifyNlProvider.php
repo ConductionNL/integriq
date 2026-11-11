@@ -207,31 +207,62 @@ class RestNotifyNlProvider implements SmsProviderInterface {
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
 	 */
 	public function send(array $sourceConfiguration, string $to, string $body, array $options = []): DeliveryResult {
-		$templateId = $this->resolveTemplateId(sourceConfiguration: $sourceConfiguration, options: $options);
-
-		$personalisation = ($options['personalisation'] ?? []);
-		if (is_array($personalisation) === false) {
-			$personalisation = [];
-		}
-
 		$payload = [
 			'phone_number' => $to,
-			'template_id' => $templateId,
-			'personalisation' => $personalisation,
-		];
-
-		$senderId = (string)($sourceConfiguration['senderId'] ?? '');
-		if ($senderId !== '') {
-			$payload['sms_sender_id'] = $senderId;
-		}
+			'template_id' => $this->resolveTemplateId(sourceConfiguration: $sourceConfiguration, options: $options),
+			'personalisation' => self::personalisation(options: $options),
+		] + self::sender(sourceConfiguration: $sourceConfiguration);
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'POST',
-			path: '/v2/notifications/sms',
-			jsonBody: $payload
+			call: new NotifyCall(method: 'POST', path: '/v2/notifications/sms', jsonBody: $payload)
 		);
 
+		return new DeliveryResult(providerMessageId: self::notificationId(response: $response), status: 'queued', detail: null);
+	}//end send()
+
+	/**
+	 * The template personalisation the options carry, or none.
+	 *
+	 * @param array $options The send options.
+	 *
+	 * @return array The personalisation.
+	 */
+	private static function personalisation(array $options): array {
+		$personalisation = ($options['personalisation'] ?? []);
+		if (is_array($personalisation) === false) {
+			return [];
+		}
+
+		return $personalisation;
+	}//end personalisation()
+
+	/**
+	 * The sender id field, when the source names one.
+	 *
+	 * @param array $sourceConfiguration The source's configuration.
+	 *
+	 * @return array{sms_sender_id?: string} The field, or nothing.
+	 */
+	private static function sender(array $sourceConfiguration): array {
+		$senderId = (string)($sourceConfiguration['senderId'] ?? '');
+		if ($senderId === '') {
+			return [];
+		}
+
+		return ['sms_sender_id' => $senderId];
+	}//end sender()
+
+	/**
+	 * The notification id NotifyNL answered a send with.
+	 *
+	 * @param string $response The answer body.
+	 *
+	 * @return string The id.
+	 *
+	 * @throws SmsProviderException When there is no usable id.
+	 */
+	private static function notificationId(string $response): string {
 		$decoded = json_decode($response, true);
 		$notificationId = null;
 		if (is_array($decoded) === true) {
@@ -244,8 +275,8 @@ class RestNotifyNlProvider implements SmsProviderInterface {
 			);
 		}
 
-		return new DeliveryResult(providerMessageId: $notificationId, status: 'queued', detail: null);
-	}//end send()
+		return $notificationId;
+	}//end notificationId()
 
 	/**
 	 * {@inheritDoc}
@@ -260,9 +291,7 @@ class RestNotifyNlProvider implements SmsProviderInterface {
 	public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult {
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'GET',
-			path: '/v2/notifications/' . rawurlencode($providerMessageId),
-			jsonBody: null
+			call: new NotifyCall(method: 'GET', path: '/v2/notifications/' . rawurlencode($providerMessageId))
 		);
 
 		$decoded = json_decode($response, true);
@@ -339,46 +368,25 @@ class RestNotifyNlProvider implements SmsProviderInterface {
 	}//end mapNotifyStatus()
 
 	/**
-	 * Dispatch one JWT-authenticated request and return its raw body, mapping every
-	 * failure mode to a secret-free {@see SmsProviderException} — never a 500 crash.
+	 * Send one authenticated call and return its body, refusing a transport failure or a non-2xx answer.
 	 *
-	 * @param array $sourceConfiguration The NotifyNL source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $path The API path (relative to `configuration.baseUrl`).
-	 * @param array|null $jsonBody Optional JSON request body.
+	 * @param array      $sourceConfiguration The source's configuration.
+	 * @param NotifyCall $call                The method, path and optional JSON body.
 	 *
-	 * @return string The response body.
+	 * @return string The answer body.
 	 *
-	 * @throws SmsProviderException On any configuration, transport, or upstream error.
+	 * @throws SmsProviderException On a credential, transport or status failure.
 	 */
-	private function dispatch(array $sourceConfiguration, string $method, string $path, ?array $jsonBody): string {
+	private function dispatch(array $sourceConfiguration, NotifyCall $call): string {
 		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? self::DEFAULT_BASE_URL), '/');
-		$url = $baseUrl . $path;
+		$url = $baseUrl . $call->path;
 
-		$jwt = $this->buildAuthorizationJwt(sourceConfiguration: $sourceConfiguration);
-
-		$requestOptions = [
-			'headers' => [
-				'Authorization' => 'Bearer ' . $jwt,
-				'Content-Type' => 'application/json',
-			],
-			'http_errors' => false,
-		];
-		if ($jsonBody !== null) {
-			$requestOptions['json'] = $jsonBody;
-		}
+		$requestOptions = $this->requestOptions(sourceConfiguration: $sourceConfiguration, call: $call);
 
 		try {
-			$response = $this->httpClient->request($method, $url, $requestOptions);
+			$response = $this->httpClient->request($call->method, $url, $requestOptions);
 		} catch (GuzzleException $exception) {
-			$this->logger->warning(
-				'[RestNotifyNlProvider] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new SmsProviderException(
-				message: 'The NotifyNL request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
+			throw $this->transportFailure(exception: $exception);
 		}
 
 		$status = $response->getStatusCode();
@@ -389,6 +397,52 @@ class RestNotifyNlProvider implements SmsProviderInterface {
 
 		return $body;
 	}//end dispatch()
+
+	/**
+	 * The request options: the signed bearer token, the JSON content type and the body.
+	 *
+	 * @param array      $sourceConfiguration The source's configuration.
+	 * @param NotifyCall $call                The call.
+	 *
+	 * @return array The Guzzle options.
+	 *
+	 * @throws SmsProviderException When the API key is missing, undecryptable or malformed.
+	 */
+	private function requestOptions(array $sourceConfiguration, NotifyCall $call): array {
+		$jwt = $this->buildAuthorizationJwt(sourceConfiguration: $sourceConfiguration);
+
+		$requestOptions = [
+			'headers' => [
+				'Authorization' => 'Bearer ' . $jwt,
+				'Content-Type' => 'application/json',
+			],
+			'http_errors' => false,
+		];
+		if ($call->jsonBody !== null) {
+			$requestOptions['json'] = $call->jsonBody;
+		}
+
+		return $requestOptions;
+	}//end requestOptions()
+
+	/**
+	 * Log a transport failure and wrap it.
+	 *
+	 * @param GuzzleException $exception The failure.
+	 *
+	 * @return SmsProviderException The exception to throw.
+	 */
+	private function transportFailure(GuzzleException $exception): SmsProviderException {
+		$this->logger->warning(
+			'[RestNotifyNlProvider] unexpected transport failure',
+			['exception' => $exception->getMessage()]
+		);
+
+		return new SmsProviderException(
+			message: 'The NotifyNL request failed unexpectedly: ' . $exception->getMessage(),
+			previous: $exception
+		);
+	}//end transportFailure()
 
 	/**
 	 * Build the per-request `Authorization: Bearer <jwt>` value.

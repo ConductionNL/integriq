@@ -1,0 +1,128 @@
+{
+    "WMO302-all": {
+        "berichttype": "WMO302",
+        "reference": "K-1",
+        "status": "accepted",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO302-none": {
+        "berichttype": "WMO302",
+        "reference": "K-1",
+        "status": "rejected",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "JW304-all": {
+        "berichttype": "JW304",
+        "reference": "K-1",
+        "status": "accepted",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "JW304-none": {
+        "berichttype": "JW304",
+        "reference": "K-1",
+        "status": "rejected",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO305-all": {
+        "berichttype": "WMO305",
+        "reference": "K-1",
+        "status": "care_started",
+        "careStartedAt": "2026-01-01",
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO305-none": {
+        "berichttype": "WMO305",
+        "reference": "K-1",
+        "status": "care_started",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO306-all": {
+        "berichttype": "WMO306",
+        "reference": "K-1",
+        "status": "care_start_confirmed",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO306-none": {
+        "berichttype": "WMO306",
+        "reference": "K-1",
+        "status": "care_start_confirmed",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "JW307-all": {
+        "berichttype": "JW307",
+        "reference": "K-1",
+        "status": "care_stopped",
+        "careStartedAt": null,
+        "careStoppedAt": "2026-02-01",
+        "paymentReference": null
+    },
+    "JW307-none": {
+        "berichttype": "JW307",
+        "reference": "K-1",
+        "status": "care_stopped",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO308-all": {
+        "berichttype": "WMO308",
+        "reference": "K-1",
+        "status": "care_stop_confirmed",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO308-none": {
+        "berichttype": "WMO308",
+        "reference": "K-1",
+        "status": "care_stop_confirmed",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "WMO322-all": {
+        "berichttype": "WMO322",
+        "reference": "K-1",
+        "status": "invoice_processed",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": "PAY-1"
+    },
+    "WMO322-none": {
+        "berichttype": "WMO322",
+        "reference": "K-1",
+        "status": "invoice_rejected",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "no-body": {
+        "berichttype": "WMO305",
+        "reference": "K",
+        "status": "care_started",
+        "careStartedAt": null,
+        "careStoppedAt": null,
+        "paymentReference": null
+    },
+    "no-code": "refused: Retour envelope is missing stuurgegevens.berichtcode.",
+    "no-kenmerk": "refused: Retour envelope is missing stuurgegevens.kenmerk — refusing to update an unresolvable case.",
+    "unknown-code": "refused: Retour berichtcode \"WMO301\" is not a recognised retour type.",
+    "letters-only": "refused: Retour berichtcode \"retour\" is not a recognised retour type.",
+    "empty": "refused: Retour envelope is empty.",
+    "malformed": "refused: Retour envelope is not well-formed XML."
+}

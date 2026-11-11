@@ -126,32 +126,94 @@ class LtiJwksResolverService {
 	 * @spec openspec/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
 	 */
 	public function resolveKey(string $registrationType, string $registrationUuid, string $jwksUri, string $kid): ?JWK {
-		$cacheKey = $this->cacheKey(registrationType: $registrationType, registrationUuid: $registrationUuid);
+		return $this->resolveLookup(
+			lookup: new JwksKeyLookup(registrationType: $registrationType, registrationUuid: $registrationUuid, jwksUri: $jwksUri, kid: $kid)
+		);
+	}//end resolveKey()
 
-		$cached = $this->cache->get($cacheKey);
-		if (is_string($cached) === true) {
-			$jwkSet = $this->deserializeJwkSet(cached: $cached);
-			if ($jwkSet !== null && $jwkSet->has($kid) === true) {
-				return $jwkSet->get($kid);
-			}
+	/**
+	 * Resolve a lookup's kid: from the cached set, else by one guarded refetch.
+	 *
+	 * @param JwksKeyLookup $lookup The key to resolve.
+	 *
+	 * @return JWK|null The resolved key, or null when it cannot be resolved.
+	 */
+	private function resolveLookup(JwksKeyLookup $lookup): ?JWK {
+		$cacheKey = $this->cacheKey(registrationType: $lookup->registrationType, registrationUuid: $lookup->registrationUuid);
+
+		$cachedKey = $this->keyFromCachedSet(cacheKey: $cacheKey, kid: $lookup->kid);
+		if ($cachedKey !== null) {
+			return $cachedKey;
 		}
 
 		// Cache miss OR the cached set does not contain this kid — refetch,
 		// but never more than once per REFETCH_GUARD_SECONDS per registration.
-		$guardKey = $this->refetchGuardKey(registrationUuid: $registrationUuid);
+		if ($this->claimRefetch(lookup: $lookup) === false) {
+			return null;
+		}
+
+		return $this->refetchKey(lookup: $lookup, cacheKey: $cacheKey);
+
+	}//end resolveLookup()
+
+	/**
+	 * The kid from the cached JWKS, when a set is cached and holds it.
+	 *
+	 * @param string $cacheKey The registration's JWKS cache key.
+	 * @param string $kid      The kid to find.
+	 *
+	 * @return JWK|null The cached key, or null on a miss.
+	 */
+	private function keyFromCachedSet(string $cacheKey, string $kid): ?JWK {
+		$cached = $this->cache->get($cacheKey);
+		if (is_string($cached) === false) {
+			return null;
+		}
+
+		$jwkSet = $this->deserializeJwkSet(cached: $cached);
+		if ($jwkSet !== null && $jwkSet->has($kid) === true) {
+			return $jwkSet->get($kid);
+		}
+
+		return null;
+
+	}//end keyFromCachedSet()
+
+	/**
+	 * Claim the registration's refetch slot; refused while the guard window is active.
+	 *
+	 * @param JwksKeyLookup $lookup The key being resolved.
+	 *
+	 * @return boolean True when a refetch may run (the guard is now set), false when the guard is active.
+	 */
+	private function claimRefetch(JwksKeyLookup $lookup): bool {
+		$guardKey = $this->refetchGuardKey(registrationUuid: $lookup->registrationUuid);
 		if ($this->cache->get($guardKey) !== null) {
 			// Guard active: fail closed. Never fall back to accepting an
 			// unverified token (design.md D4 — SSRF-amplification defence).
 			$this->logger->info(
 				'LtiJwksResolverService: refetch guard active, rejecting unresolved kid',
-				['registrationType' => $registrationType, 'registrationUuid' => $registrationUuid, 'kid' => $kid]
+				['registrationType' => $lookup->registrationType, 'registrationUuid' => $lookup->registrationUuid, 'kid' => $lookup->kid]
 			);
-			return null;
+			return false;
 		}
 
 		$this->cache->set($guardKey, true, self::REFETCH_GUARD_SECONDS);
 
-		$fetched = $this->fetchJwks(jwksUri: $jwksUri, registrationUuid: $registrationUuid);
+		return true;
+
+	}//end claimRefetch()
+
+	/**
+	 * Fetch the registration's JWKS, cache it, and pick the kid from it.
+	 *
+	 * @param JwksKeyLookup $lookup   The key being resolved.
+	 * @param string        $cacheKey The registration's JWKS cache key.
+	 *
+	 * @return JWK|null The key, or null when the fetch failed or the set lacks the kid.
+	 */
+	private function refetchKey(JwksKeyLookup $lookup, string $cacheKey): ?JWK {
+		$fetched = $this->fetchJwks(jwksUri: $lookup->jwksUri, registrationUuid: $lookup->registrationUuid);
 		if ($fetched === null) {
 			return null;
 		}
@@ -159,12 +221,13 @@ class LtiJwksResolverService {
 		$this->cache->set($cacheKey, json_encode($fetched), self::DEFAULT_TTL_SECONDS);
 
 		$jwkSet = $this->deserializeJwkSet(cached: json_encode($fetched));
-		if ($jwkSet !== null && $jwkSet->has($kid) === true) {
-			return $jwkSet->get($kid);
+		if ($jwkSet !== null && $jwkSet->has($lookup->kid) === true) {
+			return $jwkSet->get($lookup->kid);
 		}
 
 		return null;
-	}//end resolveKey()
+
+	}//end refetchKey()
 
 	/**
 	 * Deserialize a cached JWKS JSON string into a `JWKSet`.
@@ -202,14 +265,60 @@ class LtiJwksResolverService {
 			return null;
 		}
 
+		$logData = $this->callJwksEndpoint(parts: $parts, registrationUuid: $registrationUuid);
+		if ($logData === null) {
+			return null;
+		}
+
+		return $this->decodeJwksResponse(logData: $logData, registrationUuid: $registrationUuid);
+	}//end fetchJwks()
+
+	/**
+	 * Call the JWKS endpoint through an ephemeral, non-persisted source.
+	 *
+	 * @param array  $parts            The parsed `jwks_uri` (scheme and host present).
+	 * @param string $registrationUuid The registration id (for traceability only).
+	 *
+	 * @return array|null The call log object, or null when the call failed.
+	 */
+	private function callJwksEndpoint(array $parts, string $registrationUuid): ?array {
+		$source = $this->adHocJwksSource(parts: $parts, registrationUuid: $registrationUuid);
+
+		try {
+			// The source is ad hoc and never persisted, so its uuid is not a uuid.
+			// A persisted call log would name it in `call_log.source` (format: uuid)
+			// and the register refuses that row, which failed every JWKS fetch after
+			// the key set had already arrived. The fetch is therefore not logged as
+			// a call log: persistLog false returns the response in memory and
+			// writes nothing, neither the call log nor the source's rate-limit state.
+			$callLog = $this->callService->call(
+				source: $source,
+				endpoint: $this->jwksEndpoint(parts: $parts),
+				method: 'GET',
+				read: true,
+				persistLog: false
+			);
+		} catch (Throwable $exception) {
+			$this->logFetchFailure(registrationUuid: $registrationUuid, exception: $exception);
+			return null;
+		}
+
+		return $callLog->getObject();
+
+	}//end callJwksEndpoint()
+
+	/**
+	 * The ephemeral source whose location is the `jwks_uri`'s scheme, host and port.
+	 *
+	 * @param array  $parts            The parsed `jwks_uri`.
+	 * @param string $registrationUuid The registration id.
+	 *
+	 * @return ObjectEntity The ad-hoc source, never persisted.
+	 */
+	private function adHocJwksSource(array $parts, string $registrationUuid): ObjectEntity {
 		$location = $parts['scheme'] . '://' . $parts['host'];
 		if (isset($parts['port']) === true) {
 			$location .= ':' . $parts['port'];
-		}
-
-		$endpoint = ($parts['path'] ?? '');
-		if (isset($parts['query']) === true) {
-			$endpoint .= '?' . $parts['query'];
 		}
 
 		$source = new ObjectEntity();
@@ -222,29 +331,52 @@ class LtiJwksResolverService {
 			]
 		);
 
-		try {
-			// The source is ad hoc and never persisted, so its uuid is not a uuid.
-			// A persisted call log would name it in `call_log.source` (format: uuid)
-			// and the register refuses that row, which failed every JWKS fetch after
-			// the key set had already arrived. The fetch is therefore not logged as
-			// a call log: persistLog false returns the response in memory and
-			// writes nothing, neither the call log nor the source's rate-limit state.
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: $endpoint,
-				method: 'GET',
-				read: true,
-				persistLog: false
-			);
-		} catch (Throwable $exception) {
-			$this->logger->warning(
-				'LtiJwksResolverService: outbound JWKS fetch failed',
-				['registrationUuid' => $registrationUuid, 'error' => $exception->getMessage()]
-			);
-			return null;
+		return $source;
+
+	}//end adHocJwksSource()
+
+	/**
+	 * The `jwks_uri`'s path and query, the endpoint called on the ad-hoc source.
+	 *
+	 * @param array $parts The parsed `jwks_uri`.
+	 *
+	 * @return string The endpoint.
+	 */
+	private function jwksEndpoint(array $parts): string {
+		$endpoint = ($parts['path'] ?? '');
+		if (isset($parts['query']) === true) {
+			$endpoint .= '?' . $parts['query'];
 		}
 
-		$logData = $callLog->getObject();
+		return $endpoint;
+
+	}//end jwksEndpoint()
+
+	/**
+	 * Log a failed outbound JWKS fetch.
+	 *
+	 * @param string    $registrationUuid The registration id.
+	 * @param Throwable $exception        The failure.
+	 *
+	 * @return void
+	 */
+	private function logFetchFailure(string $registrationUuid, Throwable $exception): void {
+		$this->logger->warning(
+			'LtiJwksResolverService: outbound JWKS fetch failed',
+			['registrationUuid' => $registrationUuid, 'error' => $exception->getMessage()]
+		);
+
+	}//end logFetchFailure()
+
+	/**
+	 * Decode a fetched JWKS response: a 200 with a `{"keys": [...]}` JSON body.
+	 *
+	 * @param array  $logData          The call log object.
+	 * @param string $registrationUuid The registration id.
+	 *
+	 * @return array|null The decoded JWKS document, or null when the response is refused.
+	 */
+	private function decodeJwksResponse(array $logData, string $registrationUuid): ?array {
 		$statusCode = ($logData['response']['statusCode'] ?? $logData['statusCode'] ?? 0);
 		if ($statusCode !== 200) {
 			$this->logger->info(
@@ -254,15 +386,45 @@ class LtiJwksResolverService {
 			return null;
 		}
 
-		$body = ($logData['response']['body'] ?? null);
+		$body = $this->responseBody(response: ($logData['response'] ?? []));
+		if ($body === null) {
+			return null;
+		}
+
+		return $this->decodeJwksDocument(body: $body, registrationUuid: $registrationUuid);
+
+	}//end decodeJwksResponse()
+
+	/**
+	 * The response body, base64-decoded when so encoded.
+	 *
+	 * @param mixed $response The call log's `response` member.
+	 *
+	 * @return string|null The body, or null when it is missing, not a string or empty.
+	 */
+	private function responseBody(mixed $response): ?string {
+		$body = ($response['body'] ?? null);
 		if (is_string($body) === false || $body === '') {
 			return null;
 		}
 
-		if (($logData['response']['encoding'] ?? 'UTF-8') === 'base64') {
+		if (($response['encoding'] ?? 'UTF-8') === 'base64') {
 			$body = base64_decode($body);
 		}
 
+		return $body;
+
+	}//end responseBody()
+
+	/**
+	 * Decode a JWKS body; it must be a JSON object with a `keys` array.
+	 *
+	 * @param string $body             The response body.
+	 * @param string $registrationUuid The registration id.
+	 *
+	 * @return array|null The decoded document, or null when it is not a JWKS document.
+	 */
+	private function decodeJwksDocument(string $body, string $registrationUuid): ?array {
 		$decoded = json_decode($body, true);
 		if (is_array($decoded) === false || isset($decoded['keys']) === false || is_array($decoded['keys']) === false) {
 			$this->logger->info('LtiJwksResolverService: JWKS response is not a valid JWKS document', ['registrationUuid' => $registrationUuid]);
@@ -270,5 +432,6 @@ class LtiJwksResolverService {
 		}
 
 		return $decoded;
-	}//end fetchJwks()
+
+	}//end decodeJwksDocument()
 }//end class

@@ -281,4 +281,65 @@ class PropertySourceResolverTest extends TestCase {
 		$this->assertFalse($suggestions[0]['authoritative']);
 		$this->assertSame('brp', $suggestions[0]['provider']);
 	}//end testASuggestionIsMarkedAsNotAuthoritative()
+
+	/**
+	 * The full provenance of a cached answer, of a cached answer served because
+	 * the source is down (with the warning it logs), and of a source read.
+	 *
+	 * @return void
+	 */
+	public function testTheCachedUnreachableAndSourceProvenanceIsExact(): void {
+		$readAt = (time() - 300);
+		$this->store['brp:' . sha1('111')] = ['value' => ['naam' => 'Cache'], 'readAt' => $readAt];
+		$cached = $this->resolver($this->provider(600))->resolve('brp', '111')->toArray();
+		$this->assertEqualsWithDelta(300, $cached['provenance']['cacheAgeSeconds'], 2.0);
+		$cached['provenance']['cacheAgeSeconds'] = 300;
+		$this->assertSame(
+			['value' => ['naam' => 'Cache'], 'provenance' => ['origin' => ResolvedValue::ORIGIN_CACHE, 'provider' => 'brp', 'sourceIdentifier' => '111', 'readAt' => $readAt, 'cacheAgeSeconds' => 300, 'unreachable' => false, 'live' => false]],
+			$cached
+		);
+
+		$down = $this->provider(60);
+		$down->method('resolve')->willThrowException(new SourceUnreachableException('brp', 'down'));
+		$logged = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context) use (&$logged): void {
+				$logged[] = [$message, $context];
+			}
+		);
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('createDistributed')->willReturn($this->cache);
+		$resolver = new PropertySourceResolver(new PropertySourceRegistry([$down]), $factory, $logger);
+
+		$stale = $resolver->resolve('brp', '111')->toArray();
+		$this->assertEqualsWithDelta(300, $stale['provenance']['cacheAgeSeconds'], 2.0);
+		$stale['provenance']['cacheAgeSeconds'] = 300;
+		$this->assertSame(
+			['value' => ['naam' => 'Cache'], 'provenance' => ['origin' => ResolvedValue::ORIGIN_CACHE, 'provider' => 'brp', 'sourceIdentifier' => '111', 'readAt' => $readAt, 'cacheAgeSeconds' => 300, 'unreachable' => true, 'live' => false]],
+			$stale
+		);
+		$this->assertSame(
+			['value' => null, 'provenance' => ['origin' => ResolvedValue::ORIGIN_SOURCE, 'provider' => 'brp', 'sourceIdentifier' => '222', 'readAt' => null, 'cacheAgeSeconds' => null, 'unreachable' => true, 'live' => false]],
+			$resolver->resolve('brp', '222')->toArray()
+		);
+		$this->assertSame(
+			[
+				['property-source.resolve.unreachable', ['provider' => 'brp', 'identifier' => '111', 'cached' => true]],
+				['property-source.resolve.unreachable', ['provider' => 'brp', 'identifier' => '222', 'cached' => false]],
+			],
+			$logged
+		);
+
+		$up = $this->provider(600);
+		$up->method('resolve')->willReturn(['naam' => 'Bron']);
+		$read = $this->resolver($up)->resolve('brp', '333', [], true)->toArray();
+		$this->assertEqualsWithDelta(time(), $read['provenance']['readAt'], 2.0);
+		$this->assertSame($read['provenance']['readAt'], $this->store['brp:' . sha1('333')]['readAt']);
+		$read['provenance']['readAt'] = 0;
+		$this->assertSame(
+			['value' => ['naam' => 'Bron'], 'provenance' => ['origin' => ResolvedValue::ORIGIN_SOURCE, 'provider' => 'brp', 'sourceIdentifier' => '333', 'readAt' => 0, 'cacheAgeSeconds' => null, 'unreachable' => false, 'live' => true]],
+			$read
+		);
+	}//end testTheCachedUnreachableAndSourceProvenanceIsExact()
 }//end class

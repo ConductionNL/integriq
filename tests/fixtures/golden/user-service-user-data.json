@@ -1,0 +1,434 @@
+{
+    "plain-numeric-quota-db-down": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": null,
+            "enabled": true,
+            "quota": {
+                "free": "1073741824",
+                "used": 0,
+                "total": "1073741824",
+                "relative": 0.0
+            },
+            "avatarScope": "contacts",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": false,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "warning",
+                "Memory-safe quota calculation failed for user: anja",
+                {
+                    "exception": "no database"
+                }
+            ],
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "plain-numeric-quota-db-row": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": null,
+            "enabled": true,
+            "quota": {
+                "free": "1073741824",
+                "used": 268435456,
+                "total": "1073741824",
+                "relative": 25.0
+            },
+            "avatarScope": "contacts",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": false,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "plain-db-no-row": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": null,
+            "enabled": true,
+            "quota": {
+                "free": "2048",
+                "used": 0,
+                "total": "2048",
+                "relative": 0.0
+            },
+            "avatarScope": "contacts",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": false,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "info",
+                "Using fallback quota calculation for user: anja",
+                []
+            ],
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "plain-db-non-numeric-row": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": null,
+            "enabled": true,
+            "quota": {
+                "free": "none",
+                "used": 0,
+                "total": "none",
+                "relative": 0
+            },
+            "avatarScope": "contacts",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": false,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "info",
+                "Using fallback quota calculation for user: anja",
+                []
+            ],
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "plain-unlimited": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": null,
+            "enabled": true,
+            "quota": {
+                "free": "unlimited",
+                "used": 10,
+                "total": "unlimited",
+                "relative": 0
+            },
+            "avatarScope": "contacts",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": false,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "plain-zero-quota": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": null,
+            "enabled": true,
+            "quota": {
+                "free": "0",
+                "used": 10,
+                "total": "0",
+                "relative": 0
+            },
+            "avatarScope": "contacts",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": false,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "plain-quota-throws": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": null,
+            "enabled": true,
+            "quota": {
+                "free": "none",
+                "used": 0,
+                "total": "none",
+                "relative": 0
+            },
+            "avatarScope": "contacts",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": false,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": {
+                "total": 2,
+                "active": {
+                    "uuid": "org-1"
+                }
+            }
+        },
+        "logged": [
+            [
+                "warning",
+                "Failed to build quota information for user: anja",
+                {
+                    "exception": "quota backend down"
+                }
+            ],
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "rich-used-space": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": true,
+            "enabled": true,
+            "quota": {
+                "free": "1073741824",
+                "used": 536870912,
+                "total": "1073741824",
+                "relative": 50.0
+            },
+            "avatarScope": "public",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": true,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    },
+    "rich-used-space-throws": {
+        "data": {
+            "uid": "anja",
+            "displayName": "Anja de Vries",
+            "email": "anja@example.nl",
+            "emailVerified": true,
+            "enabled": true,
+            "quota": {
+                "free": "1073741824",
+                "used": 1024,
+                "total": "1073741824",
+                "relative": 0.0
+            },
+            "avatarScope": "public",
+            "lastLogin": 1700000000,
+            "backend": "Database",
+            "subadmin": [],
+            "groups": [
+                "behandelaars"
+            ],
+            "language": "",
+            "locale": "",
+            "backendCapabilities": {
+                "displayName": true,
+                "email": true,
+                "password": false,
+                "avatar": true
+            },
+            "phone": "0612345678",
+            "firstName": null,
+            "lastName": null,
+            "middleName": null,
+            "organisations": []
+        },
+        "logged": [
+            [
+                "debug",
+                "User quota calculation failed for user: anja",
+                {
+                    "exception": "backend cannot count"
+                }
+            ],
+            [
+                "warning",
+                "AccountManager failed for user: anja",
+                {
+                    "exception": "no account manager"
+                }
+            ]
+        ]
+    }
+}

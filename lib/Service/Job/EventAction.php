@@ -65,70 +65,157 @@ class EventAction {
 		$response = ['stackTrace' => []];
 		$response['stackTrace'][] = 'Running EventAction';
 
-		$type = trim((string)($argument['type'] ?? ''));
-		$source = trim((string)($argument['source'] ?? ''));
-
-		if ($type === '' || $source === '') {
-			$response['level'] = 'ERROR';
-			$response['stackTrace'][] = $response['message'] = 'EventAction needs both a "type" and a "source" argument; nothing was emitted.';
-			return $response;
-		}
-
-		$subject = ($argument['subject'] ?? null);
-		if ($subject !== null) {
-			$subject = (string)$subject;
-		}
-
-		$data = ($argument['data'] ?? []);
-		if (is_array($data) === false) {
-			// A job's arguments are authored in a free-text field, so `data` may
-			// arrive as a JSON string. Accept that rather than quietly emitting
-			// an event with no payload.
-			$decoded = json_decode((string)$data, true);
-			if (is_array($decoded) === false) {
-				$response['level'] = 'ERROR';
-				$response['stackTrace'][] = $response['message'] = 'The "data" argument must be an object, or a JSON object as a string.';
-				return $response;
-			}
-
-			$data = $decoded;
-		}
-
-		$userId = ($argument['userId'] ?? null);
-		if ($userId !== null) {
-			$userId = (string)$userId;
+		$refusal = $this->argumentRefusal(argument: $argument);
+		if ($refusal !== null) {
+			return $this->failed(response: $response, message: $refusal);
 		}
 
 		// Emitting to nobody is not an error, but it is worth saying out loud:
 		// from the outside, a bus with no active subscriptions is
 		// indistinguishable from a broken one.
-		try {
-			if ($this->eventService->hasActiveSubscriptions() === false) {
-				$response['stackTrace'][] = 'No active subscriptions — the event is recorded but delivered to nobody.';
-			}
-		} catch (Throwable $e) {
-			$response['stackTrace'][] = 'Could not check for active subscriptions: ' . $e->getMessage();
+		$response['stackTrace'] = array_merge($response['stackTrace'], $this->subscriptionNotes());
+
+		return $this->emit(argument: $argument, response: $response);
+	}//end run()
+
+	/**
+	 * Why the job's arguments cannot be emitted, or null when they can.
+	 *
+	 * @param array $argument The job arguments.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function argumentRefusal(array $argument): ?string {
+		if (trim((string)($argument['type'] ?? '')) === '' || trim((string)($argument['source'] ?? '')) === '') {
+			return 'EventAction needs both a "type" and a "source" argument; nothing was emitted.';
 		}
 
-		$response['stackTrace'][] = 'Emitting CloudEvent type="' . $type . '" source="' . $source . '"';
+		if ($this->eventData(argument: $argument) === null) {
+			return 'The "data" argument must be an object, or a JSON object as a string.';
+		}
+
+		return null;
+
+	}//end argumentRefusal()
+
+	/**
+	 * The event's data: an array as given, or a JSON object given as a string.
+	 *
+	 * A job's arguments are authored in a free-text field, so `data` may
+	 * arrive as a JSON string. Accept that rather than quietly emitting an
+	 * event with no payload.
+	 *
+	 * @param array $argument The job arguments.
+	 *
+	 * @return array|null The data, or null when it is neither.
+	 */
+	private function eventData(array $argument): ?array {
+		$data = ($argument['data'] ?? []);
+		if (is_array($data) === true) {
+			return $data;
+		}
+
+		$decoded = json_decode((string)$data, true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+
+	}//end eventData()
+
+	/**
+	 * What to say about the bus's subscriptions: nothing, that nobody listens, or that it could not be checked.
+	 *
+	 * @return array<int, string> The stack trace lines.
+	 */
+	private function subscriptionNotes(): array {
+		try {
+			if ($this->eventService->hasActiveSubscriptions() === false) {
+				return ['No active subscriptions — the event is recorded but delivered to nobody.'];
+			}
+		} catch (Throwable $e) {
+			return ['Could not check for active subscriptions: ' . $e->getMessage()];
+		}
+
+		return [];
+
+	}//end subscriptionNotes()
+
+	/**
+	 * Emit the CloudEvent and report how many subscription messages it created.
+	 *
+	 * @param array $argument The job arguments, validated.
+	 * @param array $response The response so far.
+	 *
+	 * @return array The response.
+	 */
+	private function emit(array $argument, array $response): array {
+		$type = trim((string)($argument['type'] ?? ''));
+		$response['stackTrace'][] = 'Emitting CloudEvent type="' . $type . '" source="' . trim((string)($argument['source'] ?? '')) . '"';
 
 		try {
-			$messages = $this->eventService->emitCloudEvent(
-				type: $type,
-				source: $source,
-				subject: $subject,
-				data: $data,
-				userId: $userId
-			);
+			$messages = $this->emitCloudEvent(argument: $argument);
 		} catch (Throwable $e) {
-			$response['level'] = 'ERROR';
-			$response['stackTrace'][] = $response['message'] = 'Emitting the event failed: ' . $e->getMessage();
-			return $response;
+			return $this->failed(response: $response, message: 'Emitting the event failed: ' . $e->getMessage());
 		}
 
 		$response['level'] = 'INFO';
 		$response['stackTrace'][] = $response['message'] = 'Emitted CloudEvent "' . $type . '"; ' . count($messages) . ' subscription message(s) created.';
 
 		return $response;
-	}//end run()
+
+	}//end emit()
+
+	/**
+	 * Hand the event to the bus.
+	 *
+	 * @param array $argument The job arguments, validated.
+	 *
+	 * @return array The subscription messages created.
+	 */
+	private function emitCloudEvent(array $argument): array {
+		return $this->eventService->emitCloudEvent(
+			type: trim((string)($argument['type'] ?? '')),
+			source: trim((string)($argument['source'] ?? '')),
+			subject: $this->optionalString(argument: $argument, key: 'subject'),
+			data: ($this->eventData(argument: $argument) ?? []),
+			userId: $this->optionalString(argument: $argument, key: 'userId')
+		);
+
+	}//end emitCloudEvent()
+
+	/**
+	 * An optional argument as a string, or null when absent.
+	 *
+	 * @param array  $argument The job arguments.
+	 * @param string $key      The argument name.
+	 *
+	 * @return string|null The value.
+	 */
+	private function optionalString(array $argument, string $key): ?string {
+		$value = ($argument[$key] ?? null);
+		if ($value !== null) {
+			return (string)$value;
+		}
+
+		return null;
+
+	}//end optionalString()
+
+	/**
+	 * End the run as an error with a message.
+	 *
+	 * @param array  $response The response so far.
+	 * @param string $message  The message.
+	 *
+	 * @return array The response.
+	 */
+	private function failed(array $response, string $message): array {
+		$response['level'] = 'ERROR';
+		$response['stackTrace'][] = $response['message'] = $message;
+
+		return $response;
+
+	}//end failed()
 }//end class

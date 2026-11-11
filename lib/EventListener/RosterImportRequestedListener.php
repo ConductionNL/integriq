@@ -73,25 +73,40 @@ class RosterImportRequestedListener implements IEventListener {
 		}
 
 		try {
-			$event->setResult(
-				$this->delivery->deliver(
-					systemId: $event->getSystemId(),
-					options: $event->getOptions(),
-					correlationId: $event->getCorrelationId()
-				)
-			);
-			return;
-		} catch (RosterDeliveryException $e) {
-			$code = $e->getErrorCode();
-			$message = $e->getMessage();
+			$event->setResult($this->deliver(event: $event));
 		} catch (Throwable $e) {
-			$code = 'fetch-failed';
-			$message = $e->getMessage();
+			$this->answerFailure(event: $event, exception: $e);
 		}
+	}//end handle()
 
+	/**
+	 * Deliver the asked source's roster.
+	 *
+	 * @param RosterImportRequestedEvent $event The request.
+	 *
+	 * @return array<string,mixed> The delivery service's result.
+	 */
+	private function deliver(RosterImportRequestedEvent $event): array {
+		return $this->delivery->deliver(
+			systemId: $event->getSystemId(),
+			options: $event->getOptions(),
+			correlationId: $event->getCorrelationId()
+		);
+	}//end deliver()
+
+	/**
+	 * Log a failed delivery and answer it as failed.
+	 *
+	 * @param RosterImportRequestedEvent $event     The request.
+	 * @param Throwable                  $exception Why the delivery failed.
+	 *
+	 * @return void
+	 */
+	private function answerFailure(RosterImportRequestedEvent $event, Throwable $exception): void {
+		$failure = ['errorCode' => $this->errorCodeOf(exception: $exception), 'error' => $exception->getMessage()];
 		$this->logger->warning(
 			'roster-delivery.failed',
-			['app' => $event->getSourceApp(), 'source' => $event->getSystemId(), 'errorCode' => $code, 'error' => $message]
+			['app' => $event->getSourceApp(), 'source' => $event->getSystemId()] + $failure
 		);
 
 		$event->setResult(
@@ -100,9 +115,22 @@ class RosterImportRequestedListener implements IEventListener {
 				'status' => 'failed',
 				'systemId' => $event->getSystemId(),
 				'target' => RosterTargetConfigurationInterface::TARGET,
-				'errorCode' => $code,
-				'error' => $message,
-			]
+			] + $failure
 		);
-	}//end handle()
+	}//end answerFailure()
+
+	/**
+	 * The error code of a failed delivery: the refusal's own, else `fetch-failed`.
+	 *
+	 * @param Throwable $exception Why the delivery failed.
+	 *
+	 * @return string The error code.
+	 */
+	private function errorCodeOf(Throwable $exception): string {
+		if ($exception instanceof RosterDeliveryException) {
+			return $exception->getErrorCode();
+		}
+
+		return 'fetch-failed';
+	}//end errorCodeOf()
 }//end class

@@ -1,0 +1,287 @@
+[
+    {
+        "expr": "",
+        "value": {
+            "a": {
+                "b": {
+                    "c": 1,
+                    "n": null
+                },
+                "list": [
+                    {
+                        "x": "first"
+                    },
+                    {
+                        "x": "second"
+                    }
+                ]
+            },
+            "0": "zero",
+            "dotted.key": "d",
+            "e": ""
+        }
+    },
+    {
+        "expr": "  ",
+        "value": {
+            "a": {
+                "b": {
+                    "c": 1,
+                    "n": null
+                },
+                "list": [
+                    {
+                        "x": "first"
+                    },
+                    {
+                        "x": "second"
+                    }
+                ]
+            },
+            "0": "zero",
+            "dotted.key": "d",
+            "e": ""
+        }
+    },
+    {
+        "expr": "$",
+        "value": {
+            "a": {
+                "b": {
+                    "c": 1,
+                    "n": null
+                },
+                "list": [
+                    {
+                        "x": "first"
+                    },
+                    {
+                        "x": "second"
+                    }
+                ]
+            },
+            "0": "zero",
+            "dotted.key": "d",
+            "e": ""
+        }
+    },
+    {
+        "expr": " $ ",
+        "value": {
+            "a": {
+                "b": {
+                    "c": 1,
+                    "n": null
+                },
+                "list": [
+                    {
+                        "x": "first"
+                    },
+                    {
+                        "x": "second"
+                    }
+                ]
+            },
+            "0": "zero",
+            "dotted.key": "d",
+            "e": ""
+        }
+    },
+    {
+        "expr": "$.a",
+        "value": {
+            "b": {
+                "c": 1,
+                "n": null
+            },
+            "list": [
+                {
+                    "x": "first"
+                },
+                {
+                    "x": "second"
+                }
+            ]
+        }
+    },
+    {
+        "expr": "a",
+        "value": {
+            "b": {
+                "c": 1,
+                "n": null
+            },
+            "list": [
+                {
+                    "x": "first"
+                },
+                {
+                    "x": "second"
+                }
+            ]
+        }
+    },
+    {
+        "expr": ".a",
+        "value": {
+            "b": {
+                "c": 1,
+                "n": null
+            },
+            "list": [
+                {
+                    "x": "first"
+                },
+                {
+                    "x": "second"
+                }
+            ]
+        }
+    },
+    {
+        "expr": "$..a",
+        "value": {
+            "b": {
+                "c": 1,
+                "n": null
+            },
+            "list": [
+                {
+                    "x": "first"
+                },
+                {
+                    "x": "second"
+                }
+            ]
+        }
+    },
+    {
+        "expr": "$.a.b.c",
+        "value": 1
+    },
+    {
+        "expr": "$.a.b.n",
+        "value": null
+    },
+    {
+        "expr": "$.a.b.missing",
+        "value": null
+    },
+    {
+        "expr": "$.a.list[1].x",
+        "value": "second"
+    },
+    {
+        "expr": "$.a.list.1.x",
+        "value": "second"
+    },
+    {
+        "expr": "a.list[0]",
+        "value": {
+            "x": "first"
+        }
+    },
+    {
+        "expr": "$[0]",
+        "value": "zero"
+    },
+    {
+        "expr": "0",
+        "value": "zero"
+    },
+    {
+        "expr": "$.a[0]",
+        "value": null
+    },
+    {
+        "expr": "$.a.list[5]",
+        "value": null
+    },
+    {
+        "expr": "$.a.b.c.d",
+        "value": null
+    },
+    {
+        "expr": "$.e",
+        "value": ""
+    },
+    {
+        "expr": "$.e.f",
+        "value": null
+    },
+    {
+        "expr": "a..b",
+        "value": {
+            "c": 1,
+            "n": null
+        }
+    },
+    {
+        "expr": "$.a[x]",
+        "value": null
+    },
+    {
+        "expr": "a.list[-1]",
+        "value": null
+    },
+    {
+        "expr": "$.dotted.key",
+        "value": null
+    },
+    {
+        "expr": "$$.a",
+        "value": null
+    },
+    {
+        "expr": ".",
+        "value": {
+            "a": {
+                "b": {
+                    "c": 1,
+                    "n": null
+                },
+                "list": [
+                    {
+                        "x": "first"
+                    },
+                    {
+                        "x": "second"
+                    }
+                ]
+            },
+            "0": "zero",
+            "dotted.key": "d",
+            "e": ""
+        }
+    },
+    {
+        "expr": "$.",
+        "value": {
+            "a": {
+                "b": {
+                    "c": 1,
+                    "n": null
+                },
+                "list": [
+                    {
+                        "x": "first"
+                    },
+                    {
+                        "x": "second"
+                    }
+                ]
+            },
+            "0": "zero",
+            "dotted.key": "d",
+            "e": ""
+        }
+    },
+    {
+        "expr": "scalar root $.a",
+        "value": null
+    },
+    {
+        "expr": "scalar root $",
+        "value": "text"
+    }
+]

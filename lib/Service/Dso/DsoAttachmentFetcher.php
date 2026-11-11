@@ -47,6 +47,8 @@ use OCA\Integriq\Service\PayloadTooLargeException;
 use OCA\Integriq\Service\Portal\RequestAttachmentFetcherInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -184,7 +186,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 		array $sourceConfiguration,
 		FileService $fileService
 	): array {
-		$refusal = $this->refuseUrl(entry: $entry);
+		$refusal = $this->refuseUrl(entry: $entry, sourceConfiguration: $sourceConfiguration);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -231,13 +233,16 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 	 * The failed entry when the bijlage URL may not be fetched, or null when it may.
 	 *
 	 * The URL comes from the inbound payload and the request carries the
-	 * source's credential, so only https is fetched (no file://, no plain http).
+	 * source's credential, so only https is fetched (no file://, no plain http),
+	 * only from the host and port of the source's `baseUrl`, and never with
+	 * credentials in the URL itself.
 	 *
-	 * @param array $entry The attachment entry.
+	 * @param array $entry               The attachment entry.
+	 * @param array $sourceConfiguration The active DSO source's `configuration`.
 	 *
 	 * @return array|null The terminally failed entry, or null.
 	 */
-	private function refuseUrl(array $entry): ?array {
+	private function refuseUrl(array $entry, array $sourceConfiguration): ?array {
 		$url = (string)($entry['url'] ?? '');
 		if ($url === '') {
 			return $this->failed(entry: $entry, error: 'The bijlage has no URL.', terminal: true);
@@ -247,8 +252,34 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 			return $this->failed(entry: $entry, error: 'Only https bijlage URLs are downloaded.', terminal: true);
 		}
 
+		$origin = $this->originOf(url: (string)($sourceConfiguration['baseUrl'] ?? ''));
+		if ($origin === null || $this->originOf(url: $url) !== $origin) {
+			return $this->failed(entry: $entry, error: 'Only bijlage URLs on the DSO source host are downloaded.', terminal: true);
+		}
+
 		return null;
 	}//end refuseUrl()
+
+	/**
+	 * The `host:port` of an https URL without userinfo, or null when the URL has neither form.
+	 *
+	 * @param string $url The URL.
+	 *
+	 * @return string|null The lowercased origin.
+	 */
+	private function originOf(string $url): ?string {
+		$parts = parse_url($url);
+		if (is_array($parts) === false
+			|| strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+			|| isset($parts['user']) === true
+			|| isset($parts['pass']) === true
+			|| (string)($parts['host'] ?? '') === ''
+		) {
+			return null;
+		}
+
+		return strtolower((string)$parts['host']) . ':' . (int)($parts['port'] ?? 443);
+	}//end originOf()
 
 	/**
 	 * The download size cap: the source's maxFileSize, or the default when unset or not positive.
@@ -284,10 +315,8 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 		);
 		try {
 			$file = $job['fileService']->addFile(
-				objectEntity: $job['request'],
-				fileName: (string)($entry['name'] ?? ''),
-				content: $stream,
-				tags: [self::TAG]
+				target: new FileTarget(object: $job['request']),
+				upload: new FileUpload(fileName: (string)($entry['name'] ?? ''), content: $stream, share: false, tags: [self::TAG])
 			);
 		} finally {
 			if (is_resource($stream) === true) {

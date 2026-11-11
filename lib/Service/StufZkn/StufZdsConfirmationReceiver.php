@@ -109,55 +109,91 @@ class StufZdsConfirmationReceiver implements StufZdsConfirmationReceiverInterfac
 			return $intake['answer'];
 		}
 
-		$root     = $intake['root'];
-		$code     = $intake['code'];
-		$crossRef = $intake['crossRef'];
+		$confirmation = new ZdsConfirmation(root: $intake['root'], code: $intake['code'], crossRef: $intake['crossRef'], rawXml: $rawXml);
 
-		$row = $this->log->findOutbound(referentienummer: $crossRef);
+		$row = $this->log->findOutbound(referentienummer: $confirmation->crossRef);
 		if ($row === null) {
-			$this->logger->warning('StUF-ZDS confirmation: no outbound message {ref}', ['ref' => $crossRef]);
-			return $this->refuse(statusCode: 422, reason: 'validation_failed', root: $root, organisation: '');
+			$this->logger->warning('StUF-ZDS confirmation: no outbound message {ref}', ['ref' => $confirmation->crossRef]);
+			return $this->refuse(statusCode: 422, reason: 'validation_failed', root: $confirmation->root, organisation: '');
 		}
 
+		return $this->answerFor(confirmation: $confirmation, row: $row);
+	}//end receive()
+
+	/**
+	 * Authenticate a confirmation against its outbound message's source, conclude it, and answer.
+	 *
+	 * @param ZdsConfirmation $confirmation The confirmation.
+	 * @param array           $row          The outbound row it concludes.
+	 *
+	 * @return array The answer (ConfirmationAnswer).
+	 */
+	private function answerFor(ZdsConfirmation $confirmation, array $row): array {
 		try {
 			$source = $this->log->source(sourceId: (string)($row['sourceId'] ?? ''));
 			$token  = $this->credentials->usernameToken(sourceConfiguration: (array)($source['configuration'] ?? []));
 		} catch (StufZknProviderException $exception) {
 			$this->logger->error('StUF-ZDS confirmation: source credentials unreadable: {error}', ['error' => $exception->getMessage()]);
-			return $this->refuse(statusCode: 503, reason: 'not_configured', root: $root, organisation: '');
+			return $this->refuse(statusCode: 503, reason: 'not_configured', root: $confirmation->root, organisation: '');
 		}
 
 		$organisation = (string)($source['configuration']['organisatie'] ?? '');
-		$authenticated = $this->authenticated(root: $root, token: $token, source: $source);
-
-		if ($authenticated === false) {
+		if ($this->authenticated(root: $confirmation->root, token: $token, source: $source) === false) {
 			$this->logger->warning('StUF-ZDS confirmation: credentials do not match source {id}', ['id' => ($source['id'] ?? '')]);
-			return $this->refuse(statusCode: 422, reason: 'validation_failed', root: $root, organisation: $organisation);
+			return $this->refuse(statusCode: 422, reason: 'validation_failed', root: $confirmation->root, organisation: $organisation);
 		}
 
-		// The first confirmation concludes the message. A repeat is acknowledged
-		// and changes nothing; a later one with another code (a Fo03 after a
-		// Bv03, or the reverse) is logged, so the owning app never receives two
-		// contradicting conclusions for one message.
+		$this->conclude(confirmation: $confirmation, row: $row);
+
+		return $this->bv03Answer(confirmation: $confirmation, organisation: $organisation);
+	}//end answerFor()
+
+	/**
+	 * Conclude the outbound message with its first confirmation.
+	 *
+	 * The first confirmation concludes the message. A repeat is acknowledged
+	 * and changes nothing; a later one with another code (a Fo03 after a
+	 * Bv03, or the reverse) is logged, so the owning app never receives two
+	 * contradicting conclusions for one message.
+	 *
+	 * @param ZdsConfirmation $confirmation The confirmation.
+	 * @param array           $row          The outbound row.
+	 *
+	 * @return void
+	 */
+	private function conclude(ZdsConfirmation $confirmation, array $row): void {
 		$recorded = (string)($row['confirmation'] ?? '');
 		if ($recorded === '') {
-			$this->record(row: $row, code: $code, rawXml: $rawXml);
-		} else if ($recorded !== $code) {
-			$this->logger->warning(
-				'StUF-ZDS confirmation {code} for {ref} ignored: the message was already concluded by {recorded}',
-				['code' => $code, 'ref' => $crossRef, 'recorded' => $recorded]
-			);
+			$this->record(row: $row, confirmation: $confirmation);
+			return;
 		}
 
+		if ($recorded !== $confirmation->code) {
+			$this->logger->warning(
+				'StUF-ZDS confirmation {code} for {ref} ignored: the message was already concluded by {recorded}',
+				['code' => $confirmation->code, 'ref' => $confirmation->crossRef, 'recorded' => $recorded]
+			);
+		}
+	}//end conclude()
+
+	/**
+	 * The Bv03 that acknowledges an accepted confirmation.
+	 *
+	 * @param ZdsConfirmation $confirmation The confirmation.
+	 * @param string          $organisation This side's organisatie.
+	 *
+	 * @return array The answer (ConfirmationAnswer).
+	 */
+	private function bv03Answer(ZdsConfirmation $confirmation, string $organisation): array {
 		return [
 			'statusCode' => 200,
 			'body' => $this->acks->buildBv03(
-				crossRefnummer: $this->text(xml: $root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="referentienummer"]'),
+				crossRefnummer: $this->text(xml: $confirmation->root, path: '//*[local-name()="stuurgegevens"]/*[local-name()="referentienummer"]'),
 				zenderOrganisation: $organisation,
-				ontvangerOrg: $this->senderOrganisation(root: $root)
+				ontvangerOrg: $this->senderOrganisation(root: $confirmation->root)
 			),
 		];
-	}//end receive()
+	}//end bv03Answer()
 
 	/**
 	 * Check the body and read the envelope's berichtcode and crossRefnummer.
@@ -229,29 +265,51 @@ class StufZdsConfirmationReceiver implements StufZdsConfirmationReceiverInterfac
 	/**
 	 * Store the confirmation on the row and announce the conclusion.
 	 *
-	 * @param array  $row    The outbound row.
-	 * @param string $code   The berichtcode.
-	 * @param string $rawXml The confirmation.
+	 * @param array           $row          The outbound row.
+	 * @param ZdsConfirmation $confirmation The confirmation.
 	 *
 	 * @return void
 	 */
-	private function record(array $row, string $code, string $rawXml): void {
+	private function record(array $row, ZdsConfirmation $confirmation): void {
 		$fout = null;
-		if (str_starts_with($code, 'Fo') === true) {
-			$fout = $this->reader->fault(xml: $rawXml);
+		if (str_starts_with($confirmation->code, 'Fo') === true) {
+			$fout = $this->reader->fault(xml: $confirmation->rawXml);
 		}
 
 		$caseId = null;
 		if ($fout === null) {
-			$caseId = $this->reader->confirmation(xml: $rawXml)['caseIdentification'];
+			$caseId = $this->reader->confirmation(xml: $confirmation->rawXml)['caseIdentification'];
 		}
 
-		$row   = $this->log->confirm(row: $row, berichtcode: $code, fout: $fout, caseIdentification: $caseId);
+		$row   = $this->log->confirm(row: $row, berichtcode: $confirmation->code, fout: $fout, caseIdentification: $caseId);
 		$known = (string)($row['caseIdentification'] ?? '');
 		if ($known === '') {
 			$known = null;
 		}
 
+		$this->announce(
+			row: $row,
+			result: [
+				'success' => ($fout === null),
+				'retrying' => false,
+				'referentienummer' => (string)($row['referentienummer'] ?? ''),
+				'messageId' => (string)($row['id'] ?? ''),
+				'caseIdentification' => $known,
+				'fout' => $fout,
+				'confirmation' => $confirmation->code,
+			]
+		);
+	}//end record()
+
+	/**
+	 * Tell the owning app how its message concluded; a failing listener is logged.
+	 *
+	 * @param array $row    The confirmed outbound row.
+	 * @param array $result The conclusion.
+	 *
+	 * @return void
+	 */
+	private function announce(array $row, array $result): void {
 		try {
 			$this->dispatcher->dispatchTyped(
 				new StufZdsCaseConcludedEvent(
@@ -259,21 +317,13 @@ class StufZdsConfirmationReceiver implements StufZdsConfirmationReceiverInterfac
 					correlationId: (string)($row['correlationId'] ?? ''),
 					operation: (string)($row['operation'] ?? ''),
 					attempts: (int)($row['attempts'] ?? 0),
-					result: [
-						'success' => ($fout === null),
-						'retrying' => false,
-						'referentienummer' => (string)($row['referentienummer'] ?? ''),
-						'messageId' => (string)($row['id'] ?? ''),
-						'caseIdentification' => $known,
-						'fout' => $fout,
-						'confirmation' => $code,
-					]
+					result: $result
 				)
 			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('StUF-ZDS conclusion listener failed: {error}', ['error' => $exception->getMessage()]);
 		}
-	}//end record()
+	}//end announce()
 
 	/**
 	 * A refusal: the HTTP status and a Fo03 that leaks nothing.

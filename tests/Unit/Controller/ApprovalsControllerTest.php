@@ -589,4 +589,77 @@ class ApprovalsControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame($changeSet, $response->getData()['changeSet']);
 	}//end testShowCarriesTheStoredChangeSet()
+
+	/**
+	 * Reject runs the same gate as approve: unauthenticated, outside the action
+	 * matrix (asked for approval.reject), outside the approver group, missing,
+	 * not actionable — each refused before anything is decided.
+	 *
+	 * @return void
+	 */
+	public function testRejectRunsTheSameGateAsApprove(): void {
+		$this->approvalService->expects($this->never())->method('reject');
+		$pending = $this->entity(['status' => 'pending', 'approverGroup' => 'woo-approvers']);
+
+		$anonymous = $this->createMock(IUserSession::class);
+		$anonymous->method('getUser')->willReturn(null);
+		$l = $this->createMock(IL10N::class);
+		$l->method('t')->willReturnArgument(0);
+		$controller = new ApprovalsController('integriq', $this->request, $this->approvalService, $this->createMock(\OCA\Integriq\Service\ApprovalDecisionService::class), $this->actionAuth, $anonymous, $l);
+		$this->assertSame([Http::STATUS_UNAUTHORIZED, ['error' => 'Not authenticated']], [$controller->reject('approval-1')->getStatus(), $controller->reject('approval-1')->getData()]);
+
+		$actions = [];
+		$this->actionAuth->method('requireAction')->willReturnCallback(
+			static function ($user, string $action) use (&$actions): void {
+				$actions[] = $action;
+				if (count($actions) === 1) {
+					throw new OCSForbiddenException('nope');
+				}
+			}
+		);
+		$finds = 0;
+		$this->approvalService->method('find')->willReturnCallback(
+			static function () use (&$finds, $pending): ObjectEntity {
+				$finds++;
+				if ($finds === 1) {
+					throw new ApprovalStateException('no such request', 404);
+				}
+
+				return $pending;
+			}
+		);
+		$this->approvalService->method('isAuthorizedApprover')->willReturnOnConsecutiveCalls(false, true);
+		$this->approvalService->method('assertActionable')->willThrowException(new ApprovalStateException('expired', 409));
+
+		$responses = [];
+		for ($i = 0; $i < 4; $i++) {
+			$response = $this->controller->reject('approval-1');
+			$responses[] = [$response->getStatus(), $response->getData()];
+		}
+
+		$this->assertSame(
+			[
+				[Http::STATUS_FORBIDDEN, ['error' => 'nope']],
+				[404, ['error' => 'no such request']],
+				[Http::STATUS_FORBIDDEN, ['error' => 'You are not a member of this request\'s approver group']],
+				[409, ['error' => 'expired']],
+			],
+			$responses
+		);
+		$this->assertSame(['approval.reject', 'approval.reject', 'approval.reject', 'approval.reject'], $actions);
+
+	}//end testRejectRunsTheSameGateAsApprove()
+
+	/**
+	 * Approve asks the action matrix for approval.approve.
+	 *
+	 * @return void
+	 */
+	public function testApproveAsksForTheApproveAction(): void {
+		$this->actionAuth->expects($this->once())->method('requireAction')->with($this->anything(), 'approval.approve')
+			->willThrowException(new OCSForbiddenException('nope'));
+
+		$this->assertSame(['error' => 'nope'], $this->controller->approve('approval-1')->getData());
+
+	}//end testApproveAsksForTheApproveAction()
 }//end class

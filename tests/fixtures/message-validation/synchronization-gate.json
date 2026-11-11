@@ -1,0 +1,377 @@
+{
+    "no validation": {
+        "finding": null,
+        "calls": []
+    },
+    "blank schema": {
+        "finding": null,
+        "calls": []
+    },
+    "validation not an array": {
+        "finding": null,
+        "calls": []
+    },
+    "source valid": {
+        "finding": null,
+        "calls": [
+            {
+                "checkDeclared": [
+                    {
+                        "messageSchema": "zaak"
+                    },
+                    "response",
+                    {
+                        "ok": true
+                    }
+                ]
+            }
+        ]
+    },
+    "source recorded": {
+        "finding": {
+            "side": "source",
+            "originId": "o-1",
+            "messageSchema": "zaak",
+            "errors": [
+                {
+                    "path": "/field1",
+                    "message": "wrong 1"
+                },
+                {
+                    "path": "/field2",
+                    "message": "wrong 2"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "checkDeclared": [
+                    {
+                        "messageSchema": "zaak"
+                    },
+                    "response",
+                    {
+                        "errors": 2
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[integriq] synchronization let a source message through that does not match its message schema (mode record)",
+                    {
+                        "finding": {
+                            "side": "source",
+                            "originId": "o-1",
+                            "messageSchema": "zaak",
+                            "errors": [
+                                {
+                                    "path": "/field1",
+                                    "message": "wrong 1"
+                                },
+                                {
+                                    "path": "/field2",
+                                    "message": "wrong 2"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "target recorded, no origin": {
+        "finding": {
+            "side": "target",
+            "originId": null,
+            "messageSchema": "zaak",
+            "errors": [
+                {
+                    "path": "/field1",
+                    "message": "wrong 1"
+                },
+                {
+                    "path": "/field2",
+                    "message": "wrong 2"
+                },
+                {
+                    "path": "/field3",
+                    "message": "wrong 3"
+                },
+                {
+                    "path": "/field4",
+                    "message": "wrong 4"
+                },
+                {
+                    "path": "/field5",
+                    "message": "wrong 5"
+                },
+                {
+                    "path": "/field6",
+                    "message": "wrong 6"
+                },
+                {
+                    "path": "/field7",
+                    "message": "wrong 7"
+                },
+                {
+                    "path": "/field8",
+                    "message": "wrong 8"
+                },
+                {
+                    "path": "/field9",
+                    "message": "wrong 9"
+                },
+                {
+                    "path": "/field10",
+                    "message": "wrong 10"
+                },
+                {
+                    "path": "/field11",
+                    "message": "wrong 11"
+                },
+                {
+                    "path": "/field12",
+                    "message": "wrong 12"
+                },
+                {
+                    "path": "/field13",
+                    "message": "wrong 13"
+                },
+                {
+                    "path": "/field14",
+                    "message": "wrong 14"
+                },
+                {
+                    "path": "/field15",
+                    "message": "wrong 15"
+                },
+                {
+                    "path": "/field16",
+                    "message": "wrong 16"
+                },
+                {
+                    "path": "/field17",
+                    "message": "wrong 17"
+                },
+                {
+                    "path": "/field18",
+                    "message": "wrong 18"
+                },
+                {
+                    "path": "/field19",
+                    "message": "wrong 19"
+                },
+                {
+                    "path": "/field20",
+                    "message": "wrong 20"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "checkDeclared": [
+                    {
+                        "messageSchema": "zaak",
+                        "mode": "record"
+                    },
+                    "request",
+                    {
+                        "errors": 25
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[integriq] synchronization let a target message through that does not match its message schema (mode record)",
+                    {
+                        "finding": {
+                            "side": "target",
+                            "originId": null,
+                            "messageSchema": "zaak",
+                            "errors": [
+                                {
+                                    "path": "/field1",
+                                    "message": "wrong 1"
+                                },
+                                {
+                                    "path": "/field2",
+                                    "message": "wrong 2"
+                                },
+                                {
+                                    "path": "/field3",
+                                    "message": "wrong 3"
+                                },
+                                {
+                                    "path": "/field4",
+                                    "message": "wrong 4"
+                                },
+                                {
+                                    "path": "/field5",
+                                    "message": "wrong 5"
+                                },
+                                {
+                                    "path": "/field6",
+                                    "message": "wrong 6"
+                                },
+                                {
+                                    "path": "/field7",
+                                    "message": "wrong 7"
+                                },
+                                {
+                                    "path": "/field8",
+                                    "message": "wrong 8"
+                                },
+                                {
+                                    "path": "/field9",
+                                    "message": "wrong 9"
+                                },
+                                {
+                                    "path": "/field10",
+                                    "message": "wrong 10"
+                                },
+                                {
+                                    "path": "/field11",
+                                    "message": "wrong 11"
+                                },
+                                {
+                                    "path": "/field12",
+                                    "message": "wrong 12"
+                                },
+                                {
+                                    "path": "/field13",
+                                    "message": "wrong 13"
+                                },
+                                {
+                                    "path": "/field14",
+                                    "message": "wrong 14"
+                                },
+                                {
+                                    "path": "/field15",
+                                    "message": "wrong 15"
+                                },
+                                {
+                                    "path": "/field16",
+                                    "message": "wrong 16"
+                                },
+                                {
+                                    "path": "/field17",
+                                    "message": "wrong 17"
+                                },
+                                {
+                                    "path": "/field18",
+                                    "message": "wrong 18"
+                                },
+                                {
+                                    "path": "/field19",
+                                    "message": "wrong 19"
+                                },
+                                {
+                                    "path": "/field20",
+                                    "message": "wrong 20"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "other side": {
+        "finding": {
+            "side": "elsewhere",
+            "originId": "o-2",
+            "messageSchema": "zaak",
+            "errors": [
+                {
+                    "path": "/field1",
+                    "message": "wrong 1"
+                }
+            ]
+        },
+        "calls": [
+            {
+                "checkDeclared": [
+                    {
+                        "messageSchema": "zaak"
+                    },
+                    "request",
+                    {
+                        "errors": 1
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[integriq] synchronization let a elsewhere message through that does not match its message schema (mode record)",
+                    {
+                        "finding": {
+                            "side": "elsewhere",
+                            "originId": "o-2",
+                            "messageSchema": "zaak",
+                            "errors": [
+                                {
+                                    "path": "/field1",
+                                    "message": "wrong 1"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "source refused": {
+        "refused": "The source message does not match message schema zaak: /field1: wrong 1; /field2: wrong 2; /field3: wrong 3",
+        "calls": [
+            {
+                "checkDeclared": [
+                    {
+                        "messageSchema": "zaak",
+                        "mode": "refuse"
+                    },
+                    "response",
+                    {
+                        "errors": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "target refused": {
+        "refused": "The target message does not match message schema 7: /field1: wrong 1",
+        "calls": [
+            {
+                "checkDeclared": [
+                    {
+                        "messageSchema": 7,
+                        "mode": "refuse"
+                    },
+                    "request",
+                    {
+                        "errors": 1
+                    }
+                ]
+            }
+        ]
+    },
+    "refuse but valid": {
+        "finding": null,
+        "calls": [
+            {
+                "checkDeclared": [
+                    {
+                        "messageSchema": "zaak",
+                        "mode": "refuse"
+                    },
+                    "request",
+                    {
+                        "ok": true
+                    }
+                ]
+            }
+        ]
+    }
+}

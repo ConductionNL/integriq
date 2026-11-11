@@ -1,0 +1,650 @@
+{
+    "no contract": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "contract read throws": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "log": [
+                    "warning",
+                    "ownership.read-failed",
+                    {
+                        "schema": "synchronization_contract",
+                        "error": "store down"
+                    }
+                ]
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "contract of another target": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "source owned": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "source",
+            "source": "src-1",
+            "originId": "o-9",
+            "lastSeenAt": "2026-01-02T03:04:05+00:00",
+            "lastSeenUnknown": false,
+            "absentAtSource": true,
+            "endedAt": "2026-02-01",
+            "synchronizationId": "s-1",
+            "synchronizationName": "Zaken"
+        },
+        "array": {
+            "mode": "source",
+            "source": "src-1",
+            "originId": "o-9",
+            "lastSeenAt": "2026-01-02T03:04:05+00:00",
+            "lastSeen": "known",
+            "absentAtSource": true,
+            "endedAt": "2026-02-01",
+            "synchronization": {
+                "id": "s-1",
+                "name": "Zaken"
+            }
+        }
+    },
+    "mirror declared": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "source with local additions",
+            "source": "src-1",
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": true,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": "s-1",
+            "synchronizationName": "Zaken"
+        },
+        "array": {
+            "mode": "source with local additions",
+            "source": "src-1",
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "unknown",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": "s-1",
+                "name": "Zaken"
+            }
+        }
+    },
+    "local declared": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "unknown mode": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            },
+            {
+                "log": [
+                    "warning",
+                    "ownership.unknown-mode",
+                    {
+                        "declared": "owned-by-mars",
+                        "synchronization": 4
+                    }
+                ]
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "unknown non-scalar mode": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            },
+            {
+                "log": [
+                    "warning",
+                    "ownership.unknown-mode",
+                    {
+                        "declared": "array",
+                        "synchronization": "s-1"
+                    }
+                ]
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "empty mode": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "source",
+            "source": null,
+            "originId": "o-9",
+            "lastSeenAt": "2026-01-02T03:04:05+00:00",
+            "lastSeenUnknown": false,
+            "absentAtSource": true,
+            "endedAt": "2026-02-01",
+            "synchronizationId": "s-1",
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "source",
+            "source": null,
+            "originId": "o-9",
+            "lastSeenAt": "2026-01-02T03:04:05+00:00",
+            "lastSeen": "known",
+            "absentAtSource": true,
+            "endedAt": "2026-02-01",
+            "synchronization": {
+                "id": "s-1",
+                "name": null
+            }
+        }
+    },
+    "config not an array": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "source",
+            "source": null,
+            "originId": "o-9",
+            "lastSeenAt": "2026-01-02T03:04:05+00:00",
+            "lastSeenUnknown": false,
+            "absentAtSource": true,
+            "endedAt": "2026-02-01",
+            "synchronizationId": "s-1",
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "source",
+            "source": null,
+            "originId": "o-9",
+            "lastSeenAt": "2026-01-02T03:04:05+00:00",
+            "lastSeen": "known",
+            "absentAtSource": true,
+            "endedAt": "2026-02-01",
+            "synchronization": {
+                "id": "s-1",
+                "name": null
+            }
+        }
+    },
+    "no synchronization id": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "synchronization missing": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "synchronization throws": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            },
+            {
+                "log": [
+                    "warning",
+                    "ownership.read-failed",
+                    {
+                        "schema": "synchronization",
+                        "error": "store down"
+                    }
+                ]
+            }
+        ],
+        "state": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": false,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": null,
+            "synchronizationName": null
+        },
+        "array": {
+            "mode": "local",
+            "source": null,
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "known",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": null,
+                "name": null
+            }
+        }
+    },
+    "non-array entries": {
+        "calls": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization_contract",
+                        "targetId": "t-1"
+                    }
+                }
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "synchronization",
+                        "uuid": "s-1"
+                    }
+                }
+            }
+        ],
+        "state": {
+            "mode": "source",
+            "source": "src-1",
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeenUnknown": true,
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronizationId": "s-1",
+            "synchronizationName": "Zaken"
+        },
+        "array": {
+            "mode": "source",
+            "source": "src-1",
+            "originId": null,
+            "lastSeenAt": null,
+            "lastSeen": "unknown",
+            "absentAtSource": false,
+            "endedAt": null,
+            "synchronization": {
+                "id": "s-1",
+                "name": "Zaken"
+            }
+        }
+    }
+}

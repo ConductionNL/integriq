@@ -49,33 +49,58 @@ class ConnectorTemplateLibrary {
 	public function cards(): array {
 		$cards = [];
 		foreach ($this->templates() as $template) {
-			$meta = $template['x-template'];
-			$source = $template['source'];
-			$slug = (string)$meta['slug'];
-
-			$card = [
-				'slug' => 'template:' . $slug,
-				'name' => (string)($source['name'] ?? $meta['system'] ?? $slug),
-				'description' => (string)($source['description'] ?? ''),
-				'category' => (string)($meta['category'] ?? 'Integrations'),
-				'kind' => 'source-template',
-				'mechanism' => 'mock-seeded',
-				'flagKey' => '',
-				'sourceTemplateSlug' => $slug,
-				'standards' => [(string)($meta['standard'] ?? 'REST API')],
-				'sourceType' => (string)($source['type'] ?? 'api'),
-				'tier' => (string)($meta['tier'] ?? 'curated'),
-				'verifiedAgainst' => (string)($meta['verifiedAgainst'] ?? ''),
-			];
-			if (empty($meta['snapshotDate']) === false) {
-				$card['snapshotDate'] = (string)$meta['snapshotDate'];
-			}
-
-			$cards[] = $card;
-		}//end foreach
+			$cards[] = self::cardOf(meta: $template['x-template'], source: $template['source']);
+		}
 
 		return $cards;
 	}//end cards()
+
+	/**
+	 * One template as a catalogue card.
+	 *
+	 * @param array<string, mixed> $meta   The template's `x-template` block.
+	 * @param array<string, mixed> $source The template's source.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	private static function cardOf(array $meta, array $source): array {
+		$slug = (string)$meta['slug'];
+		$card = [
+			'slug' => 'template:' . $slug,
+			'name' => (string)($source['name'] ?? $meta['system'] ?? $slug),
+			'description' => (string)($source['description'] ?? ''),
+			'category' => (string)($meta['category'] ?? 'Integrations'),
+			'kind' => 'source-template',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => $slug,
+			'standards' => [(string)($meta['standard'] ?? 'REST API')],
+			'sourceType' => (string)($source['type'] ?? 'api'),
+			'tier' => (string)($meta['tier'] ?? 'curated'),
+			'verifiedAgainst' => (string)($meta['verifiedAgainst'] ?? ''),
+		];
+
+		return $card + self::snapshotOf(meta: $meta);
+	}//end cardOf()
+
+	/**
+	 * The card's snapshot date, when the template records one.
+	 *
+	 * @param array<string, mixed> $meta The template's `x-template` block.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	private static function snapshotOf(array $meta): array {
+		if (empty($meta['snapshotDate']) === true) {
+			return [];
+		}
+
+		return ['snapshotDate' => (string)$meta['snapshotDate']];
+	}//end snapshotOf()
 
 	/**
 	 * The source payload Instantiate creates for a template, or null.
@@ -114,18 +139,27 @@ class ConnectorTemplateLibrary {
 		$templates = [];
 		foreach ($files as $file) {
 			$data = json_decode((string)file_get_contents($file), true);
-			// The allow-list and the snapshot index are not templates.
-			if (is_array($data) === false
-				|| is_array($data['x-template'] ?? null) === false
-				|| is_array($data['source'] ?? null) === false
-				|| (string)($data['x-template']['slug'] ?? '') === ''
-			) {
-				continue;
+			if (self::isTemplate(data: $data) === true) {
+				$templates[] = $data;
 			}
-
-			$templates[] = $data;
 		}
 
 		return $templates;
 	}//end templates()
+
+	/**
+	 * Whether a decoded file is a template: the allow-list and the snapshot index are not.
+	 *
+	 * @param mixed $data The decoded file.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+	 */
+	private static function isTemplate(mixed $data): bool {
+		return is_array($data) === true
+			&& is_array($data['x-template'] ?? null) === true
+			&& is_array($data['source'] ?? null) === true
+			&& (string)($data['x-template']['slug'] ?? '') !== '';
+	}//end isTemplate()
 }//end class

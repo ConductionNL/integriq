@@ -26,7 +26,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use InvalidArgumentException;
+use OCA\Integriq\Service\ListenerSchemaResolver;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
+use OCA\Integriq\Service\Ownership\OwnershipReadFailed;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCP\EventDispatcher\Event;
@@ -45,6 +47,11 @@ use Throwable;
  * OwnershipController wrote onto the object (a reason was given), and the
  * synchronisation engine's own delete, because the source removing its record
  * is the owner acting, not somebody local.
+ *
+ * When the guard itself fails, a record integriq maintains (one in integriq's
+ * register, or one a synchronisation contract was found for) is refused; any
+ * other record is let through with a warning, so a guard fault never blocks
+ * deletes in registers integriq has no stake in.
  *
  * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
  *
@@ -65,11 +72,13 @@ class SourceOwnedDeleteGuardListener implements IEventListener {
 	 * @param RecordOwnershipServiceInterface $ownership Answers who owns the record.
 	 * @param LocalDeleteGuardInterface $guard Decides, and words the refusal.
 	 * @param LoggerInterface $logger Names a guard that failed.
+	 * @param ListenerSchemaResolver $schemas Tells integriq's own register apart.
 	 */
 	public function __construct(
 		private readonly RecordOwnershipServiceInterface $ownership,
 		private readonly LocalDeleteGuardInterface $guard,
 		private readonly LoggerInterface $logger,
+		private readonly ListenerSchemaResolver $schemas,
 	) {
 
 	}//end __construct()
@@ -120,7 +129,7 @@ class SourceOwnedDeleteGuardListener implements IEventListener {
 				return;
 			}
 
-			$ownership = $this->ownership->forObject($uuid);
+			$ownership = $this->ownership->forObjectOrFail($uuid);
 			$this->guard->guard($ownership);
 		} catch (InvalidArgumentException $refusal) {
 			$event->setErrors(
@@ -132,14 +141,45 @@ class SourceOwnedDeleteGuardListener implements IEventListener {
 			);
 			$event->stopPropagation();
 		} catch (Throwable $failure) {
-			// A guard that cannot read the contracts must not become the
-			// reason nothing on the instance can be deleted.
-			$this->logger->warning(
-				'[integriq] the source-owned delete guard failed, allowing the delete: ' . $failure->getMessage(),
-				['exception' => $failure]
-			);
+			$this->onGuardFailure(event: $event, failure: $failure);
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Refuse the delete of a record integriq maintains when the guard failed.
+	 *
+	 * @param ObjectDeletingEvent $event   The event.
+	 * @param Throwable           $failure Why the guard failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 */
+	private function onGuardFailure(ObjectDeletingEvent $event, Throwable $failure): void {
+		$maintained = ($failure instanceof OwnershipReadFailed && $failure->contractFound === true)
+			|| $this->schemas->isOwnRegister(entity: $event->getObject()) === true;
+		if ($maintained === false) {
+			$this->logger->warning(
+				'[integriq] the source-owned delete guard failed on a record outside integriq, allowing the delete: ' . $failure->getMessage(),
+				['exception' => $failure]
+			);
+			return;
+		}
+
+		$this->logger->error(
+			'[integriq] the source-owned delete guard failed, refusing the delete: ' . $failure->getMessage(),
+			['exception' => $failure]
+		);
+		$event->setErrors(
+			[
+				'code' => 'source_owned_unverified',
+				'message' => 'The ownership of this record could not be checked, so it was not deleted. Try again later.',
+				'status' => 503,
+			]
+		);
+		$event->stopPropagation();
+
+	}//end onGuardFailure()
 
 }//end class

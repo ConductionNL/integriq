@@ -9,7 +9,7 @@
  * shared task service by `ApprovalService`) and then suspends the run exactly
  * the way `openregister.await-signal` does: a `FlowSuspension` with a
  * heartbeat, answered either by a delivered signal
- * (`FlowRunSignalService::signalAs()` from `ApprovalsController`) or — when
+ * (`FlowRunSignalService::answerByUuid()` from `ApprovalsController`) or — when
  * that delivery was lost — by the heartbeat re-reading the approval_request
  * itself. The record is the authority; the signal is the fast path.
  *
@@ -59,6 +59,7 @@ use DateTime;
 use OCA\Integriq\Kernel\FlowNodeIds;
 use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
@@ -117,7 +118,7 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	 * The context key carrying the engine run's uuid.
 	 *
 	 * Mirrors `FlowRunContext::CONTEXT_RUN`. The uuid is what the approval
-	 * resolution later addresses through `FlowRunSignalService::signalAs()`,
+	 * resolution later addresses through `FlowRunSignalService::answerByUuid()`,
 	 * so a run that cannot name itself cannot be approved and is refused.
 	 *
 	 * @var string
@@ -304,9 +305,7 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	/**
 	 * Ask, suspend, and carry the decision onto the items when it arrives.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (signal payload, resume slot, run uuid).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The items, each carrying the decision under the signal key.
 	 *
@@ -316,7 +315,11 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		$this->validateConfig(config: $config);
 
 		$decision = $this->decisionFrom(context: $context);

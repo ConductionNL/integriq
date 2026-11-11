@@ -1,0 +1,183 @@
+{
+    "unknown operation": {
+        "status": 404,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"message\":\"The case system has no operation \\\"delete-case\\\". It answers: read-case, list-documents, read-document, add-document, create-case.\"}",
+        "calls": []
+    },
+    "no body": {
+        "status": 400,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"message\":\"read-case needs a JSON object as its body.\"}",
+        "calls": []
+    },
+    "body not json": {
+        "status": 400,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"message\":\"read-case needs a JSON object as its body.\"}",
+        "calls": []
+    },
+    "json body": {
+        "status": 200,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"ok\":\"zgw\",\"\u00e9\":\"\u00fc/\"}",
+        "calls": [
+            {
+                "zgw": [
+                    "read-case",
+                    {
+                        "id": "Z-1"
+                    },
+                    {
+                        "zrcUrl": "https://zrc.example.test"
+                    },
+                    "Zaken"
+                ]
+            }
+        ]
+    },
+    "string body": {
+        "status": 200,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"ok\":\"zgw\",\"\u00e9\":\"\u00fc/\"}",
+        "calls": [
+            {
+                "zgw": [
+                    "list-documents",
+                    {
+                        "id": "Z-1"
+                    },
+                    {
+                        "zrcUrl": "https://zrc.example.test"
+                    },
+                    "Zaken"
+                ]
+            }
+        ]
+    },
+    "refused": {
+        "status": 404,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"message\":\"Zaak niet gevonden\"}",
+        "calls": [
+            {
+                "zgw": [
+                    "read-document",
+                    {
+                        "refuse": true
+                    },
+                    {
+                        "zrcUrl": "https://zrc.example.test"
+                    },
+                    "Zaken"
+                ]
+            }
+        ]
+    },
+    "mock true": {
+        "status": 200,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"ok\":\"mock\"}",
+        "calls": [
+            {
+                "mock": [
+                    "create-case",
+                    {
+                        "a": 1
+                    }
+                ]
+            }
+        ]
+    },
+    "mock text": {
+        "status": 200,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"ok\":\"mock\"}",
+        "calls": [
+            {
+                "mock": [
+                    "add-document",
+                    {
+                        "a": 1
+                    }
+                ]
+            }
+        ]
+    },
+    "mock false text": {
+        "status": 200,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"ok\":\"zgw\",\"\u00e9\":\"\u00fc/\"}",
+        "calls": [
+            {
+                "zgw": [
+                    "add-document",
+                    {
+                        "a": 1
+                    },
+                    {
+                        "mock": "false"
+                    },
+                    "7"
+                ]
+            }
+        ]
+    },
+    "configuration not an array": {
+        "status": 200,
+        "headers": {
+            "Content-Type": [
+                "application/json"
+            ]
+        },
+        "body": "{\"ok\":\"zgw\",\"\u00e9\":\"\u00fc/\"}",
+        "calls": [
+            {
+                "zgw": [
+                    "read-case",
+                    [],
+                    [
+                        "x"
+                    ],
+                    ""
+                ]
+            }
+        ]
+    }
+}

@@ -63,6 +63,13 @@ class NextcloudFormsEventListener implements IEventListener {
 	private const SOURCE = '/nextcloud/forms';
 
 	/**
+	 * CloudEvent type of a form submission.
+	 *
+	 * @var string
+	 */
+	private const TYPE = 'com.nextcloud.forms.submission.created';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param EventServiceInterface $eventService Service for managing CloudEvents.
@@ -97,42 +104,83 @@ class NextcloudFormsEventListener implements IEventListener {
 				return;
 			}
 
-			$form = $event->getForm();
-			$formId = (string)$form->getId();
-
-			$submission = null;
-			if (method_exists($event, 'getWebhookSerializable') === true) {
-				$submission = ($event->getWebhookSerializable()['submission'] ?? null);
-			}
-
-			$formTitle = null;
-			if (method_exists($form, 'getTitle') === true) {
-				$formTitle = $form->getTitle();
-			}
-
-			$this->eventService->handleNextcloudEvent(
-				type: 'com.nextcloud.forms.submission.created',
-				payload: [
-					'source' => self::SOURCE,
-					'subject' => $formId,
-					'data' => [
-						'formId' => $formId,
-						'formTitle' => $formTitle,
-						'submission' => $submission,
-					],
-				]
-			);
+			$this->eventService->handleNextcloudEvent(type: self::TYPE, payload: $this->payloadOf(form: $event->getForm(), event: $event));
 		} catch (\Throwable $e) {
 			// Broad catch is deliberate: this listener runs synchronously
 			// inside the Forms submission operation that triggered it.
-			$this->logger->error(
-				'Failed to process Nextcloud Forms submission event: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-					'event' => get_class($event),
-				]
-			);
-		}//end try
+			$this->logFailure(exception: $e, event: $event);
+		}
 
 	}//end handle()
+
+	/**
+	 * The CloudEvent payload of a submission.
+	 *
+	 * @param object $form  The submitted-to form.
+	 * @param Event  $event The form submitted event.
+	 *
+	 * @return array<string,mixed> The payload.
+	 */
+	private function payloadOf(object $form, Event $event): array {
+		$formId = (string)$form->getId();
+		$submission = $this->submissionOf(event: $event);
+
+		return [
+			'source' => self::SOURCE,
+			'subject' => $formId,
+			'data' => [
+				'formId' => $formId,
+				'formTitle' => $this->titleOf(form: $form),
+				'submission' => $submission,
+			],
+		];
+	}//end payloadOf()
+
+	/**
+	 * The submission the event serializes for webhooks, if it does.
+	 *
+	 * @param Event $event The form submitted event.
+	 *
+	 * @return mixed The submission, or null.
+	 */
+	private function submissionOf(Event $event): mixed {
+		if (method_exists($event, 'getWebhookSerializable') === true) {
+			return ($event->getWebhookSerializable()['submission'] ?? null);
+		}
+
+		return null;
+	}//end submissionOf()
+
+	/**
+	 * The form's title, if the form has one.
+	 *
+	 * @param object $form The form.
+	 *
+	 * @return mixed The title, or null.
+	 */
+	private function titleOf(object $form): mixed {
+		if (method_exists($form, 'getTitle') === true) {
+			return $form->getTitle();
+		}
+
+		return null;
+	}//end titleOf()
+
+	/**
+	 * Log a submission event that could not be processed.
+	 *
+	 * @param \Throwable $exception Why it failed.
+	 * @param Event      $event     The submission event.
+	 *
+	 * @return void
+	 */
+	private function logFailure(\Throwable $exception, Event $event): void {
+		$this->logger->error(
+			'Failed to process Nextcloud Forms submission event: ' . $exception->getMessage(),
+			[
+				'exception' => $exception,
+				'event' => get_class($event),
+			]
+		);
+	}//end logFailure()
 }//end class

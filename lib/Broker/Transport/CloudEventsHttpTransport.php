@@ -109,12 +109,50 @@ class CloudEventsHttpTransport implements BrokerTransportInterface {
 			);
 		}
 
+		$url = $this->sinkUrl(baseUrl: $baseUrl, topic: $publication->getTopic());
+		$options = $this->requestOptions(publication: $publication, configuration: $configuration);
+
+		try {
+			$response = $this->clientService->newClient()->post($url, $options);
+		} catch (Throwable $exception) {
+			return BrokerResult::refused(
+				self::BROKER_ID,
+				'The sink refused the event: ' . $exception->getMessage()
+			);
+		}
+
+		return $this->answered(statusCode: $response->getStatusCode(), publication: $publication);
+
+	}//end publish()
+
+	/**
+	 * The sink URL: the base URL, then the topic as a path when there is one.
+	 *
+	 * @param string $baseUrl The configured sink base URL.
+	 * @param string $topic   The publication's topic, or ''.
+	 *
+	 * @return string
+	 */
+	private function sinkUrl(string $baseUrl, string $topic): string {
 		$url = rtrim($baseUrl, '/');
-		$topic = $publication->getTopic();
 		if ($topic !== '') {
 			$url .= '/' . ltrim($topic, '/');
 		}
 
+		return $url;
+
+	}//end sinkUrl()
+
+	/**
+	 * The rendered event as the POST options: headers (with the bearer token, then the
+	 * publication's own headers on top), body and timeout.
+	 *
+	 * @param BrokerPublication   $publication   The publication.
+	 * @param array<string,mixed> $configuration The subscription's configuration, for the `token`.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function requestOptions(BrokerPublication $publication, array $configuration): array {
 		$rendered = $this->binding->render(
 			cloudEvent: $publication->getCloudEvent(),
 			contentMode: $publication->getContentMode()
@@ -126,23 +164,23 @@ class CloudEventsHttpTransport implements BrokerTransportInterface {
 			$headers['Authorization'] = 'Bearer ' . $token;
 		}
 
-		try {
-			$response = $this->clientService->newClient()->post(
-				$url,
-				[
-					'headers' => array_merge($headers, $publication->getHeaders()),
-					'body' => $rendered['body'],
-					'timeout' => 30,
-				]
-			);
-		} catch (Throwable $exception) {
-			return BrokerResult::refused(
-				self::BROKER_ID,
-				'The sink refused the event: ' . $exception->getMessage()
-			);
-		}
+		return [
+			'headers' => array_merge($headers, $publication->getHeaders()),
+			'body' => $rendered['body'],
+			'timeout' => 30,
+		];
 
-		$statusCode = $response->getStatusCode();
+	}//end requestOptions()
+
+	/**
+	 * The result for the status the sink answered.
+	 *
+	 * @param int               $statusCode  The HTTP status.
+	 * @param BrokerPublication $publication The publication.
+	 *
+	 * @return BrokerResult Published for a 2xx, refused with the status otherwise.
+	 */
+	private function answered(int $statusCode, BrokerPublication $publication): BrokerResult {
 		if ($statusCode < 200 || $statusCode >= 300) {
 			return BrokerResult::refused(
 				self::BROKER_ID,
@@ -153,6 +191,6 @@ class CloudEventsHttpTransport implements BrokerTransportInterface {
 
 		return BrokerResult::published(self::BROKER_ID, $publication->getEventId());
 
-	}//end publish()
+	}//end answered()
 
 }//end class

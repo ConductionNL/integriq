@@ -107,25 +107,13 @@ class FlagSourceSecretsWriteOnly implements IRepairStep {
 				return;
 			}
 
-			$changed = false;
-			foreach (self::SECRET_FIELDS as $field) {
-				if (isset($properties[$field]) === false || is_array($properties[$field]) === false) {
-					continue;
-				}
-
-				if (($properties[$field]['writeOnly'] ?? false) !== true) {
-					$properties[$field]['writeOnly'] = true;
-
-					$changed = true;
-				}
-			}
-
-			if ($changed === false) {
+			$flagged = $this->withWriteOnlySecrets(properties: $properties);
+			if ($flagged === null) {
 				$output->info('Integriq: source-secret write-only flags already set.');
 				return;
 			}
 
-			$schema->setProperties($properties);
+			$schema->setProperties($flagged);
 			$schemaMapper->update($schema);
 
 			$output->info('Integriq: flagged source credential fields (apikey/secret/password/jwt/authenticationConfig) write-only.');
@@ -139,4 +127,45 @@ class FlagSourceSecretsWriteOnly implements IRepairStep {
 			);
 		}//end try
 	}//end run()
+	/**
+	 * The properties with every credential field present as a map flagged
+	 * write-only, or null when every one already was.
+	 *
+	 * @param array<string,mixed> $properties The live schema properties.
+	 *
+	 * @return array<string,mixed>|null The flagged properties, or null when nothing changed.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+	 */
+	private function withWriteOnlySecrets(array $properties): ?array {
+		$changed = false;
+		foreach (self::SECRET_FIELDS as $field) {
+			if ($this->lacksWriteOnly(definition: ($properties[$field] ?? null)) === true) {
+				$properties[$field]['writeOnly'] = true;
+
+				$changed = true;
+			}
+		}
+
+		if ($changed === false) {
+			return null;
+		}
+
+		return $properties;
+
+	}//end withWriteOnlySecrets()
+
+	/**
+	 * Whether a field's definition is a map not yet flagged write-only.
+	 *
+	 * @param mixed $definition The field's schema definition, or null when absent.
+	 *
+	 * @return boolean True when it must be flagged.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+	 */
+	private function lacksWriteOnly(mixed $definition): bool {
+		return is_array($definition) === true && ($definition['writeOnly'] ?? false) !== true;
+
+	}//end lacksWriteOnly()
 }//end class

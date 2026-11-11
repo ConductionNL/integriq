@@ -37,8 +37,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Oso;
 
 use OCA\Integriq\Exception\OsoTranslationException;
+use OCA\Integriq\Service\Stuf\RetourAcknowledgementReader;
+use OCA\Integriq\Service\Stuf\RetourEnvelopeRefusedException;
 use OCA\Integriq\Service\Stuf\StufXmlParser;
-use SimpleXMLElement;
 
 /**
  * Export retour XML envelope -> plain acknowledgement status update.
@@ -46,13 +47,6 @@ use SimpleXMLElement;
  * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
  */
 class OsoAcknowledgementTranslator {
-
-	/**
-	 * The signaalcode value meaning "accepted, no correction needed".
-	 *
-	 * @var string
-	 */
-	private const SIGNAALCODE_ACCEPTED = '0';
 
 	/**
 	 * Constructor.
@@ -77,63 +71,10 @@ class OsoAcknowledgementTranslator {
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function translate(string $xml): array {
-		$root = $this->parseXml(xml: $xml);
-
-		$kenmerk = trim((string)($root->stuurgegevens->kenmerk ?? ''));
-		if ($kenmerk === '') {
-			throw new OsoTranslationException(
-				message: 'Retour envelope is missing stuurgegevens.kenmerk — refusing to resolve an unrelated message.'
-			);
+		try {
+			return (new RetourAcknowledgementReader(xmlParser: $this->xmlParser))->read(xml: $xml);
+		} catch (RetourEnvelopeRefusedException $exception) {
+			throw new OsoTranslationException(message: $exception->getMessage());
 		}
-
-		$signaalcode = trim((string)($root->stuurgegevens->signaalcode ?? ''));
-		$omschrijving = $this->nullableText(body: ($root->body ?? new SimpleXMLElement('<body/>')), field: 'omschrijving');
-
-		return [
-			'kenmerk' => $kenmerk,
-			'signaalcode' => $signaalcode,
-			'signaalOmschrijving' => $omschrijving,
-			'accepted' => ($signaalcode === self::SIGNAALCODE_ACCEPTED),
-		];
 	}//end translate()
-
-	/**
-	 * Read an optional body field, returning null instead of an empty string
-	 * when absent.
-	 *
-	 * @param SimpleXMLElement $body The retour's `<body>` element.
-	 * @param string $field The field name to read.
-	 *
-	 * @return string|null The trimmed value, or null when absent/empty.
-	 */
-	private function nullableText(SimpleXMLElement $body, string $field): ?string {
-		$value = trim((string)($body->{$field} ?? ''));
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end nullableText()
-
-	/**
-	 * Safely parse the retour XML via the shared, XXE-hardened StufXmlParser.
-	 *
-	 * @param string $xml The raw retour envelope XML.
-	 *
-	 * @return SimpleXMLElement The parsed root element.
-	 *
-	 * @throws OsoTranslationException When the XML is empty or malformed.
-	 */
-	private function parseXml(string $xml): SimpleXMLElement {
-		if (trim($xml) === '') {
-			throw new OsoTranslationException(message: 'Retour envelope is empty.');
-		}
-
-		$root = $this->xmlParser->parse(xml: $xml);
-		if ($root === null) {
-			throw new OsoTranslationException(message: 'Retour envelope is not well-formed XML.');
-		}
-
-		return $root;
-	}//end parseXml()
 }//end class
