@@ -108,51 +108,88 @@ class ZgwRegistryBinding implements ZgwRegistryBindingInterface {
 		$kind = (string)($binding['kind'] ?? self::KIND_OPENREGISTER);
 
 		if ($kind === self::KIND_OPENREGISTER) {
-			$this->markUsable(usable: true);
-
-			return ['ok' => true, 'message' => 'The binding resolves to OpenRegister on this instance.', 'binding' => $binding];
+			return $this->verdict(binding: $binding, outcome: ['ok' => true, 'message' => 'The binding resolves to OpenRegister on this instance.']);
 		}
 
 		$baseUrl = (string)($binding['baseUrl'] ?? '');
 		if ($baseUrl === '') {
-			$this->markUsable(usable: false);
-
-			return ['ok' => false, 'message' => 'An external ZGW binding needs a base URL.', 'binding' => $binding];
+			return $this->verdict(binding: $binding, outcome: ['ok' => false, 'message' => 'An external ZGW binding needs a base URL.']);
 		}
 
+		return $this->probe(binding: $binding, baseUrl: $baseUrl);
+	}//end test()
+
+	/**
+	 * Ask an external registry for its zaken and judge the answer.
+	 *
+	 * @param array  $binding The binding.
+	 * @param string $baseUrl Its base URL.
+	 *
+	 * @return array{ok: bool, message: string, binding: array} The verdict.
+	 */
+	private function probe(array $binding, string $baseUrl): array {
 		try {
 			$response = $this->clientService->newClient()->get(
 				rtrim($baseUrl, '/') . '/zaken',
 				['timeout' => 10, 'headers' => ['Accept' => 'application/json']]
 			);
-			$status = $response->getStatusCode();
 		} catch (Throwable $e) {
-			$this->markUsable(usable: false);
-			$this->logger->warning('zgw.binding.unreachable', ['baseUrl' => $baseUrl, 'error' => $e->getMessage()]);
-
-			return [
-				'ok' => false,
-				'message' => sprintf('The ZGW registry at "%s" could not be reached: %s.', $baseUrl, $e->getMessage()),
-				'binding' => $binding,
-			];
-		}//end try
-
-		// A 401 is a reachable registry asking for credentials, which is a
-		// different problem from a base URL pointing at nothing.
-		if ($status >= 500 || $status === 404) {
-			$this->markUsable(usable: false);
-
-			return [
-				'ok' => false,
-				'message' => sprintf('The ZGW registry at "%s" answered HTTP %d.', $baseUrl, $status),
-				'binding' => $binding,
-			];
+			return $this->unreachable(binding: $binding, failure: ['baseUrl' => $baseUrl, 'error' => $e->getMessage()]);
 		}
 
-		$this->markUsable(usable: true);
+		return $this->verdict(binding: $binding, outcome: $this->statusOutcome(baseUrl: $baseUrl, status: $response->getStatusCode()));
+	}//end probe()
 
-		return ['ok' => true, 'message' => sprintf('The ZGW registry at "%s" answered.', $baseUrl), 'binding' => $binding];
-	}//end test()
+	/**
+	 * Judge an unreachable registry not usable, and log it.
+	 *
+	 * @param array                              $binding The binding tested.
+	 * @param array{baseUrl: string, error: string} $failure Its base URL and why it could not be reached.
+	 *
+	 * @return array{ok: bool, message: string, binding: array} The verdict.
+	 */
+	private function unreachable(array $binding, array $failure): array {
+		$verdict = $this->verdict(
+			binding: $binding,
+			outcome: ['ok' => false, 'message' => sprintf('The ZGW registry at "%s" could not be reached: %s.', $failure['baseUrl'], $failure['error'])]
+		);
+		$this->logger->warning('zgw.binding.unreachable', $failure);
+
+		return $verdict;
+	}//end unreachable()
+
+	/**
+	 * What a registry's status says.
+	 *
+	 * A 401 is a reachable registry asking for credentials, which is a
+	 * different problem from a base URL pointing at nothing.
+	 *
+	 * @param string $baseUrl The registry's base URL.
+	 * @param int    $status  The status it answered.
+	 *
+	 * @return array{ok: bool, message: string} Not usable for a 404 or a 5xx, usable otherwise.
+	 */
+	private function statusOutcome(string $baseUrl, int $status): array {
+		if ($status >= 500 || $status === 404) {
+			return ['ok' => false, 'message' => sprintf('The ZGW registry at "%s" answered HTTP %d.', $baseUrl, $status)];
+		}
+
+		return ['ok' => true, 'message' => sprintf('The ZGW registry at "%s" answered.', $baseUrl)];
+	}//end statusOutcome()
+
+	/**
+	 * Record whether the binding is usable and answer the verdict.
+	 *
+	 * @param array                            $binding The binding tested.
+	 * @param array{ok: bool, message: string} $outcome Whether it is usable, and why.
+	 *
+	 * @return array{ok: bool, message: string, binding: array} The verdict.
+	 */
+	private function verdict(array $binding, array $outcome): array {
+		$this->markUsable(usable: $outcome['ok']);
+
+		return ['ok' => $outcome['ok'], 'message' => $outcome['message'], 'binding' => $binding];
+	}//end verdict()
 
 	/**
 	 * Record whether the binding may be used.
