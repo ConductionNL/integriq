@@ -792,20 +792,30 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 
 		$items = [];
 		foreach ($objects as $object) {
-			$payload = array_merge(
-				$object,
-				[
-					'summaryOnly' => false,
-					'synchronization' => $run->reference,
-					'summary' => $run->summary,
-				]
-			);
-
-			$items[] = $this->outputItem(run: $run, payload: $payload);
+			$items[] = $this->outputItem(run: $run, payload: $this->objectPayload(run: $run, object: $object));
 		}
 
 		return $items;
 	}//end itemsFor()
+
+	/**
+	 * The payload of one synchronised object: its result plus the run summary.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
+	 * @param array $object The per-object result.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function objectPayload(SynchronizationStepRun $run, array $object): array {
+		return array_merge(
+			$object,
+			[
+				'summaryOnly' => false,
+				'synchronization' => $run->reference,
+				'summary' => $run->summary,
+			]
+		);
+	}//end objectPayload()
 
 	/**
 	 * One output item: the payload written under the output key of the item in hand.
