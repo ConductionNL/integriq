@@ -44,7 +44,7 @@ final class BearerToken {
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
-	public static function of(IRequest $request): ?string {
+	public static function fromRequest(IRequest $request): ?string {
 		$header = $request->getHeader('Authorization');
 		if (str_starts_with($header, 'Bearer ') === false) {
 			return null;
@@ -56,5 +56,5 @@ final class BearerToken {
 		}
 
 		return $token;
-	}//end of()
+	}//end fromRequest()
 }//end class
