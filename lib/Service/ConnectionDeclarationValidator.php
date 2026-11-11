@@ -227,10 +227,7 @@ class ConnectionDeclarationValidator {
 		foreach ($fields as $name => [$required, $type]) {
 			if (array_key_exists($name, $data) === false) {
 				$errors = array_merge($errors, $this->requiredError(required: $required, path: $path . '/' . $name));
-				continue;
-			}
-
-			if ($this->matchesType(type: $type, value: $data[$name]) === false) {
+			} elseif ($this->matchesType(type: $type, value: $data[$name]) === false) {
 				$errors[] = $path . '/' . $name . ': ' . self::TYPE_MESSAGES[$type];
 			}
 		}
