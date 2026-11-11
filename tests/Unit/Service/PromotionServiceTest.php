@@ -256,10 +256,12 @@ class PromotionServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testClassNeverImportsOrCallsCredentialBrokerPlaintextResolution(): void {
-		$source = (string)file_get_contents(__DIR__ . '/../../../lib/Service/PromotionService.php');
+		foreach (['PromotionService.php', 'SourceCredentialRefs.php'] as $file) {
+			$source = (string)file_get_contents(__DIR__ . '/../../../lib/Service/' . $file);
 
-		$this->assertStringNotContainsString('use OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService', $source);
-		$this->assertStringNotContainsString('->resolveInjectable(', $source);
+			$this->assertStringNotContainsString('use OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService', $source);
+			$this->assertStringNotContainsString('->resolveInjectable(', $source);
+		}
 	}//end testClassNeverImportsOrCallsCredentialBrokerPlaintextResolution()
 
 	/**
