@@ -71,19 +71,56 @@ class RecordOwnershipService implements RecordOwnershipServiceInterface {
 	 * @spec openspec/specs/source-owned-records/spec.md
 	 */
 	public function forObject(string $targetId): OwnershipState {
-		$contract = $this->findContract(targetId: $targetId);
+		return $this->resolve(targetId: $targetId, strict: false);
+	}//end forObject()
+
+	/**
+	 * Who owns the object, throwing when the contracts cannot be read.
+	 *
+	 * @param string $targetId The object's OpenRegister uuid.
+	 *
+	 * @return OwnershipState The ownership answer.
+	 *
+	 * @throws OwnershipReadFailed When a contract or synchronisation read fails.
+	 *
+	 * @spec openspec/specs/source-owned-records/spec.md#requirement-a-local-delete-of-a-source-owned-record-is-refused-unless-somebody-says-why-req-sor-005
+	 */
+	public function forObjectOrFail(string $targetId): OwnershipState {
+		return $this->resolve(targetId: $targetId, strict: true);
+	}//end forObjectOrFail()
+
+	/**
+	 * Derive the ownership answer, optionally throwing on a failed read.
+	 *
+	 * @param string $targetId The object's OpenRegister uuid.
+	 * @param bool   $strict   Whether a failed read throws instead of reading as absent.
+	 *
+	 * @return OwnershipState The ownership answer.
+	 *
+	 * @throws OwnershipReadFailed In strict mode, when a read fails.
+	 */
+	private function resolve(string $targetId, bool $strict): OwnershipState {
+		$contract = $this->findOne(
+			lookup: new OwnershipLookup(schema: 'synchronization_contract', matchKey: 'targetId', matchValue: $targetId),
+			strict: $strict
+		);
 		if ($contract === null) {
 			return OwnershipState::local();
 		}
 
-		$synchronization = $this->findSynchronization(synchronizationId: (string)($contract['synchronizationId'] ?? ''));
+		try {
+			$synchronization = $this->findSynchronization(synchronizationId: (string)($contract['synchronizationId'] ?? ''), strict: $strict);
+		} catch (OwnershipReadFailed $failure) {
+			throw new OwnershipReadFailed(message: $failure->getMessage(), contractFound: true, previous: $failure);
+		}
+
 		$mode = $this->readMode(synchronization: $synchronization);
 		if ($mode === OwnershipState::MODE_LOCAL) {
 			return OwnershipState::local();
 		}
 
 		return self::stateOf(mode: $mode, read: new OwnershipRead(contract: $contract, synchronization: $synchronization));
-	}//end forObject()
+	}//end resolve()
 
 	/**
 	 * The ownership answer for a non-local mode.
@@ -197,29 +234,21 @@ class RecordOwnershipService implements RecordOwnershipServiceInterface {
 	}//end unknownMode()
 
 	/**
-	 * The contract that maintains one target object, if there is one.
-	 *
-	 * @param string $targetId The target object's id.
-	 *
-	 * @return array<string,mixed>|null The contract data.
-	 */
-	private function findContract(string $targetId): ?array {
-		return $this->findOne(lookup: new OwnershipLookup(schema: 'synchronization_contract', matchKey: 'targetId', matchValue: $targetId));
-	}//end findContract()
-
-	/**
 	 * One synchronisation by id.
 	 *
 	 * @param string $synchronizationId The synchronisation id.
+	 * @param bool   $strict            Whether a failed read throws.
 	 *
 	 * @return array<string,mixed>|null The synchronisation data.
+	 *
+	 * @throws OwnershipReadFailed In strict mode, when the read fails.
 	 */
-	private function findSynchronization(string $synchronizationId): ?array {
+	private function findSynchronization(string $synchronizationId, bool $strict): ?array {
 		if ($synchronizationId === '') {
 			return null;
 		}
 
-		return $this->findOne(lookup: new OwnershipLookup(schema: 'synchronization', matchKey: 'uuid', matchValue: $synchronizationId));
+		return $this->findOne(lookup: new OwnershipLookup(schema: 'synchronization', matchKey: 'uuid', matchValue: $synchronizationId), strict: $strict);
 	}//end findSynchronization()
 
 	/**
@@ -228,16 +257,22 @@ class RecordOwnershipService implements RecordOwnershipServiceInterface {
 	 * back the whole schema and the first row would look like an answer.
 	 *
 	 * @param OwnershipLookup $lookup The schema, the field filtered on and checked, and its value.
+	 * @param bool            $strict Whether a failed read throws instead of reading as absent.
 	 *
 	 * @return array<string,mixed>|null The matching object's data.
+	 *
+	 * @throws OwnershipReadFailed In strict mode, when the read fails.
 	 */
-	private function findOne(OwnershipLookup $lookup): ?array {
+	private function findOne(OwnershipLookup $lookup, bool $strict): ?array {
 		try {
 			$result = $this->objectService->findAll(
 				config: ['filters' => ['register' => self::REGISTER, 'schema' => $lookup->schema, $lookup->matchKey => $lookup->matchValue]]
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('ownership.read-failed', ['schema' => $lookup->schema, 'error' => $e->getMessage()]);
+			if ($strict === true) {
+				throw new OwnershipReadFailed(message: 'the ' . $lookup->schema . ' read failed', contractFound: false, previous: $e);
+			}
 
 			return null;
 		}
