@@ -36,6 +36,8 @@ use SimpleXMLElement;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
+ * @SuppressWarnings(PHPMD.TooManyMethods) -- each StUF-BG reading is its own named step
+ *
  * @spec openspec/changes/stuf-adapter/tasks.md#task-1
  */
 class StUFBGService {
