@@ -106,7 +106,7 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	private function convertIdsToSlugs(array $config, array $mappings, array &$mappingIds = []): array {
-		$translator = ConfigurationReferenceTranslator::idsToSlugs(mappings: $mappings);
+		$translator = (new ConfigurationReferenceTranslator())->idsToSlugs(mappings: $mappings);
 		$config = $translator->translate(config: $config);
 		foreach ($translator->mappingIds as $mappingId) {
 			$mappingIds[] = $mappingId;
@@ -173,7 +173,7 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	private function convertSlugsToIds(array $config, array $mappings): array {
-		return ConfigurationReferenceTranslator::slugsToIds(mappings: $mappings)->translate(config: $config);
+		return (new ConfigurationReferenceTranslator())->slugsToIds(mappings: $mappings)->translate(config: $config);
 	}//end convertSlugsToIds()
 
 	/**

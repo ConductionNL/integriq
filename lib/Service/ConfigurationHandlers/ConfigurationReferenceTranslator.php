@@ -57,7 +57,7 @@ final class ConfigurationReferenceTranslator {
 	private string $direction = 'idToSlug';
 
 	/**
-	 * A translator from ids to slugs, for export.
+	 * Translate from ids to slugs with these mappings, for export.
 	 *
 	 * @param array $mappings The global mappings.
 	 *
@@ -65,15 +65,15 @@ final class ConfigurationReferenceTranslator {
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
-	public static function idsToSlugs(array $mappings): self {
-		$translator = new self();
-		$translator->mappings = $mappings;
+	public function idsToSlugs(array $mappings): self {
+		$this->mappings = $mappings;
+		$this->direction = 'idToSlug';
 
-		return $translator;
+		return $this;
 	}//end idsToSlugs()
 
 	/**
-	 * A translator from slugs to ids, for import.
+	 * Translate from slugs to ids with these mappings, for import.
 	 *
 	 * @param array $mappings The global mappings.
 	 *
@@ -81,11 +81,11 @@ final class ConfigurationReferenceTranslator {
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
-	public static function slugsToIds(array $mappings): self {
-		$translator = self::idsToSlugs(mappings: $mappings);
-		$translator->direction = 'slugToId';
+	public function slugsToIds(array $mappings): self {
+		$this->mappings = $mappings;
+		$this->direction = 'slugToId';
 
-		return $translator;
+		return $this;
 	}//end slugsToIds()
 
 	/**
