@@ -112,42 +112,89 @@ class SubscriptionSigningDefaultListener implements IEventListener {
 			return;
 		}
 
-		$isCreate = $event instanceof ObjectCreatingEvent;
-		$old = null;
-		$entity = null;
-		if ($event instanceof ObjectCreatingEvent) {
-			$entity = $event->getObject();
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$entity = $event->getNewObject();
-			$old = $event->getOldObject();
-		}
-
-		if ($this->isSubscription(object: $entity) === false) {
+		$entity = $this->savedObject(event: $event);
+		if ($this->isPushSubscription(entity: $entity) === false) {
 			return;
 		}
 
 		$data = (array)$entity->getObject();
-		if ((string)($data['style'] ?? '') !== SubscriptionSigningPolicyInterface::STYLE_PUSH) {
-			return;
-		}
-
 		if ($this->policy->refuse(subscription: $data) !== null) {
-			$event->setErrors(
-				[
-					'code' => 'unsigned_without_reason',
-					'message' => $this->l10n->t('Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.'),
-					'status' => 400,
-				]
-			);
-			$event->stopPropagation();
+			$this->refuseUnsigned(event: $event);
 			return;
 		}
 
-		$event->setModifiedData($this->modifiedData(data: $data, old: $old, isCreate: $isCreate));
+		$event->setModifiedData($this->modifiedData(data: $data, old: $this->storedObject(event: $event), isCreate: $event instanceof ObjectCreatingEvent));
 
 	}//end handle()
+
+	/**
+	 * The object a create or an update saves.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function savedObject(ObjectCreatingEvent|ObjectUpdatingEvent $event): ObjectEntity {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $event->getNewObject();
+		}
+
+		return $event->getObject();
+
+	}//end savedObject()
+
+	/**
+	 * The stored object an update replaces; none for a create.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function storedObject(ObjectCreatingEvent|ObjectUpdatingEvent $event): ?ObjectEntity {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $event->getOldObject();
+		}
+
+		return null;
+
+	}//end storedObject()
+
+	/**
+	 * Whether the object is an integriq event_subscription of the push style.
+	 *
+	 * @param ObjectEntity $entity The object being saved.
+	 *
+	 * @return bool
+	 */
+	private function isPushSubscription(ObjectEntity $entity): bool {
+		if ($this->isSubscription(object: $entity) === false) {
+			return false;
+		}
+
+		$data = (array)$entity->getObject();
+
+		return (string)($data['style'] ?? '') === SubscriptionSigningPolicyInterface::STYLE_PUSH;
+
+	}//end isPushSubscription()
+
+	/**
+	 * Refuse a save that turns signing off without a reason.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
+	 *
+	 * @return void
+	 */
+	private function refuseUnsigned(ObjectCreatingEvent|ObjectUpdatingEvent $event): void {
+		$event->setErrors(
+			[
+				'code' => 'unsigned_without_reason',
+				'message' => $this->l10n->t('Turning off signing needs a reason. Say why this receiver gets unsigned deliveries.'),
+				'status' => 400,
+			]
+		);
+		$event->stopPropagation();
+
+	}//end refuseUnsigned()
 
 	/**
 	 * The fields this save writes: settings (when they change) and the readable posture.
