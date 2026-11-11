@@ -184,16 +184,7 @@ class ScimController extends Controller {
 				consumerLabel: $this->consumerLabel()
 			);
 		} catch (DirectorySyncRefusalException $refusal) {
-			// Same shape as the group route: the log names what was refused, the
-			// body carries only what the refusal decided is safe to tell a caller.
-			$this->logger->warning(
-				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
-			);
-
-			return $this->scimError(
-				status: Http::STATUS_FORBIDDEN,
-				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
-			);
+			return $this->refusedUserWrite(refusal: $refusal);
 		}
 
 		return new JSONResponse($resource, Http::STATUS_CREATED);
@@ -227,16 +218,7 @@ class ScimController extends Controller {
 				consumerLabel: $this->consumerLabel()
 			);
 		} catch (DirectorySyncRefusalException $refusal) {
-			// Same shape as the group route: the log names what was refused, the
-			// body carries only what the refusal decided is safe to tell a caller.
-			$this->logger->warning(
-				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
-			);
-
-			return $this->scimError(
-				status: Http::STATUS_FORBIDDEN,
-				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
-			);
+			return $this->refusedUserWrite(refusal: $refusal);
 		}
 
 		return new JSONResponse($updated);
@@ -267,16 +249,7 @@ class ScimController extends Controller {
 				consumerLabel: $this->consumerLabel()
 			);
 		} catch (DirectorySyncRefusalException $refusal) {
-			// Same shape as the group route: the log names what was refused, the
-			// body carries only what the refusal decided is safe to tell a caller.
-			$this->logger->warning(
-				'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
-			);
-
-			return $this->scimError(
-				status: Http::STATUS_FORBIDDEN,
-				detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
-			);
+			return $this->refusedUserWrite(refusal: $refusal);
 		}
 
 
@@ -458,6 +431,28 @@ class ScimController extends Controller {
 		return (string)$this->callingConsumer->getUuid();
 
 	}//end consumerLabel()
+
+	/**
+	 * The 403 answer to a refused user write, logged.
+	 *
+	 * Same shape as the group route: the log names what was refused, the body
+	 * carries only what the refusal decided is safe to tell a caller.
+	 *
+	 * @param DirectorySyncRefusalException $refusal The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function refusedUserWrite(DirectorySyncRefusalException $refusal): JSONResponse {
+		$this->logger->warning(
+			'[Scim] refused a user write for consumer ' . $this->consumerLabel() . ': ' . $refusal->getMessage()
+		);
+
+		return $this->scimError(
+			status: Http::STATUS_FORBIDDEN,
+			detail: (string)($refusal->getContext()['detail'] ?? 'This account cannot be managed over SCIM.')
+		);
+
+	}//end refusedUserWrite()
 
 	/**
 	 * Read an exact-match value out of a SCIM `filter` query parameter.
