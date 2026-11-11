@@ -262,4 +262,53 @@ class EventEmitNodeTest extends TestCase {
 		$this->assertTrue($out[1]['json']['eventResult']['emitted']);
 
 	}//end testFailedEmitUnderContinueCarriesErrorState()
+
+	/**
+	 * A subject that renders empty reaches the pipeline as null, and the
+	 * summary lands under an authored output key.
+	 *
+	 * @return void
+	 */
+	public function testEmptySubjectIsNullAndOutputKeyIsAuthored(): void {
+		$this->eventService->expects($this->once())
+			->method('emitCloudEvent')
+			->with('nl.example.object.updated', 'https://example.org/integriq', null, ['a' => 1])
+			->willReturn([['message' => 'm1'], ['message' => 'm2']]);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [['json' => ['a' => 1]], 'not-an-array'],
+			config: $this->config(overrides: ['subject' => '  ', 'output' => 'announced']),
+			context: []
+		));
+
+		$this->assertSame(['a' => 1, 'announced' => ['emitted' => true, 'messageCount' => 2]], $out[0]['json']);
+		$this->assertSame(['item' => 0], $out[0]['pairedItem']);
+		$this->assertSame(['json', 'pairedItem'], array_keys($out[1]));
+		$this->assertSame(['item' => 1], $out[1]['pairedItem']);
+
+	}//end testEmptySubjectIsNullAndOutputKeyIsAuthored()
+
+	/**
+	 * The error state under `continue` names the step, the message and the
+	 * event type, and an authored pairing survives.
+	 *
+	 * @return void
+	 */
+	public function testContinueErrorStateNamesStepAndType(): void {
+		$this->eventService->method('emitCloudEvent')->willThrowException(new RuntimeException('broker down'));
+
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [['json' => ['a' => 1], 'pairedItem' => ['item' => 7]]],
+			config: $this->config(overrides: ['onError' => 'continue', 'id' => 'emit-1']),
+			context: []
+		));
+
+		$error = $out[0]['json'][FlowNodeSupport::ERROR_KEY];
+		$this->assertTrue($error['failed']);
+		$this->assertSame('emit-1', $error['stepId']);
+		$this->assertSame('broker down', $error['message']);
+		$this->assertSame('nl.example.object.updated', $error['type']);
+		$this->assertSame(['item' => 7], $out[0]['pairedItem']);
+
+	}//end testContinueErrorStateNamesStepAndType()
 }//end class
