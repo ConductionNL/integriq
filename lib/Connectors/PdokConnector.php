@@ -46,6 +46,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * @SuppressWarnings(PHPMD.TooManyMethods) -- the lookup, cache, circuit and upstream steps are each named
  */
 class PdokConnector implements PdokConnectorInterface {
 	/**
