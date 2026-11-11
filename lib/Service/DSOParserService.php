@@ -511,20 +511,45 @@ class DSOParserService implements PortalRequestParserInterface {
 			}
 
 			$url = trim((string)($attachment['url'] ?? ''));
-			$name = trim((string)($attachment['naam'] ?? ''));
-			if ($name === '' && $url !== '') {
-				$name = basename((string)parse_url($url, PHP_URL_PATH));
-			}
-
-			if ($name === '' || $name === '.' || $name === '/') {
-				$name = 'bijlage-' . ($index + 1);
-			}
-
-			$parsed[] = ['name' => $name, 'url' => $url];
+			$parsed[] = ['name' => $this->attachmentName(attachment: $attachment, position: ($index + 1)), 'url' => $url];
 		}
 
 		return $parsed;
 	}//end parseAttachments()
+
+	/**
+	 * An attachment's name: its own, else its URL's file name, else `bijlage-<position>`.
+	 *
+	 * @param array $attachment The attachment.
+	 * @param int   $position   Its position among the bijlagen, from 1.
+	 *
+	 * @return string The name.
+	 */
+	private function attachmentName(array $attachment, int $position): string {
+		$name = $this->givenOrUrlName(attachment: $attachment);
+		if ($name === '' || $name === '.' || $name === '/') {
+			return 'bijlage-' . $position;
+		}
+
+		return $name;
+	}//end attachmentName()
+
+	/**
+	 * The attachment's own name, else the file name in its URL.
+	 *
+	 * @param array $attachment The attachment.
+	 *
+	 * @return string The name, possibly empty.
+	 */
+	private function givenOrUrlName(array $attachment): string {
+		$name = trim((string)($attachment['naam'] ?? ''));
+		$url = trim((string)($attachment['url'] ?? ''));
+		if ($name === '' && $url !== '') {
+			return basename((string)parse_url($url, PHP_URL_PATH));
+		}
+
+		return $name;
+	}//end givenOrUrlName()
 
 	/**
 	 * Convert a GML geometry string to GeoJSON.
