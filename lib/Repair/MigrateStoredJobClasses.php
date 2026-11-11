@@ -312,9 +312,7 @@ class MigrateStoredJobClasses implements IRepairStep {
 	 * @return array{migrated:int,failed:int} Counts for the caller's summary
 	 */
 	private function migrateAll(OrObjectService $orObjectService, IOutput $output): array {
-		$run = new JobClassMigrationRun();
-		$run->objects = $orObjectService;
-		$run->output = $output;
+		$run = $this->newRun(orObjectService: $orObjectService, output: $output);
 		for ($page = 0; $page < self::MAX_PAGES; $page++) {
 			$items = $this->jobPage(run: $run);
 			foreach ($items as $item) {
@@ -333,6 +331,22 @@ class MigrateStoredJobClasses implements IRepairStep {
 
 		return ['migrated' => $run->migrated, 'failed' => $run->failed];
 	}//end migrateAll()
+
+	/**
+	 * A fresh pass over the stored jobs, at the first page with nothing counted.
+	 *
+	 * @param OrObjectService $orObjectService The OR object service
+	 * @param IOutput         $output          The repair output channel
+	 *
+	 * @return JobClassMigrationRun
+	 */
+	private function newRun(OrObjectService $orObjectService, IOutput $output): JobClassMigrationRun {
+		$run = new JobClassMigrationRun();
+		$run->objects = $orObjectService;
+		$run->output = $output;
+
+		return $run;
+	}//end newRun()
 
 	/**
 	 * The stored jobs at the run's offset; none when the backend answers no
@@ -356,13 +370,24 @@ class MigrateStoredJobClasses implements IRepairStep {
 			return [];
 		}
 
+		return $this->pageItems(result: $result);
+	}//end jobPage()
+
+	/**
+	 * The items of one findAll() answer; none when it holds no list.
+	 *
+	 * @param mixed $result What findAll() answered.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function pageItems(mixed $result): array {
 		$items = ($result['results'] ?? $result);
 		if (is_array($items) === false) {
 			return [];
 		}
 
 		return $items;
-	}//end jobPage()
+	}//end pageItems()
 
 	/**
 	 * Report an enumeration that failed, and stopped the pass, at the run's offset.
