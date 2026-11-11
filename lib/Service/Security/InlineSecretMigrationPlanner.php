@@ -585,12 +585,7 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 	 */
 	private function listedItems(string $schema, int $limit): array {
 		try {
-			$result = $this->objectService->findAll(
-				config: [
-					'limit' => $limit,
-					'filters' => ['register' => self::REGISTER, 'schema' => $schema],
-				]
-			);
+			$result = $this->renderedListing(schema: $schema, limit: $limit);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'[integriq] inline-secret planner: source listing failed',
@@ -601,6 +596,23 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 
 		return $this->listOf(result: $result);
 	}//end listedItems()
+
+	/**
+	 * The rendered findAll() of one schema's objects (identity only, see listUuids()).
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int    $limit  Maximum number of objects to list.
+	 *
+	 * @return mixed What findAll() answers.
+	 */
+	private function renderedListing(string $schema, int $limit): mixed {
+		return $this->objectService->findAll(
+			config: [
+				'limit' => $limit,
+				'filters' => ['register' => self::REGISTER, 'schema' => $schema],
+			]
+		);
+	}//end renderedListing()
 
 	/**
 	 * The uuid of a listed object; '' for a row that is no object.
