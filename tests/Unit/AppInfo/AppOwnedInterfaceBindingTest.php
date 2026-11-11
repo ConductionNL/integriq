@@ -135,8 +135,8 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 	 * one `::class` away from a false green (integriq#2127 review 5280620536).
 	 * Today's result was right; the assertion was not.
 	 *
-	 * Matches the two forms the file uses: an alias to a concrete class, and an
-	 * explicit factory registration.
+	 * Matches the forms the files use: an alias to a concrete class, an
+	 * explicit factory registration, and an entry of an alias map.
 	 *
 	 * @param string $application The contents of Application.php.
 	 * @param string $interface The short interface name.
@@ -146,8 +146,17 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 	private function isAliased(string $application, string $interface): bool {
 		$quoted = preg_quote($interface, '/');
 
-		return (bool)preg_match(
+		if (preg_match(
 			'/register(?:ServiceAlias|Service)\s*\(\s*(?:[A-Za-z0-9_\\\\]*\\\\)?' . $quoted . '::class/',
+			$application
+		) === 1
+		) {
+			return true;
+		}
+
+		// An entry of an alias map a registrar binds in a loop: `Foo::class => FooImpl::class,`.
+		return (bool)preg_match(
+			'/^\s*(?:[A-Za-z0-9_\\\\]*\\\\)?' . $quoted . '::class\s*=>\s*[A-Za-z0-9_\\\\]+::class\s*,/m',
 			$application
 		);
 
