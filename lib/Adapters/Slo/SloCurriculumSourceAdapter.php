@@ -179,107 +179,179 @@ final class SloCurriculumSourceAdapter {
 			throw new InvalidArgumentException(sprintf('The tenant id "%s" is not a UUID.', $tenantId));
 		}
 
-		$subjects = $this->normaliseSubjects(subjectCourseIds: $subjectCourseIds);
-		$profile = $this->registry->set(setKey: $setKey);
-		$aggregate = ($profile['framework'] === 'aggregate');
-		$loaded = $this->loadRoots(profile: $profile, setKey: $setKey, rootUuid: $rootUuid);
-		$roots = $loaded['roots'];
-		$rootInfo = $loaded['rootInfo'];
-		$rootUuid = $loaded['rootUuid'];
+		$run = new FrameworkImportRun(setKey: $setKey, tenantId: $tenantId);
+		$run->subjects = $this->normaliseSubjects(subjectCourseIds: $subjectCourseIds);
+		$run->profile = $this->registry->set(setKey: $setKey);
+		$run->loaded = $this->loadRoots(run: $run, rootUuid: $rootUuid);
 
-		$walk = $this->walker->walk(roots: $roots, profile: $profile, client: $this->sloClient, rootsAreNodes: $aggregate);
-		$attribution = $this->registry->attribution();
-		$frameworkUuid = $this->mapper->frameworkUuid(tenantId: $tenantId, setKey: $setKey, rootUuid: $rootUuid);
-		$name = trim((string)$profile['namePrefix'] . $rootInfo['title']);
+		return $this->importLoaded(run: $run);
+	}//end importFramework()
 
-		$framework = $this->mapper->frameworkRecord(
-			uuid: $frameworkUuid,
-			framework: [
-				'name' => $name,
-				'sourceAuthority' => (string)$profile['sourceAuthority'],
-				'sourceRef' => $loaded['sourceRef'],
-				'edition' => $this->edition(profile: $profile, rootInfo: $rootInfo),
-				'level' => $profile['level'],
-				'description' => trim($name . '. ' . ($attribution['text'] ?? '')),
-				'proficiencyLevels' => $this->registry->proficiencyLevels(),
-				'tenantId' => $tenantId,
-			],
-			mapping: $this->registry->frameworkMapping(),
-			originId: $loaded['originId']
+	/**
+	 * Walk the loaded roots and build the framework, its competencies and the result.
+	 *
+	 * @param FrameworkImportRun $run The import, with its profile and loaded roots.
+	 *
+	 * @return array<string,mixed> setKey, rootUuid, flavour, framework, competencies, attribution, stats.
+	 *
+	 * @throws SloCurriculumException When SLO fails or a guard limit is reached.
+	 */
+	private function importLoaded(FrameworkImportRun $run): array {
+		$walk = $this->walker->walk(
+			roots: $run->loaded['roots'],
+			profile: $run->profile,
+			client: $this->sloClient,
+			rootsAreNodes: $run->isAggregate()
 		);
+		$run->attribution = $this->registry->attribution();
+		$run->frameworkUuid = $this->mapper->frameworkUuid(tenantId: $run->tenantId, setKey: $run->setKey, rootUuid: $run->rootUuid());
 
-		$competencies = $this->mapper->competencyRecords(
-			nodes: $walk['nodes'],
+		$run->framework = $this->frameworkRecord(run: $run);
+		$run->competencies = $this->competencyRecords(run: $run, nodes: $walk['nodes']);
+		$run->stats = $this->importStats(walkStats: $walk['stats'], competencies: $run->competencies);
+		$this->logImport(run: $run);
+
+		return $this->importResult(run: $run);
+	}//end importLoaded()
+
+	/**
+	 * The framework record, named after the profile prefix and the root title.
+	 *
+	 * @param FrameworkImportRun $run The import.
+	 *
+	 * @return array<string,mixed> The learniq competency-framework record.
+	 */
+	private function frameworkRecord(FrameworkImportRun $run): array {
+		return $this->mapper->frameworkRecord(
+			uuid: $run->frameworkUuid,
+			framework: $this->frameworkFields(run: $run),
+			mapping: $this->registry->frameworkMapping(),
+			originId: $run->loaded['originId']
+		);
+	}//end frameworkRecord()
+
+	/**
+	 * The framework's own fields, before the mapping.
+	 *
+	 * @param FrameworkImportRun $run The import.
+	 *
+	 * @return array<string,mixed> name, sourceAuthority, sourceRef, edition, level, description, proficiencyLevels, tenantId.
+	 */
+	private function frameworkFields(FrameworkImportRun $run): array {
+		$rootInfo = $run->rootInfo();
+		$name = trim((string)$run->profile['namePrefix'] . $rootInfo['title']);
+
+		return [
+			'name' => $name,
+			'sourceAuthority' => (string)$run->profile['sourceAuthority'],
+			'sourceRef' => $run->loaded['sourceRef'],
+			'edition' => $this->edition(profile: $run->profile, rootInfo: $rootInfo),
+			'level' => $run->profile['level'],
+			'description' => trim($name . '. ' . ($run->attribution['text'] ?? '')),
+			'proficiencyLevels' => $this->registry->proficiencyLevels(),
+			'tenantId' => $run->tenantId,
+		];
+	}//end frameworkFields()
+
+	/**
+	 * The competency records of the walked nodes, parents first.
+	 *
+	 * @param FrameworkImportRun             $run   The import.
+	 * @param array<int,array<string,mixed>> $nodes The walked nodes.
+	 *
+	 * @return array<int,array<string,mixed>> The learniq competency records.
+	 */
+	private function competencyRecords(FrameworkImportRun $run, array $nodes): array {
+		return $this->mapper->competencyRecords(
+			nodes: $nodes,
 			context: [
-				'frameworkUuid' => $frameworkUuid,
-				'tenantId' => $tenantId,
+				'frameworkUuid' => $run->frameworkUuid,
+				'tenantId' => $run->tenantId,
 				'yearNiveaus' => $this->registry->yearNiveaus(),
-				'subjectCourseIds' => $subjects,
-				'subjectFrom' => (string)$profile['subjectFrom'],
-				'rootSubjectKeys' => $rootInfo['subjectKeys'],
+				'subjectCourseIds' => $run->subjects,
+				'subjectFrom' => (string)$run->profile['subjectFrom'],
+				'rootSubjectKeys' => $run->rootInfo()['subjectKeys'],
 			],
 			mapping: $this->registry->competencyMapping()
 		);
+	}//end competencyRecords()
 
-		$stats = $walk['stats'];
+	/**
+	 * The walk's stats plus the competency counts.
+	 *
+	 * @param array<string,int>              $walkStats    The walker's stats.
+	 * @param array<int,array<string,mixed>> $competencies The competency records.
+	 *
+	 * @return array<string,int> The import stats.
+	 */
+	private function importStats(array $walkStats, array $competencies): array {
+		$stats = $walkStats;
 		$stats['competencies'] = count($competencies);
 		$stats['withYears'] = count(
 			array_filter($competencies, static fn (array $record): bool => ($record['object']['applicableYears'] ?? []) !== [])
 		);
 
+		return $stats;
+	}//end importStats()
+
+	/**
+	 * Log the import: set, root, flavour, whether the adapter is active, and the counts.
+	 *
+	 * @param FrameworkImportRun $run The import, with its stats.
+	 *
+	 * @return void
+	 */
+	private function logImport(FrameworkImportRun $run): void {
 		$this->logger->debug(
 			'slo-curriculum.importFramework',
 			[
-				'set' => $setKey,
-				'root' => $rootUuid,
+				'set' => $run->setKey,
+				'root' => $run->rootUuid(),
 				'flavour' => $this->sloClient->flavour(),
 				'active' => $this->isActive(),
-				'competencies' => $stats['competencies'],
-				'leaves' => $stats['leaves'],
+				'competencies' => $run->stats['competencies'],
+				'leaves' => $run->stats['leaves'],
 			]
 		);
+	}//end logImport()
 
+	/**
+	 * The import result.
+	 *
+	 * @param FrameworkImportRun $run The import, with its records and stats.
+	 *
+	 * @return array<string,mixed> setKey, rootUuid, flavour, framework, competencies, attribution, stats.
+	 */
+	private function importResult(FrameworkImportRun $run): array {
 		return [
-			'setKey' => $setKey,
-			'rootUuid' => $rootUuid,
+			'setKey' => $run->setKey,
+			'rootUuid' => $run->rootUuid(),
 			'flavour' => $this->sloClient->flavour(),
-			'framework' => $framework,
-			'competencies' => $competencies,
-			'attribution' => $attribution,
-			'stats' => $stats,
+			'framework' => $run->framework,
+			'competencies' => $run->competencies,
+			'attribution' => $run->attribution,
+			'stats' => $run->stats,
 		];
-	}//end importFramework()
+	}//end importResult()
 
 	/**
 	 * Fetch the trees an import walks.
 	 *
-	 * @param array<string,mixed> $profile The set profile.
-	 * @param string $setKey The set key.
-	 * @param string|null $rootUuid The requested root (per-root sets only).
+	 * @param FrameworkImportRun $run      The import, with its profile.
+	 * @param string|null        $rootUuid The requested root (per-root sets only).
 	 *
 	 * @return array{roots:array<int,array<string,mixed>>,rootInfo:array<string,mixed>,rootUuid:string|null,sourceRef:string,originId:string}
 	 *
 	 * @throws InvalidArgumentException When a per-root set gets no root uuid.
 	 */
-	private function loadRoots(array $profile, string $setKey, ?string $rootUuid): array {
-		if ($profile['framework'] === 'aggregate') {
-			$roots = [];
-			foreach ($this->discoverRoots(setKey: $setKey) as $root) {
-				$roots[] = $this->walker->fetchTree(client: $this->sloClient, uuid: $root['uuid']);
-			}
-
-			return [
-				'roots' => $roots,
-				'rootInfo' => ['title' => (string)$profile['label'], 'status' => null, 'versie' => null, 'subjectKeys' => []],
-				'rootUuid' => null,
-				'sourceRef' => self::API_BASE . ltrim((string)$profile['discover']['path'], '/'),
-				'originId' => $setKey,
-			];
+	private function loadRoots(FrameworkImportRun $run, ?string $rootUuid): array {
+		if ($run->isAggregate() === true) {
+			return $this->loadAggregateRoots(run: $run);
 		}
 
 		if ($rootUuid === null || trim($rootUuid) === '') {
 			throw new InvalidArgumentException(
-				sprintf('The set "%s" has one framework per SLO root: pass a root uuid from discoverRoots().', $setKey)
+				sprintf('The set "%s" has one framework per SLO root: pass a root uuid from discoverRoots().', $run->setKey)
 			);
 		}
 
@@ -293,6 +365,28 @@ final class SloCurriculumSourceAdapter {
 			'originId' => $rootUuid,
 		];
 	}//end loadRoots()
+
+	/**
+	 * Fetch the tree of every root an aggregate set discovers.
+	 *
+	 * @param FrameworkImportRun $run The import, with its profile.
+	 *
+	 * @return array{roots:array<int,array<string,mixed>>,rootInfo:array<string,mixed>,rootUuid:null,sourceRef:string,originId:string}
+	 */
+	private function loadAggregateRoots(FrameworkImportRun $run): array {
+		$roots = [];
+		foreach ($this->discoverRoots(setKey: $run->setKey) as $root) {
+			$roots[] = $this->walker->fetchTree(client: $this->sloClient, uuid: $root['uuid']);
+		}
+
+		return [
+			'roots' => $roots,
+			'rootInfo' => ['title' => (string)$run->profile['label'], 'status' => null, 'versie' => null, 'subjectKeys' => []],
+			'rootUuid' => null,
+			'sourceRef' => self::API_BASE . ltrim((string)$run->profile['discover']['path'], '/'),
+			'originId' => $run->setKey,
+		];
+	}//end loadAggregateRoots()
 
 	/**
 	 * Split a discovery answer into its items and its total count.
