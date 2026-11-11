@@ -191,16 +191,10 @@ class AuthenticationConfig extends Command {
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-authentication-config-audit
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$io = new SymfonyStyle($input, $output);
-
-		$limit = CommandConsole::readLimit(input: $input, io: $io);
-		if ($limit === null) {
+		$run = CommandConsole::startRun(input: $input, output: $output);
+		if ($run === null) {
 			return Command::FAILURE;
 		}
-
-		$run = new ConsoleRun(io: $io, output: $output);
-		$run->limit = $limit;
-		$run->json = (bool)$input->getOption('json');
 
 		// ── THE GATE ─────────────────────────────────────────────────────────
 		// Only these two explicit flags reach a writing path. The default action

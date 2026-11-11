@@ -84,10 +84,7 @@ class PdokController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'pdok.suggest');
 
 		if (trim($q) === '') {
-			return new JSONResponse(
-				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingQuery();
 		}
 
 		return new JSONResponse($this->pdokConnector->suggest($q));
@@ -113,28 +110,11 @@ class PdokController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'pdok.lookup');
 
 		if (trim($id) === '') {
-			return new JSONResponse(
-				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingQuery();
 		}
 
 		$payload = $this->pdokConnector->lookup($id);
-		if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
-			return new JSONResponse(
-				['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
-				Http::STATUS_SERVICE_UNAVAILABLE
-			);
-		}
-
-		if ($payload['numFound'] === 0) {
-			return new JSONResponse(
-				['error' => 'not_found', 'message_key' => 'pdok.error.not_found'],
-				Http::STATUS_NOT_FOUND
-			);
-		}
-
-		return new JSONResponse($payload);
+		return $this->singleAnswer(payload: $payload);
 	}//end lookupAction()
 
 	/**
@@ -159,10 +139,7 @@ class PdokController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'pdok.free');
 
 		if (trim($q) === '') {
-			return new JSONResponse(
-				['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingQuery();
 		}
 
 		return new JSONResponse($this->pdokConnector->free($q, $rows, $start));
@@ -196,6 +173,30 @@ class PdokController extends Controller {
 		}
 
 		$payload = $this->pdokConnector->reverse($lat, $lng);
+		return $this->singleAnswer(payload: $payload);
+	}//end reverseAction()
+
+	/**
+	 * The 400 answer for a missing or blank query.
+	 *
+	 * @return JSONResponse
+	 */
+	private function missingQuery(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end missingQuery()
+
+	/**
+	 * The answer to a lookup that names one place: 503 when PDOK gave nothing
+	 * and no cached copy, 404 when nothing was found, the payload otherwise.
+	 *
+	 * @param array<string,mixed> $payload The normalised connector payload.
+	 *
+	 * @return JSONResponse
+	 */
+	private function singleAnswer(array $payload): JSONResponse {
 		if ($payload['numFound'] === 0 && empty($payload['stale']) === true) {
 			return new JSONResponse(
 				['error' => 'pdok_unavailable', 'message_key' => 'pdok.unavailable'],
@@ -211,5 +212,5 @@ class PdokController extends Controller {
 		}
 
 		return new JSONResponse($payload);
-	}//end reverseAction()
+	}//end singleAnswer()
 }//end class

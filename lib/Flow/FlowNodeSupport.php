@@ -182,6 +182,26 @@ final class FlowNodeSupport {
 	}//end assertOnError()
 
 	/**
+	 * The config-form field of a page-level node's on-error policy.
+	 *
+	 * @param IL10N $l10n Translates the label and help.
+	 *
+	 * @return array<string, string> The field definition.
+	 *
+	 * @spec openspec/changes/flow-native-synchronization/design.md
+	 */
+	public static function onErrorField(IL10N $l10n): array {
+		return [
+			'key' => 'onError',
+			'label' => $l10n->t('On error'),
+			'type' => 'text',
+			'help' => $l10n->t(
+				'What a failed item does to the run: stop, continue or dead_letter.'
+			),
+		];
+	}//end onErrorField()
+
+	/**
 	 * Reject a reference field that is inline or empty, at flow-save time.
 	 *
 	 * Every page-level sync node names an ALREADY-CONFIGURED object — a

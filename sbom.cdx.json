@@ -2,10 +2,8 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:48c408de-80a2-42e3-9971-394869b68023",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T17:23:51Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +80,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/integriq-dev-development",
+      "bom-ref": "conductionnl/integriq-1.0.0.0",
       "type": "application",
       "name": "integriq",
-      "version": "dev-development",
+      "version": "1.0.0",
       "group": "conductionnl",
       "description": "Gateway and Service bus funtionality",
       "author": "Conduction b.v.",
@@ -96,16 +94,8 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/integriq@dev-development",
+      "purl": "pkg:composer/conductionnl/integriq@1.0.0",
       "properties": [
-        {
-          "name": "cdx:composer:package:distReference",
-          "value": "2d7f0aa7b993ce67d51f7aa3bd216a1a7873c104"
-        },
-        {
-          "name": "cdx:composer:package:sourceReference",
-          "value": "2d7f0aa7b993ce67d51f7aa3bd216a1a7873c104"
-        },
         {
           "name": "cdx:composer:package:type",
           "value": "library"
@@ -28426,7 +28416,7 @@
       "ref": "webmozart/assert-1.12.1.0"
     },
     {
-      "ref": "conductionnl/integriq-dev-development",
+      "ref": "conductionnl/integriq-1.0.0.0",
       "dependsOn": [
         "adbario/php-dot-notation-3.5.0.0",
         "elasticsearch/elasticsearch-9.5.0.0",

@@ -86,7 +86,7 @@ class BerichtenboxLetterBuilder implements LetterBuilderInterface {
 		?string $batchId = null,
 		?string $berichtId = null,
 	): BerichtenboxBatch {
-		$fields = LetterFields::forSender(senderOin: $senderOin, berichtType: $berichtType);
+		$fields = new LetterFields(senderOin: $senderOin, berichtType: $berichtType);
 		$fields->batchId = ($batchId ?? $this->guid());
 		$fields->berichtId = ($berichtId ?? $this->guid());
 		$fields->created = ($now ?? new DateTimeImmutable('now'))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
