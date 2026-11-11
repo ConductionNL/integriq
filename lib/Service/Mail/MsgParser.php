@@ -120,12 +120,9 @@ class MsgParser {
 				continue;
 			}
 
-			$propertyId = strtoupper(substr($tag, 0, 4));
 			$value = $this->decodeProperty(tag: $tag, value: $reader->readStream($childId));
 			// A property present twice keeps the first, matching the EML reader.
-			if (isset($properties[$propertyId]) === false) {
-				$properties[$propertyId] = $value;
-			}
+			$properties += [strtoupper(substr($tag, 0, 4)) => $value];
 		}
 
 		return $properties;
