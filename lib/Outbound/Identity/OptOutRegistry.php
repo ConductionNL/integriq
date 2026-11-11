@@ -97,13 +97,6 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	private const REDACTION_KEEPS = ['state', 'previousState', 'keptState', 'scope', 'code'];
 
 	/**
-	 * The decision codes under which the message is sent.
-	 *
-	 * @var string[]
-	 */
-	private const SENDING_CODES = [self::CODE_ALLOWED, self::CODE_EXEMPT_OVERRIDE];
-
-	/**
 	 * The app-config key that turns the check off in integriq's own senders.
 	 *
 	 * @var string
@@ -380,7 +373,7 @@ class OptOutRegistry implements OptOutRegistryInterface {
 			sourceApp: $send->sourceApp,
 			correlationId: (string)($send->options['correlationId'] ?? ''),
 			baseUrl: (string)($send->options['baseUrl'] ?? ''),
-			inReplyTo: $this->replyToOption(options: $send->options)
+			inReplyTo: $send->inReplyTo()
 		);
 
 	}//end decideListed()
@@ -401,22 +394,6 @@ class OptOutRegistry implements OptOutRegistryInterface {
 		return $this->uniform(recipients: $send->recipients, template: $template);
 
 	}//end decideWithAuthorityOff()
-
-	/**
-	 * The inbound message a send answers, from the sender's options.
-	 *
-	 * @param array<string,mixed> $options The sender's options.
-	 *
-	 * @return string|null The `inReplyTo` value, or null when absent or empty.
-	 */
-	private function replyToOption(array $options): ?string {
-		if (isset($options['inReplyTo']) === true && $options['inReplyTo'] !== '') {
-			return (string)$options['inReplyTo'];
-		}
-
-		return null;
-
-	}//end replyToOption()
 
 	/**
 	 * Decide when the opt-out list cannot be read: an exempt category is sent,
@@ -751,13 +728,13 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	private function decideOne(SendDecisionRun $run, AddressedRecipient $addressed): array {
 		if ($addressed->key === null) {
 			$reason = 'This address cannot be used on the "' . $run->channel . '" channel.';
-			$refusal = $this->decisionFor(run: $run, addressed: $addressed)->because(code: self::CODE_INVALID_ADDRESS, reason: $reason);
+			$refusal = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_INVALID_ADDRESS, reason: $reason);
 			return $this->suppress(run: $run, decision: $refusal);
 		}
 
 		if ($run->category === OptOutCategories::REPLY) {
 			$reason = 'A direct reply is sent whatever the opt-outs say.';
-			return $this->decision(decision: $this->decisionFor(run: $run, addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: $reason));
+			return $this->decision(decision: $run->decisionFor(addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: $reason));
 		}
 
 		$this->matchRecipient(run: $run, addressed: $addressed);
@@ -800,13 +777,13 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	private function decideExempt(SendDecisionRun $run, AddressedRecipient $addressed): array {
 		$optOut = $addressed->optOut;
 		if ($optOut === null) {
-			return $this->decision(decision: $this->decisionFor(run: $run, addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: ''));
+			return $this->decision(decision: $run->decisionFor(addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: ''));
 		}
 
 		$detail = ['scope' => (string)$optOut->getScope(), 'optOutId' => $optOut->getId()];
 		$this->append(kind: OptOutLogEntry::KIND_OVERRIDE, address: (string)$addressed->key, context: $run->logContext(), detail: $detail);
 		$reason = 'Category "' . $run->category . '" cannot be stopped by an opt-out.';
-		$decision = $this->decisionFor(run: $run, addressed: $addressed)->because(code: self::CODE_EXEMPT_OVERRIDE, reason: $reason);
+		$decision = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_EXEMPT_OVERRIDE, reason: $reason);
 		$decision->overridden = true;
 		return $this->decision(decision: $decision);
 
@@ -825,14 +802,14 @@ class OptOutRegistry implements OptOutRegistryInterface {
 		$optOut = $addressed->optOut;
 		if ($optOut !== null) {
 			$reason = 'This address opted out (' . $optOut->getScope() . ').';
-			$decision = $this->decisionFor(run: $run, addressed: $addressed)->because(code: self::CODE_OPTED_OUT, reason: $reason);
+			$decision = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_OPTED_OUT, reason: $reason);
 			$decision->logDetail = ['scope' => (string)$optOut->getScope()];
 			return $this->suppress(run: $run, decision: $decision);
 		}
 
 		if ($this->consentPermits(run: $run, addressed: $addressed) === false) {
 			$reason = 'No recorded consent permits this message.';
-			$refusal = $this->decisionFor(run: $run, addressed: $addressed)->because(code: self::CODE_NO_CONSENT, reason: $reason);
+			$refusal = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_NO_CONSENT, reason: $reason);
 			return $this->suppress(run: $run, decision: $refusal);
 		}
 
@@ -863,7 +840,7 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @return array<string,mixed> The decision.
 	 */
 	private function allow(SendDecisionRun $run, AddressedRecipient $addressed): array {
-		$decision = $this->decisionFor(run: $run, addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: '');
+		$decision = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: '');
 		if ($run->probe === true) {
 			// A probe only shows a state: no token, no short link.
 			return $this->decision(decision: $decision);
@@ -965,30 +942,9 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @return array<string,mixed> The decision: send, overridden, code, reason, unsubscribe, address, category.
 	 */
 	private function decision(SendDecision $decision): array {
-		return [
-			'send' => in_array($decision->code, self::SENDING_CODES, true),
-			'overridden' => $decision->overridden,
-			'code' => $decision->code,
-			'reason' => $decision->reason,
-			'unsubscribe' => $decision->unsubscribe,
-			'address' => $decision->address,
-			'category' => $decision->category,
-		];
+		return $decision->toArray(send: in_array($decision->code, [self::CODE_ALLOWED, self::CODE_EXEMPT_OVERRIDE], true));
 
 	}//end decision()
-
-	/**
-	 * A decision about one recipient of the batch, in the batch's category.
-	 *
-	 * @param SendDecisionRun $run The batch.
-	 * @param AddressedRecipient $addressed The recipient; an unusable address decides as empty.
-	 *
-	 * @return SendDecision The decision, without a code yet.
-	 */
-	private function decisionFor(SendDecisionRun $run, AddressedRecipient $addressed): SendDecision {
-		return new SendDecision(address: (string)$addressed->key, category: $run->category);
-
-	}//end decisionFor()
 
 	/**
 	 * The same decision for every recipient, with no table read.

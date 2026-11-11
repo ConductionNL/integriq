@@ -80,4 +80,19 @@ final class OwnSendRequest {
 		$this->sourceApp = (string)($options['sourceApp'] ?? 'integriq');
 		$this->options = $options;
 	}//end withOptions()
+
+	/**
+	 * The inbound message the send answers, from the sender's options.
+	 *
+	 * @return string|null The `inReplyTo` value, or null when absent or empty.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	public function inReplyTo(): ?string {
+		if (isset($this->options['inReplyTo']) === true && $this->options['inReplyTo'] !== '') {
+			return (string)$this->options['inReplyTo'];
+		}
+
+		return null;
+	}//end inReplyTo()
 }//end class

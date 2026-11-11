@@ -113,4 +113,25 @@ final class SendDecision {
 
 		return $copy;
 	}//end forAddress()
+
+	/**
+	 * The decision as the registry returns it.
+	 *
+	 * @param bool $send Whether the message is sent.
+	 *
+	 * @return array<string,mixed> The decision: send, overridden, code, reason, unsubscribe, address, category.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
+	 */
+	public function toArray(bool $send): array {
+		return [
+			'send' => $send,
+			'overridden' => $this->overridden,
+			'code' => $this->code,
+			'reason' => $this->reason,
+			'unsubscribe' => $this->unsubscribe,
+			'address' => $this->address,
+			'category' => $this->category,
+		];
+	}//end toArray()
 }//end class
