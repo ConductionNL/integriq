@@ -86,47 +86,84 @@ class DatasourceController extends Controller {
 		$valueExpr = (string)($body['valueExpr'] ?? '');
 
 		if ($valueExpr === '') {
-			return new JSONResponse(
-				['error' => $this->l->t('valueExpr is required')],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingValueExpr();
 		}
 
+		try {
+			$result = $service->resolve(sourceId: $sourceId, valueExpr: $valueExpr, params: $this->callerParams(body: $body), ttl: $this->ttlOf(body: $body));
+		} catch (\Throwable $e) {
+			return $this->resolveFailure(exception: $e);
+		}
+
+		return new JSONResponse($result);
+	}//end resolve()
+
+	/**
+	 * Answer a request without a value expression.
+	 *
+	 * @return JSONResponse The 400 error.
+	 */
+	private function missingValueExpr(): JSONResponse {
+		return new JSONResponse(
+			['error' => $this->l->t('valueExpr is required')],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end missingValueExpr()
+
+	/**
+	 * The caller's params, without any egress override.
+	 *
+	 * Egress guard, defence-in-depth: also strip url/host here, ahead of
+	 * the service's own guard, so no caller-supplied override ever
+	 * leaves the controller.
+	 *
+	 * @param array<string,mixed> $body The request body.
+	 *
+	 * @return array<string,mixed> The params (none unless the body carries a list), without `url` and `host`.
+	 */
+	private function callerParams(array $body): array {
 		$params = ($body['params'] ?? []);
 		if (is_array($params) === false) {
 			$params = [];
 		}
 
-		// Egress guard, defence-in-depth: also strip url/host here, ahead of
-		// the service's own guard, so no caller-supplied override ever
-		// leaves this method.
 		unset($params['url'], $params['host']);
+		return $params;
+	}//end callerParams()
 
-		$ttl = null;
+	/**
+	 * The cache ttl the caller asks for.
+	 *
+	 * @param array<string,mixed> $body The request body.
+	 *
+	 * @return int|null The ttl in seconds, or null when the body carries no number.
+	 */
+	private function ttlOf(array $body): int|null {
 		if (isset($body['ttl']) === true && is_numeric($body['ttl']) === true) {
-			$ttl = (int)$body['ttl'];
+			return (int)$body['ttl'];
 		}
 
-		try {
-			$result = $service->resolve(sourceId: $sourceId, valueExpr: $valueExpr, params: $params, ttl: $ttl);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(
-				['error' => $this->l->t('Not authorized to read this source')],
-				Http::STATUS_FORBIDDEN
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				['error' => $this->l->t('Source not found')],
-				Http::STATUS_NOT_FOUND
-			);
-		} catch (\Throwable $e) {
-			$this->logger->error('dashboard-http-datasource: resolve failed unexpectedly: ' . $e->getMessage(), ['exception' => $e]);
-			return new JSONResponse(
-				['error' => $this->l->t('Failed to resolve value')],
-				Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+		return null;
+	}//end ttlOf()
 
-		return new JSONResponse($result);
-	}//end resolve()
+	/**
+	 * Answer a resolve that failed: 403 for a source the user may not read,
+	 * 404 for one that does not exist, else log it and answer 500.
+	 *
+	 * @param \Throwable $exception The failure.
+	 *
+	 * @return JSONResponse The error.
+	 */
+	private function resolveFailure(\Throwable $exception): JSONResponse {
+		if ($exception instanceof NotAuthorizedException) {
+			return new JSONResponse(['error' => $this->l->t('Not authorized to read this source')], Http::STATUS_FORBIDDEN);
+		}
+
+		if ($exception instanceof DoesNotExistException) {
+			return new JSONResponse(['error' => $this->l->t('Source not found')], Http::STATUS_NOT_FOUND);
+		}
+
+		$this->logger->error('dashboard-http-datasource: resolve failed unexpectedly: ' . $exception->getMessage(), ['exception' => $exception]);
+		return new JSONResponse(['error' => $this->l->t('Failed to resolve value')], Http::STATUS_INTERNAL_SERVER_ERROR);
+	}//end resolveFailure()
 }//end class
