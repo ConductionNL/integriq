@@ -192,6 +192,29 @@ npm run build
 php occ app:enable integriq
 ```
 
+### Try it with Docker
+
+The repository builds an evaluation image: the official Nextcloud image with integriq and OpenRegister installed and enabled. It is meant for trying the app out and for test environments. For production, install the app from the Nextcloud App Store.
+
+```bash
+docker compose -f docker/docker-compose.yml up -d --build
+```
+
+Open http://localhost:8080/apps/integriq/ and sign in as `admin` with password `admin`. The first start takes a minute or two. Set `NEXTCLOUD_ADMIN_PASSWORD` and `APP_PORT` to change the password and the port; `docker/docker-compose.yml` lists every setting. `docker compose -f docker/docker-compose.yml down -v` removes the stack and its data.
+
+Released versions are published as `ghcr.io/conductionnl/integriq`, so leaving out `--build` uses the published image.
+
+### Run it on Kubernetes
+
+`charts/integriq` wraps the official [Nextcloud Helm chart](https://github.com/nextcloud/helm) and runs the same image with PostgreSQL:
+
+```bash
+helm dependency build charts/integriq
+helm install integriq charts/integriq --set nextcloud.nextcloud.host=integriq.example.org
+```
+
+Change the passwords in `charts/integriq/values.yaml` before you install it anywhere that matters.
+
 ## Development
 
 ### Start the environment
