@@ -236,7 +236,7 @@
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Mail/CompoundFileReader.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Mail/CompoundFileReader.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Mail/CompoundFileReader.php" method="readFat"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/CompoundFileReader.php" method="readDirectory"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/CompoundFileReader.php" method="entryName"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Mail/EmlParser.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Mail/EmlParser.php" method="walkPart"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Mail/EmlParser.php" method="decodeWords"/>
