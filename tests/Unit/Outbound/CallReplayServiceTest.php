@@ -107,6 +107,13 @@ class RecordingDispatcher implements CallDispatcherInterface {
 class CallReplayServiceTest extends TestCase {
 
 	/**
+	 * The golden hand-fired calls, taken before fire() was split.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_FIRED = '[{"result":{"call":"recorded","kind":"hand-fired","succeeded":true,"sent":true,"statusCode":200,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":200,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":200,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":true,"statusCode":199,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":199,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":199,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":true,"sent":true,"statusCode":299,"detail":"OK"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":299,"headers":[],"durationMs":12,"detail":"OK"},"statusCode":299,"statusMessage":"OK","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":true,"statusCode":300,"detail":"Service Unavailable"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":{"statusCode":300,"headers":[],"durationMs":12,"detail":"Service Unavailable"},"statusCode":300,"statusMessage":"Service Unavailable","durationMs":12,"kind":"hand-fired","firedBy":"beheerder"},"sent":1},{"result":{"call":"recorded","kind":"hand-fired","succeeded":false,"sent":false,"detail":"no route to host"},"record":{"target":"notificaties-partner","request":{"method":"POST","endpoint":"\\/notificaties"},"response":[],"statusCode":0,"statusMessage":"no route to host","durationMs":0,"kind":"hand-fired","firedBy":"beheerder"},"sent":0},{"result":{"kind":"dry-run","succeeded":true,"sent":false,"request":{"method":"POST","endpoint":"\\/notificaties","body":{"kanaal":"zaken"}},"detail":"Dry run: this is the request that would be sent. Nothing was sent."},"record":null,"sent":0},{"result":{"kind":"dry-run","succeeded":true,"sent":false,"request":{"method":"POST","endpoint":"\\/notificaties","body":{"kanaal":"zaken"}},"detail":"Dry run: this is the request that would be sent. Nothing was sent."},"record":null,"sent":0}]';
+
+	/**
 	 * The OR object service double.
 	 *
 	 * @var ORObjectService|MockObject
@@ -893,5 +900,33 @@ class CallReplayServiceTest extends TestCase {
 		return (string)$entity->getUuid();
 
 	}//end failedCall()
+
+
+	/**
+	 * GOLDEN: a hand-fired call as a dry run, answered at the 2xx boundaries,
+	 * and failed in dispatch: the outcome and what was recorded. The new record's
+	 * uuid shows only as the record it names. Pinned before fire() was split.
+	 *
+	 * @return void
+	 */
+	public function testGoldenHandFiredCalls(): void {
+		$request = ['method' => 'POST', 'endpoint' => '/notificaties', 'body' => ['kanaal' => 'zaken']];
+		$outcomes = [];
+		foreach ([[200, null, false], [199, null, false], [299, null, false], [300, null, false], [200, 'no route to host', false], [200, null, true], [500, 'x', true]] as [$status, $throw, $dryRun]) {
+			$dispatcher = new RecordingDispatcher($status, $throw);
+			$result = $this->service($dispatcher)->fire('notificaties-partner', $request, 'beheerder', $dryRun);
+			$record = null;
+			if (isset($result['call']) === true) {
+				$stored = $this->records[$result['call']];
+				$record = array_intersect_key($stored, array_flip(['target', 'request', 'response', 'statusCode', 'statusMessage', 'durationMs', 'kind', 'firedBy']));
+				$result['call'] = 'recorded';
+			}
+
+			$outcomes[] = ['result' => $result, 'record' => $record, 'sent' => count($dispatcher->sent)];
+		}
+
+		$this->assertSame(self::GOLDEN_FIRED, json_encode($outcomes));
+
+	}//end testGoldenHandFiredCalls()
 
 }//end class
