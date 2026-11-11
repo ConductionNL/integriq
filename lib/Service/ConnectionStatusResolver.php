@@ -540,7 +540,7 @@ class ConnectionStatusResolver {
 	/**
 	 * Build the outcome of rule 4 from an observation, at its own time.
 	 *
-	 * @param array{status:string,message:string,at:?string,time:int} $observation The observation.
+	 * @param array{status:string,message:string,at:?string} $observation The observation.
 	 * @param int $rule The D4 rule number that matched.
 	 *
 	 * @return array{status:string,statusMessage:string,checkedAt:?string,rule:int}
