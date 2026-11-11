@@ -25,7 +25,6 @@ namespace OCA\Integriq\Service;
 
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
-use OCP\Accounts\IAccountProperty;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -925,7 +924,8 @@ class UserService implements UserServiceInterface {
 	}//end updateAccountProperties()
 
 	/**
-	 * Set every standard profile field the data carries on the account.
+	 * Set every standard profile field the data carries on the account,
+	 * when its value differs.
 	 *
 	 * @param IAccount $account The user's account.
 	 * @param array    $data    The data array containing updates.
@@ -935,33 +935,21 @@ class UserService implements UserServiceInterface {
 	private function applyAccountChanges(IAccount $account, array $data): bool {
 		$accountUpdated = false;
 		foreach (self::ACCOUNT_PROFILE_FIELDS as $apiField => $accountProperty) {
-			if (isset($data[$apiField]) === true
-				&& $this->setAccountProperty(value: (string)$data[$apiField], property: $account->getProperty($accountProperty)) === true
-			) {
+			if (isset($data[$apiField]) === false) {
+				continue;
+			}
+
+			$value = (string)$data[$apiField];
+			// Update existing account property (getProperty() always returns non-null).
+			$property = $account->getProperty($accountProperty);
+			if ($property->getValue() !== $value) {
+				$property->setValue($value);
 				$accountUpdated = true;
 			}
 		}
 
 		return $accountUpdated;
 	}//end applyAccountChanges()
-
-	/**
-	 * Set one account property when its value differs.
-	 *
-	 * @param string           $value    The new value.
-	 * @param IAccountProperty $property The property (getProperty() always returns non-null).
-	 *
-	 * @return bool True when the value changed.
-	 */
-	private function setAccountProperty(string $value, IAccountProperty $property): bool {
-		if ($property->getValue() === $value) {
-			return false;
-		}
-
-		$property->setValue($value);
-
-		return true;
-	}//end setAccountProperty()
 
 	/**
 	 * Log an AccountManager failure without failing the whole update.
