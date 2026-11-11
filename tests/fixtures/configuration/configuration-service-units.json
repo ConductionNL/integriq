@@ -1211,5 +1211,13 @@
             "job-source-int",
             "job-source-numeric-text"
         ]
+    },
+    "export-register:sync-search-off": {
+        "mappings": [],
+        "sources": [],
+        "rules": [],
+        "endpoints": [],
+        "synchronizations": [],
+        "jobs": []
     }
 }
