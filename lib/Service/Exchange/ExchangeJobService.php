@@ -127,41 +127,74 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-001-an-exchange-job-is-a-tagged-native-job
 	 */
 	public function handleRequest(ExchangeJobRequestedEvent $event): ?ObjectEntity {
-		$refusal = $this->validate(
-			ownerApp: $event->getOwnerApp(),
-			target: $event->getTarget(),
-			direction: $event->getDirection(),
-			mappingSlug: $event->getMappingSlug()
-		);
-		if ($refusal !== null) {
-			$event->refuse(code: $refusal['code'], reason: $refusal['reason']);
+		$request = ExchangeJobRequest::fromEvent(event: $event);
+		if ($this->refuseInvalid(event: $event, request: $request) === true || $this->answerMigrated(event: $event) === true) {
 			return null;
 		}
 
+		$job     = $this->buildJob(request: $request);
 		$history = $event->getHistory();
-		$legacyId = (string)($history['legacyId'] ?? '');
-		if ($legacyId !== '') {
-			$existing = $this->findMigrated(ownerApp: $event->getOwnerApp(), legacyId: $legacyId);
-			if ($existing !== null) {
-				$event->setJobId($existing->getUuid());
-				return null;
-			}
-		}
-
-		$job = $this->buildJob(
-			ownerApp: $event->getOwnerApp(),
-			target: $event->getTarget(),
-			direction: $event->getDirection(),
-			ownerRef: $event->getOwnerRef(),
-			scope: $event->getScope(),
-			mappingSlug: $event->getMappingSlug(),
-			requestedBy: $event->getRequestedBy(),
-			name: $event->getName()
-		);
 		if ($history !== null) {
 			$job = $this->applyHistory(job: $job, history: $history);
 		}
 
+		return $this->storeRequestedJob(event: $event, job: $job);
+
+	}//end handleRequest()
+
+	/**
+	 * Refuse a request the vocabulary does not allow.
+	 *
+	 * @param ExchangeJobRequestedEvent $event   The request event.
+	 * @param ExchangeJobRequest        $request The request it carries.
+	 *
+	 * @return bool True when the request was refused.
+	 */
+	private function refuseInvalid(ExchangeJobRequestedEvent $event, ExchangeJobRequest $request): bool {
+		$refusal = $this->validate(request: $request);
+		if ($refusal === null) {
+			return false;
+		}
+
+		$event->refuse(code: $refusal['code'], reason: $refusal['reason']);
+		return true;
+
+	}//end refuseInvalid()
+
+	/**
+	 * Answer a migrated request whose legacy id was already migrated with the
+	 * existing job.
+	 *
+	 * @param ExchangeJobRequestedEvent $event The request event.
+	 *
+	 * @return bool True when the request was answered with an existing job.
+	 */
+	private function answerMigrated(ExchangeJobRequestedEvent $event): bool {
+		$legacyId = (string)($event->getHistory()['legacyId'] ?? '');
+		if ($legacyId === '') {
+			return false;
+		}
+
+		$existing = $this->findMigrated(ownerApp: $event->getOwnerApp(), legacyId: $legacyId);
+		if ($existing === null) {
+			return false;
+		}
+
+		$event->setJobId($existing->getUuid());
+		return true;
+
+	}//end answerMigrated()
+
+	/**
+	 * Store a requested job and hand its id to the event, or refuse it when
+	 * the store fails.
+	 *
+	 * @param ExchangeJobRequestedEvent $event The request event.
+	 * @param array<string,mixed>       $job   The job data.
+	 *
+	 * @return ObjectEntity|null The stored job, or null when the store failed.
+	 */
+	private function storeRequestedJob(ExchangeJobRequestedEvent $event, array $job): ?ObjectEntity {
 		try {
 			$saved = $this->saveJob(data: $job);
 		} catch (\Throwable $exception) {
@@ -173,7 +206,7 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 		$event->setJobId($saved->getUuid());
 		return $saved;
 
-	}//end handleRequest()
+	}//end storeRequestedJob()
 
 	/**
 	 * Take an ExchangeMappingRequestedEvent: upsert the mapping by slug.
@@ -251,28 +284,38 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 		string $rejectionId,
 		string $actor
 	): ObjectEntity {
-		$scope = $original['exchangeScope'] ?? [];
-		if (is_array($scope) === false) {
-			$scope = [];
-		}
+		$resubmitted = $this->resubmissionData(original: $original, recordId: $recordId);
+		$resubmitted['ownerRef']    = $ownerRef;
+		$resubmitted['requestedBy'] = $actor;
 
-		$scope['recordIds'] = [$recordId];
-
-		$job = $this->buildJob(
-			ownerApp: (string)($original['ownerApp'] ?? ''),
-			target: (string)($original['exchangeTarget'] ?? ''),
-			direction: (string)($original['exchangeDirection'] ?? ''),
-			ownerRef: $ownerRef,
-			scope: $scope,
-			mappingSlug: ($original['exchangeMapping'] ?? null),
-			requestedBy: $actor,
-			name: 'Resubmission: ' . (string)($original['name'] ?? '')
-		);
+		$job = $this->buildJob(request: ExchangeJobRequest::fromJobData(data: $resubmitted));
 		$job['resubmissionOf'] = $rejectionId;
 
 		return $this->saveJob(data: $job);
 
 	}//end createResubmission()
+
+	/**
+	 * The rejected job's data with its scope narrowed to one record and its
+	 * name marked as a resubmission.
+	 *
+	 * @param array<string,mixed> $original The rejected record's job data.
+	 * @param string              $recordId The rejected record's id in the owning app.
+	 *
+	 * @return array<string,mixed> The job data of the resubmission.
+	 */
+	private function resubmissionData(array $original, string $recordId): array {
+		$scope = $original['exchangeScope'] ?? [];
+		if (is_array($scope) === false) {
+			$scope = [];
+		}
+
+		$scope['recordIds']        = [$recordId];
+		$original['exchangeScope'] = $scope;
+		$original['name']          = 'Resubmission: ' . (string)($original['name'] ?? '');
+		return $original;
+
+	}//end resubmissionData()
 
 	/**
 	 * Load an exchange job by uuid.
@@ -357,86 +400,69 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 	/**
 	 * Check a request against the vocabulary.
 	 *
-	 * @param string      $ownerApp    The owning app.
-	 * @param string      $target      The target.
-	 * @param string      $direction   The direction.
-	 * @param string|null $mappingSlug The mapping slug.
+	 * @param ExchangeJobRequest $request The request.
 	 *
 	 * @return array{code: string, reason: string}|null The refusal, or null when valid.
 	 */
-	private function validate(string $ownerApp, string $target, string $direction, ?string $mappingSlug): ?array {
-		if ($ownerApp === '') {
-			return ['code' => 'owner-missing', 'reason' => 'The request names no owning app.'];
-		}
-
-		if ($this->targets->has(target: $target) === false) {
-			return ['code' => 'target-unknown', 'reason' => sprintf('Integriq knows no exchange target "%s".', $target)];
-		}
-
-		if ($this->targets->supportsDirection(target: $target, direction: $direction) === false) {
-			return [
-				'code' => 'direction-unsupported',
-				'reason' => sprintf('The exchange target "%s" does not support direction "%s".', $target, $direction),
-			];
-		}
-
-		if ($mappingSlug !== null && $mappingSlug !== '' && $this->findMapping(slug: $mappingSlug) === null) {
-			return ['code' => 'mapping-missing', 'reason' => sprintf('No mapping "%s" exists in integriq.', $mappingSlug)];
-		}
-
-		return null;
+	private function validate(ExchangeJobRequest $request): ?array {
+		return ($this->routeRefusal(request: $request) ?? $this->mappingRefusal(request: $request));
 
 	}//end validate()
 
 	/**
+	 * Check the owner, target and direction of a request.
+	 *
+	 * @param ExchangeJobRequest $request The request.
+	 *
+	 * @return array{code: string, reason: string}|null The refusal, or null when valid.
+	 */
+	private function routeRefusal(ExchangeJobRequest $request): ?array {
+		if ($request->ownerApp === '') {
+			return ['code' => 'owner-missing', 'reason' => 'The request names no owning app.'];
+		}
+
+		if ($this->targets->has(target: $request->target) === false) {
+			return ['code' => 'target-unknown', 'reason' => sprintf('Integriq knows no exchange target "%s".', $request->target)];
+		}
+
+		if ($this->targets->supportsDirection(target: $request->target, direction: $request->direction) === false) {
+			return [
+				'code' => 'direction-unsupported',
+				'reason' => sprintf('The exchange target "%s" does not support direction "%s".', $request->target, $request->direction),
+			];
+		}
+
+		return null;
+
+	}//end routeRefusal()
+
+	/**
+	 * Check that the mapping a request names exists.
+	 *
+	 * @param ExchangeJobRequest $request The request.
+	 *
+	 * @return array{code: string, reason: string}|null The refusal, or null when valid.
+	 */
+	private function mappingRefusal(ExchangeJobRequest $request): ?array {
+		$slug = $request->mappingSlug;
+		if ($slug === null || $slug === '' || $this->findMapping(slug: $slug) !== null) {
+			return null;
+		}
+
+		return ['code' => 'mapping-missing', 'reason' => sprintf('No mapping "%s" exists in integriq.', $slug)];
+
+	}//end mappingRefusal()
+
+	/**
 	 * Build the data of a new exchange job.
 	 *
-	 * @param string              $ownerApp    The owning app.
-	 * @param string              $target      The target.
-	 * @param string              $direction   The direction.
-	 * @param string              $ownerRef    The owner reference.
-	 * @param array<string,mixed> $scope       The scope.
-	 * @param mixed               $mappingSlug The mapping slug or null.
-	 * @param string              $requestedBy The requester.
-	 * @param string              $name        The label.
+	 * @param ExchangeJobRequest $request The request.
 	 *
 	 * @return array<string,mixed> The job data.
 	 */
-	private function buildJob(
-		string $ownerApp,
-		string $target,
-		string $direction,
-		string $ownerRef,
-		array $scope,
-		mixed $mappingSlug,
-		string $requestedBy,
-		string $name
-	): array {
-		if ($name === '') {
-			$name = $this->targets->label(target: $target) . ' ' . $direction;
-		}
-
-		$job = [
-			'name' => $name,
-			'description' => sprintf('Data exchange job of %s for target %s.', $ownerApp, $target),
-			'jobClass' => ExchangeJobAction::class,
-			'arguments' => [],
-			'interval' => 0,
-			'isEnabled' => true,
-			'singleRun' => true,
-			'exchangeTarget' => $target,
-			'exchangeDirection' => $direction,
-			'ownerApp' => $ownerApp,
-			'ownerRef' => $ownerRef,
-			'exchangeScope' => $scope,
-			'exchangeStatus' => self::STATUS_QUEUED,
-			'requestedBy' => $requestedBy,
-			'requestedAt' => (new DateTime())->format('c'),
-		];
-		if (is_string($mappingSlug) === false || $mappingSlug === '') {
-			$mappingSlug = $this->defaultMapping(ownerApp: $ownerApp, target: $target, direction: $direction, scope: $scope);
-		}
-
+	private function buildJob(ExchangeJobRequest $request): array {
+		$job         = array_merge($this->jobDefinition(request: $request), $this->exchangeFields(request: $request));
+		$mappingSlug = $this->resolveMapping(request: $request);
 		if ($mappingSlug !== null) {
 			$job['exchangeMapping'] = $mappingSlug;
 		}
@@ -446,28 +472,88 @@ class ExchangeJobService implements ExchangeJobServiceInterface {
 	}//end buildJob()
 
 	/**
+	 * The native job fields of a new exchange job: a single run of the
+	 * exchange action, named after the target and direction by default.
+	 *
+	 * @param ExchangeJobRequest $request The request.
+	 *
+	 * @return array<string,mixed> The job fields.
+	 */
+	private function jobDefinition(ExchangeJobRequest $request): array {
+		$name = $request->name;
+		if ($name === '') {
+			$name = $this->targets->label(target: $request->target) . ' ' . $request->direction;
+		}
+
+		return [
+			'name' => $name,
+			'description' => sprintf('Data exchange job of %s for target %s.', $request->ownerApp, $request->target),
+			'jobClass' => ExchangeJobAction::class,
+			'arguments' => [],
+			'interval' => 0,
+			'isEnabled' => true,
+			'singleRun' => true,
+		];
+
+	}//end jobDefinition()
+
+	/**
+	 * The exchange fields of a new, queued exchange job.
+	 *
+	 * @param ExchangeJobRequest $request The request.
+	 *
+	 * @return array<string,mixed> The exchange fields.
+	 */
+	private function exchangeFields(ExchangeJobRequest $request): array {
+		return [
+			'exchangeTarget' => $request->target,
+			'exchangeDirection' => $request->direction,
+			'ownerApp' => $request->ownerApp,
+			'ownerRef' => $request->ownerRef,
+			'exchangeScope' => $request->scope,
+			'exchangeStatus' => self::STATUS_QUEUED,
+			'requestedBy' => $request->requestedBy,
+			'requestedAt' => (new DateTime())->format('c'),
+		];
+
+	}//end exchangeFields()
+
+	/**
+	 * The mapping slug a job gets: the one its owner named, else the default.
+	 *
+	 * @param ExchangeJobRequest $request The request.
+	 *
+	 * @return string|null The mapping slug, or null when there is none.
+	 */
+	private function resolveMapping(ExchangeJobRequest $request): ?string {
+		if ($request->mappingSlug === null || $request->mappingSlug === '') {
+			return $this->defaultMapping(request: $request);
+		}
+
+		return $request->mappingSlug;
+
+	}//end resolveMapping()
+
+	/**
 	 * The mapping row for a job whose owning app named none.
 	 *
 	 * A learniq `bron-rod` export with scope `berichtsoort: schooladvies`
 	 * gets the school advice row; any other learniq `bron-rod` export gets
 	 * the learner row.
 	 *
-	 * @param string              $ownerApp  The owning app.
-	 * @param string              $target    The target.
-	 * @param string              $direction The direction.
-	 * @param array<string,mixed> $scope     The scope.
+	 * @param ExchangeJobRequest $request The request.
 	 *
 	 * @return string|null The mapping slug, or null when there is no default.
 	 *
 	 * @spec openspec/specs/rod-adapter/spec.md#scenario-default-mapping-for-a-schooladvies-job
 	 */
-	private function defaultMapping(string $ownerApp, string $target, string $direction, array $scope): ?string {
-		$byKind = (self::DEFAULT_MAPPINGS[$ownerApp][$target.':'.$direction] ?? null);
+	private function defaultMapping(ExchangeJobRequest $request): ?string {
+		$byKind = (self::DEFAULT_MAPPINGS[$request->ownerApp][$request->target.':'.$request->direction] ?? null);
 		if ($byKind === null) {
 			return null;
 		}
 
-		$kind = $scope['berichtsoort'] ?? '';
+		$kind = $request->scope['berichtsoort'] ?? '';
 		if (is_string($kind) === false) {
 			$kind = '';
 		}
