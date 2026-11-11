@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Rod;
 
+use OCA\Integriq\Service\Helper\ProviderIndex;
 use OCA\Integriq\Service\Helper\ProviderIds;
 use RuntimeException;
 
@@ -36,9 +37,9 @@ class RodProviderRegistry {
 	/**
 	 * Bindings keyed by provider id.
 	 *
-	 * @var array<string,RodProviderInterface>
+	 * @var ProviderIndex<RodProviderInterface>
 	 */
-	private array $providers = [];
+	private readonly ProviderIndex $index;
 
 	/**
 	 * Constructor.
@@ -46,13 +47,7 @@ class RodProviderRegistry {
 	 * @param iterable<RodProviderInterface> $providers The bindings.
 	 */
 	public function __construct(iterable $providers = []) {
-		foreach ($providers as $provider) {
-			if (isset($this->providers[$provider->getProviderId()]) === true) {
-				continue;
-			}
-
-			$this->providers[$provider->getProviderId()] = $provider;
-		}
+		$this->index = new ProviderIndex(kind: 'ROD', providers: $providers);
 	}//end __construct()
 
 	/**
@@ -65,7 +60,7 @@ class RodProviderRegistry {
 	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function has(string $providerId): bool {
-		return isset($this->providers[$providerId]);
+		return $this->index->has(providerId: $providerId);
 	}//end has()
 
 	/**
@@ -80,18 +75,7 @@ class RodProviderRegistry {
 	 * @spec openspec/specs/rod-adapter/spec.md#scenario-a-future-alternative-duo-compatible-transport-is-a-drop-in-binding
 	 */
 	public function get(string $providerId): RodProviderInterface {
-		$resolved = ProviderIds::orLog(providerId: $providerId);
-		if (isset($this->providers[$resolved]) === false) {
-			throw new RuntimeException(
-				sprintf(
-					'No ROD provider is registered under "%s". Registered providers: %s. Nothing was sent.',
-					$resolved,
-					ProviderIds::listed(ids: $this->ids())
-				)
-			);
-		}
-
-		return $this->providers[$resolved];
+		return $this->index->get(providerId: ProviderIds::orLog(providerId: $providerId));
 	}//end get()
 
 	/**
@@ -102,6 +86,6 @@ class RodProviderRegistry {
 	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function ids(): array {
-		return array_keys($this->providers);
+		return $this->index->ids();
 	}//end ids()
 }//end class
