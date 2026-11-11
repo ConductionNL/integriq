@@ -154,6 +154,30 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 	}//end isAliased()
 
 	/**
+	 * The classes the app only ever builds itself: constructed with `new`
+	 * somewhere in lib/ and injected into no constructor, so the container
+	 * never resolves them and their parameters need no binding.
+	 *
+	 * @param array<int, string> $files The lib/ files.
+	 *
+	 * @return array<int, string> The short class names.
+	 */
+	private function handBuiltClasses(array $files): array {
+		$newed = [];
+		$injected = [];
+		foreach ($files as $file) {
+			$source = (string)file_get_contents($file);
+			preg_match_all('/\bnew\s+(?:[A-Za-z0-9_\\\\]*\\\\)?([A-Z][A-Za-z0-9_]*)\s*\(/', $source, $news);
+			$newed = array_merge($newed, $news[1]);
+			preg_match_all('/([A-Za-z_][A-Za-z0-9_]*)\s+\$\w+/', $this->constructorParams($source), $types);
+			$injected = array_merge($injected, $types[1]);
+		}
+
+		return array_values(array_diff(array_unique($newed), $injected));
+
+	}//end handBuiltClasses()
+
+	/**
 	 * No app-owned interface is injected bare without a container binding.
 	 *
 	 * @return void
@@ -172,10 +196,12 @@ class AppOwnedInterfaceBindingTest extends TestCase {
 			}
 		}
 
+		$handBuilt = $this->handBuiltClasses($files);
+
 		$unbound = [];
 		foreach ($files as $file) {
 			$params = $this->constructorParams((string)file_get_contents($file));
-			if ($params === '') {
+			if ($params === '' || in_array(basename($file, '.php'), $handBuilt, true) === true) {
 				continue;
 			}
 
