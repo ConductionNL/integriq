@@ -267,4 +267,24 @@ class SubscriptionSigningDefaultListenerTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 
 	}//end testUnsignedWithoutAReasonIsRefusedAtUpdate()
+
+	/**
+	 * A refused write carries the refusal and nothing to store, at create and at update.
+	 *
+	 * @return void
+	 */
+	public function testARefusedWriteStoresNothing(): void {
+		$create = new ObjectCreatingEvent($this->entity(['sink' => 'https://ontvanger.example.nl/hook', 'style' => 'push', 'protocolSettings' => ['unsigned' => []]]));
+		$old = $this->entity(['style' => 'push', 'protocolSettings' => ['signingSecret' => 'whsec_stored']]);
+		$update = new ObjectUpdatingEvent($this->entity(['style' => 'push', 'protocolSettings' => ['unsigned' => ['reason' => '  ']]]), $old);
+
+		foreach ([$create, $update] as $event) {
+			$this->listener()->handle($event);
+
+			$this->assertTrue($event->isPropagationStopped());
+			$this->assertSame('unsigned_without_reason', $event->getErrors()['code']);
+			$this->assertSame([], $event->getModifiedData(), 'a refused write must not be given protocol settings to store');
+		}
+
+	}//end testARefusedWriteStoresNothing()
 }//end class
