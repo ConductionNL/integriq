@@ -515,5 +515,4 @@ class PromotionServiceTest extends TestCase {
 
 		$this->service->promote('cfg-1', 'acceptance', [], 'operator-uid');
 	}//end testPromoteWritesFailedAuditAndRethrowsWhenTargetReturns404()
-
 }//end class
