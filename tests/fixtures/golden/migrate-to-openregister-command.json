@@ -1,0 +1,355 @@
+{
+    "full run": {
+        "exit": 0,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    null,
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  source   3        3          0         1            12   -      ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            "",
+            " [OK] Migration complete — storage_migrated set to true."
+        ]
+    },
+    "full run with skips": {
+        "exit": 1,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    null,
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  source   3        2          1         0            0    -      ",
+            "  job      0        0          0         0            0    boom   ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            "",
+            " [WARNING] One or more entities reported skips or errors — storage_migrated was NOT flipped. Re-run with                ",
+            "           --entity=<slug> to retry the affected entity."
+        ]
+    },
+    "empty results": {
+        "exit": 0,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    null,
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            "",
+            " [OK] Migration complete — storage_migrated set to true."
+        ]
+    },
+    "dry run": {
+        "exit": 0,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    true,
+                    null,
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            "",
+            " ! [NOTE] Dry-run: counting legacy rows only — no data is written and the flag is unchanged.                            ",
+            "",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  source   3        3          0         1            12   -      ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            " [OK] Dry-run complete — legacy row counts above. No data written."
+        ]
+    },
+    "one entity": {
+        "exit": 0,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    "source",
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  source   3        3          0         1            12   -      ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            "",
+            " [OK] Entity \"source\" migrated. Run a full migration to flip storage_migrated."
+        ]
+    },
+    "one entity, dry run": {
+        "exit": 0,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    true,
+                    "source",
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            "",
+            " ! [NOTE] Dry-run: counting legacy rows only — no data is written and the flag is unchanged.                            ",
+            "",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  source   3        3          0         1            12   -      ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            " [OK] Dry-run complete — legacy row counts above. No data written."
+        ]
+    },
+    "unknown entity": {
+        "exit": 1,
+        "asked": [],
+        "output": [
+            "",
+            " [ERROR] Unknown entity \"nope\". Valid slugs: source, consumer, endpoint, event, event_subscription, job, mapping, rule, ",
+            "         synchronization, synchronization_contract, event_message, call_log, job_log, synchronization_log,              ",
+            "         synchronization_contract_log"
+        ]
+    },
+    "batch size not a number": {
+        "exit": 1,
+        "asked": [],
+        "output": [
+            "",
+            " [ERROR] batch-size must be an integer, got \"1e3\""
+        ]
+    },
+    "batch size negative": {
+        "exit": 1,
+        "asked": [],
+        "output": [
+            "",
+            " [ERROR] batch-size must be an integer, got \"-5\""
+        ]
+    },
+    "batch size 99": {
+        "exit": 1,
+        "asked": [],
+        "output": [
+            "",
+            " [ERROR] batch-size must be in [100, 100000], got 99"
+        ]
+    },
+    "batch size 100": {
+        "exit": 0,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    null,
+                    100
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  source   3        3          0         1            12   -      ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            "",
+            " [OK] Migration complete — storage_migrated set to true."
+        ]
+    },
+    "batch size 100000": {
+        "exit": 0,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    null,
+                    100000
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  entity   legacy   migrated   skipped   fkRewrites   ms   error  ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "  source   3        3          0         1            12   -      ",
+            " -------- -------- ---------- --------- ------------ ---- ------- ",
+            "",
+            "",
+            " [OK] Migration complete — storage_migrated set to true."
+        ]
+    },
+    "batch size 100001": {
+        "exit": 1,
+        "asked": [],
+        "output": [
+            "",
+            " [ERROR] batch-size must be in [100, 100000], got 100001"
+        ]
+    },
+    "migrator refuses": {
+        "exit": 1,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    null,
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            "",
+            " [ERROR] bad slug"
+        ]
+    },
+    "migrator fails": {
+        "exit": 1,
+        "asked": [
+            [
+                "migrateAll",
+                [
+                    false,
+                    null,
+                    10000
+                ]
+            ]
+        ],
+        "output": [
+            "",
+            " [ERROR] Migration failed: db gone"
+        ]
+    },
+    "verify, parity": {
+        "exit": 0,
+        "asked": [
+            [
+                "verifyRowCounts",
+                [
+                    []
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- -------- ",
+            "  entity   legacy   register   skipped   parity  ",
+            " -------- -------- ---------- --------- -------- ",
+            "  source   3        3          0         OK      ",
+            " -------- -------- ---------- --------- -------- ",
+            "",
+            "",
+            " [OK] All 15 entities report legacy↔register row-count parity."
+        ]
+    },
+    "verify, mismatch": {
+        "exit": 1,
+        "asked": [
+            [
+                "verifyRowCounts",
+                [
+                    []
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- ---------- ",
+            "  entity   legacy   register   skipped   parity    ",
+            " -------- -------- ---------- --------- ---------- ",
+            "  source   3        2          1         MISMATCH  ",
+            "  job      1        1          0         OK        ",
+            " -------- -------- ---------- --------- ---------- ",
+            "",
+            "",
+            " [ERROR] One or more entities show a row-count mismatch — investigate before draining legacy tables."
+        ]
+    },
+    "verify, fails": {
+        "exit": 1,
+        "asked": [
+            [
+                "verifyRowCounts",
+                [
+                    []
+                ]
+            ]
+        ],
+        "output": [
+            "",
+            " [ERROR] Verification failed: db gone"
+        ]
+    },
+    "verify wins over dry run": {
+        "exit": 0,
+        "asked": [
+            [
+                "verifyRowCounts",
+                [
+                    []
+                ]
+            ]
+        ],
+        "output": [
+            " -------- -------- ---------- --------- -------- ",
+            "  entity   legacy   register   skipped   parity  ",
+            " -------- -------- ---------- --------- -------- ",
+            "  source   3        3          0         OK      ",
+            " -------- -------- ---------- --------- -------- ",
+            "",
+            "",
+            " [OK] All 15 entities report legacy↔register row-count parity."
+        ]
+    },
+    "unknown entity before verify": {
+        "exit": 1,
+        "asked": [],
+        "output": [
+            "",
+            " [ERROR] Unknown entity \"nope\". Valid slugs: source, consumer, endpoint, event, event_subscription, job, mapping, rule, ",
+            "         synchronization, synchronization_contract, event_message, call_log, job_log, synchronization_log,              ",
+            "         synchronization_contract_log"
+        ]
+    }
+}

@@ -134,47 +134,96 @@ class MigrateToOpenRegister extends Command {
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io = new SymfonyStyle($input, $output);
 
+		$refusal = $this->optionError(input: $input);
+		if ($refusal !== null) {
+			$io->error($refusal);
+			return Command::FAILURE;
+		}
+
+		return $this->runChecked(io: $io, input: $input);
+
+	}//end execute()
+
+	/**
+	 * Why the options cannot run, if they cannot: an unknown entity, or a batch size that is not a number in range.
+	 *
+	 * @param InputInterface $input The command input.
+	 *
+	 * @return string|null The error, or null.
+	 */
+	private function optionError(InputInterface $input): ?string {
 		$entity = $input->getOption('entity');
 		if ($entity !== null && in_array($entity, self::VALID_SLUGS, true) === false) {
-			$io->error(
-				sprintf(
-					'Unknown entity "%s". Valid slugs: %s',
-					(string)$entity,
-					implode(', ', self::VALID_SLUGS)
-				)
+			return sprintf(
+				'Unknown entity "%s". Valid slugs: %s',
+				(string)$entity,
+				implode(', ', self::VALID_SLUGS)
 			);
-			return Command::FAILURE;
 		}
 
-		$batchSizeRaw = (string)$input->getOption('batch-size');
-		if (preg_match('/^\d+$/', $batchSizeRaw) !== 1) {
-			$io->error(sprintf('batch-size must be an integer, got "%s"', $batchSizeRaw));
-			return Command::FAILURE;
+		return $this->batchSizeError(raw: (string)$input->getOption('batch-size'));
+
+	}//end optionError()
+
+	/**
+	 * Why a batch size cannot run, if it cannot.
+	 *
+	 * @param string $raw The batch-size option as given.
+	 *
+	 * @return string|null The error, or null for an integer in [100, 100000].
+	 */
+	private function batchSizeError(string $raw): ?string {
+		if (preg_match('/^\d+$/', $raw) !== 1) {
+			return sprintf('batch-size must be an integer, got "%s"', $raw);
 		}
 
-		$batchSize = (int)$batchSizeRaw;
+		$batchSize = (int)$raw;
 		if ($batchSize < 100 || $batchSize > 100000) {
-			$io->error(sprintf('batch-size must be in [100, 100000], got %d', $batchSize));
-			return Command::FAILURE;
+			return sprintf('batch-size must be in [100, 100000], got %d', $batchSize);
 		}
 
+		return null;
+
+	}//end batchSizeError()
+
+	/**
+	 * Verify, or migrate with the checked options.
+	 *
+	 * @param SymfonyStyle   $io    Styled console I/O.
+	 * @param InputInterface $input The checked command input.
+	 *
+	 * @return integer The exit code.
+	 */
+	private function runChecked(SymfonyStyle $io, InputInterface $input): int {
 		if ($input->getOption('verify-only') === true) {
 			return $this->runVerify(io: $io);
-		}
-
-		$entitySlug = null;
-		if ($entity !== null) {
-			$entitySlug = (string)$entity;
 		}
 
 		return $this->runMigrate(
 			io: $io,
 			dryRun: (bool)$input->getOption('dry-run'),
-			entity: $entitySlug,
-			batchSize: $batchSize
+			entity: $this->entitySlug(input: $input),
+			batchSize: (int)$input->getOption('batch-size')
 		);
 
-	}//end execute()
+	}//end runChecked()
+
+	/**
+	 * The single entity the run is limited to.
+	 *
+	 * @param InputInterface $input The checked command input.
+	 *
+	 * @return string|null The slug, or null for a full run.
+	 */
+	private function entitySlug(InputInterface $input): ?string {
+		$entity = $input->getOption('entity');
+		if ($entity === null) {
+			return null;
+		}
+
+		return (string)$entity;
+
+	}//end entitySlug()
 
 	/**
 	 * Run the migration and render the per-entity summary table.
@@ -187,40 +236,69 @@ class MigrateToOpenRegister extends Command {
 	 * @return integer 0 on a clean run; non-zero if any entity reported skips/errors.
 	 */
 	private function runMigrate(SymfonyStyle $io, bool $dryRun, ?string $entity, int $batchSize): int {
-		if ($dryRun === true) {
-			$io->note('Dry-run: counting legacy rows only — no data is written and the flag is unchanged.');
-		}
-
+		$this->noteDryRun(io: $io, dryRun: $dryRun);
 		try {
 			$results = $this->migrator->migrateAll(dryRun: $dryRun, entitySlug: $entity, batchSize: $batchSize);
-		} catch (InvalidArgumentException $e) {
-			$io->error($e->getMessage());
-			return Command::FAILURE;
 		} catch (\Throwable $e) {
-			// Log-friendly, no stack trace to stdout per ADR-005.
-			$io->error('Migration failed: ' . $e->getMessage());
-			return Command::FAILURE;
+			return $this->migrationFailed(io: $io, exception: $e);
 		}
 
-		$rows = $this->buildResultRows(results: $results);
-		$hadIssue = $this->resultsHaveIssue(results: $results);
-
-		$io->table(
-			['entity', 'legacy', 'migrated', 'skipped', 'fkRewrites', 'ms', 'error'],
-			$rows
-		);
-
-		if ($hadIssue === true) {
-			$io->warning(
-				'One or more entities reported skips or errors — storage_migrated was NOT flipped.'
-				. ' Re-run with --entity=<slug> to retry the affected entity.'
-			);
-			return Command::FAILURE;
+		$io->table(['entity', 'legacy', 'migrated', 'skipped', 'fkRewrites', 'ms', 'error'], $this->buildResultRows(results: $results));
+		if ($this->resultsHaveIssue(results: $results) === true) {
+			return $this->notFlipped(io: $io);
 		}
 
 		$io->success($this->successMessage(dryRun: $dryRun, entity: $entity));
 		return Command::SUCCESS;
 	}//end runMigrate()
+
+	/**
+	 * Say that a dry run writes nothing.
+	 *
+	 * @param SymfonyStyle $io     Styled console I/O.
+	 * @param boolean      $dryRun Whether this is a dry run.
+	 *
+	 * @return void
+	 */
+	private function noteDryRun(SymfonyStyle $io, bool $dryRun): void {
+		if ($dryRun === true) {
+			$io->note('Dry-run: counting legacy rows only — no data is written and the flag is unchanged.');
+		}
+	}//end noteDryRun()
+
+	/**
+	 * Say why the migration stopped: the migrator's refusal as is, any other failure prefixed.
+	 *
+	 * @param SymfonyStyle $io        Styled console I/O.
+	 * @param \Throwable   $exception The failure.
+	 *
+	 * @return integer The failure exit code.
+	 */
+	private function migrationFailed(SymfonyStyle $io, \Throwable $exception): int {
+		if ($exception instanceof InvalidArgumentException) {
+			$io->error($exception->getMessage());
+			return Command::FAILURE;
+		}
+
+		// Log-friendly, no stack trace to stdout per ADR-005.
+		$io->error('Migration failed: ' . $exception->getMessage());
+		return Command::FAILURE;
+	}//end migrationFailed()
+
+	/**
+	 * Warn that skips or errors kept the storage flag down.
+	 *
+	 * @param SymfonyStyle $io Styled console I/O.
+	 *
+	 * @return integer The failure exit code.
+	 */
+	private function notFlipped(SymfonyStyle $io): int {
+		$io->warning(
+			'One or more entities reported skips or errors — storage_migrated was NOT flipped.'
+			. ' Re-run with --entity=<slug> to retry the affected entity.'
+		);
+		return Command::FAILURE;
+	}//end notFlipped()
 
 	/**
 	 * Map the migrator's per-entity result array into console table rows.
@@ -230,27 +308,43 @@ class MigrateToOpenRegister extends Command {
 	 * @return array<int, array<int, int|string>>
 	 */
 	private function buildResultRows(array $results): array {
-		$rows = [];
-		foreach ($results as $perEntity) {
-			$error = (string)($perEntity['error'] ?? '');
-			$errorCell = '-';
-			if ($error !== '') {
-				$errorCell = $error;
-			}
+		return array_values(array_map(fn (array $perEntity): array => $this->resultRow(perEntity: $perEntity), $results));
+	}//end buildResultRows()
 
-			$rows[] = [
-				(string)($perEntity['slug'] ?? '?'),
-				(int)($perEntity['legacyCount'] ?? 0),
-				(int)($perEntity['migratedCount'] ?? 0),
-				(int)($perEntity['skipped'] ?? 0),
-				(int)($perEntity['fkRewrites'] ?? 0),
-				(int)($perEntity['elapsedMs'] ?? 0),
-				$errorCell,
-			];
+	/**
+	 * One entity's result as a console table row.
+	 *
+	 * @param array<string, mixed> $perEntity The entity's result.
+	 *
+	 * @return array<int, int|string>
+	 */
+	private function resultRow(array $perEntity): array {
+		return [
+			(string)($perEntity['slug'] ?? '?'),
+			(int)($perEntity['legacyCount'] ?? 0),
+			(int)($perEntity['migratedCount'] ?? 0),
+			(int)($perEntity['skipped'] ?? 0),
+			(int)($perEntity['fkRewrites'] ?? 0),
+			(int)($perEntity['elapsedMs'] ?? 0),
+			$this->errorCell(perEntity: $perEntity),
+		];
+	}//end resultRow()
+
+	/**
+	 * An entity's error for the table: the error, or a dash when there is none.
+	 *
+	 * @param array<string, mixed> $perEntity The entity's result.
+	 *
+	 * @return string The cell.
+	 */
+	private function errorCell(array $perEntity): string {
+		$error = (string)($perEntity['error'] ?? '');
+		if ($error === '') {
+			return '-';
 		}
 
-		return $rows;
-	}//end buildResultRows()
+		return $error;
+	}//end errorCell()
 
 	/**
 	 * Whether any entity reported a skip or an error.
@@ -304,31 +398,9 @@ class MigrateToOpenRegister extends Command {
 			return Command::FAILURE;
 		}
 
-		$rows = [];
-		$allEqual = true;
-		foreach ($report as $entry) {
-			$equal = $entry['equal'];
-			if ($equal === false) {
-				$allEqual = false;
-			}
+		$io->table(['entity', 'legacy', 'register', 'skipped', 'parity'], $this->parityRows(report: $report));
 
-			$parityCell = 'MISMATCH';
-			if ($equal === true) {
-				$parityCell = 'OK';
-			}
-
-			$rows[] = [
-				$entry['slug'],
-				$entry['legacy'],
-				$entry['register'],
-				$entry['skipped'],
-				$parityCell,
-			];
-		}//end foreach
-
-		$io->table(['entity', 'legacy', 'register', 'skipped', 'parity'], $rows);
-
-		if ($allEqual === true) {
+		if ($this->allEqual(report: $report) === true) {
 			$io->success('All 15 entities report legacy↔register row-count parity.');
 			return Command::SUCCESS;
 		}
@@ -336,4 +408,42 @@ class MigrateToOpenRegister extends Command {
 		$io->error('One or more entities show a row-count mismatch — investigate before draining legacy tables.');
 		return Command::FAILURE;
 	}//end runVerify()
+
+	/**
+	 * The parity report as console table rows.
+	 *
+	 * @param array<int, array<string, mixed>> $report Per-entity parity.
+	 *
+	 * @return array<int, array<int, mixed>>
+	 */
+	private function parityRows(array $report): array {
+		$rows = [];
+		foreach ($report as $entry) {
+			$parityCell = 'MISMATCH';
+			if ($entry['equal'] === true) {
+				$parityCell = 'OK';
+			}
+
+			$rows[] = [$entry['slug'], $entry['legacy'], $entry['register'], $entry['skipped'], $parityCell];
+		}
+
+		return $rows;
+	}//end parityRows()
+
+	/**
+	 * Whether no entity reports a mismatch.
+	 *
+	 * @param array<int, array<string, mixed>> $report Per-entity parity.
+	 *
+	 * @return boolean
+	 */
+	private function allEqual(array $report): bool {
+		foreach ($report as $entry) {
+			if ($entry['equal'] === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end allEqual()
 }//end class
