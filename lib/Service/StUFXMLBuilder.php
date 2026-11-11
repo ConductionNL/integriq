@@ -113,45 +113,38 @@ class StUFXMLBuilder {
 	 */
 	private function buildStuurgegevens(DOMDocument $doc, string $berichtcode, array $stuurgegevens): DOMElement {
 		$sg = $doc->createElementNS(self::NS_STUF, 'StUF:stuurgegevens');
+		$this->appendStufTexts(parent: $sg, texts: ['StUF:berichtcode' => $berichtcode]);
 
-		$bc = $doc->createElementNS(self::NS_STUF, 'StUF:berichtcode');
-		$bc->nodeValue = $berichtcode;
-		$sg->appendChild($bc);
-
-		$zender = $doc->createElementNS(self::NS_STUF, 'StUF:zender');
-		$orgZ = $doc->createElementNS(self::NS_STUF, 'StUF:organisatie');
-		$orgZ->nodeValue = (string)($stuurgegevens['zenderOrganisatie'] ?? '');
-		$zender->appendChild($orgZ);
-		$appZ = $doc->createElementNS(self::NS_STUF, 'StUF:applicatie');
 		// Deliberately still 'OpenConnector': StUF zender/applicatie is this app's
 		// identity as the municipal zaaksysteem has it provisioned. Renaming it here
 		// does not rename it there — messages are rejected until the municipality
 		// re-provisions. Moves in a separate coordinated pass.
-		$appZ->nodeValue = (string)($stuurgegevens['zenderApplicatie'] ?? 'OpenConnector');
-		$zender->appendChild($appZ);
+		$zender = $doc->createElementNS(self::NS_STUF, 'StUF:zender');
+		$this->appendStufTexts(
+			parent: $zender,
+			texts: [
+				'StUF:organisatie' => (string)($stuurgegevens['zenderOrganisatie'] ?? ''),
+				'StUF:applicatie' => (string)($stuurgegevens['zenderApplicatie'] ?? 'OpenConnector'),
+			]
+		);
 		$sg->appendChild($zender);
 
 		$ontvanger = $doc->createElementNS(self::NS_STUF, 'StUF:ontvanger');
-		$orgO = $doc->createElementNS(self::NS_STUF, 'StUF:organisatie');
-		$orgO->nodeValue = (string)($stuurgegevens['ontvangerOrganisatie'] ?? '');
-		$ontvanger->appendChild($orgO);
-		$appO = $doc->createElementNS(self::NS_STUF, 'StUF:applicatie');
-		$appO->nodeValue = (string)($stuurgegevens['ontvangerApplicatie'] ?? '');
-		$ontvanger->appendChild($appO);
+		$this->appendStufTexts(
+			parent: $ontvanger,
+			texts: [
+				'StUF:organisatie' => (string)($stuurgegevens['ontvangerOrganisatie'] ?? ''),
+				'StUF:applicatie' => (string)($stuurgegevens['ontvangerApplicatie'] ?? ''),
+			]
+		);
 		$sg->appendChild($ontvanger);
-
-		$ref = $doc->createElementNS(self::NS_STUF, 'StUF:referentienummer');
-		$ref->nodeValue = (string)Uuid::v4();
-		$sg->appendChild($ref);
-
-		$time = $doc->createElementNS(self::NS_STUF, 'StUF:tijdstipBericht');
-		$time->nodeValue = date(format: 'YmdHis') . '000';
-		$sg->appendChild($time);
+		$this->appendStufTexts(
+			parent: $sg,
+			texts: ['StUF:referentienummer' => (string)Uuid::v4(), 'StUF:tijdstipBericht' => date(format: 'YmdHis') . '000']
+		);
 
 		if (isset($stuurgegevens['crossRefnummer']) === true) {
-			$cross = $doc->createElementNS(self::NS_STUF, 'StUF:crossRefnummer');
-			$cross->nodeValue = (string)$stuurgegevens['crossRefnummer'];
-			$sg->appendChild($cross);
+			$this->appendStufTexts(parent: $sg, texts: ['StUF:crossRefnummer' => (string)$stuurgegevens['crossRefnummer']]);
 		}
 
 		return $sg;
@@ -350,7 +343,11 @@ class StUFXMLBuilder {
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
 	public function buildFo01(string $code, string $omschrijving, array $stuurgegevens, string $plek='client'): string {
-		return $this->buildFoutbericht(berichtcode: 'Fo01', code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
+		$fault = new StufFault(berichtcode: 'Fo01', code: $code);
+		$fault->omschrijving = $omschrijving;
+		$fault->plek = $plek;
+
+		return $this->buildFault(fault: $fault, stuurgegevens: $stuurgegevens);
 	}//end buildFo01()
 
 	/**
@@ -366,53 +363,73 @@ class StUFXMLBuilder {
 	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
 	 */
 	public function buildFo02(string $code, string $omschrijving, array $stuurgegevens, string $plek='server'): string {
-		return $this->buildFoutbericht(berichtcode: 'Fo02', code: $code, omschrijving: $omschrijving, stuurgegevens: $stuurgegevens, plek: $plek);
+		$fault = new StufFault(berichtcode: 'Fo02', code: $code);
+		$fault->omschrijving = $omschrijving;
+		$fault->plek = $plek;
+
+		return $this->buildFault(fault: $fault, stuurgegevens: $stuurgegevens);
 	}//end buildFo02()
 
 	/**
-	 * Build a Fo01/Fo02 foutbericht inside a SOAP fault.
+	 * Build a foutbericht inside a SOAP fault.
 	 *
-	 * @param string $berichtcode  Fo01 or Fo02.
-	 * @param string $code         The StUF error code.
-	 * @param string $omschrijving Human-readable error description.
-	 * @param array  $stuurgegevens Stuurgegevens configuration.
-	 * @param string $plek         Where the fault lies: client or server.
+	 * A fault that names where it lies (Fo01, Fo02) reports `SOAP-ENV:Server`
+	 * for `server` and carries a StUF:plek; one that does not (Fo03) is a
+	 * client fault without it.
+	 *
+	 * @param StufFault $fault         The foutbericht.
+	 * @param array     $stuurgegevens Stuurgegevens configuration.
 	 *
 	 * @return string The complete SOAP fault XML string.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
-	private function buildFoutbericht(string $berichtcode, string $code, string $omschrijving, array $stuurgegevens, string $plek): string {
+	private function buildFault(StufFault $fault, array $stuurgegevens): string {
 		$doc = new DOMDocument(version: '1.0', encoding: 'UTF-8');
 		$doc->formatOutput = true;
 
-		$fault = $doc->createElementNS(self::NS_SOAP, 'SOAP-ENV:Fault');
-		$faultCode = $doc->createElement('faultcode');
-		$faultCode->nodeValue = 'SOAP-ENV:Client';
-		if ($plek === 'server') {
-			$faultCode->nodeValue = 'SOAP-ENV:Server';
+		$soapFault = $doc->createElementNS(self::NS_SOAP, 'SOAP-ENV:Fault');
+		$faultCode = 'SOAP-ENV:Client';
+		if ($fault->plek === 'server') {
+			$faultCode = 'SOAP-ENV:Server';
 		}
 
-		$fault->appendChild($faultCode);
-
-		$faultStr = $doc->createElement('faultstring');
-		$faultStr->nodeValue = $omschrijving;
-		$fault->appendChild($faultStr);
+		$this->appendPlainTexts(parent: $soapFault, texts: ['faultcode' => $faultCode, 'faultstring' => $fault->omschrijving]);
 
 		$detail = $doc->createElement('detail');
-		$message = $doc->createElementNS(self::NS_STUF, 'StUF:' . $berichtcode . 'Bericht');
-		$message->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: $berichtcode, stuurgegevens: $stuurgegevens));
+		$message = $doc->createElementNS(self::NS_STUF, 'StUF:' . $fault->berichtcode . 'Bericht');
+		$message->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: $fault->berichtcode, stuurgegevens: $stuurgegevens));
 
 		$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
-		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:code', text: $code);
-		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:plek', text: $plek);
-		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:omschrijving', text: $omschrijving);
+		$this->appendStufTexts(parent: $body, texts: $this->faultBody(fault: $fault));
 		$message->appendChild($body);
 		$detail->appendChild($message);
-		$fault->appendChild($detail);
+		$soapFault->appendChild($detail);
 
-		$this->wrapInEnvelope(doc: $doc, bodyContent: $fault);
+		$this->wrapInEnvelope(doc: $doc, bodyContent: $soapFault);
 
 		return (string)$doc->saveXML();
-	}//end buildFoutbericht()
+	}//end buildFault()
+
+	/**
+	 * The texts of a foutbericht's body, in order: code, plek when named, omschrijving.
+	 *
+	 * @param StufFault $fault The foutbericht.
+	 *
+	 * @return array<string, string> Text per qualified tag.
+	 *
+	 * @spec openspec/specs/stuf-adapter/spec.md
+	 */
+	private function faultBody(StufFault $fault): array {
+		$texts = ['StUF:code' => $fault->code];
+		if ($fault->plek !== null) {
+			$texts['StUF:plek'] = $fault->plek;
+		}
+
+		$texts['StUF:omschrijving'] = $fault->omschrijving;
+
+		return $texts;
+	}//end faultBody()
 
 	/**
 	 * Build zakLa01 (zaak antwoord) SOAP response XML.
@@ -525,31 +542,10 @@ class StUFXMLBuilder {
 	 * @spec openspec/specs/stuf-adapter/spec.md
 	 */
 	public function buildFo03(string $code, string $omschrijving, array $stuurgegevens): string {
-		$doc = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-		$doc->formatOutput = true;
+		$fault = new StufFault(berichtcode: 'Fo03', code: $code);
+		$fault->omschrijving = $omschrijving;
 
-		$fault = $doc->createElementNS(self::NS_SOAP, 'SOAP-ENV:Fault');
-		$faultCode = $doc->createElement('faultcode');
-		$faultCode->nodeValue = 'SOAP-ENV:Client';
-		$fault->appendChild($faultCode);
-		$faultStr = $doc->createElement('faultstring');
-		$faultStr->nodeValue = $omschrijving;
-		$fault->appendChild($faultStr);
-
-		$detail = $doc->createElement('detail');
-		$fo03 = $doc->createElementNS(self::NS_STUF, 'StUF:Fo03Bericht');
-		$fo03->appendChild($this->buildStuurgegevens(doc: $doc, berichtcode: 'Fo03', stuurgegevens: $stuurgegevens));
-
-		$body = $doc->createElementNS(self::NS_STUF, 'StUF:body');
-		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:code', text: $code);
-		$this->appendTextChild(doc: $doc, parent: $body, ns: self::NS_STUF, tag: 'StUF:omschrijving', text: $omschrijving);
-		$fo03->appendChild($body);
-		$detail->appendChild($fo03);
-		$fault->appendChild($detail);
-
-		$this->wrapInEnvelope(doc: $doc, bodyContent: $fault);
-
-		return (string)$doc->saveXML();
+		return $this->buildFault(fault: $fault, stuurgegevens: $stuurgegevens);
 	}//end buildFo03()
 
 	/**
@@ -590,22 +586,40 @@ class StUFXMLBuilder {
 	}//end buildNpsLv01()
 
 	/**
-	 * Append a text-content element to a parent element.
+	 * Append a StUF-namespaced text-content element per tag, in order.
 	 *
-	 * @param DOMDocument $doc The DOMDocument to create elements in.
-	 * @param DOMElement $parent The parent to append to.
-	 * @param string $ns Namespace URI.
-	 * @param string $tag Qualified element tag name.
-	 * @param string $text Text content.
+	 * @param DOMElement            $parent The parent to append to.
+	 * @param array<string, string> $texts  Text content per qualified tag.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/stuf-adapter/tasks.md#task-4
 	 */
-	private function appendTextChild(DOMDocument $doc, DOMElement $parent, string $ns, string $tag, string $text): void {
-		$el = $doc->createElementNS($ns, $tag);
-		$el->nodeValue = $text;
-		$parent->appendChild($el);
+	private function appendStufTexts(DOMElement $parent, array $texts): void {
+		foreach ($texts as $tag => $text) {
+			$el = $parent->ownerDocument->createElementNS(self::NS_STUF, $tag);
+			$el->nodeValue = $text;
+			$parent->appendChild($el);
+		}
 
-	}//end appendTextChild()
+	}//end appendStufTexts()
+
+	/**
+	 * Append an un-namespaced text-content element per tag, in order.
+	 *
+	 * @param DOMElement            $parent The parent to append to.
+	 * @param array<string, string> $texts  Text content per tag.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/stuf-adapter/tasks.md#task-4
+	 */
+	private function appendPlainTexts(DOMElement $parent, array $texts): void {
+		foreach ($texts as $tag => $text) {
+			$el = $parent->ownerDocument->createElement($tag);
+			$el->nodeValue = $text;
+			$parent->appendChild($el);
+		}
+
+	}//end appendPlainTexts()
 }//end class
