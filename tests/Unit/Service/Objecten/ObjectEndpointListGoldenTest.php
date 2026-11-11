@@ -111,6 +111,8 @@ class ObjectEndpointListGoldenTest extends TestCase {
 			'page size zero and page zero' => [['type' => 'aaa', 'pageSize' => 0, 'page' => 0], 'alice'],
 			'page size too large' => [['type' => 'aaa', 'pageSize' => 9999], 'alice'],
 			'past the end' => [['type' => 'aaa', 'pageSize' => 2, 'page' => 7], 'alice'],
+			'ends at the total' => [['type' => 'aaa', 'pageSize' => 2, 'page' => 2], 'alice'],
+			'one short of the total' => [['type' => 'aaa', 'pageSize' => 3, 'page' => 1], 'alice'],
 			'by url' => [['type' => 'https://example.test/api/v2/objecttypes/bbb'], 'alice'],
 		];
 		foreach ($lists as $name => [$query, $principal]) {

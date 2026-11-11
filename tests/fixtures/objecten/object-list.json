@@ -1122,6 +1122,142 @@
     },
     {
         "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index ends at the total": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": 1,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index one short of the total": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": 2,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
             "groen",
             "boom",
             "alice"
