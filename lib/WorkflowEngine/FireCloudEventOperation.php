@@ -124,38 +124,63 @@ class FireCloudEventOperation implements ISpecificOperation {
 	 */
 	public function onEvent(string $eventName, Event $event, IRuleMatcher $ruleMatcher): void {
 		foreach ($ruleMatcher->getFlows(false) as $flow) {
-			try {
-				$settings = $this->decodeSettings(operation: (string)($flow['operation'] ?? ''));
-				if ($settings === null) {
-					continue;
-				}
-
-				$data = ['eventName' => $eventName];
-				if (is_array(($settings['data'] ?? null)) === true) {
-					$data = array_merge($data, $settings['data']);
-				}
-
-				$this->eventService->emitCloudEvent(
-					type: $settings['type'],
-					source: $settings['source'],
-					subject: ($settings['subject'] ?? null),
-					data: $data
-				);
-			} catch (Throwable $e) {
-				// Deliberately swallowed — one bad flow must not stop the
-				// remaining matched flows or propagate into the NC event
-				// dispatcher that invoked onEvent() (design.md Risk 1).
-				$this->logger->warning(
-					'WorkflowEngine "Fire CloudEvent" operation dispatch failed: ' . $e->getMessage(),
-					[
-						'exception' => $e,
-						'eventName' => $eventName,
-					]
-				);
-			}//end try
-		}//end foreach
+			$this->runFlow(flow: $flow, eventName: $eventName);
+		}
 
 	}//end onEvent()
+
+	/**
+	 * Run one matched flow. Failures are deliberately swallowed — one bad
+	 * flow must not stop the remaining matched flows or propagate into the NC
+	 * event dispatcher that invoked onEvent() (design.md Risk 1).
+	 *
+	 * @param array  $flow      The matched flow.
+	 * @param string $eventName The event that matched it.
+	 *
+	 * @return void
+	 */
+	private function runFlow(array $flow, string $eventName): void {
+		try {
+			$settings = $this->decodeSettings(operation: (string)($flow['operation'] ?? ''));
+			if ($settings === null) {
+				return;
+			}
+
+			$this->fireCloudEvent(settings: $settings, eventName: $eventName);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'WorkflowEngine "Fire CloudEvent" operation dispatch failed: ' . $e->getMessage(),
+				[
+					'exception' => $e,
+					'eventName' => $eventName,
+				]
+			);
+		}//end try
+
+	}//end runFlow()
+
+	/**
+	 * Emit the configured CloudEvent, its data merged over the event name.
+	 *
+	 * @param array  $settings  The decoded operation settings.
+	 * @param string $eventName The event that matched the flow.
+	 *
+	 * @return void
+	 */
+	private function fireCloudEvent(array $settings, string $eventName): void {
+		$data = ['eventName' => $eventName];
+		if (is_array(($settings['data'] ?? null)) === true) {
+			$data = array_merge($data, $settings['data']);
+		}
+
+		$this->eventService->emitCloudEvent(
+			type: $settings['type'],
+			source: $settings['source'],
+			subject: ($settings['subject'] ?? null),
+			data: $data
+		);
+
+	}//end fireCloudEvent()
 
 	/**
 	 * Decode a flow's raw `operation` JSON into a settings array, guaranteeing
