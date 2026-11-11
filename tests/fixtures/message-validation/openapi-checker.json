@@ -1,0 +1,119 @@
+{
+    "by operation id": {
+        "valid": true,
+        "errors": [],
+        "schemas": [
+            "{\"type\":\"object\",\"properties\":{\"naam\":{\"type\":[\"string\",\"null\"],\"enum\":[\"x\",null]},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"naam\"]}"
+        ]
+    },
+    "by method and path": {
+        "valid": true,
+        "errors": [],
+        "schemas": [
+            "{\"type\":\"object\",\"properties\":{\"naam\":{\"type\":[\"string\",\"null\"],\"enum\":[\"x\",null]},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"naam\"]}"
+        ]
+    },
+    "response 200": {
+        "valid": true,
+        "errors": [],
+        "schemas": [
+            "{\"type\":[\"object\",\"null\"],\"enum\":[\"a\",null]}"
+        ]
+    },
+    "response 404 via 4XX": {
+        "valid": true,
+        "errors": [],
+        "schemas": [
+            "{\"type\":[\"string\",\"null\"]}"
+        ]
+    },
+    "response 500 via default": {
+        "valid": true,
+        "errors": [],
+        "schemas": []
+    },
+    "get list response": {
+        "valid": true,
+        "errors": [],
+        "schemas": [
+            "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"naam\":{\"type\":[\"string\",\"null\"],\"enum\":[\"x\",null]},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"naam\"]}}"
+        ]
+    },
+    "no schema in media": {
+        "valid": true,
+        "errors": [],
+        "schemas": []
+    },
+    "unresolvable reference": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The OpenAPI document refers to #/components/requestBodies/Missing, which it does not contain"
+            }
+        ],
+        "schemas": []
+    },
+    "unknown operation id": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The OpenAPI document has no operation \"nope\""
+            }
+        ],
+        "schemas": []
+    },
+    "unknown path": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The OpenAPI document has no operation GET /elsewhere"
+            }
+        ],
+        "schemas": []
+    },
+    "method on a non-operation": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The OpenAPI document has no operation DELETE /plain"
+            }
+        ],
+        "schemas": []
+    },
+    "yaml document": {
+        "valid": true,
+        "errors": [],
+        "schemas": [
+            "{\"type\":\"string\"}"
+        ]
+    },
+    "not a document": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The OpenAPI document does not parse"
+            }
+        ],
+        "schemas": []
+    },
+    "json scalar": {
+        "valid": false,
+        "errors": [
+            {
+                "path": "/",
+                "message": "The OpenAPI document does not parse"
+            }
+        ],
+        "schemas": []
+    },
+    "documentProblem good": null,
+    "documentProblem yaml": null,
+    "documentProblem no paths": "The OpenAPI document has no paths object, so it describes no operation",
+    "documentProblem scalar": "The OpenAPI document does not parse: it is not an object",
+    "documentProblem broken": "The OpenAPI document does not parse: Malformed inline YAML string at line 2."
+}
