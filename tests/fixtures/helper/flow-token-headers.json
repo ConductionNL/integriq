@@ -1,50 +1,161 @@
 {
-    "without proxy headers": {
-        "host": "integriq.example.test",
-        "content_type": "application/json",
-        "x_real_ip_extra": "kept",
-        "authorization": "Bearer t",
-        "": "empty name",
-        "mixed_case": "m"
-    },
-    "with proxy headers": {
-        "host": "integriq.example.test",
-        "content_type": "application/json",
-        "x_forwarded_for": "10.0.0.1",
-        "x_forwarded_proto": "https",
-        "x_real_ip": "10.0.0.2",
-        "x_original_uri": "/api/x",
-        "x_real_ip_extra": "kept",
-        "authorization": "Bearer t",
-        "": "empty name",
-        "mixed_case": "m"
-    },
-    "default": {
-        "host": "integriq.example.test",
-        "content_type": "application/json",
-        "x_real_ip_extra": "kept",
-        "authorization": "Bearer t",
-        "": "empty name",
-        "mixed_case": "m"
-    },
+    "without proxy headers": [
+        [
+            "host",
+            "integriq.example.test"
+        ],
+        [
+            "content_type",
+            "application/json"
+        ],
+        [
+            "x_real_ip_extra",
+            "kept"
+        ],
+        [
+            "authorization",
+            "Bearer t"
+        ],
+        [
+            "",
+            "empty name"
+        ],
+        [
+            "mixed_case",
+            "m"
+        ]
+    ],
+    "with proxy headers": [
+        [
+            "host",
+            "integriq.example.test"
+        ],
+        [
+            "content_type",
+            "application/json"
+        ],
+        [
+            "x_forwarded_for",
+            "10.0.0.1"
+        ],
+        [
+            "x_forwarded_proto",
+            "https"
+        ],
+        [
+            "x_real_ip",
+            "10.0.0.2"
+        ],
+        [
+            "x_original_uri",
+            "/api/x"
+        ],
+        [
+            "x_real_ip_extra",
+            "kept"
+        ],
+        [
+            "authorization",
+            "Bearer t"
+        ],
+        [
+            "",
+            "empty name"
+        ],
+        [
+            "mixed_case",
+            "m"
+        ]
+    ],
+    "default": [
+        [
+            "host",
+            "integriq.example.test"
+        ],
+        [
+            "content_type",
+            "application/json"
+        ],
+        [
+            "x_real_ip_extra",
+            "kept"
+        ],
+        [
+            "authorization",
+            "Bearer t"
+        ],
+        [
+            "",
+            "empty name"
+        ],
+        [
+            "mixed_case",
+            "m"
+        ]
+    ],
     "empty server": [],
-    "request original": {
-        "method": "POST",
-        "headers": {
-            "host": "integriq.example.test",
-            "content_type": "application/json",
-            "x_forwarded_for": "10.0.0.1",
-            "x_forwarded_proto": "https",
-            "x_real_ip": "10.0.0.2",
-            "x_original_uri": "/api/x",
-            "x_real_ip_extra": "kept",
-            "authorization": "Bearer t",
-            "": "empty name",
-            "mixed_case": "m"
-        },
-        "parameters": {
-            "a": 1
-        },
-        "path": "/p"
-    }
+    "request original": [
+        [
+            "method",
+            "POST"
+        ],
+        [
+            "headers",
+            [
+                [
+                    "host",
+                    "integriq.example.test"
+                ],
+                [
+                    "content_type",
+                    "application/json"
+                ],
+                [
+                    "x_forwarded_for",
+                    "10.0.0.1"
+                ],
+                [
+                    "x_forwarded_proto",
+                    "https"
+                ],
+                [
+                    "x_real_ip",
+                    "10.0.0.2"
+                ],
+                [
+                    "x_original_uri",
+                    "/api/x"
+                ],
+                [
+                    "x_real_ip_extra",
+                    "kept"
+                ],
+                [
+                    "authorization",
+                    "Bearer t"
+                ],
+                [
+                    "",
+                    "empty name"
+                ],
+                [
+                    "mixed_case",
+                    "m"
+                ]
+            ]
+        ],
+        [
+            "parameters",
+            [
+                [
+                    "a",
+                    1
+                ]
+            ]
+        ],
+        [
+            "path",
+            "/p"
+        ]
+    ]
 }

@@ -67,6 +67,10 @@ class FlowTokenHeadersGoldenTest extends TestCase {
 		$record['request original'] = (new FlowToken(requestOriginal: $request, path: '/p'))->getRequestOriginal();
 		$_SERVER = $backup;
 
+		// Header maps as [name, value] pairs: the `HTTP_` case yields an empty
+		// name, which a JSON object key may not be in the linted fixtures.
+		$record = array_map(static fn (array $entry): array => self::pairs(map: $entry), $record);
+
 		$path = __DIR__ . '/../../../fixtures/helper/flow-token-headers.json';
 		$actual = json_encode($record, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
 		if (getenv('GOLDEN_WRITE') === '1') {
@@ -75,4 +79,20 @@ class FlowTokenHeadersGoldenTest extends TestCase {
 
 		$this->assertSame(file_get_contents($path), $actual);
 	}//end testGoldenRecord()
+
+	/**
+	 * A map as ordered [key, value] pairs, nested maps included.
+	 *
+	 * @param array<mixed> $map The map.
+	 *
+	 * @return list<array{0: int|string, 1: mixed}>
+	 */
+	private static function pairs(array $map): array {
+		$pairs = [];
+		foreach ($map as $key => $value) {
+			$pairs[] = [$key, (is_array($value) === true && $value !== [] ? self::pairs(map: $value) : $value)];
+		}
+
+		return $pairs;
+	}//end pairs()
 }//end class
