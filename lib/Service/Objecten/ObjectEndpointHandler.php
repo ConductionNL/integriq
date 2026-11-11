@@ -88,6 +88,21 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	private const NOT_A_CIRCLE_DETAIL = 'Only a circular "within" is evaluated here: give "type": "Point" with "coordinates" and a "radius" in metres.';
 
 	/**
+	 * Why a list without `type` is refused.
+	 *
+	 * @var string
+	 */
+	private const NO_TYPE_DETAIL = 'A list needs a "type": a token carries a permission per objecttype, so a list across types '
+		. 'would silently answer with only the ones this token may see.';
+
+	/**
+	 * The problem title of each status this facade answers with.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PROBLEM_TITLES = [400 => 'Bad request', 404 => 'Not found'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjecttypeRegistry      $objecttypes The declared mappings.
@@ -115,27 +130,35 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	public function index(array $query, string $baseUrl = '', string $principal = ''): array {
 		$type = trim((string)($query['type'] ?? ''));
 		if ($type === '') {
-			return $this->problem(
-				status: 400,
-				title: 'Bad request',
-				detail: 'A list needs a "type": a token carries a permission per objecttype, so a list across types '
-					. 'would silently answer with only the ones this token may see.'
-			);
+			return $this->problem(status: 400, detail: self::NO_TYPE_DETAIL);
 		}
 
 		$declaration = $this->objecttypes->find(uuid: $type);
 		if ($declaration === null) {
-			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $type));
+			return $this->unknownType(type: $type);
 		}
 
+		$page = new ObjectPage(type: $type, query: $query);
+		$page->baseUrl = $baseUrl;
 		$objects = $this->readObjects(declaration: $declaration, principal: $principal);
 
+		return $this->page(objects: $this->listed(objects: $objects, query: $query), page: $page);
+	}//end index()
+
+	/**
+	 * The objects a list query keeps, in the order it asks for.
+	 *
+	 * @param array<int, array<string, mixed>> $objects The readable objects.
+	 * @param array<string, mixed>             $query   The query parameters.
+	 *
+	 * @return array<int, array<string, mixed>> The filtered, ordered objects.
+	 */
+	private function listed(array $objects, array $query): array {
 		$objects = $this->filterByDataAttrs(objects: $objects, dataAttrs: (string)($query['data_attrs'] ?? ''));
 		$objects = $this->filterByDate(objects: $objects, query: $query);
-		$objects = $this->order(objects: $objects, ordering: (string)($query['ordering'] ?? ''));
 
-		return $this->page(objects: $objects, type: $type, query: $query, baseUrl: $baseUrl);
-	}//end index()
+		return $this->order(objects: $objects, ordering: (string)($query['ordering'] ?? ''));
+	}//end listed()
 
 	/**
 	 * `GET /api/v2/objects/{uuid}`.
@@ -152,7 +175,7 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	public function show(string $type, string $uuid, string $baseUrl = '', string $principal = ''): array {
 		$declaration = $this->objecttypes->find(uuid: $type);
 		if ($declaration === null) {
-			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $type));
+			return $this->unknownType(type: $type);
 		}
 
 		foreach ($this->readObjects(declaration: $declaration, principal: $principal) as $object) {
@@ -166,7 +189,7 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 		// checked against the type, so answering differently for an object that
 		// exists under another type would let a token holder probe for uuids
 		// outside their permission.
-		return $this->problem(status: 404, title: 'Not found', detail: sprintf('No object "%s" of this objecttype.', $uuid));
+		return $this->problem(status: 404, detail: sprintf('No object "%s" of this objecttype.', $uuid));
 	}//end show()
 
 	/**
@@ -184,7 +207,7 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	public function search(string $type, array $body, string $baseUrl = '', string $principal = ''): array {
 		$declaration = $this->objecttypes->find(uuid: $type);
 		if ($declaration === null) {
-			return $this->problem(status: 404, title: 'Not found', detail: sprintf('No objecttype "%s" is published here.', $type));
+			return $this->unknownType(type: $type);
 		}
 
 		$within = ($body['geometry']['within'] ?? null);
@@ -193,12 +216,11 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 			return $refusal;
 		}
 
-		$matched = $this->objectsWithin(
-			objects: $this->readObjects(declaration: $declaration, principal: $principal),
-			within: (array)$within
-		);
+		$page = new ObjectPage(type: $type, query: $body);
+		$page->baseUrl = $baseUrl;
+		$objects = $this->readObjects(declaration: $declaration, principal: $principal);
 
-		return $this->page(objects: $matched, type: $type, query: $body, baseUrl: $baseUrl);
+		return $this->page(objects: $this->objectsWithin(objects: $objects, within: (array)$within), page: $page);
 	}//end search()
 
 	/**
@@ -210,14 +232,14 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	 */
 	private function withinRefusal(mixed $within): ?array {
 		if (is_array($within) === false) {
-			return $this->problem(status: 400, title: 'Bad request', detail: self::NO_WITHIN_DETAIL);
+			return $this->problem(status: 400, detail: self::NO_WITHIN_DETAIL);
 		}
 
 		if ($this->circleOf(within: $within) !== null) {
 			return null;
 		}
 
-		return $this->problem(status: 400, title: 'Bad request', detail: self::NOT_A_CIRCLE_DETAIL);
+		return $this->problem(status: 400, detail: self::NOT_A_CIRCLE_DETAIL);
 	}//end withinRefusal()
 
 	/**
@@ -308,59 +330,37 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 			return $objects;
 		}
 
-		foreach (explode(',', $dataAttrs) as $clause) {
-			$parts = explode('__', trim($clause));
-			if (count($parts) !== 3) {
+		foreach (explode(',', $dataAttrs) as $text) {
+			$clause = new DataAttrClause(clause: $text);
+			if ($clause->malformed === true) {
 				// A malformed clause matches NOTHING rather than being ignored.
 				// Ignoring it answers the unfiltered set to somebody who asked
 				// for a filtered one.
 				return [];
 			}
 
-			[$field, $operator, $value] = $parts;
-			$objects = array_values(
-				array_filter(
-					$objects,
-					fn (array $object): bool => $this->clauseHolds(
-						actual: ($this->translator->dataOf(object: $object)[$field] ?? null),
-						operator: $operator,
-						expected: $value
-					)
-				)
-			);
+			$objects = $this->matching(objects: $objects, clause: $clause);
 		}
 
 		return $objects;
 	}//end filterByDataAttrs()
 
 	/**
-	 * Whether one `data_attrs` clause holds.
+	 * The objects whose data satisfies one clause.
 	 *
-	 * @param mixed  $actual   The stored value.
-	 * @param string $operator The operator.
-	 * @param string $expected The expected value.
+	 * @param array<int, array<string, mixed>> $objects The objects.
+	 * @param DataAttrClause                   $clause  The clause.
 	 *
-	 * @return bool True when it holds.
+	 * @return array<int, array<string, mixed>> The matching objects.
 	 */
-	private function clauseHolds(mixed $actual, string $operator, string $expected): bool {
-		if ($actual === null) {
-			return false;
-		}
-
-		$actual = (string)$actual;
-
-		return match ($operator) {
-			'exact' => ($actual === $expected),
-			'icontains' => (stripos($actual, $expected) !== false),
-			'gt' => ($actual > $expected),
-			'gte' => ($actual >= $expected),
-			'lt' => ($actual < $expected),
-			'lte' => ($actual <= $expected),
-			// An operator nobody declared matches nothing, for the same reason
-			// a malformed clause does.
-			default => false,
-		};
-	}//end clauseHolds()
+	private function matching(array $objects, DataAttrClause $clause): array {
+		return array_values(
+			array_filter(
+				$objects,
+				fn (array $object): bool => $clause->holds(actual: ($this->translator->dataOf(object: $object)[$clause->field] ?? null))
+			)
+		);
+	}//end matching()
 
 	/**
 	 * Narrow by `date` and `registrationDate`.
@@ -430,34 +430,12 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	 * One page of records in the standard's list envelope.
 	 *
 	 * @param array<int, array<string, mixed>> $objects The objects.
-	 * @param string                           $type    The objecttype.
-	 * @param array<string, mixed>             $query   The query.
-	 * @param string                           $baseUrl The API base.
+	 * @param ObjectPage                       $page    The requested page and how its records render.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The response.
 	 */
-	private function page(array $objects, string $type, array $query, string $baseUrl): array {
+	private function page(array $objects, ObjectPage $page): array {
 		$total = count($objects);
-		$size = (int)($query['pageSize'] ?? self::PAGE_SIZE);
-		$size = max(1, min($size, self::MAX_PAGE_SIZE));
-		$page = max(1, (int)($query['page'] ?? 1));
-
-		$slice = array_slice($objects, (($page - 1) * $size), $size);
-
-		$results = [];
-		foreach ($slice as $object) {
-			$results[] = $this->translator->toRecord(object: $object, objecttype: $type, baseUrl: $baseUrl);
-		}
-
-		$next = null;
-		if (($page * $size) < $total) {
-			$next = ($page + 1);
-		}
-
-		$previous = null;
-		if ($page > 1) {
-			$previous = ($page - 1);
-		}
 
 		return [
 			'status' => 200,
@@ -466,12 +444,29 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 				// this to know when to stop, and answering the page size makes
 				// every list look like exactly one page.
 				'count' => $total,
-				'next' => $next,
-				'previous' => $previous,
-				'results' => $results,
+				'next' => $page->next(total: $total),
+				'previous' => $page->previous(),
+				'results' => $this->records(objects: array_slice($objects, $page->offset(), $page->size), page: $page),
 			],
 		];
 	}//end page()
+
+	/**
+	 * The records of one page's objects.
+	 *
+	 * @param array<int, array<string, mixed>> $objects The page's objects.
+	 * @param ObjectPage                       $page    The objecttype and base url they render with.
+	 *
+	 * @return array<int, array<string, mixed>> The records.
+	 */
+	private function records(array $objects, ObjectPage $page): array {
+		$results = [];
+		foreach ($objects as $object) {
+			$results[] = $this->translator->toRecord(object: $object, objecttype: $page->type, baseUrl: $page->baseUrl);
+		}
+
+		return $results;
+	}//end records()
 
 	/**
 	 * A circle from a `within` clause, or null when it is not one.
@@ -520,18 +515,28 @@ class ObjectEndpointHandler implements ObjectEndpointHandlerInterface {
 	}//end pointOf()
 
 	/**
-	 * A problem response in the standard's shape.
+	 * The 404 for an objecttype that is not published here.
 	 *
-	 * @param int    $status The status.
-	 * @param string $title  The title.
+	 * @param string $type The objecttype asked for.
+	 *
+	 * @return array{status: int, body: array<string, mixed>} The response.
+	 */
+	private function unknownType(string $type): array {
+		return $this->problem(status: 404, detail: sprintf('No objecttype "%s" is published here.', $type));
+	}//end unknownType()
+
+	/**
+	 * A problem response in the standard's shape, titled after its status.
+	 *
+	 * @param int    $status The status, 400 or 404.
 	 * @param string $detail The detail.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The response.
 	 */
-	private function problem(int $status, string $title, string $detail): array {
+	private function problem(int $status, string $detail): array {
 		return [
 			'status' => $status,
-			'body' => ['type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail],
+			'body' => ['type' => 'about:blank', 'title' => self::PROBLEM_TITLES[$status], 'status' => $status, 'detail' => $detail],
 		];
 	}//end problem()
 }//end class
