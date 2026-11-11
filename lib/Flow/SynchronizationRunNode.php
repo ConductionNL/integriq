@@ -127,12 +127,6 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 */
 	public const WARNING_THRESHOLD = 250;
 
-	/**
-	 * The run counts copied onto every summary, in output order.
-	 *
-	 * @var list<string>
-	 */
-	private const SUMMARY_COUNTS = ['found', 'created', 'updated', 'deleted', 'skipped', 'invalid'];
 
 	/**
 	 * Constructor.
@@ -206,96 +200,8 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configForm(): array {
-		return [
-			$this->synchronizationField(),
-			$this->forceField(),
-			$this->outputField(),
-			$this->maxItemsField(),
-			$this->onErrorField(),
-		];
+		return (new SynchronizationRunConfigForm(l10n: $this->l10n))->fields();
 	}//end configForm()
-
-	/**
-	 * The "synchronization" field of the config form.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function synchronizationField(): array {
-		return [
-			'key' => 'synchronization',
-			'label' => $this->l10n->t('Synchronization'),
-			'type' => 'select',
-			'help' => $this->l10n->t('The configured synchronization this step runs, with its own source, mapping and target.'),
-			'required' => true,
-			'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
-		];
-	}//end synchronizationField()
-
-	/**
-	 * The "force" field of the config form.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function forceField(): array {
-		return [
-			'key' => 'force',
-			'label' => $this->l10n->t('Force a full pass'),
-			'type' => 'boolean',
-			'help' => $this->l10n->t(
-				'Ignores the unchanged-object skip and re-processes everything the source '
-				. 'returns. Slower; use it after changing a mapping.'
-			),
-		];
-	}//end forceField()
-
-	/**
-	 * The "output" field of the config form.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function outputField(): array {
-		return [
-			'key' => 'output',
-			'label' => $this->l10n->t('Field to store the summary in'),
-			'type' => 'text',
-			'help' => $this->l10n->t(
-				'With a field name, the incoming item is preserved and the run summary is '
-				. 'added under it. Empty means the summary replaces the item.'
-			),
-		];
-	}//end outputField()
-
-	/**
-	 * The "maxItems" field of the config form.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function maxItemsField(): array {
-		return [
-			'key' => 'maxItems',
-			'label' => $this->l10n->t('Item ceiling'),
-			'type' => 'number',
-			'help' => $this->l10n->t('The most synchronised objects this step may emit as items. The summary always reports the full run.'),
-		];
-	}//end maxItemsField()
-
-	/**
-	 * The "onError" field of the config form.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function onErrorField(): array {
-		return [
-			'key' => 'onError',
-			'label' => $this->l10n->t('When the run fails'),
-			'type' => 'text',
-			'help' => $this->l10n->t(
-				'"stop" (default) fails the step; "continue" records the error on the item '
-				. 'and carries on; "dead_letter" routes the item to the flow\'s dead-letter '
-				. 'handling.'
-			),
-		];
-	}//end onErrorField()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
@@ -491,8 +397,9 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 */
 	private function emitSynchronisedObjects(SynchronizationStepRun $run): void {
 		$log = $this->runSynchronization(run: $run);
-		$objects = $this->objectsFrom(log: $log);
-		$run->summary = $this->summaryFrom(log: $log, reference: $run->reference);
+		$reader = new SynchronizationLogReader();
+		$objects = $reader->objectsFrom(log: $log);
+		$run->summary = $reader->summaryFrom(log: $log, reference: $run->reference);
 
 		$this->assertWithinCeiling(run: $run, objectCount: count($objects));
 
@@ -669,101 +576,6 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 			previous: $exception
 		);
 	}//end synchronizationFailure()
-
-	/**
-	 * Read the per-object results off a synchronisation log.
-	 *
-	 * @param array $log The synchronisation log.
-	 *
-	 * @return array<int, array<string, mixed>> One entry per contract, in order.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	private function objectsFrom(array $log): array {
-		$result = (array)($log['result'] ?? []);
-		$embedded = ($result['_embed']['contracts'] ?? null);
-		$contracts = (array)($result['contracts'] ?? []);
-
-		$objects = [];
-		foreach (array_values($contracts) as $position => $contractId) {
-			$payload = self::embeddedPayload(embedded: $embedded, position: $position);
-			$objects[] = self::objectFor(contractId: $contractId, payload: $payload);
-		}
-
-		return $objects;
-	}//end objectsFrom()
-
-	/**
-	 * The embedded contract payload at a position, or an empty array.
-	 *
-	 * @param mixed $embedded The log's `_embed.contracts`, when present.
-	 * @param int $position The contract's position.
-	 *
-	 * @return array
-	 */
-	private static function embeddedPayload(mixed $embedded, int $position): array {
-		$payload = null;
-		if (is_array($embedded) === true && array_key_exists($position, $embedded) === true) {
-			$payload = $embedded[$position];
-		}
-
-		if (is_array($payload) === false) {
-			return [];
-		}
-
-		return $payload;
-	}//end embeddedPayload()
-
-	/**
-	 * One per-object result: the target id, else the origin id, else the contract id.
-	 *
-	 * @param mixed $contractId The contract id from the log.
-	 * @param array $payload The contract's embedded payload.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function objectFor(mixed $contractId, array $payload): array {
-		$objectId = ($payload['targetId'] ?? null);
-		if ($objectId === null || $objectId === '') {
-			$objectId = ($payload['originId'] ?? $contractId);
-		}
-
-		return [
-			'objectId' => $objectId,
-			'originId' => ($payload['originId'] ?? null),
-			'targetId' => ($payload['targetId'] ?? null),
-			'outcome' => (string)($payload['targetLastAction'] ?? 'unchanged'),
-			'contract' => $contractId,
-			'object' => $payload,
-		];
-	}//end objectFor()
-
-	/**
-	 * Read the run counts off a synchronisation log.
-	 *
-	 * @param array $log The synchronisation log.
-	 * @param string $reference The authored synchronization reference.
-	 *
-	 * @return array<string, mixed> The summary.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	private function summaryFrom(array $log, string $reference): array {
-		$result = (array)($log['result'] ?? []);
-		$counts = (array)($result['objects'] ?? []);
-
-		$summary = [
-			'synchronization' => $reference,
-			'runId' => ($log['uuid'] ?? ($log['id'] ?? null)),
-			'message' => ($log['message'] ?? null),
-		];
-		foreach (self::SUMMARY_COUNTS as $count) {
-			$summary[$count] = (int)($counts[$count] ?? 0);
-		}
-
-		return $summary;
-
-	}//end summaryFrom()
 
 	/**
 	 * Build the output items for one synchronisation run.
