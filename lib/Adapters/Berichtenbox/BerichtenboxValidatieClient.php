@@ -31,7 +31,6 @@ use OCA\Integriq\Service\Mtls\MtlsConfigResolverInterface;
 use OCA\Integriq\Service\Mtls\MtlsTransportServiceInterface;
 use OCA\Integriq\Service\Security\EgressGuardInterface;
 use Psr\Http\Message\ResponseInterface;
-use Throwable;
 
 /**
  * Asks Logius, synchronously, which BSNs take letters of a BerichtType from this sender.
@@ -161,11 +160,11 @@ class BerichtenboxValidatieClient {
 	 * A refusal because the check is not configured to be made.
 	 *
 	 * @param string    $problem  The start of the message.
-	 * @param Throwable $previous The cause, whose message completes it.
+	 * @param EgressRefusedException|MtlsTransportException $previous The cause, whose message completes it.
 	 *
 	 * @return BerichtenboxException The refusal.
 	 */
-	private function notConfigured(string $problem, Throwable $previous): BerichtenboxException {
+	private function notConfigured(string $problem, EgressRefusedException|MtlsTransportException $previous): BerichtenboxException {
 		return new BerichtenboxException(
 			message: $problem . $previous->getMessage(),
 			reason: BerichtenboxException::CODE_NOT_CONFIGURED,
@@ -177,11 +176,11 @@ class BerichtenboxValidatieClient {
 	 * A refusal because the check failed.
 	 *
 	 * @param string    $problem  The start of the message.
-	 * @param Throwable $previous The cause, whose message completes it.
+	 * @param EgressRefusedException|MtlsTransportException $previous The cause, whose message completes it.
 	 *
 	 * @return BerichtenboxException The refusal.
 	 */
-	private function refusal(string $problem, Throwable $previous): BerichtenboxException {
+	private function refusal(string $problem, EgressRefusedException|MtlsTransportException $previous): BerichtenboxException {
 		return new BerichtenboxException(
 			message: $problem . $previous->getMessage(),
 			reason: BerichtenboxException::CODE_SUBSCRIPTION_FAULT,
