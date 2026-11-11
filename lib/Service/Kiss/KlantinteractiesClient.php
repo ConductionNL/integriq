@@ -83,6 +83,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\KissProviderException;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -216,6 +217,24 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 * @spec openspec/specs/kiss-kcc-bridge/spec.md
 	 */
 	public function listCustomerContacts(array $sourceConfiguration, ?string $since, int $pageSize): array {
+		$response = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			request: new KissRequest(method: 'GET', path: '/klantcontacten', query: $this->listQuery(since: $since, pageSize: $pageSize))
+		);
+		$results = $this->listResults(response: $response);
+
+		return ['items' => $results, 'nextCursor' => $this->latestRegistrationDate(results: $results)];
+	}//end listCustomerContacts()
+
+	/**
+	 * The klantcontacten list query: expanded, sorted by registration date, paged, and from `since` when given.
+	 *
+	 * @param string|null $since    The cursor; null or '' for the first page.
+	 * @param int         $pageSize The page size.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private function listQuery(?string $since, int $pageSize): array {
 		$query = [
 			'expand' => self::DEFAULT_EXPAND,
 			'sorteer' => 'registratiedatum',
@@ -225,14 +244,20 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 			$query['registratiedatum__gte'] = $since;
 		}
 
-		$response = $this->dispatch(
-			sourceConfiguration: $sourceConfiguration,
-			method: 'GET',
-			path: '/klantcontacten',
-			query: $query,
-			jsonBody: null
-		);
+		return $query;
 
+	}//end listQuery()
+
+	/**
+	 * The listed klantcontacten: a page's `results`, else the decoded array itself.
+	 *
+	 * @param string $response The response body.
+	 *
+	 * @return array<int, mixed> The items, re-indexed.
+	 *
+	 * @throws KissProviderException When the list is not an array.
+	 */
+	private function listResults(string $response): array {
 		$decoded = json_decode($response, true);
 		$results = [];
 		if (is_array($decoded) === true) {
@@ -245,17 +270,42 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 			);
 		}
 
-		$results = array_values($results);
+		return array_values($results);
+
+	}//end listResults()
+
+	/**
+	 * The latest `registratiedatum` among the items: the next page's cursor.
+	 *
+	 * @param array<int, mixed> $results The listed items.
+	 *
+	 * @return string|null The cursor, or null when no item carries a date.
+	 */
+	private function latestRegistrationDate(array $results): ?string {
 		$nextCursor = null;
 		foreach ($results as $item) {
 			$registrationDate = (string)($item['registratiedatum'] ?? '');
-			if ($registrationDate !== '' && ($nextCursor === null || $registrationDate > $nextCursor)) {
+			if ($this->isLaterDate(date: $registrationDate, cursor: $nextCursor) === true) {
 				$nextCursor = $registrationDate;
 			}
 		}
 
-		return ['items' => $results, 'nextCursor' => $nextCursor];
-	}//end listCustomerContacts()
+		return $nextCursor;
+
+	}//end latestRegistrationDate()
+
+	/**
+	 * Whether a registration date moves the cursor: it is set and later than the cursor so far.
+	 *
+	 * @param string      $date   The item's `registratiedatum`, '' when absent.
+	 * @param string|null $cursor The latest date so far, null for none.
+	 *
+	 * @return bool True when the date is the new cursor.
+	 */
+	private function isLaterDate(string $date, ?string $cursor): bool {
+		return ($date !== '' && ($cursor === null || $date > $cursor));
+
+	}//end isLaterDate()
 
 	/**
 	 * {@inheritDoc}
@@ -273,10 +323,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'POST',
-			path: '/klantcontacten',
-			query: [],
-			jsonBody: $payload
+			request: new KissRequest(method: 'POST', path: '/klantcontacten', jsonBody: $payload)
 		);
 
 		$customerContactId = $this->extractId(response: $response, context: 'klantcontact');
@@ -289,10 +336,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 				$involvedParty['klantcontact'] = ['uuid' => $customerContactId];
 				$this->dispatch(
 					sourceConfiguration: $sourceConfiguration,
-					method: 'POST',
-					path: '/betrokkenen',
-					query: [],
-					jsonBody: $involvedParty
+					request: new KissRequest(method: 'POST', path: '/betrokkenen', jsonBody: $involvedParty)
 				);
 			} catch (Throwable $exception) {
 				$this->logger->warning(
@@ -337,10 +381,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'POST',
-			path: '/onderwerpobjecten',
-			query: [],
-			jsonBody: $payload
+			request: new KissRequest(method: 'POST', path: '/onderwerpobjecten', jsonBody: $payload)
 		);
 
 		return $this->extractId(response: $response, context: 'onderwerpobject');
@@ -398,44 +439,19 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 * mapping every failure mode to a secret-free {@see KissProviderException}
 	 * — never a 500 crash.
 	 *
-	 * @param array $sourceConfiguration The KISS source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $path The API path (relative to `configuration.baseUrl`).
-	 * @param array $query Query string parameters.
-	 * @param array|null $jsonBody Optional JSON request body.
+	 * @param array       $sourceConfiguration The KISS source's `configuration` object.
+	 * @param KissRequest $request             The method, path (relative to `configuration.baseUrl`), query and JSON body.
 	 *
 	 * @return string The response body.
 	 *
 	 * @throws KissProviderException On any configuration, transport, or upstream error.
 	 */
-	private function dispatch(array $sourceConfiguration, string $method, string $path, array $query, ?array $jsonBody): string {
-		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
-		if ($baseUrl === '') {
-			throw new KissProviderException(
-				message: $this->l->t('KISS base URL missing') . ': `configuration.baseUrl` is required.'
-			);
-		}
-
-		$url = $baseUrl . $path;
-
-		$requestOptions = [
-			'headers' => [
-				'Authorization' => $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration),
-				'Content-Type' => 'application/json',
-				'Accept' => 'application/json',
-			],
-			'http_errors' => false,
-		];
-		if ($query !== []) {
-			$requestOptions['query'] = $query;
-		}
-
-		if ($jsonBody !== null) {
-			$requestOptions['json'] = $jsonBody;
-		}
+	private function dispatch(array $sourceConfiguration, KissRequest $request): string {
+		$url = $this->requireBaseUrl(sourceConfiguration: $sourceConfiguration) . $request->path;
+		$requestOptions = $this->requestOptions(sourceConfiguration: $sourceConfiguration, request: $request);
 
 		try {
-			$response = $this->httpClient->request($method, $url, $requestOptions);
+			$response = $this->httpClient->request($request->method, $url, $requestOptions);
 		} catch (GuzzleException $exception) {
 			$this->logger->warning(
 				'[KlantinteractiesClient] unexpected transport failure',
@@ -447,6 +463,71 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 			);
 		}
 
+		return $this->successfulBody(response: $response);
+	}//end dispatch()
+
+	/**
+	 * The configured base URL without a trailing slash; it is required.
+	 *
+	 * @param array $sourceConfiguration The KISS source's `configuration` object.
+	 *
+	 * @return string The base URL.
+	 *
+	 * @throws KissProviderException When none is configured.
+	 */
+	private function requireBaseUrl(array $sourceConfiguration): string {
+		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
+		if ($baseUrl === '') {
+			throw new KissProviderException(
+				message: $this->l->t('KISS base URL missing') . ': `configuration.baseUrl` is required.'
+			);
+		}
+
+		return $baseUrl;
+
+	}//end requireBaseUrl()
+
+	/**
+	 * The Guzzle options: token and JSON headers, and the query and body when the request has them.
+	 *
+	 * @param array       $sourceConfiguration The KISS source's `configuration` object.
+	 * @param KissRequest $request             The request.
+	 *
+	 * @return array The options.
+	 *
+	 * @throws KissProviderException When the token is missing or undecryptable.
+	 */
+	private function requestOptions(array $sourceConfiguration, KissRequest $request): array {
+		$requestOptions = [
+			'headers' => [
+				'Authorization' => $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration),
+				'Content-Type' => 'application/json',
+				'Accept' => 'application/json',
+			],
+			'http_errors' => false,
+		];
+		if ($request->query !== []) {
+			$requestOptions['query'] = $request->query;
+		}
+
+		if ($request->jsonBody !== null) {
+			$requestOptions['json'] = $request->jsonBody;
+		}
+
+		return $requestOptions;
+
+	}//end requestOptions()
+
+	/**
+	 * The body of a 2xx answer; any other status is refused.
+	 *
+	 * @param ResponseInterface $response The answer.
+	 *
+	 * @return string The body.
+	 *
+	 * @throws KissProviderException When the status is not 2xx.
+	 */
+	private function successfulBody(ResponseInterface $response): string {
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
 		if ($status < 200 || $status >= 300) {
@@ -454,7 +535,8 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 		}
 
 		return $body;
-	}//end dispatch()
+
+	}//end successfulBody()
 
 	/**
 	 * Build the per-request `Authorization: <scheme> <token>` header value.
