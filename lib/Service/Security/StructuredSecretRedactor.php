@@ -54,6 +54,21 @@ final class StructuredSecretRedactor {
 	private const QUERY_PAIR = '/(^|[&;])([^=&;#]+)=([^&;#]*)/';
 
 	/**
+	 * A `Name: value` header line in a text; group 1 is everything before the
+	 * value, group 2 the name, group 3 the value up to the end of the line.
+	 *
+	 * @var string
+	 */
+	private const HEADER_LINE = '/^([ \t]*([A-Za-z0-9][A-Za-z0-9_\-]*)[ \t]*:[ \t]*)([^\r\n]*?)[ \t]*$/m';
+
+	/**
+	 * How deep a JSON text inside a value is decoded.
+	 *
+	 * @var integer
+	 */
+	private const JSON_TEXT_DEPTH = 64;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SensitiveFieldRegistry $registry The registry that knows secret-shaped names.
@@ -144,6 +159,79 @@ final class StructuredSecretRedactor {
 	}//end redactEncodedUrl()
 
 	/**
+	 * Masks the secrets a text shows: a JSON document by its names, header lines
+	 * whose name is a secret header, and URL secrets.
+	 *
+	 * @param string $text The text.
+	 *
+	 * @return string The text with its secrets masked.
+	 */
+	private function redactText(string $text): string {
+		$json = $this->redactJsonText(text: $text);
+		if ($json !== null) {
+			return $json;
+		}
+
+		$text = (string)preg_replace_callback(
+			self::HEADER_LINE,
+			fn (array $line): string => $this->maskedHeaderLine(line: $line),
+			$text
+		);
+
+		return $this->redactUrl(url: $text);
+	}//end redactText()
+
+	/**
+	 * A JSON object or list held as text, masked like a configuration and encoded
+	 * again; null when the text is not one or holds no secret.
+	 *
+	 * @param string $text The text.
+	 *
+	 * @return string|null The masked JSON text, or null.
+	 */
+	private function redactJsonText(string $text): ?string {
+		$start = substr(ltrim($text), 0, 1);
+		if ($start !== '{' && $start !== '[') {
+			return null;
+		}
+
+		try {
+			$decoded = json_decode($text, true, self::JSON_TEXT_DEPTH, JSON_THROW_ON_ERROR);
+		} catch (\JsonException $e) {
+			return null;
+		}
+
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		$masked = $this->registry->redactConfiguration(data: $decoded);
+		if ($masked === $decoded) {
+			return null;
+		}
+
+		return (string)json_encode($masked, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+	}//end redactJsonText()
+
+	/**
+	 * One header line as text, its value masked when the name is a secret header.
+	 *
+	 * @param array<int, string> $line The match: the line, everything before the value, the name and the value.
+	 *
+	 * @return string The line.
+	 */
+	private function maskedHeaderLine(array $line): string {
+		if ($line[3] === ''
+			|| $this->registry->isSensitiveHeaderName(name: $line[2]) === false
+			|| $this->registry->isPureTemplate(value: $line[3]) === true
+		) {
+			return $line[0];
+		}
+
+		return $line[1] . SensitiveFieldRegistry::PLACEHOLDER;
+	}//end maskedHeaderLine()
+
+	/**
 	 * One query pair as text, its value masked when its name is secret-shaped.
 	 *
 	 * @param array<int, string> $pair The match: separator, name and value.
@@ -224,7 +312,7 @@ final class StructuredSecretRedactor {
 		}
 
 		if (is_string($value) === true) {
-			return $this->redactUrl(url: $value);
+			return $this->redactText(text: $value);
 		}
 
 		if (is_array($value) === false) {
