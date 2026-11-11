@@ -721,21 +721,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function edgesFor(array $nodes): array {
-		$ids = array_map(static fn (array $node): string => (string)$node['id'], array_values($nodes));
-
-		$edges = [];
-		$total = count($ids);
-		for ($index = 0; $index < ($total - 1); $index++) {
-			$from = $ids[$index];
-			$to = $ids[($index + 1)];
-			$edges[] = [
-				'id' => $from . '-' . $to,
-				'from' => $from,
-				'to' => $to,
-			];
-		}
-
-		return $edges;
+		return PipelineEdges::chain(nodes: $nodes);
 	}//end edgesFor()
 
 	/**
