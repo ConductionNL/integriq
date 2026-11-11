@@ -383,48 +383,9 @@ class RenameDutchColumns implements IRepairStep {
 			return [];
 		}
 
-		return $this->tablesOfRegisters(names: $names, ids: $ids);
+		return (new ShardTableMatcher(registerIds: $ids))->tablesIn(names: $names);
 	}//end shardTables()
 
-	/**
-	 * The listed tables that are a shard of one of the registers, once each.
-	 *
-	 * @param array<int, string> $names The listed table names.
-	 * @param array<int, mixed>  $ids   The register ids.
-	 *
-	 * @return array<int, string>
-	 */
-	private function tablesOfRegisters(array $names, array $ids): array {
-		$markers = array_map(static fn ($id): string => 'openregister_table_' . ((int)$id) . '_', $ids);
-
-		$tables = [];
-		foreach ($names as $name) {
-			if (self::isShardOf(name: $name, markers: $markers) === true) {
-				$tables[] = $name;
-			}
-		}
-
-		return array_values(array_unique($tables));
-	}//end tablesOfRegisters()
-
-	/**
-	 * Whether a table name is a register marker followed by a schema id only.
-	 *
-	 * @param string             $name    The table name.
-	 * @param array<int, string> $markers The `openregister_table_{register}_` markers.
-	 *
-	 * @return bool
-	 */
-	private static function isShardOf(string $name, array $markers): bool {
-		foreach ($markers as $marker) {
-			$offset = strpos($name, $marker);
-			if ($offset !== false && ctype_digit(substr($name, ($offset + strlen($marker)))) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isShardOf()
 
 	/**
 	 * Ids of every register whose slug starts with the prefix.
