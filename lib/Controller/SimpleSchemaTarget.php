@@ -43,24 +43,6 @@ final class SimpleSchemaTarget {
 	public mixed $targetId = '';
 
 	/**
-	 * Read the target from an endpoint's object data.
-	 *
-	 * @param array $endpointData The endpoint object data.
-	 *
-	 * @return self
-	 *
-	 * @spec openspec/specs/endpoint-runtime/spec.md
-	 */
-	public static function fromEndpoint(array $endpointData): self {
-		$target = new self();
-		$target->endpoint = ($endpointData['endpoint'] ?? '');
-		$target->targetId = ($endpointData['targetId'] ?? '');
-
-		return $target;
-
-	}//end fromEndpoint()
-
-	/**
 	 * The targetId split on its slash.
 	 *
 	 * @return array The parts.

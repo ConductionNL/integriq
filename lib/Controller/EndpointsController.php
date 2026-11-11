@@ -494,7 +494,7 @@ class EndpointsController extends Controller {
 	 * @return SimpleSchemaTarget|JSONResponse The target, or the 500 a misconfigured one answers.
 	 */
 	private function parseSimpleTarget(array $endpointData): SimpleSchemaTarget|JSONResponse {
-		$target = SimpleSchemaTarget::fromEndpoint(endpointData: $endpointData);
+		$target = $this->simpleTarget(endpointData: $endpointData);
 		if (empty($target->targetId) === true) {
 			$this->logger->error('Simple endpoint has empty targetId', ['endpoint' => $target->endpoint]);
 			return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: empty targetId')], 500);
@@ -507,6 +507,22 @@ class EndpointsController extends Controller {
 		return $target;
 
 	}//end parseSimpleTarget()
+
+	/**
+	 * The endpoint name and targetId of a fast-path endpoint, as configured.
+	 *
+	 * @param array $endpointData The endpoint object data.
+	 *
+	 * @return SimpleSchemaTarget
+	 */
+	private function simpleTarget(array $endpointData): SimpleSchemaTarget {
+		$target = new SimpleSchemaTarget();
+		$target->endpoint = ($endpointData['endpoint'] ?? '');
+		$target->targetId = ($endpointData['targetId'] ?? '');
+
+		return $target;
+
+	}//end simpleTarget()
 
 	/**
 	 * Log a targetId that is not a "register/schema" pair and answer 500.
