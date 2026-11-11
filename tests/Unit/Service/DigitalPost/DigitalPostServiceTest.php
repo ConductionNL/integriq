@@ -568,4 +568,75 @@ class DigitalPostServiceTest extends TestCase {
 
 		$this->assertSame(0, $job->pollSource(['slug' => 'een-api', 'configuration' => ['type' => 'api']]));
 	}//end testASourceWithNoDigitalPostProviderIsNotPolled()
+
+	/**
+	 * The whole queued letter, what the provider is handed, the stored outcome and the
+	 * announcement; a letter that cannot be stored is refused before the provider is called.
+	 *
+	 * @return void
+	 */
+	public function testTheWholeLetterItsSendAndAnUnstorableLetter(): void {
+		$config = ['providerId' => 'berichtenbox', 'senderOin' => '000'];
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$handed = [];
+		$provider->expects($this->once())->method('send')->willReturnCallback(
+			static function (array $message, array $sourceConfig) use (&$handed): DigitalPostResult {
+				$handed = [$message, $sourceConfig];
+				return DigitalPostResult::accepted(DigitalPostResult::STATUS_SENT, 'ref-9');
+			}
+		);
+		$event = $this->request(category: 'case-update', caseRef: 'zaak/1');
+
+		$this->service($provider, $config)->handleSendRequest($event);
+
+		$queued = $this->saved[0];
+		$this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\dT/', $queued['created']);
+		$queued['created'] = 'NOW';
+		$this->assertSame(
+			[
+				'recipient' => '999993653',
+				'subject' => 'Uw aanvraag',
+				'body' => $queued['body'],
+				'attachments' => [['name' => 'besluit.pdf', 'url' => 'https://example.test/besluit.pdf']],
+				'requestedBy' => 'behandelaar1',
+				'sourceApp' => 'dossiq',
+				'sourceId' => 'berichtenbox-source',
+				'providerId' => 'berichtenbox',
+				'correlationId' => 'corr-1',
+				'category' => 'case-update',
+				'caseRef' => 'zaak/1',
+				'status' => DigitalPostResult::STATUS_QUEUED,
+				'lastError' => '',
+				'simulated' => false,
+				'created' => 'NOW',
+			],
+			$queued
+		);
+		$this->assertStringStartsWith('Beste heer De Vries,', $queued['body']);
+		$this->assertSame($this->saved[0], $handed[0]);
+		$this->assertSame($config, $handed[1]);
+		$this->assertSame(array_merge($this->saved[0], ['status' => DigitalPostResult::STATUS_SENT, 'providerReference' => 'ref-9', 'lastError' => '', 'simulated' => false]), $this->saved[1]);
+		$announced = $this->dispatched[0];
+		$this->assertSame(['msg-1', DigitalPostResult::STATUS_SENT, 'behandelaar1', DigitalPostResult::STATUS_QUEUED, false, ''], [$announced->getMessageId(), $announced->getStatus(), $announced->getRequestedBy(), $announced->getPreviousStatus(), $announced->isSimulated(), $announced->getLastError()]);
+		$this->assertSame('msg-1', $event->getMessageId());
+
+		$this->setUp();
+		$this->failSaves = true;
+		$unstored = $this->request();
+		$silent = $this->createMock(DigitalPostProviderInterface::class);
+		$silent->method('getProviderId')->willReturn('berichtenbox');
+		$silent->expects($this->never())->method('send');
+		try {
+			$this->service($silent, $config)->handleSendRequest($unstored);
+		} catch (\Throwable $exception) {
+			$this->fail('An unstorable letter is refused, not thrown: ' . $exception->getMessage());
+		}
+
+		$this->assertTrue($unstored->isHandled());
+		$this->assertSame('not_stored', $unstored->getRefusal()['code']);
+		$this->assertNull($unstored->getMessageId());
+		$this->assertSame([], $this->dispatched);
+
+	}//end testTheWholeLetterItsSendAndAnUnstorableLetter()
 }//end class
