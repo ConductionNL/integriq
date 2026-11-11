@@ -67,14 +67,15 @@ class CallEventNormaliser {
 	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 	 */
 	public function normalise(array $payload, array $mapping = [], array $kindMap = []): ?array {
-		$rawKind = (string) $this->at(payload: $payload, path: (string) ($mapping['kind'] ?? 'kind'));
+		$source  = new MappedPayload(payload: $payload, mapping: $mapping);
+		$rawKind = (string) $this->field(source: $source, name: 'kind');
 		$kind    = (string) ($kindMap[$rawKind] ?? $rawKind);
 
 		if (in_array($kind, self::KINDS, true) === false) {
 			return null;
 		}
 
-		$callId = trim((string) $this->at(payload: $payload, path: (string) ($mapping['callId'] ?? 'callId')));
+		$callId = trim((string) $this->field(source: $source, name: 'callId'));
 		if ($callId === '') {
 			// Without a call id nothing can be deduplicated, correlated across
 			// kinds, or pushed back as a contact moment. It is not an event,
@@ -82,32 +83,61 @@ class CallEventNormaliser {
 			return null;
 		}
 
-		$event = [
-			'kind'         => $kind,
-			'callId'       => $callId,
-			'callerNumber' => $this->toE164(
-				number: (string) $this->at(payload: $payload, path: (string) ($mapping['callerNumber'] ?? 'callerNumber'))
-			),
-			'agentId'      => trim((string) $this->at(payload: $payload, path: (string) ($mapping['agentId'] ?? 'agentId'))),
-			'at'           => $this->toIso(
-				value: (string) $this->at(payload: $payload, path: (string) ($mapping['at'] ?? 'at'))
-			),
-		];
-
+		$event = ['kind' => $kind, 'callId' => $callId] + $this->callFields(source: $source);
 		if ($kind === 'ended') {
-			$duration                  = $this->at(payload: $payload, path: (string) ($mapping['durationSeconds'] ?? 'durationSeconds'));
-			if (is_numeric($duration) === true) {
-				$event['durationSeconds'] = (int) $duration;
-			} else {
-				// A duration nobody can read is zero, not a refusal: the call
-				// still ended, and the panel still has to clear the caller.
-				$event['durationSeconds'] = 0;
-			}
+			$event['durationSeconds'] = $this->durationSeconds(source: $source);
 		}
 
 		return $event;
 
 	}//end normalise()
+
+	/**
+	 * The value of a normalised field in a mapped payload.
+	 *
+	 * @param MappedPayload $source The payload and its mapping.
+	 * @param string        $name   The normalised field.
+	 *
+	 * @return mixed The scalar value, or null.
+	 */
+	private function field(MappedPayload $source, string $name): mixed {
+		return $this->at(payload: $source->payload, path: $source->pathOf(field: $name));
+
+	}//end field()
+
+	/**
+	 * The caller number (E.164), the agent and the moment of a call event.
+	 *
+	 * @param MappedPayload $source The payload and its mapping.
+	 *
+	 * @return array{callerNumber: string, agentId: string, at: string} The fields.
+	 */
+	private function callFields(MappedPayload $source): array {
+		return [
+			'callerNumber' => $this->toE164(number: (string) $this->field(source: $source, name: 'callerNumber')),
+			'agentId'      => trim((string) $this->field(source: $source, name: 'agentId')),
+			'at'           => $this->toIso(value: (string) $this->field(source: $source, name: 'at')),
+		];
+
+	}//end callFields()
+
+	/**
+	 * The duration of an ended call. A duration nobody can read is zero, not a
+	 * refusal: the call still ended, and the panel still has to clear the caller.
+	 *
+	 * @param MappedPayload $source The payload and its mapping.
+	 *
+	 * @return int The seconds.
+	 */
+	private function durationSeconds(MappedPayload $source): int {
+		$duration = $this->field(source: $source, name: 'durationSeconds');
+		if (is_numeric($duration) === true) {
+			return (int) $duration;
+		}
+
+		return 0;
+
+	}//end durationSeconds()
 
 	/**
 	 * A phone number in E.164, as far as it can be read.
