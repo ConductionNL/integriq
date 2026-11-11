@@ -232,13 +232,14 @@ class RenameDutchColumns implements IRepairStep {
 	 * @spec openspec/changes/rename-dutch-columns-follows-the-schema/specs/register-vocabulary/spec.md#requirement-a-column-follows-the-name-its-schema-declares-req-rv-001
 	 */
 	private function migrateTable(TableColumnMove $move, array &$tally): void {
+		$mover = new ColumnPairMover(db: $this->db, logger: $this->logger);
 		foreach (self::COLUMN_MAP as $dutch => $english) {
 			$pair = $this->direction(declared: $move->declared, dutch: $dutch, english: $english);
 			if ($pair === null || $move->has(column: $pair['from']) === false) {
 				continue;
 			}
 
-			$counted = $this->movePair(move: $move, pair: $pair);
+			$counted = ($this->refusedCollision(move: $move, pair: $pair) ?? $mover->move(move: $move, pair: $pair));
 			if ($counted !== null) {
 				$tally[$counted]++;
 			}
@@ -247,16 +248,15 @@ class RenameDutchColumns implements IRepairStep {
 	}//end migrateTable()
 
 	/**
-	 * Move one column pair: refuse two sources for one destination, rename
-	 * when the destination is absent, else back-fill it.
+	 * Refuse a rename (from the Dutch name) when two sources target one
+	 * destination: migrating neither, logged.
 	 *
-	 * @param TableColumnMove                          $move The table.
+	 * @param TableColumnMove                                $move The table.
 	 * @param array{from: string, to: string, kind: string} $pair Which way the pair moves.
 	 *
-	 * @return string|null The tally to count, or null when the statement failed.
+	 * @return string|null `refused`, or null when the pair may move.
 	 */
-	private function movePair(TableColumnMove $move, array $pair): ?string {
-		// A rename (from the Dutch name) refuses when two sources target one destination.
+	private function refusedCollision(TableColumnMove $move, array $pair): ?string {
 		if ($pair['kind'] === 'renamed' && $this->hasCollision(columns: $move->columns, target: $pair['to']) === true) {
 			$this->logger->warning(
 				'RenameDutchColumns: two sources target one destination; migrating neither.',
@@ -265,53 +265,9 @@ class RenameDutchColumns implements IRepairStep {
 			return 'refused';
 		}
 
-		if ($move->has(column: $pair['to']) === false) {
-			return $this->renameColumn(move: $move, pair: $pair);
-		}
-
-		return $this->copyColumn(move: $move, pair: $pair);
-
-	}//end movePair()
-
-	/**
-	 * Rename the source column to the destination.
-	 *
-	 * @param TableColumnMove                          $move The table.
-	 * @param array{from: string, to: string, kind: string} $pair Which way the pair moves.
-	 *
-	 * @return string|null The pair's kind, or null when the statement failed.
-	 */
-	private function renameColumn(TableColumnMove $move, array $pair): ?string {
-		$sql = 'ALTER TABLE ' . $move->quotedTable . ' RENAME COLUMN '
-			. $this->quote(identifier: $pair['from']) . ' TO ' . $this->quote(identifier: $pair['to']);
-		if ($this->exec(sql: $sql) === true) {
-			return $pair['kind'];
-		}
-
 		return null;
 
-	}//end renameColumn()
-
-	/**
-	 * Back-fill the destination column from the source where it is empty.
-	 *
-	 * @param TableColumnMove                          $move The table.
-	 * @param array{from: string, to: string, kind: string} $pair Which way the pair moves.
-	 *
-	 * @return string|null `copied`, or null when the statement failed.
-	 */
-	private function copyColumn(TableColumnMove $move, array $pair): ?string {
-		$qTo = $this->quote(identifier: $pair['to']);
-		$qFrom = $this->quote(identifier: $pair['from']);
-		$sql = 'UPDATE ' . $move->quotedTable . ' SET ' . $qTo . ' = ' . $qFrom
-			. ' WHERE ' . $qTo . ' IS NULL AND ' . $qFrom . ' IS NOT NULL';
-		if ($this->exec(sql: $sql) === true) {
-			return 'copied';
-		}
-
-		return null;
-
-	}//end copyColumn()
+	}//end refusedCollision()
 
 	/**
 	 * Which way one Dutch/English pair moves in a table, or null to leave it.
@@ -546,27 +502,6 @@ class RenameDutchColumns implements IRepairStep {
 
 		return $columns;
 	}//end columnsOf()
-
-	/**
-	 * Execute one statement, logging and swallowing failure.
-	 *
-	 * @param string $sql The statement.
-	 *
-	 * @return bool Whether it succeeded.
-	 */
-	private function exec(string $sql): bool {
-		try {
-			$this->db->executeStatement($sql);
-			return true;
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'RenameDutchColumns: statement failed; leaving the column as it was.',
-				['sql' => $sql, 'exception' => $e->getMessage()]
-			);
-			return false;
-		}
-
-	}//end exec()
 
 	/**
 	 * Quote an identifier for the active platform.
