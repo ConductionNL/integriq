@@ -203,4 +203,33 @@ class ExchangeReadModelTest extends TestCase {
 		$this->assertCount(14, $targets);
 
 	}//end testTargetsSayWhatIsHandled()
+
+	/**
+	 * Every bounded read the model makes, with its filters, page size and offset, in order.
+	 *
+	 * @return void
+	 */
+	public function testEveryReadIsBoundedAndFiltered(): void {
+		$this->model->listJobs('learniq', ['target' => 'bron-rod', 'status' => '', 'ownerRef' => 'lp/1'], 0, 7);
+		$this->model->listRejections('learniq', ['status' => 'failed', 'target' => '', 'jobId' => 'job-1'], 250, -1);
+		$this->model->getJob('learniq', 'job-1');
+
+		$ownReads = array_filter($this->queries, static fn (array $config): bool => $config['filters']['schema'] !== 'mapping');
+		$reads = array_map(
+			static fn (array $config): array => [$config['filters'], $config['limit'], $config['offset']],
+			array_values($ownReads)
+		);
+		$register = ['register' => 'integriq'];
+		$this->assertSame(
+			[
+				[$register + ['schema' => 'job', 'ownerApp' => 'learniq', 'exchangeTarget' => 'bron-rod', 'ownerRef' => 'lp/1'], 1, 7],
+				[$register + ['schema' => 'sync_item_dead_letter', 'ownerApp' => 'learniq', 'status' => 'failed'], 1000, 0],
+				[$register + ['schema' => 'sync_item_dead_letter', 'ownerApp' => 'learniq', 'status' => 'failed', 'exchangeJob' => 'job-1'], 200, 0],
+				[$register + ['schema' => 'sync_item_dead_letter', 'ownerApp' => 'learniq', 'exchangeJob' => 'job-1'], 200, 0],
+				[$register + ['schema' => 'job_log', 'jobId' => 'job-1'], 20, 0],
+			],
+			$reads
+		);
+
+	}//end testEveryReadIsBoundedAndFiltered()
 }//end class
