@@ -1210,47 +1210,56 @@ class EventService implements EventServiceInterface {
 	 * the sweep and a replay re-attempt the SAME kind of action that
 	 * originally ran/failed (`dead-letter-replay` REQ-DLR-003).
 	 *
+	 * Every caller is a publish, retry-sweep or replay entry point, so this
+	 * method mints a fresh `event`-entryPoint trace context and owns its
+	 * persistence (execution-trace REQ-001/REQ-004).
+	 *
 	 * @param ObjectEntity $message The message to attempt delivery for.
 	 * @param ObjectEntity|null $subscription The already-resolved subscription, when the
 	 *                                        caller has it in hand (avoids a redundant
 	 *                                        find()); resolved from
 	 *                                        `message.subscriptionId` when null.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context. When null (the common
-	 *                                          publish/retry-sweep case), a fresh `event`-entryPoint
-	 *                                          context is minted here and its persistence owned by this
-	 *                                          method (execution-trace REQ-001/REQ-004).
 	 *
 	 * @return boolean True when the attempt succeeded.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
 	 */
-	private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription = null, ?ExecutionTraceContext $trace = null): bool {
-		$ownsEventTrace = ($trace === null);
-		if ($ownsEventTrace === true) {
-			$trace = new ExecutionTraceContext(entryPoint: 'event', entryPointId: $message->getUuid(), triggeredBy: 'http');
-		}
-
+	private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription = null): bool {
+		$trace  = new ExecutionTraceContext(entryPoint: 'event', entryPointId: $message->getUuid(), triggeredBy: 'http');
 		$result = $this->attemptDeliveryDispatch(message: $message, subscription: $subscription, trace: $trace);
-
-		if ($ownsEventTrace === true) {
-			$attemptDeliveryTraceStatus = 'failed';
-			if ($result === true) {
-				$attemptDeliveryTraceStatus = 'success';
-			}
-
-			try {
-				$this->executionTraceService?->persist(trace: $trace, status: $attemptDeliveryTraceStatus);
-			} catch (\Throwable $exception) {
-				$this->logger->warning(
-					'EventService: failed to persist execution_trace.',
-					['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
-				);
-			}
-		}
+		$this->persistDeliveryTrace(trace: $trace, succeeded: $result);
 
 		return $result;
 	}//end attemptDelivery()
+
+	/**
+	 * Persist the event trace of one delivery attempt; a trace that cannot be
+	 * stored is logged and never changes the attempt's outcome.
+	 *
+	 * @param ExecutionTraceContext $trace     The attempt's trace context.
+	 * @param bool                  $succeeded Whether the attempt succeeded.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+	 */
+	private function persistDeliveryTrace(ExecutionTraceContext $trace, bool $succeeded): void {
+		$status = 'failed';
+		if ($succeeded === true) {
+			$status = 'success';
+		}
+
+		try {
+			$this->executionTraceService?->persist(trace: $trace, status: $status);
+		} catch (\Throwable $exception) {
+			$this->logger->warning(
+				'EventService: failed to persist execution_trace.',
+				['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
+			);
+		}
+
+	}//end persistDeliveryTrace()
 
 	/**
 	 * The action.kind switch extracted from {@see attemptDelivery()} so the
