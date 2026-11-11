@@ -2,6 +2,8 @@
 import { translate as t } from '@nextcloud/l10n'
 import { Endpoint } from '../../entities/index.js'
 import { endpointStore, navigationStore } from '../../store/store.js'
+import { fetchOpenRegisterCollection } from '../openRegisterGet.js'
+import { emptyEndpointItem } from './emptyEndpointItem.js'
 defineOptions({
 	name: 'EditEndpoint',
 	components: {
@@ -17,18 +19,7 @@ defineOptions({
 
 	data() {
 		return {
-			endpointItem: {
-				name: '',
-				description: '',
-				endpoint: '',
-				endpointArray: '',
-				endpointRegex: '',
-				method: '',
-				targetType: '',
-				targetId: '',
-				slug: '',
-				configurations: [],
-			},
+			endpointItem: emptyEndpointItem(),
 
 			success: null,
 			loading: false,
@@ -164,18 +155,7 @@ defineOptions({
 			this.loading = false
 			this.error = false
 			this.hasUpdated = false
-			this.endpointItem = {
-				name: '',
-				description: '',
-				endpoint: '',
-				endpointArray: '',
-				endpointRegex: '',
-				method: '',
-				targetType: '',
-				targetId: '',
-				slug: '',
-				configurations: [],
-			}
+			this.endpointItem = emptyEndpointItem()
 			this.methodOptions.value = { label: 'GET' }
 			this.targetTypeOptions.value = { label: 'register/schema' }
 			this.initialSchemaSet = false
@@ -187,23 +167,7 @@ defineOptions({
 
 			// checking if OpenRegister is installed
 			console.info('Fetching registers from Open Register')
-			const response = await fetch(
-				'/index.php/apps/openregister/api/registers',
-				{
-					headers: {
-						accept: '*/*',
-						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-						'cache-control': 'no-cache',
-						pragma: 'no-cache',
-						'x-requested-with': 'XMLHttpRequest',
-					},
-					referrerPolicy: 'no-referrer',
-					body: null,
-					method: 'GET',
-					mode: 'cors',
-					credentials: 'include',
-				},
-			)
+			const response = await fetchOpenRegisterCollection('registers')
 
 			if (!response.ok) {
 				console.info('Open Register is not installed')
@@ -247,23 +211,7 @@ defineOptions({
 
 			// checking if OpenRegister is installed
 			console.info('Fetching schemas from Open Register')
-			const response = await fetch(
-				'/index.php/apps/openregister/api/schemas',
-				{
-					headers: {
-						accept: '*/*',
-						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-						'cache-control': 'no-cache',
-						pragma: 'no-cache',
-						'x-requested-with': 'XMLHttpRequest',
-					},
-					referrerPolicy: 'no-referrer',
-					body: null,
-					method: 'GET',
-					mode: 'cors',
-					credentials: 'include',
-				},
-			)
+			const response = await fetchOpenRegisterCollection('schemas')
 
 			if (!response.ok) {
 				console.info('Open Register is not installed')
@@ -287,23 +235,7 @@ defineOptions({
 
 			try {
 				console.info('Fetching configurations from Open Register')
-				const response = await fetch(
-					'/index.php/apps/openregister/api/configurations',
-					{
-						headers: {
-							accept: '*/*',
-							'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-							'cache-control': 'no-cache',
-							pragma: 'no-cache',
-							'x-requested-with': 'XMLHttpRequest',
-						},
-						referrerPolicy: 'no-referrer',
-						body: null,
-						method: 'GET',
-						mode: 'cors',
-						credentials: 'include',
-					},
-				)
+				const response = await fetchOpenRegisterCollection('configurations')
 
 				if (!response.ok) {
 					console.info('Failed to fetch configurations')
