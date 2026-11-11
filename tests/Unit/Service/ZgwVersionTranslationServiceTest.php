@@ -250,4 +250,33 @@ class ZgwVersionTranslationServiceTest extends TestCase {
 		$this->assertSame(self::GOLDEN_TRANSLATIONS, json_encode(['outcomes' => $outcomes, 'saved' => $saved]));
 	}//end testGoldenTranslationsAndLogs()
 
+
+	/**
+	 * A 1.0 -> 1.6 request runs the upgrade, a 1.6 -> 1.0 request the downgrade.
+	 *
+	 * @return void
+	 */
+	public function testEachDirectionRunsItsOwnTranslation(): void {
+		$status = $this->createMock(StatusTranslator::class);
+		$status->method('getResource')->willReturn('status');
+		$status->method('translateToV16')->willReturn(['ran' => 'to 1.6']);
+		$status->method('translateToV1x')->willReturn(['ran' => 'to 1.x']);
+		$this->objectService->method('saveObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+
+		$service = new ZgwVersionTranslationService(
+			negotiationService: new ZgwVersionNegotiationService(),
+			objectService: $this->objectService,
+			caseTranslator: new CaseTranslator(),
+			caseTypeTranslator: new CaseTypeTranslator(),
+			informatieObjectTranslator: new InformatieObjectTranslator(),
+			decisionTranslator: new DecisionTranslator(),
+			roleTranslator: new RolTranslator(),
+			statusTranslator: $status,
+			resultTranslator: new ResultTranslator()
+		);
+
+		$this->assertSame(['ran' => 'to 1.6'], $service->translate('status', '1.0', '1.6', []));
+		$this->assertSame(['ran' => 'to 1.x'], $service->translate('status', '1.6', '1.0', []));
+	}//end testEachDirectionRunsItsOwnTranslation()
+
 }//end class
