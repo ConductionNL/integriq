@@ -155,8 +155,19 @@ class RenameDutchColumns implements IRepairStep {
 			return;
 		}
 
-		$tally = ['renamed' => 0, 'restored' => 0, 'copied' => 0, 'refused' => 0, 'unread' => 0];
+		$this->reportTally(output: $output, tally: $this->migrateTables(tables: $tables));
 
+	}//end run()
+
+	/**
+	 * Migrate every shard table whose schema can be read, counting each move.
+	 *
+	 * @param array<int, string> $tables The shard tables.
+	 *
+	 * @return array<string, int> The tally, with the number of tables.
+	 */
+	private function migrateTables(array $tables): array {
+		$tally = ['renamed' => 0, 'restored' => 0, 'copied' => 0, 'refused' => 0, 'unread' => 0, 'tables' => count($tables)];
 		foreach ($tables as $table) {
 			$declared = $this->declaredColumns(table: $table);
 			if ($declared === null) {
@@ -166,69 +177,141 @@ class RenameDutchColumns implements IRepairStep {
 				continue;
 			}
 
-			$this->migrateTable(table: $table, declared: $declared, tally: $tally);
+			$this->migrateTable(move: $this->tableMove(table: $table, declared: $declared), tally: $tally);
 		}
 
+		return $tally;
+
+	}//end migrateTables()
+
+	/**
+	 * Report the tally of a run.
+	 *
+	 * @param IOutput            $output Repair output.
+	 * @param array<string, int> $tally  The tally, with the number of tables.
+	 *
+	 * @return void
+	 */
+	private function reportTally(IOutput $output, array $tally): void {
 		$output->info(
 			'RenameDutchColumns: ' . $tally['renamed'] . ' renamed, ' . $tally['restored'] . ' restored to the declared Dutch name, '
 			. $tally['copied'] . ' back-filled, ' . $tally['refused'] . ' refused, ' . $tally['unread'] . ' skipped (schema unreadable), across '
-			. count($tables) . ' shard table(s).'
+			. $tally['tables'] . ' shard table(s).'
 		);
 
-	}//end run()
+	}//end reportTally()
+
+	/**
+	 * One shard table to move: its columns and quoted name, and what its
+	 * schema declares.
+	 *
+	 * @param string             $table    The shard table.
+	 * @param array<int, string> $declared The column names the table's schema declares.
+	 *
+	 * @return TableColumnMove
+	 */
+	private function tableMove(string $table, array $declared): TableColumnMove {
+		$move = new TableColumnMove();
+		$move->table = $table;
+		$move->columns = $this->columnsOf(table: $table);
+		$move->quotedTable = $this->quote(identifier: $table);
+		$move->declared = $declared;
+
+		return $move;
+
+	}//end tableMove()
 
 	/**
 	 * Move one table's columns towards the names its schema declares.
 	 *
-	 * @param string                $table    The shard table.
-	 * @param array<int, string>    $declared The column names the table's schema declares.
-	 * @param array<string, int>    $tally    Counters, updated in place.
+	 * @param TableColumnMove    $move  The table.
+	 * @param array<string, int> $tally Counters, updated in place.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rename-dutch-columns-follows-the-schema/specs/register-vocabulary/spec.md#requirement-a-column-follows-the-name-its-schema-declares-req-rv-001
 	 */
-	private function migrateTable(string $table, array $declared, array &$tally): void {
-		$columns = $this->columnsOf(table: $table);
-		$qTable = $this->quote(identifier: $table);
-
+	private function migrateTable(TableColumnMove $move, array &$tally): void {
 		foreach (self::COLUMN_MAP as $dutch => $english) {
-			$move = $this->direction(declared: $declared, dutch: $dutch, english: $english);
-			if ($move === null || in_array($move['from'], $columns, true) === false) {
+			$pair = $this->direction(declared: $move->declared, dutch: $dutch, english: $english);
+			if ($pair === null || $move->has(column: $pair['from']) === false) {
 				continue;
 			}
 
-			$from = $move['from'];
-			$to = $move['to'];
-			if ($from === $dutch && $this->hasCollision(columns: $columns, target: $to) === true) {
-				$this->logger->warning(
-					'RenameDutchColumns: two sources target one destination; migrating neither.',
-					['table' => $table, 'source' => $from, 'destination' => $to]
-				);
-				$tally['refused']++;
-				continue;
+			$counted = $this->movePair(move: $move, pair: $pair);
+			if ($counted !== null) {
+				$tally[$counted]++;
 			}
-
-			if (in_array($to, $columns, true) === false) {
-				$sql = 'ALTER TABLE ' . $qTable . ' RENAME COLUMN '
-					. $this->quote(identifier: $from) . ' TO ' . $this->quote(identifier: $to);
-				if ($this->exec(sql: $sql) === true) {
-					$tally[$move['kind']]++;
-				}
-
-				continue;
-			}
-
-			$qTo = $this->quote(identifier: $to);
-			$qFrom = $this->quote(identifier: $from);
-			$sql = 'UPDATE ' . $qTable . ' SET ' . $qTo . ' = ' . $qFrom
-				. ' WHERE ' . $qTo . ' IS NULL AND ' . $qFrom . ' IS NOT NULL';
-			if ($this->exec(sql: $sql) === true) {
-				$tally['copied']++;
-			}
-		}//end foreach
+		}
 
 	}//end migrateTable()
+
+	/**
+	 * Move one column pair: refuse two sources for one destination, rename
+	 * when the destination is absent, else back-fill it.
+	 *
+	 * @param TableColumnMove                          $move The table.
+	 * @param array{from: string, to: string, kind: string} $pair Which way the pair moves.
+	 *
+	 * @return string|null The tally to count, or null when the statement failed.
+	 */
+	private function movePair(TableColumnMove $move, array $pair): ?string {
+		// A rename (from the Dutch name) refuses when two sources target one destination.
+		if ($pair['kind'] === 'renamed' && $this->hasCollision(columns: $move->columns, target: $pair['to']) === true) {
+			$this->logger->warning(
+				'RenameDutchColumns: two sources target one destination; migrating neither.',
+				['table' => $move->table, 'source' => $pair['from'], 'destination' => $pair['to']]
+			);
+			return 'refused';
+		}
+
+		if ($move->has(column: $pair['to']) === false) {
+			return $this->renameColumn(move: $move, pair: $pair);
+		}
+
+		return $this->copyColumn(move: $move, pair: $pair);
+
+	}//end movePair()
+
+	/**
+	 * Rename the source column to the destination.
+	 *
+	 * @param TableColumnMove                          $move The table.
+	 * @param array{from: string, to: string, kind: string} $pair Which way the pair moves.
+	 *
+	 * @return string|null The pair's kind, or null when the statement failed.
+	 */
+	private function renameColumn(TableColumnMove $move, array $pair): ?string {
+		$sql = 'ALTER TABLE ' . $move->quotedTable . ' RENAME COLUMN '
+			. $this->quote(identifier: $pair['from']) . ' TO ' . $this->quote(identifier: $pair['to']);
+		if ($this->exec(sql: $sql) === true) {
+			return $pair['kind'];
+		}
+
+		return null;
+
+	}//end renameColumn()
+
+	/**
+	 * Back-fill the destination column from the source where it is empty.
+	 *
+	 * @param TableColumnMove                          $move The table.
+	 * @param array{from: string, to: string, kind: string} $pair Which way the pair moves.
+	 *
+	 * @return string|null `copied`, or null when the statement failed.
+	 */
+	private function copyColumn(TableColumnMove $move, array $pair): ?string {
+		$qTo = $this->quote(identifier: $pair['to']);
+		$qFrom = $this->quote(identifier: $pair['from']);
+		$sql = 'UPDATE ' . $move->quotedTable . ' SET ' . $qTo . ' = ' . $qFrom
+			. ' WHERE ' . $qTo . ' IS NULL AND ' . $qFrom . ' IS NOT NULL';
+		if ($this->exec(sql: $sql) === true) {
+			return 'copied';
+		}
+
+		return null;
+
+	}//end copyColumn()
 
 	/**
 	 * Which way one Dutch/English pair moves in a table, or null to leave it.
