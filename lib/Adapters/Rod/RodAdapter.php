@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Rod;
 
+use OCA\Integriq\Adapters\DuoEdukoppelingAdapter;
+
 /**
  * Catalogue descriptor for the DUO ROD adapter (ADR-017 Rule 1).
  *
@@ -38,7 +40,7 @@ namespace OCA\Integriq\Adapters\Rod;
  *
  * @SuppressWarnings(PHPMD.ShortMethodName)
  */
-final class RodAdapter {
+final class RodAdapter extends DuoEdukoppelingAdapter {
 
 	/**
 	 * Stable adapter id.
@@ -46,20 +48,6 @@ final class RodAdapter {
 	 * @var string
 	 */
 	public const ID = 'rod';
-
-	/**
-	 * Sandbox/mock provider binding.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_LOG = 'log';
-
-	/**
-	 * Live Edukoppeling (Digikoppeling WUS) provider binding.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_EDUKOPPELING = 'edukoppeling';
 
 	/**
 	 * Catalogue id.
@@ -82,97 +70,4 @@ final class RodAdapter {
 	public function label(): string {
 		return 'DUO ROD';
 	}//end label()
-
-	/**
-	 * Adapters catalogue category.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md
-	 */
-	public function category(): string {
-		return 'government';
-	}//end category()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO top-level menu.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md
-	 */
-	public function addsTopLevelMenu(): bool {
-		return false;
-	}//end addsTopLevelMenu()
-
-	/**
-	 * ADR-017 Rule 1: an adapter family adds NO per-adapter /beheer route.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md
-	 */
-	public function addsManagementRoute(): bool {
-		return false;
-	}//end addsManagementRoute()
-
-	/**
-	 * The provider bindings this adapter offers.
-	 *
-	 * @return array<int, string>
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
-	 */
-	public function providers(): array {
-		return [self::PROVIDER_LOG, self::PROVIDER_EDUKOPPELING];
-	}//end providers()
-
-	/**
-	 * The configuration schema a Verbinding fills in to use this adapter.
-	 *
-	 * @return array<string, mixed> A JSON-schema fragment.
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-001-rod-provider-abstraction-with-log-and-edukoppeling-bindings
-	 */
-	public function configSchema(): array {
-		return [
-			'type' => 'object',
-			'title' => 'DUO ROD',
-			'properties' => [
-				'provider' => [
-					'type' => 'string',
-					'enum' => [self::PROVIDER_LOG, self::PROVIDER_EDUKOPPELING],
-					'default' => self::PROVIDER_LOG,
-					'title' => 'Provider binding',
-					'description' => '`log` (default) simulates every send. `edukoppeling` dispatches over the '
-						. 'live DUO ROD koppelvlak. It requires a DUO software-vendor certificate reference and '
-						. 'is gated until that certificate is held (see decisions.md M3(c)).',
-				],
-				'endpoint' => [
-					'type' => 'string',
-					'format' => 'uri',
-					'title' => 'Endpoint URL',
-					'description' => 'DUO ROD Edukoppeling endpoint URL. Required when provider=edukoppeling.',
-				],
-				'certificateRef' => [
-					'type' => 'string',
-					'title' => 'PKIoverheid certificate reference',
-					'description' => 'Broker credentialRef for the DUO software-vendor certificate. Never stored '
-						. 'here (ADR-007). Required when provider=edukoppeling.',
-				],
-				'webhookSignature' => [
-					'type' => 'object',
-					'title' => 'Retour signature',
-					'description' => 'HMAC verification settings for the inbound DUO acknowledgement/retour.',
-					'properties' => [
-						'scheme' => ['type' => 'string', 'default' => 'openconnector'],
-						'secret' => ['type' => 'string'],
-						'header' => ['type' => 'string', 'default' => 'X-OpenConnector-Signature'],
-						'toleranceSeconds' => ['type' => 'integer'],
-					],
-				],
-			],
-		];
-
-	}//end configSchema()
 }//end class
