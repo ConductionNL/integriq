@@ -33,6 +33,11 @@ use RuntimeException;
  * append-only promotion_audit write (success + failure paths).
  */
 class PromotionServiceTest extends TestCase {
+
+	private const GOLDEN_SCAN = '[{"type":"source","slug":"top","field":"configuration.authentication.credentialRef"},{"type":"source","slug":"deep","field":"configuration.authentication.apikey.credentialRef"},{"type":"source","slug":"deep","field":"configuration.authentication.oauth.client.secret.credentialRef"},{"type":"source","slug":"unbound","field":"configuration.authentication.password.credentialRef"}]';
+
+	private const GOLDEN_REBOUND = '{"components":{"sources":{"api":["not-a-source",{"slug":"no-auth","configuration":[]},{"slug":"top","configuration":{"authentication":{"credentialRef":{"credentialId":"old-top"}}}},{"slug":"deep","configuration":{"authentication":{"apikey":{"credentialRef":{"credentialName":"new-default"}},"header":"X-Api-Key","oauth":{"client":{"secret":{"credentialRef":{"credentialId":"new-secret"}}},"scopes":["read","write"]}}}}],"broken":"not-a-group","sftp":[{"slug":"unbound","configuration":{"authentication":{"password":{"credentialRef":{"credentialId":"old-pw"}}}}}]}}}';
+
 	/**
 	 * @var ConfigurationService|\PHPUnit\Framework\MockObject\MockObject
 	 */
@@ -431,4 +436,56 @@ class PromotionServiceTest extends TestCase {
 
 		$this->service->promote('cfg-1', 'acceptance', [], 'operator-uid');
 	}//end testPromoteWritesFailedAuditAndRethrowsWhenTargetReturns404()
+
+	/**
+	 * GOLDEN: a document with several source groups, entries that are not
+	 * arrays, a source without authentication, a top-level placeholder, nested
+	 * placeholders at two depths and plain values. The scan lists every
+	 * placeholder in walk order; the rebinding rewrites a field-specific match,
+	 * falls back to a slug-wide binding, and leaves unmatched placeholders and
+	 * plain values verbatim.
+	 *
+	 * @return void
+	 */
+	public function testGoldenScanAndRebindingAcrossEveryDocumentShape(): void {
+		$document = [
+			'components' => [
+				'sources' => [
+					'api' => [
+						'not-a-source',
+						['slug' => 'no-auth', 'configuration' => []],
+						['slug' => 'top', 'configuration' => ['authentication' => ['credentialRef' => ['credentialId' => 'old-top']]]],
+						[
+							'slug' => 'deep',
+							'configuration' => [
+								'authentication' => [
+									'apikey' => ['credentialRef' => ['credentialName' => 'old-key']],
+									'header' => 'X-Api-Key',
+									'oauth' => [
+										'client' => ['secret' => ['credentialRef' => ['credentialId' => 'old-secret']]],
+										'scopes' => ['read', 'write'],
+									],
+								],
+							],
+						],
+					],
+					'broken' => 'not-a-group',
+					'sftp' => [
+						['slug' => 'unbound', 'configuration' => ['authentication' => ['password' => ['credentialRef' => ['credentialId' => 'old-pw']]]]],
+					],
+				],
+			],
+		];
+		$bindings = [
+			'not-a-binding',
+			['sourceSlug' => '', 'credentialId' => 'ignored'],
+			['sourceSlug' => 'deep', 'field' => 'configuration.authentication.oauth.client.secret.credentialRef', 'credentialId' => 'new-secret'],
+			['sourceSlug' => 'deep', 'credentialName' => 'new-default'],
+			['sourceSlug' => 'top', 'credentialId' => ''],
+		];
+
+		$this->assertSame(self::GOLDEN_SCAN, json_encode($this->service->scanCredentialRefs($document)));
+		$this->assertSame(self::GOLDEN_REBOUND, json_encode($this->service->applyCredentialBindings($document, $bindings)));
+	}//end testGoldenScanAndRebindingAcrossEveryDocumentShape()
+
 }//end class
