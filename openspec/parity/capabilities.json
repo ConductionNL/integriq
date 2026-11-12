@@ -2531,7 +2531,10 @@
 			"integriq": "yes",
 			"built": {
 				"state": "built",
-				"change": "2026-09-29-gateway-endpoint-transform-and-plugins",
+				"change": [
+					"2026-09-29-gateway-endpoint-transform-and-plugins",
+					"sandboxed-tenant-scripts"
+				],
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Rule/Plugin/EndpointRulePluginInterface.php is the plug-in contract; a sibling app registers an implementation by listening for RegisterEndpointRulePluginsEvent, and RuleService::processCustomRule() runs the plug-in a custom rule names in configuration.plugin (an unknown id is refused by name). connectRelations is the first registered plug-in. A javascript rule is refused: the rule schema type enum leaves it out, the editor no longer offers it, and EndpointService::processJavaScriptRule() throws. Tests: EndpointRulePluginTest (4), RuleTypeRefusesJavaScriptTest (3), EndpointServiceTest::testAJavaScriptRuleIsRefusedWhenItRuns, tests/vitest/javascriptRuleRefused.spec.js (2). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29).",
 				"requirement": "openspec/specs/rule-pipeline :: A custom rule runs a registered plug-in (REQ-GTP-002)"
@@ -3903,7 +3906,10 @@
 			"integriq": "partial",
 			"built": {
 				"state": "built",
-				"change": "2026-09-29-registry-backed-field-source",
+				"change": [
+					"2026-09-29-registry-backed-field-source",
+					"registry-bindings-speak-the-registry-api"
+				],
 				"owner": "ConductionNL/integriq",
 				"evidence": "Integriq half built: lib/PropertySource/ (PropertySourceResolver, BAG/BRP/KvK providers over existing sources, provenance, staleness budget, labelled last value when unreachable, ListResyncService) behind /api/property-sources/{provider}/suggest|resolve|resync, reached from Sources > Look up in a base registry (src/dialogs/RegistryLookupDialog.vue: search, resolve a suggestion by its identifier, provenance and state, read again skipping the cache, resync a list). Tests: tests/vitest/registryLookupDialog.spec.js (8) plus the existing PropertySource PHPUnit suite. A form field cannot yet read live: that needs x-openregister-property-source on a schema property (openregister#4168) and the declaration on a case type (dossiq#3188), so the rating stays partial. Built by change registry-backed-field-source (archived 2026-09-29).",
 				"requirement": "openspec/specs/registry-field-source :: A property source is resolved through one provider contract (REQ-RFS-001)",
@@ -3994,7 +4000,8 @@
 				"requirement": [
 					"openspec/specs/synchronization-engine :: A synchronization runs on its job's schedule (REQ-SCB-012)",
 					"openspec/specs/synchronization-engine :: Synchronization orchestration and direction routing (REQ-001)"
-				]
+				],
+				"change": "bounded-jsonl-sync"
 			},
 			"reachedOn": "/synchronizations index + /synchronizations/:id detail page (SynchronizationEditorModal.vue / SynchronizationDetailPage.vue) configure the sync; a job (Jobs page, /jobs) with jobClass=SynchronizationAction runs it on a cron schedule",
 			"provider": "integriq",
@@ -4180,7 +4187,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Ownership/DisappearancePolicy.php declares three real policies (DELETE, MARK_ENDED, KEEP_AND_FLAG, defaulting to DELETE when unset) read via fromSourceConfig(); lib/Service/SynchronizationService.php:3832 deleteInvalidObjects() calls it (line ~3853) and is itself called from the real cleanup path at line 2797. sourceConfig (where disappearancePolicy lives) is editable as a JSON config block in src/modals/v2/SynchronizationEditorModal.vue:133-138 / SynchronizationDetailPage.vue:114-117, though there is no dedicated dropdown specifically for this key.",
 				"spec": "openspec/specs/synchronization-engine",
-				"requirement": "openspec/specs/source-owned-records :: What happens when a record disappears is declared, not hardcoded (REQ-SOR-002)"
+				"requirement": "openspec/specs/source-owned-records :: What happens when a record disappears is declared, not hardcoded (REQ-SOR-002)",
+				"change": "synchronisation-source-destruction-purge"
 			},
 			"reachedOn": "/synchronizations/:id editor, sourceConfig.disappearancePolicy (JSON config block, no dedicated form field)",
 			"note": "Reachable only by hand-editing the sourceConfig JSON, not through a labelled dropdown, worth a live check to confirm an admin can actually discover and set this.",
@@ -4447,7 +4455,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php:8466 dispatches a rule's 'fetch_file' case to processFetchFileRule() (defined 9625, ending 9702), which calls fetchFile()/saveFetchedFile() (8686/8860) to attach a fetched file to the synced object; lib/Flow/FetchFileNode.php exposes the same as a flow step.",
 				"spec": "openspec/specs/synchronization-engine",
-				"requirement": "openspec/specs/synchronization-engine :: Target write, deduplication and file handling (REQ-004)"
+				"requirement": "openspec/specs/synchronization-engine :: Target write, deduplication and file handling (REQ-004)",
+				"change": "fetch-file-skip-empty-document-id"
 			},
 			"reachedOn": "a synchronization or endpoint rule of type fetch_file (AddEndpointRuleModal.vue / rule editor)",
 			"provider": "integriq",
@@ -4709,7 +4718,10 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/RegistrySubscriptionRequestedListener.php:51-109 handles OpenRegister's RegistrySubscriptionRequestedEvent and delegates to lib/Service/Registry/SubscriptionRequestHandler.php:62 handle(), which resolves a real provider (lib/Service/Registry/KvkMutatieProvider.php, register.d/kvk-mutatieservice-source.json) and records the subscription (SubscriptionRoster::add); the listener is registered in lib/AppInfo/Application.php:244 and lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered as a background job in appinfo/info.xml:143 to poll for updates.",
-				"change": "2026-09-29-registry-subscription-connector",
+				"change": [
+					"2026-09-29-registry-subscription-connector",
+					"registry-update-maps-source-fields"
+				],
 				"requirement": "openspec/specs/registry-subscription-connector :: A subscription request is turned into a live subscription (REQ-RSC-002)"
 			},
 			"reachedOn": "machine/event route: OpenRegister dispatches RegistrySubscriptionRequestedEvent when a field on an integriq-managed object asks to follow a base registry (e.g. KVK mutatieservice)",
@@ -4750,7 +4762,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2813-2833 Flows (/flows, type index) and FlowDetail (/flows/:id, type flow) pages, config.app 'openconnector'; src/views/Flow/FlowDetailSidebar.vue:11 CnFlowSidebar shares useFlowStore with the canvas. Two engines coexist: legacy step flows run on integriq's own lib/Service/FlowRunnerService.php (step loop lines 253-346, step types at 364-370); new flows are graphs executed by OpenRegister's FlowEngine (nextcloud-vue useFlowStore.js:1445,1661 POST /apps/openregister/api/flows, /apps/openregister/api/flows/{id}/run), with integriq contributing its own node types via lib/Flow/FlowNodeListener.php:100-110 (RegisterFlowNodesEvent).",
 				"spec": "openspec/specs/flow-orchestration",
-				"requirement": "openspec/specs/flow-orchestration :: Integriq's Flow pages are the shared canvas over the one native flow store (REQ-017)"
+				"requirement": "openspec/specs/flow-orchestration :: Integriq's Flow pages are the shared canvas over the one native flow store (REQ-017)",
+				"change": "retire-integriq-flow-schema"
 			},
 			"reachedOn": "/flows (Flows index) -> /flows/:id (FlowDetail, CnFlowEditorPage canvas)",
 			"note": "Two flow engines run side by side: FlowRunnerService for un-migrated legacy step flows, OpenRegister's generic FlowEngine graph canvas for new/migrated ones (lib/Repair/MigrateFlowStepsToGraph.php documents the coexistence and is not a defect).",
@@ -5091,7 +5104,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2344-2352 RuleDetail (/rules/:id, type custom, component RuleDetailPage): 'the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.' src/modals/v2/RuleEditorModal.vue and src/views/Rule/actionForms/* provide the no-code action forms.",
 				"spec": "openspec/specs/rule-editor-ui",
-				"requirement": "openspec/specs/rule-editor-ui :: Action-type configuration and per-action-type forms (REQ-RULEUI-003)"
+				"requirement": "openspec/specs/rule-editor-ui :: Action-type configuration and per-action-type forms (REQ-RULEUI-003)",
+				"change": "rule-editor-a11y-i18n-hardening"
 			},
 			"reachedOn": "/rules/:id (RuleDetailPage)",
 			"note": "The form only offers the 17 action types listed in ruleDraft.js ACTION_TYPES; 8 more the backend accepts (audit_trail, override, custom, composite_fanout, referentienummer, avg_bsn_policy, selfurl_hal, flow) have no authoring UI (ruleDraft.js:56-63) and can only be set by seeding a rule from a configuration import.",
@@ -5129,7 +5143,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/FlowRunnerService.php:303-313 'approval' step type calls dispatchApproval() (defined at :522) then suspendFlowRun() (:696); lib/Flow/ApprovalRequestNode.php is the equivalent node for graph-format flows; src/manifest.json:2800-2802 Approvals page (/approvals, custom ApprovalsIndex) and ApprovalDetail (/approvals/:id).",
 				"spec": "openspec/specs/approval-workflow",
-				"requirement": "openspec/specs/flow-orchestration :: `approval` step suspends and resumes the flow run (REQ-005)"
+				"requirement": "openspec/specs/flow-orchestration :: `approval` step suspends and resumes the flow run (REQ-005)",
+				"change": "approvals-verification-pack"
 			},
 			"reachedOn": "/approvals (ApprovalsIndex) -> /approvals/:id (ApprovalDetail); flow suspends mid-run until decided",
 			"provider": "integriq",
@@ -5929,7 +5944,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/CloudEventListener.php:32-46 documents two guards ('the recursion bug'): a firehose gate (skip entirely when zero active subscriptions) and a self-reference guard (SELF_SCHEMAS = event/event_message/event_subscription never re-forwarded, lines 51-63). lib/Service/Event/EventLoopGuard.php:57-211 is the dedicated service (decide(), carriesMarker(), stamp(), chain()).",
 				"spec": "openspec/specs/events-cloudevents",
-				"requirement": "openspec/specs/events-cloudevents :: CloudEventListener registration and safety guards (REQ-008)"
+				"requirement": "openspec/specs/events-cloudevents :: CloudEventListener registration and safety guards (REQ-008)",
+				"change": "stop-cloudevent-recursion"
 			},
 			"reachedOn": "automatic, no UI: enforced on every object-change event before a CloudEvent is even persisted",
 			"provider": "integriq",
@@ -5965,7 +5981,10 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/NextcloudFileEventListener.php, NextcloudFileTagEventListener.php, NextcloudCalendarEventListener.php, NextcloudFormsEventListener.php, NextcloudTablesEventListener.php normalize NC core events into CloudEvents (per openspec/changes/archive/2026-09-28-nc-events-start-or-flows/proposal.md: 'Integriq's event hub already normalizes Nextcloud core events (files, calendar, Tables, Forms) into CloudEvents').",
-				"change": "2026-09-28-nc-events-start-or-flows",
+				"change": [
+					"2026-09-28-nc-events-start-or-flows",
+					"nextcloud-event-hub-verification"
+				],
 				"requirement": "openspec/specs/nextcloud-event-triggers :: File events MUST be normalized to CloudEvents (REQ-001)"
 			},
 			"reachedOn": "automatic: file/calendar/Forms/Tables activity in Nextcloud -> event_subscription matching -> /cloud-events pages",
@@ -6083,7 +6102,8 @@
 				"requirement": [
 					"openspec/specs/outbound-call-log :: Every outbound call is a record with its request and its response (REQ-OCD-001)",
 					"openspec/specs/endpoint-runtime :: Inbound observability logging for API-product-scoped endpoints (REQ-EP-009)"
-				]
+				],
+				"change": "call-log-without-bodies"
 			},
 			"reachedOn": "/sources/logs (SourceLogs), /endpoints/logs (EndpointLogs)",
 			"provider": "integriq",
@@ -6777,7 +6797,10 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"change": "zgw-connectors-for-dossiq",
+				"change": [
+					"zgw-connectors-for-dossiq",
+					"connectors-case-system-document-delivery"
+				],
 				"evidence": "ZGW set installer built: lib/Service/Zgw/ZgwSetInstaller.php install() binds a set's seeded synchronizations (lib/Settings/register.d/zgw-consumer-sets.json) to an operator-chosen register and schema behind lib/Service/Zgw/ZgwSetInstallGuard.php, reached by lib/Controller/ZgwSetsController.php (/api/zgw-sets/{slug}/install); notifications pull through lib/Service/Zgw/ZgwNotificationPullListener.php and the push synchronizations write back. Change zgw-connectors-for-dossiq: 7 of 8 tasks ticked, only the Playwright test open. The design's ConfigurationSetInstaller.php was built as ZgwSetInstaller.php. Set file: lib/Settings/configurations/zgw-documenten.json (source ships disabled until an administrator installs the set).",
 				"readOn": "2026-10-30",
 				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
@@ -7027,7 +7050,8 @@
 				"requirement": [
 					"openspec/specs/stuf-zkn-bridge :: Inbound zakLk01/edcLk01 translation with a literal-leak guard (REQ-002)",
 					"openspec/specs/stuf-zkn-bridge :: Outbound zakLk01 kennisgeving translation with a literal-leak guard (REQ-003)"
-				]
+				],
+				"change": "stuf-provider-writes"
 			},
 			"reachedOn": "machine route: POST /api/stuf-zkn/inbound (legacy case system SOAP push) and /api/stuf-zkn/kennisgevingen (outbound push from sibling apps); viewable at /messages/stuf",
 			"provider": "integriq",
@@ -7097,12 +7121,18 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:38 dSO#receiveRequest -> lib/Controller/DSOController.php:132 receiveRequest() (machine webhook with real PKI/HMAC signature verification per routes.php comment); routes.php:47-50 dSO#listVerzoeken/status/handoff/postOutbound -> DSOController.php:221,250,290,353. A repo-wide search of src/ finds zero calls to /api/dso/verzoeken anywhere, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue, no verzoeken review page.",
+				"evidence": "appinfo/routes.php:38 dSO#receiveRequest -> lib/Controller/DSOController.php:132 receiveRequest() (machine webhook with real PKI/HMAC signature verification per routes.php comment); routes.php:46-48 dSO#listVerzoeken/status/postOutbound -> lib/Controller/DSOController.php (the handoff route was removed by retire-dso-case-handoff; the case app takes the mapped dso_verzoek). A repo-wide search of src/ finds zero calls to /api/dso/verzoeken anywhere, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue, no verzoeken review page.",
 				"spec": "openspec/specs/dso-omgevingsloket",
-				"requirement": "openspec/specs/dso-omgevingsloket :: STAM Koppelvlak Endpoint Registration (REQ-DSO-001)"
+				"requirement": "openspec/specs/dso-omgevingsloket :: STAM Koppelvlak Endpoint Registration (REQ-DSO-001)",
+				"change": [
+					"dso-activity-mapping-table",
+					"dso-attachments-on-the-request",
+					"dso-intake-through-an-integriq-connection",
+					"retire-dso-case-handoff"
+				]
 			},
 			"reachedOn": "machine route: POST /api/dso/stam/verzoeken (Omgevingsloket STAM push); the staff review/handoff surface (list, status, handoff) has no page reaching it",
-			"note": "Receipt, status, hand-off and outbound run as machine routes. No integriq page lists received verzoeken; the case app shows them once handed off.",
+			"note": "Receipt, status and outbound run as machine routes. No integriq page lists received verzoeken; the case app takes them up from the mapped dso_verzoek.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "dso-omgevingsloket",
@@ -7248,7 +7278,10 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/PropertySource/Provider/BrpPropertySource.php:36 const ID='brp', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/brp-haalcentraal-source.json seed source is surfaced on /store via lib/Service/CatalogRegistryService.php collectFromSeedFragments().",
-				"change": "2026-09-29-registry-backed-field-source",
+				"change": [
+					"2026-09-29-registry-backed-field-source",
+					"brp-relations-read"
+				],
 				"requirement": [
 					"openspec/specs/registry-field-source :: BAG, BRP and KvK bind to sources that already exist (REQ-RFS-006)",
 					"openspec/specs/registry-field-source :: An unreachable source degrades to a labelled last value (REQ-RFS-005)"
@@ -7402,7 +7435,10 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"change": "berichtenbox-digital-post-adapter",
+				"change": [
+					"berichtenbox-digital-post-adapter",
+					"berichtenbox-client"
+				],
 				"evidence": "lib/Service/DigitalPost/BerichtenboxProvider.php:156 calls BerichtenboxClient::dispatch(), and lib/AppInfo/Application.php:703-721 resolves that client to BerichtenboxClientMock (the result is marked simulated, BerichtenboxProvider.php:163) or, with logius.berichtenbox.feature_flag on, to lib/Adapters/Berichtenbox/BerichtenboxClientUnavailable.php, which always throws (:62-65). The live BerichtenboxClientHttp that lib/Adapters/Berichtenbox/BerichtenboxClient.php:14-17 names does not exist in lib/; it is Task 8 of the open change openspec/changes/berichtenbox-digital-post-adapter (tasks.md:54-63), blocked on Logius BBK credentials, a PKIoverheid certificate and OpenRegister issueSigningMaterial. The send path before the client is built: lib/EventListener/DigitalPostSendRequestedListener.php, lib/Service/DigitalPost/DigitalPostService.php, provider list at appinfo/routes.php:93.",
 				"requirement": [
 					"openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter :: A send is a typed command with a tracked message (REQ-DPA-002)",
@@ -7574,7 +7610,8 @@
 				"requirement": [
 					"openspec/specs/ibabs-notubiz-connector :: Besluit Retrieval from iBabs (REQ-RIS-004)",
 					"openspec/specs/ibabs-notubiz-connector :: Besluitenlijst Retrieval (REQ-RIS-005)"
-				]
+				],
+				"change": "decidesk-ris-import-go-investigation"
 			},
 			"reachedOn": "background job RISPollJob polls iBabs sources on a schedule; NotuBiz sources are accepted in configuration but never actually polled",
 			"note": "Concrete, explicitly logged gap: iBabs besluit retrieval works, NotuBiz does not, even though both are named as supported sources.",
@@ -7621,7 +7658,8 @@
 				"requirement": [
 					"openspec/specs/open-formulieren-intake :: Signed inbound submission webhook (REQ-001)",
 					"openspec/specs/open-formulieren-intake :: `openformulieren_submission` lifecycle with per-submission isolation (REQ-003)"
-				]
+				],
+				"change": "openformulieren-intake-through-an-integriq-connection"
 			},
 			"reachedOn": "machine route: POST /api/open-formulieren/submissions (signed webhook); viewable at /messages/form-submissions",
 			"provider": "integriq",
@@ -9140,7 +9178,10 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Public route senderIdentity#unsubscribe -> lib/Controller/SenderIdentityController.php unsubscribe() verifies the token (lib/Outbound/Identity/UnsubscribeTokenService.php) and writes the opt-out to integriq's own table integriq_opt_outs through lib/Outbound/Identity/OptOutRegistry.php. Every integriq sender asks it before a send: lib/Outbound/OutboundSendGate.php:90 calls OptOutRegistry::decideForSend() (fails closed) and composes the body with the unsubscribe link through lib/Outbound/Identity/MessageComposer.php; the gate is used by SmsDispatchService, EventService, DigitalPostService, IntakeReplyService and OutboundRetryService.",
-				"change": "outbound-sender-identity-and-deliverability",
+				"change": [
+					"outbound-sender-identity-and-deliverability",
+					"opt-outs-in-an-app-table-and-routing-rules-read-as-config"
+				],
 				"readOn": "2026-10-30",
 				"requirement": [
 					"openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity :: REQ-OSI-004 A recipient's opt-out is held once",
@@ -9746,7 +9787,8 @@
 				"requirement": [
 					"openspec/specs/connector-catalog :: Catalog lists adapters, seeded source templates and configuration templates with category filter and status badges (REQ-001)",
 					"openspec/specs/connector-catalog :: Catalog detail modal offers an authorized Enable or Instantiate action (REQ-002)"
-				]
+				],
+				"change": "platform-bookkeeping-catalogue-items"
 			},
 			"reachedOn": "Store page (/store), card click opens CatalogItemDetailDialog with Enable/Instantiate",
 			"note": "Store is local: it lists adapters and seeded templates shipped with this instance, not a remote marketplace. Creating a source still hits the source schema's admin-only data-layer lock.",
@@ -10370,7 +10412,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/integration.js:80 registerIntegration id sync-contract (renderMode mount, SyncedFromTab); bundle built at webpack.config.js:24-34 and loaded on every page via Util::addInitScript in lib/AppInfo/Application.php:316-327; backend provider lib/Service/Integration/SynchronizationContractProvider.php:163 list; src/integration/SyncedFromTab.vue:34-55 renders synchronization link, subtitle and origin id",
 				"spec": "openspec/specs/synced-from-tab",
-				"requirement": "openspec/specs/synced-from-tab :: Fetch synced-from rows (REQ-SYNC-002)"
+				"requirement": "openspec/specs/synced-from-tab :: Fetch synced-from rows (REQ-SYNC-002)",
+				"change": "record-provenance-tab"
 			},
 			"reachedOn": "Synced from tab/widget on OpenRegister object detail pages in any app",
 			"note": "Other apps' records show which synchronization wrote them, with a deep link and origin id. Call logs or run logs are not shown there. The hint's leaf-integrations.json is the opposite direction (integriq consuming OR's files, deck, talk and calendar leaves on its own source and synchronization pages).",
@@ -12402,6 +12445,691 @@
 			"screen": {
 				"canvas": "design-system",
 				"board": "IqEndpoint"
+			}
+		},
+		{
+			"id": "plt-egress-residency",
+			"area": "platform",
+			"name": "List every outside system data goes to with its country, and allow EU only.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connections-declare-data-residency",
+				"change": "connections-declare-data-residency",
+				"requirement": "openspec/changes/connections-declare-data-residency/specs/data-residency :: One page lists every outbound destination with its location (REQ-RES-002)",
+				"evidence": "Not built: specified in openspec/changes/connections-declare-data-residency (20/20 tasks open). No row covers per-destination residency and EU-only egress; plt-eu-hosting (decided-no) is about a hosted offering, not egress."
+			},
+			"feature": "data-residency",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connections-declare-data-residency covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": []
+			}
+		},
+		{
+			"id": "nl-zgw-catalogi-serve",
+			"area": "nl-standards",
+			"name": "Serve your document types as a ZGW Catalogi API that a Documenten API can use.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/zgw-catalogi-served",
+				"change": "zgw-catalogi-served",
+				"requirement": "openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade :: Integriq serves catalogussen and informatieobjecttypen read only (REQ-ZCS-001)",
+				"evidence": "Not built: specified in openspec/changes/zgw-catalogi-served (20/20 tasks open). nl-zgw-catalogi is the import direction (built); serving a Catalogi API has no row."
+			},
+			"feature": "zgw-catalogi-facade",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change zgw-catalogi-served covered no row.",
+			"screen": {
+				"reason": "No screen of its own: serve your document types as a zgw catalogi api that a documenten api can use runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "src-watched-folder",
+			"area": "sources",
+			"name": "Pick up each file dropped in a Nextcloud folder once as a draft record.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/sources-sftp-adapter-watched-folder",
+				"change": "sources-sftp-adapter-watched-folder",
+				"requirement": "openspec/changes/sources-sftp-adapter-watched-folder/specs/data-infra-connectors :: A folder in Nextcloud Files is a watched source (REQ-SFTP-003)",
+				"evidence": "Not built: specified in openspec/changes/sources-sftp-adapter-watched-folder (18/18 tasks open). Part 2 of sources-sftp-adapter (row src-sftp is about SFTP/FTP exchange and already points at part 1); the watched folder is a separate capability."
+			},
+			"feature": "data-infra-connectors",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change sources-sftp-adapter-watched-folder covered no row.",
+			"screen": {
+				"reason": "No screen of its own: pick up each file dropped in a nextcloud folder once as a draft record runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "con-chat-threads",
+			"area": "connectors",
+			"name": "Search Teams and Talk chats and fetch each message with its conversation.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-graph-document-search-chat-threads",
+				"change": "connectors-graph-document-search-chat-threads",
+				"requirement": "openspec/changes/connectors-graph-document-search-chat-threads/specs/document-cms-connectors :: A fetched chat message comes with its conversation (REQ-DCC-010)",
+				"evidence": "Not built: specified in openspec/changes/connectors-graph-document-search-chat-threads (16/16 tasks open). Part 2 of connectors-graph-document-search; no row for chat as a searchable source."
+			},
+			"feature": "document-cms-connectors",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-graph-document-search-chat-threads covered no row.",
+			"screen": {
+				"reason": "No screen of its own: search teams and talk chats and fetch each message with its conversation runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "con-registration-targets",
+			"area": "connectors",
+			"name": "Register a form submission as a case, object or record in an outside system.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/form-submission-registration-targets",
+				"change": "form-submission-registration-targets",
+				"requirement": "openspec/changes/form-submission-registration-targets/specs/submission-registration :: An app registers a submission through one typed command (REQ-SREG-002)",
+				"evidence": "Not built: specified in openspec/changes/form-submission-registration-targets (16/16 tasks open). msg-form-intake covers taking submissions in; registering them outward (ZGW, Objects API, StUF-ZDS, JSON) has no row. No integriq screen named in the impact."
+			},
+			"feature": "submission-registration",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change form-submission-registration-targets covered no row.",
+			"screen": {
+				"reason": "No screen of its own: register a form submission as a case, object or record in an outside system runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "nl-ori-serve",
+			"area": "nl-standards",
+			"name": "Serve council meetings, agenda items, decisions and votes through the public ORI API.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "partial",
+			"built": {
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/ori-public-serving",
+				"change": "ori-public-serving",
+				"requirement": "openspec/changes/ori-public-serving/specs/ori-public-serving :: Anonymous ORI resource dispatch (REQ-ORIPUB-001)",
+				"evidence": "Partly built; nl-ris is the import direction; serving ORI 1.4 publicly has no row. 5 of 19 ticked, implementation still open."
+			},
+			"feature": "ori-public-serving",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change ori-public-serving covered no row.",
+			"screen": {
+				"reason": "No screen of its own: serve council meetings, agenda items, decisions and votes through the public ori api runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "msg-payment-settlements",
+			"area": "messaging",
+			"name": "Report every payment provider payout with its payments, refunds, chargebacks and fees.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/messaging-payment-command-settlements-and-point-of-sale",
+				"change": "messaging-payment-command-settlements-and-point-of-sale",
+				"requirement": "openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers :: Every provider settlement is reported once with its transactions (REQ-LPP-008)",
+				"evidence": "Not built: specified in openspec/changes/messaging-payment-command-settlements-and-point-of-sale (13/13 tasks open). msg-payment already points at messaging-payments-review; settlements and point-of-sale are new. The command event (REQ-LPP-007) could alternatively ride msg-payment."
+			},
+			"feature": "live-payment-providers",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change messaging-payment-command-settlements-and-point-of-sale covered no row.",
+			"screen": {
+				"reason": "No screen of its own: report every payment provider payout with its payments, refunds, chargebacks and fees runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "obs-investigation-window",
+			"area": "observability",
+			"name": "Switch on full call logging for a source for a while, then off again.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/outbound-call-log-investigation-window-page-and-allowlist",
+				"change": "outbound-call-log-investigation-window-page-and-allowlist",
+				"requirement": "openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log :: The source page shows the window and says when no body was stored (REQ-OCD-011)",
+				"evidence": "Not built: specified in openspec/changes/outbound-call-log-investigation-window-page-and-allowlist (12/12 tasks open). Part 1 (archive/2026-10-09-outbound-call-log-investigation-window) is recorded on row map-versions, which looks like a mispointing; no row names the investigation window."
+			},
+			"feature": "outbound-call-log",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change outbound-call-log-investigation-window-page-and-allowlist covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": "IqBron"
+			}
+		},
+		{
+			"id": "src-watched-folder-intake",
+			"area": "sources",
+			"name": "Hand each file from a watched folder to an intake app such as scan intake.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/sources-sftp-adapter-intake-hand-over",
+				"change": "sources-sftp-adapter-intake-hand-over",
+				"requirement": "openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors :: A watched folder hands a file to a named intake through a typed event (REQ-SFTP-005)",
+				"evidence": "Not built: specified in openspec/changes/sources-sftp-adapter-intake-hand-over (12/12 tasks open). Part 3 of sources-sftp-adapter; depends on the watched-folder row proposed for part 2."
+			},
+			"feature": "data-infra-connectors",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change sources-sftp-adapter-intake-hand-over covered no row.",
+			"screen": {
+				"reason": "No screen of its own: hand each file from a watched folder to an intake app such as scan intake runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "nl-digipoort",
+			"area": "nl-standards",
+			"name": "File VAT returns and other SBR filings with the Belastingdienst through Digipoort.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-digipoort-sbr-filing",
+				"change": "connectors-digipoort-sbr-filing",
+				"requirement": "openspec/changes/connectors-digipoort-sbr-filing/specs/digipoort-sbr-connector :: A filing request becomes one delivery (REQ-DPS-002)",
+				"evidence": "Not built: specified in openspec/changes/connectors-digipoort-sbr-filing (11/11 tasks open). No Digipoort/SBR row; adds a filings log page."
+			},
+			"feature": "digipoort-sbr-connector",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-digipoort-sbr-filing covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": []
+			}
+		},
+		{
+			"id": "gw-data-feeds",
+			"area": "gateway",
+			"name": "Serve the datasets an app declares as read-only paged feeds for a BI tool.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/gateway-declared-data-feeds",
+				"change": "gateway-declared-data-feeds",
+				"requirement": "openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds :: A feed answers only its declared fields, page by page (REQ-DDF-002)",
+				"evidence": "Not built: specified in openspec/changes/gateway-declared-data-feeds (11/11 tasks open). No row for app-declared data feeds; Task 4 has a Playwright test, so a screen changes."
+			},
+			"feature": "declared-data-feeds",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change gateway-declared-data-feeds covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": []
+			}
+		},
+		{
+			"id": "obs-error-sink",
+			"area": "observability",
+			"name": "Send errors from chosen apps to a Sentry compatible or OTLP error service.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans",
+				"change": "observability-opentelemetry-export-errors-and-app-spans",
+				"requirement": "openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace :: Errors from the apps an administrator selects go to an error sink (REQ-OTEL-006)",
+				"evidence": "Not built: specified in openspec/changes/observability-opentelemetry-export-errors-and-app-spans (11/11 tasks open). obs-otel (traces) points at part 1 observability-opentelemetry-export; error tracking is a separate capability. No ErrorSink code yet."
+			},
+			"feature": "execution-trace",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change observability-opentelemetry-export-errors-and-app-spans covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": []
+			}
+		},
+		{
+			"id": "con-payroll-lms",
+			"area": "connectors",
+			"name": "Exchange payroll with a payroll bureau, and staff and trainings with a learning platform.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-hr-data-exchange",
+				"change": "connectors-hr-data-exchange",
+				"requirement": "openspec/changes/connectors-hr-data-exchange/specs/hr-data-exchange :: A ready payroll handoff reaches the bureau and its payslips come back (REQ-HRX-001)",
+				"evidence": "Not built: specified in openspec/changes/connectors-hr-data-exchange (10/10 tasks open). No payroll bureau or LMS row; config-only templates."
+			},
+			"feature": "hr-data-exchange",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-hr-data-exchange covered no row.",
+			"screen": {
+				"reason": "No screen of its own: exchange payroll with a payroll bureau, and staff and trainings with a learning platform runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "con-hr-timetable",
+			"area": "connectors",
+			"name": "Keep staff and approved leave in step between the HR app and Untis.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-hr-staff-sync",
+				"change": "connectors-hr-staff-sync",
+				"requirement": "openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync :: A new or departing employee reaches Untis without a manual step (REQ-HRS-001)",
+				"evidence": "Not built: specified in openspec/changes/connectors-hr-staff-sync (10/10 tasks open). con-timetable imports a timetable; pushing HR staff and leave to Untis has no row."
+			},
+			"feature": "staff-timetable-sync",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-hr-staff-sync covered no row.",
+			"screen": {
+				"reason": "No screen of its own: keep staff and approved leave in step between the hr app and untis runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "con-job-boards",
+			"area": "connectors",
+			"name": "Post a vacancy to werk.nl, LinkedIn and Indeed in one go.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-job-board-multiposting",
+				"change": "connectors-job-board-multiposting",
+				"requirement": "openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors :: werk.nl, LinkedIn and Indeed are job board templates (REQ-JBC-002)",
+				"evidence": "Not built: specified in openspec/changes/connectors-job-board-multiposting (10/10 tasks open). No job board row."
+			},
+			"feature": "job-board-connectors",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-job-board-multiposting covered no row.",
+			"screen": {
+				"reason": "No screen of its own: post a vacancy to werk.nl, linkedin and indeed in one go runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "con-webshop",
+			"area": "connectors",
+			"name": "Bring orders from WooCommerce, Shopify or Lightspeed in as web shop orders.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-webshop-orders",
+				"change": "connectors-webshop-orders",
+				"requirement": "openspec/changes/connectors-webshop-orders/specs/webshop-order-connectors :: An order becomes a WebshopOrder as shillinq defines it (REQ-WSO-002)",
+				"evidence": "Not built: specified in openspec/changes/connectors-webshop-orders (10/10 tasks open). No web shop row; config-only."
+			},
+			"feature": "webshop-order-connectors",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-webshop-orders covered no row.",
+			"screen": {
+				"reason": "No screen of its own: bring orders from woocommerce, shopify or lightspeed in as web shop orders runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "src-service-fetch",
+			"area": "sources",
+			"name": "Define a lookup once so a form can fetch named values from an outside service.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/forms-service-fetch-for-apps",
+				"change": "forms-service-fetch-for-apps",
+				"requirement": "openspec/changes/forms-service-fetch-for-apps/specs/service-fetch :: An administrator defines a service fetch with inputs and mapped outputs (REQ-SF-001)",
+				"evidence": "Not built: specified in openspec/changes/forms-service-fetch-for-apps (10/10 tasks open). No row for an admin-defined fetch with named inputs and outputs; adds an admin page."
+			},
+			"feature": "service-fetch",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change forms-service-fetch-for-apps covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": []
+			}
+		},
+		{
+			"id": "plt-ai-actions",
+			"area": "platform",
+			"name": "Let an AI assistant run, test and replay integrations once a person approves.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "partial",
+			"built": {
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/hermiq-ai-tooling",
+				"change": "hermiq-ai-tooling",
+				"requirement": "openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface :: REQ-MCP-105 — Exactly six curated tools MUST exist, each an action over existing configuration or a payload-free read, with honest scope and reach",
+				"evidence": "Partly built; plt-ai-tools (built) covers read tools; approval-gated action tools are new. lib/Mcp/IntegriqAgentTools.php exists, Task 6 (hermiq classification, e2e) open. Could instead LINK plt-ai-tools."
+			},
+			"feature": "openconnector-mcp-tool-surface",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change hermiq-ai-tooling covered no row.",
+			"screen": {
+				"reason": "No screen of its own: let an ai assistant run, test and replay integrations once a person approves runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "id-yivi",
+			"area": "identity",
+			"name": "Let residents log in with Yivi and share only the attributes a form asks for.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/idp-broker-yivi-route",
+				"change": "idp-broker-yivi-route",
+				"requirement": "openspec/changes/idp-broker-yivi-route/specs/idp-broker-yivi :: Yivi is a provider on the broker, reached as an OIDC registration (REQ-YIVI-001)",
+				"evidence": "Not built: specified in openspec/changes/idp-broker-yivi-route (10/10 tasks open). No Yivi row; carries an open decision on the assurance floor (REQ-YIVI-004)."
+			},
+			"feature": "idp-broker-yivi",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change idp-broker-yivi-route covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": []
+			}
+		},
+		{
+			"id": "src-app-connection-call",
+			"area": "sources",
+			"name": "Let another app call its declared connection, such as RDW or a route planner.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/sources-route-distance-and-rdw-lookup",
+				"change": "sources-route-distance-and-rdw-lookup",
+				"requirement": "openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls :: An app calls a connection it declared through a typed command (REQ-CC-001)",
+				"evidence": "Not built: specified in openspec/changes/sources-route-distance-and-rdw-lookup (10/10 tasks open). No row for a typed connection-call command or the route distance and RDW lookups."
+			},
+			"feature": "connection-calls",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change sources-route-distance-and-rdw-lookup covered no row.",
+			"screen": {
+				"reason": "No screen of its own: let another app call its declared connection, such as rdw or a route planner runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "src-per-user-oauth",
+			"area": "sources",
+			"name": "Call a source with the signed-in user's own account instead of a shared one.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "no",
+			"built": {
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/sources-per-user-oauth",
+				"change": "sources-per-user-oauth",
+				"requirement": "openspec/changes/sources-per-user-oauth/specs/http-call-engine :: A source can call with the signed-in user's own account (REQ-PUOA-001)",
+				"evidence": "Not built: specified in openspec/changes/sources-per-user-oauth (9/9 tasks open). src-auth-oauth is a shared OAuth credential; per-user tokens have no row. Adds a connected-accounts page."
+			},
+			"feature": "http-call-engine",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change sources-per-user-oauth covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": []
+			}
+		},
+		{
+			"id": "con-m365-search",
+			"area": "connectors",
+			"name": "Search Microsoft 365 files, mail and chat to gather documents for a request.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "partial",
+			"built": {
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-graph-document-search",
+				"change": "connectors-graph-document-search",
+				"requirement": "openspec/changes/connectors-graph-document-search/specs/document-cms-connectors :: A Microsoft 365 source answers a document search across files, mail and chat (REQ-DCC-008)",
+				"evidence": "Partly built; con-sharepoint covers taking SharePoint documents; search across M365 has no row. Search and fetch events exist; mail and chat wait on sources-per-user-oauth."
+			},
+			"feature": "document-cms-connectors",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-graph-document-search covered no row.",
+			"screen": {
+				"reason": "No screen of its own: search microsoft 365 files, mail and chat to gather documents for a request runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "con-exchange-rates",
+			"area": "connectors",
+			"name": "Fetch the European Central Bank daily exchange rates and answer rate requests from apps.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "partial",
+			"built": {
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/sources-ecb-exchange-rates",
+				"change": "sources-ecb-exchange-rates",
+				"requirement": "openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source :: The ECB reference rates are stored every working day (REQ-FX-001)",
+				"evidence": "Partly built; Import built (ExchangeRateSyncJob, EcbReferenceRateParser, ecb-exchange-rates-source.json); ExchangeRateRequestedEvent not built."
+			},
+			"feature": "exchange-rate-source",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change sources-ecb-exchange-rates covered no row.",
+			"screen": {
+				"reason": "No screen of its own: fetch the european central bank daily exchange rates and answer rate requests from apps runs as a machine route, job or event."
+			}
+		},
+		{
+			"id": "obs-source-monitor",
+			"area": "observability",
+			"name": "See per source how its calls performed and when its certificate expires.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "partial",
+			"built": {
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/brp-connection-monitor-from-pipelinq",
+				"change": "brp-connection-monitor-from-pipelinq",
+				"requirement": "openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring :: A source shows how it performed in the last 24 hours (REQ-CRUN-006)",
+				"evidence": "Partly built; 2 of 6 ticked; open 2.1 keepiq references in MtlsConfigResolver, 2.3 expiry alerts, 3.1 pipelinq handover listener."
+			},
+			"feature": "connection-run-monitoring",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change brp-connection-monitor-from-pipelinq covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": "IqBrpMonitor"
+			}
+		},
+		{
+			"id": "con-course-marketplace",
+			"area": "connectors",
+			"name": "Offer courses from Go1, LinkedIn Learning or Udemy inside the learning platform.",
+			"source": "open-change-triage-2026-11-12",
+			"integriq": "partial",
+			"built": {
+				"state": "building",
+				"owner": "ConductionNL/integriq",
+				"plan": "openspec/changes/connectors-course-marketplace",
+				"change": "connectors-course-marketplace",
+				"requirement": "openspec/changes/connectors-course-marketplace/specs/course-marketplace-connectors :: A provider's catalogue arrives in learniq as draft courses that launch through LTI (REQ-CMKT-001)",
+				"evidence": "Partly built; 10 of 14 ticked (course-marketplace-connectors.json exists); Task 6 selection fields on the source form still open."
+			},
+			"feature": "course-marketplace-connectors",
+			"featureConfidence": "medium",
+			"n8n": "unknown",
+			"tyk": "unknown",
+			"apisix": "unknown",
+			"mulesoft": "unknown",
+			"wso2": "unknown",
+			"frank": "unknown",
+			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-course-marketplace covered no row.",
+			"screen": {
+				"canvas": "design-system",
+				"board": "learniq/LqLlAanbod"
 			}
 		}
 	],
