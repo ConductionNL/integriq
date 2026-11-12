@@ -1181,7 +1181,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:1194-1260 dispatchRequest() builds a Guzzle request from source location/config when sourceData['type'] !== 'soap'; lib/Settings/integriq_register.json:145 source.type enum includes 'api'",
 				"spec": "openspec/specs/http-call-engine",
-				"requirement": "openspec/specs/http-call-engine :: Outbound HTTP call orchestration with CallLog persistence (REQ-001)"
+				"requirement": [
+					"openspec/specs/http-call-engine :: Outbound HTTP call orchestration with CallLog persistence (REQ-001)",
+					"openspec/specs/http-call-engine :: Templated call values are rendered at call time (REQ-SCB-001)"
+				]
 			},
 			"reachedOn": "/sources index -> create/edit Source (type=api, location, headers) -> SourcesController#test (POST /api/sources/test/{id}) or any Endpoint of targetType=api proxying through CallService::call()",
 			"note": "Plain REST/HTTP calling is the base of the engine: location + headers + method, Guzzle underneath.",
@@ -1205,7 +1208,10 @@
 			},
 			"screen": {
 				"canvas": "design-system",
-				"board": "IqBronnen"
+				"board": [
+					"IqBronnen",
+					"IqBron"
+				]
 			}
 		},
 		{
@@ -1909,7 +1915,11 @@
 				"evidence": "src/manifest.json:927-930 Sources index page column 'circuitBreakerState' shown per row; lib/Service/ConnectionStatusResolver.php:74-502 resolve() derives a status (declared-unavailable/switched-off/simulated/observed/ok) per app connection; lib/Service/ConnectionProbeService.php:85-232 probeDue()/probe()/testSource() runs an hourly health probe against linked sources",
 				"change": "2026-09-29-connection-registry",
 				"spec": "openspec/specs/connection-registry",
-				"requirement": "openspec/specs/connection-registry :: The health job probes linked sources every hour (REQ-CONN-005)"
+				"requirement": [
+					"openspec/specs/connection-registry :: The health job probes linked sources every hour (REQ-CONN-005)",
+					"openspec/specs/logs-and-statistics :: The dashboard shows traffic over a chosen period (REQ-SCB-010)",
+					"openspec/specs/connection-registry :: Integriq shows all connections on one admin page (REQ-CONN-006)"
+				]
 			},
 			"reachedOn": "/sources index (circuitBreakerState column) and /connections index (AppConnections page, resolved status per connection)",
 			"note": "There is no single 'source health' dashboard widget; the at-a-glance view is the circuitBreakerState column on the Sources list plus the separate Connections page's resolved status.",
@@ -3030,7 +3040,10 @@
 				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:120 authorizeJwt() and :155 authorizeApiKey() hand the check to OpenRegister's AuthorizationService (DECISIONS 56, 62, 64; integriq's own AuthorizationService was removed by 441f67de on 5 Oct), passing lib/Service/Consumer/IntegriqConsumerSource.php, whose resolve() (:137-168) gives OpenRegister the consumer's userId; OpenRegister then makes that Nextcloud user act for the request, and the bridge clears the volatile user again when integriq's lifetime cap refuses the token (:136). A rule-inline apiKey map key => uid (:155, $keys) does the same for rule keys.",
 				"spec": "openspec/specs/consumer-management",
 				"change": "consumer-auth-on-openregister",
-				"requirement": "openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
+				"requirement": [
+					"openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
+					"openspec/specs/authorization-jwt :: API key authorization via header-to-uid map (REQ-004)"
+				],
 				"readOn": "2026-10-30"
 			},
 			"reachedOn": "consumer userId field or an endpoint rule's apiKey->userId map -> machine route: any authenticated gateway call runs the rest of the pipeline as that Nextcloud user",
@@ -5416,7 +5429,12 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "openspec/specs/flow-workflowengine-operations/spec.md: registers SynchronizationService/EndpointService/EventService as NC core OCP\\WorkflowEngine operations ('Run synchronization', 'Call endpoint', 'Fire CloudEvent'). lib/AppInfo/Application.php:298 calls registerWorkflowEngineOperations() (defined :868-890), feature-detected on IAppManager::isEnabledForAnyUser('workflowengine'); lib/WorkflowEngine/CallEndpointOperation.php, RunSynchronizationOperation.php, FireCloudEventOperation.php, RegisterOperationsListener.php implement the three operations.",
 				"spec": "openspec/specs/flow-workflowengine-operations",
-				"requirement": "openspec/specs/flow-workflowengine-operations :: All three operations MUST be admin-scoped and File-entity-scoped only (REQ-005)"
+				"requirement": [
+					"openspec/specs/flow-workflowengine-operations :: All three operations MUST be admin-scoped and File-entity-scoped only (REQ-005)",
+					"openspec/specs/flow-workflowengine-operations :: The \"Run synchronization\" operation's `onEvent()` MUST dispatch to `SynchronizationService` (REQ-002)",
+					"openspec/specs/flow-workflowengine-operations :: The \"Call endpoint\" operation's `onEvent()` MUST dispatch to `EndpointService::triggerFromFlow()` (REQ-003)",
+					"openspec/specs/flow-workflowengine-operations :: The \"Fire CloudEvent\" operation's `onEvent()` MUST dispatch to `EventService::emitCloudEvent()` (REQ-004)"
+				]
 			},
 			"reachedOn": "Nextcloud's own Settings > Flow admin page, operation picker for a File (or other) entity",
 			"provider": "integriq",
@@ -6563,7 +6581,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/BackgroundJob/LogCleanUpTask.php: 'Runs periodically to remove old call logs and job logs from the database and prevent storage bloat', extends TimedJob; appinfo/info.xml:110 registers it as a background job.",
 				"spec": "openspec/specs/logs-and-statistics",
-				"requirement": "openspec/specs/logs-and-statistics :: App-wide retention settings read and update (REQ-004)"
+				"requirement": [
+					"openspec/specs/logs-and-statistics :: App-wide retention settings read and update (REQ-004)",
+					"openspec/specs/job-scheduling :: Periodic expired-log cleanup across log schemas (REQ-005)"
+				]
 			},
 			"reachedOn": "automatic background job, no page (registered in appinfo/info.xml)",
 			"provider": "integriq",
@@ -6597,16 +6618,21 @@
 			"area": "observability",
 			"name": "See usage figures per consumer and endpoint.",
 			"source": "competitor-derived",
-			"integriq": "yes",
+			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007.",
+				"evidence": "Not built: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure over every consumer and endpoint, with no breakdown per consumer or per endpoint; planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007.",
 				"spec": "openspec/specs/api-product-gateway",
-				"requirement": "openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
+				"requirement": [
+					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
+				],
+				"change": "gateway-usage-per-consumer-and-endpoint",
+				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id (ApiProductDetail), analytics tab",
-			"note": "This is per-API-PRODUCT analytics (a gateway construct wrapping one or more endpoints/consumers), not a fleet-wide usage-by-consumer report; it satisfies the capability but at the product's own scope.",
+			"note": "Per-product analytics exist (request count, error rate, percentiles), but only as one product-wide figure. The split per consumer and per endpoint the row asks for is planned in gateway-usage-per-consumer-and-endpoint.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "api-product-gateway",
@@ -6806,7 +6832,7 @@
 				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken. Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/zgw-connectors-for-dossiq (open; its scope lists the zgw-documenten configuration set).",
+			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-documenten.json; only the change's Playwright test is open in zgw-connectors-for-dossiq.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "zgw-connectors",
@@ -6845,7 +6871,7 @@
 				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Sibling row names opencatalogi:svc-import as provider; integriq's own package for consuming an outside ZGW Catalogi API is an unbuilt descriptor only, so if this is delivered anywhere it is not here.",
+			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-catalogi.json. Sibling row opencatalogi:svc-import covers serving a catalogue; this row is consuming an outside one.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "zgw-connectors",
@@ -6931,7 +6957,7 @@
 				"requirement": "openspec/changes/zgw-connectors-for-dossiq/specs/zgw-consumer-connectors :: Six packaged, slug-referenced ZGW consumer sets (REQ-ZGWC-001)"
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Same unbuilt packaged-connector pattern as nl-zgw-zaken.",
+			"note": "Delivered by the ZGW set installer (lib/Service/Zgw/ZgwSetInstaller.php) with the seeded set in lib/Settings/configurations/zgw-besluiten.json; only the change's Playwright test is open in zgw-connectors-for-dossiq.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "zgw-connectors",
@@ -7360,7 +7386,11 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Registry/KvkMutatieProvider.php:47 registryId(), :71 subscribe(), :94 unsubscribe(), :107 pollChanges() extends AbstractSourceSubscriptionProvider; lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered in appinfo/info.xml:143 as a TimedJob and calls postChanges() (line 117) to persist polled changes.",
 				"change": "2026-09-29-registry-subscription-connector",
-				"requirement": "openspec/specs/registry-subscription-connector :: A subscription request is turned into a live subscription (REQ-RSC-002)",
+				"requirement": [
+					"openspec/specs/registry-subscription-connector :: A subscription provider per registry (REQ-RSC-001)",
+					"openspec/specs/registry-subscription-connector :: A subscription request is turned into a live subscription (REQ-RSC-002)",
+					"openspec/specs/registry-subscription-connector :: A polled change is posted to OpenRegister, not stored locally (REQ-RSC-003)"
+				],
 				"spec": "openspec/specs/registry-subscription-connector"
 			},
 			"reachedOn": "background job RegistrySubscriptionPollJob (cron) polls subscribed KvK mutatieservice sources and posts changes",
@@ -7821,7 +7851,10 @@
 				"change": "statutory-gateways-and-frameworks",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Event/GatewayDeliveryRequestedEvent.php + lib/EventListener/GatewayDeliveryRequestedListener.php (registered in lib/AppInfo/Application.php) are the production caller of the CORV, GGK, WKPB and publication adapters: a sibling dispatches the event, the adapter validates before anything leaves, SourceGatewayTransport sends over the configured source, and the GatewayDelivery comes back on the event (tests/Unit/EventListener/GatewayDeliveryRequestedListenerTest.php, real adapters). Sources > Statutory gateways (src/dialogs/GatewayCatalogueDialog.vue) shows the catalogue by standard and where each endpoint sits. Still open in change statutory-gateways-and-frameworks: task 3 (seeded mock-mode CORV/GGK sources, once the statutory endpoints are known) and task 6 (ZGW call sites through the registry binding).",
-				"requirement": "openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways :: CORV and GGK ship as sector gateways (REQ-SG-003)"
+				"requirement": [
+					"openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways :: CORV and GGK ship as sector gateways (REQ-SG-003)",
+					"openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways :: A WKPB restriction is registered through a gateway (REQ-SG-009)"
+				]
 			},
 			"reachedOn": "Sources > Statutory gateways (catalogue and overview); a sibling app sends by dispatching GatewayDeliveryRequestedEvent",
 			"note": "29 Sep 2026: the adapters now have a caller and the catalogue a screen. No source for CORV or GGK ships yet, so a send answers 'no source configured' until an administrator adds one; that is task 3. dossiq#3189 asks dossiq to declare the WKPB flag.",
@@ -8752,11 +8785,13 @@
 			"source": "sibling-matrix",
 			"integriq": "no",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:75 mailIntake#import -> lib/Controller/MailIntakeController.php:108 import() reads the uploaded 'file', parses it with lib/Service/Mail/MessageParser.php (EmlParser.php 363 lines, MsgParser.php 317 lines + CompoundFileReader.php for OLE .msg) and hands it to MailIntakeService.php:135 intake(). NO frontend caller: grep -rn 'mail-intake' src/ = 0 hits, not in frontend-api-paths.txt; no upload control on the MailMessages logs page (src/manifest.d/mail-intake.json).",
+				"evidence": "Not built: no page lets a user import a file; task 8 of messaging-intake-routing-rules adds the import action to the inbox (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:75 mailIntake#import -> lib/Controller/MailIntakeController.php:108 import() reads the uploaded 'file', parses it with lib/Service/Mail/MessageParser.php (EmlParser.php 363 lines, MsgParser.php 317 lines + CompoundFileReader.php for OLE .msg) and hands it to MailIntakeService.php:135 intake(). NO frontend caller: grep -rn 'mail-intake' src/ = 0 hits, not in frontend-api-paths.txt; no upload control on the MailMessages logs page (src/manifest.d/mail-intake.json).",
 				"spec": "openspec/specs/mail-intake",
-				"requirement": "openspec/specs/mail-intake :: .eml and .msg files import into the same message shape (REQ-MAIL-002)"
+				"requirement": "openspec/specs/mail-intake :: .eml and .msg files import into the same message shape (REQ-MAIL-002)",
+				"change": "messaging-intake-routing-rules",
+				"plan": "openspec/changes/messaging-intake-routing-rules"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Real .eml and .msg parsing exists behind a session-gated admin route, but no page has an upload button, so a user cannot import a file. The result is a mail_message, not a case; linking to a case depends on a sibling app handling MessageReceivedEvent.",
@@ -9189,7 +9224,7 @@
 				]
 			},
 			"reachedOn": "public route GET /unsubscribe/{token}; RecipientOptOuts page (/outbound/opt-outs)",
-			"note": "The unsubscribe landing works and opt-outs are visible, but no integriq send path consults the registry or mints the link, so no message actually carries an unsubscribe link from integriq.",
+			"note": "Every integriq sender goes through OutboundSendGate, which asks the opt-out registry before a send and composes the body with the unsubscribe link (see evidence). The unsubscribe landing page writes the opt-out.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "outbound-messaging",
@@ -9278,7 +9313,7 @@
 				]
 			},
 			"reachedOn": "OutboundMessages page (/messages/outbound), read-only",
-			"note": "The per-recipient log page exists, but inside integriq only a forward ever creates a row, so the page is empty unless a sibling app writes outbound_message objects. Body, retry and forward have no buttons.",
+			"note": "Every integriq sender records an outbound_message with the outcome per recipient through OutboundSendGate and MessageRecorder (see evidence). The send history on the case is dossiq's half.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "outbound-messaging",
@@ -10911,7 +10946,7 @@
 				"requirement": "openspec/specs/translation-service :: A sibling app can translate text through integriq (REQ-TRL-001)"
 			},
 			"reachedOn": "sibling apps through OCA\\Integriq\\Service\\TranslationService::translate() (decidiq minutes translation); DeepL and LibreTranslate source templates in the catalogue under Language",
-			"note": "No translation service template or adapter exists; the ZGW 'translate' code is API version translation and does not count.",
+			"note": "TranslationService sends text to the first enabled DeepL or LibreTranslate source (see evidence); both ship as dormant source templates.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -11411,7 +11446,7 @@
 				"spec": "openspec/specs/connection-run-monitoring"
 			},
 			"reachedOn": "/sources/:id (Pulls per day), /connection-alerts, Administration settings > Integriq",
-			"note": "Gemeente Stein wens W3 (requirement 20243). Integriq: Counts are shown; no threshold alert reaches the administrator.",
+			"note": "Gemeente Stein wens W3 (requirement 20243). Counts are shown per source, and ConnectionThresholdJob runs ConnectionAlertService every five minutes to alert the administrator when a threshold is passed (see evidence).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "logs-and-statistics",
@@ -12472,7 +12507,7 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connections-declare-data-residency covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": []
+				"board": "IqBeheerKoppelingen"
 			}
 		},
 		{
@@ -12717,7 +12752,7 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-digipoort-sbr-filing covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": []
+				"board": "IqUitgaand"
 			}
 		},
 		{
@@ -12745,7 +12780,7 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change gateway-declared-data-feeds covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": []
+				"board": "IqEndpoint"
 			}
 		},
 		{
@@ -12773,7 +12808,7 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change observability-opentelemetry-export-errors-and-app-spans covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": []
+				"board": "IqBeheerinstellingen"
 			}
 		},
 		{
@@ -12909,7 +12944,7 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change forms-service-fetch-for-apps covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": []
+				"board": "IqBron"
 			}
 		},
 		{
@@ -12964,7 +12999,7 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change idp-broker-yivi-route covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": []
+				"board": "IqBeheerKoppelingen"
 			}
 		},
 		{
@@ -13019,7 +13054,7 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change sources-per-user-oauth covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": []
+				"board": "IqPersoonlijkeInstellingen"
 			}
 		},
 		{
