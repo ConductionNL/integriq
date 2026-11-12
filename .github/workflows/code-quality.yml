@@ -352,7 +352,7 @@ jobs:
       # #132 sets PHP_CLI_SERVER_WORKERS=8 on this job's server, which is what
       # makes the self-referential fixtures serveable. Merged 2026-08-03.
       newman-seed-command: 'SEED_SCOPE=register bash apps/integriq/tests/e2e/ci-seed.sh'
-      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"stable2.1"}]'
 
       # ── E2E browser tests ────────────────────────────────────────────────
       # `playwright-test-path` does double duty in the shared workflow:
