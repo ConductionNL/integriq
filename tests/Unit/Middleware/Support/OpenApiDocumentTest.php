@@ -51,16 +51,19 @@ class OpenApiDocumentTest extends TestCase {
 		// Operations marked x-provided-by come from OpenRegister's AppHost route table, which tests may not load.
 		$documented = [];
 		$hosted     = [];
-		$protocol = [];
-		foreach (self::document()['paths'] as $path => $item) {
-			if (isset($item['servers']) === true) {
-				// A path that implements an external standard keeps its unversioned URL and names that base.
-				$this->assertStringEndsWith(suffix: '/apps/integriq/api', string: $item['servers'][0]['url']);
+		$protocol  = [];
+		$standards = dirname(__DIR__, 4).'/openapi.standards.json';
+		if (is_file($standards) === true) {
+			// The endpoints that implement an external standard, under their unversioned base.
+			$document = json_decode((string) file_get_contents($standards), true);
+			$this->assertStringEndsWith(suffix: '/apps/integriq/api', string: $document['servers'][0]['url']);
+			foreach (array_keys($document['paths']) as $path) {
 				$this->assertTrue(condition: StandardProtocolPaths::matches(path: '/api'.$path), message: $path.' is not a standard protocol path');
 				$protocol[] = '/api'.self::shape(path: $path);
-				continue;
 			}
+		}
 
+		foreach (self::document()['paths'] as $path => $item) {
 			foreach ($item as $verb => $operation) {
 				if (in_array($verb, ['get', 'put', 'post', 'delete', 'patch', 'options', 'head'], true) === false) {
 					continue;
