@@ -23,6 +23,9 @@ if (!file_exists($routesFile)) {
 	exit(2);
 }
 
+// routes.php passes its table through the app's own ApiPathAliases.
+require_once __DIR__ . '/../../vendor/autoload.php';
+
 $config = require $routesFile;
 $routes = $config['routes'] ?? [];
 $resources = $config['resources'] ?? [];
