@@ -205,30 +205,8 @@ class MigrateEolSchemaSlugs implements IRepairStep {
 	 * @return array<int, string>
 	 */
 	private function existingSlugs(): array {
-		$slugs = [];
-		foreach (self::SLUG_MAP as $old => $new) {
-			$slugs[] = $old;
-			$slugs[] = $new;
-		}
-
-		$placeholders = implode(',', array_fill(0, count($slugs), '?'));
-
-		try {
-			$rows = $this->db->executeQuery(
-				'SELECT slug FROM `*PREFIX*openregister_schemas` WHERE slug IN (' . $placeholders . ')'
-				. ' AND (application = ? OR application LIKE ?)',
-				array_merge($slugs, [self::REGISTER_SLUG, self::REGISTER_SLUG . '.%'])
-			)->fetchAll();
-		} catch (Exception $e) {
-			$this->logger->warning(
-				'MigrateEolSchemaSlugs: could not read schema slugs; skipping.',
-				['exception' => $e->getMessage()]
-			);
-			return [];
-		}
-
 		$found = [];
-		foreach ($rows as $row) {
+		foreach ($this->slugRows() as $row) {
 			$slug = ($row['slug'] ?? null);
 			if (is_string($slug) === true && $slug !== '') {
 				$found[] = $slug;
@@ -237,6 +215,43 @@ class MigrateEolSchemaSlugs implements IRepairStep {
 
 		return array_values(array_unique($found));
 	}//end existingSlugs()
+
+	/**
+	 * The schema rows of this app that carry an old or a new slug of the map;
+	 * none (logged) when the read fails.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function slugRows(): array {
+		$slugs = $this->mappedSlugs();
+		$placeholders = implode(',', array_fill(0, count($slugs), '?'));
+
+		try {
+			return $this->db->executeQuery(
+				'SELECT slug FROM `*PREFIX*openregister_schemas` WHERE slug IN (' . $placeholders . ')'
+				. ' AND (application = ? OR application LIKE ?)',
+				array_merge($slugs, [self::REGISTER_SLUG, self::REGISTER_SLUG . '.%'])
+			)->fetchAll();
+		} catch (Exception $e) {
+			$this->logSkip(message: 'MigrateEolSchemaSlugs: could not read schema slugs; skipping.', exception: $e);
+			return [];
+		}
+	}//end slugRows()
+
+	/**
+	 * Every old and new slug of the map, pair by pair.
+	 *
+	 * @return array<int, string>
+	 */
+	private function mappedSlugs(): array {
+		$slugs = [];
+		foreach (self::SLUG_MAP as $old => $new) {
+			$slugs[] = $old;
+			$slugs[] = $new;
+		}
+
+		return $slugs;
+	}//end mappedSlugs()
 
 	/**
 	 * Rename one schema slug.
@@ -330,25 +345,43 @@ class MigrateEolSchemaSlugs implements IRepairStep {
 	 *  resolved.
 	 */
 	private function synchronizationTable(): ?string {
+		$row = $this->synchronizationIds();
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		return $this->tableNameFor(row: $row);
+	}//end synchronizationTable()
+
+	/**
+	 * The register and schema ids of this app's synchronization schema, as
+	 * the database answers them; null (logged) when the read fails.
+	 *
+	 * @return mixed The row, false without one, or null.
+	 */
+	private function synchronizationIds(): mixed {
 		try {
-			$row = $this->db->executeQuery(
+			return $this->db->executeQuery(
 				'SELECT r.id AS register_id, s.id AS schema_id'
 				. ' FROM `*PREFIX*openregister_registers` r, `*PREFIX*openregister_schemas` s'
 				. ' WHERE r.slug = ? AND s.slug = ? AND s.application = ?',
 				[self::REGISTER_SLUG, 'synchronization', self::REGISTER_SLUG]
 			)->fetch();
 		} catch (Exception $e) {
-			$this->logger->warning(
-				'MigrateEolSchemaSlugs: could not resolve the synchronization table; skipping.',
-				['exception' => $e->getMessage()]
-			);
+			$this->logSkip(message: 'MigrateEolSchemaSlugs: could not resolve the synchronization table; skipping.', exception: $e);
 			return null;
 		}
+	}//end synchronizationIds()
 
-		if (is_array($row) === false) {
-			return null;
-		}
-
+	/**
+	 * The table name composed from both ids, checked against the shape
+	 * OpenRegister's own linkage repair enforces; null when an id is missing.
+	 *
+	 * @param array<string, mixed> $row The register and schema ids.
+	 *
+	 * @return string|null The unprefixed table name.
+	 */
+	private function tableNameFor(array $row): ?string {
 		$registerId = (int)($row['register_id'] ?? 0);
 		$schemaId = (int)($row['schema_id'] ?? 0);
 		if ($registerId === 0 || $schemaId === 0) {
@@ -361,5 +394,20 @@ class MigrateEolSchemaSlugs implements IRepairStep {
 		}
 
 		return $table;
-	}//end synchronizationTable()
+	}//end tableNameFor()
+
+	/**
+	 * Log a read this step skips because the database refused it.
+	 *
+	 * @param string    $message   What could not be read.
+	 * @param Exception $exception The refusal.
+	 *
+	 * @return void
+	 */
+	private function logSkip(string $message, Exception $exception): void {
+		$this->logger->warning(
+			$message,
+			['exception' => $exception->getMessage()]
+		);
+	}//end logSkip()
 }//end class
