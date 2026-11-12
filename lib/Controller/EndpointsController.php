@@ -164,52 +164,13 @@ class EndpointsController extends Controller {
 	#[PublicPage]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function handlePath(string $_path): Response {
-		try {
-			// Find matching endpoint for the given path and method (using cache).
-			$endpoint = $this->endpointCacheService->findByPathRegex(
-				path: $_path,
-				method: $this->request->getMethod()
-			);
-
-			// If no matching endpoint found, return 404.
-			if ($endpoint === null) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l->t(
-							'No matching endpoint found for path and method: %1$s %2$s',
-							[$_path, $this->request->getMethod()]
-						),
-					],
-					statusCode: 404
-				);
-			}
-		} catch (\Exception $e) {
-			// Multiple endpoints found (handled by cache service).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 409
-			);
-		}//end try
-
-		// OPTIMIZATION: For simple endpoints with no rules/conditions/mappings, bypass EndpointService.
-		if ($this->isSimpleEndpoint(endpoint: $endpoint) === true) {
-			$response = $this->handleSimpleSchemaRequest(endpoint: $endpoint, path: $_path);
-		} else {
-			$response = $this->endpointService->handleRequest($endpoint, $this->request, $_path);
+		$endpoint = $this->matchEndpoint(path: $_path);
+		if ($endpoint instanceof JSONResponse) {
+			return $endpoint;
 		}
 
-		// Check if the Accept header is set to XML.
-		$acceptHeader = $this->request->getHeader('Accept');
-		if (stripos($acceptHeader, 'application/xml') !== false && $response instanceof JSONResponse === true) {
-			// Convert JSON response to XML response.
-			$response = new XMLResponse(
-				data: $response->getData(),
-				status: $response->getStatus(),
-				headers: $response->getHeaders(),
-				path: $_path
-			);
-		}
-
+		$response = $this->serve(endpoint: $endpoint, path: $_path);
+		$response = $this->inRequestedFormat(response: $response, path: $_path);
 		$response = $this->authorizationService->corsAfterController($this->request, $response);
 
 		// An endpoint's own CORS policy replaces the echoed origin (REQ-EP-014).
@@ -219,6 +180,106 @@ class EndpointsController extends Controller {
 
 		return $response;
 	}//end handlePath()
+
+	/**
+	 * The endpoint registered for the path and method (using cache), or the
+	 * 404 when none matches and the 409 when the match is ambiguous.
+	 *
+	 * @param string $path The path component appended after /api/endpoint/.
+	 *
+	 * @return ObjectEntity|JSONResponse The endpoint, or the refusal.
+	 */
+	private function matchEndpoint(string $path): ObjectEntity|JSONResponse {
+		try {
+			$endpoint = $this->endpointCacheService->findByPathRegex(
+				path: $path,
+				method: $this->request->getMethod()
+			);
+			if ($endpoint === null) {
+				return $this->noEndpointFor(path: $path);
+			}
+		} catch (\Exception $e) {
+			// Multiple endpoints found (handled by cache service).
+			return $this->ambiguousEndpoint(exception: $e);
+		}
+
+		return $endpoint;
+	}//end matchEndpoint()
+
+	/**
+	 * The 404 for a path and method no endpoint is registered for.
+	 *
+	 * @param string $path The requested path.
+	 *
+	 * @return JSONResponse
+	 */
+	private function noEndpointFor(string $path): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $this->l->t(
+					'No matching endpoint found for path and method: %1$s %2$s',
+					[$path, $this->request->getMethod()]
+				),
+			],
+			statusCode: 404
+		);
+	}//end noEndpointFor()
+
+	/**
+	 * The 409 for a path more than one endpoint matches.
+	 *
+	 * @param \Exception $exception The cache service's refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function ambiguousEndpoint(\Exception $exception): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $exception->getMessage()],
+			statusCode: 409
+		);
+	}//end ambiguousEndpoint()
+
+	/**
+	 * Serve the request: simple endpoints (no rules, conditions or mappings)
+	 * directly, every other one through EndpointService.
+	 *
+	 * @param ObjectEntity $endpoint The matched endpoint.
+	 * @param string       $path     The requested path.
+	 *
+	 * @return Response
+	 */
+	private function serve(ObjectEntity $endpoint, string $path): Response {
+		// OPTIMIZATION: For simple endpoints with no rules/conditions/mappings, bypass EndpointService.
+		if ($this->isSimpleEndpoint(endpoint: $endpoint) === true) {
+			return $this->handleSimpleSchemaRequest(endpoint: $endpoint, path: $path);
+		}
+
+		return $this->endpointService->handleRequest($endpoint, $this->request, $path);
+	}//end serve()
+
+	/**
+	 * The answer as XML when the Accept header asks for it and it is JSON;
+	 * otherwise as served.
+	 *
+	 * @param Response $response The served answer.
+	 * @param string   $path     The requested path.
+	 *
+	 * @return Response
+	 */
+	private function inRequestedFormat(Response $response, string $path): Response {
+		$acceptHeader = $this->request->getHeader('Accept');
+		if (stripos($acceptHeader, 'application/xml') === false || $response instanceof JSONResponse === false) {
+			return $response;
+		}
+
+		// Convert JSON response to XML response.
+		return new XMLResponse(
+			data: $response->getData(),
+			status: $response->getStatus(),
+			headers: $response->getHeaders(),
+			path: $path
+		);
+	}//end inRequestedFormat()
 
 	/**
 	 * Implements a preflighted CORS response for OPTIONS requests.
