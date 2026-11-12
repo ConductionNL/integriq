@@ -141,18 +141,13 @@ class ZgwVersionTranslationService implements ZgwVersionTranslationServiceInterf
 	 * @spec openspec/specs/zgw-version-translation/spec.md#requirement-persistence-and-observability-zgw-version-translation-log-req-004
 	 */
 	public function translate(string $resource, string $fromVersion, string $toVersion, array $payload): array {
-		$this->negotiationService->assertKnownVersion(version: $fromVersion);
-		$this->negotiationService->assertKnownVersion(version: $toVersion);
+		$request = new ZgwTranslationRequest(resource: $resource, payload: $payload);
+		$request->fromVersion = $fromVersion;
+		$request->toVersion = $toVersion;
 
-		if (isset($this->translators[$resource]) === false) {
-			throw new ZgwUnknownResourceException(
-				message: 'Unknown ZGW resource "' . $resource . '" — supported resources are: '
-					. implode(', ', $this->getSupportedResources()) . '.'
-			);
-		}
-
+		$this->assertTranslatable(request: $request);
 		if ($fromVersion === $toVersion) {
-			$this->persistLog(resource: $resource, fromVersion: $fromVersion, toVersion: $toVersion, status: 'passthrough', error: null);
+			$this->logOutcome(request: $request, status: 'passthrough');
 
 			return $payload;
 		}
@@ -160,61 +155,112 @@ class ZgwVersionTranslationService implements ZgwVersionTranslationServiceInterf
 		$this->negotiationService->assertImplementedVersion(version: $fromVersion);
 		$this->negotiationService->assertImplementedVersion(version: $toVersion);
 
-		$translator = $this->translators[$resource];
+		return $this->translateLogged(request: $request);
+	}//end translate()
+
+	/**
+	 * Refuse an unknown version, then an unknown resource.
+	 *
+	 * @param ZgwTranslationRequest $request The translation.
+	 *
+	 * @return void
+	 *
+	 * @throws ZgwUnknownResourceException When the resource has no registered translator.
+	 */
+	private function assertTranslatable(ZgwTranslationRequest $request): void {
+		$this->negotiationService->assertKnownVersion(version: $request->fromVersion);
+		$this->negotiationService->assertKnownVersion(version: $request->toVersion);
+
+		if (isset($this->translators[$request->resource]) === false) {
+			throw new ZgwUnknownResourceException(
+				message: 'Unknown ZGW resource "' . $request->resource . '" — supported resources are: '
+					. implode(', ', $this->getSupportedResources()) . '.'
+			);
+		}
+	}//end assertTranslatable()
+
+	/**
+	 * Translate with the resource's translator and log the outcome, a failure before it is rethrown.
+	 *
+	 * @param ZgwTranslationRequest $request The translation.
+	 *
+	 * @return array<string, mixed> The translated payload.
+	 *
+	 * @throws ZgwVersionTranslationException When the translation fails.
+	 */
+	private function translateLogged(ZgwTranslationRequest $request): array {
+		$translator = $this->translators[$request->resource];
 
 		try {
-			$translated = $this->dispatch(translator: $translator, fromVersion: $fromVersion, toVersion: $toVersion, payload: $payload);
+			$translated = $this->dispatch(request: $request, translator: $translator);
 		} catch (ZgwVersionTranslationException $exception) {
-			$this->persistLog(
-				resource: $resource,
-				fromVersion: $fromVersion,
-				toVersion: $toVersion,
-				status: 'failed',
-				error: $exception->getMessage()
-			);
+			$this->logFailure(request: $request, exception: $exception);
 			throw $exception;
 		}
 
-		$this->persistLog(resource: $resource, fromVersion: $fromVersion, toVersion: $toVersion, status: 'success', error: null);
+		$this->logOutcome(request: $request, status: 'success');
 
 		return $translated;
-	}//end translate()
+	}//end translateLogged()
+
+	/**
+	 * Persist a `success` or `passthrough` log record.
+	 *
+	 * @param ZgwTranslationRequest $request The translation.
+	 * @param string $status `success` or `passthrough`.
+	 *
+	 * @return void
+	 */
+	private function logOutcome(ZgwTranslationRequest $request, string $status): void {
+		$this->persistLog(resource: $request->resource, fromVersion: $request->fromVersion, toVersion: $request->toVersion, status: $status, error: null);
+	}//end logOutcome()
+
+	/**
+	 * Persist a `failed` log record with the failure's detail.
+	 *
+	 * @param ZgwTranslationRequest $request The translation.
+	 * @param ZgwVersionTranslationException $exception The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(ZgwTranslationRequest $request, ZgwVersionTranslationException $exception): void {
+		$this->persistLog(
+			resource: $request->resource,
+			fromVersion: $request->fromVersion,
+			toVersion: $request->toVersion,
+			status: 'failed',
+			error: $exception->getMessage()
+		);
+	}//end logFailure()
 
 	/**
 	 * Invoke the correct translator direction for a `1.0`↔`1.6` pair.
 	 *
+	 * @param ZgwTranslationRequest $request The translation: its payload and version pair.
 	 * @param ZgwResourceTranslatorInterface $translator The resolved translator.
-	 * @param string $fromVersion The source version.
-	 * @param string $toVersion The target version.
-	 * @param array<string, mixed> $payload The payload to translate.
 	 *
 	 * @return array<string, mixed> The translated payload.
 	 *
-	 * @throws ZgwVersionTranslationException When `$fromVersion`/`$toVersion` is not a
+	 * @throws ZgwVersionTranslationException When `fromVersion`/`toVersion` is not a
 	 *                                        supported `1.0`↔`1.6` pair (should be
 	 *                                        unreachable once both are asserted
 	 *                                        implemented, kept as a defensive guard).
 	 */
-	private function dispatch(
-		ZgwResourceTranslatorInterface $translator,
-		string $fromVersion,
-		string $toVersion,
-		array $payload,
-	): array {
-		if ($fromVersion === ZgwVersionNegotiationService::VERSION_CANONICAL
-			&& $toVersion === ZgwVersionNegotiationService::VERSION_STABILITY
+	private function dispatch(ZgwTranslationRequest $request, ZgwResourceTranslatorInterface $translator): array {
+		if ($request->fromVersion === ZgwVersionNegotiationService::VERSION_CANONICAL
+			&& $request->toVersion === ZgwVersionNegotiationService::VERSION_STABILITY
 		) {
-			return $translator->translateToV16(payload: $payload);
+			return $translator->translateToV16(payload: $request->payload);
 		}
 
-		if ($fromVersion === ZgwVersionNegotiationService::VERSION_STABILITY
-			&& $toVersion === ZgwVersionNegotiationService::VERSION_CANONICAL
+		if ($request->fromVersion === ZgwVersionNegotiationService::VERSION_STABILITY
+			&& $request->toVersion === ZgwVersionNegotiationService::VERSION_CANONICAL
 		) {
-			return $translator->translateToV1x(payload: $payload);
+			return $translator->translateToV1x(payload: $request->payload);
 		}
 
 		throw new ZgwVersionTranslationException(
-			message: 'Unsupported translation direction "' . $fromVersion . '" -> "' . $toVersion . '".'
+			message: 'Unsupported translation direction "' . $request->fromVersion . '" -> "' . $request->toVersion . '".'
 		);
 
 	}//end dispatch()
