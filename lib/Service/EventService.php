@@ -1210,47 +1210,56 @@ class EventService implements EventServiceInterface {
 	 * the sweep and a replay re-attempt the SAME kind of action that
 	 * originally ran/failed (`dead-letter-replay` REQ-DLR-003).
 	 *
+	 * Every caller is a publish, retry-sweep or replay entry point, so this
+	 * method mints a fresh `event`-entryPoint trace context and owns its
+	 * persistence (execution-trace REQ-001/REQ-004).
+	 *
 	 * @param ObjectEntity $message The message to attempt delivery for.
 	 * @param ObjectEntity|null $subscription The already-resolved subscription, when the
 	 *                                        caller has it in hand (avoids a redundant
 	 *                                        find()); resolved from
 	 *                                        `message.subscriptionId` when null.
-	 * @param ExecutionTraceContext|null $trace The active execution trace context. When null (the common
-	 *                                          publish/retry-sweep case), a fresh `event`-entryPoint
-	 *                                          context is minted here and its persistence owned by this
-	 *                                          method (execution-trace REQ-001/REQ-004).
 	 *
 	 * @return boolean True when the attempt succeeded.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
 	 */
-	private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription = null, ?ExecutionTraceContext $trace = null): bool {
-		$ownsEventTrace = ($trace === null);
-		if ($ownsEventTrace === true) {
-			$trace = new ExecutionTraceContext(entryPoint: 'event', entryPointId: $message->getUuid(), triggeredBy: 'http');
-		}
-
+	private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription = null): bool {
+		$trace  = new ExecutionTraceContext(entryPoint: 'event', entryPointId: $message->getUuid(), triggeredBy: 'http');
 		$result = $this->attemptDeliveryDispatch(message: $message, subscription: $subscription, trace: $trace);
-
-		if ($ownsEventTrace === true) {
-			$attemptDeliveryTraceStatus = 'failed';
-			if ($result === true) {
-				$attemptDeliveryTraceStatus = 'success';
-			}
-
-			try {
-				$this->executionTraceService?->persist(trace: $trace, status: $attemptDeliveryTraceStatus);
-			} catch (\Throwable $exception) {
-				$this->logger->warning(
-					'EventService: failed to persist execution_trace.',
-					['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
-				);
-			}
-		}
+		$this->persistDeliveryTrace(trace: $trace, succeeded: $result);
 
 		return $result;
 	}//end attemptDelivery()
+
+	/**
+	 * Persist the event trace of one delivery attempt; a trace that cannot be
+	 * stored is logged and never changes the attempt's outcome.
+	 *
+	 * @param ExecutionTraceContext $trace     The attempt's trace context.
+	 * @param bool                  $succeeded Whether the attempt succeeded.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+	 */
+	private function persistDeliveryTrace(ExecutionTraceContext $trace, bool $succeeded): void {
+		$status = 'failed';
+		if ($succeeded === true) {
+			$status = 'success';
+		}
+
+		try {
+			$this->executionTraceService?->persist(trace: $trace, status: $status);
+		} catch (\Throwable $exception) {
+			$this->logger->warning(
+				'EventService: failed to persist execution_trace.',
+				['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
+			);
+		}
+
+	}//end persistDeliveryTrace()
 
 	/**
 	 * The action.kind switch extracted from {@see attemptDelivery()} so the
@@ -2845,34 +2854,59 @@ class EventService implements EventServiceInterface {
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
 	 */
 	public function ingestDeliveryRequest(DeliveryRequestedEvent $request): array {
-		$payload = $request->getPayload();
-		$optOut = $this->decideDelivery(request: $request, payload: $payload);
-		if ($optOut !== null && $optOut['decision']['send'] === true) {
-			$payload = $optOut['payload'];
+		$run = $this->startDeliveryIngest(request: $request);
+		if ($run->isRefused() === true) {
+			return $this->deliveryAnswer(run: $run, refusal: $this->refuseDelivery(request: $request, optOut: $run->optOut));
 		}
 
-		$event = $this->saveDeliveryEvent(
+		$run->messages = $this->processEvent(event: $run->event);
+		$this->recordDelivery(run: $run);
+
+		return $this->deliveryAnswer(run: $run, refusal: null);
+	}//end ingestDeliveryRequest()
+
+	/**
+	 * Ask the opt-out list about a delivery request and store its CloudEvent.
+	 *
+	 * @param DeliveryRequestedEvent $request The typed cross-app delivery request.
+	 *
+	 * @return DeliveryIngestRun The run, with the decision, the stored payload and the event.
+	 *
+	 * @throws Exception On persistence failure.
+	 */
+	private function startDeliveryIngest(DeliveryRequestedEvent $request): DeliveryIngestRun {
+		$run = new DeliveryIngestRun(request: $request);
+		$run->payload = $request->getPayload();
+		$run->optOut = $this->decideDelivery(request: $request, payload: $run->payload);
+		if ($run->optOut !== null && $run->optOut['decision']['send'] === true) {
+			$run->payload = $run->optOut['payload'];
+		}
+
+		$run->event = $this->saveDeliveryEvent(
 			request: $request,
-			data: ['delivery' => $this->deliveryRecord(request: $request, optOut: $optOut), 'payload' => $payload]
+			data: ['delivery' => $this->deliveryRecord(request: $request, optOut: $run->optOut), 'payload' => $run->payload]
 		);
 
-		if ($optOut !== null && $optOut['decision']['send'] !== true) {
-			return [
-				'event' => $event,
-				'messages' => [],
-				'refusal' => $this->refuseDelivery(request: $request, optOut: $optOut),
-			];
-		}
+		return $run;
 
-		$messages = $this->processEvent(event: $event);
-		$this->recordDelivery(request: $request, optOut: $optOut, payload: $payload, event: $event, messages: $messages);
+	}//end startDeliveryIngest()
 
+	/**
+	 * What ingestDeliveryRequest() answers.
+	 *
+	 * @param DeliveryIngestRun $run The run.
+	 * @param array{code:string,reason:string}|null $refusal The opt-out refusal, or null when routed.
+	 *
+	 * @return array{event: ObjectEntity, messages: ObjectEntity[], refusal: array{code:string,reason:string}|null} The answer.
+	 */
+	private function deliveryAnswer(DeliveryIngestRun $run, ?array $refusal): array {
 		return [
-			'event' => $event,
-			'messages' => $messages,
-			'refusal' => null,
+			'event' => $run->event,
+			'messages' => $run->messages,
+			'refusal' => $refusal,
 		];
-	}//end ingestDeliveryRequest()
+
+	}//end deliveryAnswer()
 
 	/**
 	 * The `data.delivery` block of a delivery request's CloudEvent.
@@ -2970,47 +3004,62 @@ class EventService implements EventServiceInterface {
 	/**
 	 * Keep the outbound log row of a personal delivery that was routed.
 	 *
-	 * @param DeliveryRequestedEvent $request The request.
-	 * @param array<string,mixed>|null $optOut The opt-out decision, or null when no person was named.
-	 * @param array<string,mixed> $payload The payload as stored.
-	 * @param ObjectEntity $event The stored CloudEvent.
-	 * @param ObjectEntity[] $messages The delivery messages routing created.
+	 * @param DeliveryIngestRun $run The run, with its routed messages.
 	 *
 	 * @return void
 	 */
-	private function recordDelivery(
-		DeliveryRequestedEvent $request,
-		?array $optOut,
-		array $payload,
-		ObjectEntity $event,
-		array $messages,
-	): void {
-		if ($optOut === null || $this->sendGate === null) {
+	private function recordDelivery(DeliveryIngestRun $run): void {
+		if ($run->optOut === null || $this->sendGate === null) {
 			return;
 		}
 
-		$address = (string)$optOut['decision']['address'];
-		$logRow = $this->sendGate->open(
-			channel: $optOut['channel'],
-			subjectRef: $request->getSubjectId(),
-			subject: $request->getSubjectLabel(),
-			body: (string)($payload['body'] ?? ''),
-			address: $address,
-			options: [
-				'sourceApp' => $request->getSourceApp(),
-				'correlationId' => $request->getCorrelationId(),
-				'caseRef' => (string)($payload['caseRef'] ?? ''),
-			],
-			decision: $optOut['decision']
-		);
-		if ($messages === []) {
+		$address = (string)$run->optOut['decision']['address'];
+		$logRow  = $this->openDeliveryLogRow(run: $run, address: $address);
+		if ($run->messages === []) {
 			$this->sendGate->failed(uuid: $logRow, address: $address, step: 'route', reason: 'No event subscription matched this delivery.');
 			return;
 		}
 
-		$this->sendGate->handedOver(uuid: $logRow, address: $address, reference: (string)$event->getUuid());
+		$this->sendGate->handedOver(uuid: $logRow, address: $address, reference: (string)$run->event->getUuid());
 
 	}//end recordDelivery()
+
+	/**
+	 * Open the outbound log row of a routed personal delivery.
+	 *
+	 * @param DeliveryIngestRun $run     The run.
+	 * @param string            $address The recipient key.
+	 *
+	 * @return string|null The row uuid, or null when it could not be written.
+	 */
+	private function openDeliveryLogRow(DeliveryIngestRun $run, string $address): ?string {
+		return $this->sendGate->open(
+			channel: $run->optOut['channel'],
+			subjectRef: $run->request->getSubjectId(),
+			subject: $run->request->getSubjectLabel(),
+			body: (string)($run->payload['body'] ?? ''),
+			address: $address,
+			options: $this->deliveryLogOptions(run: $run),
+			decision: $run->optOut['decision']
+		);
+
+	}//end openDeliveryLogRow()
+
+	/**
+	 * The log-row options of a routed personal delivery.
+	 *
+	 * @param DeliveryIngestRun $run The run.
+	 *
+	 * @return array<string,string> The source app, correlation id and case reference.
+	 */
+	private function deliveryLogOptions(DeliveryIngestRun $run): array {
+		return [
+			'sourceApp' => $run->request->getSourceApp(),
+			'correlationId' => $run->request->getCorrelationId(),
+			'caseRef' => (string)($run->payload['caseRef'] ?? ''),
+		];
+
+	}//end deliveryLogOptions()
 
 	/**
 	 * Ask the opt-out list about a delivery that names a personal recipient.
