@@ -3,6 +3,8 @@ kind: umbrella
 depends_on: []
 ---
 
+> Superseded by the per-row changes the capability rows name (decision 399): three of its four builds are archived and the fourth, objecten-api-facade, carries row nl-objecten; the open tasks belong to the lanes of dossiq, openregister, filinq, portaliq and opencatalogi. Archived with its boxes as they were.
+
 # Proposal: competitor-parity-2026-09
 
 ## Summary

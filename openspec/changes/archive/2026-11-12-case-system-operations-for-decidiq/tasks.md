@@ -37,4 +37,4 @@
       confidentialAs, publicAs, kinds, mock); 21 en and 22 nl strings.
       `tests/vitest/caseSystemSourceFields.spec.js` mounts the real editor and fields;
       the confidentiality options are checked against the Zaken 1.5.1 schema fixture.
-- [ ] Test (`tests/e2e/case-system-link.spec.ts`)
+- [x] Test (`tests/e2e/case-system-link.spec.ts`) (done: lib/Service/CaseSystem/ with unit tests (CaseSystemOperationsTest, ZgwCaseSystemTest) and tests/vitest/caseSystemSourceFields.spec.js; closed on code by decision 399, tests/e2e/case-system-link.spec.ts was not written)

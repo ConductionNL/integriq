@@ -2,6 +2,8 @@
 kind: code
 ---
 
+> Code done and tasks ticked (decision 399). It stays open only because its delta modifies REQ-OSI-003 in the outbound-sender-identity spec, which the open change outbound-sender-identity-and-deliverability creates: archive this one right after that one.
+
 # Proposal: enrol-sender-identity-in-credential-broker
 
 ## Summary
