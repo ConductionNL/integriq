@@ -1298,7 +1298,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Twig/AuthenticationExtension.php:35 registers Twig function oauthToken -> lib/Twig/AuthenticationRuntime.php:54 oauthToken($source) -> lib/Service/AuthenticationService.php:280 fetchOAuthTokens() (client-credentials and password grants, createClientCredentialConfig/createPasswordConfig at lines 189/240); CallService's call-Twig sandbox allows the 'oauthToken' function (CallService.php:222-224)",
 				"spec": "openspec/specs/authentication-twig",
-				"requirement": "REQ-001",
+				"requirement": "openspec/specs/authentication-twig :: OAuth Client Credentials and Password token fetch (REQ-001)",
 				"requirementNote": "A fresh token is fetched through oauthToken() on every call, so no cached token outlives its expiry."
 			},
 			"reachedOn": "/sources/:id edit form -> 'headers' or 'configuration' JSON field, admin writes e.g. {\"Authorization\": \"Bearer {{ oauthToken(source) }}\"} referencing configuration.authentication.* (grant_type/tokenUrl/client_id/client_secret)",
@@ -1413,7 +1413,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php: ['name'=>'sources#test','url'=>'/api/sources/test/{id}','verb'=>'POST']; lib/Controller/SourcesController.php:249-320 test() calls SourceTestService::run() and returns the raw result or a 502 on failure; src/modals/v2/TestSourceModal.vue:294 axios.post(/apps/integriq/api/sources/test/${this.sourceId})",
 				"spec": "openspec/specs/logs-and-statistics",
-				"requirement": "REQ-003"
+				"requirement": "openspec/specs/logs-and-statistics :: Per-source call log listing and outbound test call (REQ-003)"
 			},
 			"reachedOn": "/sources/:id detail page, Test connection action -> TestSourceModal.vue",
 			"provider": "integriq",
@@ -1642,7 +1642,7 @@
 				"owner": "ConductionNL/openregister",
 				"evidence": "lib/Service/BrokeredCallService.php:98 BROKER_CLASS='OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService'; :173 hasCredentialRef(), :442 prepare(), :494 dispatch() resolve+redeem a configuration.authentication.credentialRef ({credentialId}|{credentialName}) against OpenRegister's credential register (CREDENTIAL_REGISTER/CREDENTIAL_SCHEMA, :885-886) and dispatch in-process without embedding the secret on the source; src/dialogs/LinkSourceDialog.vue and src/modals/v2/SourceFormFields.vue:9-23 (brokered-credential NcSelect, GET /apps/openregister/api/credentials) let an operator pick an existing credential for a source",
 				"change": "2026-07-15-source-broker-credentials",
-				"requirement": "REQ-SBC-001",
+				"requirement": "openspec/specs/http-call-engine :: credentialRef source authentication contract (REQ-SBC-001)",
 				"spec": "openspec/specs/http-call-engine"
 			},
 			"reachedOn": "/sources/:id edit form, 'Brokered credential (OpenRegister)' switch -> NcSelect of the signed-in user's OpenRegister credentials",
@@ -1909,7 +1909,7 @@
 				"evidence": "src/manifest.json:927-930 Sources index page column 'circuitBreakerState' shown per row; lib/Service/ConnectionStatusResolver.php:74-502 resolve() derives a status (declared-unavailable/switched-off/simulated/observed/ok) per app connection; lib/Service/ConnectionProbeService.php:85-232 probeDue()/probe()/testSource() runs an hourly health probe against linked sources",
 				"change": "2026-09-29-connection-registry",
 				"spec": "openspec/specs/connection-registry",
-				"requirement": "REQ-CONN-005"
+				"requirement": "openspec/specs/connection-registry :: The health job probes linked sources every hour (REQ-CONN-005)"
 			},
 			"reachedOn": "/sources index (circuitBreakerState column) and /connections index (AppConnections page, resolved status per connection)",
 			"note": "There is no single 'source health' dashboard widget; the at-a-glance view is the circuitBreakerState column on the Sources list plus the separate Connections page's resolved status.",
@@ -2180,7 +2180,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/RateLimit/InboundRateLimitService.php:91 enforce(consumerKey, rateLimit, quota) -> lib/Service/EndpointService.php:977-1058 enforceInboundRateLimit()/enforceConsumerScope() and :1096-1129 applyRateLimitDecision(), called from dispatchAfterBeforeRules() before schema/source dispatch; per-tier limits configured on api_product.tiers (lib/Settings/register.d/api-product-gateway.json 'tiers': rateLimit{requestsPerWindow,windowSeconds}, quota{limit,period})",
 				"spec": "openspec/specs/api-product-gateway",
-				"requirement": "openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
+				"requirement": [
+					"openspec/specs/consumer-management :: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)",
+					"openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
+				]
 			},
 			"reachedOn": "/products (ApiProducts index/detail), tiers configuration; enforced as a machine route on every call through that product's endpoints",
 			"provider": "integriq",
@@ -2217,7 +2220,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/RateLimit/RateLimitDecision.php:60-93 constructor takes $retryAfter and toHeaders() emits 'Retry-After' when allowed===false, alongside RateLimit-Limit/Remaining/Reset; lib/Service/EndpointService.php:1113-1130 applyRateLimitDecision() returns a 429 JSONResponse with $decision->toHeaders() when over budget",
 				"spec": "openspec/specs/api-product-gateway",
-				"requirement": "openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
+				"requirement": [
+					"openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)",
+					"openspec/specs/consumer-management :: IETF RateLimit response headers (REQ-CON-RL-003)"
+				]
 			},
 			"reachedOn": "machine route: any over-limit caller of an api_product-scoped endpoint gets Retry-After on the 429 response",
 			"provider": "integriq",
@@ -2410,7 +2416,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rliE \"\\bgrpc\\b|\\bwebsocket\\b|\\bmqtt\\b\" lib/ src/ (excluding vendor) returns 0 files with real code; the only MQTT mention is a schema description string on event_subscription.url ('Delivery target URL (or AMQP/MQTT endpoint)') whose own x-notes at lib/Settings/integriq_register.json:1032 says: 'Nothing reads this field. It used to promise HTTP, AMQP, MQTT and NATS while only HTTP was implemented ... action.kind and action.brokerId are the authority.'. Specified in openspec/changes/gateway-graphql-and-streaming-protocols/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-graphql-and-streaming-protocols",
-				"requirement": "openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: A web server or broker asks integriq who may connect (REQ-GQLP-002)"
+				"requirement": [
+					"openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: WebSocket, gRPC and MQTT traffic reaches the upstream through a documented server (REQ-GQLP-003)",
+					"openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: A web server or broker asks integriq who may connect (REQ-GQLP-002)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The schema itself documents that the MQTT/AMQP promise was never real; only HTTP delivery is implemented for event subscriptions, and the gateway proxy is HTTP-only.",
@@ -2713,7 +2722,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/ConsumersController.php:1-48 is a DI-only placeholder; consumer CRUD runs entirely through OpenRegister's generic object API (frontend-api-paths.txt: LinkSourceDialog.vue:268 -> /apps/openregister/api/objects/integriq/source, and ConsumerEditorModal.vue against /apps/openregister/api/objects/integriq/consumer); consumer schema in lib/Settings/integriq_register.json and register.d/consumer-form-fields.json declares name/domains/ips/authorizationType/authorizationConfiguration/rateLimit/quota.",
 				"spec": "openspec/specs/consumer-management",
-				"requirement": "openspec/specs/consumer-management :: REQ-CON-UI-001: Consumer Management UI"
+				"requirement": "openspec/specs/consumer-management :: Consumer Management UI (REQ-CON-UI-001)"
 			},
 			"reachedOn": "/consumers index page (manifest-pages.txt: Consumers | /consumers | index | integriq consumer), edit dialog src/modals/v2/ConsumerEditorModal.vue",
 			"note": "The consumers tab has no dedicated controller of its own; every read/write goes straight through OpenRegister's generic object API, which is also why the write-only credential fix (99-consumer-secrets-writeonly.json) had to land as a schema fragment rather than a controller change.",
@@ -3018,7 +3027,7 @@
 				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:120 authorizeJwt() and :155 authorizeApiKey() hand the check to OpenRegister's AuthorizationService (DECISIONS 56, 62, 64; lib/Service/AuthorizationService.php was removed by 441f67de on 5 Oct), passing lib/Service/Consumer/IntegriqConsumerSource.php, whose resolve() (:137-168) gives OpenRegister the consumer's userId; OpenRegister then makes that Nextcloud user act for the request, and the bridge clears the volatile user again when integriq's lifetime cap refuses the token (:136). A rule-inline apiKey map key => uid (:155, $keys) does the same for rule keys.",
 				"spec": "openspec/specs/consumer-management",
 				"change": "consumer-auth-on-openregister",
-				"requirement": "REQ-006",
+				"requirement": "openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
 				"readOn": "2026-10-30"
 			},
 			"reachedOn": "consumer userId field or an endpoint rule's apiKey->userId map -> machine route: any authenticated gateway call runs the rest of the pipeline as that Nextcloud user",
@@ -3321,7 +3330,7 @@
 				"owner": "ConductionNL/openregister",
 				"evidence": "Integriq's own code confirms OpenRegister organisation-scopes objects by default: lib/Service/ExecutionTraceService.php:154-160 documents deliberately leaving 'OR's [own access-control] layer... at its defaults' for a caller-supplied id read, and every system-context engine lookup (AuthorizationService::findIssuer/resolveConsumerByApiKey, EndpointService::getRuleById/getEndpointById) explicitly passes _multitenancy:false ONLY to bypass that default for cross-tenant auth resolution; ordinary admin CRUD (Consumers/Sources/Endpoints pages) calls the generic /apps/openregister/api/objects/integriq/... endpoints with no such override, leaving OR's default organisation scoping in force.",
 				"spec": "openspec/specs/openconnector-or-adoption",
-				"requirement": "integriq consumes shared multi-tenancy + i18n specs"
+				"requirement": "openspec/specs/openconnector-or-adoption :: integriq consumes shared multi-tenancy + i18n specs"
 			},
 			"reachedOn": "every integriq admin page (Consumers, Sources, Endpoints, ...) that reads/writes through OpenRegister's generic object API",
 			"note": "Verified from integriq's own comments about OR's behaviour, not from reading OpenRegister's source directly, since it is a sibling app; confidence on the exact mechanism is therefore secondhand.",
@@ -3437,7 +3446,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:277 executeMapping() applies a mapping's key->value dot-notation rules (mapping.getMapping()) against input data; the editor UI is a bespoke custom page.",
 				"spec": "openspec/specs/mapping-editor-ui",
-				"requirement": "REQ-MAPUI-002"
+				"requirement": "openspec/specs/mapping-editor-ui :: Mapping / cast / unset rule editing (REQ-MAPUI-002)"
 			},
 			"reachedOn": "/mappings/:id detail page (manifest-pages.txt: MappingDetail | custom | MappingDetailPage | integriq mapping)",
 			"provider": "integriq",
@@ -3474,7 +3483,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:169 renderTemplateString() renders a Twig template string against the mapping input; called from within executeMapping() (around line 330) for any mapping value that is not a direct dot-path match.",
 				"spec": "openspec/specs/mapping-and-search",
-				"requirement": "openspec/specs/mapping-and-search :: REQ-001: Apply a mapping recipe to an input payload"
+				"requirement": "openspec/specs/mapping-and-search :: Apply a mapping recipe to an input payload (REQ-001)"
 			},
 			"reachedOn": "/mappings/:id editor, expression/template value fields",
 			"provider": "integriq",
@@ -3548,7 +3557,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:405 handleCast() implements roughly 20 cast kinds (string/bool/?bool/int/float/array/date/url/base64/json/moneyStringToInt/intToMoneyString/etc), invoked from executeMapping()'s cast loop.",
 				"spec": "openspec/specs/mapping-and-search",
-				"requirement": "openspec/specs/mapping-and-search :: REQ-002: Cast a mapped value to a declared type"
+				"requirement": "openspec/specs/mapping-and-search :: Cast a mapped value to a declared type (REQ-002)"
 			},
 			"reachedOn": "/mappings/:id editor, cast configuration per field",
 			"provider": "integriq",
@@ -3622,7 +3631,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:277-301 executeMapping()'s $list===true branch iterates the input array and recursively calls executeMapping() per item, building a mapped list.",
 				"spec": "openspec/specs/mapping-and-search",
-				"requirement": "openspec/specs/mapping-and-search :: REQ-001: Apply a mapping recipe to an input payload"
+				"requirement": "openspec/specs/mapping-and-search :: Apply a mapping recipe to an input payload (REQ-001)"
 			},
 			"reachedOn": "/mappings/:id editor, invoked with list=true from synchronization/endpoint pipelines mapping paginated result sets",
 			"provider": "integriq",
@@ -3859,7 +3868,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "MappingService::renderTemplateString (lib/Service/MappingService.php:169) runs full Twig, loops, conditionals, filters, with app-specific additions in lib/Twig/MappingExtension.php:51-89 (b64enc/b64dec/json_decode/slugify filters, generateUuid/executeMapping/getFileContents/getFiles/getTargetIdByOriginId/getOriginIdByTargetId functions).",
 				"spec": "openspec/specs/authentication-twig",
-				"requirement": "REQ-005"
+				"requirement": "openspec/specs/authentication-twig :: Twig mapping runtime — encoding, mapping execution, file lookup, slug (REQ-005)"
 			},
 			"reachedOn": "/mappings/:id editor, any expression/template value field",
 			"note": "Twig is a general-purpose templating engine reused for this, not a transformation DSL purpose-built the way DataWeave is, but it delivers the same practical capability (complex, loop/condition-capable transformations).",
@@ -3897,7 +3906,7 @@
 				"change": "2026-09-29-registry-backed-field-source",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Integriq half built: lib/PropertySource/ (PropertySourceResolver, BAG/BRP/KvK providers over existing sources, provenance, staleness budget, labelled last value when unreachable, ListResyncService) behind /api/property-sources/{provider}/suggest|resolve|resync, reached from Sources > Look up in a base registry (src/dialogs/RegistryLookupDialog.vue: search, resolve a suggestion by its identifier, provenance and state, read again skipping the cache, resync a list). Tests: tests/vitest/registryLookupDialog.spec.js (8) plus the existing PropertySource PHPUnit suite. A form field cannot yet read live: that needs x-openregister-property-source on a schema property (openregister#4168) and the declaration on a case type (dossiq#3188), so the rating stays partial. Built by change registry-backed-field-source (archived 2026-09-29).",
-				"requirement": "REQ-RFS-001",
+				"requirement": "openspec/specs/registry-field-source :: A property source is resolved through one provider contract (REQ-RFS-001)",
 				"spec": "openspec/specs/registry-field-source"
 			},
 			"reachedOn": "Sources > Look up in a base registry (an administrator's lookup); no form field yet, see openregister#4168",
@@ -3982,7 +3991,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Job/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule.",
 				"spec": "openspec/specs/synchronization-engine",
-				"requirement": "openspec/specs/synchronization-engine :: Synchronization orchestration and direction routing (REQ-001)"
+				"requirement": [
+					"openspec/changes/spec-coverage-closing-round/specs/synchronization-engine :: A synchronization runs on its job's schedule (REQ-SCB-012)",
+					"openspec/specs/synchronization-engine :: Synchronization orchestration and direction routing (REQ-001)"
+				]
 			},
 			"reachedOn": "/synchronizations index + /synchronizations/:id detail page (SynchronizationEditorModal.vue / SynchronizationDetailPage.vue) configure the sync; a job (Jobs page, /jobs) with jobClass=SynchronizationAction runs it on a cron schedule",
 			"provider": "integriq",
@@ -4209,7 +4221,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:367 synchronizations#test; called from src/modals/v2/runTargets.js:499 and src/modals/v2/SynchronizationEditorModal.vue:840 (frontend-api-paths.txt); SynchronizationService::synchronize() accepts an $isTest flag that short-circuits persistence.",
 				"spec": "openspec/specs/synchronization-engine",
-				"requirement": "REQ-011"
+				"requirement": "openspec/specs/synchronization-engine :: Test runs make no writes (REQ-011)"
 			},
 			"reachedOn": "/synchronizations/:id detail page and the synchronization editor's 'test' action",
 			"provider": "integriq",
@@ -4963,8 +4975,8 @@
 				"evidence": "_lane/frontend-api-paths.txt: /apps/integriq/api/jobs/run/${rowId(item)} and /apps/integriq/api/jobs/test/${rowId(item)}, both called from src/modals/v2/runTargets.js:568,601; appinfo/routes.php jobs#run and jobs#test routes backing them.",
 				"spec": "openspec/specs/job-management",
 				"requirement": [
-					"openspec/specs/job-management :: REQ-JOB-001: Job execution runtime",
-					"openspec/specs/job-management :: REQ-JOB-002: Job dry-run (test mode)"
+					"openspec/specs/job-management :: Job execution runtime (REQ-JOB-001)",
+					"openspec/specs/job-management :: Job dry-run (test mode) (REQ-JOB-002)"
 				]
 			},
 			"reachedOn": "/jobs (Jobs index) row action, Run/Test",
@@ -5003,8 +5015,8 @@
 				"evidence": "src/manifest.json:2156-2164 JobLogs page (/jobs/logs, type logs, schema job_log); src/manifest.json:2893-2899 nav entry 'Every scheduled run, and how it ended.'",
 				"spec": "openspec/specs/job-management",
 				"requirement": [
-					"openspec/specs/job-management :: REQ-JOB-001: Job execution runtime",
-					"openspec/specs/job-management :: REQ-JOB-UI-001: Job Management UI"
+					"openspec/specs/job-management :: Job execution runtime (REQ-JOB-001)",
+					"openspec/specs/job-management :: Job Management UI (REQ-JOB-UI-001)"
 				]
 			},
 			"reachedOn": "/jobs/logs (JobLogs)",
@@ -5575,7 +5587,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:412-416 events#subscriptions (GET/POST), events#updateSubscription, events#unsubscribe; src/manifest.json:1991-2028 Webhooks page (/webhooks, index, schema event_subscription, addLabel 'Add Webhook') is documented as 'a webhook is an EventSubscription with a delivery sink URL (push/pull)'.",
 				"spec": "openspec/specs/events-cloudevents",
-				"requirement": "REQ-005"
+				"requirement": "openspec/specs/events-cloudevents :: Events and subscriptions REST surface (REQ-005)"
 			},
 			"reachedOn": "/webhooks (Webhooks index) -> add/edit subscription; machine route: POST /api/events/subscriptions",
 			"provider": "integriq",
@@ -6374,7 +6386,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:21 metrics#index (/api/metrics, GET); lib/Controller/MetricsController.php extends OpenRegister AppHost's GenericMetricsController, wired by an explicit factory in lib/AppInfo/Application.php::registerAppHostObservability(); lib/Observability/IntegriqMetricsProvider.php:64,788 implements IMetricsProvider::metrics().",
 				"spec": "openspec/specs/prometheus-metrics",
-				"requirement": "openspec/specs/prometheus-metrics :: REQ-PROM-001: Metrics Endpoint"
+				"requirement": "openspec/specs/prometheus-metrics :: Metrics Endpoint (REQ-PROM-001)"
 			},
 			"reachedOn": "machine route: GET /api/metrics (admin-only, no #[NoAdminRequired])",
 			"note": "The generic controller/collection plumbing is OpenRegister's AppHost observability package; integriq supplies its own IntegriqMetricsProvider content.",
@@ -6412,7 +6424,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:22 health#index (/api/health, GET); lib/Controller/HealthController.php delegates to OpenRegister AppHost's GenericHealthController (null-injected and reporting 503 with the missing dependency named when OpenRegister is disabled, rather than a bare DI 500).",
 				"spec": "openspec/specs/apphost-adoption",
-				"requirement": "Declarative Health per ADR-006"
+				"requirement": "openspec/specs/apphost-adoption :: Declarative Health per ADR-006"
 			},
 			"reachedOn": "machine route: GET /api/health",
 			"provider": "integriq",
@@ -6531,7 +6543,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/BackgroundJob/LogCleanUpTask.php: 'Runs periodically to remove old call logs and job logs from the database and prevent storage bloat', extends TimedJob; appinfo/info.xml:110 registers it as a background job.",
 				"spec": "openspec/specs/logs-and-statistics",
-				"requirement": "REQ-004"
+				"requirement": "openspec/specs/logs-and-statistics :: App-wide retention settings read and update (REQ-004)"
 			},
 			"reachedOn": "automatic background job, no page (registered in appinfo/info.xml)",
 			"provider": "integriq",
@@ -6609,7 +6621,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Outbound/BodyRedactor.php: 'Removes credential material from a body before it is stored... Redaction runs before the write, never on read... Mirrors the snapshot redaction of execution-trace REQ-003.' Used by lib/Outbound/MessageRecorder.php and lib/Outbound/Call/CallRecorder.php. TraceDetail's own step timeline separately redacts input/output before storage (src/manifest.json:3266).",
 				"spec": "openspec/specs/http-call-engine",
-				"requirement": "REQ-006"
+				"requirement": "openspec/specs/http-call-engine :: REQ-006 — CallLog request/response redaction before persistence"
 			},
 			"reachedOn": "automatic on write, no toggle needed; redacted values are what SourceLogs/EndpointLogs/OutboundMessages/TraceDetail ever display",
 			"provider": "integriq",
@@ -6646,7 +6658,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2847-2900 Reports page (/reports, type reports) with categories health/traffic/components/protocols, cards for Operational health, Traces, Source logs, Endpoint logs, Job logs and more.",
 				"spec": "openspec/specs/logs-and-statistics",
-				"requirement": "REQ-002"
+				"requirement": "openspec/specs/logs-and-statistics :: Synchronization log level statistics and CSV export (REQ-002)"
 			},
 			"reachedOn": "/reports (Reports hub)",
 			"provider": "integriq",
@@ -6971,7 +6983,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:607-616 ten objectenApi# routes (objecttypes, objecttype, objecttypeVersion, objects, search, createObject, object, replaceObject, updateObject, deleteObject) -> lib/Controller/ObjectenApiController.php (methods at lines 101-380), gated by ObjectenTokenService per routes.php comment.",
 				"change": "objecten-api-facade",
-				"requirement": "REQ-OAF-003"
+				"requirement": "openspec/changes/objecten-api-facade/specs/objecten-api-facade :: The Objecten API reads objects in the standard's shape (REQ-OAF-003)"
 			},
 			"reachedOn": "machine route: GET/POST /api/v2/objects and /api/v2/objecttypes (external suppliers presenting 'Authorization: Token <key>', no Nextcloud session)",
 			"note": "Sibling row lists dossiq:12.3 as provider, but the Objecten/Objecttypen API is actually served by integriq's own ObjectenApiController, not dossiq.",
@@ -7277,7 +7289,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/PropertySource/Provider/KvkPropertySource.php:36-ish const ID='kvk', :73 suggest(), :111 resolve() implements PropertySourceProviderInterface, reached via appinfo/routes.php:521-522 propertySource#suggest/{provider}, #resolve/{provider}; lib/Settings/register.d/kvk-source.json seed source surfaced on /store.",
 				"change": "2026-09-29-registry-backed-field-source",
-				"requirement": "REQ-RFS-006",
+				"requirement": "openspec/specs/registry-field-source :: BAG, BRP and KvK bind to sources that already exist (REQ-RFS-006)",
 				"spec": "openspec/specs/registry-field-source"
 			},
 			"reachedOn": "GET /api/property-sources/kvk/suggest|resolve, called by any OpenRegister field declaring x-openregister-property-source: kvk; the KvK source template is installable from /store",
@@ -7315,7 +7327,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Registry/KvkMutatieProvider.php:47 registryId(), :71 subscribe(), :94 unsubscribe(), :107 pollChanges() extends AbstractSourceSubscriptionProvider; lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered in appinfo/info.xml:143 as a TimedJob and calls postChanges() (line 117) to persist polled changes.",
 				"change": "2026-09-29-registry-subscription-connector",
-				"requirement": "REQ-RSC-002",
+				"requirement": "openspec/specs/registry-subscription-connector :: A subscription request is turned into a live subscription (REQ-RSC-002)",
 				"spec": "openspec/specs/registry-subscription-connector"
 			},
 			"reachedOn": "background job RegistrySubscriptionPollJob (cron) polls subscribed KvK mutatieservice sources and posts changes",
@@ -7649,7 +7661,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:179 kiss#createCustomerContact -> lib/Controller/KissController.php -> lib/Service/KissSyncService.php:127 injects the real lib/Service/Kiss/KlantinteractiesClient.php REST binding alongside lib/Service/Kiss/LogKlantinteractiesProvider.php (mock), resolved per-configuration at KissSyncService.php:384 resolveProvider(); lib/BackgroundJob/KissPullJob.php is the cron-driven pull side.",
 				"spec": "openspec/specs/kiss-kcc-bridge",
-				"requirement": "REQ-001"
+				"requirement": "openspec/specs/kiss-kcc-bridge :: Klantinteracties provider abstraction with log and REST bindings (REQ-001)"
 			},
 			"reachedOn": "machine route: POST /api/kiss/klantcontacten (sibling apps' own contact-moment services, e.g. procest); pull side via KissPullJob cron",
 			"provider": "integriq",
@@ -8181,7 +8193,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "The code now has a caller: lib/Auth/Idp/IdpLoginService.php callback() reads the assertion, consumes the signed single-use state (IdpLoginStateStore), runs AssertionGuard, maps trust, pseudonymises a BSN through SubjectPseudonymService::pseudonymFor() or takes a polymorphic pseudonym through fromPolymorphic(), mints the envelope (with branch for eHerkenning) and calls EnvelopeExchangeService::issueCode(); the browser goes back to the consumer's registered address with code and relayState. Routes idpBroker#start and idpBroker#callback in appinfo/routes.php. Consumers carry returnUrls, enabled and a secret by broker reference (IdpConsumer, IdpConsumerSecretResolver, occ integriq:idp:consumer, seeded disabled portaliq). Tests: tests/Unit/Auth/Idp/IdpBrowserLoginTest.php (17, start, callback and exchange round trip against a scripted provider), IdpConsumerRegistrationTest.php (6), IdpBrokerControllerTest.php (+3). Rated partial: a live login still needs the vendor SAML SP or OIDC RP (Open Decision D1), so on an instance the start ends on the error page.",
 				"spec": "openspec/specs/digid-eherkenning-auth-adapter",
-				"requirement": "One-time signed subject envelope handoff"
+				"requirement": "openspec/specs/digid-eherkenning-auth-adapter :: One-time signed subject envelope handoff"
 			},
 			"reachedOn": "machine route POST /api/idp/envelope/exchange exists, but nothing in the repository ever issues a code for it to redeem",
 			"note": "Live-defect candidate: a consuming app calling exchange today would always get a 401, because issueCode() and the BSN-pseudonymisation step are never invoked by any controller, listener or job in this codebase.",
@@ -8219,7 +8231,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:283 eudiWallet#createOffer, :277 resolveOffer, :278 token, :279 credential -> lib/Controller/EudiWalletController.php:295 createOffer(), :367 resolveOffer(), :394 token(), :419 credential() -> lib/Service/EudiCredentialOfferService.php.",
 				"spec": "openspec/specs/eudi-wallet-credential-issuance",
-				"requirement": "REQ-EUDI-007"
+				"requirement": "openspec/specs/eudi-wallet-credential-issuance :: Credential endpoint verifies proof-of-possession and dispatches by format (REQ-EUDI-007)"
 			},
 			"reachedOn": "machine route: POST /api/eudi/credential-offers (consumer-gated, e.g. learniq requests an offer), then the citizen's wallet completes the OpenID4VCI token/credential exchange over the public routes",
 			"provider": "integriq",
@@ -8259,7 +8271,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:284 eudiWallet#revoke -> lib/Controller/EudiWalletController.php:334 revoke() -> lib/Service/EudiCredentialOfferService.php:787 revoke(), which at line 810 calls $this->statusListService->revokeIndex() (lib/Service/EudiStatusListService.php:188), the same status list the wallet reads via appinfo/routes.php:280 eudiWallet#statusList -> EudiWalletController.php:451 statusList().",
 				"spec": "openspec/specs/eudi-wallet-credential-issuance",
-				"requirement": "REQ-EUDI-009"
+				"requirement": "openspec/specs/eudi-wallet-credential-issuance :: Revocation flips one status-list bit and fires a signed callback (REQ-EUDI-009)"
 			},
 			"reachedOn": "machine route: POST /api/eudi/credential-offers/{id}/revoke flips the bit in the status list the wallet checks at GET /api/eudi/status-lists/{id}",
 			"provider": "integriq",
@@ -8300,7 +8312,7 @@
 				"evidence": "appinfo/routes.php:286-288 eudiIssuerKeyAdmin#status/generateKey/rotateKey -> lib/Controller/EudiIssuerKeyAdminController.php. A case-insensitive grep of src/ for 'eudi' returns zero matches, and src/views/admin/ contains only ActionAuthMatrix.vue, AdminSettings.vue and DsoPkiSettings.vue. Covered by openspec/changes/adapter-configuration-screens/ (0 of 12 tasks ticked; OpenSpec pass 2026-09-27): Task 5 specifies the EUDI status list and its issuer key surface, the screen this row lacks.",
 				"change": "adapter-configuration-screens",
 				"spec": "openspec/specs/eudi-wallet-credential-issuance",
-				"requirement": "REQ-EUDI-002"
+				"requirement": "openspec/specs/eudi-wallet-credential-issuance :: Issuer signing-key lifecycle under Beheer > Authenticatie (REQ-EUDI-002)"
 			},
 			"reachedOn": "nothing reaches it: no admin page calls /api/admin/eudi/keys",
 			"note": "Staff key-rotation capability with no page, the same shape as the nl-dso finding.",
@@ -8617,7 +8629,7 @@
 				"owner": "nextcloud/server",
 				"evidence": "Integriq's own routes (e.g. appinfo/routes.php:584-585 user#login/logout) and its admin settings page (src/main.js:178 registers /settings/admin/integriq) sit entirely behind Nextcloud's own session/auth middleware; no integriq-specific login bypass or custom auth guard was found anywhere in lib/Controller/ or lib/AppInfo/Application.php.",
 				"change": "platform-properties",
-				"requirement": "REQ-PLTP-003"
+				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The admin pages sit behind the Nextcloud login (REQ-PLTP-003)"
 			},
 			"reachedOn": "the standard Nextcloud login page/SSO redirect (user_oidc/user_saml, if enabled), then Beheer > Integriq at /settings/admin/integriq",
 			"note": "This is platform behaviour inherited from Nextcloud, not integriq-specific code; not independently verified beyond confirming no custom bypass exists.",
@@ -9882,7 +9894,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/info.xml:4 id integriq, :90 nextcloud min 32 max 35, :42 php 8.3; licence EUPL-1.2 (info.xml:23); hard dependency on openregister recorded in the comment at info.xml:34-41",
 				"change": "platform-properties",
-				"requirement": "REQ-PLTP-001"
+				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The app runs on the customer's own Nextcloud (REQ-PLTP-001)"
 			},
 			"reachedOn": "Nextcloud app install (apps page / occ app:enable integriq)",
 			"note": "Runs inside any self-hosted Nextcloud 32 to 35 with OpenRegister installed; the openregister dependency is not enforced by info.xml, so installing without it leaves every entity without storage.",
@@ -9920,7 +9932,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/info.xml:43 pgsql min 10, :44 sqlite, :45 mysql min 8.0; storage is OpenRegister objects (single migration lib/Migration/Version2Date20260908000000.php); lib/Service/SettingsService.php:80 branches PostgreSQL vs DATE_ADD for the rebase SQL",
 				"change": "platform-properties",
-				"requirement": "REQ-PLTP-002"
+				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The app runs on the Nextcloud database (REQ-PLTP-002)"
 			},
 			"reachedOn": "Nextcloud install on any of the three databases",
 			"note": "All three are declared and data lives in OpenRegister tables. The one raw-SQL path, SettingsService rebase, emits DATE_ADD for every non-Postgres platform (SQLite has no DATE_ADD) and targets legacy openconnector_* tables, but no page calls it.",
@@ -10041,7 +10053,7 @@
 				"owner": "ConductionNL/openregister",
 				"evidence": "Audit trail sidebar tab {type: audit} declared on SourceDetail src/manifest.json:1323-1328, EndpointDetail :1579, ConsumerDetail :1924, CloudEventDetail :2704; the trail itself is OpenRegister's generic per-object audit log; integriq adds only domain-specific records (promotion_audit lib/Service/PromotionService.php:478, approval audit block src/views/Approvals/ApprovalDetail.vue:59-64, dead-letter replay stamps)",
 				"spec": "openspec/specs/openconnector-or-adoption",
-				"requirement": "REQ-ORA-001"
+				"requirement": "openspec/specs/openconnector-or-adoption :: Detail pages show the record's OpenRegister audit trail (REQ-ORA-001)"
 			},
 			"reachedOn": "Audit trail tab in the sidebar of Source, Endpoint, Consumer and CloudEvent detail pages",
 			"note": "The info.xml claim (appinfo/info.xml description line 'keep a per-object audit trail') is OpenRegister's generic audit trail surfaced in integriq's pages; integriq adds nothing to it. Mapping, rule and synchronization detail pages are custom pages and were not confirmed to show the tab.",
@@ -10272,7 +10284,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/integriq_register.json:673,1390,1499,1828,1966,2219,2391,2590 declare x-openregister-mcp read tools (search/get) on 8 schemas, consumed by OpenRegister's SchemaDerivedToolProvider (openregister lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php, local checkout); lib/Mcp does not exist (ls: no such directory); grep 'McpTool|IMcpScannable' lib: 0 hits; openspec/changes/hermiq-ai-tooling/tasks.md 0 of 22 ticked",
 				"spec": "openspec/specs/openconnector-mcp-tool-surface",
-				"requirement": "openspec/specs/openconnector-mcp-tool-surface :: REQ-MCP-102"
+				"requirement": "openspec/specs/openconnector-mcp-tool-surface :: REQ-MCP-102 — Exactly 8 operational schemas MUST be exposed, read-only, and every declared `search` filter MUST be a real property of its schema"
 			},
 			"reachedOn": "An MCP client connected to OpenRegister's MCP server (read tools only)",
 			"note": "An assistant can search and read eight integriq schemas through OpenRegister's schema-derived MCP tools. The governed action tools (run or test a sync, test a source, replay dead letters) in hermiq-ai-tooling are specified only. Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-08-17-declared-actions-and-mcp-scope; the missing half is integriq's own work, so the owner moved to ConductionNL/integriq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
@@ -10310,7 +10322,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Datasource/DashboardDatasourceService.php:140 resolve(sourceId, valueExpr, params, ttl); HTTP facade appinfo/routes.php:351 -> lib/Controller/DatasourceController.php:84 (egress guard strips url/host); capability advertised lib/AppInfo/Capabilities.php:69 registered at lib/AppInfo/Application.php:690; docs/developers/dashboard-http-datasource.md; consumer ConductionNL/launchpad development lib/Service/LiveTileService.php:146,156 calls Service\\Datasource\\DashboardDatasourceService::resolve in-process (fetched via gh api ?ref=development)",
 				"spec": "openspec/specs/dashboard-http-datasource",
-				"requirement": "Resolve endpoint returns a single value from a named source"
+				"requirement": "openspec/specs/dashboard-http-datasource :: Resolve endpoint returns a single value from a named source"
 			},
 			"reachedOn": "LaunchPad live-data tile widget (in-process PHP call); the /api/datasource/{sourceId}/resolve HTTP route itself has no caller",
 			"note": "The hint's CardfeedController is the corporate card feed enrolment, unrelated to dashboards. A stale local launchpad checkout (d2f3afd2, 2026-09-05) still duck-typed OCA\\OpenConnector\\Service\\DashboardDataSourceService::resolveDashboardValue, which never existed; current development fixed it.",
@@ -10348,7 +10360,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/integration.js:80 registerIntegration id sync-contract (renderMode mount, SyncedFromTab); bundle built at webpack.config.js:24-34 and loaded on every page via Util::addInitScript in lib/AppInfo/Application.php:316-327; backend provider lib/Service/Integration/SynchronizationContractProvider.php:163 list; src/integration/SyncedFromTab.vue:34-55 renders synchronization link, subtitle and origin id",
 				"spec": "openspec/specs/synced-from-tab",
-				"requirement": "REQ-SYNC-002"
+				"requirement": "openspec/specs/synced-from-tab :: Fetch synced-from rows (REQ-SYNC-002)"
 			},
 			"reachedOn": "Synced from tab/widget on OpenRegister object detail pages in any app",
 			"note": "Other apps' records show which synchronization wrote them, with a deep link and origin id. Call logs or run logs are not shown there. The hint's leaf-integrations.json is the opposite direction (integriq consuming OR's files, deck, talk and calendar leaves on its own source and synchronization pages).",
@@ -10388,7 +10400,7 @@
 				"portalsFound": "tenderned, boamp-france, germany-bund, latvia-iub, sweden-avropa, austria-opentender, greece-diavgeia, australia-austender (8 of 8)",
 				"rating_readerRating": "partial",
 				"change": "native-data-gathering-provider",
-				"requirement": "Gathering connectors ship as register.d fragments"
+				"requirement": "openspec/changes/native-data-gathering-provider/specs/native-data-gathering-provider :: Gathering connectors ship as register.d fragments"
 			},
 			"reachedOn": "/store (catalog_item source-template cards, instantiate via POST /api/catalog/items/{id}/instantiate) and /sources, /synchronizations",
 			"note": "Every named portal exists as a working keyless HTTP source with a live-verified mapping, but every synchronization targets spectr/tender, a register integriq does not ship, so out of the box the enabled weekly jobs have nowhere to write unless the Specter register is installed. Germany ports only the govdata CKAN path and TenderNed carries a documented 0-based pagination offset bug that skips page 2. Re-rated partial to no by the lane: every one of the eight synchronizations targets spectr/tender (e.g. lib/Settings/register.d/tenderned-connector.json:101) and grep for a spectr register in lib/Settings returns 0, so on a stock install the weekly jobs that ship enabled fetch and then have no register to write to. A declaration that breaks the path is a no, not a partial. It becomes yes on an instance that also carries the Specter register.",
@@ -10426,7 +10438,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/register.d/endoflife-date-source.json:6-69 (eol_product and eol_cycle schemas in the integriq register), :150 (endoflife-date source, https://endoflife.date/api, auth none); lib/Settings/register.d/endoflife-date-source-cycles.json:49,113,177,241,305,369,433,497 (eight synchronizations targeting integriq/eol_cycle with daily jobs); tests/Integration/EndoflifeDateLiveSyncTest.php:58; tests/Unit/Service/EndoflifeDateSyncTest.php",
 				"spec": "openspec/specs/endoflife-date-source",
-				"requirement": "endoflife.date source preset ships enabled, credential-free"
+				"requirement": "openspec/specs/endoflife-date-source :: endoflife.date source preset ships enabled, credential-free"
 			},
 			"reachedOn": "/sources and /synchronizations (the endoflife-date source and its eight syncs); no integriq page lists eol_cycle itself",
 			"note": "Integriq pulls endoflife.date cycles for eight fixed products (php, nodejs, python, postgresql, mysql, nextcloud, wordpress, laravel) into its own eol_cycle schema daily. Writing those dates onto a software record is the consuming app's job (stackiq), and adding a ninth product needs a new mapping, sync and job per product.",
@@ -10469,7 +10481,7 @@
 				"change": "openregister/2026-10-05-integration-kvk-opencorporates",
 				"readOn": "2026-10-07",
 				"spec": "openregister:openspec/specs/integration-company-lookup",
-				"requirement": "OpenCorporates Company Search",
+				"requirement": "openregister:openspec/specs/integration-company-lookup :: OpenCorporates Company Search",
 				"localSpec": "openspec/specs/registry-field-source"
 			},
 			"reachedOn": "pipelinq prospect discovery through GET /apps/openregister/api/integrations/opencorporates/search over integriq's opencorporates source; in integriq, /store (source-template:opencorporates) and /sources",
@@ -10511,7 +10523,7 @@
 				"change": "openregister/2026-10-05-integration-xwiki-query-search",
 				"readOn": "2026-10-07",
 				"spec": "openregister:openspec/specs/integration-xwiki",
-				"requirement": "Object-Independent Free-Text Page Search",
+				"requirement": "openregister:openspec/specs/integration-xwiki :: Object-Independent Free-Text Page Search",
 				"localSpec": "openspec/specs/connector-catalog"
 			},
 			"reachedOn": "pipelinq's XWikiController search through GET /apps/openregister/api/integrations/xwiki/search, and OpenRegister's object xWiki links, over integriq's xwiki source; in integriq, /store (source-template:xwiki) and /sources",
@@ -10591,7 +10603,7 @@
 				"evidence": "lib/Settings/register.d/dpg-registry-connector.json:8 (source dpg-registry, https://raw.githubusercontent.com/DPGAlliance/dpg-api/main/docs/dpgs, auth none), :55 (sync, endpoint /index.json), :69 (targetId spectr/marketplaceApp), :85 (weekly job); tests/Unit/Settings/Wave0GatheringConnectorRegisterFragmentTest.php:55",
 				"rating_readerRating": "partial",
 				"change": "native-data-gathering-provider",
-				"requirement": "Gathering connectors ship as register.d fragments"
+				"requirement": "openspec/changes/native-data-gathering-provider/specs/native-data-gathering-provider :: Gathering connectors ship as register.d fragments"
 			},
 			"reachedOn": "/store (source-template:dpg-registry card) and /sources, /synchronizations",
 			"note": "Reads the DPG Alliance's GitHub-hosted index.json (the old api.digitalpublicgoods.net is dead), but like the other Specter feeds it writes to spectr/marketplaceApp, which integriq does not ship. Re-rated partial to no by the lane: the sync targets spectr/marketplaceApp (dpg-registry-connector.json:69), a register integriq does not ship, so the enabled weekly job has nowhere to write on a stock install.",
@@ -10718,7 +10730,7 @@
 				"change": "2026-09-28-integriq-adapter-verzuimloket",
 				"evidence": "lib/Service/Exchange/ExchangeTargetDispatcher.php:315 calls lib/Service/VerzuimloketService.php:125 sendMelding(), which translates the melding, sends it through the log or Edukoppeling provider and keeps a verzuim_message record the register accepts (tests/Unit/Service/VerzuimloketServiceTest.php validates every record kind against the merged schema with opis); appinfo/routes.php verzuimloket#berichten and #retour; appinfo/info.xml VerzuimloketRetryJob. Ships dormant: the live Edukoppeling transport waits on a DUO certificate. Built by change integriq-adapter-verzuimloket (archived 2026-09-28).",
 				"spec": "openspec/specs/verzuimloket-adapter",
-				"requirement": "REQ-002"
+				"requirement": "openspec/specs/verzuimloket-adapter :: REQ-002: Outbound envelope translation with a literal-leak guard"
 			},
 			"reachedOn": "learniq leerplicht DataExchangeJob through the exchange target dispatcher, and POST /api/verzuimloket/berichten; DUO retour at POST /api/verzuimloket/retour; hourly VerzuimloketRetryJob",
 			"note": "There is no DUO or verzuimregister target template; only the generic outbound sync (see con-push-register) could be configured for it by hand. Built 2026-09-28; the build-all pass found every audit record refused by the register (nulls in string properties) and fixed it. Rated partial until the Edukoppeling transport has a DUO certificate; the code path is complete.",
@@ -10803,7 +10815,7 @@
 				"change": "2026-09-29-connectors-catalogue-expansion",
 				"readOn": "2026-10-07",
 				"spec": "openspec/specs/connector-catalog",
-				"requirement": "REQ-CCX-003"
+				"requirement": "openspec/specs/connector-catalog :: Generated SaaS templates come from a pinned directory and a reviewed allow-list (REQ-CCX-003)"
 			},
 			"reachedOn": "/store, tier 'Generated templates', plus the source-template cards from lib/Settings/register.d",
 			"note": "The Store holds roughly 35 entries, not hundreds, and that count is padded: two environment placeholder sources (environment-local-source, environment-acceptance-source) become connector cards, and SmartDocuments and Xential each appear twice (adapter and source template). About ten of the real ones are Specter feeds that write to a register integriq does not ship.",
@@ -10951,7 +10963,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php synchronize() pulls base data into a register on a schedule (row sync-create); lib/Service/EndpointService.php:1876-1900 handleSchemaRequest() serves that register to consuming applications (row gw-endpoint); lib/EventListener/CloudEventListener.php:32-46 pushes every change to subscribers (row evt-publish)",
 				"spec": "openspec/specs/synchronization-engine",
-				"requirement": "REQ-026"
+				"requirement": "openspec/specs/synchronization-engine :: Base data is distributed from one register to every consuming application (REQ-026)"
 			},
 			"reachedOn": "/synchronizations fills the store, /endpoints publishes it at /api/endpoint/{path}, /webhooks pushes changes",
 			"note": "Gemeente Stein 2021 integratieplatform, requirement 166860 (distribution component fed from NedMagazijn); Goeree-Overflakkee tendered datadistributie- en integratiesoftware on 2026-06-07 (TenderNed 428120) and Deventer for the DOWR municipalities on 2026-05-29 (TenderNed 426662). Integriq: The central store itself is OpenRegister; integriq fills it and distributes from it.",
@@ -11098,8 +11110,8 @@
 				"evidence": "openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; code at lib/Service/Adapter/EndpointWorkspace/. Added in the spec round reverse check; not live-checked.",
 				"spec": "openspec/specs/endpoint-workspace-connectors",
 				"requirement": [
-					"openspec/specs/endpoint-workspace-connectors :: REQ-EWC-001",
-					"openspec/specs/endpoint-workspace-connectors :: REQ-EWC-002"
+					"openspec/specs/endpoint-workspace-connectors :: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)",
+					"openspec/specs/endpoint-workspace-connectors :: Each EWC adapter manifest entry SHALL declare a fixed capability vocabulary scoped to session-enumeration, user-mapping, and audit-event ingestion (REQ-EWC-002)"
 				]
 			},
 			"n8n": "unknown",
@@ -11151,11 +11163,12 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/slo-curriculum-import/spec.md is the main spec; code at lib/Settings/register.d/slo-curriculum-source.json. Added in the spec round reverse check; not live-checked.",
+				"evidence": "lib/Adapters/Slo/SloCurriculumSourceAdapter.php importFramework() walks a set through SloCurriculumTreeWalker and maps it with SloCurriculumMapper into competency-framework and competency records (FrameworkImportRun); SloCurriculumClientHttp is the live client behind the flag, SloCurriculumClientMock the default; source template lib/Settings/register.d/slo-curriculum-source.json.",
 				"spec": "openspec/specs/slo-curriculum-import",
 				"requirement": [
-					"openspec/specs/slo-curriculum-import :: A dormant SLO source template carries the set profiles and the attribution (REQ-001)",
-					"openspec/specs/slo-curriculum-import :: Mapping presets name learniq's contract fields (REQ-002)"
+					"openspec/specs/slo-curriculum-import :: The tree walk follows the set profile (REQ-005)",
+					"openspec/specs/slo-curriculum-import :: One framework per set and root, with stable ids and attribution (REQ-007)",
+					"openspec/specs/slo-curriculum-import :: A dormant SLO source template carries the set profiles and the attribution (REQ-001)"
 				]
 			},
 			"n8n": "unknown",
@@ -11335,7 +11348,7 @@
 				"change": "2026-09-29-observability-connection-run-summary",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/RunSummaryService.php behind GET /api/sources/{id}/run-summary (lib/Controller/RunSummaryController.php, action source.logs, at most 31 days) sums a source's runs per day; src/components/SourceRunSummaryWidget.vue shows it on SourceDetail with the latest runs and Run again on a failed one (src/handlers/runAgain.js, triggeredBy rerun, no dialog; also a row action on Synchronization Runs). Run records carry sourceId and triggeredBy (SynchronizationRunProgressService::start). lib/BackgroundJob/ConnectionThresholdJob.php runs lib/Service/ConnectionAlertService.php every five minutes: alertThresholds on source and synchronization (failed calls, failed runs, invalid objects over a window) open one connection_alert above a threshold and clear it once the count falls back. The alert's created rule notifies the members of the group in the app setting connection_alert_group (lib/Notification/ConnectionAlertRecipientResolver.php, no default; set on the admin page, ConnectionAlertSettingsController refuses an unknown group). Operations > Connection alerts lists them. Tests: SynchronizationRunProgressServiceTest, RunSummaryServiceTest, RunSummaryControllerTest, SynchronizationsControllerRerunTest, ConnectionAlertServiceTest (payloads validated against the merged connection_alert schema), ConnectionAlertRecipientResolverTest, ConnectionThresholdJobTest, ConnectionAlertSettingsControllerTest, tests/vitest/connectionRunSummary.spec.js. Built by change observability-connection-run-summary (archived 2026-09-29).",
-				"requirement": "REQ-CRUN-004",
+				"requirement": "openspec/specs/connection-run-monitoring :: Thresholds per source and synchronization open an alert (REQ-CRUN-004)",
 				"spec": "openspec/specs/connection-run-monitoring"
 			},
 			"reachedOn": "/sources/:id (Pulls per day), /connection-alerts, Administration settings > Integriq",
@@ -11699,7 +11712,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json Endpoints index page (/endpoints) and the Sources pages edit routes and upstreams as records; lib/EventListener/EndpointCacheInvalidationListener.php:69-95 applies a saved change without a restart (row gw-hot-reload)",
 				"change": "2026-07-14-revive-dead-capabilities",
-				"requirement": "openspec/specs/endpoint-runtime :: REQ-EP-UI-001: Endpoint Management UI"
+				"requirement": "openspec/specs/endpoint-runtime :: Endpoint Management UI (REQ-EP-UI-001)"
 			},
 			"reachedOn": "/endpoints and /sources index and detail pages",
 			"note": "Open APISIX request 2026-06-19 for a simpler interface for services and routes.",
@@ -12118,7 +12131,7 @@
 				"evidence": "integriq's flow canvas (src/manifest.json:3147-3168 Flows and FlowDetail pages, which mount nextcloud-vue CnFlowIndexPage and CnFlowDetail per openspec/specs/flow-orchestration REQ-017) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
 				"spec": "openspec/specs/flow-orchestration",
 				"readOn": "2026-10-07",
-				"requirement": "REQ-018"
+				"requirement": "openspec/specs/flow-orchestration :: A flow reads and writes a register schema as a reference table (REQ-018)"
 			},
 			"reachedOn": "/flows/:id canvas, object read and write nodes against a register",
 			"note": "n8n 1.119.0 (2025-11-03) took data tables out of beta. Integriq: The table is an OpenRegister register; integriq consumes the nodes.",

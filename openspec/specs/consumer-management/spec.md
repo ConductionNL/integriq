@@ -17,7 +17,7 @@ authentication enforcement (covered by PHPUnit/Newman). It is a retrofit spec.
 
 ## Requirements
 
-### REQ-CON-UI-001: Consumer Management UI
+### Requirement: Consumer Management UI (REQ-CON-UI-001)
 
 Integriq MUST provide a Consumers section in its SPA where administrators can browse,
 create, edit, and delete consumer configurations.
@@ -98,7 +98,7 @@ enforced on save and would make existing rows unsaveable.
   consumer does not silently replace it
 - @e2e exclude asserted on the draft seeding — covered by vitest
 
-### REQ-WBHK-UI-001: Webhook Management UI
+### Requirement: Webhook Management UI (REQ-WBHK-UI-001)
 
 Integriq MUST provide a Webhooks section in its SPA where administrators can
 browse, create, edit, and delete webhook consumers.
@@ -115,7 +115,7 @@ browse, create, edit, and delete webhook consumers.
 - WHEN the user clicks the "Add Item" button
 - THEN a modal or dialog opens containing the webhook/consumer creation form
 
-### REQ-CON-001: Consumer authentication enforcement
+### Requirement: Consumer authentication enforcement (REQ-CON-001)
 
 The system SHALL enforce consumer-level authentication on inbound calls to
 Integriq endpoints by resolving the `consumer` record associated with the

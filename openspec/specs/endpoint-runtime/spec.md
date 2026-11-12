@@ -26,7 +26,7 @@ itself is specified separately under the `rule-pipeline` capability.
 
 ## Requirements
 
-### REQ-EP-UI-001: Endpoint Management UI
+### Requirement: Endpoint Management UI (REQ-EP-UI-001)
 
 Integriq MUST provide an Endpoints section in its SPA where administrators can
 browse, create, edit, and delete endpoint configurations. This requirement covers
