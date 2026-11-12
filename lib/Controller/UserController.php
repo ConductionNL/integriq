@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
+use OCA\Integriq\Service\SecondFactorGate;
 use OCA\Integriq\Service\SecurityServiceInterface;
+use OCA\Integriq\Service\UserApiOriginPolicy;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -33,9 +35,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
-use OCP\Authentication\TwoFactorAuth\IRegistry;
-use OCP\IConfig;
-use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -115,22 +114,16 @@ class UserController extends Controller {
 	private readonly IL10N $l;
 
 	/**
-	 * Two-factor provider registry, to see whether an account has a second factor
-	 * @var IRegistry
+	 * Decides whether an account needs a second factor and so cannot log in here
+	 * @var SecondFactorGate
 	 */
-	private readonly IRegistry $twoFactorRegistry;
+	private readonly SecondFactorGate $secondFactorGate;
 
 	/**
-	 * System configuration, for the two-factor enforcement settings
-	 * @var IConfig
+	 * Decides which Origin may be granted CORS access to these endpoints
+	 * @var UserApiOriginPolicy
 	 */
-	private readonly IConfig $config;
-
-	/**
-	 * Group manager, for the two-factor enforcement groups
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly UserApiOriginPolicy $originPolicy;
 
 	/**
 	 * CORS allowed methods
@@ -167,9 +160,8 @@ class UserController extends Controller {
 	 * @param LoggerInterface $logger The logger for security events
 	 * @param UserServiceInterface $userService The user service for user-related operations
 	 * @param IL10N $l The localization service
-	 * @param IRegistry $twoFactorRegistry The two-factor provider registry
-	 * @param IConfig $config The system configuration
-	 * @param IGroupManager $groupManager The group manager
+	 * @param SecondFactorGate $secondFactorGate The second-factor check for the login
+	 * @param UserApiOriginPolicy $originPolicy The allow-list of CORS origins
 	 * @param string $corsMethods Allowed CORS methods
 	 * @param string $corsAllowedHeaders Allowed CORS headers
 	 * @param int $corsMaxAge CORS max age
@@ -206,9 +198,8 @@ class UserController extends Controller {
 		LoggerInterface $logger,
 		UserServiceInterface $userService,
 		IL10N $l,
-		IRegistry $twoFactorRegistry,
-		IConfig $config,
-		IGroupManager $groupManager,
+		SecondFactorGate $secondFactorGate,
+		UserApiOriginPolicy $originPolicy,
 		string $corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		string $corsAllowedHeaders = 'Authorization, Content-Type, Accept',
 		int $corsMaxAge = 1728000,
@@ -220,9 +211,8 @@ class UserController extends Controller {
 		$this->userService = $userService;
 		$this->logger = $logger;
 		$this->l = $l;
-		$this->twoFactorRegistry = $twoFactorRegistry;
-		$this->config = $config;
-		$this->groupManager = $groupManager;
+		$this->secondFactorGate = $secondFactorGate;
+		$this->originPolicy = $originPolicy;
 
 		$this->corsMethods = $corsMethods;
 		$this->corsAllowedHeaders = $corsAllowedHeaders;
@@ -308,24 +298,7 @@ class UserController extends Controller {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function allowedCorsOrigin(): ?string {
-		$origin = trim($this->request->getHeader('Origin'));
-		if ($origin === '') {
-			return null;
-		}
-
-		$configured = $this->config->getAppValue('integriq', 'user_api_allowed_origins', '');
-		$allowed = preg_split('/[\s,]+/', $configured, -1, PREG_SPLIT_NO_EMPTY);
-		if ($allowed === false) {
-			return null;
-		}
-
-		foreach ($allowed as $candidate) {
-			if (strcasecmp(rtrim($candidate, '/'), $origin) === 0) {
-				return $origin;
-			}
-		}
-
-		return null;
+		return $this->originPolicy->grantFor(origin: $this->request->getHeader('Origin'));
 	}//end allowedCorsOrigin()
 
 	/**
@@ -571,7 +544,7 @@ class UserController extends Controller {
 			// is refused here and logs in through Nextcloud's own login flow.
 			// It gets the wrong-password answer, so the refusal does not tell an
 			// unauthenticated caller that the guessed password was right.
-			if ($this->requiresSecondFactor(user: $user) === true) {
+			if ($this->secondFactorGate->requiresSecondFactor(user: $user) === true) {
 				$this->logger->info(
 					'Integriq API login refused: account requires two-factor authentication',
 					['user' => $user->getUID(), 'ip' => $clientIp]
@@ -691,80 +664,6 @@ class UserController extends Controller {
 
 		return $this->securityService->addSecurityHeaders($response);
 	}//end invalidCredentialsResponse()
-
-	/**
-	 * Whether the account has, or must have, a second factor.
-	 *
-	 * /api/user/login sets the session directly and never runs core's
-	 * two-factor preparation, so a session it created would count as
-	 * two-factor-complete. Refusing every account that has an enabled provider
-	 * (backup codes included), or that falls under the instance's two-factor
-	 * enforcement, keeps the endpoint from bypassing the second factor. Fails
-	 * closed: when the registry cannot be read the account is treated as
-	 * requiring a second factor.
-	 *
-	 * @param IUser $user The authenticated user.
-	 *
-	 * @return bool True when the login must be refused.
-	 *
-	 * @spec openspec/specs/user-management-and-login/spec.md
-	 */
-	private function requiresSecondFactor(IUser $user): bool {
-		try {
-			$states = $this->twoFactorRegistry->getProviderStates($user);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				'Integriq API login: two-factor provider states unreadable, refusing',
-				['exception' => $e->getMessage()]
-			);
-			return true;
-		}
-
-		if (in_array(needle: true, haystack: $states, strict: true) === true) {
-			return true;
-		}
-
-		return $this->isTwoFactorEnforcedFor(user: $user);
-	}//end requiresSecondFactor()
-
-	/**
-	 * Whether the instance's two-factor enforcement applies to this account.
-	 *
-	 * Mirrors core's enforcement settings: `twofactor_enforced` switches it on,
-	 * `twofactor_enforced_groups` narrows it to those groups (empty means every
-	 * account), and `twofactor_enforced_excluded_groups` exempts groups unless
-	 * the account is also in an enforced group.
-	 *
-	 * @param IUser $user The authenticated user.
-	 *
-	 * @return bool True when enforcement applies.
-	 *
-	 * @spec openspec/specs/user-management-and-login/spec.md
-	 */
-	private function isTwoFactorEnforcedFor(IUser $user): bool {
-		$enforced = $this->config->getSystemValue('twofactor_enforced', 'false');
-		if ($enforced !== true && $enforced !== 'true') {
-			return false;
-		}
-
-		// Same order as core's MandatoryTwoFactor: an enforced group wins over an
-		// excluded one, and naming enforced groups limits enforcement to them.
-		$uid = $user->getUID();
-		$enforcedGroups = (array)$this->config->getSystemValue('twofactor_enforced_groups', []);
-		foreach ($enforcedGroups as $group) {
-			if ($this->groupManager->isInGroup($uid, (string)$group) === true) {
-				return true;
-			}
-		}
-
-		foreach ((array)$this->config->getSystemValue('twofactor_enforced_excluded_groups', []) as $group) {
-			if ($this->groupManager->isInGroup($uid, (string)$group) === true) {
-				return false;
-			}
-		}
-
-		return $enforcedGroups === [];
-	}//end isTwoFactorEnforcedFor()
 
 	/**
 	 * Put the user in the session and create a session token, so later requests

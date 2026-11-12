@@ -21,7 +21,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\UserController;
+use OCA\Integriq\Service\SecondFactorGate;
 use OCA\Integriq\Service\SecurityService;
+use OCA\Integriq\Service\UserApiOriginPolicy;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\Authentication\TwoFactorAuth\IRegistry;
@@ -185,7 +187,7 @@ class UserControllerLoginGoldenTest extends TestCase {
 			fn (string $uid, string $group) => in_array($group, ($this->case['groups'] ?? []), true)
 		);
 
-		return new UserController('integriq', $request, $userManager, $session, new SecurityService($cacheFactory, $logger), $logger, $userService, $l10n, $registry, $config, $groupManager);
+		return new UserController('integriq', $request, $userManager, $session, new SecurityService($cacheFactory, $logger), $logger, $userService, $l10n, new SecondFactorGate($registry, $config, $groupManager, $logger), new UserApiOriginPolicy($config));
 	}//end controller()
 
 	/**

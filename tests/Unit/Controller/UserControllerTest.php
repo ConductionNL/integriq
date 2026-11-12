@@ -19,15 +19,15 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\UserController;
+use OCA\Integriq\Service\SecondFactorGate;
 use OCA\Integriq\Service\SecurityService;
+use OCA\Integriq\Service\UserApiOriginPolicy;
 use OCA\Integriq\Service\UserService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
-use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -113,9 +113,8 @@ class UserControllerTest extends TestCase {
 			$this->logger,
 			$this->userService,
 			$this->l10n,
-			$this->createMock(IRegistry::class),
-			$this->createMock(IConfig::class),
-			$this->createMock(IGroupManager::class)
+			$this->createMock(SecondFactorGate::class),
+			new UserApiOriginPolicy($this->createMock(IConfig::class))
 		);
 	}
 
@@ -459,9 +458,8 @@ class UserControllerTest extends TestCase {
 			$this->logger,
 			$this->userService,
 			$this->l10n,
-			$this->createMock(IRegistry::class),
-			$config,
-			$this->createMock(IGroupManager::class)
+			$this->createMock(SecondFactorGate::class),
+			new UserApiOriginPolicy($config)
 		);
 	}
 
