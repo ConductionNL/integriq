@@ -1180,7 +1180,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:1194-1260 dispatchRequest() builds a Guzzle request from source location/config when sourceData['type'] !== 'soap'; lib/Settings/integriq_register.json:145 source.type enum includes 'api'",
-				"spec": "openspec/specs/http-call-engine"
+				"spec": "openspec/specs/http-call-engine",
+				"requirement": "openspec/specs/http-call-engine :: Outbound HTTP call orchestration with CallLog persistence (REQ-001)"
 			},
 			"reachedOn": "/sources index -> create/edit Source (type=api, location, headers) -> SourcesController#test (POST /api/sources/test/{id}) or any Endpoint of targetType=api proxying through CallService::call()",
 			"note": "Plain REST/HTTP calling is the base of the engine: location + headers + method, Guzzle underneath.",
@@ -1217,7 +1218,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:1215-1220 dispatchRequest() branches to `new SOAPService($this->cookieJar)` when sourceData['type']==='soap'; lib/Service/SOAPService.php:44-75 builds a WSDL-based SOAP engine (Soap\\Engine, ExtSoapDriver) and calls callSoapSource(); src/modals/v2/SourceFormFields.vue:324 type option {id:'soap', label:'SOAP'}",
-				"spec": "openspec/specs/http-call-engine"
+				"spec": "openspec/specs/http-call-engine",
+				"requirement": "openspec/specs/http-call-engine :: SOAP source invocation via WSDL (REQ-004)"
 			},
 			"reachedOn": "/sources index -> create Source, type = SOAP -> source detail Test connection (SourcesController#test) or an Endpoint proxying to it",
 			"note": "Requires ext-soap/ext-xsd per the code comment; no separate check that those extensions are enabled at runtime.",
@@ -1257,7 +1259,8 @@
 				"state": "built",
 				"change": "2026-09-28-sources-declared-basic-and-apikey-auth",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/SourceAuthApplier.php apply(), called in CallService after mergeSourceConfiguration(): a source with auth basic sends username and password as the Guzzle auth tuple, a source with auth apikey sends the key in authorizationHeader (Authorization when none is named); an explicit configuration.auth or header wins and a credentialRef source is left to the broker. Tests: CallServiceTest::testADeclaredBasicLoginIsSent, testADeclaredApiKeyIsSentInTheDeclaredHeader (call log holds no key and validates against call_log), testAnApiKeyWithoutAHeaderNameGoesInAuthorization, testAnExplicitLoginAndTheBrokerWin. Built by change sources-declared-basic-and-apikey-auth (archived 2026-09-28)."
+				"evidence": "lib/Service/SourceAuthApplier.php apply(), called in CallService after mergeSourceConfiguration(): a source with auth basic sends username and password as the Guzzle auth tuple, a source with auth apikey sends the key in authorizationHeader (Authorization when none is named); an explicit configuration.auth or header wins and a credentialRef source is left to the broker. Tests: CallServiceTest::testADeclaredBasicLoginIsSent, testADeclaredApiKeyIsSentInTheDeclaredHeader (call log holds no key and validates against call_log), testAnApiKeyWithoutAHeaderNameGoesInAuthorization, testAnExplicitLoginAndTheBrokerWin. Built by change sources-declared-basic-and-apikey-auth (archived 2026-09-28).",
+				"requirement": "openspec/specs/http-call-engine :: A source logs in with the login it declares (REQ-SDL-001)"
 			},
 			"reachedOn": "/sources/:id edit form: auth basic with username and password, or apikey with a key and a header name; every call to the source carries them",
 			"note": "Built 2026-09-28: the guided auth fields on the Source form now take effect at call time. Before, they were dead and a source configured only through them called out unauthenticated.",
@@ -1333,7 +1336,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Twig/AuthenticationExtension.php:36 registers jwtToken -> lib/Service/AuthenticationService.php:518 fetchJWTToken(), which builds and signs a JWT from configuration (getJWK/getRSJWK/getHSJWK/generateJWT at lines 359-518)",
-				"spec": "openspec/specs/authentication-twig"
+				"spec": "openspec/specs/authentication-twig",
+				"requirement": "openspec/specs/authentication-twig :: JWT token minting with HS/RS/PS algorithms (REQ-002)"
 			},
 			"reachedOn": "/sources/:id edit form -> headers/configuration JSON field, admin writes {{ jwtToken(source) }} into an Authorization header, referencing configuration.authentication JWK/algorithm settings",
 			"note": "Same manual-wiring caveat as OAuth: no dedicated JWT UI, it is a Twig function the admin must call themselves in a free-form field.",
@@ -1370,7 +1374,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:649-670 getCertificate() writes config['cert']/config['ssl_key'] to temp files and hands them to Guzzle as client-cert options; these keys are populated from the source's free-form 'configuration' object via mergeSourceConfiguration()/applyConfigDot() (CallService.php:835-845), since configuration.cert/configuration.ssl_key are not schema-rejected outside the credentialRef broker path (lib/Settings/integriq_register.json:245 explicitly says cert/ssl_key are only rejected 'in v1' for the credentialRef/broker branch)",
-				"spec": "openspec/specs/mtls-client-certificate-transport"
+				"spec": "openspec/specs/mtls-client-certificate-transport",
+				"requirement": "openspec/specs/mtls-client-certificate-transport :: Shared mTLS transport builds Guzzle TLS options from encrypted-at-rest certificate material (REQ-001)"
 			},
 			"reachedOn": "/sources/:id edit form -> generic 'configuration' JSON field, admin sets configuration.cert / configuration.ssl_key (PEM strings) -> any call through that source",
 			"note": "No dedicated certificate-upload UI field; a PKIoverheid client cert is pasted as PEM text into the generic configuration JSON object. The dedicated MtlsConfigResolver/MtlsCertificateBundle machinery (lib/Service/Mtls/) is wired only into the DSO/StufZkn/IWMO/FSC bridge clients, not into this generic CallService path.",
@@ -1444,7 +1449,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Automatic trip: lib/Service/CallService.php:2198-2221 recordFailure() increments circuitBreakerFailureCount and opens the breaker once it reaches circuitBreakerThreshold; lib/Service/CallService.php:1972-2002 guardCircuitBreaker() blocks dispatch while open and probes after cooldown. Manual reset: routes.php 'sources#resetCircuitBreaker' POST /api/sources/{id}/circuit-breaker/reset -> SourcesController.php:388 resetCircuitBreaker() -> CallService::resetCircuitBreaker(); src/components/CircuitBreakerBadge.vue:208 axios.post(.../circuit-breaker/reset), wired into SourceDetail via src/manifest.json:1312 bodyWidgets[].component=CircuitBreakerBadge",
-				"spec": "openspec/specs/http-call-engine"
+				"spec": "openspec/specs/http-call-engine",
+				"requirement": [
+					"openspec/specs/http-call-engine :: Per-source circuit breaker generalized into CallService (REQ-008)",
+					"openspec/specs/http-call-engine :: Manual circuit breaker trip and reset (REQ-009)"
+				]
 			},
 			"reachedOn": "/sources/:id detail page, Circuit breaker body widget (Reset breaker button, shown when open)",
 			"note": "A manual 'trip' route also exists (SourcesController#tripCircuitBreaker) but CircuitBreakerBadge.vue only renders a Reset button, no Trip button; grep found no frontend caller of the trip endpoint, so it is admin-API-only, not reachable from any page.",
@@ -1481,7 +1490,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:3346-3406 sourceRateLimit() parses the upstream's X-RateLimit-*/RateLimit-* response headers into rateLimitRemaining/rateLimitReset on the source; lib/Service/CallService.php:1938-1946 guardCallPreconditions() then REFUSES the next call with a synthetic 429 CallLog once rateLimitRemaining<=0, until rateLimitReset passes (checkAndResetRateLimit(), CallService.php:797-822). No spacing/queuing/delay logic keys off rateLimitRemaining anywhere in CallService.php (only usleep-based retry backoff exists, CallService.php:2047-2079, which is a separate failure-retry mechanism). Specified in openspec/changes/sources-outbound-rate-limit-pacing/ (OpenSpec pass 2026-09-27).",
-				"change": "sources-outbound-rate-limit-pacing"
+				"change": "sources-outbound-rate-limit-pacing",
+				"requirement": "openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine :: Calls to a source are spaced to stay under its limit (REQ-RLPC-001)"
 			},
 			"reachedOn": "machine route: any Endpoint/Synchronization dispatching through a rate-limited source",
 			"note": "The engine tracks a source's rate limit and reacts to it, but the described outcome (stay under the limit so calls are spaced out rather than refused) is the opposite of the implemented behaviour, which refuses with 429 once the budget hits zero rather than delaying/pacing calls to avoid exhausting it.",
@@ -1518,7 +1528,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php:6084-6234 fetchObjectsFromSource()/fetchAllPagesOptimized() (usesPagination, currentPage, RFC5988 next-link handling per comment at line 96) drive multi-page fetches; lib/Service/SynchronizationService.php:7911 paginationValueFor() advances the per-page cursor; @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Source object fetching and pagination (REQ-002)"
 			},
 			"reachedOn": "/synchronizations/:id detail page (source config pagination settings) -> scheduled/manual sync run",
 			"provider": "integriq",
@@ -1554,7 +1565,8 @@
 				"state": "built",
 				"owner": "ConductionNL/openregister",
 				"evidence": "lib/Settings/register.d/99-source-secrets-writeonly.json marks source.apikey/secret/password/jwt/authenticationConfig writeOnly:true; lib/Settings/register.d/99-source-nested-auth-writeonly.json adds x-openregister-writeonly-paths for nested configuration.authentication.* (client_secret/password/secret/private_key/encryptedToken/encryptedApiKey/mtls) and configuration.directory.authentication.*. Per the fragment's own comment, OpenRegister's render boundary (or#386/or#459/or#460/or#462) strips these on EVERY rendered read, including admin reads and @self.relations, while CallService still reads the raw value via _render:false (CallService.php ~L2141 per the comment).",
-				"spec": "openspec/specs/source-credential-custody"
+				"spec": "openspec/specs/source-credential-custody",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/source-credential-custody :: A source's secrets are never read back (REQ-SCB-002)"
 			},
 			"reachedOn": "/sources index and /sources/:id detail, any generic object read of a source; the value is never present in the response body",
 			"note": "Enforcement mechanism (schema-driven writeOnly stripping) lives in OpenRegister; integriq supplies the schema annotations declaring which fields are secret.",
@@ -1591,7 +1603,8 @@
 				"state": "built",
 				"change": "2026-09-29-migrate-inline-secrets-to-broker",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Built (migrate-inline-secrets-to-broker, archived 29 Sep 2026): `occ integriq:migrate-inline-secrets` moves each source's inline apikey/secret/password/jwt into the OpenRegister credential broker (organisation-scoped, verified round trip before the inline value is nulled; InlineSecretMigrationExecutor), RemoveMigratedSourceSecretFields removes those four properties from the live source schema once a raw gate is clean, and authenticationConfig goes through the operator-gated `occ integriq:authentication-config`. Partial: an instance keeps inline values, stored unencrypted, until an operator runs the migration; the bridge clients (Mtls, Dso, StufZkn, Fsc, Sms) keep their own ICrypto encryption."
+				"evidence": "Built (migrate-inline-secrets-to-broker, archived 29 Sep 2026): `occ integriq:migrate-inline-secrets` moves each source's inline apikey/secret/password/jwt into the OpenRegister credential broker (organisation-scoped, verified round trip before the inline value is nulled; InlineSecretMigrationExecutor), RemoveMigratedSourceSecretFields removes those four properties from the live source schema once a raw gate is clean, and authenticationConfig goes through the operator-gated `occ integriq:authentication-config`. Partial: an instance keeps inline values, stored unencrypted, until an operator runs the migration; the bridge clients (Mtls, Dso, StufZkn, Fsc, Sms) keep their own ICrypto encryption.",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/source-credential-custody :: Migrated secrets live in the credential broker (REQ-SCB-003)"
 			},
 			"reachedOn": "/sources/:id, credentials on a plain REST/SOAP source (apikey/secret/password/jwt, and configuration.authentication.client_secret) are stored as plaintext in the OR object store; only the six named bridge clients (DSO, StufZkn, IWMO/IStandaarden, FSC, KISS, NotifyNL) encrypt their residual token/cert fields via ICrypto",
 			"note": "General field encryption at rest is explicitly not shipped (ADR-007 pending per the schema's own comments); only a handful of hardcoded government-bridge integrations encrypt their secrets today. This is a documented gap, not a silent one.",
@@ -1667,7 +1680,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "routes.php 'sources#logs' GET /api/sources/logs; lib/Controller/SourcesController.php:88-240 logs() (AuthorizedAdminSetting, filters, pagination, date_from/date_to); manifest page SourceLogs route /sources/logs schema call_log",
-				"spec": "openspec/specs/logs-and-statistics"
+				"spec": "openspec/specs/logs-and-statistics",
+				"requirement": "openspec/specs/logs-and-statistics :: Per-source call log listing and outbound test call (REQ-003)"
 			},
 			"reachedOn": "/sources/logs page",
 			"provider": "integriq",
@@ -1703,7 +1717,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Flow/FetchFileNode.php (openconnector.fetch-file flow node, runs a configured fetch_file Rule against every synced item through SynchronizationService); lib/Service/Synchronization/FetchFilesJob.php; lib/Service/StorageService.php stores fetched files into Nextcloud Files",
-				"spec": "openspec/specs/synchronization-files"
+				"spec": "openspec/specs/synchronization-files",
+				"requirement": "openspec/specs/synchronization-files :: Binary file downloads SHALL stream to storage without full in-memory buffering"
 			},
 			"reachedOn": "/synchronizations/:id detail -> Rules of type fetch_file attached to the sync (Rules/RuleDetail pages configure the rule; the fetch itself runs during a sync run, not from a page action)",
 			"note": "Per FetchFileNode.php's own doc comment, the fetch is fire-and-forget: a green step means the fetch was dispatched, not that the file is present yet, worth knowing for anyone testing this live.",
@@ -1740,7 +1755,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:1166-1227 dispatchRequest() accepts an optional $sink resource, kept OUT of the persisted/logged $config, and passes it to Guzzle's 'sink' request option (buildRequestOptions) so the response body streams to disk instead of being buffered in memory; @spec openspec/specs/synchronization-files/spec.md",
-				"change": "2026-09-29-stream-file-content"
+				"change": "2026-09-29-stream-file-content",
+				"requirement": "openspec/specs/synchronization-files :: Binary file downloads SHALL stream to storage without full in-memory buffering"
 			},
 			"reachedOn": "machine path: file-fetch rule / concurrent file fetcher dispatching a source call with a sink target",
 			"provider": "integriq",
@@ -1776,7 +1792,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rliE \"\\bsftp\\b|\\bftp\\b\" lib/ src/ (excluding vendor) returns 0 files. Specified in openspec/changes/sources-sftp-adapter/ (OpenSpec pass 2026-09-27).",
-				"change": "sources-sftp-adapter"
+				"change": "sources-sftp-adapter",
+				"requirement": "openspec/changes/sources-sftp-adapter/specs/data-infra-connectors :: A partner's SFTP or FTPS server is a source (REQ-SFTP-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Matches the lane's own hint; no SFTP/FTP source type or client exists anywhere in the app.",
@@ -1816,7 +1833,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniE \"\\bPDO\\b|\\bDBAL\\b\" lib/ (excluding vendor) returns 2 hits, both in lib/Service/Migration/LegacyToRegisterMigrator.php and lib/Repair/RenameDutchColumns.php, internal schema-migration code, unrelated to a 'database' source type; no such type exists in the source.type enum. Specified in openspec/changes/sources-database-adapter/ (OpenSpec pass 2026-09-27).",
-				"change": "sources-database-adapter"
+				"change": "sources-database-adapter",
+				"requirement": "openspec/changes/sources-database-adapter/specs/data-infra-connectors :: A relational database is a source with declared statements (REQ-DBSF-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -1852,7 +1870,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:1094 renderConfiguration() applies renderValue() (CallService.php:314-336, Twig createTemplate().render(context:['source'=>$sourceData])) recursively over the whole merged call config (headers, query, body) before dispatch; sandboxed Twig environment CallService.php:216-224",
-				"spec": "openspec/specs/http-call-engine"
+				"spec": "openspec/specs/http-call-engine",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/http-call-engine :: Templated call values are rendered at call time (REQ-SCB-001)"
 			},
 			"reachedOn": "/sources/:id edit form, any header/body/query value in 'headers' or 'configuration' containing {{ ... }} is rendered against the source's own fields at call time",
 			"provider": "integriq",
@@ -1932,7 +1951,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:1876-1900 handleSchemaRequest() resolves targetType='register/schema' targetId '<register>/<schema>' to a mapper and serves CRUD (GET/POST/PUT/PATCH/DELETE) against it, lines 1913-2030; appinfo/routes.php catch-all 'endpoints#handlePath' GET/PUT/PATCH/POST/DELETE '/api/endpoint/{_path}'",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": "openspec/specs/endpoint-runtime :: Full Pipeline and Target Dispatch (REQ-EP-003)"
 			},
 			"reachedOn": "/endpoints index -> create Endpoint (targetType=register/schema) -> published at /api/endpoint/{path}",
 			"provider": "integriq",
@@ -1968,7 +1988,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:2174-2266 handleSourceRequest() resolves targetType='api' to a Source via targetId, renders the upstream path (renderEndpointPath, CallService), then proxies via CallService::call() and returns the upstream's response/status",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": "openspec/specs/endpoint-runtime :: Full Pipeline and Target Dispatch (REQ-EP-003)"
 			},
 			"reachedOn": "/endpoints index -> create Endpoint (targetType=api, targetId=source) -> /api/endpoint/{path}",
 			"provider": "integriq",
@@ -2004,7 +2025,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/EndpointsController.php:144-153 handlePath() resolves the endpoint via endpointCacheService.findByPathRegex(path, method), lib/Service/EndpointCacheService.php:107-131 matches only endpoints whose stored 'method' equals the incoming request method; a path matching one endpoint's regex but not its method returns 404 (\"No matching endpoint found for path and method\")",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": "openspec/specs/endpoint-runtime :: Generic Path Dispatch and CORS (REQ-EP-001)"
 			},
 			"reachedOn": "/endpoints/:id edit form, 'method' field (single HTTP verb) on the endpoint schema",
 			"note": "An endpoint declares exactly one method, not a set; choosing several accepted methods for one endpoint means creating several endpoint rows on the same path.",
@@ -2041,7 +2063,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:1400 getPathParameters() extracts named segments from the inbound path against endpointArray; lib/Service/EndpointService.php:2174-2222 buildUpstreamPathContext()/renderEndpointPath() substitutes those (plus query/body) into the upstream path template for a targetType=api proxy, e.g. '/hydra/label/{owner}/{repo}' per the doc comment at line ~2195",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/endpoint-runtime :: Path placeholders reach the upstream path (REQ-SCB-004)"
 			},
 			"reachedOn": "/endpoints/:id edit form, path segments written as {{ name }}/{name} in the endpoint path, consumed by both register/schema (as an object id) and source-proxy (as upstream path template) targets",
 			"provider": "integriq",
@@ -2077,7 +2100,11 @@
 				"state": "built",
 				"change": "2026-09-29-gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Incoming: EndpointService::handleSchemaRequest() applies inputMapping to the request parameters. Outgoing: EndpointService::dispatchAfterBeforeRules() passes the body the after rules produced through applyOutputMapping(), which runs MappingService::executeMapping() with the endpoint's outputMapping on one object, or on each item of a results list while keeping the pagination keys. Tests: EndpointServiceOutputMappingTest (4, real MappingService and mapping object). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29)."
+				"evidence": "Incoming: EndpointService::handleSchemaRequest() applies inputMapping to the request parameters. Outgoing: EndpointService::dispatchAfterBeforeRules() passes the body the after rules produced through applyOutputMapping(), which runs MappingService::executeMapping() with the endpoint's outputMapping on one object, or on each item of a results list while keeping the pagination keys. Tests: EndpointServiceOutputMappingTest (4, real MappingService and mapping object). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29).",
+				"requirement": [
+					"openspec/specs/endpoint-runtime :: An endpoint's output mapping reshapes its answer (REQ-GTP-001)",
+					"openspec/specs/rule-pipeline :: Data-Mutation Rules (REQ-RULE-002)"
+				]
 			},
 			"reachedOn": "/endpoints/:id edit form: Input mapping reshapes the request, Output mapping reshapes the answer a consumer gets",
 			"note": "Built 2026-09-29: the output mapping is applied to the answer after the after rules. Before, it was a form field nothing read.",
@@ -2114,7 +2141,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointCacheService.php (the only class with 'Cache' in the name for endpoints) caches the endpoint CONFIG list for path/method matching (getAllEndpoints/refreshCache/findByPathRegex), not response bodies; no Cache-Control/ETag/TTL field exists on the endpoint schema (grep '\"cache' lib/Settings/integriq_register.json returns 0); no Cache-Control handling found in EndpointService.php or EndpointsController.php. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-response-cache-and-problem-errors"
+				"change": "gateway-response-cache-and-problem-errors",
+				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: An endpoint can cache its answers (REQ-RCPE-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "EndpointCacheService is a routing-lookup cache, easy to mistake for a response cache from its name alone, it never caches an endpoint's answer.",
@@ -2151,7 +2179,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/RateLimit/InboundRateLimitService.php:91 enforce(consumerKey, rateLimit, quota) -> lib/Service/EndpointService.php:977-1058 enforceInboundRateLimit()/enforceConsumerScope() and :1096-1129 applyRateLimitDecision(), called from dispatchAfterBeforeRules() before schema/source dispatch; per-tier limits configured on api_product.tiers (lib/Settings/register.d/api-product-gateway.json 'tiers': rateLimit{requestsPerWindow,windowSeconds}, quota{limit,period})",
-				"spec": "openspec/specs/api-product-gateway"
+				"spec": "openspec/specs/api-product-gateway",
+				"requirement": "openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
 			},
 			"reachedOn": "/products (ApiProducts index/detail), tiers configuration; enforced as a machine route on every call through that product's endpoints",
 			"provider": "integriq",
@@ -2187,7 +2216,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/RateLimit/RateLimitDecision.php:60-93 constructor takes $retryAfter and toHeaders() emits 'Retry-After' when allowed===false, alongside RateLimit-Limit/Remaining/Reset; lib/Service/EndpointService.php:1113-1130 applyRateLimitDecision() returns a 429 JSONResponse with $decision->toHeaders() when over budget",
-				"spec": "openspec/specs/api-product-gateway"
+				"spec": "openspec/specs/api-product-gateway",
+				"requirement": "openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
 			},
 			"reachedOn": "machine route: any over-limit caller of an api_product-scoped endpoint gets Retry-After on the 429 response",
 			"provider": "integriq",
@@ -2223,7 +2253,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/register.d/api-product-gateway.json api_product schema: 'productSlug' groups every version-row of the same logical product (design.md Decision 1), 'version' (semver), 'status' (deprecated), 'sunsetDate' (required when deprecated); lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation/Sunset headers on every response served through a deprecated product version's endpoints",
-				"spec": "openspec/specs/api-product-gateway"
+				"spec": "openspec/specs/api-product-gateway",
+				"requirement": [
+					"openspec/specs/api-product-gateway :: API Product groups Endpoints into a named, versioned bundle (REQ-APG-001)",
+					"openspec/specs/api-product-gateway :: Deprecated product version carries Sunset and Deprecation headers (REQ-APG-006)"
+				]
 			},
 			"reachedOn": "/products index -> ApiProductDetail page, create a new version row under the same productSlug, mark the old one status=deprecated with a sunsetDate",
 			"provider": "integriq",
@@ -2259,7 +2293,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "The only 'OpenAPI' machinery found is lib/Service/ConfigurationService.php:519-591 exportSource()/exportEndpoint()/exportMapping()/exportRule()/exportJob()/exportSynchronization(), which export integriq's OWN objects (sources/endpoints/mappings/rules/jobs/syncs) into an OpenAPI-shaped envelope for environment promotion/backup (@spec configuration-export-import), consumed by ExportConfigurationDialog.vue, not a generated description of the endpoints' actual HTTP contract for a caller/developer. No swagger-ui, no per-path/method/schema OAS document reachable by a developer was found. Specified in openspec/changes/gateway-openapi-import-and-publish/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-openapi-import-and-publish"
+				"change": "gateway-openapi-import-and-publish",
+				"requirement": "openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish :: Integriq publishes an OpenAPI description of its endpoints (REQ-OAPI-002)"
 			},
 			"reachedOn": "nothing reaches it (the /configurations export produces a different artifact: a portable config bundle, not a developer-facing API description)",
 			"note": "Easy to mis-read as satisfying this row because the word 'OpenAPI' appears throughout ConfigurationService, it is the configuration-export-import feature reusing the OAS envelope shape for its own object graph, not endpoint documentation for API consumers.",
@@ -2299,7 +2334,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "The import side (ImportPreviewDialog.vue, /apps/integriq/api/configurations/import(/preview)) reads back the SAME configuration-export-import envelope (integriq's own exported sources/endpoints/mappings/rules), per lib/Service/ConfigurationImportPreviewService.php, it is not built to ingest an arbitrary third-party OpenAPI/Swagger document and generate new Endpoints from its paths. Specified in openspec/changes/gateway-openapi-import-and-publish/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-openapi-import-and-publish"
+				"change": "gateway-openapi-import-and-publish",
+				"requirement": "openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish :: An OpenAPI document is imported as a source and endpoints (REQ-OAPI-001)"
 			},
 			"reachedOn": "nothing reaches it for this capability (import only round-trips integriq's own export format)",
 			"note": "Same OpenAPI-envelope-vs-OpenAPI-spec distinction as gw-openapi-publish.",
@@ -2336,7 +2372,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rliE \"graphql\" lib/ src/ (excluding vendor) returns 0 files. Specified in openspec/changes/gateway-graphql-and-streaming-protocols/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-graphql-and-streaming-protocols"
+				"change": "gateway-graphql-and-streaming-protocols",
+				"requirement": "openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: A GraphQL API is proxied with operation-aware policies (REQ-GQLP-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -2372,7 +2409,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rliE \"\\bgrpc\\b|\\bwebsocket\\b|\\bmqtt\\b\" lib/ src/ (excluding vendor) returns 0 files with real code; the only MQTT mention is a schema description string on event_subscription.url ('Delivery target URL (or AMQP/MQTT endpoint)') whose own x-notes at lib/Settings/integriq_register.json:1032 says: 'Nothing reads this field. It used to promise HTTP, AMQP, MQTT and NATS while only HTTP was implemented ... action.kind and action.brokerId are the authority.'. Specified in openspec/changes/gateway-graphql-and-streaming-protocols/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-graphql-and-streaming-protocols"
+				"change": "gateway-graphql-and-streaming-protocols",
+				"requirement": "openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: A web server or broker asks integriq who may connect (REQ-GQLP-002)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The schema itself documents that the MQTT/AMQP promise was never real; only HTTP delivery is implemented for event subscriptions, and the gateway proxy is HTTP-only.",
@@ -2409,7 +2447,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rliE \"canary\" lib/ src/ (excluding vendor) returns 0 files. Specified in openspec/changes/gateway-upstream-routing/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-upstream-routing"
+				"change": "gateway-upstream-routing",
+				"requirement": "openspec/changes/gateway-upstream-routing/specs/endpoint-runtime :: An endpoint routes to one of several targets (REQ-UPRT-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -2445,7 +2484,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rliE \"load.?balanc\" lib/ src/ (excluding vendor) returns 0 files; an Endpoint's targetId names exactly one Source, and findByPathRegex() (EndpointCacheService.php:107) treats more than one endpoint matching the same path+method as an ERROR (409 'Multiple endpoints found'), not a pool to spread traffic over. Specified in openspec/changes/gateway-upstream-routing/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-upstream-routing"
+				"change": "gateway-upstream-routing",
+				"requirement": [
+					"openspec/changes/gateway-upstream-routing/specs/endpoint-runtime :: An endpoint routes to one of several targets (REQ-UPRT-001)",
+					"openspec/changes/gateway-upstream-routing/specs/endpoint-runtime :: A target that is down is skipped (REQ-UPRT-002)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -2481,7 +2524,8 @@
 				"state": "built",
 				"change": "2026-09-29-gateway-endpoint-transform-and-plugins",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Rule/Plugin/EndpointRulePluginInterface.php is the plug-in contract; a sibling app registers an implementation by listening for RegisterEndpointRulePluginsEvent, and RuleService::processCustomRule() runs the plug-in a custom rule names in configuration.plugin (an unknown id is refused by name). connectRelations is the first registered plug-in. A javascript rule is refused: the rule schema type enum leaves it out, the editor no longer offers it, and EndpointService::processJavaScriptRule() throws. Tests: EndpointRulePluginTest (4), RuleTypeRefusesJavaScriptTest (3), EndpointServiceTest::testAJavaScriptRuleIsRefusedWhenItRuns, tests/vitest/javascriptRuleRefused.spec.js (2). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29)."
+				"evidence": "lib/Rule/Plugin/EndpointRulePluginInterface.php is the plug-in contract; a sibling app registers an implementation by listening for RegisterEndpointRulePluginsEvent, and RuleService::processCustomRule() runs the plug-in a custom rule names in configuration.plugin (an unknown id is refused by name). connectRelations is the first registered plug-in. A javascript rule is refused: the rule schema type enum leaves it out, the editor no longer offers it, and EndpointService::processJavaScriptRule() throws. Tests: EndpointRulePluginTest (4), RuleTypeRefusesJavaScriptTest (3), EndpointServiceTest::testAJavaScriptRuleIsRefusedWhenItRuns, tests/vitest/javascriptRuleRefused.spec.js (2). Built by change gateway-endpoint-transform-and-plugins (archived 2026-09-29).",
+				"requirement": "openspec/specs/rule-pipeline :: A custom rule runs a registered plug-in (REQ-GTP-002)"
 			},
 			"reachedOn": "/rules: a rule of type Custom with configuration.plugin naming a plug-in a sibling app registered; JavaScript is no longer a rule type",
 			"note": "Built 2026-09-29 as a PHP plug-in point for sibling apps. Integriq runs no tenant scripts (design D3, an open product question for Ruben); flows are the no-code route.",
@@ -2518,7 +2562,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rn \"problem\\+json|application/problem\" lib/ src/ returns 0 hits; error responses seen in lib/Service/EndpointService.php (e.g. transformError(), the 400/404/429 JSONResponse bodies) use ad-hoc {\"error\": ...} or {\"error\", \"message\", \"reason\"} shapes, never RFC 7807 application/problem+json. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-response-cache-and-problem-errors"
+				"change": "gateway-response-cache-and-problem-errors",
+				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: Every gateway error is a problem document (REQ-RCPE-002)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -2554,7 +2599,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:2143-2155 checkConditions() runs JsonLogic against an endpoint's 'conditions' but only to ACCEPT or REJECT the request (a non-empty result is returned as a 400 field-error list, doHandleRequest():440-443), it never selects a different target. lib/Service/EndpointCacheService.php:143-160 findByPathRegex() treats two endpoints matching the same path+method as an ambiguous 409 error, not a content-routing decision. Specified in openspec/changes/gateway-upstream-routing/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-upstream-routing"
+				"change": "gateway-upstream-routing",
+				"requirement": "openspec/changes/gateway-upstream-routing/specs/endpoint-runtime :: An endpoint routes to one of several targets (REQ-UPRT-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "'conditions' looks like it could route by content but only gates pass/fail on one fixed target; two endpoints on the same path+method is an error, not a router.",
@@ -2591,7 +2637,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php + lib/Controller/EndpointsController.php:141-142 handlePath() is #[NoCSRFRequired] #[PublicPage], every endpoint is reachable without a Nextcloud session by construction; lib/Controller/EndpointsController.php:283-286 isSimpleEndpoint() additionally requires isPublic===true to opt an endpoint into the fast GET-only schema path; access restriction (when wanted) is opt-in via an 'authentication' rule in the endpoint's rule pipeline, not the other way around",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/endpoint-runtime :: Endpoints answer without a Nextcloud session (REQ-SCB-005)"
 			},
 			"reachedOn": "/endpoints/:id edit form, isPublic flag (fast-path opt-in) and, more generally, every endpoint is anonymously callable unless an authentication Rule is attached",
 			"note": "The architecture is inverted from a typical gateway: everything is public by default (PublicPage route) and an operator opts INTO auth via a Rule, rather than opting into anonymous access from a default-closed state. isPublic itself only controls eligibility for the optimisation fast-path, not general reachability.",
@@ -2628,7 +2675,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/EndpointCacheInvalidationListener.php:69-95 handle() calls endpointCacheService->clearCache() whenever an integriq 'endpoint' object fires ObjectCreatedEvent/ObjectUpdatedEvent/ObjectDeletedEvent; lib/AppInfo/Application.php:311-313 registers this listener for all three OpenRegister events; the next request re-fetches fresh data via EndpointCacheService::refreshCache()/fetchEndpointsFromOr()",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/endpoint-runtime :: A saved endpoint applies on the next request (REQ-SCB-006)"
 			},
 			"reachedOn": "machine path: saving an Endpoint (any page that edits one) fires the OR event, which clears the routing cache for the very next inbound request",
 			"provider": "integriq",
@@ -2664,7 +2712,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/ConsumersController.php:1-48 is a DI-only placeholder; consumer CRUD runs entirely through OpenRegister's generic object API (frontend-api-paths.txt: LinkSourceDialog.vue:268 -> /apps/openregister/api/objects/integriq/source, and ConsumerEditorModal.vue against /apps/openregister/api/objects/integriq/consumer); consumer schema in lib/Settings/integriq_register.json and register.d/consumer-form-fields.json declares name/domains/ips/authorizationType/authorizationConfiguration/rateLimit/quota.",
-				"spec": "openspec/specs/consumer-management"
+				"spec": "openspec/specs/consumer-management",
+				"requirement": "openspec/specs/consumer-management :: REQ-CON-UI-001: Consumer Management UI"
 			},
 			"reachedOn": "/consumers index page (manifest-pages.txt: Consumers | /consumers | index | integriq consumer), edit dialog src/modals/v2/ConsumerEditorModal.vue",
 			"note": "The consumers tab has no dedicated controller of its own; every read/write goes straight through OpenRegister's generic object API, which is also why the write-only credential fix (99-consumer-secrets-writeonly.json) had to land as a schema fragment rather than a controller change.",
@@ -2701,7 +2750,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/AuthorizationService.php:810 authorizeApiKey() checks rule-inline keys (814-825) then falls back to resolveConsumerByApiKey() (832, defined at 872) matching consumer.authorizationConfiguration.apiKey; wired from lib/Service/EndpointService.php:3010 inside the endpoint rule pipeline's 'apikey' case.",
-				"spec": "openspec/specs/authorization-jwt"
+				"spec": "openspec/specs/authorization-jwt",
+				"requirement": "openspec/specs/authorization-jwt :: API key authorization via header-to-uid map (REQ-004)"
 			},
 			"reachedOn": "consumer authorizationType=apiKey field (src/modals/v2/ConsumerEditorModal.vue, consumerDraft.js:76) or an endpoint rule's apikey authentication config (src/views/Rule/actionForms/AuthenticationForm.vue) -> machine route: any gateway endpoint whose rule sets authentication.type=apikey",
 			"note": "Two independent credential sources are checked: a rule-inline key map (legacy, per endpoint) and a consumer-backed apiKey (the newer, reusable path).",
@@ -2738,7 +2788,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/AuthorizationService.php:368 authorizeJwt() verifies signature/algorithm-confusion guard/expiry/jti-replay, resolving the issuer consumer via findIssuer() at 132; wired from lib/Service/EndpointService.php:3021 ('jwt'/'jwt-zgw' rule case) and lib/Controller/EudiWalletController.php:210.",
-				"spec": "openspec/specs/authorization-jwt"
+				"spec": "openspec/specs/authorization-jwt",
+				"requirement": "openspec/specs/authorization-jwt :: JWT Bearer authorization with consumer-registered public keys (REQ-001)"
 			},
 			"reachedOn": "consumer authorizationType=jwt + authorizationConfiguration.publicKey/algorithm (ConsumerEditorModal.vue) -> machine route: any gateway endpoint rule with authentication.type=jwt",
 			"note": "The hint's worry (openregister found authorizeJwt without caller) does not hold inside integriq: two real callers exist.",
@@ -2775,7 +2826,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep of appinfo/routes.php for a token-issuing endpoint finds only lti#token (line 247, LTI-specific) and eudiWallet#token (line 278, EUDI-wallet-specific); AuthorizationService::authorizeOAuth (lib/Service/AuthorizationService.php:561) only validates that Nextcloud's own OAuth2/session layer already authenticated a Bearer token ($this->userSession->isLoggedIn()), it never mints a token itself. Specified in openspec/changes/access-oauth-and-token-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "access-oauth-and-token-validation"
+				"change": "access-oauth-and-token-validation",
+				"requirement": "openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt :: Integriq issues client credentials tokens to consumers (REQ-TOKV-003)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Integriq consumes Nextcloud's own OAuth2 app as a bearer-token check, it does not run its own authorisation server for API consumers.",
@@ -2812,7 +2864,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "consumerDraft.js:72-79 AUTHORIZATION_TYPES lists none/basic/bearer/apiKey/oauth2/jwt only, no oidc; case-insensitive grep of lib/ and src/ for oidc/openid finds only the LTI 1.3 platform login flow (appinfo/routes.php:241-244, lti#login), which is a different capability (a Tool logging into integriq-as-Platform), not a consumer authenticating to integriq's own APIs via an external OIDC provider. Specified in openspec/changes/access-oauth-and-token-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "access-oauth-and-token-validation"
+				"change": "access-oauth-and-token-validation",
+				"requirement": "openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt :: A consumer can accept tokens from an outside OpenID Connect provider (REQ-TOKV-002)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The authorization-jwt spec's own summary (openspec/features.overlay.json) advertises 'JWT, Basic, OAuth, or API-key per consumer', OIDC is not among them.",
@@ -2849,7 +2902,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/ConsumerScopeService.php:90 isAllowed() matches the request's client IP (IRequest::getRemoteAddress(), never a spoofable forwarded header) against consumer.ips/domains via lib/Service/Scope/IpMatcher.php and ReverseDnsResolver.php; wired from lib/Service/EndpointService.php:1058 enforceConsumerScope(), called at 1064, which runs after authentication and before rate limiting.",
-				"spec": "openspec/specs/consumer-management"
+				"spec": "openspec/specs/consumer-management",
+				"requirement": "openspec/specs/consumer-management :: Consumer source-scope enforcement (REQ-CON-SCOPE-001)"
 			},
 			"reachedOn": "consumer ips/domains fields (ConsumerEditorModal.vue, consumerDraft.js:152-153) -> machine route: every gateway endpoint call for a consumer with ips/domains configured",
 			"note": "Absent = unrestricted, an empty configured list rejects everything, documented and matched by the code.",
@@ -2886,7 +2940,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniF 'mtls|client certificate|SSL_CLIENT|peer certificate|x509' across appinfo/ and lib/Controller returns zero hits for anything inbound. Every mTLS file that does exist (lib/Service/Mtls/MtlsCertificateBundle.php, MtlsTransportOptionsBuilder.php, MtlsConfigResolver.php, MtlsTransportService.php) builds Guzzle client-certificate options for OUTBOUND calls to sources (StUF/DSO/FSC/IWMO), per openspec/specs/mtls-client-certificate-transport/spec.md, which documents only integriq presenting a certificate, never requiring one from a caller. Specified in openspec/changes/access-consumer-credentials/ (OpenSpec pass 2026-09-27).",
-				"change": "access-consumer-credentials"
+				"change": "access-consumer-credentials",
+				"requirement": "openspec/changes/access-consumer-credentials/specs/authorization-jwt :: An endpoint can require a client certificate (REQ-CRED-004)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The feature id below is the only close technical match (mtls-client-certificate-transport), but that spec is entirely about outbound transport, not this row's inbound requirement.",
@@ -2923,7 +2978,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "The consumer schema (lib/Settings/integriq_register.json) has no 'scopes' property at all; the only mechanism that limits a consumer to a subset of endpoints is the per-endpoint rule's inline apiKey map (configuration.authentication.keys, consumed at lib/Service/AuthorizationService.php:814-825), configured separately on each endpoint's rule (src/views/Rule/actionForms/AuthenticationForm.vue). Specified in openspec/changes/access-oauth-and-token-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "access-oauth-and-token-validation"
+				"change": "access-oauth-and-token-validation",
+				"requirement": "openspec/changes/access-oauth-and-token-validation/specs/consumer-management :: A consumer is limited to the endpoints and actions its scopes allow (REQ-TOKV-005)"
 			},
 			"reachedOn": "an endpoint's rule authentication config (AddEndpointRuleModal.vue / AuthenticationForm.vue) restricts which keys may call THAT endpoint",
 			"note": "There is no scopes list on the consumer object and no restriction to specific actions within an endpoint (only whole-endpoint, per-rule key allowlisting); the hint's 'ConsumerScopeService' pointer is actually the IP/domain feature (acc-ip), not this one.",
@@ -2999,7 +3055,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "api_product schema in lib/Settings/register.d/api-product-gateway.json (endpoints uuids array + tiers map with rateLimit/quota/requiresApproval); src/views/ApiProducts/ApiProductDetail.vue is a bespoke custom page (endpoint picker, tier editor) since a generic OR detail page cannot express it.",
-				"spec": "openspec/specs/api-product-gateway"
+				"spec": "openspec/specs/api-product-gateway",
+				"requirement": [
+					"openspec/specs/api-product-gateway :: API Product groups Endpoints into a named, versioned bundle (REQ-APG-001)",
+					"openspec/specs/api-product-gateway :: Consumer subscribes to an API Product at a tier (REQ-APG-003)"
+				]
 			},
 			"reachedOn": "/products index page + /products/:id (manifest-pages.txt: ApiProducts, ApiProductDetail custom component)",
 			"provider": "integriq",
@@ -3035,7 +3095,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:505-506 productSubscriptions#approve/#reject; lib/Controller/ProductSubscriptionsController.php:209 approve() and 250 reject() delegate to ApprovalService and flip the subscription's status; called from src/views/ApiProducts/ApiProductDetail.vue:602 and :631 (frontend-api-paths.txt).",
-				"spec": "openspec/specs/api-product-gateway"
+				"spec": "openspec/specs/api-product-gateway",
+				"requirement": "openspec/specs/api-product-gateway :: Subscription approval gate reuses the HITL ApprovalService (REQ-APG-004)"
 			},
 			"reachedOn": "/products/:id detail page, pending-subscriptions section (ApiProductDetail.vue)",
 			"note": "This is a separate approve/reject mechanism from the generic HITL Approvals page (ApprovalsController), both exist, this row is the product-subscription-specific one the hint named.",
@@ -3075,7 +3136,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt).",
-				"spec": "openspec/specs/api-product-gateway"
+				"spec": "openspec/specs/api-product-gateway",
+				"requirement": "openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 			},
 			"reachedOn": "/products/:id detail page, analytics panel (ApiProductDetail.vue)",
 			"provider": "integriq",
@@ -3111,7 +3173,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "openspec/features.overlay.json lists slug developer-portal with status 'soon' and no docsUrl; grep -rniF 'developer portal|devportal' across lib/ and src/ returns zero hits. The /store page (catalog_item schema) is an internal admin catalogue for installing connectors, not a public page for outside developers to discover APIs or request access. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
-				"change": "access-developer-portal-and-subscriptions"
+				"change": "access-developer-portal-and-subscriptions",
+				"requirement": [
+					"openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer finds the published API products (REQ-DEVP-001)",
+					"openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer requests access for their own application (REQ-DEVP-002)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -3147,7 +3213,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniF 'self-service' across lib/ and src/ returns zero hits; every consumer credential is admin-typed via ConsumerEditorModal.vue on the admin-only /consumers page. The only key generate/rotate routes in appinfo/routes.php (lti#generateKey/#rotateKey lines 259-260, eudiIssuerKeyAdmin#generateKey/#rotateKey lines 287-288) are admin-gated, tenant-wide key management, not a per-developer self-service flow. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
-				"change": "access-developer-portal-and-subscriptions"
+				"change": "access-developer-portal-and-subscriptions",
+				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer manages the keys of their own application (REQ-DEVP-003)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -3183,7 +3250,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/register.d/99-consumer-secrets-writeonly.json marks consumer.authorizationConfiguration writeOnly:true, so OpenRegister strips it from every API response permanently, verified compatible with the engine because AuthorizationService::findIssuer()/resolveConsumerByApiKey() both pass _rbac:false. But nothing generates a random secret server-side and displays it once: the admin types the apiKey value directly into ConsumerEditorModal.vue's json-widget field, so there is no generate-and-reveal moment to speak of. Specified in openspec/changes/access-consumer-credentials/ (OpenSpec pass 2026-09-27).",
-				"change": "access-consumer-credentials"
+				"change": "access-consumer-credentials",
+				"requirement": "openspec/changes/access-consumer-credentials/specs/consumer-management :: A new key is shown exactly once (REQ-CRED-002)"
 			},
 			"reachedOn": "consumer authorizationConfiguration field (ConsumerEditorModal.vue), never returned by any subsequent read",
 			"note": "The built behaviour is stronger than 'shown once' (it is never shown back at all, not even to the admin who set it), but there is no generate/reveal UX matching the classic 'copy this now, you will not see it again' pattern.",
@@ -3290,7 +3358,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rniF for 'design rule', 'spectral', 'NL API Design Rules', 'API-strategie' and general linting terms across lib/, src/ and openspec/specs returns zero hits. Specified in openspec/changes/gateway-api-design-rules-check/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-api-design-rules-check"
+				"change": "gateway-api-design-rules-check",
+				"requirement": [
+					"openspec/changes/gateway-api-design-rules-check/specs/api-design-rules :: An API description is checked against rule sets (REQ-ADRC-001)",
+					"openspec/changes/gateway-api-design-rules-check/specs/api-design-rules :: A product with an open error is not published (REQ-ADRC-003)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "No feature id in the provided list matches this capability closely; api-product-gateway is the nearest neighbour by subject area only.",
@@ -3327,7 +3399,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/ScimController.php:371 authorize() calls AuthorizationService::authorizeApiKey(header, keys: []), the empty keys array forces every match through the consumer-backed path, never the legacy rule-inline one, and rejects with an undifferentiated 401 on failure; called at the top of every SCIM route handler (lines 124, 151, 176, 216, 259, 300, 327), all registered #[PublicPage] in appinfo/routes.php:140-148 precisely because this check replaces the NC session.",
-				"change": "harden-scim-consumer-authorization"
+				"change": "harden-scim-consumer-authorization",
+				"requirement": "openspec/specs/directory-sync :: SCIM provisioning creates, changes and deactivates accounts (REQ-DS-003)"
 			},
 			"reachedOn": "machine route: POST/GET/PUT/PATCH/DELETE /api/scim/v2/Users and /Groups, called by an outside identity system",
 			"provider": "integriq",
@@ -3400,7 +3473,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:169 renderTemplateString() renders a Twig template string against the mapping input; called from within executeMapping() (around line 330) for any mapping value that is not a direct dot-path match.",
-				"spec": "openspec/specs/mapping-and-search"
+				"spec": "openspec/specs/mapping-and-search",
+				"requirement": "openspec/specs/mapping-and-search :: REQ-001: Apply a mapping recipe to an input payload"
 			},
 			"reachedOn": "/mappings/:id editor, expression/template value fields",
 			"provider": "integriq",
@@ -3436,7 +3510,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:384 mappings#test; lib/Controller/MappingsController.php:145 test() runs a mapping against sample input with optional schema validation and returns the result; called from src/components/mapping/MappingResultPanel.vue:503 and src/views/Synchronization/SyncMappingPreview.vue:322 (frontend-api-paths.txt).",
-				"spec": "openspec/specs/mapping-editor-ui"
+				"spec": "openspec/specs/mapping-editor-ui",
+				"requirement": "openspec/specs/mapping-editor-ui :: Test-mapping execution and result rendering (REQ-MAPUI-004)"
 			},
 			"reachedOn": "/mappings/:id editor's test panel (MappingResultPanel.vue) and the synchronization mapping preview (SyncMappingPreview.vue)",
 			"provider": "integriq",
@@ -3472,7 +3547,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:405 handleCast() implements roughly 20 cast kinds (string/bool/?bool/int/float/array/date/url/base64/json/moneyStringToInt/intToMoneyString/etc), invoked from executeMapping()'s cast loop.",
-				"spec": "openspec/specs/mapping-and-search"
+				"spec": "openspec/specs/mapping-and-search",
+				"requirement": "openspec/specs/mapping-and-search :: REQ-002: Cast a mapped value to a declared type"
 			},
 			"reachedOn": "/mappings/:id editor, cast configuration per field",
 			"provider": "integriq",
@@ -3508,7 +3584,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:339 'Unset unwanted key's' loop deletes every key named in mapping.getUnset() from the output dot-array.",
-				"spec": "openspec/specs/mapping-and-search"
+				"spec": "openspec/specs/mapping-and-search",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/mapping-and-search :: The unset list leaves fields out (REQ-SCB-008)"
 			},
 			"reachedOn": "/mappings/:id editor, unset field list",
 			"provider": "integriq",
@@ -3544,7 +3621,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:277-301 executeMapping()'s $list===true branch iterates the input array and recursively calls executeMapping() per item, building a mapped list.",
-				"spec": "openspec/specs/mapping-and-search"
+				"spec": "openspec/specs/mapping-and-search",
+				"requirement": "openspec/specs/mapping-and-search :: REQ-001: Apply a mapping recipe to an input payload"
 			},
 			"reachedOn": "/mappings/:id editor, invoked with list=true from synchronization/endpoint pipelines mapping paginated result sets",
 			"provider": "integriq",
@@ -3580,7 +3658,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php:7075 falls back to SafeXmlParser + xmlToArray() (defined at line 10280) to turn a non-JSON source response into an array before it reaches the mapping pipeline. There is no reverse direction: no cast type or Twig filter turns mapped output back into XML; the only XML writers are StUFXMLBuilder.php's protocol-specific message builders (e.g. buildNpsLa01, buildAdrLa01), not a general mapping capability. Specified in openspec/changes/mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
-				"change": "mapping-formats-and-lookups"
+				"change": "mapping-formats-and-lookups",
+				"requirement": [
+					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A mapping declares its output format (REQ-MFL-002)",
+					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A synchronization sends the mapping's output format to an API target (REQ-MFL-003)"
+				]
 			},
 			"reachedOn": "synchronization fetch path (any source whose response is not JSON) -> mapping pipeline; the mapping editor itself has no XML control",
 			"note": "Inbound XML-to-array is automatic and generic; outbound array-to-XML only exists for the specific StUF message shapes, not as a mapping-editor feature.",
@@ -3617,7 +3699,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Migration/Source/FileMigrationSource.php:207-241 reads CSV rows with str_getcsv() as a migration source, feeding the sync/mapping pipeline. The general HTTP-source fetch path (SynchronizationService.php around line 7050-7080) only has JSON and XML fallbacks, no CSV parsing, despite src/views/Synchronization/SyncConfigWidget.vue:194 offering 'json | xml | csv' as placeholder text for a format field. No CSV writing/export exists anywhere in lib/ or src/. Specified in openspec/changes/mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
-				"change": "mapping-formats-and-lookups"
+				"change": "mapping-formats-and-lookups",
+				"requirement": [
+					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A synchronization reads a CSV source response (REQ-MFL-001)",
+					"openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A mapping declares its output format (REQ-MFL-002)"
+				]
 			},
 			"reachedOn": "migration source setup (sync-migration capability) reads CSV files; a regular HTTP source configured with a csv format hint is not actually parsed as CSV",
 			"note": "The placeholder text in SyncConfigWidget.vue promises csv as a source response format, but the parser backing it does not implement that branch, a live-check candidate.",
@@ -3657,7 +3743,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Outbound/Call/MappingVersionService.php:46 snapshots a mapping before it is used, injected into lib/Outbound/Call/CallReplayService.php:70; call_log schema carries mapping/mappingVersion/attempts[].mappingVersion fields (lib/Settings/integriq_register.json:2107, 2121), rendered generically on the call_log-backed logs pages.",
-				"change": "2026-10-09-outbound-call-log-investigation-window"
+				"change": "2026-10-09-outbound-call-log-investigation-window",
+				"requirement": "openspec/specs/outbound-call-log :: A replay names the mapping version it ran under (REQ-OCD-005)"
 			},
 			"reachedOn": "/sources/logs, /endpoints/logs (manifest-pages.txt logs pages on the call_log schema) show which mapping version a call ran under; replay offers the snapshot vs current version",
 			"provider": "integriq",
@@ -3696,7 +3783,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Twig/MappingExtension.php:79-89 registers only generateUuid/executeMapping/getFileContents/getFiles/getTargetIdByOriginId/getOriginIdByTargetId as Twig functions available inside a mapping expression; callSource is explicitly NOT registered (comment at lines 64-73: removed in a security hardening pass to close an SSRF path). getTargetIdByOriginId/getOriginIdByTargetId only translate a synchronization contract's own origin/target ids, not an arbitrary register lookup. lib/Controller/MappingsController.php:433 getObjects() only lists available registers for the editor's picker UI, it resolves nothing during execution. Specified in openspec/changes/mapping-formats-and-lookups/ (OpenSpec pass 2026-09-27).",
-				"change": "mapping-formats-and-lookups"
+				"change": "mapping-formats-and-lookups",
+				"requirement": "openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search :: A mapping can look up a value in an allowed register schema (REQ-MFL-004)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The hint (MappingService lookups, mappings/objects route) points at a register-picker endpoint for the UI, not a runtime lookup/translate-a-code capability, the hint was wrong.",
@@ -3733,7 +3821,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php references mapping-by-id fields at multiple points (sourceHashMapping:3762, sourceTargetMapping-driven executeMapping:4533, updateMapping:8182, deleteMapping:8121, generic save_object.mapping:8300/8310, processMappingRule:8463); lib/Flow/ApplyMappingNode.php:195/200/242 lets a flow step reference a mapping id via config['mapping'] with optionsFrom pointed at /apps/openregister/api/objects/integriq/mapping, the same mapping objects are resolved by id from synchronizations, endpoint rules and flows.",
-				"spec": "openspec/specs/mapping-and-search"
+				"spec": "openspec/specs/mapping-and-search",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/mapping-and-search :: One mapping is reused by id (REQ-SCB-007)"
 			},
 			"reachedOn": "any synchronization/endpoint-rule/flow-step mapping picker that references a saved mapping by id",
 			"provider": "integriq",
@@ -3851,7 +3940,8 @@
 				"state": "building",
 				"change": "allowlisted-expression-sources",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Controller/ExpressionSourceController.php (index:87, add:112, remove:146) plus appinfo/routes.php:616-618 implement a full admin-only CRUD API for an environment-variable allowlist (lib/Expression/EnvironmentAllowlist.php, ExpressionValueSourceRegistry.php, EnvironmentValueSource.php). grep of src/ for 'expression-sources'/'EnvironmentAllowlist' returns zero hits (no admin settings page), and grep of lib/AppInfo/Application.php and lib/Listener/ for any wiring of ExpressionValueSourceRegistry into OpenRegister's expression evaluator also returns zero hits."
+				"evidence": "lib/Controller/ExpressionSourceController.php (index:87, add:112, remove:146) plus appinfo/routes.php:616-618 implement a full admin-only CRUD API for an environment-variable allowlist (lib/Expression/EnvironmentAllowlist.php, ExpressionValueSourceRegistry.php, EnvironmentValueSource.php). grep of src/ for 'expression-sources'/'EnvironmentAllowlist' returns zero hits (no admin settings page), and grep of lib/AppInfo/Application.php and lib/Listener/ for any wiring of ExpressionValueSourceRegistry into OpenRegister's expression evaluator also returns zero hits.",
+				"requirement": "openspec/changes/allowlisted-expression-sources/specs/expression-value-sources :: `env:` resolves only an allowlisted key (REQ-EVS-002)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Even if an admin called the API directly there is nothing on the evaluation side that ever consults the allowlist or these value sources during expression evaluation, the restriction this row asks about is not enforced anywhere.",
@@ -4255,7 +4345,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php:2158-2159 applies JsonLogic::apply(synchronization.conditions, serializedObject) and skips the record when it evaluates false; conditions are configured via the shared conditions builder (syncDraft.js normaliseConditions/EMPTY_ROOT_GROUP).",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/synchronization-engine :: Synchronization conditions skip records (REQ-SCB-009)"
 			},
 			"reachedOn": "/synchronizations/:id editor, conditions builder",
 			"provider": "integriq",
@@ -6122,7 +6213,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:420-435 Dashboard page (/, type dashboard) with dateRange enabled; the widgets note (:435) describes four lead counts backed by schema enums (synchronization_run.status, sync_item_dead_letter.status, event_message.status, source.circuitBreakerState) plus volume charts over time.",
-				"spec": "openspec/specs/logs-and-statistics"
+				"spec": "openspec/specs/logs-and-statistics",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/logs-and-statistics :: The dashboard shows traffic over a chosen period (REQ-SCB-010)"
 			},
 			"reachedOn": "/ (Dashboard)",
 			"provider": "integriq",
@@ -6158,7 +6250,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2985-2989 OperationalHealth (/reports/operational-health, type dashboard): 'The Reports hub cards six log surfaces, which answer \"what happened to this one thing\". Nothing aggregated them, so \"how is it going\" had no page at all.' Charts read synchronization_run.status, execution_trace.status, event_message.status, sync_item_dead_letter.phase.",
-				"spec": "openspec/specs/logs-and-statistics"
+				"spec": "openspec/specs/logs-and-statistics",
+				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/logs-and-statistics :: One page shows operational health (REQ-SCB-011)"
 			},
 			"reachedOn": "/reports -> Operational health -> /reports/operational-health",
 			"provider": "integriq",
@@ -10849,7 +10942,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:1876-2266 gateway endpoints (register-backed and proxied); lib/Service/SynchronizationService.php and lib/Service/FlowRunnerService.php run message flows between systems; lib/Service/EventService.php dispatches events (rows gw-endpoint, gw-proxy, sync-create, auto-flow-canvas, evt-publish)",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": [
+					"openspec/specs/endpoint-runtime :: Full Pipeline and Target Dispatch (REQ-EP-003)",
+					"openspec/specs/flow-orchestration :: a flow runs via cron, endpoint rule, event, or manual trigger (REQ-007)"
+				]
 			},
 			"reachedOn": "/endpoints, /synchronizations, flow canvas, /webhooks in one app",
 			"note": "Gemeente Lansingerland, Api Gateway en ESB, published 2026-07-17; Stein 166856 asks one platform for orchestration, national facilities and distribution.",
@@ -10967,7 +11064,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/AuthorizationService.php:186-230 getJWK() builds the key set from a static publicKey in the consumer's configuration, never from a JWKS address; lib/Service/Lti/LtiJwksResolverService.php:128 resolveKey() does fetch and cache a JWKS by kid, but only for LTI registrations. Specified in openspec/changes/access-oauth-and-token-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "access-oauth-and-token-validation"
+				"change": "access-oauth-and-token-validation",
+				"requirement": "openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt :: A consumer token is checked against its issuer's JWKS (REQ-TOKV-001)"
 			},
 			"reachedOn": "consumer authorizationConfiguration.publicKey (ConsumerEditorModal.vue); JWKS only on LTI tool registrations",
 			"note": "Open APISIX feature request since 2025-12-05 for jwt-auth. Integriq: JWKS lookup exists for LTI tools only, not for gateway consumers.",
@@ -11045,7 +11143,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:2472 processRules() runs every rule in turn and lib/Service/EndpointService.php:2948 processAuthenticationRule() returns an error response when its single configured type (apikey, jwt, basic, nc-session) fails, so several authentication rules on one endpoint all have to pass: AND, not OR. Specified in openspec/changes/access-consumer-credentials/ (OpenSpec pass 2026-09-27).",
-				"change": "access-consumer-credentials"
+				"change": "access-consumer-credentials",
+				"requirement": "openspec/changes/access-consumer-credentials/specs/authorization-jwt :: An endpoint accepts any one of several login methods (REQ-CRED-005)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Open Tyk request TT-2378: OR logic for multiple authentication modes on one API. Integriq: Two authentication rules on an endpoint stack; there is no either-or.",
@@ -11084,7 +11183,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/register.d/api-product-gateway.json:250-256 subscription status pending_approval, active, rejected, revoked and :282 revokedAt; no end-date property on the subscription schema (properties listed at :223-294). Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
-				"change": "access-developer-portal-and-subscriptions"
+				"change": "access-developer-portal-and-subscriptions",
+				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A subscription can end on a date (REQ-DEVP-005)"
 			},
 			"reachedOn": "/products/:id detail page, subscriptions section",
 			"note": "Open WSO2 API Manager request, Type/NewFeature. Integriq: A subscription can be revoked by hand; it cannot be given an end date.",
@@ -11123,7 +11223,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation and Sunset headers on calls to a deprecated product version (row gw-versioning); no message is sent to subscribed consumers. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
-				"change": "access-developer-portal-and-subscriptions"
+				"change": "access-developer-portal-and-subscriptions",
+				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: Subscribers are told when a product they use changes (REQ-DEVP-004)"
 			},
 			"reachedOn": "machine route: headers on every call to a deprecated version",
 			"note": "Open WSO2 API Manager request, API consumer notifications. Integriq: Callers learn of retirement from response headers only, not from a notice.",
@@ -11274,7 +11375,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json Endpoints index page (/endpoints) and the Sources pages edit routes and upstreams as records; lib/EventListener/EndpointCacheInvalidationListener.php:69-95 applies a saved change without a restart (row gw-hot-reload)",
-				"change": "2026-07-14-revive-dead-capabilities"
+				"change": "2026-07-14-revive-dead-capabilities",
+				"requirement": "openspec/specs/endpoint-runtime :: REQ-EP-UI-001: Endpoint Management UI"
 			},
 			"reachedOn": "/endpoints and /sources index and detail pages",
 			"note": "Open APISIX request 2026-06-19 for a simpler interface for services and routes.",
@@ -11423,7 +11525,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "the gateway proxies HTTP endpoints only (lib/Service/EndpointService.php:2174-2266); lib/Mcp does not exist, and the x-openregister-mcp declarations at lib/Settings/integriq_register.json:673,1390,1499,1828 expose integriq's own objects as read tools through OpenRegister, they do not put an outside MCP server behind keys and limits. Specified in openspec/changes/gateway-mcp-proxy/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-mcp-proxy"
+				"change": "gateway-mcp-proxy",
+				"requirement": "openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime :: An outside MCP server is published as a gateway endpoint (REQ-MCPX-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Tyk 5.13.0 (2026-05-19) MCP gateway and 5.15.0 MCP proxies; WSO2 API Manager 4.7.0 MCP governance and analytics. Integriq: Row plt-ai-tools covers integriq's own objects as tools; proxying other MCP servers is absent.",
@@ -11496,7 +11599,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Settings/register.d/99-consumer-secrets-writeonly.json keeps one authorizationConfiguration per consumer; lib/Service/AuthorizationService.php resolveConsumerByApiKey() and authorizeJwt() at :368 check the single stored key; grep -iE 'rotat|previousSecret|secondary' over both finds nothing. Specified in openspec/changes/access-consumer-credentials/ (OpenSpec pass 2026-09-27).",
-				"change": "access-consumer-credentials"
+				"change": "access-consumer-credentials",
+				"requirement": "openspec/changes/access-consumer-credentials/specs/consumer-management :: A key can be replaced without downtime (REQ-CRED-003)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "WSO2 API Manager 4.7.0 (2026-04): multiple client secrets per OAuth application.",
@@ -11569,7 +11673,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:2033-2039 a register-backed endpoint returns OpenRegister's ValidationException as a refusal when a write breaks the register schema; lib/Controller/MappingsController.php:176-186 and :278 validate a mapping result against a schema with Opis JSON Schema in the test panel; proxied traffic (lib/Service/EndpointService.php:2174-2266) is passed through unvalidated and there is no XSD or OpenAPI validator. Specified in openspec/changes/mapping-message-schema-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "mapping-message-schema-validation"
+				"change": "mapping-message-schema-validation",
+				"requirement": [
+					"openspec/changes/mapping-message-schema-validation/specs/message-schema-validation :: An endpoint validates its request and its proxied answer (REQ-MSV-002)",
+					"openspec/changes/mapping-message-schema-validation/specs/message-schema-validation :: A synchronization validates source objects and target bodies (REQ-MSV-003)"
+				]
 			},
 			"reachedOn": "/endpoints with targetType=register/schema; /mappings/:id test panel",
 			"note": "Frank!Framework 10.1.0 (2026-04-25) added an OpenAPI validator next to its XML and JSON validators. Integriq: Register writes and mapping tests are validated against JSON Schema; proxied messages, XSD and OpenAPI are not.",
@@ -11611,7 +11719,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Adapters/Digikoppeling/WsSecuritySigner.php:99 signs a SOAP Body with a WS-Security X.509 enveloped signature and verifies replies, used by lib/Adapters/Digikoppeling/WusProfileService.php:56 for Digikoppeling WUS calls (row nl-digikoppeling); grep -iE 'xmlenc|EncryptedData' over lib/ finds no message encryption",
-				"spec": "openspec/specs/digikoppeling-adapter"
+				"spec": "openspec/specs/digikoppeling-adapter",
+				"requirement": "openspec/specs/digikoppeling-adapter :: WUS synchronous profile with WS-Security signing (REQ-DK-002)"
 			},
 			"reachedOn": "Digikoppeling WUS calls from StUF-ZKN and Berichtenbox clients",
 			"note": "Frank!Framework 10.2.0 (2026-07-17) added SOAP encrypt and decrypt methods. Integriq: Signing only, and only on the Digikoppeling WUS path; no encryption.",
@@ -11798,7 +11907,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -riE '\\bkong\\b|apigee|aws.?api.?gateway|azure.?api.?management' over lib/ and src/ finds nothing; integriq's gateway serves its own endpoints only (lib/Service/EndpointService.php:1876-2266). Specified in openspec/changes/gateway-federated-api-discovery/ (OpenSpec pass 2026-09-27).",
-				"change": "gateway-federated-api-discovery"
+				"change": "gateway-federated-api-discovery",
+				"requirement": [
+					"openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory :: APIs on other gateways are listed with integriq's own (REQ-FEDG-001)",
+					"openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory :: A discovered API can be brought behind integriq (REQ-FEDG-003)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "WSO2 API Manager 4.6.0 (2025-11-04) added API discovery for federated gateways.",
@@ -11871,7 +11984,8 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -riE 'oauth-protected-resource|protectedResourceMetadata|resource_metadata' over lib/ finds nothing; appinfo/routes.php has no .well-known route for gateway endpoints. Specified in openspec/changes/access-oauth-and-token-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "access-oauth-and-token-validation"
+				"change": "access-oauth-and-token-validation",
+				"requirement": "openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt :: A protected endpoint publishes where to get a token (REQ-TOKV-004)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Tyk 5.13.0 (2026-05-19) serves /.well-known/oauth-protected-resource as gateway middleware (RFC 9728).",
@@ -11910,7 +12024,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:2174-2266 handleSourceRequest() proxies any HTTP call, so an A2A JSON-RPC endpoint can be published behind an integriq endpoint; grep -riE '\\ba2a\\b|agent.?card' over lib/ and src/ finds nothing, so the agent card is not rewritten and must be edited by hand to point at the gateway",
-				"spec": "openspec/specs/endpoint-runtime"
+				"spec": "openspec/specs/endpoint-runtime",
+				"requirement": "openspec/specs/endpoint-runtime :: Full Pipeline and Target Dispatch (REQ-EP-003)"
 			},
 			"reachedOn": "/endpoints with targetType=api",
 			"note": "MuleSoft Omni Gateway 1.9.3 added an A2A Agent Card policy (release note 2026-06-11) that rewrites the agent card URL to the gateway's public URL. Integriq: Custom work: generic proxying only, no A2A handling.",
