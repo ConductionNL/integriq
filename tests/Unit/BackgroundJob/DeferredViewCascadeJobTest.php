@@ -17,6 +17,7 @@ namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
 use OCA\Integriq\BackgroundJob\DeferredViewCascadeJob;
 use OCA\Integriq\Service\SourceMappingService;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\ObjectService;
@@ -199,13 +200,13 @@ class DeferredViewCascadeJobTest extends TestCase {
 			}
 		);
 
-		$openRegister->method('deleteObject')->willReturnCallback(
+		$openRegister->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
 				$this->trace[] = 'deleteObject:' . $uuid . '@' . $register . '/' . $schema;
 
 				return true;
 			}
-		);
+		));
 
 		return $openRegister;
 	}//end tracingOpenRegister()
@@ -401,13 +402,13 @@ class DeferredViewCascadeJobTest extends TestCase {
 				return [$this->row('ev-9')];
 			}
 		);
-		$openRegister->method('deleteObject')->willReturnCallback(
+		$openRegister->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
 				$this->trace[] = 'deleteObject:' . $uuid . '@' . $register . '/' . $schema;
 
 				return true;
 			}
-		);
+		));
 
 		$sourceMapping = $this->createMock(SourceMappingService::class);
 		$sourceMapping->method('getOpenRegisters')->willReturn($openRegister);
@@ -454,7 +455,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 
 		$openRegister = $this->createMock(ObjectService::class);
 		$openRegister->method('findAll')->willReturn([$this->row('ev-bad'), $this->row('ev-good')]);
-		$openRegister->method('deleteObject')->willReturnCallback(
+		$openRegister->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
 				if ($uuid === 'ev-bad') {
 					throw new \RuntimeException('row is locked');
@@ -464,7 +465,7 @@ class DeferredViewCascadeJobTest extends TestCase {
 
 				return true;
 			}
-		);
+		));
 
 		$sourceMapping = $this->createMock(SourceMappingService::class);
 		$sourceMapping->method('getOpenRegisters')->willReturn($openRegister);
@@ -593,13 +594,13 @@ class DeferredViewCascadeJobTest extends TestCase {
 
 		$openRegister = $this->createMock(ObjectService::class);
 		$openRegister->method('findAll')->willReturn([$this->row('ev-1')]);
-		$openRegister->method('deleteObject')->willReturnCallback(
+		$openRegister->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function (?string $uuid = null, string|int|null $register = null, string|int|null $schema = null): bool {
 				$this->trace[] = 'deleteObject:' . $uuid;
 
 				return true;
 			}
-		);
+		));
 
 		$sourceMapping = $this->createMock(SourceMappingService::class);
 		$sourceMapping->method('getOpenRegisters')->willReturn($openRegister);

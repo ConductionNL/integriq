@@ -24,6 +24,7 @@ use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1726,7 +1727,7 @@ HTML;
 		);
 
 		$stopped = [];
-		$this->orObjectService->method('deleteObject')->willReturnCallback(
+		$this->orObjectService->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function (string $uuid) use ($listener, &$stopped): bool {
 				$entity = new \OCA\OpenRegister\Db\ObjectEntity();
 				$entity->setUuid($uuid);
@@ -1737,7 +1738,7 @@ HTML;
 
 				return $event->isPropagationStopped() === false;
 			}
-		);
+		));
 
 		$targetObject = [];
 		$this->service->updateTarget(
@@ -1745,7 +1746,7 @@ HTML;
 			targetObject: $targetObject,
 			action: 'delete'
 		);
-		$this->orObjectService->deleteObject('person-uuid-1');
+		$this->orObjectService->deleteObject(new \OCA\OpenRegister\Service\Object\ObjectDeletion(uuid: 'person-uuid-1'));
 
 		$this->assertSame([false, true], $stopped, 'the engine delete passes; the same delete from elsewhere is stopped');
 

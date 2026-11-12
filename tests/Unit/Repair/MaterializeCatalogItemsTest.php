@@ -19,6 +19,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MaterializeCatalogItems;
 use OCA\Integriq\Service\CatalogRegistryServiceInterface;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -177,7 +178,7 @@ class MaterializeCatalogItemsTest extends TestCase {
 			}
 		);
 		$orObjectService->expects($this->once())->method('deleteObject')
-			->with($this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid'));
+			->with(...DeleteCallShape::args($this->callback(static fn ($uuid): bool => $uuid === 'stale-uuid')));
 
 		$this->makeStep($this->makeRegistryService($entries), $orObjectService)->run($this->makeOutput());
 

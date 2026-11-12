@@ -25,6 +25,8 @@ use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuardInterface;
 use OCA\Integriq\Service\Ownership\RecordOwnershipServiceInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -160,7 +162,9 @@ class OwnershipController extends Controller {
 				);
 			}
 
-			$this->objectService->deleteObject(uuid: $id, register: $register, schema: $schema);
+			$this->objectService->deleteObject(
+				deletion: new ObjectDeletion(uuid: $id, target: new ObjectFindTarget(register: $register, schema: $schema))
+			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}

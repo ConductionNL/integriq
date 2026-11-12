@@ -35,6 +35,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -464,7 +465,7 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 		}
 
 		try {
-			$this->objectService->deleteObject(uuid: $consumerId);
+			$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $consumerId));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[NotificatiesSubscriberService] failed to cascade-delete companion consumer ' . $consumerId . ': ' . $e->getMessage(),

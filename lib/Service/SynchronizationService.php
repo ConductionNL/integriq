@@ -76,6 +76,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -5943,7 +5944,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$targetId = (string)$write->contract['targetId'];
 			$permanent = ($action === DisappearancePolicy::PURGE);
 			SourceOwnedDeleteGuardListener::whileTheEngineDeletes(
-				delete: static fn () => $objectService->deleteObject(uuid: $targetId, permanent: $permanent)
+				delete: static fn () => $objectService->deleteObject(deletion: new ObjectDeletion(uuid: $targetId, permanent: $permanent))
 			);
 		}
 

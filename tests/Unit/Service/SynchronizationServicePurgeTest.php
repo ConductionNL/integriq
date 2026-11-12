@@ -34,6 +34,7 @@ use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\SynchronizationContractLogService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
@@ -112,7 +113,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 				return ObjectServiceMockBuilder::objectEntity($this, (array)$args[0], 'saved');
 			}
 		);
-		$orObjectService->method('deleteObject')->willReturnCallback(
+		$orObjectService->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function (...$args) use ($refuseUuid): bool {
 				// By position: 0 is the uuid, 7 is `permanent` (openregister 98a3469c0f).
 				$args = ['uuid' => $args[0], 'permanent' => ($args[7] ?? false)];
@@ -123,7 +124,7 @@ class SynchronizationServicePurgeTest extends TestCase {
 				$this->deletes[] = $args;
 				return true;
 			}
-		);
+		));
 
 		$contractLogService = $this->createMock(SynchronizationContractLogService::class);
 		$contractLogService->method('createFromArray')->willReturnCallback(

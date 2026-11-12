@@ -31,6 +31,8 @@ namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -192,7 +194,9 @@ class ConnectionStore implements ConnectionStoreInterface {
 	 */
 	public function delete(string $uuid): void {
 		$this->asSystem(
-			operation: 			fn () => $this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER, schema: self::SCHEMA)
+			operation: 			fn () => $this->objectService->deleteObject(
+				deletion: new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA))
+			)
 		);
 	}//end delete()
 

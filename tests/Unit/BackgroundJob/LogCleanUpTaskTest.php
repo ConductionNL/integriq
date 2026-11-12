@@ -19,6 +19,7 @@ namespace OCA\Integriq\Tests\Unit\BackgroundJob;
 
 use OCA\Integriq\BackgroundJob\LogCleanUpTask;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -159,7 +160,7 @@ class LogCleanUpTaskTest extends TestCase {
 				return new ObjectEntity();
 			}
 		);
-		$objectService->method('deleteObject')->willReturnCallback(
+		$objectService->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 			function ($uuid, $register = null, $schema = null, bool $_rbac = true) {
 				$this->rbacFlags[] = ['deleteObject', (string)$uuid, $_rbac];
 				if (in_array((string)$uuid, $this->failingDeletes, true) === true) {
@@ -169,7 +170,7 @@ class LogCleanUpTaskTest extends TestCase {
 				$this->deletes[] = (string)$uuid;
 				return true;
 			}
-		);
+		));
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturnArgument(2);

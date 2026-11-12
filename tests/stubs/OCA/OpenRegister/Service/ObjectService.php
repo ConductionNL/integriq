@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -265,25 +266,21 @@ class ObjectService {
 	 * The trailing parameters follow openregister development 98a3469c0f; a
 	 * permanent delete (`permanent: true`) removes the object and its files.
 	 *
-	 * @param string|null $uuid
-	 * @param string|int|null $register
-	 * @param string|int|null $schema
+	 * Signature as OpenRegister #9099: the uuid, register, schema, user and
+	 * permanent flag travel in one ObjectDeletion; tests/Helpers/DeleteCallShape
+	 * flattens a call for the recordings that predate it.
+	 *
+	 * @param ObjectDeletion $deletion The object, where it lives, who deletes it and whether permanently.
 	 * @param bool $_rbac
 	 * @param bool $_multitenancy
 	 * @param bool $_retentionSweep
-	 * @param mixed $currentUser
-	 * @param bool $permanent
 	 * @return bool
 	 */
 	public function deleteObject(
-		?string $uuid = null,
-		string|int|null $register = null,
-		string|int|null $schema = null,
+		ObjectDeletion $deletion,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $_retentionSweep = false,
-		mixed $currentUser = null,
-		bool $permanent = false,
 	): bool {
 		return true;
 	}

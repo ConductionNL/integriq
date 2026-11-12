@@ -17,6 +17,7 @@ namespace OCA\Integriq\Tests\Unit\Rule;
 
 use Exception;
 use OCA\Integriq\Rule\CompositeFanoutRule;
+use OCA\Integriq\Tests\Helpers\DeleteCallShape;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
@@ -116,7 +117,7 @@ class CompositeFanoutRuleTest extends TestCase {
 		// Rollback must delete exactly the one object that was created (the parent).
 		$orObjectService->expects($this->once())
 			->method('deleteObject')
-			->with('parent-uuid', 'pipelinq', 'ticket')
+			->with(...DeleteCallShape::args('parent-uuid', 'pipelinq', 'ticket'))
 			->willReturn(true);
 
 		$rule = $this->makeRule(
@@ -204,7 +205,7 @@ class CompositeFanoutRuleTest extends TestCase {
 
 		$parentObject = $this->makeObject('parent-uuid', []);
 		$orObjectService->expects($this->once())->method('saveObject')->willReturn($parentObject);
-		$orObjectService->expects($this->once())->method('deleteObject')->with('parent-uuid', 'pipelinq', 'ticket')->willReturn(true);
+		$orObjectService->expects($this->once())->method('deleteObject')->with(...DeleteCallShape::args('parent-uuid', 'pipelinq', 'ticket'))->willReturn(true);
 
 		$rule = $this->makeRule(
 			[
@@ -285,7 +286,7 @@ class CompositeFanoutRuleTest extends TestCase {
 					return $this->makeObject('uuid-' . $counter, ['saved' => $schema]);
 				}
 			);
-			$service->method('deleteObject')->willReturnCallback(
+			$service->method('deleteObject')->willReturnCallback(DeleteCallShape::callback(
 				function (...$args) use (&$calls, $body) {
 					$calls[] = ['delete', $args];
 					if (isset($body['deletefails']) === true) {
@@ -294,7 +295,7 @@ class CompositeFanoutRuleTest extends TestCase {
 
 					return true;
 				}
-			);
+			));
 			$logger = $this->createMock(LoggerInterface::class);
 			$logger->method('error')->willReturnCallback(
 				function (string $message) use (&$calls) {

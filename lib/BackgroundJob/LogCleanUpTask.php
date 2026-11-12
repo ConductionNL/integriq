@@ -24,6 +24,7 @@ namespace OCA\Integriq\BackgroundJob;
 use DateTime;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -113,7 +114,7 @@ class LogCleanUpTask extends TimedJob {
 			}
 
 			try {
-				$this->orObjectService->deleteObject(uuid: $object->getUuid(), _rbac: false, _multitenancy: false);
+				$this->orObjectService->deleteObject(deletion: new ObjectDeletion(uuid: $object->getUuid()), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Continue with remaining objects even if one deletion fails.
 				$this->logger->warning(

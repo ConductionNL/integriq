@@ -29,6 +29,7 @@ use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -307,7 +308,7 @@ class EventsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
 		}
 
-		$this->orObjectService->deleteObject(uuid: $subscription->getUuid());
+		$this->orObjectService->deleteObject(deletion: new ObjectDeletion(uuid: $subscription->getUuid()));
 		return new JSONResponse([]);
 	}//end unsubscribe()
 
