@@ -9510,8 +9510,8 @@
 				"frank": "source read at v10.2.0, not driven: grep -rliE 'mollie|stripe|adyen|payment|ideal' over java finds only the word 'Ideal' in two comments (management-gateway/src/main/java/org/frankframework/management/bus/message/RequestMessageBuilder.java); no payment provider connector"
 			},
 			"screen": {
-				"board": null,
-				"reason": "A server-to-server payment API with a provider webhook; the checkout is shown by the calling app."
+				"canvas": "design-system",
+				"board": "IqBetalingen"
 			}
 		},
 		{
@@ -13184,7 +13184,10 @@
 			"note": "Row added in the closing round of 2026-11-12 (decision 395): open change connectors-course-marketplace covered no row.",
 			"screen": {
 				"canvas": "design-system",
-				"board": "learniq/LqLlAanbod"
+				"board": [
+					"learniq/LqLlAanbod",
+					"IqWinkel"
+				]
 			}
 		}
 	],
