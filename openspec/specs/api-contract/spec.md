@@ -24,7 +24,7 @@ Every response of an endpoint under `/api/` MUST carry an `API-Version` header w
 
 ### Requirement: API errors are problem details
 
-A JSON error response (status 400 or higher) of an endpoint under `/api/` MUST be served as `application/problem+json` with the members `type`, `title` and `status`, plus `detail` when the body already carries a `detail`, `message` or `error` text (/core/error-handling/problem-details). Every member the body already had MUST be kept, so existing callers see no change. A body that already uses `type`, `title` or `status` for something else, or that is a JSON list, MUST be left as it is.
+A JSON error response (status 400 or higher) of an endpoint under `/api/` MUST be served as `application/problem+json` with the members `type`, `title` and `status`, plus `detail` when the body already carries a `detail`, `message` or `error` text (/core/error-handling/problem-details). Every member the body already had MUST be kept, so existing callers see no change. A body that already uses `type`, `title` or `status` for something else, or that is a JSON list, MUST be left as it is. Endpoints whose error format an external standard fixes MUST keep that format: SCIM 2.0 under `/api/scim/` (RFC 7644) and the OAuth 2.0 token and credential endpoints `/api/eudi/token`, `/api/eudi/credential` and `/api/lti/token` (RFC 6749).
 
 #### Scenario: A not-found error becomes problem details
 
@@ -71,7 +71,7 @@ Every route under `/api/` MUST also be served under `/api/v1/`, with the same co
 
 ### Requirement: Standard protocol paths keep their own formats
 
-Paths that implement a protocol defined elsewhere (SCIM 2.0, OpenID4VCI token and credential, LTI 1.3, Identity provider broker (OIDC, SAML), PSD2 callback, Payment provider webhooks, FSC, Objecten API, ZGW Notificaties callbacks, StUF-ZKN, DSO STAM, iStandaarden (iWMO, iJW), Education and absence standards (ROD, Verzuimloket, UWLR, Edu-V, OSO), Peppol inbound, NotifyNL inbound, Open Formulieren submissions, Inbound intake channels, Telephony (CTI) events, Inbound verdicts, Proxied endpoints, Health check, Prometheus metrics) MUST NOT get a `/api/v1/` alias, a `Deprecation` header, an `API-Version` header or a problem details rewrite: their formats belong to their standard. They are listed in `lib/Middleware/Support/StandardProtocolPaths.php` and are not described in the OpenAPI document.
+Paths that implement a protocol defined elsewhere (SCIM 2.0, OpenID4VCI token and credential, LTI 1.3, Identity provider broker (OIDC, SAML), PSD2 callback, Payment provider webhooks, FSC, Objecten API, ZGW Notificaties callbacks, StUF-ZKN, DSO STAM, iStandaarden (iWMO, iJW), Education and absence standards (ROD, Verzuimloket, UWLR, Edu-V, OSO), Peppol inbound, NotifyNL inbound, Open Formulieren submissions, Inbound intake channels, Telephony (CTI) events, Inbound verdicts, Proxied endpoints, Health check, Prometheus metrics) MUST NOT get a `/api/v1/` alias or a `Deprecation` header: their paths belong to their standard. They keep the `API-Version` header and the error handling described above. They are listed in `lib/Middleware/Support/StandardProtocolPaths.php` and are not described in the OpenAPI document.
 
 #### Scenario: A protocol path is left alone
 
@@ -79,4 +79,4 @@ Paths that implement a protocol defined elsewhere (SCIM 2.0, OpenID4VCI token an
 
 - GIVEN a client calls `/index.php/apps/integriq/api/scim/v2/Users` and it answers `400` with `{"error": "x"}`
 - THEN the body MUST stay `{"error": "x"}`
-- AND the response MUST carry no `API-Version` and no `Deprecation` header
+- AND the response MUST carry an `API-Version` header and no `Deprecation` header

@@ -209,7 +209,7 @@ class ApiContractMiddlewareTest extends TestCase {
 	}//end testVersionedPathIsNotDeprecated()
 
 	/**
-	 * A path that speaks a protocol defined elsewhere keeps that protocol's formats.
+	 * A path that speaks a protocol defined elsewhere keeps its error format and is not deprecated.
 	 *
 	 * @return void
 	 */
@@ -218,9 +218,25 @@ class ApiContractMiddlewareTest extends TestCase {
 		$headers  = $this->headersOf(response: $response);
 
 		$this->assertSame(expected: ['error' => 'x'], actual: $response->getData());
-		$this->assertArrayNotHasKey(key: 'API-Version', array: $headers);
+		$this->assertSame(expected: '1.2.3', actual: $headers['API-Version']);
 		$this->assertArrayNotHasKey(key: 'Deprecation', array: $headers);
 	}//end testStandardProtocolPathIsUntouched()
+
+	/**
+	 * A protocol path without a foreign error format keeps the API contract, minus the deprecation.
+	 *
+	 * @return void
+	 */
+	public function testHealthPathKeepsVersionAndProblemDetails(): void {
+		$response = $this->decorate(path: '/apps/integriq/api/health', response: new JSONResponse(data: ['error' => 'down'], statusCode: 503));
+		$headers  = $this->headersOf(response: $response);
+		$data     = $response->getData();
+
+		$this->assertSame(expected: '1.2.3', actual: $headers['API-Version']);
+		$this->assertSame(expected: 503, actual: $data['status']);
+		$this->assertSame(expected: 'down', actual: $data['error']);
+		$this->assertArrayNotHasKey(key: 'Deprecation', array: $headers);
+	}//end testHealthPathKeepsVersionAndProblemDetails()
 
 	/**
 	 * The headers a response set, read without the server container that

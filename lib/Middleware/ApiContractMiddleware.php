@@ -28,7 +28,6 @@ namespace OCA\Integriq\Middleware;
 
 use OCA\Integriq\Kernel\AppIdentity;
 use OCA\Integriq\Middleware\Support\ApiPathAliases;
-use OCA\Integriq\Middleware\Support\StandardProtocolPaths;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -39,7 +38,7 @@ use OCP\IRequest;
  * Stamps `API-Version` on API responses, marks an unversioned path deprecated
  * in favour of its `/api/v1/` alias, and turns JSON error bodies into problem
  * details. Paths that speak a protocol defined elsewhere
- * ({@see StandardProtocolPaths}) are left exactly as they are.
+ * ({@see StandardProtocolPaths}) are not deprecated.
  *
  * An error body keeps every member it already had, so existing callers that
  * read `error` or `message` see no change. A body that already uses `type`,
@@ -62,6 +61,19 @@ class ApiContractMiddleware extends Middleware {
 	 * @var string
 	 */
 	private const API_PATH_MARKER = '/api/';
+
+	/**
+	 * API paths whose error format an external standard fixes: SCIM 2.0
+	 * (RFC 7644) and the OAuth 2.0 token and credential endpoints of
+	 * OpenID4VCI and LTI (RFC 6749). Their errors keep that format.
+	 *
+	 * @var list<string>
+	 */
+	private const FOREIGN_ERROR_FORMATS = [
+		'#/api/scim/#',
+		'#/api/eudi/(token|credential)$#',
+		'#/api/lti/token$#',
+	];
 
 	/**
 	 * The media type of an RFC 9457 problem details document.
@@ -155,22 +167,35 @@ class ApiContractMiddleware extends Middleware {
 	}//end decorate()
 
 	/**
-	 * Whether the request path lies under the app's `/api/` and is not a standard protocol path.
+	 * Whether the request path lies under the app's `/api/`.
 	 *
-	 * @return bool True for a request on the app's own API.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) StandardProtocolPaths is a pure lookup that routes.php shares, outside any container.
+	 * @return bool True for an API request.
 	 *
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
 	private function isApiRequest(): bool {
 		$path = $this->request->getPathInfo();
-		if (is_string($path) === false || str_contains($path, self::API_PATH_MARKER) === false) {
-			return false;
+
+		return is_string($path) === true && str_contains($path, self::API_PATH_MARKER) === true;
+	}//end isApiRequest()
+
+	/**
+	 * Whether the request path belongs to a protocol with its own error format.
+	 *
+	 * @return bool True when errors must keep the protocol's format.
+	 *
+	 * @spec openspec/specs/api-contract/spec.md
+	 */
+	private function hasForeignErrorFormat(): bool {
+		$path = (string) $this->request->getPathInfo();
+		foreach (self::FOREIGN_ERROR_FORMATS as $pattern) {
+			if (preg_match($pattern, $path) === 1) {
+				return true;
+			}
 		}
 
-		return StandardProtocolPaths::matches(path: $path) === false;
-	}//end isApiRequest()
+		return false;
+	}//end hasForeignErrorFormat()
 
 	/**
 	 * Add the RFC 9745 `Deprecation` header and a `Link` to the successor on an unversioned path.
@@ -226,7 +251,7 @@ class ApiContractMiddleware extends Middleware {
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
 	private function decorateError(JSONResponse $response): void {
-		if ($response->getStatus() < 400) {
+		if ($response->getStatus() < 400 || $this->hasForeignErrorFormat() === true) {
 			return;
 		}
 
