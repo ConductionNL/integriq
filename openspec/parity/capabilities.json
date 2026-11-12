@@ -3156,13 +3156,18 @@
 			"area": "access",
 			"name": "See how much each API product is used and by whom.",
 			"source": "own-code",
-			"integriq": "yes",
+			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt).",
+				"evidence": "Not built: the \"by whom\" part: lib/Controller/ProductSubscriptionsController.php analytics() returns one product-wide figure with no split per consumer. Planned in gateway-usage-per-consumer-and-endpoint (decision 389, verify round 2026-11-12). Code that exists: appinfo/routes.php:504 productSubscriptions#analytics; lib/Controller/ProductSubscriptionsController.php:310 analytics() reads bounded call_log rows for request count/error rate; called from src/views/ApiProducts/ApiProductDetail.vue:455 (frontend-api-paths.txt).",
 				"spec": "openspec/specs/api-product-gateway",
-				"requirement": "openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
+				"requirement": [
+					"openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway :: Product usage is split per consumer and per endpoint (REQ-APGU-001)",
+					"openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
+				],
+				"change": "gateway-usage-per-consumer-and-endpoint",
+				"plan": "openspec/changes/gateway-usage-per-consumer-and-endpoint"
 			},
 			"reachedOn": "/products/:id detail page, analytics panel (ApiProductDetail.vue)",
 			"provider": "integriq",
@@ -6661,13 +6666,18 @@
 			"area": "observability",
 			"name": "Hide personal data in the message bodies that get logged.",
 			"source": "own-code",
-			"integriq": "yes",
+			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Outbound/BodyRedactor.php: 'Removes credential material from a body before it is stored... Redaction runs before the write, never on read... Mirrors the snapshot redaction of execution-trace REQ-003.' Used by lib/Outbound/MessageRecorder.php and lib/Outbound/Call/CallRecorder.php. TraceDetail's own step timeline separately redacts input/output before storage (src/manifest.json:3266).",
+				"evidence": "Not built: lib/Service/Security/SensitiveFieldRegistry.php masks secret-shaped fields only (token, key, secret, password); a BSN, name or address in a logged body is stored as plain text. Planned in call-log-personal-data-masking (decision 389, verify round 2026-11-12). Code that exists: lib/Outbound/BodyRedactor.php: 'Removes credential material from a body before it is stored... Redaction runs before the write, never on read... Mirrors the snapshot redaction of execution-trace REQ-003.' Used by lib/Outbound/MessageRecorder.php and lib/Outbound/Call/CallRecorder.php. TraceDetail's own step timeline separately redacts input/output before storage (src/manifest.json:3266).",
 				"spec": "openspec/specs/http-call-engine",
-				"requirement": "openspec/specs/http-call-engine :: REQ-006 — CallLog request/response redaction before persistence"
+				"requirement": [
+					"openspec/changes/call-log-personal-data-masking/specs/outbound-call-log :: Personal data is masked before a body is logged (REQ-PDM-001)",
+					"openspec/specs/http-call-engine :: REQ-006 — CallLog request/response redaction before persistence"
+				],
+				"change": "call-log-personal-data-masking",
+				"plan": "openspec/changes/call-log-personal-data-masking"
 			},
 			"reachedOn": "automatic on write, no toggle needed; redacted values are what SourceLogs/EndpointLogs/OutboundMessages/TraceDetail ever display",
 			"provider": "integriq",
@@ -10894,7 +10904,7 @@
 		{
 			"id": "con-library-size",
 			"area": "connectors",
-			"name": "Pick from hundreds of ready-made connectors for common business software.",
+			"name": "Pick from about 35 ready-made connectors for common business software in the store.",
 			"source": "competitor-derived",
 			"integriq": "partial",
 			"built": {
@@ -10908,7 +10918,7 @@
 				"requirement": "openspec/specs/connector-catalog :: Generated SaaS templates come from a pinned directory and a reviewed allow-list (REQ-CCX-003)"
 			},
 			"reachedOn": "/store, tier 'Generated templates', plus the source-template cards from lib/Settings/register.d",
-			"note": "The Store holds roughly 35 entries, not hundreds, and that count is padded: two environment placeholder sources (environment-local-source, environment-acceptance-source) become connector cards, and SmartDocuments and Xential each appear twice (adapter and source template). About ten of the real ones are Specter feeds that write to a register integriq does not ship.",
+			"note": "Reworded 2026-11-12 (verify round) from \"hundreds of\" to the real size: the store holds about 35 entries (curated, generated and adapter templates). The mechanism to generate more from the pinned APIs.guru snapshot is in place, with 2 entries on the allow-list.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "connector-catalog",
@@ -12146,11 +12156,16 @@
 			"originUrl": "https://github.com/frankframework/frankframework/pull/11057",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Adapters/Digikoppeling/WsSecuritySigner.php:99 signs a SOAP Body with a WS-Security X.509 enveloped signature and verifies replies, used by lib/Adapters/Digikoppeling/WusProfileService.php:56 for Digikoppeling WUS calls (row nl-digikoppeling); grep -iE 'xmlenc|EncryptedData' over lib/ finds no message encryption",
+				"evidence": "Not built: encryption: only signing exists (WsSecuritySigner); grep -iE xmlenc|EncryptedData over lib/ finds nothing. Planned in sources-ws-security-encryption (decision 389, verify round 2026-11-12). Code that exists: lib/Adapters/Digikoppeling/WsSecuritySigner.php:99 signs a SOAP Body with a WS-Security X.509 enveloped signature and verifies replies, used by lib/Adapters/Digikoppeling/WusProfileService.php:56 for Digikoppeling WUS calls (row nl-digikoppeling); grep -iE 'xmlenc|EncryptedData' over lib/ finds no message encryption",
 				"spec": "openspec/specs/digikoppeling-adapter",
-				"requirement": "openspec/specs/digikoppeling-adapter :: WUS synchronous profile with WS-Security signing (REQ-DK-002)"
+				"requirement": [
+					"openspec/changes/sources-ws-security-encryption/specs/digikoppeling-adapter :: A SOAP source encrypts its body and decrypts the answer (REQ-WSE-001)",
+					"openspec/specs/digikoppeling-adapter :: WUS synchronous profile with WS-Security signing (REQ-DK-002)"
+				],
+				"change": "sources-ws-security-encryption",
+				"plan": "openspec/changes/sources-ws-security-encryption"
 			},
 			"reachedOn": "Digikoppeling WUS calls from StUF-ZKN and Berichtenbox clients",
 			"note": "Frank!Framework 10.2.0 (2026-07-17) added SOAP encrypt and decrypt methods. Integriq: Signing only, and only on the Digikoppeling WUS path; no encryption.",
@@ -12451,11 +12466,16 @@
 			"originUrl": "https://docs.mulesoft.com/gateway/latest/policies-included-a2a-agent-card.md",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:2174-2266 handleSourceRequest() proxies any HTTP call, so an A2A JSON-RPC endpoint can be published behind an integriq endpoint; grep -riE '\\ba2a\\b|agent.?card' over lib/ and src/ finds nothing, so the agent card is not rewritten and must be edited by hand to point at the gateway",
+				"evidence": "Not built: the agent card is not rewritten to the gateway address, so another agent can bypass the gateway; grep -riE a2a|agent.?card over lib/ and src/ finds nothing. Planned in gateway-a2a-agent-card (decision 389, verify round 2026-11-12). Code that exists: lib/Service/EndpointService.php:2174-2266 handleSourceRequest() proxies any HTTP call, so an A2A JSON-RPC endpoint can be published behind an integriq endpoint; grep -riE '\\ba2a\\b|agent.?card' over lib/ and src/ finds nothing, so the agent card is not rewritten and must be edited by hand to point at the gateway",
 				"spec": "openspec/specs/endpoint-runtime",
-				"requirement": "openspec/specs/endpoint-runtime :: Full Pipeline and Target Dispatch (REQ-EP-003)"
+				"requirement": [
+					"openspec/changes/gateway-a2a-agent-card/specs/endpoint-runtime :: An A2A agent's card points at the gateway (REQ-A2A-001)",
+					"openspec/specs/endpoint-runtime :: Full Pipeline and Target Dispatch (REQ-EP-003)"
+				],
+				"change": "gateway-a2a-agent-card",
+				"plan": "openspec/changes/gateway-a2a-agent-card"
 			},
 			"reachedOn": "/endpoints with targetType=api",
 			"note": "MuleSoft Omni Gateway 1.9.3 added an A2A Agent Card policy (release note 2026-06-11) that rewrites the agent card URL to the gateway's public URL. Integriq: Custom work: generic proxying only, no A2A handling.",
