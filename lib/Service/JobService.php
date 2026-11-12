@@ -29,6 +29,7 @@ use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -94,6 +95,7 @@ class JobService implements JobServiceInterface {
 	 * @param IUserSession $userSession User session manager.
 	 * @param IUserManager $userManager User manager for user operations.
 	 * @param IAppConfig $appConfig App config used to read global retention overrides.
+	 * @param IGroupManager|null $groupManager Decides whether a job's owner is an administrator (iq-b-f3).
 	 *
 	 * @psalm-param IJobList $jobList
 	 * @psalm-param ORObjectService $objectService
@@ -110,6 +112,7 @@ class JobService implements JobServiceInterface {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		IAppConfig $appConfig,
+		private readonly ?IGroupManager $groupManager = null,
 	) {
 		$this->errorRetention = 2592000000;
 		$this->successRetention = 3600000;
@@ -235,7 +238,8 @@ class JobService implements JobServiceInterface {
 				object: $jobData,
 				register: 'integriq',
 				schema: 'job',
-				uuid: $job->getUuid()
+				uuid: $job->getUuid(),
+				_rbac: false, // RBAC bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 			);
 		}
 
@@ -261,7 +265,8 @@ class JobService implements JobServiceInterface {
 			object: $jobData,
 			register: 'integriq',
 			schema: 'job',
-			uuid: $job->getUuid()
+			uuid: $job->getUuid(),
+			_rbac: false, // RBAC bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 		);
 
 	}//end scheduleJob()
@@ -397,6 +402,12 @@ class JobService implements JobServiceInterface {
 			return ['run' => false, 'log' => null, 'user' => null];
 		}
 
+		$refusal = $this->refuseUnsafeJob(job: $job, jobData: $jobData);
+		if ($refusal !== null) {
+			$log = $this->saveJobLog(job: $job, jobData: $jobData, logData: ['level' => 'WARNING', 'message' => $refusal]);
+			return ['run' => false, 'log' => $log, 'user' => null];
+		}
+
 		$userId = ($jobData['userId'] ?? null);
 		if (empty($userId) === true) {
 			return ['run' => true, 'log' => null, 'user' => null];
@@ -412,6 +423,47 @@ class JobService implements JobServiceInterface {
 
 		return ['run' => true, 'log' => null, 'user' => $user];
 	}//end checkJobMayRun()
+
+	/**
+	 * Why a job must not run at all, or null when it may (iq-b-f3).
+	 *
+	 * Two defences behind the admin-only `job` schema. `jobClass` is resolved
+	 * from the container and its `run()` called, so it is limited to integriq's
+	 * own actions (`OCA\Integriq\Action\*`) instead of any
+	 * container-resolvable class. And a job runs as its `userId`, which becomes
+	 * the identity every OpenRegister check in the action sees, so a `userId`
+	 * other than the job owner's own is honoured only when the owner is an
+	 * administrator (or the job has no owner: a job the app seeded itself).
+	 * Without a group manager that question cannot be answered and the job is
+	 * refused.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param array $jobData The job's data.
+	 *
+	 * @return string|null The refusal message for the job log, or null.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function refuseUnsafeJob(ObjectEntity $job, array $jobData): ?string {
+		$jobClass = ($jobData['jobClass'] ?? null);
+		if (is_string($jobClass) === false
+			|| str_starts_with(ltrim($jobClass, '\\'), 'OCA\\Integriq\\Action\\') === false
+		) {
+			return sprintf('jobClass "%s" is not an integriq action; skipping job.', (string)$jobClass);
+		}
+
+		$userId = (string)($jobData['userId'] ?? '');
+		$owner = (string)($job->getOwner() ?? '');
+		if ($userId === '' || $owner === '' || $owner === $userId) {
+			return null;
+		}
+
+		if ($this->groupManager !== null && $this->groupManager->isAdmin($owner) === true) {
+			return null;
+		}
+
+		return sprintf('Job owner "%s" may not run this job as "%s"; only an administrator may set another user. Skipping job.', $owner, $userId);
+	}//end refuseUnsafeJob()
 
 	/**
 	 * Checks whether a job's next run has arrived.
@@ -564,7 +616,8 @@ class JobService implements JobServiceInterface {
 			object: $jobData,
 			register: 'integriq',
 			schema: 'job',
-			uuid: $job->getUuid()
+			uuid: $job->getUuid(),
+			_rbac: false, // RBAC bypass: engine run stamps on the stored admin-owned job, no caller fields; also from cron (99-engine-config-lockdown).
 		);
 
 		return $logEntry;
@@ -897,7 +950,8 @@ class JobService implements JobServiceInterface {
 					'schema' => 'job',
 					'isEnabled' => true,
 				],
-			]
+			],
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 		$jobs = ($matches['results'] ?? $matches);
 		$results = [];

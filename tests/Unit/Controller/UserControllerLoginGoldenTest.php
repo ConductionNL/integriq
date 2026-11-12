@@ -21,11 +21,16 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\UserController;
+use OCA\Integriq\Service\SecondFactorGate;
 use OCA\Integriq\Service\SecurityService;
+use OCA\Integriq\Service\UserApiOriginPolicy;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Http\Response;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -168,7 +173,21 @@ class UserControllerLoginGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		return new UserController('integriq', $request, $userManager, $session, new SecurityService($cacheFactory, $logger), $logger, $userService, $l10n);
+		$registry = $this->createMock(IRegistry::class);
+		$registry->method('getProviderStates')->willReturn(($this->case['twoFactor'] ?? []));
+
+		$config = $this->createMock(IConfig::class);
+		$config->method('getAppValue')->willReturn('https://app.example');
+		$config->method('getSystemValue')->willReturnCallback(
+			fn (string $key, $default = '') => ($this->case['system'][$key] ?? $default)
+		);
+
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isInGroup')->willReturnCallback(
+			fn (string $uid, string $group) => in_array($group, ($this->case['groups'] ?? []), true)
+		);
+
+		return new UserController('integriq', $request, $userManager, $session, new SecurityService($cacheFactory, $logger), $logger, $userService, $l10n, new SecondFactorGate($registry, $config, $groupManager, $logger), new UserApiOriginPolicy($config));
 	}//end controller()
 
 	/**
@@ -182,6 +201,12 @@ class UserControllerLoginGoldenTest extends TestCase {
 		return [
 			'success' => ['params' => $valid],
 			'success-with-origin' => ['params' => $valid, 'headers' => ['Origin' => 'https://app.example']],
+			'unlisted-origin' => ['params' => $valid, 'headers' => ['Origin' => 'https://evil.example']],
+			'two-factor-enabled' => ['params' => $valid, 'twoFactor' => ['totp' => true]],
+			'two-factor-disabled-provider' => ['params' => $valid, 'twoFactor' => ['totp' => false]],
+			'two-factor-enforced' => ['params' => $valid, 'system' => ['twofactor_enforced' => 'true']],
+			'two-factor-enforced-other-group' => ['params' => $valid, 'system' => ['twofactor_enforced' => 'true', 'twofactor_enforced_groups' => ['beheer']]],
+			'two-factor-enforced-excluded' => ['params' => $valid, 'groups' => ['vrij'], 'system' => ['twofactor_enforced' => 'true', 'twofactor_enforced_excluded_groups' => ['vrij']]],
 			'missing-password' => ['params' => ['username' => 'jan']],
 			'short-username' => ['params' => ['username' => 'j', 'password' => 'x']],
 			'bad-username' => ['params' => ['username' => 'jan<', 'password' => 'x']],
@@ -260,4 +285,49 @@ class UserControllerLoginGoldenTest extends TestCase {
 
 		$this->assertSame(json_decode((string)file_get_contents(self::GOLDEN), true), json_decode($encoded, true));
 	}//end testEveryCaseMatchesTheGoldenFile()
+
+	/**
+	 * Api-f2 and pp-f2: a right password on a two-factor or disabled account
+	 * answers exactly like a wrong password, also with an allowed Origin, and
+	 * all three are throttled and counted as a failed attempt.
+	 *
+	 * @return void
+	 */
+	public function testSecondFactorRefusalIsIndistinguishableFromWrongPassword(): void {
+		$valid = ['username' => 'jan', 'password' => 'geheim'];
+		$origin = ['Origin' => 'https://app.example'];
+		$outcomes = [];
+		$refusals = [
+			'wrong' => ['check' => 'false'],
+			'twoFactor' => ['twoFactor' => ['totp' => true]],
+			'disabled' => ['enabled' => false],
+		];
+		foreach ($refusals as $name => $extra) {
+			$this->case = array_merge(['params' => $valid, 'headers' => $origin], $extra);
+			$this->cache = [];
+			$this->log = [];
+			$response = $this->controller()->login();
+			$this->assertTrue($response->isThrottled(), $name . ' must be throttled');
+			$this->assertSame(['action' => 'integriq_api_login'], $response->getThrottleMetadata());
+			$this->assertSame(1, ($this->cache['integriq_login_attempts_jan'] ?? null), $name . ' must count as a failed attempt');
+			$outcomes[$name] = $this->describe($response);
+		}
+
+		$this->assertSame(401, $outcomes['twoFactor']['status']);
+		$this->assertSame($outcomes['wrong'], $outcomes['twoFactor']);
+		$this->assertSame($outcomes['wrong'], $outcomes['disabled'], 'pp-f2: a disabled account answers like a wrong password');
+	}//end testSecondFactorRefusalIsIndistinguishableFromWrongPassword()
+
+	/**
+	 * Api-f2: core only registers throttle() when the method carries the attribute.
+	 *
+	 * @return void
+	 */
+	public function testLoginCarriesBruteForceProtection(): void {
+		$attributes = (new \ReflectionMethod(UserController::class, 'login'))
+			->getAttributes(\OCP\AppFramework\Http\Attribute\BruteForceProtection::class);
+
+		$this->assertCount(1, $attributes);
+		$this->assertSame('integriq_api_login', $attributes[0]->getArguments()['action']);
+	}//end testLoginCarriesBruteForceProtection()
 }//end class

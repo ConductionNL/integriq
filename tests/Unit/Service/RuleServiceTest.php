@@ -162,4 +162,55 @@ class RuleServiceTest extends TestCase {
 		}
 	}//end testProcessCustomRuleDispatchesConnectRelationsType()
 
+	/**
+	 * Api-f4: a failed external fetch on the extend rule answers the endpoint
+	 * caller generically and logs the internal message.
+	 *
+	 * @return void
+	 */
+	public function testExtendExternalUrlDoesNotReturnTheExceptionMessage(): void {
+		$internal = 'SQLSTATE[HY000] connect to db.internal.example:5432 failed';
+
+		$callService = $this->createMock(CallService::class);
+		$callService->method('call')->willThrowException(new Exception($internal));
+
+		$orObjectService = ObjectServiceMockBuilder::make($this);
+		$orObjectService->method('findAll')->willReturn(
+			['results' => [ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://x.example/o/1'], 'src-1')]]
+		);
+
+		$logged = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$logged): void {
+				$logged[] = $context;
+			}
+		);
+
+		$service = new RuleService(
+			$this->createMock(ObjectService::class),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$callService,
+			$orObjectService,
+			new EndpointRulePluginRegistry(plugins: []),
+			null,
+			$logger,
+		);
+
+		$rule = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			['configuration' => ['extend_external_input' => ['properties' => [['property' => 'zaak', 'schema' => 1]], 'validate' => false]]],
+			'rule-uuid-extend'
+		);
+
+		$response = $service->extendExternalUrl($rule, ['zaak' => 'https://x.example/o/1']);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $response);
+		$this->assertSame(400, $response->getStatus());
+		$this->assertStringNotContainsString('db.internal', (string)json_encode($response->getData()));
+		$this->assertSame('The object referenced in field zaak could not be retrieved', $response->getData()['error']);
+		$this->assertSame($internal, ($logged[0]['exception'] ?? null));
+	}//end testExtendExternalUrlDoesNotReturnTheExceptionMessage()
+
 }//end class

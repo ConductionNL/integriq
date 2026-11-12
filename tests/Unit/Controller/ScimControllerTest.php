@@ -25,6 +25,7 @@ use OCA\Integriq\Controller\ScimController;
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
+use OCA\Integriq\Service\Consumer\ConsumerPrivilegeGate;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
@@ -84,9 +85,46 @@ class ScimControllerTest extends TestCase {
 			request: $this->request,
 			provisioningService: $this->provisioningService,
 			authorizationService: $this->authorizationService,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			privilegeGate: $this->privilegeGate()
 		);
 	}//end controller()
+
+	/**
+	 * Whether the privilege gate admits the consumer in the current test.
+	 *
+	 * @var boolean
+	 */
+	private bool $consumerMayUseScim = true;
+
+	/**
+	 * A privilege gate that answers $consumerMayUseScim for the `scim` scope.
+	 *
+	 * @return ConsumerPrivilegeGate
+	 */
+	private function privilegeGate(): ConsumerPrivilegeGate {
+		$gate = $this->createMock(ConsumerPrivilegeGate::class);
+		$gate->method('mayUse')->willReturnCallback(
+			fn (ObjectEntity $consumer, string $scope): bool => ($scope === ConsumerPrivilegeGate::SCOPE_SCIM && $this->consumerMayUseScim)
+		);
+
+		return $gate;
+	}//end privilegeGate()
+
+	/**
+	 * A valid key of a consumer without the `scim` scope reads nothing (iq-a-f5).
+	 *
+	 * @return void
+	 */
+	public function testAConsumerWithoutTheScimScopeIsForbidden(): void {
+		$this->consumerMayUseScim = false;
+		$this->request->method('getHeader')->willReturn('Bearer right-key');
+		$this->provisioningService->expects($this->never())->method('listUsers');
+
+		$response = $this->controller()->listUsers();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testAConsumerWithoutTheScimScopeIsForbidden()
 
 	/**
 	 * A call with no credential is rejected before any account is read.

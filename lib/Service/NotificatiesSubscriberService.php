@@ -182,7 +182,12 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-registration-update-and-deletion-against-the-remote-api-req-001
 	 */
 	public function updateAbonnement(string $id, array $config): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(
+			id: $id,
+			register: 'integriq',
+			schema: 'notificaties_abonnement',
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+		);
 		$data = $this->mergeAbonnementConfig(current: $abonnement->getObject(), config: $config);
 
 		$source = $this->resolveSource(sourceId: (string)($data['sourceId'] ?? ''));
@@ -251,7 +256,8 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 				'status' => self::STATUS_PENDING,
 			],
 			register: 'integriq',
-			schema: 'notificaties_abonnement'
+			schema: 'notificaties_abonnement',
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
 		);
 
 	}//end persistPendingAbonnement()
@@ -269,7 +275,8 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 			object: $data,
 			register: 'integriq',
 			schema: 'notificaties_abonnement',
-			uuid: $id
+			uuid: $id,
+			_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema write is admin-only (99-engine-config-lockdown).
 		);
 
 	}//end persistAbonnement()
@@ -415,7 +422,12 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	 * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-abonnement-deletion-cascades-its-companion-consumer-req-004
 	 */
 	public function deleteAbonnement(string $id): ObjectEntity {
-		$abonnement = $this->objectService->find(id: $id, register: 'integriq', schema: 'notificaties_abonnement');
+		$abonnement = $this->objectService->find(
+			id: $id,
+			register: 'integriq',
+			schema: 'notificaties_abonnement',
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+		);
 		$data = $abonnement->getObject();
 
 		if (($data['status'] ?? '') === self::STATUS_DELETED) {
@@ -490,7 +502,12 @@ class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInte
 	 */
 	public function findAbonnement(string $abonnementId): ?ObjectEntity {
 		try {
-			return $this->objectService->find(id: $abonnementId, register: 'integriq', schema: 'notificaties_abonnement');
+			return $this->objectService->find(
+				id: $abonnementId,
+				register: 'integriq',
+				schema: 'notificaties_abonnement',
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			);
 		} catch (Throwable $e) {
 			return null;
 		}

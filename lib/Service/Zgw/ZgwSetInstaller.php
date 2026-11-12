@@ -128,7 +128,13 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 		foreach ($bound as $object) {
 			$uuid = $object['uuid'];
 			unset($object['uuid']);
-			$this->objectService->saveObject(object: $object, register: 'integriq', schema: 'synchronization', uuid: $uuid);
+			$this->objectService->saveObject(
+				object: $object,
+				register: 'integriq',
+				schema: 'synchronization',
+				uuid: $uuid,
+				_rbac: false, // RBAC bypass: caller authorised by ActionAuth/AuthorizedAdminSetting above; schema is admin-only (99-engine-config-lockdown).
+			);
 		}
 
 		$bindings = array_filter($bindings, fn (string $holder): bool => $holder !== $slug);
@@ -292,7 +298,12 @@ class ZgwSetInstaller implements ZgwSetInstallerInterface {
 		foreach ($slugs as $syncSlug) {
 			$entity = null;
 			try {
-				$entity = $this->objectService->find(id: (string)$syncSlug, register: 'integriq', schema: 'synchronization');
+				$entity = $this->objectService->find(
+					id: (string)$syncSlug,
+					register: 'integriq',
+					schema: 'synchronization',
+					_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+				);
 			} catch (\Throwable) {
 				$entity = null;
 			}

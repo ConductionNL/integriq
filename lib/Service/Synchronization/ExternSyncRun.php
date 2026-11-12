@@ -171,4 +171,15 @@ class ExternSyncRun {
 	 * @var float[]
 	 */
 	public array $objectTimes = [];
+
+	/**
+	 * Failed items whose existing target could not be identified (iq-b-f4).
+	 *
+	 * Such an item's target is not in `$targetIds`, so the deletion pass would
+	 * read it as gone from the source; while this is above zero the run deletes
+	 * nothing.
+	 *
+	 * @var integer
+	 */
+	public int $unattributedFailures = 0;
 }//end class

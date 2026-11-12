@@ -378,4 +378,67 @@ class SynchronizationServiceDeletionRatioGuardTest extends TestCase {
 		$this->assertSame(0, $deleted);
 		$this->assertSame('fetch_incomplete', $guardInfo['reason']);
 	}//end testForceDeletionDoesNotBypassFetchIncompleteGate()
+
+	/**
+	 * Below the ratio floor the guard still refuses to remove every target (iq-b-f4).
+	 *
+	 * @return void
+	 */
+	public function testSmallSyncCannotLoseEveryTargetWithoutForce(): void {
+		$this->seedContracts(2);
+		$this->service->expects($this->never())->method('updateTarget');
+
+		$guardInfo = null;
+		$deleted = $this->service->deleteInvalidObjects($this->makeSync(), [], false, [], true, false, $guardInfo);
+
+		$this->assertSame(0, $deleted);
+		$this->assertTrue($guardInfo['guarded']);
+		$this->assertSame('ratio_threshold_exceeded', $guardInfo['reason']);
+	}//end testSmallSyncCannotLoseEveryTargetWithoutForce()
+
+	/**
+	 * Below the ratio floor a partial disappearance is still deleted.
+	 *
+	 * @return void
+	 */
+	public function testSmallSyncStillDeletesAPartialDisappearance(): void {
+		$targetIds = $this->seedContracts(2);
+		$this->service->expects($this->once())
+			->method('updateTarget')
+			->willReturnCallback(static fn (array $synchronizationContract, ...$rest) => $synchronizationContract);
+
+		$guardInfo = null;
+		$deleted = $this->service->deleteInvalidObjects($this->makeSync(), [$targetIds[0]], false, [], true, false, $guardInfo);
+
+		$this->assertSame(1, $deleted);
+		$this->assertFalse($guardInfo['guarded']);
+	}//end testSmallSyncStillDeletesAPartialDisappearance()
+
+	/**
+	 * A previously synced item that fails keeps its target out of the deletion pass (iq-b-f4).
+	 *
+	 * @return void
+	 */
+	public function testAFailedItemKeepsItsExistingTarget(): void {
+		$run = new \OCA\Integriq\Service\Synchronization\ExternSyncRun();
+		$run->synchronization = $this->makeSync();
+		$keep = new \ReflectionMethod(SynchronizationService::class, 'keepTargetOfFailedItem');
+		$keep->setAccessible(true);
+
+		$index = ['origin-1' => [['originId' => 'origin-1', 'targetId' => 'target-1']]];
+		$keep->invoke($this->service, $run, ['id' => 'origin-1', 'title' => 'broken'], $index);
+		$this->assertSame(['target-1'], $run->targetIds);
+		$this->assertSame(0, $run->unattributedFailures);
+
+		// A new item that failed has no target to keep, and is not unattributed.
+		$keep->invoke($this->service, $run, ['id' => 'origin-new'], $index);
+		$this->assertSame(['target-1'], $run->targetIds);
+		$this->assertSame(0, $run->unattributedFailures);
+
+		// An item without an origin id, or a run without a contract index, cannot be
+		// matched: it is counted, and the run then deletes nothing.
+		$keep->invoke($this->service, $run, ['title' => 'no id'], $index);
+		$keep->invoke($this->service, $run, ['id' => 'origin-1'], null);
+		$this->assertSame(2, $run->unattributedFailures);
+	}//end testAFailedItemKeepsItsExistingTarget()
 }//end class

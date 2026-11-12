@@ -58,6 +58,7 @@ use Throwable;
 use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
 
 /**
@@ -135,6 +136,7 @@ class MappingService implements MappingServiceInterface {
 	) {
 		$this->twig = new Environment($loader);
 		$this->twig->addExtension(new MappingExtension());
+		$this->twig->addExtension(new SandboxExtension(policy: (new MappingSandboxPolicy())->create(), sandboxed: true));
 		$this->twig->addRuntimeLoader(
 			new MappingRuntimeLoader(
 				mappingService:                 $this,
@@ -247,7 +249,8 @@ class MappingService implements MappingServiceInterface {
 			$object = $this->orObjectService->find(
 				id: $reference,
 				register: self::REGISTER,
-				schema: self::SCHEMA
+				schema: self::SCHEMA,
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (DoesNotExistException) {
 			$object = null;
@@ -277,7 +280,8 @@ class MappingService implements MappingServiceInterface {
 							'schema' => self::SCHEMA,
 							$field => $identifier,
 						],
-					]
+					],
+					_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 				);
 			} catch (DoesNotExistException) {
 				continue;
@@ -768,7 +772,8 @@ class MappingService implements MappingServiceInterface {
 		$object = $this->orObjectService->find(
 			id: $mappingId,
 			register: self::REGISTER,
-			schema: self::SCHEMA
+			schema: self::SCHEMA,
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 		if ($object === null) {
@@ -796,7 +801,8 @@ class MappingService implements MappingServiceInterface {
 					'register' => self::REGISTER,
 					'schema' => self::SCHEMA,
 				],
-			]
+			],
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 		$rows = ($results['results'] ?? $results);

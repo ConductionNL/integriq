@@ -20,6 +20,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\EudiWalletController;
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EudiIssuanceException;
+use OCA\Integriq\Service\Consumer\ConsumerPrivilegeGate;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\EudiCredentialOfferService;
 use OCA\Integriq\Service\EudiIssuerKeyService;
@@ -77,6 +78,13 @@ class EudiWalletControllerTest extends TestCase {
 	private EudiWalletController $controller;
 
 	/**
+	 * The consumer privilege gate.
+	 *
+	 * @var ConsumerPrivilegeGate|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $privilegeGate;
+
+	/**
 	 * Set up test fixtures.
 	 *
 	 * @return void
@@ -90,6 +98,10 @@ class EudiWalletControllerTest extends TestCase {
 		$this->statusListService = $this->createMock(EudiStatusListService::class);
 		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
 		$this->throttler = $this->createMock(IThrottler::class);
+		$this->privilegeGate = $this->createMock(ConsumerPrivilegeGate::class);
+		$this->privilegeGate->method('mayUse')->willReturnCallback(
+			fn (ObjectEntity $consumer, string $scope): bool => ($scope === ConsumerPrivilegeGate::SCOPE_EUDI_ISSUE && $consumer->getUuid() !== 'consumer-without-scope')
+		);
 
 		$this->request->method('getServerProtocol')->willReturn('https');
 		$this->request->method('getServerHost')->willReturn('example.test');
@@ -102,7 +114,8 @@ class EudiWalletControllerTest extends TestCase {
 			$this->statusListService,
 			$this->authorizationService,
 			$this->throttler,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->privilegeGate
 		);
 
 	}//end setUp()
@@ -170,6 +183,24 @@ class EudiWalletControllerTest extends TestCase {
 		$this->assertSame($data['offerUrl'], $data['qrPayload']);
 
 	}//end testCreateOfferSuccessReturnsOfferUrls()
+
+	/**
+	 * A consumer without the `eudi.issue` scope cannot create an offer (iq-a-f5).
+	 *
+	 * @return void
+	 */
+	public function testCreateOfferWithoutIssueScopeIs403(): void {
+		$this->request->method('getHeader')->with('Authorization')->willReturn('Bearer valid.jwt.token');
+
+		$consumer = new ObjectEntity();
+		$consumer->setUuid('consumer-without-scope');
+		$this->authorizationService->method('getResolvedConsumer')->willReturn($consumer);
+		$this->offerService->expects($this->never())->method('createOffer');
+
+		$response = $this->controller->createOffer();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testCreateOfferWithoutIssueScopeIs403()
 
 	/**
 	 * A service-level rejection (EudiIssuanceException) is rendered with its

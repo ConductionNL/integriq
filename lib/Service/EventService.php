@@ -1380,7 +1380,8 @@ class EventService implements EventServiceInterface {
 			$synchronization = $this->objectService->find(
 				id: $synchronizationId,
 				register: 'integriq',
-				schema: 'synchronization'
+				schema: 'synchronization',
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 			);
 		} catch (\Throwable $e) {
 			$synchronization = null;
@@ -1456,7 +1457,12 @@ class EventService implements EventServiceInterface {
 		}
 
 		try {
-			$job = $this->objectService->find(id: $jobId, register: 'integriq', schema: 'job');
+			$job = $this->objectService->find(
+				id: $jobId,
+				register: 'integriq',
+				schema: 'job',
+				_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+			);
 		} catch (\Throwable $e) {
 			$job = null;
 		}

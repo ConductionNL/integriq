@@ -480,6 +480,66 @@ class SynchronizationServiceTest extends TestCase {
 	}//end testHandleObjectEventQueriesOrForDirectSyncs()
 
 	/**
+	 * The synchronization lookups behind object-event triggers read as the
+	 * engine: an object written without a session (webhook-triggered sync,
+	 * public endpoint POST) must still find its dependent synchronizations,
+	 * although the `synchronization` schema denies anonymous reads
+	 * (99-engine-config-lockdown). The mock answers like OpenRegister's RBAC
+	 * does for an anonymous caller: nothing, unless the read bypasses RBAC.
+	 *
+	 * @return void
+	 */
+	public function testObjectEventSyncLookupFindsSynchronizationWithoutSession(): void {
+		$objectEntity = ObjectServiceMockBuilder::objectEntity($this, [], 'obj-anon');
+		$objectEntity->setRegister('integriq');
+		$objectEntity->setSchema('source');
+
+		$syncEntity = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'sync-a'], 'sync-uuid-anon');
+		$rbacFlags = [];
+		$this->orObjectService->method('findAll')->willReturnCallback(
+			function (array $config = [], bool $_rbac = true) use ($syncEntity, &$rbacFlags): array {
+				if (($config['filters']['schema'] ?? null) === 'synchronization') {
+					$rbacFlags[] = $_rbac;
+				}
+
+				if ($_rbac === true) {
+					return ['results' => [], 'total' => 0];
+				}
+
+				return ['results' => [$syncEntity], 'total' => 1];
+			}
+		);
+
+		$this->assertSame([$syncEntity], $this->service->findAllBySourceId('integriq', 'source'));
+
+		$rbacFlags = [];
+		$this->service->handleObjectEventSynchronization($objectEntity, 'create');
+		$this->assertNotEmpty($rbacFlags, 'the object event must look up synchronizations');
+		$this->assertNotContains(true, $rbacFlags, 'every object-event synchronization lookup must bypass RBAC');
+	}//end testObjectEventSyncLookupFindsSynchronizationWithoutSession()
+
+	/**
+	 * getSynchronization() by filters (the public endpoint sync-rule path,
+	 * `reference` lookup) finds the synchronization without a session.
+	 *
+	 * @return void
+	 */
+	public function testGetSynchronizationByFiltersBypassesRbac(): void {
+		$syncEntity = ObjectServiceMockBuilder::objectEntity($this, ['reference' => 'ref-1'], 'sync-uuid-ref');
+		$this->orObjectService->method('findAll')->willReturnCallback(
+			function (array $config = [], bool $_rbac = true) use ($syncEntity): array {
+				if ($_rbac === true) {
+					return ['results' => [], 'total' => 0];
+				}
+
+				return ['results' => [$syncEntity], 'total' => 1];
+			}
+		);
+
+		$this->assertSame($syncEntity, $this->service->getSynchronization(filters: ['reference' => 'ref-1']));
+	}//end testGetSynchronizationByFiltersBypassesRbac()
+
+	/**
 	 * encodeArrayKeys() rewrites flat keys.
 	 *
 	 * @return void

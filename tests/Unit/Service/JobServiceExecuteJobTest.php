@@ -146,7 +146,7 @@ class JobServiceExecuteJobTest extends TestCase {
 	 */
 	private function job(array $overrides = []): \OCA\OpenRegister\Db\ObjectEntity {
 		$body = array_merge(
-			['isEnabled' => true, 'jobClass' => 'Some\\Action', 'interval' => 3600, 'arguments' => ['a' => 1]],
+			['isEnabled' => true, 'jobClass' => 'OCA\\Integriq\\Action\\SomeAction', 'interval' => 3600, 'arguments' => ['a' => 1]],
 			$overrides
 		);
 
@@ -380,4 +380,91 @@ class JobServiceExecuteJobTest extends TestCase {
 
 		$this->assertNotNull($result);
 	}//end testTracePersistenceFailureIsSwallowed()
+
+	/**
+	 * Build a service whose user and group managers know the given users (iq-b-f3).
+	 *
+	 * @param array<int, string> $admins The uids that are administrators.
+	 *
+	 * @return JobService
+	 */
+	private function serviceWithUsers(array $admins): JobService {
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturnCallback(
+			function (string $uid) {
+				$user = $this->createMock(\OCP\IUser::class);
+				$user->method('getUID')->willReturn($uid);
+				return $user;
+			}
+		);
+
+		$groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturnCallback(fn (string $uid): bool => in_array($uid, $admins, true));
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('hasKey')->willReturn(false);
+
+		return new JobService(
+			$this->createMock(IJobList::class),
+			$this->objectService,
+			$this->createMock(IDBConnection::class),
+			$this->container,
+			$this->createMock(IUserSession::class),
+			$userManager,
+			$appConfig,
+			$groupManager,
+		);
+	}//end serviceWithUsers()
+
+	/**
+	 * A jobClass outside integriq's own actions is never resolved or run.
+	 *
+	 * @return void
+	 */
+	public function testJobClassOutsideTheActionNamespaceIsRefused(): void {
+		$this->actionOutcome = ['level' => 'SUCCESS'];
+
+		foreach (['OCA\\Files\\Command\\Scan', 'OC\\Core\\Command\\Maintenance\\Mode', 'OCA\\IntegriqEvil\\Action\\X'] as $class) {
+			$this->service->executeJob($this->job(['jobClass' => $class]));
+			$this->assertNull($this->receivedArguments, $class . ' must not run');
+		}
+
+		$this->assertStringContainsString('is not an integriq action', (string)end($this->saved['job_log'])['message']);
+	}//end testJobClassOutsideTheActionNamespaceIsRefused()
+
+	/**
+	 * A non-admin job owner cannot make the job run as somebody else.
+	 *
+	 * @return void
+	 */
+	public function testNonAdminOwnerCannotRunAsAnotherUser(): void {
+		$this->actionOutcome = ['level' => 'SUCCESS'];
+		$job = $this->job(['userId' => 'admin']);
+		$job->setOwner('mallory');
+
+		$this->serviceWithUsers(admins: ['admin'])->executeJob($job);
+
+		$this->assertNull($this->receivedArguments);
+		$this->assertStringContainsString('may not run this job as', (string)end($this->saved['job_log'])['message']);
+	}//end testNonAdminOwnerCannotRunAsAnotherUser()
+
+	/**
+	 * An administrator may set another user, and an owner may run a job as themself.
+	 *
+	 * @return void
+	 */
+	public function testAdminOwnerOrSelfMayRunAsTheConfiguredUser(): void {
+		$this->actionOutcome = ['level' => 'SUCCESS'];
+
+		$byAdmin = $this->job(['userId' => 'service-account']);
+		$byAdmin->setOwner('admin');
+		$this->serviceWithUsers(admins: ['admin'])->executeJob($byAdmin);
+		$this->assertNotNull($this->receivedArguments);
+
+		$this->receivedArguments = null;
+		$bySelf = $this->job(['userId' => 'jan']);
+		$bySelf->setOwner('jan');
+		$this->serviceWithUsers(admins: ['admin'])->executeJob($bySelf);
+		$this->assertNotNull($this->receivedArguments);
+	}//end testAdminOwnerOrSelfMayRunAsTheConfiguredUser()
 }//end class

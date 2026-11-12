@@ -35,6 +35,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\RegisterResolverService;
 use OCP\AppFramework\Http\JSONResponse;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -165,6 +166,8 @@ class RuleService {
 	 *                                                       identifiers; nullable so unit tests that don't
 	 *                                                       exercise the catalogue rule path can omit the
 	 *                                                       dependency.
+	 * @param LoggerInterface|null $logger Logs the internal reason a rule step failed, which the
+	 *                                     endpoint caller does not get to see.
 	 *
 	 * @return void
 	 */
@@ -176,6 +179,7 @@ class RuleService {
 		private readonly ORObjectService $orObjectService,
 		private readonly EndpointRulePluginRegistryInterface $pluginRegistry,
 		private readonly ?RegisterResolverService $registerResolver = null,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 
@@ -552,10 +556,18 @@ class RuleService {
 					statusCode: 400
 				);
 			} catch (Exception $exception) {
+				// The message comes from the outbound fetch of a caller-supplied URL and
+				// can carry internal host names, upstream bodies or SQL text: log it, and
+				// give the endpoint caller the generic answer (ADR-050, api-f4).
+				$this->logger?->warning(
+					'Rule extend_external_input could not retrieve the referenced object',
+					['property' => $property['property'], 'exception' => $exception->getMessage()]
+				);
+
 				return new JSONResponse(
 					data: [
 						'message' => 'Invalid Input',
-						'error' => $exception->getMessage(),
+						'error' => 'The object referenced in field ' . $property['property'] . ' could not be retrieved',
 						'errors' => [
 							[
 								'name' => $propName,

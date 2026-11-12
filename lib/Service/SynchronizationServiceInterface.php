@@ -71,8 +71,9 @@ interface SynchronizationServiceInterface {
 	 * always a 100% ratio) and the production incidents motivating this guard
 	 * (ConductionNL/integriq#1000/#1001/#1002) involve synchronizations
 	 * with dozens to thousands of contracts, not a handful. Below this floor
-	 * the guard is skipped entirely and deletion proceeds exactly as it did
-	 * before this change (still subject to the fetch-completeness gate).
+	 * the ratio is not used; the guard then only refuses a pass that would
+	 * remove every target (a source that suddenly answers nothing), unless
+	 * deletion is forced (iq-b-f4). The fetch-completeness gate applies too.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
 	 */

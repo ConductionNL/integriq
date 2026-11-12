@@ -24,15 +24,18 @@ namespace OCA\Integriq\Tests\Unit\Directory;
 use OCA\Integriq\Directory\DirectorySource;
 use OCA\Integriq\Directory\GroupMappingResolver;
 use OCA\Integriq\Directory\OpenWorkReporter;
+use OCA\Integriq\Directory\PrivilegedAccountGuard;
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\Group\ISubAdmin;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Security\ISecureRandom;
+use OCP\Settings\IManager as ISettingsManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -54,6 +57,16 @@ class ScimProvisioningServiceTest extends TestCase {
 	private $groupManager;
 
 	/**
+	 * @var ISubAdmin|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $subAdmin;
+
+	/**
+	 * @var ISettingsManager|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $settingsManager;
+
+	/**
 	 * Build the collaborators every test shares.
 	 *
 	 * @return void
@@ -61,6 +74,9 @@ class ScimProvisioningServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->subAdmin = $this->createMock(ISubAdmin::class);
+		$this->settingsManager = $this->createMock(ISettingsManager::class);
+		$this->settingsManager->method('getAllAllowedAdminSettings')->willReturn([]);
 
 	}//end setUp()
 
@@ -88,7 +104,13 @@ class ScimProvisioningServiceTest extends TestCase {
 			),
 			logger: $this->createMock(LoggerInterface::class),
 			directorySource: $this->directorySource(managedGroups: $managedGroups),
-			mappingResolver: $this->mappingResolver(managedGroups: $managedGroups)
+			mappingResolver: $this->mappingResolver(managedGroups: $managedGroups),
+			accountGuard: new PrivilegedAccountGuard(
+				groupManager: $this->groupManager,
+				subAdmin: $this->subAdmin,
+				settingsManager: $this->settingsManager,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end service()
 
@@ -313,6 +335,50 @@ class ScimProvisioningServiceTest extends TestCase {
 		);
 
 	}//end testAConsumerCannotRewriteAnAdministratorsEmail()
+
+	/**
+	 * A group sub-admin is as privileged as `admin` for SCIM (iq-a-f5).
+	 *
+	 * @return void
+	 */
+	public function testAConsumerCannotRewriteASubAdminsEmail(): void {
+		$user = $this->createMock(IUser::class);
+		$user->expects($this->never())->method('setEMailAddress');
+
+		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('isInGroup')->willReturn(false);
+		$this->subAdmin->method('isSubAdmin')->willReturn(true);
+
+		$this->expectException(DirectorySyncRefusalException::class);
+
+		$this->service()->upsertUser(
+			resource: ['userName' => 'groepsbeheerder', 'emails' => [['value' => 'mallory@example.org']]],
+			consumerLabel: 'consumer-1'
+		);
+	}//end testAConsumerCannotRewriteASubAdminsEmail()
+
+	/**
+	 * An account with delegated admin settings is as privileged as `admin` for SCIM (iq-a-f5).
+	 *
+	 * @return void
+	 */
+	public function testAConsumerCannotRewriteADelegatedAdminsEmail(): void {
+		$user = $this->createMock(IUser::class);
+		$user->expects($this->never())->method('setEMailAddress');
+
+		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('isInGroup')->willReturn(false);
+		$this->subAdmin->method('isSubAdmin')->willReturn(false);
+		$this->settingsManager = $this->createMock(ISettingsManager::class);
+		$this->settingsManager->method('getAllAllowedAdminSettings')->willReturn(['OCA\\Integriq\\Settings\\IntegriqAdmin']);
+
+		$this->expectException(DirectorySyncRefusalException::class);
+
+		$this->service()->upsertUser(
+			resource: ['userName' => 'functioneel-beheerder', 'emails' => [['value' => 'mallory@example.org']]],
+			consumerLabel: 'consumer-1'
+		);
+	}//end testAConsumerCannotRewriteADelegatedAdminsEmail()
 
 	/**
 	 * A caller cannot walk the whole account estate with one `count`.

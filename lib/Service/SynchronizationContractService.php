@@ -90,7 +90,8 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			id: (string)$id,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			_audit: false
+			_audit: false,
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
 		);
 
 	}//end findObject()
@@ -101,6 +102,9 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	 * @param array $filters Additional `filters` payload (register+schema injected).
 	 *
 	 * @return array<ObjectEntity> The matching contract objects.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-duplicate-synchronization-contracts-are-surfaced-never-silently-removed-req-013
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	public function findAllObjects(array $filters = []): array {
 		$config = [
@@ -109,7 +113,10 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 				$filters
 			),
 		];
-		$matches = $this->orObjectService->findAll(config: $config);
+		$matches = $this->orObjectService->findAll(
+			config: $config,
+			_rbac: false, // RBAC bypass: engine reads its own admin-owned config, also for anonymous/webcron callers (99-engine-config-lockdown).
+		);
 
 		return array_values(($matches['results'] ?? $matches));
 	}//end findAllObjects()
@@ -401,6 +408,8 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	 * @param array $object Array of contract data.
 	 *
 	 * @return array The persisted contract payload array.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
 	 */
 	public function createFromArray(array $object): array {
 		if (empty($object['uuid']) === true) {
@@ -418,7 +427,8 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			object: $object,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			uuid: $uuid
+			uuid: $uuid,
+			_rbac: false, // RBAC bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();
@@ -462,7 +472,8 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			object: $merged,
 			register: self::REGISTER,
 			schema: self::SCHEMA,
-			uuid: $uuidParam
+			uuid: $uuidParam,
+			_rbac: false, // RBAC bypass: engine bookkeeping from source data, no caller fields; webhooks/object events/cron too (99-engine-config-lockdown).
 		);
 
 		return $saved->jsonSerialize();

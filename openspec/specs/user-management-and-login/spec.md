@@ -92,6 +92,12 @@ sanitised user payload plus session cookie hints. All responses carry security h
 - WHEN `POST /api/user/login` is called
 - THEN the failed attempt is recorded and HTTP 401 returns a generic "Invalid username or password" message (no indication whether the username exists)
 
+#### Scenario: A refused correct password answers like a wrong one
+
+- GIVEN the correct password for an account that is disabled, or that has or must have a second factor
+- WHEN `POST /api/user/login` is called
+- THEN the failed attempt is recorded, the real reason is only logged, and the response (HTTP 401, the generic "Invalid username or password" message, headers, throttling) is the same as for a wrong password
+
 #### Scenario: Lockout after repeated failures
 
 - GIVEN `RATE_LIMIT_ATTEMPTS` failed attempts for a username within the window

@@ -22,11 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
+use OCA\Integriq\Service\SecondFactorGate;
 use OCA\Integriq\Service\SecurityServiceInterface;
+use OCA\Integriq\Service\UserApiOriginPolicy;
 use OCA\Integriq\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -60,6 +63,13 @@ use Psr\Log\LoggerInterface;
  *   helpers' signatures adds no dependency the class did not have.
  */
 class UserController extends Controller {
+
+	/**
+	 * Core brute-force throttler action for a refused login (api-f2).
+	 *
+	 * @var string
+	 */
+	private const LOGIN_THROTTLE_ACTION = 'integriq_api_login';
 
 	/**
 	 * User manager for user operations
@@ -104,6 +114,18 @@ class UserController extends Controller {
 	private readonly IL10N $l;
 
 	/**
+	 * Decides whether an account needs a second factor and so cannot log in here
+	 * @var SecondFactorGate
+	 */
+	private readonly SecondFactorGate $secondFactorGate;
+
+	/**
+	 * Decides which Origin may be granted CORS access to these endpoints
+	 * @var UserApiOriginPolicy
+	 */
+	private readonly UserApiOriginPolicy $originPolicy;
+
+	/**
 	 * CORS allowed methods
 	 *
 	 * @var string
@@ -138,6 +160,8 @@ class UserController extends Controller {
 	 * @param LoggerInterface $logger The logger for security events
 	 * @param UserServiceInterface $userService The user service for user-related operations
 	 * @param IL10N $l The localization service
+	 * @param SecondFactorGate $secondFactorGate The second-factor check for the login
+	 * @param UserApiOriginPolicy $originPolicy The allow-list of CORS origins
 	 * @param string $corsMethods Allowed CORS methods
 	 * @param string $corsAllowedHeaders Allowed CORS headers
 	 * @param int $corsMaxAge CORS max age
@@ -174,6 +198,8 @@ class UserController extends Controller {
 		LoggerInterface $logger,
 		UserServiceInterface $userService,
 		IL10N $l,
+		SecondFactorGate $secondFactorGate,
+		UserApiOriginPolicy $originPolicy,
 		string $corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		string $corsAllowedHeaders = 'Authorization, Content-Type, Accept',
 		int $corsMaxAge = 1728000,
@@ -185,6 +211,8 @@ class UserController extends Controller {
 		$this->userService = $userService;
 		$this->logger = $logger;
 		$this->l = $l;
+		$this->secondFactorGate = $secondFactorGate;
+		$this->originPolicy = $originPolicy;
 
 		$this->corsMethods = $corsMethods;
 		$this->corsAllowedHeaders = $corsAllowedHeaders;
@@ -237,21 +265,16 @@ class UserController extends Controller {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function buildCorsPreflightResponse(): Response {
-		$originHeader = $this->request->getHeader('Origin');
-		if ($originHeader !== '') {
-			$origin = $originHeader;
-		} else {
-			$origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');
-		}
-
-		// Credentials require a non-wildcard origin; fall back to the dev origin only when the
-		// request truly has no Origin header (server-side test tooling).
-		if ($origin === '*' && $this->request->getHeader('Origin') === '') {
-			$origin = 'http://localhost:3000';
-		}
-
 		$response = new Response();
+		$origin = $this->allowedCorsOrigin();
+		if ($origin === null) {
+			// Not an allow-listed origin: no CORS grant, so the browser refuses
+			// the cross-origin call. Same-origin callers do not need one.
+			return $response;
+		}
+
 		$response->addHeader('Access-Control-Allow-Origin', $origin);
+		$response->addHeader('Vary', 'Origin');
 		$response->addHeader('Access-Control-Allow-Methods', $this->corsMethods);
 		$response->addHeader('Access-Control-Max-Age', (string)$this->corsMaxAge);
 		$response->addHeader('Access-Control-Allow-Headers', $this->corsAllowedHeaders);
@@ -259,6 +282,24 @@ class UserController extends Controller {
 
 		return $response;
 	}//end buildCorsPreflightResponse()
+
+	/**
+	 * The request's Origin when the administrator allow-listed it, null otherwise.
+	 *
+	 * These responses carry `Access-Control-Allow-Credentials: true`, so the
+	 * origin they grant can read the signed-in user's profile and drive the
+	 * login with the browser's cookies. Reflecting whatever Origin arrived gave
+	 * that to every site. Only origins listed (comma or whitespace separated, as
+	 * `scheme://host[:port]`) in the app setting `user_api_allowed_origins` are
+	 * granted; the list is empty by default, which grants none.
+	 *
+	 * @return string|null The origin to grant, or null for no CORS grant.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function allowedCorsOrigin(): ?string {
+		return $this->originPolicy->grantFor(origin: $this->request->getHeader('Origin'));
+	}//end allowedCorsOrigin()
 
 	/**
 	 * Add CORS headers to a JSON response so browser clients receive cookies.
@@ -270,18 +311,13 @@ class UserController extends Controller {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function addCorsHeaders(JSONResponse $response): JSONResponse {
-		$originHeader = $this->request->getHeader('Origin');
-		if ($originHeader !== '') {
-			$origin = $originHeader;
-		} else {
-			$origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');
-		}
-
-		if ($origin === '*' && $this->request->getHeader('Origin') === '') {
-			$origin = 'http://localhost:3000';
+		$origin = $this->allowedCorsOrigin();
+		if ($origin === null) {
+			return $response;
 		}
 
 		$response->addHeader('Access-Control-Allow-Origin', $origin);
+		$response->addHeader('Vary', 'Origin');
 		$response->addHeader('Access-Control-Allow-Methods', $this->corsMethods);
 		$response->addHeader('Access-Control-Allow-Headers', $this->corsAllowedHeaders);
 		$response->addHeader('Access-Control-Allow-Credentials', 'true');
@@ -442,14 +478,17 @@ class UserController extends Controller {
 	 * anything else in this app: this is the one public surface here where the
 	 * caller presents a credential a stranger could guess.
 	 *
-	 * Brute-force protection is ALREADY COMPLETE here, and deliberately not via
-	 * NC's IThrottler: SecurityService::checkLoginRateLimit() gates entry (with
-	 * a lockout and a delay), recordFailedLoginAttempt() feeds it on both
-	 * failure paths, and recordSuccessfulLogin() clears it. That is the
-	 * two-halves shape ADR-082 asks for, keyed on USERNAME + IP rather than IP
-	 * alone — finer-grained than the framework throttler, so adding
-	 * BruteForceProtection on top would be a second, coarser counter for the
-	 * same event.
+	 * Brute-force protection has two layers. SecurityService::checkLoginRateLimit()
+	 * gates entry (with a lockout and a delay), recordFailedLoginAttempt() feeds
+	 * it on every failure path, and recordSuccessfulLogin() clears it, keyed on
+	 * USERNAME + IP. BruteForceProtection adds core's per-IP throttler on top:
+	 * every refused password guess calls throttle(), which core only registers
+	 * when the method carries the attribute.
+	 *
+	 * An account that needs a second factor is refused with exactly the answer a
+	 * wrong password gets (same status, message and headers) and counts as a
+	 * failed attempt, so the refusal does not confirm a guessed password; the
+	 * real reason is only logged.
 	 *
 	 * The AnonRateLimit ceiling below is the volume half, which app-local logic
 	 * did not cover.
@@ -464,6 +503,7 @@ class UserController extends Controller {
 	#[NoCSRFRequired]
 	#[PublicPage]
 	#[AnonRateLimit(limit: 20, period: 60)]
+	#[BruteForceProtection(action: self::LOGIN_THROTTLE_ACTION)]
 	public function login(): JSONResponse {
 		try {
 			// MEMORY MONITORING: Check initial memory usage to prevent OOM.
@@ -497,6 +537,20 @@ class UserController extends Controller {
 			$user = $this->authenticateLogin(credentials: $credentials, clientIp: $clientIp);
 			if ($user instanceof JSONResponse === true) {
 				return $user;
+			}
+
+			// This endpoint creates a session without core's login chain, so it cannot
+			// ask for a second factor. An account that has one (or must have one)
+			// is refused here and logs in through Nextcloud's own login flow.
+			// It gets the wrong-password answer, so the refusal does not tell an
+			// unauthenticated caller that the guessed password was right.
+			if ($this->secondFactorGate->requiresSecondFactor(user: $user) === true) {
+				$this->logger->info(
+					'Integriq API login refused: account requires two-factor authentication',
+					['user' => $user->getUID(), 'ip' => $clientIp]
+				);
+				$this->securityService->recordFailedLoginAttempt($credentials['username'], $clientIp, 'second_factor_required');
+				return $this->invalidCredentialsResponse();
 			}
 
 			// Authentication successful - record success and clear rate limits.
@@ -536,13 +590,15 @@ class UserController extends Controller {
 	 * Both failures are recorded for the rate limit. A wrong password answers 401,
 	 * not 400: the request is well formed, the authentication failed. The spec
 	 * ("Failed login is rate-limited and anti-enumeration") reserves 400 for
-	 * validateLoginCredentials() and for a disabled account. The message is
-	 * generic, so it does not reveal whether the username exists.
+	 * validateLoginCredentials(). A disabled account answers exactly like a wrong
+	 * password, because checkPassword() succeeds for it and a distinct answer
+	 * would confirm the guessed password (pp-f2); the real reason is logged. The
+	 * message is generic, so it does not reveal whether the username exists.
 	 *
 	 * @param array  $credentials The sanitized `username` and `password`.
 	 * @param string $clientIp    The client IP address.
 	 *
-	 * @return IUser|JSONResponse The user, or the 429, 401 or 400 response.
+	 * @return IUser|JSONResponse The user, or the 429 or 401 response.
 	 *
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
@@ -573,25 +629,41 @@ class UserController extends Controller {
 		if ($user === false) {
 			$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'invalid_credentials');
 
-			$response = new JSONResponse(
-				data: ['error' => $this->l->t('Invalid username or password')],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
-			return $this->securityService->addSecurityHeaders($response);
+			return $this->invalidCredentialsResponse();
 		}
 
 		if ($user->isEnabled() === false) {
+			$this->logger->info(
+				'Integriq API login refused: account is disabled',
+				['user' => $user->getUID(), 'ip' => $clientIp]
+			);
 			$this->securityService->recordFailedLoginAttempt($username, $clientIp, 'account_disabled');
 
-			$response = new JSONResponse(
-				data: ['error' => $this->l->t('Account is disabled')],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-			return $this->securityService->addSecurityHeaders($response);
+			return $this->invalidCredentialsResponse();
 		}
 
 		return $user;
 	}//end authenticateLogin()
+
+	/**
+	 * The answer to a refused password: 401 with a generic message, throttled.
+	 *
+	 * Used for a wrong password, a disabled account and an account that needs a
+	 * second factor, so they cannot be told apart by an unauthenticated caller.
+	 *
+	 * @return JSONResponse The 401 response.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function invalidCredentialsResponse(): JSONResponse {
+		$response = new JSONResponse(
+			data: ['error' => $this->l->t('Invalid username or password')],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+		$response->throttle(['action' => self::LOGIN_THROTTLE_ACTION]);
+
+		return $this->securityService->addSecurityHeaders($response);
+	}//end invalidCredentialsResponse()
 
 	/**
 	 * Put the user in the session and create a session token, so later requests

@@ -114,6 +114,22 @@ class SecurityService
 | `PROGRESSIVE_DELAY_BASE` | 2 | Base delay for progressive backoff |
 | `MAX_PROGRESSIVE_DELAY` | 60 | Maximum delay cap (seconds) |
 
+### Cross-origin front ends (CORS)
+
+The `/api/user/*` responses allow credentials, so a site that is granted CORS access can read the signed-in user's profile and log in with the browser's cookies. Integriq therefore only grants CORS to origins an administrator lists in the app setting `user_api_allowed_origins`. The list is empty by default, which grants no origin: a front end served from the Nextcloud host itself needs nothing, but a headless front end on another origin gets a browser CORS error until its origin is listed.
+
+List each origin as `scheme://host[:port]`, without a path, separated by commas or spaces:
+
+```bash
+occ config:app:set integriq user_api_allowed_origins --value 'https://portal.example.nl'
+```
+
+```bash
+occ config:app:set integriq user_api_allowed_origins --value 'https://portal.example.nl, https://beheer.example.nl:8443'
+```
+
+Origins are compared case-insensitively and a trailing slash is ignored. To see the current list, run `occ config:app:get integriq user_api_allowed_origins`; to grant no origin again, run `occ config:app:delete integriq user_api_allowed_origins`.
+
 ### Security Headers
 
 Customize security headers in the `addSecurityHeaders()` method:

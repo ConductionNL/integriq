@@ -74,18 +74,6 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 	private const GENERATED_PASSWORD_LENGTH = 48;
 
 	/**
-	 * The groups SCIM may never write, whatever the caller presents.
-	 *
-	 * Not configurable, by design. A deployment that could switch this off would
-	 * eventually be a deployment that had.
-	 *
-	 * @var array<int,string>
-	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
-	 */
-	private const PRIVILEGED_GROUPS = ['admin'];
-
-	/**
 	 * What a caller is told when it names a privileged group.
 	 *
 	 * Deliberately says nothing about which groups are privileged or why. A
@@ -159,6 +147,7 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 	 * @param LoggerInterface $logger Logger for provisioning outcomes.
 	 * @param DirectorySource $directorySource Supplies the configured directory connections.
 	 * @param GroupMappingResolver $mappingResolver Supplies the groups a connection declares it manages.
+	 * @param PrivilegedAccountGuard $accountGuard Tells whether an account is too privileged to be written over SCIM.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
@@ -170,6 +159,7 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly DirectorySource $directorySource,
 		private readonly GroupMappingResolver $mappingResolver,
+		private readonly PrivilegedAccountGuard $accountGuard,
 	) {
 
 	}//end __construct()
@@ -233,25 +223,23 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 			return;
 		}
 
-		foreach (self::PRIVILEGED_GROUPS as $privilegedGroup) {
-			if ($this->groupManager->isInGroup($userId, $privilegedGroup) !== true) {
-				continue;
-			}
-
-			$this->logger->warning(
-				'[Scim] consumer ' . $consumerLabel . ' was refused a write to the account ' . $userId
-				. ': the account holds a privileged group membership'
-			);
-
-			throw new DirectorySyncRefusalException(
-				message: 'the account holds a privileged group membership and is never writable over SCIM',
-				context: [
-					'user' => $userId,
-					'consumer' => $consumerLabel,
-					'detail' => self::REFUSAL_DETAIL_PRIVILEGED_USER,
-				]
-			);
+		if ($this->accountGuard->isPrivileged(user: $user) === false) {
+			return;
 		}
+
+		$this->logger->warning(
+			'[Scim] consumer ' . $consumerLabel . ' was refused a write to the account ' . $userId
+			. ': the account holds a privileged group membership'
+		);
+
+		throw new DirectorySyncRefusalException(
+			message: 'the account holds a privileged group membership and is never writable over SCIM',
+			context: [
+				'user' => $userId,
+				'consumer' => $consumerLabel,
+				'detail' => self::REFUSAL_DETAIL_PRIVILEGED_USER,
+			]
+		);
 
 	}//end assertWritableUser()
 
@@ -281,7 +269,7 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 		// so it is a narrower exposure, not a closed one (integriq#2104 review
 		// 5264751700). Lifting the assertion to a shared place both routes call is
 		// its own change.
-		if (in_array(needle: $groupId, haystack: self::PRIVILEGED_GROUPS, strict: true) === true) {
+		if (in_array(needle: $groupId, haystack: PrivilegedAccountGuard::PRIVILEGED_GROUPS, strict: true) === true) {
 			$this->refuse(
 				groupId: $groupId,
 				consumerLabel: $consumerLabel,
