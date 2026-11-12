@@ -2758,7 +2758,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/AuthorizationService.php:810 authorizeApiKey() checks rule-inline keys (814-825) then falls back to resolveConsumerByApiKey() (832, defined at 872) matching consumer.authorizationConfiguration.apiKey; wired from lib/Service/EndpointService.php:3010 inside the endpoint rule pipeline's 'apikey' case.",
+				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:155 authorizeApiKey() hands the rule-inline key map and the consumer-backed apiKey check to openregister@lib/Service/AuthorizationService.php (integriq's own copy was removed by 441f67de), with the consumer resolved through lib/Service/Consumer/IntegriqConsumerSource.php; wired from lib/Service/EndpointService.php:3595 inside the endpoint rule pipeline's 'apikey' case.",
 				"spec": "openspec/specs/authorization-jwt",
 				"requirement": "openspec/specs/authorization-jwt :: API key authorization via header-to-uid map (REQ-004)"
 			},
@@ -2796,7 +2796,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/AuthorizationService.php:368 authorizeJwt() verifies signature/algorithm-confusion guard/expiry/jti-replay, resolving the issuer consumer via findIssuer() at 132; wired from lib/Service/EndpointService.php:3021 ('jwt'/'jwt-zgw' rule case) and lib/Controller/EudiWalletController.php:210.",
+				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:120 authorizeJwt() hands signature, algorithm-confusion, expiry and jti-replay checks to openregister@lib/Service/AuthorizationService.php (integriq's own copy was removed by 441f67de), with the issuer consumer resolved through lib/Service/Consumer/IntegriqConsumerSource.php; wired from lib/Service/EndpointService.php:3602 ('jwt'/'jwt-zgw' rule case) and lib/Controller/EudiWalletController.php:224.",
 				"spec": "openspec/specs/authorization-jwt",
 				"requirement": "openspec/specs/authorization-jwt :: JWT Bearer authorization with consumer-registered public keys (REQ-001)"
 			},
@@ -3024,7 +3024,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:120 authorizeJwt() and :155 authorizeApiKey() hand the check to OpenRegister's AuthorizationService (DECISIONS 56, 62, 64; lib/Service/AuthorizationService.php was removed by 441f67de on 5 Oct), passing lib/Service/Consumer/IntegriqConsumerSource.php, whose resolve() (:137-168) gives OpenRegister the consumer's userId; OpenRegister then makes that Nextcloud user act for the request, and the bridge clears the volatile user again when integriq's lifetime cap refuses the token (:136). A rule-inline apiKey map key => uid (:155, $keys) does the same for rule keys.",
+				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:120 authorizeJwt() and :155 authorizeApiKey() hand the check to OpenRegister's AuthorizationService (DECISIONS 56, 62, 64; integriq's own AuthorizationService was removed by 441f67de on 5 Oct), passing lib/Service/Consumer/IntegriqConsumerSource.php, whose resolve() (:137-168) gives OpenRegister the consumer's userId; OpenRegister then makes that Nextcloud user act for the request, and the bridge clears the volatile user again when integriq's lifetime cap refuses the token (:136). A rule-inline apiKey map key => uid (:155, $keys) does the same for rule keys.",
 				"spec": "openspec/specs/consumer-management",
 				"change": "consumer-auth-on-openregister",
 				"requirement": "openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
@@ -4786,7 +4786,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/FlowRunnerService.php:286-301 'branch' step type selects the next step via JsonLogic (selectBranchTarget); openspec/specs/flow-orchestration/spec.md:152-194 REQ-004. Migrated/new graph flows get the same behaviour from OpenRegister's own RouterNode/SwitchNode (openregister lib/Service/Flow/Nodes/SwitchNode.php, RouterNode.php), reachable through the same canvas.",
+				"evidence": "lib/Service/FlowRunnerService.php:286-301 'branch' step type selects the next step via JsonLogic (selectBranchTarget); openspec/specs/flow-orchestration/spec.md:152-194 REQ-004. Migrated/new graph flows get the same behaviour from OpenRegister's own RouterNode/SwitchNode (openregister@lib/Service/Flow/Nodes/SwitchNode.php, openregister@lib/Service/Flow/Nodes/RouterNode.php), reachable through the same canvas.",
 				"spec": "openspec/specs/flow-orchestration",
 				"requirement": "openspec/specs/flow-orchestration :: `branch` step selects the next step via JsonLogic (REQ-004)"
 			},
@@ -4860,7 +4860,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "openregister lib/Service/Flow/Nodes/SubFlowNode.php implements calling one flow from another; integriq's own lib/Service/FlowRunnerService.php:364-370 has no subflow step type. FlowNodeRegistry (openregister lib/Service/Flow/FlowNodeRegistry.php:194-260) serves one shared, cross-app node catalogue, so SubFlowNode is available on integriq's /flows canvas for graph-format flows.",
+				"evidence": "openregister@lib/Service/Flow/Nodes/SubFlowNode.php implements calling one flow from another; integriq's own lib/Service/FlowRunnerService.php:364-370 has no subflow step type. FlowNodeRegistry (openregister@lib/Service/Flow/FlowNodeRegistry.php:194-260) serves one shared, cross-app node catalogue, so SubFlowNode is available on integriq's /flows canvas for graph-format flows.",
 				"change": "2026-07-15-visual-flow-orchestration",
 				"requirement": "openregister:openspec/changes/or-flow-sub-flow/specs/flow-sub-flow :: A flow can run another flow as a step (REQ-SF-001)"
 			},
@@ -5210,7 +5210,7 @@
 				"requirement": "openspec/specs/nextcloud-event-triggers :: A matched subscription can start an OpenRegister flow"
 			},
 			"reachedOn": "Webhooks page, subscription modal, Delivery action \"Flow\" with a flow picker",
-			"note": "Backend dispatch is real and tested; the staff screen to configure an NC-event-to-flow subscription does not exist yet. Built 2026-09-28: the modal now offers Flow.",
+			"note": "The Webhooks subscription modal offers Flow as an action (since 2026-09-28), so an administrator sets up a Nextcloud-event-to-flow subscription on screen.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "nextcloud-app-bridges",
@@ -5287,7 +5287,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/hermiq",
-				"evidence": "hermiq lib/Flow/HermiqAgentNode.php:102-104 is step type hermiq.agent-step and :235 execute() runs an agent turn for each item and puts the answer on it (with expectJson parsing, :391); hermiq lib/Flow/HermiqFlowNodeListener.php:73 registers it on OpenRegister's RegisterFlowNodesEvent, wired at hermiq lib/AppInfo/Application.php:156-161 (hermiq development 7cac4471b); openregister lib/Service/Flow/FlowNodeRegistry.php:574 dispatches that event to fill the node catalogue the flow canvas reads (openregister development 5cda2f04).",
+				"evidence": "hermiq@lib/Flow/HermiqAgentNode.php:102-104 is step type hermiq.agent-step and :235 execute() runs an agent turn for each item and puts the answer on it (with expectJson parsing, :391); hermiq@lib/Flow/HermiqFlowNodeListener.php:73 registers it on OpenRegister's RegisterFlowNodesEvent, wired at hermiq@lib/AppInfo/Application.php:156-161 (hermiq development 7cac4471b); openregister@lib/Service/Flow/FlowNodeRegistry.php:574 dispatches that event to fill the node catalogue the flow canvas reads (openregister development 5cda2f04).",
 				"spec": "openspec/specs/flow-orchestration"
 			},
 			"reachedOn": "flow canvas node palette, Agent step (hermiq installed)",
@@ -5667,7 +5667,7 @@
 				"requirement": "openspec/specs/webhook-signing :: An unsigned subscription and an unsigned attempt are marked (REQ-SOW-003)"
 			},
 			"reachedOn": "Webhooks index: the Signature column; the Webhook signing action on a row shows signed or unsigned with its reason, and the recipe",
-			"note": "Built 2026-09-29: the policy #2074 shipped with tests and no caller now runs on OpenRegister's save path. A subscription saved before this has no Signature value until it is saved again (no migration, design D5).",
+			"note": "SubscriptionSigningPolicy runs on OpenRegister's save path through SubscriptionSigningDefaultListener. A subscription saved before 2026-09-29 has no signing posture until it is saved again (no migration, design D5).",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "events-cloudevents",
@@ -5814,7 +5814,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Broker (transports, registry, CloudEvents binding; archived 2026-09-29-event-broker-transport) publishes a matched event; the Webhooks form now offers Broker: src/modals/EventSubscription/SubscriptionActionFields.vue broker block fed by GET /api/events/brokers (lib/Controller/EventBrokersController.php), src/modals/EventSubscription/BrokerConnectionFields.vue writes protocolSettings.broker {baseUrl, vhost, username, credentialRef} with no password field, lib/Broker/BrokerCredentialResolver.php resolves the reference at publish via BrokeredCallService::resolveCredentialRef(). Tests: EventBrokersControllerTest, EventServiceBrokerTest, BrokerSubscriptionPayloadTest (payload vs merged event_subscription schema), tests/vitest/brokerSubscriptionFields.spec.js; tests/e2e/events-broker-subscription.spec.ts not run.",
+				"evidence": "lib/Broker (transports, registry, CloudEvents binding; archived 2026-09-29-event-broker-transport) publishes a matched event; the Webhooks form now offers Broker: src/modals/EventSubscription/SubscriptionActionFields.vue broker block fed by GET /api/events/brokers (lib/Controller/EventBrokersController.php), src/modals/EventSubscription/BrokerConnectionFields.vue writes protocolSettings.broker {baseUrl, vhost, username, credentialRef} with no password field, lib/Service/Broker/BrokerCredentialResolver.php resolves the reference at publish via BrokeredCallService::resolveCredentialRef(). Tests: EventBrokersControllerTest, EventServiceBrokerTest, BrokerSubscriptionPayloadTest (payload vs merged event_subscription schema), tests/vitest/brokerSubscriptionFields.spec.js; tests/e2e/events-broker-subscription.spec.ts not run.",
 				"change": "2026-09-29-events-broker-subscription-screen",
 				"requirement": "openspec/specs/events-cloudevents :: A subscription's action dispatch MUST support a `broker` kind (REQ-013)"
 			},
@@ -5964,7 +5964,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/EventListener/NextcloudFileEventListener.php, NextcloudFileTagEventListener.php, NextcloudCalendarEventListener.php, NextcloudFormsEventListener.php, NextcloudTablesEventListener.php normalize NC core events into CloudEvents (per openspec/changes/nc-events-start-or-flows/proposal.md: 'Integriq's event hub already normalizes Nextcloud core events (files, calendar, Tables, Forms) into CloudEvents').",
+				"evidence": "lib/EventListener/NextcloudFileEventListener.php, NextcloudFileTagEventListener.php, NextcloudCalendarEventListener.php, NextcloudFormsEventListener.php, NextcloudTablesEventListener.php normalize NC core events into CloudEvents (per openspec/changes/archive/2026-09-28-nc-events-start-or-flows/proposal.md: 'Integriq's event hub already normalizes Nextcloud core events (files, calendar, Tables, Forms) into CloudEvents').",
 				"change": "2026-09-28-nc-events-start-or-flows",
 				"requirement": "openspec/specs/nextcloud-event-triggers :: File events MUST be normalized to CloudEvents (REQ-001)"
 			},
@@ -6744,7 +6744,7 @@
 				]
 			},
 			"reachedOn": "nothing reaches it",
-			"note": "Only a package descriptor and an openspec proposal exist; the installer that would bind it to an operator-chosen register/schema was never built. Corrections round 9 (2026-09-28): the change that carries this row is named: openspec/changes/zgw-connectors-for-dossiq (open; its scope lists the zgw-zaken configuration set).",
+			"note": "The set installer is built (ZgwSetInstaller); only the change's Playwright test is open in zgw-connectors-for-dossiq.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "zgw-connectors",
@@ -7102,7 +7102,7 @@
 				"requirement": "openspec/specs/dso-omgevingsloket :: STAM Koppelvlak Endpoint Registration (REQ-DSO-001)"
 			},
 			"reachedOn": "machine route: POST /api/dso/stam/verzoeken (Omgevingsloket STAM push); the staff review/handoff surface (list, status, handoff) has no page reaching it",
-			"note": "Live-defect candidate: an operator has no way to see or hand off a received Omgevingsloket application anywhere in the UI, even though the backend read/handoff/outbound surface is fully built.",
+			"note": "Receipt, status, hand-off and outbound run as machine routes. No integriq page lists received verzoeken; the case app shows them once handed off.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "dso-omgevingsloket",
@@ -7363,7 +7363,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:478-481 pdok#suggestAction/lookupAction/freeAction/reverseAction -> lib/Controller/PdokController.php:78,107,153,183 -> lib/Connectors/PdokConnector.php:142,157,174,192 (real implementation, with normalize()/writeThrough() at 394/564). A case-insensitive grep of src/ for 'pdok' returns zero matches anywhere in integriq's own frontend; the only mention is the Catalog descriptor at lib/Service/CatalogRegistryService.php:218 ('adapter:pdok'). Reached cross-app (added 2026-09-26): dossiq src/services/pdokService.js:72 builds /apps/{integriq}/api/pdok and calls suggest, lookup, free and reverse (:141, :175, :198, :221); dossiq src/components/map/AddressSearch.vue:53,80 calls suggest() and is hosted by src/components/map/LocationPicker.vue.",
+				"evidence": "appinfo/routes.php:478-481 pdok#suggestAction/lookupAction/freeAction/reverseAction -> lib/Controller/PdokController.php:78,107,153,183 -> lib/Connectors/PdokConnector.php:142,157,174,192 (real implementation, with normalize()/writeThrough() at 394/564). A case-insensitive grep of src/ for 'pdok' returns zero matches anywhere in integriq's own frontend; the only mention is the Catalog descriptor at lib/Service/CatalogRegistryService.php:218 ('adapter:pdok'). Reached cross-app (added 2026-09-26): dossiq@src/services/pdokService.js:72 builds /apps/{integriq}/api/pdok and calls suggest, lookup, free and reverse (:141, :175, :198, :221); dossiq@src/components/map/AddressSearch.vue:53,80 calls suggest() and is hosted by dossiq@src/components/map/LocationPicker.vue.",
 				"readOn": "2026-09-26",
 				"spec": "openspec/specs/pdok-adapter",
 				"requirement": "openspec/specs/pdok-adapter :: Four REST Endpoints at `/api/pdok/*`"
@@ -7696,7 +7696,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock).",
+				"evidence": "appinfo/routes.php:89 cti#events -> lib/Controller/CtiController.php:92 events() -> lib/Service/Kiss/CtiEventIntake.php:161 handle() verifies, deduplicates and dispatches a typed lib/Event/CallEvent.php via IEventDispatcher; lib/Service/Kiss/WebhookCtiProvider.php is a real binding alongside LogCtiProvider.php (mock).",
 				"change": "kcc-cti-adapter",
 				"requirement": "openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge :: A call carries its caller context as a typed event (REQ-006)"
 			},
@@ -7935,7 +7935,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/oso-adapter/spec.md is the main spec; code at lib/Service/Oso/OsoProviderInterface.php. Added in the spec round reverse check; not live-checked.",
+				"evidence": "openspec/specs/oso-adapter/spec.md is the main spec; code at lib/Service/Oso/OsoProviderInterface.php. Live client lib/Service/Oso/OsoKennisnetClient.php, reached through lib/Controller/OsoController.php. Not live-checked.",
 				"spec": "openspec/specs/oso-adapter",
 				"requirement": "openspec/specs/oso-adapter :: REQ-004: Push export, signed inbound import, and signed export retour"
 			},
@@ -7960,7 +7960,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/rod-adapter/spec.md is the main spec; code at lib/Service/Rod/RodProviderInterface.php. Added in the spec round reverse check; not live-checked.",
+				"evidence": "openspec/specs/rod-adapter/spec.md is the main spec; code at lib/Service/Rod/RodProviderInterface.php. Live client lib/Service/Rod/RodEdukoppelingClient.php, reached through lib/Controller/RodController.php. Not live-checked.",
 				"spec": "openspec/specs/rod-adapter",
 				"requirement": [
 					"openspec/specs/rod-adapter :: REQ-002: Outbound envelope translation with a literal-leak guard",
@@ -7986,11 +7986,15 @@
 			"source": "spec-round-2026-10-07",
 			"integriq": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/swv-handoff/spec.md is the main spec; code at lib/sources.seed.json. Added in the spec round reverse check; not live-checked.",
+				"evidence": "Not built: only lib/Adapters/Swv/SwvHandoffClientMock.php implements the client, so nothing reaches an SWV system (decision 389). Code that exists: openspec/specs/swv-handoff/spec.md is the main spec; code at lib/sources.seed.json.",
 				"spec": "openspec/specs/swv-handoff",
-				"requirement": "openspec/specs/swv-handoff :: Dormant SWV hand-off client with deterministic mock default (REQ-001)"
+				"requirement": [
+					"openspec/changes/connectors-education-live-clients/specs/swv-handoff :: A live client hands a support request to the SWV system (REQ-005)",
+					"openspec/specs/swv-handoff :: Dormant SWV hand-off client with deterministic mock default (REQ-001)"
+				],
+				"plan": "openspec/changes/connectors-education-live-clients"
 			},
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -8013,7 +8017,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/uwlr-eduv-adapter/spec.md is the main spec; code at lib/Service/UwlrEduV/UwlrEduVProviderInterface.php. Added in the spec round reverse check; not live-checked.",
+				"evidence": "openspec/specs/uwlr-eduv-adapter/spec.md is the main spec; code at lib/Service/UwlrEduV/UwlrEduVProviderInterface.php. Live client lib/Service/UwlrEduV/UwlrEduVKennisnetClient.php, reached through lib/Controller/UwlrEduVController.php. Not live-checked.",
 				"spec": "openspec/specs/uwlr-eduv-adapter",
 				"requirement": "openspec/specs/uwlr-eduv-adapter :: REQ-008: Push/sync endpoints and a shared signed retour endpoint"
 			},
@@ -8196,7 +8200,7 @@
 				"requirement": "openspec/specs/digid-eherkenning-auth-adapter :: One-time signed subject envelope handoff"
 			},
 			"reachedOn": "machine route POST /api/idp/envelope/exchange exists, but nothing in the repository ever issues a code for it to redeem",
-			"note": "Live-defect candidate: a consuming app calling exchange today would always get a 401, because issueCode() and the BSN-pseudonymisation step are never invoked by any controller, listener or job in this codebase.",
+			"note": "The callback now issues the one-time code (IdpLoginService::callback() calls EnvelopeExchangeService::issueCode()). A live login still needs a configured SAML SP or OIDC RP; without one the start ends on the error page.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "citizen-and-business-login",
@@ -8666,14 +8670,14 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"change": "2026-09-28-mail-intake-creates-cases",
-				"evidence": "lib/BackgroundJob/MailboxPollJob.php (appinfo/info.xml) calls lib/Service/Mail/MailboxSourceHandler.php:150 pollAll(), which polls every enabled mailbox source and hands each new message to MailIntakeService::intake(); intake dispatches MessageReceivedEvent, which dossiq lib/Listener/MessageReceivedListener.php answers (registered in dossiq CrossAppListenerRegistrar, accessors getMessage/getMessageUuid/getDetectedReference/setOutcome match integriq lib/Event/MessageReceivedEvent.php). tests/Unit/BackgroundJob/MailboxPollJobTest.php. Built by change mail-intake-creates-cases (archived 2026-09-28).",
+				"evidence": "lib/BackgroundJob/MailboxPollJob.php (appinfo/info.xml) calls lib/Service/Mail/MailboxSourceHandler.php:150 pollAll(), which polls every enabled mailbox source and hands each new message to MailIntakeService::intake(); intake dispatches MessageReceivedEvent, which dossiq@lib/Listener/MessageReceivedListener.php answers (registered in dossiq CrossAppListenerRegistrar, accessors getMessage/getMessageUuid/getDetectedReference/setOutcome match integriq lib/Event/MessageReceivedEvent.php). tests/Unit/BackgroundJob/MailboxPollJobTest.php. Built by change mail-intake-creates-cases (archived 2026-09-28).",
 				"requirement": [
 					"openspec/specs/mail-intake :: A mailbox is a source and a message is an object (REQ-MAIL-001)",
 					"openspec/specs/mail-intake :: A received message is offered to the owning app as a typed event (REQ-MAIL-003)"
 				]
 			},
 			"reachedOn": "every five minutes through MailboxPollJob for each enabled mailbox source, POST /api/mail-intake/poll/{id} and /api/mail-intake/import; the Mail intake page lists the messages; dossiq MessageReceivedListener links or creates the case",
-			"note": "The intake engine is complete but nothing ever runs it: no poll job, no poll button, no import upload, so the MailMessages page stays empty. Case creation is delegated to whichever app listens for MessageReceivedEvent; no listener was found in the local procest checkout, so the case half is unverified. Built 2026-09-28: the poll is now scheduled, and dossiq development has the listener that links or creates the case.",
+			"note": "MailboxPollJob polls every enabled mailbox source; dossiq's MessageReceivedListener links or creates the case.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "intake-channels",
@@ -8917,11 +8921,15 @@
 			"source": "own-code",
 			"integriq": "no",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:96 intakeChannels#reply -> lib/Controller/IntakeChannelsController.php:265 reply() (ActionAuthService 'intake.reply') -> lib/Intake/IntakeReplyService.php:67 reply() -> adapter reply(): TeamsChannelAdapter.php:217 (Bot Framework POST, mock short-circuit :231) and MessagingChannelAdapter.php:151 (POST to replyEndpoint :175, mock returns MOCK-REPLY :166); form and public-space adapters refuse. NO frontend caller: '/api/intake/messages/{id}/reply' absent from frontend-api-paths.txt; IntakeMessages logs page declares no action.",
+				"evidence": "Not built: no page or app calls the reply route, so no handler can answer a sender (task 7 adds the inbox action; decision 389). Code that exists: appinfo/routes.php:96 intakeChannels#reply -> lib/Controller/IntakeChannelsController.php:265 reply() (ActionAuthService 'intake.reply') -> lib/Intake/IntakeReplyService.php:67 reply() -> adapter reply(): TeamsChannelAdapter.php:217 (Bot Framework POST, mock short-circuit :231) and MessagingChannelAdapter.php:151 (POST to replyEndpoint :175, mock returns MOCK-REPLY :166); form and public-space adapters refuse. NO frontend caller: '/api/intake/messages/{id}/reply' absent from frontend-api-paths.txt; IntakeMessages logs page declares no action.",
 				"change": "intake-channels-beyond-mail",
-				"requirement": "openspec/changes/intake-channels-beyond-mail/specs/intake-channels :: A reply goes back over the channel it arrived on (REQ-IC-005)"
+				"requirement": [
+					"openspec/changes/intake-channels-beyond-mail/specs/intake-channels :: A reply goes back over the channel it arrived on (REQ-IC-005)",
+					"openspec/changes/intake-channels-beyond-mail/specs/intake-channels :: A handler works a message from the shared inbox (REQ-IC-021)"
+				],
+				"plan": "openspec/changes/intake-channels-beyond-mail"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Channel-aware reply code is real for Teams and the generic messaging channel, but no page has a reply button, and it is a staff action with no other caller.",
@@ -8955,14 +8963,16 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "IntakeMessages page (/messages/intake, logs, schema intake_message) in src/manifest.d/intake-channels.json lists every channel's messages with status/rule/reason columns, fed by lib/Intake/IntakeRoutingService.php:123 route() via machine route appinfo/routes.php:84. Mail lands on a separate MailMessages page (src/manifest.d/mail-intake.json). No assign action: no route assigns an intake_message to a case (grep -n 'assign' appinfo/routes.php in intake block = 0), and the logs page declares no actions.",
+				"evidence": "Not built: the inbox is read-only; no route or action assigns a message to a case (task 7, REQ-IC-021; decision 389). Code that exists: IntakeMessages page (/messages/intake, logs, schema intake_message) in src/manifest.d/intake-channels.json lists every channel's messages with status/rule/reason columns, fed by lib/Intake/IntakeRoutingService.php:123 route() via machine route appinfo/routes.php:84. Mail lands on a separate MailMessages page (src/manifest.d/mail-intake.json). No assign action: no route assigns an intake_message to a case (grep -n 'assign' appinfo/routes.php in intake block = 0), and the logs page declares no actions.",
 				"change": "intake-channels-beyond-mail",
 				"requirement": [
+					"openspec/changes/intake-channels-beyond-mail/specs/intake-channels :: A handler works a message from the shared inbox (REQ-IC-021)",
 					"openspec/changes/intake-channels-beyond-mail/specs/intake-channels :: A routing rule maps a channel and a payload onto a case type (REQ-IC-002)",
 					"openspec/changes/messaging-intake-routing-rules/specs/intake-channels :: A held message is routed again on request, with its files (REQ-IRE-003)"
-				]
+				],
+				"plan": "openspec/changes/intake-channels-beyond-mail"
 			},
 			"reachedOn": "IntakeMessages page (/messages/intake), read-only",
 			"note": "One read-only inbox across the non-mail channels exists, and mail sits on a second page. Staff cannot assign a held message to a case from it; assignment only happens automatically via a routing rule.",
@@ -9269,7 +9279,7 @@
 				"requirement": "openspec/changes/outbound-communication-log/specs/outbound-message-log :: The log answers when a recipient was last told anything (REQ-OCL-006)"
 			},
 			"reachedOn": "machine route: GET /api/outbound/last-contact (session, meant for a sibling app such as dossiq); no integriq page",
-			"note": "The query is real but reads outbound_message, which integriq itself only writes on a forward, so it will answer 'not contacted' unless a sibling app writes the log. Live-defect candidate: any logged-in user can ask about any subject and recipient.",
+			"note": "LastContactQuery reads outbound_message through OpenRegister's findAll() under default RBAC and multitenancy, so a caller sees only messages they may read. It answers from what the log holds; integriq writes outbound_message on a forward, and sibling apps write their own sends.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "outbound-messaging",
@@ -9772,7 +9782,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/ConnectionRegistryService.php:46 reads each enabled app's lib/Settings/connections.json, :93 sync, :121 syncChangedDeclarations, validated by lib/Service/ConnectionDeclarationValidator.php against lib/Settings/connections.schema.json; run by repair step lib/Repair/SyncConnectionDeclarations.php (appinfo/info.xml:273), hourly lib/BackgroundJob/ConnectionHealthJob.php (info.xml:138) and AppEnable/AppDisable plus status/refresh event listeners (lib/AppInfo/Application.php:274-277); AppConnections page src/manifest.json:837 (index, schema app_connection, admin permission, folder sidebar per app), menu src/manifest.json:266",
+				"evidence": "lib/Service/ConnectionRegistryService.php:46 reads each enabled app's own <app>@lib/Settings/connections.json, :93 sync, :121 syncChangedDeclarations, validated by lib/Service/ConnectionDeclarationValidator.php against lib/Settings/connections.schema.json; run by repair step lib/Repair/SyncConnectionDeclarations.php (appinfo/info.xml:273), hourly lib/BackgroundJob/ConnectionHealthJob.php (info.xml:138) and AppEnable/AppDisable plus status/refresh event listeners (lib/AppInfo/Application.php:274-277); AppConnections page src/manifest.json:837 (index, schema app_connection, admin permission, folder sidebar per app), menu src/manifest.json:266",
 				"change": "2026-09-29-connection-registry",
 				"requirement": "openspec/specs/connection-registry :: The sync turns declaration files into connection rows (REQ-CONN-001)"
 			},
@@ -9851,7 +9861,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "appinfo/routes.php:18-20; lib/Controller/SetupController.php:113 status, :146 saveConfig, :198 runAction (load-demo-data), all #[AuthorizedAdminSetting]; manifest setup block src/manifest.json:3-37 (welcome, demo-data choice, load-demo-data run-action, summary); rendered by @conduction/nextcloud-vue 2.39.0 (package-lock.json:2428) CnAppRoot which mounts CnSetupWizard and calls /apps/{appId}/api/setup/* (nextcloud-vue v2.39.0 src/composables/useSetupStatus.js:151, CnSetupWizard.vue:696,707); plus a getting-started walkthrough tour src/manifest.json:4207",
+				"evidence": "appinfo/routes.php:18-20; lib/Controller/SetupController.php:113 status, :146 saveConfig, :198 runAction (load-demo-data), all #[AuthorizedAdminSetting]; manifest setup block src/manifest.json:3-37 (welcome, demo-data choice, load-demo-data run-action, summary); rendered by @conduction/nextcloud-vue 2.39.0 (package-lock.json:2428) CnAppRoot which mounts CnSetupWizard and calls /apps/{appId}/api/setup/* (nextcloud-vue@src/composables/useSetupStatus.js:151 at v2.39.0, CnSetupWizard.vue:696,707); plus a getting-started walkthrough tour src/manifest.json:4207",
 				"change": "wizard-dataset-card-load",
 				"requirement": [
 					"openspec/specs/first-time-setup :: Setup status reports every manifest step",
@@ -10282,7 +10292,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/integriq_register.json:673,1390,1499,1828,1966,2219,2391,2590 declare x-openregister-mcp read tools (search/get) on 8 schemas, consumed by OpenRegister's SchemaDerivedToolProvider (openregister lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php, local checkout); lib/Mcp does not exist (ls: no such directory); grep 'McpTool|IMcpScannable' lib: 0 hits; openspec/changes/hermiq-ai-tooling/tasks.md 0 of 22 ticked",
+				"evidence": "lib/Settings/integriq_register.json:673,1390,1499,1828,1966,2219,2391,2590 declare x-openregister-mcp read tools (search/get) on 8 schemas, consumed by OpenRegister's SchemaDerivedToolProvider (openregister@lib/Mcp/BuiltIn/SchemaDerivedToolProvider.php); lib/Mcp does not exist (ls: no such directory); grep 'McpTool|IMcpScannable' lib: 0 hits; openspec/changes/hermiq-ai-tooling/tasks.md 0 of 22 ticked",
 				"spec": "openspec/specs/openconnector-mcp-tool-surface",
 				"requirement": "openspec/specs/openconnector-mcp-tool-surface :: REQ-MCP-102 — Exactly 8 operational schemas MUST be exposed, read-only, and every declared `search` filter MUST be a real property of its schema"
 			},
@@ -10320,7 +10330,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/Datasource/DashboardDatasourceService.php:140 resolve(sourceId, valueExpr, params, ttl); HTTP facade appinfo/routes.php:351 -> lib/Controller/DatasourceController.php:84 (egress guard strips url/host); capability advertised lib/AppInfo/Capabilities.php:69 registered at lib/AppInfo/Application.php:690; docs/developers/dashboard-http-datasource.md; consumer ConductionNL/launchpad development lib/Service/LiveTileService.php:146,156 calls Service\\Datasource\\DashboardDatasourceService::resolve in-process (fetched via gh api ?ref=development)",
+				"evidence": "lib/Service/Datasource/DashboardDatasourceService.php:140 resolve(sourceId, valueExpr, params, ttl); HTTP facade appinfo/routes.php:351 -> lib/Controller/DatasourceController.php:84 (egress guard strips url/host); capability advertised lib/AppInfo/Capabilities.php:69 registered at lib/AppInfo/Application.php:690; docs/developers/dashboard-http-datasource.md; consumer launchpad@lib/Service/LiveTileService.php (development):146,156 calls Service\\Datasource\\DashboardDatasourceService::resolve in-process (fetched via gh api ?ref=development)",
 				"spec": "openspec/specs/dashboard-http-datasource",
 				"requirement": "openspec/specs/dashboard-http-datasource :: Resolve endpoint returns a single value from a named source"
 			},
@@ -10477,7 +10487,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "OpenRegister built and archived the lookup (openspec/changes/archive/2026-10-05-integration-kvk-opencorporates, 11 tasks ticked, none open): openregister appinfo/routes.php:929 companyLookup#openCorporatesSearch GET /api/integrations/opencorporates/search, lib/Controller/CompanyLookupController.php:150 openCorporatesSearch(), lib/Service/Integration/Providers/OpenCorporatesProvider.php:73 SOURCE_ID 'opencorporates' routed through the source integriq seeds. Integriq ships that source: lib/Settings/register.d/opencorporates-source.json:9 slug opencorporates, :20 configuration.mock true, :52 isEnabled true. A user reaches the search in pipelinq: lib/Service/OpenCorporatesApiClient.php:213 calls the OpenRegister endpoint, used by lib/Service/ProspectDiscoveryService.php. Rated partial: integriq's source answers with a canned mock until an admin adds an api_token and removes the mock flag, and integriq has no screen of its own for the search.",
+				"evidence": "OpenRegister built and archived the lookup (openregister@openspec/changes/archive/2026-10-05-integration-kvk-opencorporates, 11 tasks ticked, none open): openregister@appinfo/routes.php:929 companyLookup#openCorporatesSearch GET /api/integrations/opencorporates/search, openregister@lib/Controller/CompanyLookupController.php:150 openCorporatesSearch(), openregister@lib/Service/Integration/Providers/OpenCorporatesProvider.php:73 SOURCE_ID 'opencorporates' routed through the source integriq seeds. Integriq ships that source: lib/Settings/register.d/opencorporates-source.json:9 slug opencorporates, :20 configuration.mock true, :52 isEnabled true. A user reaches the search in pipelinq: pipelinq@lib/Service/OpenCorporatesApiClient.php:213 calls the OpenRegister endpoint, used by pipelinq@lib/Service/ProspectDiscoveryService.php. Rated partial: integriq's source answers with a canned mock until an admin adds an api_token and removes the mock flag, and integriq has no screen of its own for the search.",
 				"change": "openregister/2026-10-05-integration-kvk-opencorporates",
 				"readOn": "2026-10-07",
 				"spec": "openregister:openspec/specs/integration-company-lookup",
@@ -10519,7 +10529,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "OpenRegister built and archived the query search (openspec/changes/archive/2026-10-05-integration-xwiki-query-search, 10 tasks ticked, none open): openregister appinfo/routes.php:915 xwikiLinks#search GET /api/integrations/xwiki/search, lib/Controller/XwikiLinksController.php:303 search(), next to the object-linked routes at :914-918 and lib/Service/Integration/Providers/XwikiProvider.php. Integriq ships the source it reads through: lib/Settings/register.d/xwiki-source.json:9 slug xwiki, :21 isEnabled false with a dev-stack placeholder location. pipelinq calls the search: lib/Service/XWikiService.php:229 searchViaOpenRegister(), served by lib/Controller/XWikiController.php. Rated partial: integriq's source ships disabled with a placeholder URL, so nothing reads pages until an admin sets the real location and enables it, and integriq has no screen of its own for wiki pages.",
+				"evidence": "OpenRegister built and archived the query search (openregister@openspec/changes/archive/2026-10-05-integration-xwiki-query-search, 10 tasks ticked, none open): openregister@appinfo/routes.php:915 xwikiLinks#search GET /api/integrations/xwiki/search, openregister@lib/Controller/XwikiLinksController.php:303 search(), next to the object-linked routes at :914-918 and openregister@lib/Service/Integration/Providers/XwikiProvider.php. Integriq ships the source it reads through: lib/Settings/register.d/xwiki-source.json:9 slug xwiki, :21 isEnabled false with a dev-stack placeholder location. pipelinq calls the search: pipelinq@lib/Service/XWikiService.php:229 searchViaOpenRegister(), served by pipelinq@lib/Controller/XWikiController.php. Rated partial: integriq's source ships disabled with a placeholder URL, so nothing reads pages until an admin sets the real location and enables it, and integriq has no screen of its own for wiki pages.",
 				"change": "openregister/2026-10-05-integration-xwiki-query-search",
 				"readOn": "2026-10-07",
 				"spec": "openregister:openspec/specs/integration-xwiki",
@@ -10681,14 +10691,16 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"change": "2026-09-28-rostering-adapter-targets-planninq",
-				"evidence": "lib/EventListener/RosterImportRequestedListener.php (registered in lib/AppInfo/Application.php) -> lib/Sources/Roster/RosterDeliveryService.php deliver() -> RosterImportSourceAdapter importLessons() -> lib/Sources/Roster/PlanninqTimetableTarget.php deliver(), whose named arguments match planninq lib/Event/TimetableUpsertRequestedEvent.php; the learniq caller lib/Timetabling/PlanninqTimetableImport.php matches RosterImportRequestedEvent. RosterImportClient is bound to RosterImportClientMock whatever the flag (Application.php), because no live vendor client exists (design D9, per-institution onboarding). Built by changes integriq-adapter-rostering-imports and rostering-adapter-targets-planninq (archived 2026-09-28).",
+				"evidence": "Not built: only the mock rostering client exists (lib/Adapters/Roster/RosterImportClientMock.php), so no timetable is read from a scheduling package (decision 389). Code that exists: lib/EventListener/RosterImportRequestedListener.php (registered in lib/AppInfo/Application.php) -> lib/Sources/Roster/RosterDeliveryService.php deliver() -> RosterImportSourceAdapter importLessons() -> lib/Sources/Roster/PlanninqTimetableTarget.php deliver(), whose named arguments match planninq@lib/Event/TimetableUpsertRequestedEvent.php; the learniq caller learniq@lib/Timetabling/PlanninqTimetableImport.php matches RosterImportRequestedEvent. RosterImportClient is bound to RosterImportClientMock whatever the flag (Application.php), because no live vendor client exists (design D9, per-institution onboarding). Built by changes integriq-adapter-rostering-imports and rostering-adapter-targets-planninq (archived 2026-09-28).",
 				"requirement": [
+					"openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target :: A live rostering client reads lessons from the school's scheduling package (REQ-007)",
 					"openspec/specs/rostering-planninq-target :: Learniq asks for a delivery through integriq's typed event (REQ-005)",
 					"openspec/specs/rostering-planninq-target :: The mapper turns a vendor lesson into a planninq session (REQ-002)"
-				]
+				],
+				"plan": "openspec/changes/connectors-education-live-clients"
 			},
 			"reachedOn": "learniq timetable import job through RosterImportRequestedEvent, delivered into planninq through TimetableUpsertRequestedEvent; mock client only",
 			"note": "No source template, mapping or adapter for any scheduling package ships; a timetable import would have to be built by hand with the generic sync engine. Built 2026-09-28 as a dormant adapter: the chain learniq -> integriq -> planninq is wired end to end, but only the mock client exists, so the rating stays partial until a live Zermelo, Untis, Xedule or TimeEdit client is onboarded.",
@@ -11082,7 +11094,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/corporate-card-feed/spec.md is the main spec; code at lib/Service/Cardfeed/. Added in the spec round reverse check; not live-checked.",
+				"evidence": "openspec/specs/corporate-card-feed/spec.md is the main spec; code at lib/Service/Cardfeed/. Live client lib/Service/Cardfeed/RestCardfeedProvider.php, reached through lib/Controller/CardfeedController.php. Not live-checked.",
 				"spec": "openspec/specs/corporate-card-feed",
 				"requirement": "openspec/specs/corporate-card-feed :: Scheduled transaction sync emitting a synced event with a batch URI (REQ-003)"
 			},
@@ -11105,14 +11117,16 @@
 			"source": "spec-round-2026-10-07",
 			"integriq": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; code at lib/Service/Adapter/EndpointWorkspace/. Added in the spec round reverse check; not live-checked.",
+				"evidence": "Not built: only the Azure Virtual Desktop reference adapter exists, registered but called by no route or page; no Intune, Jamf or Citrix adapter (decision 389). Code that exists: openspec/specs/endpoint-workspace-connectors/spec.md is the main spec; reference adapter lib/Service/Adapter/EndpointWorkspace/AzureVirtualDesktopAdapter.php, registered in lib/Service/ServiceBindings.php:445.",
 				"spec": "openspec/specs/endpoint-workspace-connectors",
 				"requirement": [
+					"openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors :: An administrator sees the sessions or devices of a connected workspace manager (REQ-EWC-008)",
 					"openspec/specs/endpoint-workspace-connectors :: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)",
 					"openspec/specs/endpoint-workspace-connectors :: Each EWC adapter manifest entry SHALL declare a fixed capability vocabulary scoped to session-enumeration, user-mapping, and audit-event ingestion (REQ-EWC-002)"
-				]
+				],
+				"plan": "openspec/changes/connectors-endpoint-workspace-adapters"
 			},
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -11133,14 +11147,16 @@
 			"source": "spec-round-2026-10-07",
 			"integriq": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/lvs-result-import/spec.md is the main spec; code at lib/sources.seed.json. Added in the spec round reverse check; not live-checked.",
+				"evidence": "Not built: only lib/Adapters/Lvs/UwlrResultImportClientMock.php implements the client, so no result is read from Cito, IEP, Boom or Dia (decision 389). Code that exists: openspec/specs/lvs-result-import/spec.md is the main spec; code at lib/sources.seed.json.",
 				"spec": "openspec/specs/lvs-result-import",
 				"requirement": [
+					"openspec/changes/connectors-education-live-clients/specs/lvs-result-import :: A live UWLR client reads results from the pupil tracking system (REQ-004)",
 					"openspec/specs/lvs-result-import :: Dormant UWLR result-import client with deterministic mock default (REQ-001)",
 					"openspec/specs/lvs-result-import :: Source adapter maps a UWLR-shaped batch onto the lvs-import-contract payload (REQ-002)"
-				]
+				],
+				"plan": "openspec/changes/connectors-education-live-clients"
 			},
 			"n8n": "unknown",
 			"tyk": "unknown",
@@ -12128,7 +12144,7 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/openregister",
-				"evidence": "integriq's flow canvas (src/manifest.json:3147-3168 Flows and FlowDetail pages, which mount nextcloud-vue CnFlowIndexPage and CnFlowDetail per openspec/specs/flow-orchestration REQ-017) runs graphs on OpenRegister's node catalogue, which has ConductionNL/openregister development lib/Service/Flow/Nodes/ObjectReadNode.php and lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
+				"evidence": "integriq's flow canvas (src/manifest.json:3147-3168 Flows and FlowDetail pages, which mount nextcloud-vue CnFlowIndexPage and CnFlowDetail per openspec/specs/flow-orchestration REQ-017) runs graphs on OpenRegister's node catalogue, which has openregister@lib/Service/Flow/Nodes/ObjectReadNode.php and openregister@lib/Service/Flow/Nodes/ObjectWriteNode.php:157 (create, update, upsert at :164-178, type openregister.object-write at :388); a register schema is the reference table",
 				"spec": "openspec/specs/flow-orchestration",
 				"readOn": "2026-10-07",
 				"requirement": "openspec/specs/flow-orchestration :: A flow reads and writes a register schema as a reference table (REQ-018)"
