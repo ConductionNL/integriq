@@ -2180,7 +2180,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/RateLimit/InboundRateLimitService.php:91 enforce(consumerKey, rateLimit, quota) -> lib/Service/EndpointService.php:977-1058 enforceInboundRateLimit()/enforceConsumerScope() and :1096-1129 applyRateLimitDecision(), called from dispatchAfterBeforeRules() before schema/source dispatch; per-tier limits configured on api_product.tiers (lib/Settings/register.d/api-product-gateway.json 'tiers': rateLimit{requestsPerWindow,windowSeconds}, quota{limit,period})",
 				"spec": "openspec/specs/api-product-gateway",
-				"requirement": "openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
+				"requirement": [
+					"openspec/specs/consumer-management :: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)",
+					"openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
+				]
 			},
 			"reachedOn": "/products (ApiProducts index/detail), tiers configuration; enforced as a machine route on every call through that product's endpoints",
 			"provider": "integriq",
@@ -2217,7 +2220,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/RateLimit/RateLimitDecision.php:60-93 constructor takes $retryAfter and toHeaders() emits 'Retry-After' when allowed===false, alongside RateLimit-Limit/Remaining/Reset; lib/Service/EndpointService.php:1113-1130 applyRateLimitDecision() returns a 429 JSONResponse with $decision->toHeaders() when over budget",
 				"spec": "openspec/specs/api-product-gateway",
-				"requirement": "openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)"
+				"requirement": [
+					"openspec/specs/api-product-gateway :: Per-tier rate-limit enforcement extends the inbound rate limiter (REQ-APG-005)",
+					"openspec/specs/consumer-management :: IETF RateLimit response headers (REQ-CON-RL-003)"
+				]
 			},
 			"reachedOn": "machine route: any over-limit caller of an api_product-scoped endpoint gets Retry-After on the 429 response",
 			"provider": "integriq",
@@ -2410,7 +2416,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "grep -rliE \"\\bgrpc\\b|\\bwebsocket\\b|\\bmqtt\\b\" lib/ src/ (excluding vendor) returns 0 files with real code; the only MQTT mention is a schema description string on event_subscription.url ('Delivery target URL (or AMQP/MQTT endpoint)') whose own x-notes at lib/Settings/integriq_register.json:1032 says: 'Nothing reads this field. It used to promise HTTP, AMQP, MQTT and NATS while only HTTP was implemented ... action.kind and action.brokerId are the authority.'. Specified in openspec/changes/gateway-graphql-and-streaming-protocols/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-graphql-and-streaming-protocols",
-				"requirement": "openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: A web server or broker asks integriq who may connect (REQ-GQLP-002)"
+				"requirement": [
+					"openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: WebSocket, gRPC and MQTT traffic reaches the upstream through a documented server (REQ-GQLP-003)",
+					"openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime :: A web server or broker asks integriq who may connect (REQ-GQLP-002)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "The schema itself documents that the MQTT/AMQP promise was never real; only HTTP delivery is implemented for event subscriptions, and the gateway proxy is HTTP-only.",
@@ -3982,7 +3991,10 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Job/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule.",
 				"spec": "openspec/specs/synchronization-engine",
-				"requirement": "openspec/specs/synchronization-engine :: Synchronization orchestration and direction routing (REQ-001)"
+				"requirement": [
+					"openspec/changes/spec-coverage-closing-round/specs/synchronization-engine :: A synchronization runs on its job's schedule (REQ-SCB-012)",
+					"openspec/specs/synchronization-engine :: Synchronization orchestration and direction routing (REQ-001)"
+				]
 			},
 			"reachedOn": "/synchronizations index + /synchronizations/:id detail page (SynchronizationEditorModal.vue / SynchronizationDetailPage.vue) configure the sync; a job (Jobs page, /jobs) with jobClass=SynchronizationAction runs it on a cron schedule",
 			"provider": "integriq",
@@ -11151,11 +11163,12 @@
 			"built": {
 				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/specs/slo-curriculum-import/spec.md is the main spec; code at lib/Settings/register.d/slo-curriculum-source.json. Added in the spec round reverse check; not live-checked.",
+				"evidence": "lib/Adapters/Slo/SloCurriculumSourceAdapter.php importFramework() walks a set through SloCurriculumTreeWalker and maps it with SloCurriculumMapper into competency-framework and competency records (FrameworkImportRun); SloCurriculumClientHttp is the live client behind the flag, SloCurriculumClientMock the default; source template lib/Settings/register.d/slo-curriculum-source.json.",
 				"spec": "openspec/specs/slo-curriculum-import",
 				"requirement": [
-					"openspec/specs/slo-curriculum-import :: A dormant SLO source template carries the set profiles and the attribution (REQ-001)",
-					"openspec/specs/slo-curriculum-import :: Mapping presets name learniq's contract fields (REQ-002)"
+					"openspec/specs/slo-curriculum-import :: The tree walk follows the set profile (REQ-005)",
+					"openspec/specs/slo-curriculum-import :: One framework per set and root, with stable ids and attribution (REQ-007)",
+					"openspec/specs/slo-curriculum-import :: A dormant SLO source template carries the set profiles and the attribution (REQ-001)"
 				]
 			},
 			"n8n": "unknown",
