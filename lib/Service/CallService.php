@@ -59,6 +59,7 @@ use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Call\CallRequest;
+use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
@@ -1398,77 +1399,114 @@ class CallService implements CallServiceInterface {
 	}//end snapshotCertPaths()
 
 	/**
-	 * Decodes the response body, determines encoding, resolves remote IP, and
-	 * assembles the structured $data array that contains both request and response info.
+	 * Decode the response body and build the structured request/response data the call log stores.
 	 *
-	 * @param \Psr\Http\Message\ResponseInterface $response The HTTP response.
-	 * @param string $url The URL that was called.
-	 * @param string $method The HTTP method used.
-	 * @param array $config The Guzzle request config that was sent.
-	 * @param float $timeStart Microtime at request start.
-	 * @param float $timeEnd Microtime after response received.
+	 * Security: never persist live secrets to the CallLog. Secret-bearing
+	 * locations are redacted from the config copy written into 'request', from
+	 * the URL (which may carry query-string secrets), and from the response body
+	 * (which can echo the request URL with its query secrets). The actual
+	 * outbound call has already been dispatched with the REAL secrets before
+	 * this runs.
 	 *
-	 * @return array Structured array with 'request' and 'response' sub-arrays.
+	 * @param FinishedCall $call The dispatched call.
 	 *
-	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
+	 * @return array{request: array<string, mixed>, response: array<string, mixed>} The structured data.
 	 */
-	private function buildResponseData(
-		\Psr\Http\Message\ResponseInterface $response,
-		string $url,
-		string $method,
-		array $config,
-		float $timeStart,
-		float $timeEnd,
-	): array {
-		$body = $response->getBody()->getContents();
+	private function buildResponseData(FinishedCall $call): array {
+		$body = $call->dispatched['response']->getBody()->getContents();
+		$secretValues = $this->collectSecretValues(config: $call->prepared['config'], url: $call->prepared['url']);
+		$request = $this->loggedRequest(call: $call);
 
-		$isUtf8 = (mb_check_encoding(value: $body, encoding: 'UTF-8') !== false);
-		if ($isUtf8 === true) {
-			$bodyForLog = $body;
-			$bodyEncoding = 'UTF-8';
-		} else {
-			$bodyForLog = base64_encode($body);
-			$bodyEncoding = 'base64';
+		return [
+			'request' => $request,
+			'response' => $this->loggedResponse(call: $call, logged: $this->loggedBody(body: $body, secretValues: $secretValues)),
+		];
+
+	}//end buildResponseData()
+
+	/**
+	 * The request as logged: the redacted URL, the method and the redacted configuration.
+	 *
+	 * @param FinishedCall $call The dispatched call.
+	 *
+	 * @return array<string, mixed> The logged request.
+	 */
+	private function loggedRequest(FinishedCall $call): array {
+		$redactedConfig = $this->redactSecretsFromConfig(config: $call->prepared['config']);
+		$redactedUrl = $this->redactSecretsFromUrl(url: $call->prepared['url']);
+
+		return [
+			'url' => $redactedUrl,
+			'method' => $call->prepared['method'],
+			...$redactedConfig,
+		];
+
+	}//end loggedRequest()
+
+	/**
+	 * The body as logged: as is when it is UTF-8, else base64, with every secret value redacted.
+	 *
+	 * @param string       $body         The raw response body.
+	 * @param array<mixed> $secretValues The secret values to redact.
+	 *
+	 * @return array{body: string, encoding: string} The logged body and its encoding.
+	 */
+	private function loggedBody(string $body, array $secretValues): array {
+		$logged = ['body' => base64_encode($body), 'encoding' => 'base64'];
+		if (mb_check_encoding(value: $body, encoding: 'UTF-8') !== false) {
+			$logged = ['body' => $body, 'encoding' => 'UTF-8'];
 		}
 
+		$logged['body'] = $this->redactSecretValuesFromString(body: $logged['body'], secretValues: $secretValues);
+
+		return $logged;
+
+	}//end loggedBody()
+
+	/**
+	 * The response as logged.
+	 *
+	 * @param FinishedCall                         $call   The dispatched call.
+	 * @param array{body: string, encoding: string} $logged The logged body.
+	 *
+	 * @return array<string, mixed> The logged response.
+	 */
+	private function loggedResponse(FinishedCall $call, array $logged): array {
+		$response = $call->dispatched['response'];
+
+		return [
+			'statusCode' => $response->getStatusCode(),
+			'statusMessage' => $response->getReasonPhrase(),
+			'responseTime' => (($call->endedAt() - $call->startedAt()) * 1000),
+			'size' => $response->getBody()->getSize(),
+			'remoteIp' => $this->remoteIpOf(response: $response),
+			'headers' => $response->getHeaders(),
+			'body' => $logged['body'],
+			'encoding' => $logged['encoding'],
+		];
+
+	}//end loggedResponse()
+
+	/**
+	 * The remote address a proxy names: X-Real-IP, else X-Forwarded-For, else none.
+	 *
+	 * @param \Psr\Http\Message\ResponseInterface $response The response.
+	 *
+	 * @return string|null The address, or null when neither header is set.
+	 */
+	private function remoteIpOf(\Psr\Http\Message\ResponseInterface $response): ?string {
 		$remoteIp = $response->getHeaderLine('X-Real-IP');
 		if ($remoteIp === '') {
 			$remoteIp = $response->getHeaderLine('X-Forwarded-For');
 		}
 
 		if ($remoteIp === '') {
-			$remoteIp = null;
+			return null;
 		}
 
-		// Security: never persist live secrets to the CallLog. Redact secret-bearing
-		// locations from the config copy that is written into 'request', from the URL
-		// (which may carry query-string secrets), and from the response body (which can
-		// echo the request URL with its query secrets). The actual outbound call has
-		// already been dispatched with the REAL secrets before this method runs.
-		$secretValues = $this->collectSecretValues(config: $config, url: $url);
-		$redactedConfig = $this->redactSecretsFromConfig(config: $config);
-		$redactedUrl = $this->redactSecretsFromUrl(url: $url);
-		$bodyForLog = $this->redactSecretValuesFromString(body: $bodyForLog, secretValues: $secretValues);
+		return $remoteIp;
 
-		return [
-			'request' => [
-				'url' => $redactedUrl,
-				'method' => $method,
-				...$redactedConfig,
-			],
-			'response' => [
-				'statusCode' => $response->getStatusCode(),
-				'statusMessage' => $response->getReasonPhrase(),
-				'responseTime' => (($timeEnd - $timeStart) * 1000),
-				'size' => $response->getBody()->getSize(),
-				'remoteIp' => $remoteIp,
-				'headers' => $response->getHeaders(),
-				'body' => $bodyForLog,
-				'encoding' => $bodyEncoding,
-			],
-		];
-
-	}//end buildResponseData()
+	}//end remoteIpOf()
 
 	/**
 	 * Redacts secret-bearing locations from a Guzzle request config before it is
@@ -2993,86 +3031,147 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
 	 */
 	private function finalizeCall(array $prepared, array $dispatched): ObjectEntity {
-		$response = $dispatched['response'];
-		$timeStart = (float)$dispatched['timeStart'];
-		$timeEnd = (float)$dispatched['timeEnd'];
-		$trace = $prepared['request']->trace;
-		$withholdBodies = $prepared['request']->withholdBodies;
-		$source = $prepared['source'];
-		$sourceData = $prepared['sourceData'];
+		$call = new FinishedCall(prepared: $prepared, dispatched: $dispatched);
 
 		// Phase 11: Decode response body and build the structured data array.
-		$data = $this->buildResponseData(
-			response: $response,
-			url: $prepared['url'],
-			method: $prepared['method'],
-			config: $prepared['config'],
-			timeStart: $timeStart,
-			timeEnd: $timeEnd,
-		);
+		$call->data = $this->buildResponseData(call: $call);
 
 		// Phase 12: Persist CallLog and get back the entity.
-		$callLog = $this->buildAndPersistCallLog(
-			source: $source,
-			sourceData: $sourceData,
-			data: $data,
-			logBody: $prepared['logBody'],
-			successExpires: $prepared['successExpires'],
-			errorExpires: $prepared['errorExpires'],
-			trace: $trace,
-			persistLog: $prepared['request']->persistLog,
-			withholdBodies: $withholdBodies,
-		);
+		$callLog = $this->persistCallLog(call: $call);
 
-		// A trace is stored too, so it follows the call log's body policy: outside
-		// an investigation window, and without logBody, the step holds no body
-		// (outbound-call-log REQ-OCD-001), and a call that withholds its bodies
-		// hands the trace the same stripped request and response the call log gets.
-		$traced = ['request' => $data['request'], 'response' => $this->redactResponseHeaders(response: $data['response'])];
-		if ($this->bodyCapturePolicy->captures(sourceData: $sourceData, logBody: (bool)$prepared['logBody']) === false) {
-			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
-		}
-
-		if ($withholdBodies === true) {
-			$traced = $this->bodyCapturePolicy->withhold(record: $traced);
-		}
-
-		// Phase 12b: when this call was made from within a traced execution,
-		// append a `call` step reusing the exact already-redacted request/
-		// response array just persisted to `call_log` — never a second,
-		// independent redaction pass (execution-trace REQ-003 / http-call-engine
-		// REQ-011).
-		if ($trace !== null) {
-			$callStepStatus = 'success';
-			if ($data['response']['statusCode'] >= 400) {
-				$callStepStatus = 'error';
-			}
-
-			$trace->addStep(
-				type: 'call',
-				name: ($sourceData['name'] ?? $source->getUuid()),
-				timing: null,
-				status: $callStepStatus,
-				input: $traced['request'],
-				output: $traced['response'],
-				startedAtMicrotime: $timeStart,
-				finishedAtMicrotime: $timeEnd,
-				spanId: ($prepared['spanId'] ?? null),
-			);
-		}
+		// Phase 12b: trace the call when it was made from within a traced execution.
+		$this->traceCall(call: $call);
 
 		// Phase 13: Fire postRequest hook if present.
-		if ($prepared['postRequest'] !== null && $prepared['request']->runningSupportRequest === false) {
-			$this->call(
-				source: $source,
-				endpoint: $prepared['postRequest']['endpoint'],
-				config: $prepared['postRequest']['config'],
-				runningSupportRequest: true
-			);
-		}
+		$this->firePostRequest(prepared: $prepared);
 
 		return $callLog;
 	}//end finalizeCall()
+
+	/**
+	 * Persist the call's CallLog.
+	 *
+	 * @param FinishedCall $call The dispatched call, its data built.
+	 *
+	 * @return ObjectEntity The CallLog entity.
+	 */
+	private function persistCallLog(FinishedCall $call): ObjectEntity {
+		$prepared = $call->prepared;
+
+		return $this->buildAndPersistCallLog(
+			source: $prepared['source'],
+			sourceData: $prepared['sourceData'],
+			data: $call->data,
+			logBody: $prepared['logBody'],
+			successExpires: $prepared['successExpires'],
+			errorExpires: $prepared['errorExpires'],
+			trace: $prepared['request']->trace,
+			persistLog: $prepared['request']->persistLog,
+			withholdBodies: $prepared['request']->withholdBodies,
+		);
+	}//end persistCallLog()
+
+	/**
+	 * Append a `call` step to the execution trace the call was made from, if any.
+	 *
+	 * The step reuses the exact already-redacted request/response array just
+	 * persisted to `call_log` — never a second, independent redaction pass
+	 * (execution-trace REQ-003 / http-call-engine REQ-011).
+	 *
+	 * @param FinishedCall $call The dispatched call, its data built.
+	 *
+	 * @return void
+	 */
+	private function traceCall(FinishedCall $call): void {
+		$traced = $this->tracedExchange(call: $call);
+		if ($call->prepared['request']->trace === null) {
+			return;
+		}
+
+		$this->addCallStep(call: $call, traced: $traced);
+	}//end traceCall()
+
+	/**
+	 * The exchange a trace step holds, under the call log's body policy.
+	 *
+	 * Outside an investigation window, and without logBody, the step holds no
+	 * body (outbound-call-log REQ-OCD-001), and a call that withholds its bodies
+	 * hands the trace the same stripped request and response the call log gets.
+	 *
+	 * @param FinishedCall $call The dispatched call, its data built.
+	 *
+	 * @return array{request: array<string, mixed>, response: array<string, mixed>} The traced exchange.
+	 */
+	private function tracedExchange(FinishedCall $call): array {
+		$prepared = $call->prepared;
+		$traced = ['request' => $call->data['request'], 'response' => $this->redactResponseHeaders(response: $call->data['response'])];
+		if ($this->bodyCapturePolicy->captures(sourceData: $prepared['sourceData'], logBody: (bool)$prepared['logBody']) === false) {
+			$traced = $this->bodyCapturePolicy->strip(request: $traced['request'], response: $traced['response']);
+		}
+
+		if ($prepared['request']->withholdBodies === true) {
+			$traced = $this->bodyCapturePolicy->withhold(record: $traced);
+		}
+
+		return $traced;
+	}//end tracedExchange()
+
+	/**
+	 * Add the call's step to its execution trace.
+	 *
+	 * @param FinishedCall                                                           $call   The dispatched call, its trace set.
+	 * @param array{request: array<string, mixed>, response: array<string, mixed>} $traced The traced exchange.
+	 *
+	 * @return void
+	 */
+	private function addCallStep(FinishedCall $call, array $traced): void {
+		$call->prepared['request']->trace->addStep(
+			type: 'call',
+			name: ($call->prepared['sourceData']['name'] ?? $call->prepared['source']->getUuid()),
+			timing: null,
+			status: $this->callStepStatus(call: $call),
+			input: $traced['request'],
+			output: $traced['response'],
+			startedAtMicrotime: $call->startedAt(),
+			finishedAtMicrotime: $call->endedAt(),
+			spanId: ($call->prepared['spanId'] ?? null),
+		);
+	}//end addCallStep()
+
+	/**
+	 * The trace status of a call: an error from 400 up, else a success.
+	 *
+	 * @param FinishedCall $call The dispatched call, its data built.
+	 *
+	 * @return string `success` or `error`.
+	 */
+	private function callStepStatus(FinishedCall $call): string {
+		if ($call->data['response']['statusCode'] >= 400) {
+			return 'error';
+		}
+
+		return 'success';
+	}//end callStepStatus()
+
+	/**
+	 * Fire the source's postRequest hook, unless this call is itself a support request.
+	 *
+	 * @param array $prepared The prepared call.
+	 *
+	 * @return void
+	 */
+	private function firePostRequest(array $prepared): void {
+		if ($prepared['postRequest'] === null || $prepared['request']->runningSupportRequest === true) {
+			return;
+		}
+
+		$this->call(
+			source: $prepared['source'],
+			endpoint: $prepared['postRequest']['endpoint'],
+			config: $prepared['postRequest']['config'],
+			runningSupportRequest: true
+		);
+	}//end firePostRequest()
 
 	/**
 	 * Calls a source according to given configuration.
