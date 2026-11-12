@@ -3,9 +3,11 @@
 /**
  * Integriq API contract middleware.
  *
- * Applies two NL API Design Rules to every response of the app's JSON API:
- * the `API-Version` header (/core/version-header) and RFC 9457 problem details
- * for error responses (/core/error-handling/problem-details).
+ * Applies the NL API Design Rules that hold for every response of the app's
+ * JSON API: the `API-Version` header (/core/version-header), RFC 9457 problem
+ * details for error responses (/core/error-handling/problem-details) and, on an
+ * unversioned path, the announcement of its `/api/v1/` successor
+ * (/core/uri-version, /core/deprecation-schedule).
  *
  * @category  Middleware
  * @package   OCA\Integriq\Middleware
@@ -25,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Middleware;
 
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Middleware\Support\ApiPathAliases;
+use OCA\Integriq\Middleware\Support\StandardProtocolPaths;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -32,8 +36,10 @@ use OCP\AppFramework\Middleware;
 use OCP\IRequest;
 
 /**
- * Stamps `API-Version` on API responses and turns JSON error bodies into
- * problem details.
+ * Stamps `API-Version` on API responses, marks an unversioned path deprecated
+ * in favour of its `/api/v1/` alias, and turns JSON error bodies into problem
+ * details. Paths that speak a protocol defined elsewhere
+ * ({@see StandardProtocolPaths}) are left exactly as they are.
  *
  * An error body keeps every member it already had, so existing callers that
  * read `error` or `message` see no change. A body that already uses `type`,
@@ -56,19 +62,6 @@ class ApiContractMiddleware extends Middleware {
 	 * @var string
 	 */
 	private const API_PATH_MARKER = '/api/';
-
-	/**
-	 * API paths whose error format an external standard fixes: SCIM 2.0
-	 * (RFC 7644) and the OAuth 2.0 token and credential endpoints of
-	 * OpenID4VCI and LTI (RFC 6749). Their errors keep that format.
-	 *
-	 * @var list<string>
-	 */
-	private const FOREIGN_ERROR_FORMATS = [
-		'#/api/scim/#',
-		'#/api/eudi/(token|credential)$#',
-		'#/api/lti/token$#',
-	];
 
 	/**
 	 * The media type of an RFC 9457 problem details document.
@@ -153,6 +146,7 @@ class ApiContractMiddleware extends Middleware {
 		}
 
 		$response->addHeader(name: 'API-Version', value: $this->appManager->getAppVersion(appId: AppIdentity::APP_ID));
+		$this->announceSuccessor(response: $response);
 		if ($response instanceof JSONResponse) {
 			$this->decorateError(response: $response);
 		}
@@ -161,35 +155,66 @@ class ApiContractMiddleware extends Middleware {
 	}//end decorate()
 
 	/**
-	 * Whether the request path lies under the app's `/api/`.
+	 * Whether the request path lies under the app's `/api/` and is not a standard protocol path.
 	 *
-	 * @return bool True for an API request.
+	 * @return bool True for a request on the app's own API.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) StandardProtocolPaths is a pure lookup that routes.php shares, outside any container.
 	 *
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
 	private function isApiRequest(): bool {
 		$path = $this->request->getPathInfo();
+		if (is_string($path) === false || str_contains($path, self::API_PATH_MARKER) === false) {
+			return false;
+		}
 
-		return is_string($path) === true && str_contains($path, self::API_PATH_MARKER) === true;
+		return StandardProtocolPaths::matches(path: $path) === false;
 	}//end isApiRequest()
 
 	/**
-	 * Whether the request path belongs to a protocol with its own error format.
+	 * Add the RFC 9745 `Deprecation` header and a `Link` to the successor on an unversioned path.
 	 *
-	 * @return bool True when errors must keep the protocol's format.
+	 * The path keeps answering exactly as before; only the headers are added.
+	 *
+	 * @param Response $response The response.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ApiPathAliases is a pure lookup that routes.php shares, outside any container.
 	 *
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
-	private function hasForeignErrorFormat(): bool {
-		$path = (string) $this->request->getPathInfo();
-		foreach (self::FOREIGN_ERROR_FORMATS as $pattern) {
-			if (preg_match($pattern, $path) === 1) {
-				return true;
-			}
+	private function announceSuccessor(Response $response): void {
+		$path      = (string) $this->request->getPathInfo();
+		$successor = ApiPathAliases::successorOf(path: $path);
+		if ($successor === null) {
+			return;
 		}
 
-		return false;
-	}//end hasForeignErrorFormat()
+		$response->addHeader(name: 'Deprecation', value: ApiPathAliases::DEPRECATED_SINCE);
+		$response->addHeader(
+			name: 'Link',
+			value: '<'.$this->scriptPrefix(pathInfo: $path).$successor.'>; rel="successor-version"'
+		);
+	}//end announceSuccessor()
+
+	/**
+	 * The front controller that precedes the path info in the request URI, such as `/index.php`.
+	 *
+	 * @param string $pathInfo The request path info.
+	 *
+	 * @return string The prefix, or '' when the URI carries none.
+	 */
+	private function scriptPrefix(string $pathInfo): string {
+		$uri      = (string) $this->request->getRequestUri();
+		$position = strpos($uri, $pathInfo);
+		if ($pathInfo === '' || $position === false) {
+			return '';
+		}
+
+		return substr($uri, 0, $position);
+	}//end scriptPrefix()
 
 	/**
 	 * Serve a JSON error response as problem details when its body allows it.
@@ -201,7 +226,7 @@ class ApiContractMiddleware extends Middleware {
 	 * @spec openspec/specs/api-contract/spec.md
 	 */
 	private function decorateError(JSONResponse $response): void {
-		if ($response->getStatus() < 400 || $this->hasForeignErrorFormat() === true) {
+		if ($response->getStatus() < 400) {
 			return;
 		}
 

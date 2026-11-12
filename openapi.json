@@ -3,7 +3,7 @@
     "info": {
         "title": "Integriq",
         "version": "0.4.10-unstable.20261011120000",
-        "description": "The JSON API of Integriq, the integration hub for Nextcloud: sources, endpoints, mappings, synchronisations, jobs and their logs, and the connectors to government and education standards (DSO, StUF, ZGW Notificaties, SCIM, LTI, OpenID4VCI, Peppol and others). The sources, mappings and other objects themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Integriq adds on top. Endpoints that implement an external protocol keep that protocol's error format.",
+        "description": "The JSON API of Integriq, the integration hub for Nextcloud: sources, endpoints, mappings, synchronisations, jobs and their logs, and the connectors to government and education standards (DSO, StUF, ZGW Notificaties, SCIM, LTI, OpenID4VCI, Peppol and others). The sources, mappings and other objects themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Integriq adds on top. Endpoints that implement an external protocol keep that protocol's error format.\n\nEvery path is served under `/api/v1/`, the version this document describes. The unversioned `/api/` paths keep working, are deprecated, and name their `/api/v1/` successor in a `Link` header next to a `Deprecation` header. Errors are RFC 9457 problem details (`application/problem+json`), and every response carries an `API-Version` header. Paths that implement an external standard keep the formats of that standard and are not described here.",
         "contact": {
             "name": "Conduction B.V.",
             "email": "info@conduction.nl",
@@ -16,8 +16,8 @@
     },
     "servers": [
         {
-            "url": "https://{host}/index.php/apps/integriq/api",
-            "description": "The Integriq API on a Nextcloud instance.",
+            "url": "https://{host}/index.php/apps/integriq/api/v1",
+            "description": "The Integriq API on a Nextcloud instance, version 1.",
             "variables": {
                 "host": {
                     "default": "localhost",
@@ -166,6 +166,10 @@
         {
             "name": "gateways",
             "description": "Reading which laws this instance reaches is open to any signed-in account"
+        },
+        {
+            "name": "generic-preferences",
+            "description": "The generic preferences endpoints."
         },
         {
             "name": "health",
@@ -1910,6 +1914,18 @@
             }
         },
         "/cti/{sourceId}/events": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "cti-events",
                 "summary": "Receive call events from a phone system",
@@ -2247,6 +2263,18 @@
             }
         },
         "/dso/stam/verzoeken": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "dso-receive-request",
                 "summary": "Receive a DSO-verzoek via the STAM koppelvlak",
@@ -2418,6 +2446,18 @@
             }
         },
         "/endpoint/{_path}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "options": {
                 "operationId": "endpoints-preflighted-cors",
                 "summary": "Implements a preflighted CORS response for OPTIONS requests",
@@ -2788,6 +2828,18 @@
             }
         },
         "/eudi/credential": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "eudi-wallet-credential",
                 "summary": "Issue a credential (Bearer + proof-of-possession)",
@@ -2981,6 +3033,18 @@
             }
         },
         "/eudi/token": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "eudi-wallet-token",
                 "summary": "Exchange a pre-authorized_code for an access token",
@@ -4137,6 +4201,18 @@
             }
         },
         "/fsc/call": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "fsc-call",
                 "summary": "Resolve an organisation+service via the directory and invoke it",
@@ -4180,6 +4256,18 @@
             }
         },
         "/fsc/services": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "fsc-list-services",
                 "summary": "List the FSC services currently resolvable (the `fsc_service` cache)",
@@ -4440,6 +4528,18 @@
             }
         },
         "/health": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "health-index",
                 "summary": "GET /api/health, declarative health check (ADR-006, public)",
@@ -4472,6 +4572,18 @@
             }
         },
         "/idp/envelope/exchange": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "idp-broker-exchange",
                 "summary": "Redeem a one-time code for its subject envelope",
@@ -4504,6 +4616,18 @@
             }
         },
         "/idp/{provider}/callback": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "idp-broker-callback",
                 "summary": "Finish a government login and send the browser back with a one-time code",
@@ -4588,6 +4712,18 @@
             }
         },
         "/idp/{provider}/start": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "idp-broker-start",
                 "summary": "Start a government login and send the browser to the identity provider",
@@ -4662,6 +4798,18 @@
             }
         },
         "/intake/channels/{channel}/inbound": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "intake-channels-inbound",
                 "summary": "Receive one message on a channel",
@@ -4882,6 +5030,18 @@
             }
         },
         "/iwmo-ijw/berichten": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "iwmo-ijw-create-message",
                 "summary": "Register one toewijzing or declaratie bericht",
@@ -4922,6 +5082,18 @@
             }
         },
         "/iwmo-ijw/retour": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "iwmo-ijw-inbound",
                 "summary": "Receive an inbound iWMO/iJW retour message",
@@ -5433,6 +5605,18 @@
             }
         },
         "/lti/platform/authorize": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "lti-platform-authorize",
                 "summary": "The platform authorization endpoint (`GET` and `POST /api/lti/platform/authorize`)",
@@ -5493,6 +5677,18 @@
             }
         },
         "/lti/token": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "lti-token",
                 "summary": "RFC 7523 JWT-bearer client-credentials token endpoint",
@@ -5597,6 +5793,18 @@
             }
         },
         "/lti/{deployment}/ags/lineitems/{lineItemId}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "lti-ags-line-item",
                 "summary": "Inbound AGS line-item scope check (thin, line-item storage/CRUD is not modelled by this adapter; the consuming app owns ",
@@ -5646,6 +5854,18 @@
             }
         },
         "/lti/{deployment}/ags/lineitems/{lineItemId}/scores": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "lti-ags-score",
                 "summary": "Inbound AGS score POST",
@@ -5704,6 +5924,18 @@
             }
         },
         "/lti/{deployment}/ags/publish-score": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "lti-ags-publish-score",
                 "summary": "Publish a score to a Platform's AGS line item, acting as Tool",
@@ -5746,6 +5978,18 @@
             }
         },
         "/lti/{deployment}/launch": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "lti-launch",
                 "summary": "Launch id_token validation and dispatch to the consuming app",
@@ -5792,6 +6036,18 @@
             }
         },
         "/lti/{deployment}/login": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "lti-login",
                 "summary": "OIDC third-party-initiated login initiation",
@@ -5876,6 +6132,18 @@
             }
         },
         "/lti/{deployment}/nrps/membership": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "lti-nrps-membership",
                 "summary": "Inbound NRPS membership request",
@@ -6347,6 +6615,18 @@
             }
         },
         "/metrics": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "metrics-index",
                 "summary": "GET /api/metrics, declarative Prometheus metrics (admin-only, ADR-006)",
@@ -6699,6 +6979,18 @@
             }
         },
         "/notificaties/callback/{abonnementId}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "notificaties-subscriber-callback",
                 "summary": "Receive an inbound ZGW Notificaties API notification",
@@ -6748,6 +7040,18 @@
             }
         },
         "/notifynl/inbound": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "notify-nl-inbound",
                 "summary": "Receive a NotifyNL delivery-status callback",
@@ -6874,6 +7178,18 @@
             }
         },
         "/open-formulieren/submissions": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "open-formulieren-inbound",
                 "summary": "Receive a signed Open Formulieren submission",
@@ -7020,7 +7336,7 @@
             "get": {
                 "operationId": "open-api-show",
                 "summary": "The OpenAPI document of this API",
-                "description": "Returns this document. It needs no authentication and can be read from any origin.",
+                "description": "Returns this document, with `info.version` set to the installed version. It needs no login and can be read from any origin.",
                 "tags": [
                     "open-api"
                 ],
@@ -7058,6 +7374,18 @@
             }
         },
         "/oso/export": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "oso-export",
                 "summary": "Register one outbound OSO export",
@@ -7098,6 +7426,18 @@
             }
         },
         "/oso/import": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "oso-import",
                 "summary": "Receive an inbound OSO overstapdossier",
@@ -7130,6 +7470,18 @@
             }
         },
         "/oso/retour": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "oso-retour",
                 "summary": "Receive an inbound OSO export acknowledgement/retour",
@@ -7822,6 +8174,18 @@
             }
         },
         "/payments/webhook": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "payments-webhook",
                 "summary": "Receive a provider payment-status webhook",
@@ -8073,6 +8437,18 @@
             }
         },
         "/peppol/inbound": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "peppol-inbound",
                 "summary": "Receive an Access Point delivery callback or inbound-document notification",
@@ -8153,6 +8529,82 @@
                         }
                     }
                 ]
+            }
+        },
+        "/preferences/{key}": {
+            "get": {
+                "operationId": "generic-preferences-get-preference",
+                "summary": "Get preference (generic preferences)",
+                "description": "Get preference (generic preferences). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "generic-preferences"
+                ],
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "description": "The key.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "generic-preferences-set-preference",
+                "summary": "Set preference (generic preferences)",
+                "description": "Set preference (generic preferences). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "generic-preferences"
+                ],
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "description": "The key.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
             }
         },
         "/products/subscriptions/{subscriptionId}/approve": {
@@ -8671,6 +9123,18 @@
             }
         },
         "/psd2/callback": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "psd2-callback",
                 "summary": "Complete the SCA flow after the bank redirected the operator back",
@@ -8872,6 +9336,18 @@
             }
         },
         "/rod/berichten": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "rod-berichten",
                 "summary": "Register one outbound ROD bericht",
@@ -8912,6 +9388,18 @@
             }
         },
         "/rod/retour": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "rod-retour",
                 "summary": "Receive an inbound DUO ROD acknowledgement/retour",
@@ -8944,6 +9432,18 @@
             }
         },
         "/scim/v2/Groups": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "scim-list-groups",
                 "summary": "List SCIM groups",
@@ -8984,6 +9484,18 @@
             }
         },
         "/scim/v2/Groups/{id}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "patch": {
                 "operationId": "scim-update-group",
                 "summary": "Set one SCIM group's membership",
@@ -9128,6 +9640,18 @@
             }
         },
         "/scim/v2/Users": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "scim-list-users",
                 "summary": "List SCIM users",
@@ -9217,6 +9741,18 @@
             }
         },
         "/scim/v2/Users/{id}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "scim-get-user",
                 "summary": "Read one SCIM user",
@@ -9966,6 +10502,18 @@
             }
         },
         "/stuf-zkn/confirmations": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "stuf-zds-confirmation-receive",
                 "summary": "Receive one confirmation envelope",
@@ -10004,6 +10552,18 @@
             }
         },
         "/stuf-zkn/inbound": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "stuf-zkn-inbound",
                 "summary": "Receive an inbound StUF-ZKN SOAP kennisgeving (`zakLk01`/`edcLk01`)",
@@ -10042,6 +10602,18 @@
             }
         },
         "/stuf-zkn/kennisgevingen": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "stuf-zkn-outbound",
                 "summary": "Register one outbound `zakLk01` kennisgeving for a zaak create/update/status change",
@@ -10082,6 +10654,18 @@
             }
         },
         "/stuf-zkn/provider/{sourceId}/cases": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "stuf-provider-cases",
                 "summary": "Receive a case request (zakLv01, zakLk01, edcLk01)",
@@ -10122,6 +10706,18 @@
             }
         },
         "/stuf-zkn/provider/{sourceId}/persons": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "stuf-provider-persons",
                 "summary": "Receive a person request (npsLv01)",
@@ -11567,6 +12163,18 @@
             }
         },
         "/uwlr-eduv/basispoort": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "uwlr-edu-v-basispoort",
                 "summary": "Register one Basispoort sync",
@@ -11607,6 +12215,18 @@
             }
         },
         "/uwlr-eduv/edu-v": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "uwlr-edu-v-edu-v",
                 "summary": "Register one outbound Edu-V export",
@@ -11647,6 +12267,18 @@
             }
         },
         "/uwlr-eduv/entree-content": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "uwlr-edu-v-entree-content",
                 "summary": "Register one Entree content sync",
@@ -11687,6 +12319,18 @@
             }
         },
         "/uwlr-eduv/retour": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "uwlr-edu-v-retour",
                 "summary": "Receive an inbound UWLR/Edu-V/Basispoort/Entree-content acknowledgement/retour",
@@ -11719,6 +12363,18 @@
             }
         },
         "/uwlr-eduv/uwlr": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "uwlr-edu-v-uwlr",
                 "summary": "Register one outbound UWLR export",
@@ -11759,6 +12415,18 @@
             }
         },
         "/v2/objects": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "objecten-api-objects",
                 "summary": "`GET /api/v2/objects`",
@@ -11815,6 +12483,18 @@
             }
         },
         "/v2/objects/search": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "objecten-api-search",
                 "summary": "`POST /api/v2/objects/search`",
@@ -11844,6 +12524,18 @@
             }
         },
         "/v2/objects/{uuid}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "objecten-api-object",
                 "summary": "`GET /api/v2/objects/{uuid}`",
@@ -11998,6 +12690,18 @@
             }
         },
         "/v2/objecttypes": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "objecten-api-objecttypes",
                 "summary": "`GET /api/v2/objecttypes`",
@@ -12027,6 +12731,18 @@
             }
         },
         "/v2/objecttypes/{uuid}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "objecten-api-objecttype",
                 "summary": "`GET /api/v2/objecttypes/{uuid}`",
@@ -12067,6 +12783,18 @@
             }
         },
         "/v2/objecttypes/{uuid}/versions/{version}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "get": {
                 "operationId": "objecten-api-objecttype-version",
                 "summary": "`GET /api/v2/objecttypes/{uuid}/versions/{version}`",
@@ -12150,6 +12878,18 @@
             }
         },
         "/verdicts/inbound": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "verdict-inbound",
                 "summary": "Take a verdict from an external checker",
@@ -12179,6 +12919,18 @@
             }
         },
         "/verzuimloket/berichten": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "verzuimloket-berichten",
                 "summary": "Register one outbound Verzuimloket melding",
@@ -12219,6 +12971,18 @@
             }
         },
         "/verzuimloket/retour": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/integriq/api",
+                    "description": "The unversioned base of the paths that implement an external standard, which keep their own URLs and formats.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
             "post": {
                 "operationId": "verzuimloket-retour",
                 "summary": "Receive an inbound DUO Verzuimloket acknowledgement/retour",
