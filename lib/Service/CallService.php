@@ -1046,22 +1046,16 @@ class CallService implements CallServiceInterface {
 	}//end clampRateLimitHeader()
 
 	/**
-	 * Normalise Guzzle request config with TLS and secret-redaction guards.
+	 * Refuse `verify: false` on a source unless that is explicitly allowed.
 	 *
-	 * @param array $config Raw Guzzle config array to normalise.
+	 * @param array $config     The Guzzle config of the call.
 	 * @param array $sourceData Source configuration data.
-	 * @param array $callData The per-call request data (see CALL_DATA_KEYS), merged in unrendered.
 	 *
-	 * @return array The normalised config with TLS and secret guards applied.
+	 * @return array The config, with certificate verification forced back on when the override is refused.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md
 	 */
-	private function normaliseRequestConfig(array $config, array $sourceData, array $callData = []): array {
-		// Caller input is data, not a template: take it out before rendering and
-		// merge it back afterwards (iq-a-f2).
-		$callerInput = ($config[self::CALLER_INPUT] ?? []);
-		unset($config[self::CALLER_INPUT]);
-
+	private function guardInsecureTls(array $config, array $sourceData): array {
 		// #1011: a source can disable TLS certificate verification by setting
 		// `verify: false` in its configuration. Without a guardrail, Guzzle
 		// honours it silently and the connection is exposed to MITM — which
@@ -1091,6 +1085,28 @@ class CallService implements CallServiceInterface {
 				);
 			}
 		}//end if
+
+		return $config;
+	}//end guardInsecureTls()
+
+	/**
+	 * Normalise Guzzle request config with TLS and secret-redaction guards.
+	 *
+	 * @param array $config Raw Guzzle config array to normalise.
+	 * @param array $sourceData Source configuration data.
+	 * @param array $callData The per-call request data (see CALL_DATA_KEYS), merged in unrendered.
+	 *
+	 * @return array The normalised config with TLS and secret guards applied.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md
+	 */
+	private function normaliseRequestConfig(array $config, array $sourceData, array $callData = []): array {
+		// Caller input is data, not a template: take it out before rendering and
+		// merge it back afterwards (iq-a-f2).
+		$callerInput = ($config[self::CALLER_INPUT] ?? []);
+		unset($config[self::CALLER_INPUT]);
+
+		$config = $this->guardInsecureTls(config: $config, sourceData: $sourceData);
 
 		// Check if the config has a Content-Type header and overwrite it if it does.
 		if (isset($config['headers']['Content-Type']) === true) {
@@ -1278,6 +1294,36 @@ class CallService implements CallServiceInterface {
 	}//end warnAboutUnrenderedTemplates()
 
 	/**
+	 * Merge the per-call headers into the rendered config, case-insensitively (api-f1).
+	 *
+	 * A header the call gives wins over the same header, in any capitalisation,
+	 * authored in the source configuration.
+	 *
+	 * @param array $config   The rendered call configuration.
+	 * @param array $callData The per-call request data, unrendered.
+	 *
+	 * @return array The configuration with the per-call headers merged in.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md
+	 */
+	private function mergeCallHeaders(array $config, array $callData): array {
+		$callHeaders = ($callData['headers'] ?? null);
+		if (is_array($callHeaders) === false || $callHeaders === []) {
+			return $config;
+		}
+
+		$given = array_change_key_case($callHeaders, CASE_LOWER);
+		$authored = array_filter(
+			(array)($config['headers'] ?? []),
+			static fn (mixed $name): bool => array_key_exists(strtolower((string)$name), $given) === false,
+			ARRAY_FILTER_USE_KEY
+		);
+		$config['headers'] = array_merge($callHeaders, $authored);
+
+		return $config;
+	}//end mergeCallHeaders()
+
+	/**
 	 * Merge the unrendered per-call request data into the rendered config (api-f1).
 	 *
 	 * The per-call value is the more specific statement and wins over what the
@@ -1306,16 +1352,7 @@ class CallService implements CallServiceInterface {
 			$config[$key] = $callData[$key];
 		}
 
-		$callHeaders = ($callData['headers'] ?? null);
-		if (is_array($callHeaders) === true && $callHeaders !== []) {
-			$given = array_change_key_case($callHeaders, CASE_LOWER);
-			$authored = array_filter(
-				(array)($config['headers'] ?? []),
-				static fn (mixed $name): bool => array_key_exists(strtolower((string)$name), $given) === false,
-				ARRAY_FILTER_USE_KEY
-			);
-			$config['headers'] = array_merge($callHeaders, $authored);
-		}
+		$config = $this->mergeCallHeaders(config: $config, callData: $callData);
 
 		foreach (['body', 'multipart'] as $key) {
 			if (array_key_exists($key, $callData) === true && $callData[$key] !== null) {
