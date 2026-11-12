@@ -251,6 +251,12 @@ npm run stylelint       # CSS/SCSS linting
 npm run test            # Jest unit tests
 ```
 
+#### Test coverage
+
+<!-- coverage:start -->
+Measured test coverage: 83.9% of statements (PHP 86.7% of 64,694 statements, JavaScript 57.9% of 7,010 statements), at commit `f39bbb134` on 2026-11-12. The figures come from [`coverage-summary.json`](coverage-summary.json); refresh them with `composer coverage:publish`.
+<!-- coverage:end -->
+
 #### Quality-gate baselines
 
 `composer check:strict` is the unified gate you run locally; CI runs the equivalent gates on every PR via `.github/workflows/code-quality.yml` (the shared `ConductionNL/.github` quality pipeline).
