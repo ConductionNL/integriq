@@ -3,6 +3,9 @@
 /**
  * Integriq Health Controller — AppHost adapter with OpenRegister guard.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin app-namespace health endpoint (URL `/api/health`, route name
  * `health#index`, both unchanged). It carries no health logic of its own for
  * the healthy path: when OpenRegister is present it delegates to the

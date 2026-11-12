@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Sync Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Core of the stuf-zkn-bridge: resolves the configured `type=stuf-zkn`
  * source + provider binding, drives the INBOUND path (parse+translate a
  * `zakLk01`/`edcLk01` kennisgeving, upsert the OR/ZGW zaak/document object,
@@ -40,9 +43,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

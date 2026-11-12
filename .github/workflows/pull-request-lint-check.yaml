@@ -7,6 +7,9 @@ on:
       - main
       - beta
 
+permissions:
+  contents: read
+
 jobs:
   lint-check:
     runs-on: ubuntu-latest

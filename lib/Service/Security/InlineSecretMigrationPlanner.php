@@ -3,6 +3,9 @@
 /**
  * Integriq Inline Secret Migration Planner.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Phase C of ocon#151 / ADR-064: plans the migration of a `source` object's
  * INLINE credential fields (`apikey`, `secret`, `password`, `jwt`,
  * `authenticationConfig`) into the OpenRegister credential broker, so the
@@ -33,9 +36,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

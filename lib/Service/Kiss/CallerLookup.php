@@ -3,6 +3,9 @@
 /**
  * Integriq Caller Lookup.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Turns a ringing phone number into the person behind it, or into nothing.
  *
  * THE RISK THIS CLASS EXISTS TO CONTAIN.
@@ -32,9 +35,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

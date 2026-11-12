@@ -3,6 +3,9 @@
 /**
  * Parses a scheduled-trigger `filter` annotation into a normalised AST.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * This is the single gate between what an author writes and what the engine
  * runs. The validator reports the errors this parser produces; the evaluator
  * executes the AST it produces. Neither enumerates operators itself, so a shape

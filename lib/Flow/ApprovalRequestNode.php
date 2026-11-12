@@ -3,6 +3,9 @@
 /**
  * Integriq Approval Request flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.approval-request` — the `approval` step of the retired
  * app-local flow runner, re-homed on OpenRegister's engine. The node persists
  * a `pending` `approval_request` (the HITL system of record, mirrored onto the
@@ -40,9 +43,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

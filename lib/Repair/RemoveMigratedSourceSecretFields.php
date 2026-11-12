@@ -4,6 +4,9 @@
  * Integriq — remove the auto-migratable inline-secret fields from the LIVE
  * source schema, ONCE the fleet has verifiably migrated them (Phase D / ocon#151).
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHAT THIS DOES — and why it is IRREVERSIBLE
  * ─────────────────────────────────────────────────────────────────────────────
@@ -56,9 +59,6 @@
  * @version GIT: <git-id>
  *
  * @link https://www.Integriq.nl
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

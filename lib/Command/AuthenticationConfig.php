@@ -3,6 +3,9 @@
 /**
  * OCC command: integriq:authentication-config (ocon#232, follow-up to ocon#151).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  * WHAT THIS COMMAND IS FOR
  * ─────────────────────────────────────────────────────────────────────────────
@@ -64,9 +67,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

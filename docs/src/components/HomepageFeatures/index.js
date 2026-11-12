@@ -1,3 +1,7 @@
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';

@@ -3,6 +3,9 @@
 /**
  * A brokered source is never dispatched asynchronously.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `BrokeredCallService::assertScopeGuards()` refuses asynchronous dispatch
  * outright — "the brokered call is synchronous in-process" — and that refusal
  * becomes a persisted synthetic 409 CallLog rather than a thrown error. So a

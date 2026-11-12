@@ -3,6 +3,9 @@
 /**
  * Integriq — inbound consumer source-scope (domains/ips) enforcement.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The `consumer` schema advertises `ips` ("Allowed source IP addresses") and
  * `domains` ("Allowed source domains") as scope controls. Until this service
  * existed nothing in `lib/` read either field — they were a fabricated control

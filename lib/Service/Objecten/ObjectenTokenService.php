@@ -3,6 +3,9 @@
 /**
  * `Authorization: Token <key>` — and what that token may do, per objecttype.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * 🔴 FAIL-CLOSED ORDERING IS THE WHOLE OF THIS CLASS. The requirement spells
  * it out: no `Authorization` header means 401 "and no register is read". So the
  * token is resolved FIRST, before an objecttype is looked up, before a register
@@ -29,9 +32,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.conduction.nl
  *

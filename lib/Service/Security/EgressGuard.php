@@ -3,6 +3,9 @@
 /**
  * Integriq Egress Guard.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Refuses an outbound URL that points into the instance's own network before an
  * HTTP call is made to it: the app-local form of the egress guard hydra ADR-067
  * decision 3 describes, until OpenRegister ships the shared `EgressGuard`. The
@@ -31,9 +34,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

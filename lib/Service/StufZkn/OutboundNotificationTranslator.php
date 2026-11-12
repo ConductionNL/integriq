@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Outbound Kennisgeving Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates an OR/ZGW zaak object (a create, update, or status change) into
  * a `zakLk01` StUF-ZKN 3.10 SOAP kennisgeving XML envelope, so a subscribed
  * legacy StUF consumer (midoffice, DMS, belastingen, KCC) stays in sync
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

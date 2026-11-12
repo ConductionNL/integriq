@@ -12,6 +12,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/configuration-export-import/spec.md#scenario-import-without-confirmation-is-rejected
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

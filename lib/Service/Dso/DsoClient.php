@@ -3,6 +3,9 @@
 /**
  * Integriq DSO (Digitaal Stelsel Omgevingswet) Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin REST binding for {@see DsoConnectorProviderInterface} against a
  * DSO-LV-fronted "voortgangsinformatie"/besluit endpoint. Deliberately a
  * hand-rolled HTTP client (Guzzle, already an app dependency) rather than a
@@ -58,9 +61,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

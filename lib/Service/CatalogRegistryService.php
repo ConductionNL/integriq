@@ -3,6 +3,9 @@
 /**
  * Catalog Registry Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Single PHP-side source of truth for the Catalog page's card entries
  * (REQ-003). Assembles catalog descriptors from three existing sources —
  * never inventing an entry:

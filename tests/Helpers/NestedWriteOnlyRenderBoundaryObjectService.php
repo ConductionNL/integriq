@@ -4,6 +4,9 @@
  * An OpenRegister ObjectService test double reproducing the NESTED write-only
  * render boundary (`x-openregister-writeonly-paths`, openregister#459).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Sibling of {@see RenderBoundarySimulatingObjectService}, which models the
  * TOP-LEVEL `writeOnly` strip. This one models the schema-level DOT-PATH strip:
  * a declared path and its whole sub-tree vanish on EVERY rendered read —
@@ -28,9 +31,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  */

@@ -3,6 +3,9 @@
 /**
  * Integriq Rule → Flow migration generator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Task 3.3 of `flow-native-synchronization` ("Rules → trigger-object + switch"):
  * renders an existing Rule entity into a GENERATED FLOW DOCUMENT started by
  * `openregister.trigger-object`, with the rule's JsonLogic conditions expressed
@@ -67,9 +70,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

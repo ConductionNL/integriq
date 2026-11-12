@@ -19,6 +19,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/endpoint-runtime/spec.md
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Controller;

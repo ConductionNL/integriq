@@ -3,6 +3,9 @@
 /**
  * The two notification decisions that are not preferences.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * 🔑 A PREFERENCE ANSWERS WHAT A PERSON WANTS. Two things a municipality needs
  * are not that: a kind that always goes out on a named channel because the law
  * or the process says so, and a kind that must never reach a party outside the
@@ -34,9 +37,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @link https://conduction.nl
  *

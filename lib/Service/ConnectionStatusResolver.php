@@ -3,6 +3,9 @@
 /**
  * Integriq ConnectionStatusResolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Works out a connection row's `status`, `statusMessage` and `checkedAt` by the
  * rules of the hydra umbrella design D4, first match wins:
  *
@@ -47,9 +50,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @version GIT: <git_id>
  *

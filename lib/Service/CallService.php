@@ -3,6 +3,9 @@
 /**
  * Integriq Call Service.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Provides functionality to handle API calls to a specified source within the
  * NextCloud environment. Manages the execution of HTTP requests using the
  * Guzzle HTTP client, while rendering templates with Twig and managing call

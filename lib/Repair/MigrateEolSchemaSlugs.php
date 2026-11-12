@@ -2,6 +2,9 @@
 /**
  * Renames the two camelCase endoflife.date schema slugs to snake_case.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `eolProduct` and `eolCycle` were the only camelCase slugs among the 55 this
  * app declares. Every other slug is snake_case, and a register that spells two
  * of its schemas differently from the other fifty-three is a register whose
@@ -47,9 +50,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://conduction.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

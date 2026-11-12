@@ -3,6 +3,9 @@
 /**
  * Integriq UnsubscribeTokenService.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The link binds to a recipient and a case through a signed token, not to an
  * account: the person who wants the updates to stop usually has neither an
  * account nor a reason to make one. A message in a protected category carries
@@ -31,9 +34,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @link https://www.integriq.nl
  *

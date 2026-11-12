@@ -15,6 +15,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
