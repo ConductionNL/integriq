@@ -57,7 +57,7 @@ final class ApiPathAliases {
 	 * Unversioned paths that keep no successor, because a route the app already
 	 * declares under `/api/v1/` answers their versioned form with something else.
 	 *
-	 * @var array<string,string>
+	 * @var array<string,non-empty-string>
 	 */
 	public const WITHOUT_SUCCESSOR = [
 	];
@@ -66,7 +66,7 @@ final class ApiPathAliases {
 	 * Paths whose versioned form has a new name, as a pattern over the
 	 * unversioned path and its replacement, which follows the kebab-case rule.
 	 *
-	 * @var array<string,string>
+	 * @var array<non-empty-string,string>
 	 */
 	public const RENAMED = [
 	];
@@ -222,7 +222,7 @@ final class ApiPathAliases {
 	/**
 	 * The renamed paths.
 	 *
-	 * @return array<string,string> The replacements by pattern.
+	 * @return array<non-empty-string,string> The replacements by pattern.
 	 */
 	private static function renames(): array {
 		return self::RENAMED;
@@ -231,7 +231,7 @@ final class ApiPathAliases {
 	/**
 	 * The patterns of the unversioned paths that keep no successor.
 	 *
-	 * @return array<string,string> The patterns by reason.
+	 * @return array<string,non-empty-string> The patterns by reason.
 	 */
 	private static function withoutSuccessor(): array {
 		return self::WITHOUT_SUCCESSOR;

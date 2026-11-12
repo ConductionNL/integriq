@@ -207,7 +207,7 @@ class ApiContractMiddleware extends Middleware {
 	 * @return string The prefix, or '' when the URI carries none.
 	 */
 	private function scriptPrefix(string $pathInfo): string {
-		$uri      = (string) $this->request->getRequestUri();
+		$uri      = $this->request->getRequestUri();
 		$position = strpos($uri, $pathInfo);
 		if ($pathInfo === '' || $position === false) {
 			return '';
