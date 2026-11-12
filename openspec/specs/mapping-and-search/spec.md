@@ -21,7 +21,7 @@ code already exists.
 
 ## Requirements
 
-### REQ-UI-001: Mapping Management UI
+### Requirement: Mapping Management UI (REQ-UI-001)
 
 Integriq MUST provide a Mappings section in its SPA where administrators can
 browse, create, edit, and test mapping configurations.
@@ -44,7 +44,7 @@ browse, create, edit, and test mapping configurations.
 - WHEN the user clicks on a mapping row or card in the Mappings list
 - THEN the mapping detail view renders without error
 
-### REQ-001: Apply a mapping recipe to an input payload
+### Requirement: Apply a mapping recipe to an input payload (REQ-001)
 
 The system MUST transform an input array into an output array according to a mapping
 recipe. `executeMapping()` is the public entry point: it normalises an `ObjectEntity`
@@ -85,7 +85,7 @@ decoded back afterward.
 - WHEN the local engine renders it
 - THEN an `Exception` is thrown naming the mapping, the key, and the failing value
 
-### REQ-002: Cast a mapped value to a declared type
+### Requirement: Cast a mapped value to a declared type (REQ-002)
 
 The system MUST coerce a mapped value according to its `cast` directive. `handleCast()`
 supports scalar casts (`string`, `int`/`integer`, `float`, `bool`/`boolean` and their
@@ -119,7 +119,7 @@ checks.
 - WHEN `handleCast()` runs
 - THEN the value passes through unmodified (default branch)
 
-### REQ-003: Resolve mappings through the OpenRegister object shim
+### Requirement: Resolve mappings through the OpenRegister object shim (REQ-003)
 
 The system MUST expose mapping entities only through the service layer, never via direct
 storage access. `getMapping()` resolves a single mapping by id from the `openconnector`
@@ -141,7 +141,7 @@ when present.
 - WHEN `getMappings()` is called
 - THEN the inner `results` array is returned
 
-### REQ-004: Test, persist, and list mappings via the controller
+### Requirement: Test, persist, and list mappings via the controller (REQ-004)
 
 The system MUST provide `@NoAdminRequired @NoCSRFRequired` endpoints for the mapping UI.
 `test()` requires `inputObject` and `mapping` in the request (throwing
@@ -175,7 +175,7 @@ registers via `RegisterMapper::findAll()`.
 - WHEN `saveObject()` runs
 - THEN it returns HTTP 412 (no OpenRegister) or HTTP 400 (missing object) respectively
 
-### REQ-005: Compile request filters into search queries and merge facets
+### Requirement: Compile request filters into search queries and merge facets (REQ-005)
 
 The system MUST translate request query parameters into backend-specific query fragments
 and merge results from multiple sources. `parseQueryString()` (with
