@@ -34,6 +34,7 @@ use DateTime;
 use OCA\Integriq\Event\UwlrEduVAcknowledgementReceivedEvent;
 use OCA\Integriq\Exception\UwlrEduVProviderException;
 use OCA\Integriq\Exception\UwlrEduVTranslationException;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\UwlrEduV\BasispoortSyncTranslator;
 use OCA\Integriq\Service\UwlrEduV\EduVExportEnvelopeTranslator;
@@ -360,27 +361,16 @@ class UwlrEduVService implements UwlrEduVServiceInterface {
 	 * @spec openspec/specs/uwlr-eduv-adapter/spec.md#requirement-req-008-pushsync-endpoints-and-a-shared-signed-retour-endpoint
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new UwlrEduVProviderException(
 				message: 'No active UWLR/Edu-V source is configured (register "integriq", schema "source", '
 					. 'type "uwlr-eduv", isEnabled=true). Configure one before using this bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**
