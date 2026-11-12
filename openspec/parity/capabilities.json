@@ -5526,10 +5526,12 @@
 			"source": "sibling-matrix",
 			"integriq": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "No dedicated inbound CloudEvents decoder exists: lib/Broker/CloudEventHttpBinding.php only has render() (outbound encoding), no decode/parse method (`grep -n 'function ' lib/Broker/CloudEventHttpBinding.php` shows render/dataContentType/binaryBody/headerValue only). The generic inbound path is an Endpoint + Rule (lib/Service/EndpointService.php handleRuleProcessing()): any outside system can POST a body (including a CloudEvent JSON payload) to an Endpoint, and a Rule can act on it (mapping/synchronization/job/etc). lib/Controller/NotificatiesSubscriberController.php's callback() is the one purpose-built inbound-notification-to-CloudEvent normalizer, but it is ZGW-specific (see evt-zgw-subscribe).",
-				"spec": "openspec/specs/events-cloudevents"
+				"evidence": "Not built: no inbound CloudEvents receiver exists (decisions 389 and 392). No dedicated inbound CloudEvents decoder exists: lib/Broker/CloudEventHttpBinding.php only has render() (outbound encoding), no decode/parse method (`grep -n 'function ' lib/Broker/CloudEventHttpBinding.php` shows render/dataContentType/binaryBody/headerValue only). The generic inbound path is an Endpoint + Rule (lib/Service/EndpointService.php handleRuleProcessing()): any outside system can POST a body (including a CloudEvent JSON payload) to an Endpoint, and a Rule can act on it (mapping/synchronization/job/etc). lib/Controller/NotificatiesSubscriberController.php's callback() is the one purpose-built inbound-notification-to-CloudEvent normalizer, but it is ZGW-specific (see evt-zgw-subscribe).",
+				"spec": "openspec/specs/events-cloudevents",
+				"requirement": "openspec/changes/cloudevents-receiver/specs/events-cloudevents :: Outside systems SHALL send CloudEvents to a receiver that checks and routes them (REQ-017)",
+				"plan": "openspec/changes/cloudevents-receiver"
 			},
 			"reachedOn": "generic: any registered Endpoint URL, acted on via its attached Rules",
 			"note": "There is no CloudEvents-aware inbound receiver that validates ce-id/ce-type/ce-source and turns it into an integriq event/subscription match; only generic endpoint+rule handling, or the ZGW-specific Notificaties callback.",
