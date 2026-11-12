@@ -44,9 +44,9 @@ event. Building them would give the same adapters a second entrance.
 - **files**: a learniq issue (drafted for Ruben; lanes file nothing on another repo)
 - **acceptance_criteria**:
   - GIVEN the merged integriq change WHEN the issue is filed THEN it names the event's getters and asks learniq to listen, filter on `getOwnerApp() === 'learniq'`, and record the outcome on the record idempotently
-- [ ] Implement. Drafted for Ruben (for-ruben/learniq-listen-for-exchange-acknowledgements.md);
-      not filed yet, so not ticked.
-- [ ] Test (the learniq issue exists and links back)
+- Moved out, not built here (decision 399; learniq's half, a human files the issue): drafted for Ruben
+      (for-ruben/learniq-listen-for-exchange-acknowledgements.md), not filed yet.
+- Moved out with the implementation above: the learniq issue exists and links back.
 
 ## Verification
 

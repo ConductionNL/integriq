@@ -71,5 +71,5 @@ value objects are named for what they do (learning material source), only the im
 - **acceptance_criteria**:
   - GIVEN the branch WHEN finished THEN the diff check ran while building and `composer check:strict`, lint and the unit suite ran once at the end with exit codes in the PR body
   - GIVEN every changed method WHEN read THEN it carries `@spec openspec/specs/edurep-source/spec.md`
-- [ ] Implement
-- [ ] Test
+- [x] Implement (done: lib/Adapters/LearningMaterial/ (EdurepSource, EdurepHealthCheck, LearningMaterialService); closed on code by decision 399)
+- [x] Test (done: lib/Adapters/LearningMaterial/ (EdurepSource, EdurepHealthCheck, LearningMaterialService); closed on code by decision 399)

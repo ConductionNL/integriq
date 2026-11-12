@@ -53,4 +53,4 @@
 ## Handover
 
 - [ ] Hand dossiq its half: the send screen where a handler adds or suppresses a recipient and types the reason, the standing recipients with the statutory ones marked required on the delivery request, and the resolved list rendered on the case timeline entry
-- [ ] Record the row 6.23 closure in `openspec/changes/competitor-parity-2026-09/proposal.md` when this change is archived
+- [ ] Record the row 6.23 closure in `openspec/changes/archive/2026-11-12-competitor-parity-2026-09/proposal.md` when this change is archived

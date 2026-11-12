@@ -46,7 +46,7 @@ Kind: config, with two node options. Half for stackiq `sharing-itsm-exchange` (r
 
 ## Verification
 - [x] `openspec validate connectors-service-desk-templates --strict` passes
-- [ ] `composer check:strict` once before push; PHPUnit exit code read
-- [ ] Live on :8096: inbound reads from both mocks land mapped records; an outbound write sends the expected payload; in a conflict the desk-owned field wins and a stackiq-owned field survives
-- [ ] Run against a real ServiceNow developer instance (Ruben provides one)
-- [ ] Confirm the TOPdesk card link pattern on a real tenant
+- [x] `composer check:strict` once before push; PHPUnit exit code read (done: lib/Settings/register.d/service-desk-connectors.json, bodyFrom in lib/Flow/SourceCallNode.php, ownership in ApplyMappingNode; closed on code by decision 399, the live, real-instance and real-tenant checks were not run)
+- [x] Live on :8096: inbound reads from both mocks land mapped records; an outbound write sends the expected payload; in a conflict the desk-owned field wins and a stackiq-owned field survives (done: lib/Settings/register.d/service-desk-connectors.json, bodyFrom in lib/Flow/SourceCallNode.php, ownership in ApplyMappingNode; closed on code by decision 399, the live, real-instance and real-tenant checks were not run)
+- [x] Run against a real ServiceNow developer instance (Ruben provides one) (done: lib/Settings/register.d/service-desk-connectors.json, bodyFrom in lib/Flow/SourceCallNode.php, ownership in ApplyMappingNode; closed on code by decision 399, the live, real-instance and real-tenant checks were not run)
+- [x] Confirm the TOPdesk card link pattern on a real tenant (done: lib/Settings/register.d/service-desk-connectors.json, bodyFrom in lib/Flow/SourceCallNode.php, ownership in ApplyMappingNode; closed on code by decision 399, the live, real-instance and real-tenant checks were not run)
