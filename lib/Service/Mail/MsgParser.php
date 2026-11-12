@@ -63,45 +63,94 @@ class MsgParser {
 	public function parse(string $raw): ParsedMessage {
 		$reader = new CompoundFileReader($raw);
 		$properties = $this->readProperties(reader: $reader, storageId: 0);
-		$headers = $this->parseTransportHeaders(block: $this->property(properties: $properties, propertyId: '007D'));
+		$headers = $this->transportHeaders(properties: $properties);
 
-		$subject = $this->property(properties: $properties, propertyId: '0037');
-		if ($subject === '') {
-			$subject = $this->property(properties: $properties, propertyId: '0E1D');
-		}
+		return new ParsedMessage(
+			$this->messageIdFor(properties: $properties, raw: $raw),
+			$this->senderOf(properties: $properties, headers: $headers),
+			$this->recipients(displayTo: $this->property(properties: $properties, propertyId: '0E04'), headers: $headers),
+			$this->firstProperty(properties: $properties, propertyIds: ['0037', '0E1D']),
+			MailHeaders::date(header: (string)($headers['date'] ?? '')),
+			$this->property(properties: $properties, propertyId: '1000'),
+			HtmlSanitizer::sanitize($this->property(properties: $properties, propertyId: '1013')),
+			$this->readAttachments(reader: $reader),
+		);
 
-		$from = $this->property(properties: $properties, propertyId: '5D01');
-		if ($from === '') {
-			$from = $this->property(properties: $properties, propertyId: '0C1F');
-		}
+	}//end parse()
 
+	/**
+	 * The stored internet headers of the message.
+	 *
+	 * @param array<string,string> $properties The message's properties.
+	 *
+	 * @return array<string,string> Lower-cased header names to values.
+	 */
+	private function transportHeaders(array $properties): array {
+		return $this->parseTransportHeaders(block: $this->property(properties: $properties, propertyId: '007D'));
+
+	}//end transportHeaders()
+
+	/**
+	 * The message id: the stored property, else the stored header, else a
+	 * hash of the bytes.
+	 *
+	 * @param array<string,string> $properties The message's properties.
+	 * @param string               $raw        The compound file bytes.
+	 *
+	 * @return string
+	 */
+	private function messageIdFor(array $properties, string $raw): string {
 		$messageId = trim($this->property(properties: $properties, propertyId: '1035'), " <>\t");
 		if ($messageId === '') {
-			$messageId = trim((string)($headers['message-id'] ?? ''), " <>\t");
+			$messageId = trim((string)($this->transportHeaders(properties: $properties)['message-id'] ?? ''), " <>\t");
 		}
 
 		if ($messageId === '') {
 			$messageId = 'sha256:' . hash('sha256', $raw);
 		}
 
-		$html = $this->property(properties: $properties, propertyId: '1013');
+		return $messageId;
 
+	}//end messageIdFor()
+
+	/**
+	 * The sender: the sender's address property, else the sender name
+	 * property, else the stored From header.
+	 *
+	 * @param array<string,string> $properties The message's properties.
+	 * @param array<string,string> $headers    The stored internet headers.
+	 *
+	 * @return string
+	 */
+	private function senderOf(array $properties, array $headers): string {
+		$from = $this->firstProperty(properties: $properties, propertyIds: ['5D01', '0C1F']);
 		if ($from === '') {
 			$from = (string)($headers['from'] ?? '');
 		}
 
-		return new ParsedMessage(
-			$messageId,
-			$from,
-			$this->recipients(displayTo: $this->property(properties: $properties, propertyId: '0E04'), headers: $headers),
-			$subject,
-			MailHeaders::date(header: (string)($headers['date'] ?? '')),
-			$this->property(properties: $properties, propertyId: '1000'),
-			HtmlSanitizer::sanitize($html),
-			$this->readAttachments(reader: $reader),
-		);
+		return $from;
 
-	}//end parse()
+	}//end senderOf()
+
+	/**
+	 * The first of the properties that is not empty.
+	 *
+	 * @param array<string,string> $properties  The properties read from a storage.
+	 * @param array<int,string>    $propertyIds The 4 hex character property ids, in order.
+	 *
+	 * @return string The value, or an empty string when all are empty.
+	 */
+	private function firstProperty(array $properties, array $propertyIds): string {
+		foreach ($propertyIds as $propertyId) {
+			$value = $this->property(properties: $properties, propertyId: $propertyId);
+			if ($value !== '') {
+				return $value;
+			}
+		}
+
+		return '';
+
+	}//end firstProperty()
 
 	/**
 	 * Read every property stream of one storage.
