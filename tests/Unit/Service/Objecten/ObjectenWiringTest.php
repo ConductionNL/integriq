@@ -510,7 +510,7 @@ class ObjectenWiringTest extends TestCase {
 						'register' => 'meldingen',
 						'schema' => 'melding',
 					]]],
-					ObjectenOpenRegisterAccess::TOKEN_SCHEMA => ['results' => [[
+					ObjectenOpenRegisterAccess::CREDENTIAL_SCHEMA => ['results' => [[
 						'@self' => ['id' => 'token-1'],
 						'name' => 'Leverancier meldingen',
 						'credential' => 'cred-1',

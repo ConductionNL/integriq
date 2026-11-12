@@ -154,7 +154,7 @@ class MigrateDsoStamConnection implements IRepairStep {
 
 		$trust = [
 			'mode' => $read(SignedPayloadVerifierInterface::CONFIG_MODE),
-			'hmacSecret' => $read(SignedPayloadVerifierInterface::CONFIG_HMAC_SECRET),
+			'hmacSecret' => $read(SignedPayloadVerifierInterface::CONFIG_HMAC_NAME),
 			'signingCertificate' => $read(SignedPayloadVerifierInterface::CONFIG_SIGNING_CERTIFICATE),
 			'intermediateChain' => $read(SignedPayloadVerifierInterface::CONFIG_INTERMEDIATE_CHAIN),
 			'rootCa' => $read(SignedPayloadVerifierInterface::CONFIG_ROOT_CA),
