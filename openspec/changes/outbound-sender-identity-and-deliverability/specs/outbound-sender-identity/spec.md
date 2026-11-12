@@ -213,3 +213,19 @@ Candidate C-communication-65, `could`, one documented passer
 - **WHEN** the timeline entry is rendered
 - **THEN** the disclaimer is absent from the entry
 - **AND** the stored message still contains it, and the entry offers the original
+
+### Requirement: REQ-OSI-010 A message that fails a send check is held for review
+
+When a message fails a send check, such as an alignment, signing or opt-out check that does not allow a send, the system SHALL put it on hold instead of sending it or dropping it. A held message SHALL be listed with the check that stopped it. A person with the send right SHALL release it, which sends it, or withdraw it, which records it as not sent. Both acts SHALL be logged with their actor.
+
+#### Scenario: A message with a failing check waits for a person
+
+- **GIVEN** an identity whose send check refuses a message
+- **WHEN** a sibling app hands that message over for sending
+- **THEN** the message is held and listed with the reason, and nothing is sent
+
+#### Scenario: A held message is released
+
+- **GIVEN** a held message
+- **WHEN** a person with the send right releases it
+- **THEN** it is sent, and the log records the release with that person
