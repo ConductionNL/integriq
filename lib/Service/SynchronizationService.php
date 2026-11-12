@@ -3215,12 +3215,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			return;
 		}
 
-		if (is_scalar($originId) === false) {
-			$run->unattributedFailures++;
-			return;
-		}
-
-		foreach (($contractIndex[(string)$originId] ?? []) as $contract) {
+		foreach (($contractIndex[$originId] ?? []) as $contract) {
 			$targetId = ($contract['targetId'] ?? null);
 			if (is_string($targetId) === true && $targetId !== '') {
 				$run->targetIds[] = $targetId;
