@@ -472,8 +472,8 @@ class ObjectenApiController extends Controller {
 	 */
 	private function detailFor(string $verdict): string {
 		return match ($verdict) {
-			ObjectenTokenServiceInterface::NO_TOKEN,
-			ObjectenTokenServiceInterface::UNKNOWN_TOKEN => 'This API is reached with an "Authorization: Token <key>" header.',
+			ObjectenTokenServiceInterface::NO_CREDENTIAL,
+			ObjectenTokenServiceInterface::UNKNOWN_CREDENTIAL => 'This API is reached with an "Authorization: Token <key>" header.',
 			ObjectenTokenServiceInterface::UNKNOWN_OBJECTTYPE => 'No such objecttype is published here.',
 			ObjectenTokenServiceInterface::REFUSED_OBJECTTYPE => 'This token does not carry a permission for that objecttype.',
 			ObjectenTokenServiceInterface::READ_ONLY => 'This token may read that objecttype but not write it.',

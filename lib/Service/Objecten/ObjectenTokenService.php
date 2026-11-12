@@ -87,8 +87,8 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 	 * @var array<string, int>
 	 */
 	public const STATUS = [
-		self::NO_TOKEN => 401,
-		self::UNKNOWN_TOKEN => 401,
+		self::NO_CREDENTIAL => 401,
+		self::UNKNOWN_CREDENTIAL => 401,
 		self::UNKNOWN_OBJECTTYPE => 404,
 		self::REFUSED_OBJECTTYPE => 403,
 		self::READ_ONLY => 403,
@@ -265,12 +265,12 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 		// 1. The token, FIRST. Nothing below this line may touch a register.
 		$key = $this->keyFrom(authorization: $authorization);
 		if ($key === null) {
-			return $this->verdict(verdict: self::NO_TOKEN, principal: '');
+			return $this->verdict(verdict: self::NO_CREDENTIAL, principal: '');
 		}
 
 		$token = $this->tokenFor(key: $key);
 		if ($token === null) {
-			return $this->verdict(verdict: self::UNKNOWN_TOKEN, principal: '');
+			return $this->verdict(verdict: self::UNKNOWN_CREDENTIAL, principal: '');
 		}
 
 		// 2. Does this instance publish the objecttype at all.

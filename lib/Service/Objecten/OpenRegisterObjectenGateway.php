@@ -99,7 +99,7 @@ class OpenRegisterObjectenGateway {
 			credentialRead: fn (string $reference): ?string => $this->access->readCredential(reference: $reference)
 		);
 
-		foreach ($tokens->load(declarations: $this->access->declarations(schema: ObjectenOpenRegisterAccess::TOKEN_SCHEMA)) as $reason) {
+		foreach ($tokens->load(declarations: $this->access->declarations(schema: ObjectenOpenRegisterAccess::CREDENTIAL_SCHEMA)) as $reason) {
 			$this->logger->warning('Integriq objecten: a token declaration was refused: ' . $reason);
 		}
 

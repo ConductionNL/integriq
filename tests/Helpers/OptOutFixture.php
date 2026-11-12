@@ -71,7 +71,7 @@ class OptOutFixture {
 	 *
 	 * @var array<string,string>
 	 */
-	public array $config = [UnsubscribeTokenService::CONFIG_SECRET => 'unit-secret-0123456789'];
+	public array $config = [UnsubscribeTokenService::SIGNING_CONFIG_NAME => 'unit-secret-0123456789'];
 
 	/**
 	 * The unix time the clock answers.
