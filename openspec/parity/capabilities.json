@@ -4875,7 +4875,7 @@
 				"owner": "ConductionNL/openregister",
 				"evidence": "openregister@lib/Service/Flow/Nodes/SubFlowNode.php implements calling one flow from another; integriq's own lib/Service/FlowRunnerService.php:364-370 has no subflow step type. FlowNodeRegistry (openregister@lib/Service/Flow/FlowNodeRegistry.php:194-260) serves one shared, cross-app node catalogue, so SubFlowNode is available on integriq's /flows canvas for graph-format flows.",
 				"change": "2026-07-15-visual-flow-orchestration",
-				"requirement": "openregister:openspec/changes/or-flow-sub-flow/specs/flow-sub-flow :: A flow can run another flow as a step (REQ-SF-001)"
+				"requirement": "openregister:openspec/specs/flow-sub-flow :: A flow can run another flow as a step (REQ-SF-001)"
 			},
 			"reachedOn": "/flows/:id (FlowDetail canvas), subflow node from OpenRegister's shared node catalogue",
 			"note": "Only reachable for the new graph-format flows (post-migration), not for legacy step flows still on FlowRunnerService.",
