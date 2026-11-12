@@ -3891,7 +3891,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Job/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Synchronization orchestration and direction routing (REQ-001)"
 			},
 			"reachedOn": "/synchronizations index + /synchronizations/:id detail page (SynchronizationEditorModal.vue / SynchronizationDetailPage.vue) configure the sync; a job (Jobs page, /jobs) with jobClass=SynchronizationAction runs it on a cron schedule",
 			"provider": "integriq",
@@ -3927,7 +3928,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "synchronization.syncMode/cursorWatermark/sourceConfig.cursorField declared in lib/Settings/integriq_register.json:1713-1722; lib/Service/SynchronizationService.php computes the new high-watermark from cursorField across fetched records (~line 3469-3493) and only reads it when syncMode=incremental (per the schema description at line 1722); wired into the fetch/twig context at line 6038 ($twigContext['cursor']).",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Incremental sync mode selects a cursor-filtered fetch request (REQ-016)"
 			},
 			"reachedOn": "/synchronizations/:id editor, syncMode=incremental + sourceConfig.cursorField",
 			"provider": "integriq",
@@ -3963,7 +3965,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:368 synchronizations#resetCursor; SynchronizationService.php:3501-3521 clears cursorWatermark to null without touching syncMode; called from src/views/Synchronization/SynchronizationDetailPage.vue:1062-1068 resetCursor() via the button at line 197.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Reset-cursor action clears the stored watermark (REQ-019)"
 			},
 			"reachedOn": "/synchronizations/:id detail page, 'reset cursor' button (SynchronizationDetailPage.vue:197)",
 			"provider": "integriq",
@@ -4031,7 +4034,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "synchronization_contract schema tracks originId/targetId/originHash/targetHash/sourceLastChecked per record; lib/Service/SynchronizationService.php finds/upserts contracts keyed by (synchronizationId, originId) (~lines 1027-1121); the page renders the schema generically.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": [
+					"openspec/specs/synchronization-engine :: Target write, deduplication and file handling (REQ-004)",
+					"openspec/specs/synchronization-engine :: Synchronization Management UI (REQ-UI-001)"
+				]
 			},
 			"reachedOn": "/synchronizations/contracts index page (manifest-pages.txt: SynchronizationContracts | index | integriq synchronization_contract)",
 			"provider": "integriq",
@@ -4070,7 +4077,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Ownership/DisappearancePolicy.php declares three real policies (DELETE, MARK_ENDED, KEEP_AND_FLAG, defaulting to DELETE when unset) read via fromSourceConfig(); lib/Service/SynchronizationService.php:3832 deleteInvalidObjects() calls it (line ~3853) and is itself called from the real cleanup path at line 2797. sourceConfig (where disappearancePolicy lives) is editable as a JSON config block in src/modals/v2/SynchronizationEditorModal.vue:133-138 / SynchronizationDetailPage.vue:114-117, though there is no dedicated dropdown specifically for this key.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/source-owned-records :: What happens when a record disappears is declared, not hardcoded (REQ-SOR-002)"
 			},
 			"reachedOn": "/synchronizations/:id editor, sourceConfig.disappearancePolicy (JSON config block, no dedicated form field)",
 			"note": "Reachable only by hand-editing the sourceConfig JSON, not through a labelled dropdown, worth a live check to confirm an admin can actually discover and set this.",
@@ -4147,7 +4155,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:366 synchronizations#run; called from src/modals/v2/runTargets.js:505 (frontend-api-paths.txt).",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Sync rule pipeline and management/integration surface (REQ-005)"
 			},
 			"reachedOn": "/synchronizations/:id detail page, 'run now' action",
 			"provider": "integriq",
@@ -4183,7 +4192,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationRunProgressService.php (start/tick/finish/writeCount) is resolved and used inside SynchronizationService.php:628-629 during a run; lib/BackgroundJob/StaleRunSweepJob.php sweeps runs that stopped ticking. The synchronization_run schema this writes to is rendered generically.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Mid-run progress is observable without slowing the run (REQ-022)"
 			},
 			"reachedOn": "/synchronization-runs index page (manifest-pages.txt: SynchronizationRuns | index | integriq synchronization_run)",
 			"provider": "integriq",
@@ -4219,7 +4229,12 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:436-441 syncDeadLetter#index/show/replay/discard/bulkReplay/bulkDiscard; lib/Controller/SyncDeadLetterController.php implements them; called from src/views/Synchronization/SyncDeadLetterPage.vue and src/modals/Synchronization/SyncDeadLetterDetailModal.vue (frontend-api-paths.txt: /apps/integriq/api/sync-dead-letter*).",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": [
+					"openspec/specs/synchronization-engine :: Per-item isolation and dead-letter capture during extern-to-intern sync (REQ-008)",
+					"openspec/specs/dead-letter-replay :: Audited manual replay of a dead-lettered sync item (REQ-DLR-009)",
+					"openspec/specs/dead-letter-replay :: Audited discard of a dead-lettered sync item (REQ-DLR-010)"
+				]
 			},
 			"reachedOn": "/dead-letters page and /synchronizations (SyncDeadLetterPage.vue)",
 			"provider": "integriq",
@@ -4291,7 +4306,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php:4478-4516 compares originHash against the stored contract's originHash (plus mapping/config staleness checks) and returns resultAction:'skip' when nothing changed, without writing the target.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Change detection is independent of how a timestamp is typed (REQ-024)"
 			},
 			"reachedOn": "automatic, every synchronization run (no separate UI control needed)",
 			"provider": "integriq",
@@ -4327,7 +4343,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php:8466 dispatches a rule's 'fetch_file' case to processFetchFileRule() (defined 9625, ending 9702), which calls fetchFile()/saveFetchedFile() (8686/8860) to attach a fetched file to the synced object; lib/Flow/FetchFileNode.php exposes the same as a flow step.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: Target write, deduplication and file handling (REQ-004)"
 			},
 			"reachedOn": "a synchronization or endpoint rule of type fetch_file (AddEndpointRuleModal.vue / rule editor)",
 			"provider": "integriq",
@@ -4363,7 +4380,8 @@
 				"state": "built",
 				"change": "2026-09-28-records-owned-by-an-external-source",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Declared: src/modals/v2/SynchronizationEditorModal.vue sets sourceConfig.ownershipMode and disappearancePolicy (src/views/Synchronization/ownershipOptions.js) and asks POST /api/ownership/validate-policy before saving (tests/vitest/syncOwnershipEditor.spec.js). Read: GET /api/ownership/{id} (lib/Controller/OwnershipController.php, RecordOwnershipService). Enforced: lib/EventListener/SourceOwnedDeleteGuardListener.php, registered on OpenRegister ObjectDeletingEvent in lib/AppInfo/Application.php, stops any delete of a source-owned record without the override OwnershipController::destroy writes, and lets the engine delete (SynchronizationService wraps its delete in whileTheEngineDeletes) (tests/Unit/EventListener/SourceOwnedDeleteGuardListenerTest.php, SynchronizationServiceTest::testTheEnginesDeletePassesTheSourceOwnedGuard). Built by change records-owned-by-an-external-source (archived 2026-09-28)."
+				"evidence": "Declared: src/modals/v2/SynchronizationEditorModal.vue sets sourceConfig.ownershipMode and disappearancePolicy (src/views/Synchronization/ownershipOptions.js) and asks POST /api/ownership/validate-policy before saving (tests/vitest/syncOwnershipEditor.spec.js). Read: GET /api/ownership/{id} (lib/Controller/OwnershipController.php, RecordOwnershipService). Enforced: lib/EventListener/SourceOwnedDeleteGuardListener.php, registered on OpenRegister ObjectDeletingEvent in lib/AppInfo/Application.php, stops any delete of a source-owned record without the override OwnershipController::destroy writes, and lets the engine delete (SynchronizationService wraps its delete in whileTheEngineDeletes) (tests/Unit/EventListener/SourceOwnedDeleteGuardListenerTest.php, SynchronizationServiceTest::testTheEnginesDeletePassesTheSourceOwnedGuard). Built by change records-owned-by-an-external-source (archived 2026-09-28).",
+				"requirement": "openspec/specs/source-owned-records :: A local delete of a source-owned record is refused unless somebody says why (REQ-SOR-005)"
 			},
 			"reachedOn": "Synchronizations > edit: who owns these records, and what happens when the source stops sending one; any delete of a source-owned record is refused with the synchronisation named",
 			"note": "Built 2026-09-28. The refusal now runs on OpenRegister's own delete path, so the delete button on any page meets it; a delete with a stated reason goes through /api/ownership/{id}. Showing the ownership on a contact or case party is the consuming app's screen (dossiq). Rated partial: a local edit of a source-owned record is not refused, it is overwritten at the next run (design D4).",
@@ -4400,7 +4418,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:374-376 tablesBridge#status/tables/columns; lib/Controller/TablesBridgeController.php implements them; called from src/views/Synchronization/SyncConfigWidget.vue:776 and TablesColumnMapping.vue:196 (frontend-api-paths.txt); 'nextcloud-table' is a real sourceType/targetType option (syncDraft.js NEXTCLOUD_TABLE_OPTION) shown when the backend reports the Tables app enabled.",
-				"spec": "openspec/specs/tables-bridge"
+				"spec": "openspec/specs/tables-bridge",
+				"requirement": [
+					"openspec/specs/tables-bridge :: Nextcloud Table as a synchronization target (REQ-001)",
+					"openspec/specs/tables-bridge :: Nextcloud Table as a synchronization source (REQ-002)"
+				]
 			},
 			"reachedOn": "/synchronizations/:id editor, sourceType/targetType = Nextcloud Table",
 			"provider": "integriq",
@@ -4436,7 +4458,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:379-381 formsBridge#status/forms/questions; lib/Controller/FormsBridgeController.php implements them; called from src/views/Synchronization/SyncConfigWidget.vue:838 and FormsFieldMapping.vue:179 (frontend-api-paths.txt); 'nextcloud-form' is a source-only sourceType option (syncDraft.js NEXTCLOUD_FORM_OPTION).",
-				"spec": "openspec/specs/nextcloud-forms-connector"
+				"spec": "openspec/specs/nextcloud-forms-connector",
+				"requirement": "openspec/specs/nextcloud-forms-connector :: Nextcloud Form as a synchronization source (REQ-002)"
 			},
 			"reachedOn": "/synchronizations/:id editor, sourceType = Nextcloud Form",
 			"provider": "integriq",
@@ -4472,7 +4495,11 @@
 				"state": "built",
 				"change": "2026-09-29-migration-source-adapters",
 				"owner": "ConductionNL/integriq",
-				"evidence": "Connections > Migrations (src/manifest.json page Migrations, an index over integriq/column_mapping): ColumnMappingEditorModal writes a column mapping, runs POST /api/migration-sources/column-mapping/validate before every save and raises version by one; MigrationTestRunPanel picks a migration source from GET /api/migration-sources (file, redmine) and runs POST /api/migration-sources/preview, which reads and writes nothing. Adapters: lib/Migration/Source/FileMigrationSource.php, RedmineMigrationSource.php. Tests: tests/vitest/migrationColumnMapping.spec.js (9), tests/Unit/Migration/ColumnMappingStoredPayloadTest.php (3), the existing migration source tests. The write half (import engine, preview, conflict policy) is openregister's, openregister#4167. Built by change migration-source-adapters (archived 2026-09-29)."
+				"evidence": "Connections > Migrations (src/manifest.json page Migrations, an index over integriq/column_mapping): ColumnMappingEditorModal writes a column mapping, runs POST /api/migration-sources/column-mapping/validate before every save and raises version by one; MigrationTestRunPanel picks a migration source from GET /api/migration-sources (file, redmine) and runs POST /api/migration-sources/preview, which reads and writes nothing. Adapters: lib/Migration/Source/FileMigrationSource.php, RedmineMigrationSource.php. Tests: tests/vitest/migrationColumnMapping.spec.js (9), tests/Unit/Migration/ColumnMappingStoredPayloadTest.php (3), the existing migration source tests. The write half (import engine, preview, conflict policy) is openregister's, openregister#4167. Built by change migration-source-adapters (archived 2026-09-29).",
+				"requirement": [
+					"openspec/specs/migration-sources :: A migration source is an adapter behind one contract (REQ-MSA-001)",
+					"openspec/specs/migration-sources :: A named incumbent has an adapter, and a supported path is rehearsable (REQ-MSA-003)"
+				]
 			},
 			"reachedOn": "Connections > Migrations: New column mapping, and Test a migration above the list",
 			"note": "Built 2026-09-29: the screen that reaches the migration sources. Integriq reads and reports; OpenRegister's import engine writes.",
@@ -4509,7 +4536,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Every fetched record is keyed to a synchronization_contract by (synchronizationId, originId) (lib/Service/SynchronizationService.php ~1027-1121, with explicit duplicate-key detection at line 1090); a re-fetch of the same source record resolves the SAME contract and updates it (or skips it, see sync-skip-unchanged) rather than creating a second target object.",
-				"spec": "openspec/specs/synchronization-engine"
+				"spec": "openspec/specs/synchronization-engine",
+				"requirement": "openspec/specs/synchronization-engine :: A contract is upserted on its own identity (REQ-025)"
 			},
 			"reachedOn": "automatic, every synchronization run",
 			"note": "This covers the sync PULL path; there is no generic idempotency-key mechanism for inbound webhook/gateway deliveries (not checked as part of this row).",
@@ -4578,7 +4606,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/RegistrySubscriptionRequestedListener.php:51-109 handles OpenRegister's RegistrySubscriptionRequestedEvent and delegates to lib/Service/Registry/SubscriptionRequestHandler.php:62 handle(), which resolves a real provider (lib/Service/Registry/KvkMutatieProvider.php, register.d/kvk-mutatieservice-source.json) and records the subscription (SubscriptionRoster::add); the listener is registered in lib/AppInfo/Application.php:244 and lib/BackgroundJob/RegistrySubscriptionPollJob.php is registered as a background job in appinfo/info.xml:143 to poll for updates.",
-				"change": "2026-09-29-registry-subscription-connector"
+				"change": "2026-09-29-registry-subscription-connector",
+				"requirement": "openspec/specs/registry-subscription-connector :: A subscription request is turned into a live subscription (REQ-RSC-002)"
 			},
 			"reachedOn": "machine/event route: OpenRegister dispatches RegistrySubscriptionRequestedEvent when a field on an integriq-managed object asks to follow a base registry (e.g. KVK mutatieservice)",
 			"provider": "integriq",
@@ -4617,7 +4646,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2813-2833 Flows (/flows, type index) and FlowDetail (/flows/:id, type flow) pages, config.app 'openconnector'; src/views/Flow/FlowDetailSidebar.vue:11 CnFlowSidebar shares useFlowStore with the canvas. Two engines coexist: legacy step flows run on integriq's own lib/Service/FlowRunnerService.php (step loop lines 253-346, step types at 364-370); new flows are graphs executed by OpenRegister's FlowEngine (nextcloud-vue useFlowStore.js:1445,1661 POST /apps/openregister/api/flows, /apps/openregister/api/flows/{id}/run), with integriq contributing its own node types via lib/Flow/FlowNodeListener.php:100-110 (RegisterFlowNodesEvent).",
-				"spec": "openspec/specs/flow-orchestration"
+				"spec": "openspec/specs/flow-orchestration",
+				"requirement": "openspec/specs/flow-orchestration :: Integriq's Flow pages are the shared canvas over the one native flow store (REQ-017)"
 			},
 			"reachedOn": "/flows (Flows index) -> /flows/:id (FlowDetail, CnFlowEditorPage canvas)",
 			"note": "Two flow engines run side by side: FlowRunnerService for un-migrated legacy step flows, OpenRegister's generic FlowEngine graph canvas for new/migrated ones (lib/Repair/MigrateFlowStepsToGraph.php documents the coexistence and is not a defect).",
@@ -4654,7 +4684,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/FlowRunnerService.php:286-301 'branch' step type selects the next step via JsonLogic (selectBranchTarget); openspec/specs/flow-orchestration/spec.md:152-194 REQ-004. Migrated/new graph flows get the same behaviour from OpenRegister's own RouterNode/SwitchNode (openregister lib/Service/Flow/Nodes/SwitchNode.php, RouterNode.php), reachable through the same canvas.",
-				"spec": "openspec/specs/flow-orchestration"
+				"spec": "openspec/specs/flow-orchestration",
+				"requirement": "openspec/specs/flow-orchestration :: `branch` step selects the next step via JsonLogic (REQ-004)"
 			},
 			"reachedOn": "/flows/:id (FlowDetail canvas), branch step/node",
 			"provider": "integriq",
@@ -4727,7 +4758,8 @@
 				"state": "built",
 				"owner": "ConductionNL/openregister",
 				"evidence": "openregister lib/Service/Flow/Nodes/SubFlowNode.php implements calling one flow from another; integriq's own lib/Service/FlowRunnerService.php:364-370 has no subflow step type. FlowNodeRegistry (openregister lib/Service/Flow/FlowNodeRegistry.php:194-260) serves one shared, cross-app node catalogue, so SubFlowNode is available on integriq's /flows canvas for graph-format flows.",
-				"change": "2026-07-15-visual-flow-orchestration"
+				"change": "2026-07-15-visual-flow-orchestration",
+				"requirement": "openregister:openspec/changes/or-flow-sub-flow/specs/flow-sub-flow :: A flow can run another flow as a step (REQ-SF-001)"
 			},
 			"reachedOn": "/flows/:id (FlowDetail canvas), subflow node from OpenRegister's shared node catalogue",
 			"note": "Only reachable for the new graph-format flows (post-migration), not for legacy step flows still on FlowRunnerService.",
@@ -4801,7 +4833,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2047-2054 Jobs page (/jobs, index, schema job) with interval config; lib/Service/JobIntervalCron.php (interval/cron computation); lib/Service/JobService.php:511 nextRunDt computed from jobConfig['interval'].",
-				"spec": "openspec/specs/job-scheduling"
+				"spec": "openspec/specs/job-scheduling",
+				"requirement": "openspec/specs/job-scheduling :: Job scheduling registration and execution with retention-bounded logs (REQ-004)"
 			},
 			"reachedOn": "/jobs (Jobs index) -> job form",
 			"provider": "integriq",
@@ -4837,7 +4870,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "_lane/frontend-api-paths.txt: /apps/integriq/api/jobs/run/${rowId(item)} and /apps/integriq/api/jobs/test/${rowId(item)}, both called from src/modals/v2/runTargets.js:568,601; appinfo/routes.php jobs#run and jobs#test routes backing them.",
-				"spec": "openspec/specs/job-management"
+				"spec": "openspec/specs/job-management",
+				"requirement": [
+					"openspec/specs/job-management :: REQ-JOB-001: Job execution runtime",
+					"openspec/specs/job-management :: REQ-JOB-002: Job dry-run (test mode)"
+				]
 			},
 			"reachedOn": "/jobs (Jobs index) row action, Run/Test",
 			"provider": "integriq",
@@ -4873,7 +4910,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2156-2164 JobLogs page (/jobs/logs, type logs, schema job_log); src/manifest.json:2893-2899 nav entry 'Every scheduled run, and how it ended.'",
-				"spec": "openspec/specs/job-management"
+				"spec": "openspec/specs/job-management",
+				"requirement": [
+					"openspec/specs/job-management :: REQ-JOB-001: Job execution runtime",
+					"openspec/specs/job-management :: REQ-JOB-UI-001: Job Management UI"
+				]
 			},
 			"reachedOn": "/jobs/logs (JobLogs)",
 			"provider": "integriq",
@@ -4909,7 +4950,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2306-2313 Rules page (/rules, index, schema rule); lib/Service/RuleService.php; lib/Service/EndpointService.php handleRuleProcessing() applies rules (before/after timing, action types error/mapping/synchronization/javascript/authentication/download/upload/locking/fetch_file/write_file/etc, see src/views/Rule/ruleDraft.js:65-81) to endpoint traffic.",
-				"spec": "openspec/specs/rule-pipeline"
+				"spec": "openspec/specs/rule-pipeline",
+				"requirement": "openspec/specs/rule-pipeline :: Ordered Rule Pipeline Execution (REQ-RULE-001)"
 			},
 			"reachedOn": "/rules (Rules index)",
 			"provider": "integriq",
@@ -4945,7 +4987,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2344-2352 RuleDetail (/rules/:id, type custom, component RuleDetailPage): 'the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.' src/modals/v2/RuleEditorModal.vue and src/views/Rule/actionForms/* provide the no-code action forms.",
-				"spec": "openspec/specs/rule-editor-ui"
+				"spec": "openspec/specs/rule-editor-ui",
+				"requirement": "openspec/specs/rule-editor-ui :: Action-type configuration and per-action-type forms (REQ-RULEUI-003)"
 			},
 			"reachedOn": "/rules/:id (RuleDetailPage)",
 			"note": "The form only offers the 17 action types listed in ruleDraft.js ACTION_TYPES; 8 more the backend accepts (audit_trail, override, custom, composite_fanout, referentienummer, avg_bsn_policy, selfurl_hal, flow) have no authoring UI (ruleDraft.js:56-63) and can only be set by seeding a rule from a configuration import.",
@@ -4982,7 +5025,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/FlowRunnerService.php:303-313 'approval' step type calls dispatchApproval() (defined at :522) then suspendFlowRun() (:696); lib/Flow/ApprovalRequestNode.php is the equivalent node for graph-format flows; src/manifest.json:2800-2802 Approvals page (/approvals, custom ApprovalsIndex) and ApprovalDetail (/approvals/:id).",
-				"spec": "openspec/specs/approval-workflow"
+				"spec": "openspec/specs/approval-workflow",
+				"requirement": "openspec/specs/flow-orchestration :: `approval` step suspends and resumes the flow run (REQ-005)"
 			},
 			"reachedOn": "/approvals (ApprovalsIndex) -> /approvals/:id (ApprovalDetail); flow suspends mid-run until decided",
 			"provider": "integriq",
@@ -5021,7 +5065,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "openspec/changes/archive/2026-10-09-hitl-on-shared-tasks/tasks.md section 1 fully checked ([x] 1.1-1.4); lib/Service/ApprovalService.php:922 calls OpenRegister's ORTaskService::import() from every suspend path, writing the returned uuid back onto the approval_request as taskUuid (:927); completeApproval()/reject() close the mirrored task (tasks.md 1.2).",
-				"change": "2026-10-09-hitl-on-shared-tasks"
+				"change": "2026-10-09-hitl-on-shared-tasks",
+				"requirement": "openspec/specs/hitl-on-shared-tasks :: Every suspension mirrors one shared task"
 			},
 			"reachedOn": "no dedicated integriq page; the mirrored task surfaces in OpenRegister's own shared task inbox, not in /approvals",
 			"note": "A mirror failure never blocks the approval (logged, not thrown), so this degrades to no task-list entry rather than a broken approval. Follow-ups 2.1-2.4 (task-first resolution, driving decisions from the shared inbox, translation) are explicitly not done yet (tasks.md section 2, all unchecked).",
@@ -5058,7 +5103,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"change": "2026-09-28-nc-events-start-or-flows",
-				"evidence": "src/modals/EventSubscription/SubscriptionActionFields.vue KIND_OPTIONS offers flow and fetchFlows() lists integriq/flow objects; onFlowPick() writes action {kind: flow, flowId}; lib/Service/EventService.php:1113 case 'flow' dispatches dispatchFlowAction() into FlowRunnerService::run(). tests/vitest/subscriptionFlowAction.spec.js, EventServiceTest. Built by change nc-events-start-or-flows (build-all pass 2026-09-28)."
+				"evidence": "src/modals/EventSubscription/SubscriptionActionFields.vue KIND_OPTIONS offers flow and fetchFlows() lists integriq/flow objects; onFlowPick() writes action {kind: flow, flowId}; lib/Service/EventService.php:1113 case 'flow' dispatches dispatchFlowAction() into FlowRunnerService::run(). tests/vitest/subscriptionFlowAction.spec.js, EventServiceTest. Built by change nc-events-start-or-flows (build-all pass 2026-09-28).",
+				"requirement": "openspec/specs/nextcloud-event-triggers :: A matched subscription can start an OpenRegister flow"
 			},
 			"reachedOn": "Webhooks page, subscription modal, Delivery action \"Flow\" with a flow picker",
 			"note": "Backend dispatch is real and tested; the staff screen to configure an NC-event-to-flow subscription does not exist yet. Built 2026-09-28: the modal now offers Flow.",
@@ -5098,7 +5144,8 @@
 				"state": "built",
 				"change": "2026-09-28-automation-endpoint-flow-trigger",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/views/Rule/actionForms/FlowForm.vue picks a flow from OpenRegister's integriq/flow objects; ruleDraft.js ACTION_TYPES offers 'flow'; RuleActionConfig.vue and RuleEditorModal.vue write the id to configuration.flow, which EndpointService::processFlowRule() reads to run FlowRunnerService::run() with the request as input; flowRuleMissingFlow() holds Save back in the dialog and on the detail page for a flow rule with no flow. Tests: tests/vitest/endpointFlowRule.spec.js (6), EndpointServiceTest::testProcessFlowRuleRunsAndReturnsDataUnmodified, testProcessFlowRuleThrowsWithoutConfiguredFlow. Built by change automation-endpoint-flow-trigger (archived 2026-09-28)."
+				"evidence": "src/views/Rule/actionForms/FlowForm.vue picks a flow from OpenRegister's integriq/flow objects; ruleDraft.js ACTION_TYPES offers 'flow'; RuleActionConfig.vue and RuleEditorModal.vue write the id to configuration.flow, which EndpointService::processFlowRule() reads to run FlowRunnerService::run() with the request as input; flowRuleMissingFlow() holds Save back in the dialog and on the detail page for a flow rule with no flow. Tests: tests/vitest/endpointFlowRule.spec.js (6), EndpointServiceTest::testProcessFlowRuleRunsAndReturnsDataUnmodified, testProcessFlowRuleThrowsWithoutConfiguredFlow. Built by change automation-endpoint-flow-trigger (archived 2026-09-28).",
+				"requirement": "openspec/specs/rule-editor-ui :: An administrator can start a flow from an endpoint rule (REQ-AFT-001)"
 			},
 			"reachedOn": "Rules > Create rule (or a rule's detail page): Type Flow shows a Flow picker; the rule on an endpoint makes the endpoint path the webhook a partner calls",
 			"note": "Built 2026-09-28: the flow action is offered in the rule editor. Before, only a rule seeded from an imported configuration could start a flow.",
@@ -5212,7 +5259,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:3274-3289 FlowRuns page (/flow-runs, type logs, schema flow_run, rowDetail: true) for legacy step-engine runs, with appendLog() calls in lib/Service/FlowRunnerService.php writing the per-step trail. For graph-format flows, nextcloud-vue's CnFlowSidebar.vue:200-277 (Runs tab, store.runs / store.inspectRun) shows run history and per-step traces inline in FlowDetail.",
-				"change": "2026-07-15-visual-flow-orchestration"
+				"change": "2026-07-15-visual-flow-orchestration",
+				"requirement": "openspec/specs/flow-orchestration :: A flow's run history is inspectable per step (REQ-014)"
 			},
 			"reachedOn": "/flow-runs (legacy flows); /flows/:id sidebar 'Runs' tab (graph flows)",
 			"note": "The manifest's own note on FlowRuns says: 'A flow you could draw and never watch... nothing in src/ read it, so a run that failed overnight left no trace a user could reach' before this page was added, which is useful context on how recent this fix is.",
@@ -5249,7 +5297,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "openspec/specs/flow-workflowengine-operations/spec.md: registers SynchronizationService/EndpointService/EventService as NC core OCP\\WorkflowEngine operations ('Run synchronization', 'Call endpoint', 'Fire CloudEvent'). lib/AppInfo/Application.php:298 calls registerWorkflowEngineOperations() (defined :868-890), feature-detected on IAppManager::isEnabledForAnyUser('workflowengine'); lib/WorkflowEngine/CallEndpointOperation.php, RunSynchronizationOperation.php, FireCloudEventOperation.php, RegisterOperationsListener.php implement the three operations.",
-				"spec": "openspec/specs/flow-workflowengine-operations"
+				"spec": "openspec/specs/flow-workflowengine-operations",
+				"requirement": "openspec/specs/flow-workflowengine-operations :: All three operations MUST be admin-scoped and File-entity-scoped only (REQ-005)"
 			},
 			"reachedOn": "Nextcloud's own Settings > Flow admin page, operation picker for a File (or other) entity",
 			"provider": "integriq",
@@ -5349,7 +5398,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/CloudEventListener.php:32-46 forwards OpenRegister ObjectCreated/Updated/Deleted events to EventService; lib/Service/EventService.php processes and dispatches matching event_subscription rows. src/manifest.json:2547-2553 CloudEvents index (/cloud-events/events, schema event).",
-				"spec": "openspec/specs/events-cloudevents"
+				"spec": "openspec/specs/events-cloudevents",
+				"requirement": "openspec/specs/events-cloudevents :: OR object lifecycle → CloudEvent producer (REQ-004)"
 			},
 			"reachedOn": "automatic on any register/schema object change matching an active subscription; visible via /cloud-events/events and /cloud-events/logs",
 			"provider": "integriq",
@@ -5468,7 +5518,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Controller/EventsController.php generateSigningSecret()/rotateSigningSecret() (routes appinfo/routes.php:422-423); lib/Service/EventService.php:572-587 signs the raw outbound body with the subscription's signingSecret (X-OpenConnector-Signature header) when configured, including a rotation grace period. src/manifest.json:2018-2021 Webhooks page 'manage-signing' row action opens src/modals/Subscription/SubscriptionSigningModal.vue.",
-				"spec": "openspec/specs/webhook-signing"
+				"spec": "openspec/specs/webhook-signing",
+				"requirement": "openspec/specs/webhook-signing :: Outbound deliveries are HMAC-signed when the subscription has a signing secret (REQ-WHS-001)"
 			},
 			"reachedOn": "/webhooks (Webhooks index) row action 'Webhook signing'",
 			"provider": "integriq",
@@ -5507,7 +5558,8 @@
 				"state": "built",
 				"change": "2026-09-29-signed-outbound-webhooks",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/EventListener/SubscriptionSigningDefaultListener.php, registered in lib/AppInfo/Application.php on OpenRegister's ObjectCreatingEvent and ObjectUpdatingEvent, runs lib/Service/Subscriptions/SubscriptionSigningPolicy.php on every event_subscription save: a new push subscription gains a secret, unsigned needs a reason (stamped setBy/setAt), and the readable mirror signingPosture/unsignedReason is written because protocolSettings is writeOnly. src/manifest.json Webhooks columns include signingPosture; src/modals/Subscription/SubscriptionSigningModal.vue shows the posture, the reason and the verification recipe. lib/Service/EventService.php deliverMessage records attempts[].signed and sends no signature when unsigned is set. Tests: tests/Unit/EventListener/SubscriptionSigningDefaultListenerTest.php (real OpenRegister events, stored payload validated against the merged register), EventServiceTest::testASignedAttemptRecordsThatItWasSigned and ::testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo, tests/vitest/subscriptionSigningRecipe.spec.js. Built by change signed-outbound-webhooks (archived 2026-09-29)."
+				"evidence": "lib/EventListener/SubscriptionSigningDefaultListener.php, registered in lib/AppInfo/Application.php on OpenRegister's ObjectCreatingEvent and ObjectUpdatingEvent, runs lib/Service/Subscriptions/SubscriptionSigningPolicy.php on every event_subscription save: a new push subscription gains a secret, unsigned needs a reason (stamped setBy/setAt), and the readable mirror signingPosture/unsignedReason is written because protocolSettings is writeOnly. src/manifest.json Webhooks columns include signingPosture; src/modals/Subscription/SubscriptionSigningModal.vue shows the posture, the reason and the verification recipe. lib/Service/EventService.php deliverMessage records attempts[].signed and sends no signature when unsigned is set. Tests: tests/Unit/EventListener/SubscriptionSigningDefaultListenerTest.php (real OpenRegister events, stored payload validated against the merged register), EventServiceTest::testASignedAttemptRecordsThatItWasSigned and ::testAnUnsignedSubscriptionSendsNoSignatureAndTheAttemptSaysSo, tests/vitest/subscriptionSigningRecipe.spec.js. Built by change signed-outbound-webhooks (archived 2026-09-29).",
+				"requirement": "openspec/specs/webhook-signing :: An unsigned subscription and an unsigned attempt are marked (REQ-SOW-003)"
 			},
 			"reachedOn": "Webhooks index: the Signature column; the Webhook signing action on a row shows signed or unsigned with its reason, and the recipe",
 			"note": "Built 2026-09-29: the policy #2074 shipped with tests and no caller now runs on OpenRegister's save path. A subscription saved before this has no Signature value until it is saved again (no migration, design D5).",
@@ -5544,7 +5596,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EventService.php:392-456 evaluateFilters() supports multiple filter dialects per subscription, called from the subscription-matching path at :371.",
-				"spec": "openspec/specs/events-cloudevents"
+				"spec": "openspec/specs/events-cloudevents",
+				"requirement": "openspec/specs/events-cloudevents :: CloudEvent fan-out to matching subscriptions (REQ-001)"
 			},
 			"reachedOn": "/webhooks (Webhooks index) subscription form, 'types'/filter fields",
 			"provider": "integriq",
@@ -5580,7 +5633,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EventService.php:83-110 documents baseSeconds/factor/capSeconds(6h max)/maxRetries; resolveRetryPolicy() at :737-751 reads per-subscription retryPolicy overrides falling back to defaults; scheduling logic at :753-811. src/modals/EventSubscription/SubscriptionActionFields.vue:10-13 documents the formData.retryPolicy authoring fields.",
-				"spec": "openspec/specs/events-cloudevents"
+				"spec": "openspec/specs/events-cloudevents",
+				"requirement": "openspec/specs/events-cloudevents :: Push delivery with status tracking and retry sweep (REQ-002)"
 			},
 			"reachedOn": "/webhooks (Webhooks index) subscription form, retry policy fields",
 			"provider": "integriq",
@@ -5616,7 +5670,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:426-431 events#deadLetterIndex, events#bulkReplay, events#bulkDiscard, events#deadLetterShow, events#replay, events#discard; src/views/EventDelivery/EventDeliveriesPage.vue:294,319 call /api/events/dead-letter and its bulk verb; src/modals/EventDelivery/EventDeliveryDetailModal.vue:254 per-item replay/discard. src/views/Operations/DeadLettersPage.vue merges this queue with sync-dead-letter under one Dead letters page (/dead-letters).",
-				"spec": "openspec/specs/dead-letter-replay"
+				"spec": "openspec/specs/dead-letter-replay",
+				"requirement": [
+					"openspec/specs/dead-letter-replay :: Dead-letter UI in the Events section (REQ-DLR-006)",
+					"openspec/specs/dead-letter-replay :: Audited replay returning the message to the delivery machine (REQ-DLR-003)"
+				]
 			},
 			"reachedOn": "/dead-letters (DeadLettersPage), Events queue -> Replay/Discard, single or bulk",
 			"provider": "integriq",
@@ -5652,7 +5710,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Broker (transports, registry, CloudEvents binding; archived 2026-09-29-event-broker-transport) publishes a matched event; the Webhooks form now offers Broker: src/modals/EventSubscription/SubscriptionActionFields.vue broker block fed by GET /api/events/brokers (lib/Controller/EventBrokersController.php), src/modals/EventSubscription/BrokerConnectionFields.vue writes protocolSettings.broker {baseUrl, vhost, username, credentialRef} with no password field, lib/Broker/BrokerCredentialResolver.php resolves the reference at publish via BrokeredCallService::resolveCredentialRef(). Tests: EventBrokersControllerTest, EventServiceBrokerTest, BrokerSubscriptionPayloadTest (payload vs merged event_subscription schema), tests/vitest/brokerSubscriptionFields.spec.js; tests/e2e/events-broker-subscription.spec.ts not run.",
-				"change": "2026-09-29-events-broker-subscription-screen"
+				"change": "2026-09-29-events-broker-subscription-screen",
+				"requirement": "openspec/specs/events-cloudevents :: A subscription's action dispatch MUST support a `broker` kind (REQ-013)"
 			},
 			"reachedOn": "no UI: a subscription with action.kind='broker' can only be created by writing to the object directly via the API, not through the Webhooks page's subscription form",
 			"note": "Publishing to RabbitMQ, a Kafka REST Proxy or a CloudEvents endpoint is set up on the Webhooks page with a credential reference; no native AMQP, MQTT or Kafka client (out of scope).",
@@ -5692,7 +5751,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:321-325 notificatiesSubscriber#index/create/update/destroy (/api/notificaties/abonnementen) and notificatiesSubscriber#callback (/api/notificaties/callback/{abonnementId}, the inbound push receiver); lib/Controller/NotificatiesSubscriberController.php; src/manifest.json:2029-2038 NotificatiesAbonnementenPage (/notificaties/abonnementen, custom) documented as 'create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer.'",
-				"spec": "openspec/specs/notificaties-api-connector"
+				"spec": "openspec/specs/notificaties-api-connector",
+				"requirement": [
+					"openspec/specs/notificaties-api-connector :: Abonnement registration, update, and deletion against the remote API (REQ-001)",
+					"openspec/specs/notificaties-api-connector :: Inbound notifications are normalized into the existing CloudEvents pipe (REQ-003)"
+				]
 			},
 			"reachedOn": "/notificaties/abonnementen (NotificatiesAbonnementenPage)",
 			"provider": "integriq",
@@ -5760,7 +5823,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/CloudEventListener.php:32-46 documents two guards ('the recursion bug'): a firehose gate (skip entirely when zero active subscriptions) and a self-reference guard (SELF_SCHEMAS = event/event_message/event_subscription never re-forwarded, lines 51-63). lib/Service/Event/EventLoopGuard.php:57-211 is the dedicated service (decide(), carriesMarker(), stamp(), chain()).",
-				"spec": "openspec/specs/events-cloudevents"
+				"spec": "openspec/specs/events-cloudevents",
+				"requirement": "openspec/specs/events-cloudevents :: CloudEventListener registration and safety guards (REQ-008)"
 			},
 			"reachedOn": "automatic, no UI: enforced on every object-change event before a CloudEvent is even persisted",
 			"provider": "integriq",
@@ -5796,7 +5860,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/NextcloudFileEventListener.php, NextcloudFileTagEventListener.php, NextcloudCalendarEventListener.php, NextcloudFormsEventListener.php, NextcloudTablesEventListener.php normalize NC core events into CloudEvents (per openspec/changes/nc-events-start-or-flows/proposal.md: 'Integriq's event hub already normalizes Nextcloud core events (files, calendar, Tables, Forms) into CloudEvents').",
-				"change": "2026-09-28-nc-events-start-or-flows"
+				"change": "2026-09-28-nc-events-start-or-flows",
+				"requirement": "openspec/specs/nextcloud-event-triggers :: File events MUST be normalized to CloudEvents (REQ-001)"
 			},
 			"reachedOn": "automatic: file/calendar/Forms/Tables activity in Nextcloud -> event_subscription matching -> /cloud-events pages",
 			"provider": "integriq",
@@ -5832,7 +5897,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:419 events#pull (/api/events/subscriptions/{subscriptionId}/pull, GET); lib/Controller/EventsController.php:397-429 pull() rejects non-pull-style subscriptions (400) and otherwise calls EventService::pullEvents() with limit/cursor.",
-				"spec": "openspec/specs/events-cloudevents"
+				"spec": "openspec/specs/events-cloudevents",
+				"requirement": "openspec/specs/events-cloudevents :: Pull subscription cursor pagination (REQ-003)"
 			},
 			"reachedOn": "machine route: GET /api/events/subscriptions/{id}/pull (subscription style: pull)",
 			"provider": "integriq",
@@ -5868,7 +5934,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "`grep -in 'kafka\\|topic\\|asyncapi\\|stream' src/views/ApiProducts/ApiProductDetail.vue lib/Controller/ApiProduct*.php lib/Service/ApiProduct*.php` = 0 hits. The API Products/gateway feature (api-product-gateway) governs REST endpoints only; no AsyncAPI-style governance of the Kafka/RabbitMQ broker transports (evt-broker) exists. Specified in openspec/changes/events-async-api-products/ (OpenSpec pass 2026-09-27).",
-				"change": "events-async-api-products"
+				"change": "events-async-api-products",
+				"requirement": [
+					"openspec/changes/events-async-api-products/specs/api-product-gateway :: An API product can declare event channels (REQ-AAPI-001)",
+					"openspec/changes/events-async-api-products/specs/api-product-gateway :: A consumer reaches a channel under the product's policies (REQ-AAPI-002)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -5904,7 +5974,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:1338-1345 SourceLogs (/sources/logs, type logs, schema call_log) and :1589-1596 EndpointLogs (/endpoints/logs, same schema) render inbound and outbound calls.",
-				"spec": "openspec/specs/logs-and-statistics"
+				"spec": "openspec/specs/logs-and-statistics",
+				"requirement": [
+					"openspec/specs/outbound-call-log :: Every outbound call is a record with its request and its response (REQ-OCD-001)",
+					"openspec/specs/endpoint-runtime :: Inbound observability logging for API-product-scoped endpoints (REQ-EP-009)"
+				]
 			},
 			"reachedOn": "/sources/logs (SourceLogs), /endpoints/logs (EndpointLogs)",
 			"provider": "integriq",
@@ -5940,7 +6014,8 @@
 				"state": "building",
 				"owner": "ConductionNL/integriq",
 				"evidence": "openspec/changes/archive/2026-09-29-job-logs-filtering-and-columns/proposal.md documents a fixed defect: CnLogsPage now reads $route.query deep-link filters (shared nextcloud-vue fix, not integriq-owned per app-shell-and-logs-ui REQ-SHELLUI-003). src/handlers/logTargets.js:52-59 VIEW_LOGS_TARGETS wires 'View source logs'/'View endpoint logs'/'View job logs'/'View synchronization logs' row actions to pre-filtered navigation (?source=, ?endpoint=, ?jobId=, ?synchronizationId=), verified against a populated instance in the file's own comment ('?source= filters correctly, 11 of 15 rows'). CnLogsPage.vue and CnDataTable.vue (nextcloud-vue) were checked for an on-page filter/search widget: none exists. Specified in openspec/changes/observability-log-filters/ (OpenSpec pass 2026-09-27).",
-				"change": "observability-log-filters"
+				"change": "observability-log-filters",
+				"requirement": "openspec/changes/observability-log-filters/specs/app-shell-and-logs-ui :: Every log page declares its filter controls (REQ-LOGF-001)"
 			},
 			"reachedOn": "cross-page: a 'View logs' row action from Sources/Endpoints/Jobs/Synchronizations lands on the matching logs page pre-filtered; sortable 'created'/'startedAt' columns cover time; status is shown as a coloured badge but has no filter control",
 			"note": "Filtering works as deep-link query params (any non-underscore-prefixed key is forwarded as an OpenRegister property filter) and via row-action links from other pages, but none of the logs pages (SourceLogs, EndpointLogs, Traces, JobLogs) has an on-page filter bar or date-range picker a staff member can use directly.",
@@ -5977,7 +6052,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:3168-3172 Traces page (/traces, type logs, schema execution_trace); :3262-3271 TraceDetail (/traces/:id, custom TraceDetailPage) 'renders one execution_trace's ordered step timeline (type/duration/status per step, expandable redacted input/output)'.",
-				"spec": "openspec/specs/execution-trace"
+				"spec": "openspec/specs/execution-trace",
+				"requirement": [
+					"openspec/specs/execution-trace :: Ordered per-execution step timeline (REQ-002)",
+					"openspec/specs/execution-trace :: Traces UI — typed list and detail timeline (REQ-007)"
+				]
 			},
 			"reachedOn": "/traces (Traces index) -> /traces/:id (TraceDetail)",
 			"provider": "integriq",
@@ -6013,7 +6092,11 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "_lane/frontend-api-paths.txt: /apps/integriq/api/execution-traces/${this.traceId}/replay called twice from src/views/ExecutionTrace/TraceDetailPage.vue:232,260. src/manifest.json:3266 TraceDetail note: 'a Replay action (dry-run preview shown first; a separate confirmation step is required before a forced replay).'",
-				"spec": "openspec/specs/execution-trace"
+				"spec": "openspec/specs/execution-trace",
+				"requirement": [
+					"openspec/specs/execution-trace :: Dry-run replay performs no writes (REQ-005)",
+					"openspec/specs/execution-trace :: Forced replay reuses the original entry point's real dispatch path (REQ-006)"
+				]
 			},
 			"reachedOn": "/traces/:id (TraceDetail), Replay action",
 			"provider": "integriq",
@@ -6049,7 +6132,8 @@
 				"state": "built",
 				"change": "2026-09-28-outbound-call-delivery-and-replay",
 				"owner": "ConductionNL/integriq",
-				"evidence": "src/manifest.json SourceLogs wires slots[\"row-actions\"] to src/components/callLog/CallLogRowActions.vue (Replay, opening src/modals/CallLog/CallReplayModal.vue: preview, mapping version choice, dry run, replay) and actionsComponent to src/components/callLog/CallLogActions.vue (Replay failed calls, src/modals/CallLog/CallBulkReplayModal.vue with per-call outcomes; Fire a call by hand, src/modals/CallLog/CallFireModal.vue), all calling appinfo/routes.php callLog#preview/#replay(+bulk)/#fire in lib/Controller/CallLogController.php over lib/Outbound/Call/CallReplayService.php. tests/vitest/callLogReplay.spec.js drives the real components; tests/Unit/Outbound/CallReplayServiceTest.php validates every write against the merged call_log schema. Built by change outbound-call-delivery-and-replay (archived 2026-09-28)."
+				"evidence": "src/manifest.json SourceLogs wires slots[\"row-actions\"] to src/components/callLog/CallLogRowActions.vue (Replay, opening src/modals/CallLog/CallReplayModal.vue: preview, mapping version choice, dry run, replay) and actionsComponent to src/components/callLog/CallLogActions.vue (Replay failed calls, src/modals/CallLog/CallBulkReplayModal.vue with per-call outcomes; Fire a call by hand, src/modals/CallLog/CallFireModal.vue), all calling appinfo/routes.php callLog#preview/#replay(+bulk)/#fire in lib/Controller/CallLogController.php over lib/Outbound/Call/CallReplayService.php. tests/vitest/callLogReplay.spec.js drives the real components; tests/Unit/Outbound/CallReplayServiceTest.php validates every write against the merged call_log schema. Built by change outbound-call-delivery-and-replay (archived 2026-09-28).",
+				"requirement": "openspec/specs/outbound-call-log :: A failed call is replayed from the screen, singly and in bulk (REQ-OCD-002)"
 			},
 			"reachedOn": "Sources > Logs: Replay on a row, and Replay failed calls or Fire a call by hand above the list",
 			"note": "The spec's own requirement name says 'replayed from the screen', but no screen was built. Built 2026-09-28: the screen replays one call with a preview and a dry run, replays the recent failed calls together with an outcome per call, and fires a call by hand. Replay is per outbound call record, not per whole run like n8n or Frank.",
@@ -6194,7 +6278,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:21 metrics#index (/api/metrics, GET); lib/Controller/MetricsController.php extends OpenRegister AppHost's GenericMetricsController, wired by an explicit factory in lib/AppInfo/Application.php::registerAppHostObservability(); lib/Observability/IntegriqMetricsProvider.php:64,788 implements IMetricsProvider::metrics().",
-				"spec": "openspec/specs/prometheus-metrics"
+				"spec": "openspec/specs/prometheus-metrics",
+				"requirement": "openspec/specs/prometheus-metrics :: REQ-PROM-001: Metrics Endpoint"
 			},
 			"reachedOn": "machine route: GET /api/metrics (admin-only, no #[NoAdminRequired])",
 			"note": "The generic controller/collection plumbing is OpenRegister's AppHost observability package; integriq supplies its own IntegriqMetricsProvider content.",
@@ -6269,7 +6354,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Observability/Otel/OtlpTraceExporter.php sends OTLP/HTTP traces mapped by lib/Observability/Otel/SpanMapper.php (root span plus one child per step, no BSN, name or header in the payload); ExecutionTraceService::persist() queues and lib/BackgroundJob/OtelExportJob.php exports one trace per job behind lib/Observability/Otel/OtelExportBreaker.php; lib/Observability/Otel/TraceParent.php reads an inbound traceparent and CallService passes it on outbound (EndpointService, CallService); settings in OtelSettings, admin routes appinfo/routes.php:726-727 otelSettings#getConfig/#setConfig (/api/admin/otel). Change observability-opentelemetry-export: every implement and PHPUnit task ticked, only a Newman and a Playwright run open.",
 				"change": "observability-opentelemetry-export",
-				"readOn": "2026-10-30"
+				"readOn": "2026-10-30",
+				"requirement": "openspec/changes/observability-opentelemetry-export/specs/execution-trace :: A persisted trace is exported as OpenTelemetry spans (REQ-OTEL-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -6308,7 +6394,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Built by openspec/changes/archive/2026-09-30-integriq-notifications: lib/Settings/integriq_register.json declares x-openregister-notifications rules on call_log (call-failed), job_log (job-error), synchronization_log (sync-failed, off by default), event_message (delivery-retries-exhausted) and job (job-overdue, off by default), which OpenRegister's notification engine delivers. Every rule names the ConnectionAlertRecipientResolver expression recipient: the app setting connection_alert_group, default admin (DECISIONS 29 Sep row 7). Tests: tests/Unit/Settings/IntegrationAlertRecipientsTest.php, tests/Unit/Settings/JobOverdueRuleTest.php. Rated partial: a circuit breaker opening has no rule of its own, and two rules ship switched off.",
-				"change": "2026-09-30-integriq-notifications"
+				"change": "2026-09-30-integriq-notifications",
+				"requirement": "openspec/specs/openconnector-notifications :: Operational schemas declare notification rules"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -6388,7 +6475,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:504 productSubscriptions#analytics (/api/products/{productId}/analytics, GET, admin-only per spec_ref); src/views/ApiProducts/ApiProductDetail.vue:448-459 loadAnalytics() calls it, tagged openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007.",
-				"spec": "openspec/specs/api-product-gateway"
+				"spec": "openspec/specs/api-product-gateway",
+				"requirement": "openspec/specs/api-product-gateway :: Gateway analytics per API Product (REQ-APG-007)"
 			},
 			"reachedOn": "/products/:id (ApiProductDetail), analytics tab",
 			"note": "This is per-API-PRODUCT analytics (a gateway construct wrapping one or more endpoints/consumers), not a fleet-wide usage-by-consumer report; it satisfies the capability but at the product's own scope.",
@@ -6499,7 +6587,8 @@
 				"state": "built",
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:837-909 AppConnections (/connections, admin-only, schema app_connection): columns app/title/status (formatter connectionStatus)/statusMessage/checkedAt; note: 'every app's declared connections in one admin-only list. Rows are written by the declaration sync, the status resolver, app reports and the hourly health job.'",
-				"change": "2026-09-29-connection-registry"
+				"change": "2026-09-29-connection-registry",
+				"requirement": "openspec/specs/connection-registry :: Integriq shows all connections on one admin page (REQ-CONN-006)"
 			},
 			"reachedOn": "/connections (AppConnections, admin only)",
 			"note": "integriq owns the app_connection registry itself (the connection-registry programme); other apps' matrices naming integriq as provider for this row are consistent with that.",
@@ -11162,7 +11251,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php:384 mappings#test and :367 synchronizations#test run a single test by hand (rows map-test, sync-test); src/views/ExecutionTrace/TraceDetailPage.vue:232,260 replay one traced request (row obs-trace-replay); there is no stored test case set that replays as a suite. Specified in openspec/changes/automation-integration-regression-tests/ (OpenSpec pass 2026-09-27).",
-				"change": "automation-integration-regression-tests"
+				"change": "automation-integration-regression-tests",
+				"requirement": [
+					"openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests :: A test case stores an input, an expected output and its subject (REQ-IRT-001)",
+					"openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests :: A suite run replays every case without calling the source or writing (REQ-IRT-003)"
+				]
 			},
 			"reachedOn": "/mappings/:id test panel, /synchronizations/:id test action, /traces/:id Replay",
 			"note": "n8n community feature request 2026-01-22, workflow unit testing with test cases; Frank!Framework issue 6603 asks the same of Larva. Integriq: Single tests and single replays, no recorded regression suite.",
@@ -11201,7 +11294,11 @@
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/JobIntervalCron.php:40-91 only translates an interval in seconds to a cron line, and lib/Service/JobService.php:511 computes nextRunDt from jobConfig['interval']; there is no calendar, weekday or month-day schedule. Specified in openspec/changes/automation-job-calendar-schedules/ (OpenSpec pass 2026-09-27).",
-				"change": "automation-job-calendar-schedules"
+				"change": "automation-job-calendar-schedules",
+				"requirement": [
+					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: A job can carry a calendar schedule instead of an interval (REQ-JCAL-001)",
+					"openspec/changes/automation-job-calendar-schedules/specs/job-scheduling :: The next run follows the calendar after success and after failure (REQ-JCAL-002)"
+				]
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "n8n community feature request 2025-11-29, advanced scheduler and cron enhancements.",
