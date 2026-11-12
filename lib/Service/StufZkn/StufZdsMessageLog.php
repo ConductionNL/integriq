@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZDS Message Log.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * One `stuf_message` row per ZDS case message: opened when the envelope is
  * built, moved to `retrying` while a transient failure waits for its next
  * attempt, and concluded `sent` or `failed`. The envelope is kept only while
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

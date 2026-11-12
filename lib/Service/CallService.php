@@ -3,6 +3,9 @@
 /**
  * Integriq Call Service.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Provides functionality to handle API calls to a specified source within the
  * NextCloud environment. Manages the execution of HTTP requests using the
  * Guzzle HTTP client, while rendering templates with Twig and managing call
@@ -3519,13 +3522,7 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
 	 */
 	private function settleAsyncResponse(array $prepared, \Psr\Http\Message\ResponseInterface $response): ObjectEntity {
-		$sourceData = $prepared['sourceData'];
-		$this->recordBreakerOutcome(
-			source: $prepared['source'],
-			sourceData: $sourceData,
-			statusCode: $response->getStatusCode(),
-			retryPolicy: $prepared['retryPolicy'],
-		);
+		$this->recordBreakerOutcome(prepared: $prepared, statusCode: $response->getStatusCode());
 
 		return $this->finalizeCall(
 			prepared: $prepared,
@@ -3585,10 +3582,10 @@ class CallService implements CallServiceInterface {
 	 * {@see callAsync()} from inventing a second, stricter rule that would open
 	 * breakers the synchronous path leaves closed.
 	 *
-	 * @param ObjectEntity $source The source ObjectEntity.
-	 * @param array $sourceData The mutable source data array (breaker bookkeeping mutates it).
+	 * @param array   $prepared   The prepared call: its source, source data and resolved retry policy
+	 *                            (for its `retryableStatusCodes`). The breaker bookkeeping works on a copy
+	 *                            of the source data, as before.
 	 * @param integer $statusCode The HTTP status code that came back.
-	 * @param array $retryPolicy The resolved retry policy, for its `retryableStatusCodes`.
 	 *
 	 * @return void
 	 *
@@ -3596,20 +3593,16 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
 	 */
-	private function recordBreakerOutcome(
-		ObjectEntity $source,
-		array &$sourceData,
-		int $statusCode,
-		array $retryPolicy,
-	): void {
-		if (in_array($statusCode, $retryPolicy['retryableStatusCodes'], true) === true) {
-			$this->recordBreakerFailure(source: $source, sourceData: $sourceData);
+	private function recordBreakerOutcome(array $prepared, int $statusCode): void {
+		$sourceData = $prepared['sourceData'];
+		if (in_array($statusCode, $prepared['retryPolicy']['retryableStatusCodes'], true) === true) {
+			$this->recordBreakerFailure(source: $prepared['source'], sourceData: $sourceData);
 
 			return;
 		}
 
 		if ($statusCode < 400) {
-			$this->recordBreakerSuccess(source: $source, sourceData: $sourceData);
+			$this->recordBreakerSuccess(source: $prepared['source'], sourceData: $sourceData);
 		}
 
 	}//end recordBreakerOutcome()

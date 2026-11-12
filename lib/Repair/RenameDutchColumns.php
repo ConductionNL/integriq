@@ -3,6 +3,9 @@
 /**
  * Integriq RenameDutchColumns Repair Step
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Moves stored data from the Dutch columns to the English ones the shillinq
  * register now declares. Covers every vocabulary cluster migrated so far, not
  * only amounts — the class was renamed from RenameDutchAmountColumns when the
@@ -41,9 +44,6 @@
  *     reversible and a re-run is a no-op;
  *   - two sources targeting one destination in a table are REFUSED, not merged;
  *   - nothing is deleted.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
  * @package  OCA\Integriq\Repair

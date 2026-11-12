@@ -17,6 +17,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-open-formulieren-connections-account-is-chosen-and-checked-by-an-administrator-req-007
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

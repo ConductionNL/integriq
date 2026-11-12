@@ -4,6 +4,9 @@
  * Integriq — migrate inline source secrets, then record the Phase D gate
  * (Phase C / ADR-064; ocon#151).
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  * THE EXECUTOR IS NOW UNBLOCKED — this step RUNS the migration.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -51,9 +54,6 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

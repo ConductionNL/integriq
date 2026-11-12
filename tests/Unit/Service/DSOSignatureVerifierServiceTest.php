@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-1
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

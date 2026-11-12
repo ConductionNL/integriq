@@ -15,6 +15,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -214,31 +217,38 @@ class SynchronizationLogService implements SynchronizationLogServiceInterface {
 	 */
 	private function resolveContractId(mixed $contract): ?string {
 		if (\is_object($contract) === true) {
-			if (method_exists($contract, 'getUuid') === false) {
-				return null;
-			}
-
-			$uuid = $contract->getUuid();
-			if (empty($uuid) === true) {
-				return null;
-			}
-
-			return (string)$uuid;
+			return $this->objectContractId(contract: $contract);
 		}
 
-		if (\is_string($contract) === true) {
-			// An empty string references nothing, exactly like a null entry —
-			// keeping it would persist [''] and fan out a degenerate object in
-			// Flow. The `logs` list drops '' for the same reason.
-			if ($contract === '') {
-				return null;
-			}
-
+		// An empty string references nothing, exactly like a null entry —
+		// keeping it would persist [''] and fan out a degenerate object in
+		// Flow. The `logs` list drops '' for the same reason.
+		if (\is_string($contract) === true && $contract !== '') {
 			return $contract;
 		}
 
 		return null;
 	}//end resolveContractId()
+
+	/**
+	 * The uuid of a contract object, or null when it has none.
+	 *
+	 * @param object $contract The contract object.
+	 *
+	 * @return string|null The uuid.
+	 */
+	private function objectContractId(object $contract): ?string {
+		if (method_exists($contract, 'getUuid') === false) {
+			return null;
+		}
+
+		$uuid = $contract->getUuid();
+		if (empty($uuid) === true) {
+			return null;
+		}
+
+		return (string)$uuid;
+	}//end objectContractId()
 
 	/**
 	 * Compact the run-log's reference lists to the references that exist.
@@ -261,54 +271,93 @@ class SynchronizationLogService implements SynchronizationLogServiceInterface {
 	 * @return array The result with its reference lists compacted.
 	 */
 	private function normaliseResultReferences(array $result): array {
-		$contracts = ($result['contracts'] ?? null);
-		if (\is_array($contracts) === true) {
-			$embedded = ($result['_embed']['contracts'] ?? null);
-			$hasEmbed = \is_array($embedded);
+		if (\is_array($result['contracts'] ?? null) === true) {
+			$result = $this->compactContracts(result: $result);
+		}
 
-			// Reindexed once, outside the loop: re-running array_values() per
-			// contract rebuilt the whole embedded list on every iteration,
-			// making compaction O(n²) in the number of contracts.
-			$embeddedByPosition = [];
-			if ($hasEmbed === true) {
-				$embeddedByPosition = array_values($embedded);
-			}
-
-			$keptContracts = [];
-			$keptEmbedded = [];
-			foreach (array_values($contracts) as $position => $contract) {
-				$uuid = $this->resolveContractId(contract: $contract);
-				if ($uuid === null) {
-					continue;
-				}
-
-				$keptContracts[] = $uuid;
-				if ($hasEmbed === true) {
-					// Always append, defaulting to null, so the embedded list
-					// keeps exactly one entry per surviving contract even when
-					// it was shorter than `contracts` to begin with.
-					$keptEmbedded[] = ($embeddedByPosition[$position] ?? null);
-				}
-			}
-
-			$result['contracts'] = $keptContracts;
-			if ($hasEmbed === true) {
-				$result['_embed']['contracts'] = $keptEmbedded;
-			}
-		}//end if
-
-		$logs = ($result['logs'] ?? null);
-		if (\is_array($logs) === true) {
-			$result['logs'] = array_values(
-				array_filter(
-					$logs,
-					static function ($logId) {
-						return $logId !== null && $logId !== '';
-					}
-				)
-			);
+		if (\is_array($result['logs'] ?? null) === true) {
+			$result['logs'] = $this->compactLogs(logs: $result['logs']);
 		}
 
 		return $result;
 	}//end normaliseResultReferences()
+
+	/**
+	 * Keep the contracts that reference something, as their uuids, and the
+	 * embedded contracts at the same positions.
+	 *
+	 * `_embed.contracts` is compacted in lockstep because
+	 * `Flow\SynchronizationRunNode::objectsFrom()` pairs the two by position.
+	 *
+	 * @param array $result The run-log result payload, with a `contracts` list.
+	 *
+	 * @return array The result with both lists compacted.
+	 */
+	private function compactContracts(array $result): array {
+		$embedded = ($result['_embed']['contracts'] ?? null);
+		$kept = $this->keptContracts(contracts: $result['contracts']);
+		$result['contracts'] = array_values($kept);
+		if (\is_array($embedded) === true) {
+			// Reindexed once, not per contract: that rebuilt the whole
+			// embedded list on every iteration, O(n²) in the contracts.
+			$result['_embed']['contracts'] = $this->embeddedAt(embedded: array_values($embedded), positions: array_keys($kept));
+		}
+
+		return $result;
+	}//end compactContracts()
+
+	/**
+	 * The uuid of every contract that references something, by its position.
+	 *
+	 * @param array $contracts The `contracts` list.
+	 *
+	 * @return array<int,string> Position to uuid.
+	 */
+	private function keptContracts(array $contracts): array {
+		$kept = [];
+		foreach (array_values($contracts) as $position => $contract) {
+			$uuid = $this->resolveContractId(contract: $contract);
+			if ($uuid !== null) {
+				$kept[$position] = $uuid;
+			}
+		}
+
+		return $kept;
+	}//end keptContracts()
+
+	/**
+	 * The embedded entries at the given positions, null where the embedded
+	 * list is shorter, so it keeps exactly one entry per surviving contract.
+	 *
+	 * @param array          $embedded  The embedded list, reindexed.
+	 * @param array<int,int> $positions The surviving positions.
+	 *
+	 * @return array
+	 */
+	private function embeddedAt(array $embedded, array $positions): array {
+		$kept = [];
+		foreach ($positions as $position) {
+			$kept[] = ($embedded[$position] ?? null);
+		}
+
+		return $kept;
+	}//end embeddedAt()
+
+	/**
+	 * The log ids that reference something (not null, not ''), reindexed.
+	 *
+	 * @param array $logs The `logs` list.
+	 *
+	 * @return array
+	 */
+	private function compactLogs(array $logs): array {
+		return array_values(
+			array_filter(
+				$logs,
+				static function ($logId) {
+					return $logId !== null && $logId !== '';
+				}
+			)
+		);
+	}//end compactLogs()
 }//end class

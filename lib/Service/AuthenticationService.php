@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -24,7 +27,6 @@ use DateTime;
 use GuzzleHttp\Client;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
-use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\Algorithm\HS384;
 use Jose\Component\Signature\Algorithm\HS512;
@@ -426,25 +428,9 @@ class AuthenticationService implements AuthenticationServiceInterface {
 		// - the filename is unpredictable,
 		// - the bytes are never readable to other local users,
 		// - cleanup runs even when JWKFactory::createFromKeyFile throws.
-		$filename = tempnam(sys_get_temp_dir(), 'oc_privatekey_');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(request: new PemKeyFileRequest(prefix: 'oc_privatekey_', pem: base64_decode($configuration['secret'])));
+		if ($jwk === null) {
 			throw new Exception('Could not allocate a temp file for the private key.');
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, base64_decode($configuration['secret']));
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		return $jwk;

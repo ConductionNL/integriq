@@ -3,6 +3,9 @@
 /**
  * Integriq mTLS Configuration Resolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Decrypts and validates a source's `configuration.authentication.mtls`
  * block into an in-memory {@see MtlsCertificateBundle}, entirely BEFORE any
  * network call is attempted. Certificate material is `OCP\Security\ICrypto`-
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

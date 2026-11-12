@@ -18,6 +18,9 @@
  * @link https://www.Integriq.nl
  *
  * @todo This listener should be moved to the software catalog app.
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\EventListener;

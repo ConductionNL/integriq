@@ -3,6 +3,9 @@
 /**
  * Integriq Brokered Call Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Isolates ALL coupling between the outbound HTTP call engine and the
  * OpenRegister credential broker (`OCA\OpenRegister\Service\Credential\
  * CredentialBrokerService`). A Source whose merged configuration carries
@@ -28,9 +31,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -548,15 +548,10 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	public function prepare(array $config, array $sourceData, bool $asynchronous): array {
-		$authentication = ($config['authentication'] ?? []);
-		if (is_array($authentication) === false) {
-			throw new BrokeredCallConfigurationException(
-				message: 'credentialRef requires `authentication` to be an object in the source configuration.'
-			);
-		}
-
-		$ref = $this->validateCredentialRef(authentication: $authentication);
-		$this->assertScopeGuards(config: $config, sourceData: $sourceData, asynchronous: $asynchronous);
+		$ref = $this->validateCredentialRef(authentication: $this->authenticationOf(config: $config));
+		$this->refuseSoapSource(sourceData: $sourceData);
+		$this->refuseAsynchronousDispatch(asynchronous: $asynchronous);
+		$this->refuseTopLevelTlsIdentity(config: $config);
 		$this->assertBrokerAvailable();
 
 		// Resolve the broker eagerly so a container-resolution failure is a
@@ -565,14 +560,36 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 
 		$credentialId = $this->resolveCredentialId(ref: $ref);
 		$credential = $this->loadCredential(credentialId: $credentialId, ref: $ref);
-		$actingUserId = $this->resolveActingUser(credential: $credential, credentialId: $credentialId);
 
 		return [
 			'credentialId' => $credentialId,
-			'actingUserId' => $actingUserId,
+			'actingUserId' => $this->resolveActingUser(credential: $credential, credentialId: $credentialId),
 		];
 
 	}//end prepare()
+
+	/**
+	 * The source configuration's `authentication` object.
+	 *
+	 * @param array $config The merged call configuration.
+	 *
+	 * @return array The authentication object.
+	 *
+	 * @throws BrokeredCallConfigurationException When it is not an object.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	private function authenticationOf(array $config): array {
+		$authentication = ($config['authentication'] ?? []);
+		if (is_array($authentication) === false) {
+			throw new BrokeredCallConfigurationException(
+				message: 'credentialRef requires `authentication` to be an object in the source configuration.'
+			);
+		}
+
+		return $authentication;
+
+	}//end authenticationOf()
 
 	/**
 	 * Dispatches one brokered call through the OpenRegister credential broker.
@@ -830,19 +847,17 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 	}//end extractSingleRefValue()
 
 	/**
-	 * Enforces the v1 scope guards: no SOAP, no async, no TLS client certs.
+	 * v1 scope: credentialRef is refused on a SOAP source, whose transport bypasses the brokered HTTP path.
 	 *
-	 * @param array $config The merged call configuration.
 	 * @param array $sourceData The raw source data array.
-	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
 	 *
 	 * @return void
 	 *
-	 * @throws BrokeredCallConfigurationException On any v1 scope violation.
+	 * @throws BrokeredCallConfigurationException On a SOAP source.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */
-	private function assertScopeGuards(array $config, array $sourceData, bool $asynchronous): void {
+	private function refuseSoapSource(array $sourceData): void {
 		if (($sourceData['type'] ?? null) === 'soap') {
 			throw new BrokeredCallConfigurationException(
 				message: 'credentialRef is not supported on SOAP sources (v1 scope) — the SOAP transport '
@@ -850,6 +865,20 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 			);
 		}
 
+	}//end refuseSoapSource()
+
+	/**
+	 * v1 scope: credentialRef is refused on asynchronous dispatch; the brokered call is synchronous in-process.
+	 *
+	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
+	 *
+	 * @return void
+	 *
+	 * @throws BrokeredCallConfigurationException On asynchronous dispatch.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+	 */
+	private function refuseAsynchronousDispatch(bool $asynchronous): void {
 		if ($asynchronous === true) {
 			throw new BrokeredCallConfigurationException(
 				message: 'credentialRef does not support asynchronous dispatch (v1 scope) — the brokered '
@@ -857,12 +886,27 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 			);
 		}
 
-		// An empty `cert` / `ssl_key` is no certificate: the seeded BRP source ships both
-		// as "" placeholders, and `isset("")` is true, so the proxy path refused a source
-		// that carried no certificate at all (integriq#2102). A REAL certificate is still
-		// refused here: on the proxy path the broker opens the TLS connection itself and
-		// cannot present a client certificate, so accepting one would send the call
-		// without it. The app-injected form below carries both.
+	}//end refuseAsynchronousDispatch()
+
+	/**
+	 * A real TLS client certificate is refused next to a top-level credentialRef.
+	 *
+	 * An empty `cert` / `ssl_key` is no certificate: the seeded BRP source ships both
+	 * as "" placeholders, and `isset("")` is true, so the proxy path refused a source
+	 * that carried no certificate at all (integriq#2102). A REAL certificate is still
+	 * refused here: on the proxy path the broker opens the TLS connection itself and
+	 * cannot present a client certificate, so accepting one would send the call
+	 * without it. The app-injected form carries both.
+	 *
+	 * @param array $config The merged call configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws BrokeredCallConfigurationException When the configuration carries a certificate.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+	 */
+	private function refuseTopLevelTlsIdentity(array $config): void {
 		if ($this->hasTlsIdentity(config: $config) === true) {
 			throw new BrokeredCallConfigurationException(
 				message: 'A TLS client certificate (cert / ssl_key) cannot be used with a top-level '
@@ -872,7 +916,7 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 			);
 		}
 
-	}//end assertScopeGuards()
+	}//end refuseTopLevelTlsIdentity()
 
 	/**
 	 * Soft-fail guard: the broker class must exist AND openregister must be enabled.

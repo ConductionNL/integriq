@@ -3,6 +3,9 @@
 /**
  * Integriq Flow Graph Migration Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies (and rolls back) the steps-to-graph migration over the LIVE `flow`
  * objects in the register (retire-integriq-flow-schema Task 2). The
  * translation itself is `FlowStepsToGraphTranslator` and stays pure; this
@@ -28,9 +31,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

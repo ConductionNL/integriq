@@ -3,6 +3,9 @@
 /**
  * Integriq — UWLR/Edu-V/Basispoort/Entree-content adapter catalogue descriptor.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ADR-017 Rule 1: a new adapter family ships as a CARD in the *Adapters*
  * catalogue plus a configuration schema — never as a new top-level menu item
  * or a `/beheer` route. This descriptor is that catalogue entry for the

@@ -3,6 +3,9 @@
 /**
  * OCC command: integriq:contracts:dedupe.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Removes the duplicate `SynchronizationContract` rows left behind by the
  * identity defect fixed in #1306/#1307/#1309/#1311. Until that fix,
  * `synchronizeContract()` minted a FRESH uuid on every rerun — a contract
@@ -33,9 +36,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

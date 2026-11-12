@@ -24,6 +24,9 @@
  *
  * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-2
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-4
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -198,7 +201,7 @@ class DsoPkiSettingsController extends Controller {
 			return $this->saveFailed(exception: $exception);
 		}
 
-		$this->withdrawPrevious(consumer: $consumer, userId: $submitted->userId);
+		$this->accountCheck()->withdrawPrevious(consumer: $consumer, userId: $submitted->userId);
 		return null;
 	}//end save()
 
@@ -246,6 +249,21 @@ class DsoPkiSettingsController extends Controller {
 	}//end accountState()
 
 	/**
+	 * The checks on the connection's account.
+	 *
+	 * @return IntakeAccountCheck
+	 */
+	private function accountCheck(): IntakeAccountCheck {
+		return new IntakeAccountCheck(
+			connection: $this->connection,
+			groups: $this->groups,
+			groupManager: $this->groupManager,
+			l: $this->l,
+			intakeGroup: IntakeGroupsInterface::DSO_INTAKE
+		);
+	}//end accountCheck()
+
+	/**
 	 * The 400 answer for a trust chain or account that may not be saved, or null.
 	 *
 	 * @param SubmittedConnection $submitted The submitted trust configuration and account.
@@ -272,15 +290,7 @@ class DsoPkiSettingsController extends Controller {
 			return null;
 		}
 
-		$fieldError = $this->accountError(userId: $userId, warnings: $warnings);
-		if ($fieldError === null) {
-			return null;
-		}
-
-		return new JSONResponse(
-			['errors' => [$fieldError], 'fieldErrors' => ['userId' => $fieldError]],
-			Http::STATUS_BAD_REQUEST
-		);
+		return $this->accountCheck()->refusal(fieldError: $this->accountError(userId: $userId, warnings: $warnings));
 
 	}//end refusal()
 
@@ -331,24 +341,6 @@ class DsoPkiSettingsController extends Controller {
 	}//end ambiguous()
 
 	/**
-	 * Take the account the connection used before out of the intake group.
-	 *
-	 * @param ObjectEntity|null $consumer The consumer as it was before the save.
-	 * @param string            $userId   The account it has now, or ''.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/dso-omgevingsloket/spec.md#requirement-verzoeken-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-dso-072
-	 */
-	private function withdrawPrevious(?ObjectEntity $consumer, string $userId): void {
-		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
-		if ($previous !== '' && $previous !== $userId) {
-			$this->groups->withdraw(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $previous);
-		}
-
-	}//end withdrawPrevious()
-
-	/**
 	 * The field error for an account, or null when it may be saved.
 	 *
 	 * @param string       $userId   The chosen uid.
@@ -364,16 +356,7 @@ class DsoPkiSettingsController extends Controller {
 			return $unresolvable;
 		}
 
-		// The authorization block grants the intake group, so the chosen
-		// account joins it before its rights are checked. It leaves again when
-		// the check still refuses it and it was not a member before.
-		$wasMember = $this->groups->isMember(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $userId);
-		$this->groups->enrol(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $userId);
-
-		$missing = $this->connection->missingRights(userId: $userId);
-		if ($missing !== null && $missing !== [] && $wasMember === false) {
-			$this->groups->withdraw(groupId: IntakeGroupsInterface::DSO_INTAKE, userId: $userId);
-		}
+		$missing = $this->accountCheck()->missingRights(userId: $userId);
 
 		if ($missing === null) {
 			$warnings[] = $this->l->t('The rights of account %s could not be checked. Pushes are refused until they can be.', [$userId]);
@@ -381,9 +364,7 @@ class DsoPkiSettingsController extends Controller {
 			return $this->l->t('Account %1$s lacks the %2$s right on DSO verzoeken.', [$userId, implode(', ', $missing)]);
 		}
 
-		if ($this->groupManager->isAdmin($userId) === true) {
-			$warnings[] = $this->l->t('Account %s is an administrator. A dedicated account keeps the audit trail readable.', [$userId]);
-		}
+		$this->accountCheck()->warnAdministrator(userId: $userId, warnings: $warnings);
 
 		return null;
 

@@ -61,17 +61,7 @@ class EnvelopeReplayGuard {
 	 * @param ICacheFactory $cacheFactory The Nextcloud cache factory.
 	 */
 	public function __construct(ICacheFactory $cacheFactory) {
-		if ($cacheFactory->isAvailable() === false) {
-			return;
-		}
-
-		$cache = $cacheFactory->createDistributed(self::CACHE_PREFIX . '.');
-		if ($cache instanceof IMemcache) {
-			// `IMemcache::add()` is the atomic one. Without it, two requests
-			// racing on the same jti both read "not seen" and both proceed,
-			// which is the replay the guard exists to stop.
-			$this->cache = $cache;
-		}
+		$this->cache = AtomicCache::distributed(cacheFactory: $cacheFactory, prefix: self::CACHE_PREFIX);
 
 	}//end __construct()
 

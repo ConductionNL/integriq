@@ -3,6 +3,9 @@
 /**
  * Operator-gated removal of the vestigial `source.authenticationConfig` (ocon#232).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * ─────────────────────────────────────────────────────────────────────────────
  * THIS CLASS DELETES CREDENTIAL DATA. THE GATING IS THE POINT.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -47,9 +50,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

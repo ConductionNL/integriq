@@ -3,6 +3,9 @@
 /**
  * Integriq Synchronization Contract Log Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Write path for synchronization contract logs, backed by OpenRegister.
  *
  * Post OpenRegister-cutover the `openconnector_synchronization_contract_logs`

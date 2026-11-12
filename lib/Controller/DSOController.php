@@ -21,6 +21,9 @@
  *
  * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

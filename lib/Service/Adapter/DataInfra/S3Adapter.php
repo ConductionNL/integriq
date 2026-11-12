@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -372,11 +375,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 			);
 		}
 
-		return $this->putObject(
-			bucket: $bucket,
-			key: $key,
-			content: (string)($payload['content'] ?? '')
-		);
+		return $this->putObject(location: new S3Location(bucket: $bucket, key: $key), content: (string)($payload['content'] ?? ''));
 
 	}//end create()
 
@@ -419,11 +418,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 
 		[$bucket, $key] = $parts;
 
-		return $this->putObject(
-			bucket: $bucket,
-			key: $key,
-			content: (string)($payload['content'] ?? '')
-		);
+		return $this->putObject(location: new S3Location(bucket: $bucket, key: $key), content: (string)($payload['content'] ?? ''));
 
 	}//end update()
 
@@ -437,8 +432,7 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 * the bucket rejected the write. Both are failures, and neither may be
 	 * reported as a successful write.
 	 *
-	 * @param string $bucket Bucket name.
-	 * @param string $key Object key.
+	 * @param S3Location $location The bucket and key.
 	 * @param string $content Raw bytes to write.
 	 *
 	 * @return array<string,mixed> The written object's `bucket`, `key` and upstream `status`.
@@ -447,30 +441,40 @@ class S3Adapter extends AbstractCategoryAdapterProvider {
 	 *
 	 * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-5
 	 */
-	private function putObject(string $bucket, string $key, string $content): array {
-		$result = $this->writeObject(bucket: $bucket, key: $key, content: $content);
+	private function putObject(S3Location $location, string $content): array {
+		$result = $this->writeObject(bucket: $location->bucket, key: $location->key, content: $content);
+		$this->assertWritten(location: $location, result: $result);
+
+		return [
+			'bucket' => $location->bucket,
+			'key' => $location->key,
+			'status' => $result['status'],
+		];
+
+	}//end putObject()
+
+	/**
+	 * Refuse a write that did not complete, or that the bucket answered outside 2xx.
+	 *
+	 * @param S3Location $location The bucket and key written.
+	 * @param array{status: int}|null $result What {@see writeObject()} returned.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the write did not complete with a 2xx status.
+	 */
+	private function assertWritten(S3Location $location, ?array $result): void {
 		if ($result === null) {
 			throw new RuntimeException(
-				sprintf('S3 write of "%s" to bucket "%s" did not complete.', $key, $bucket)
+				sprintf('S3 write of "%s" to bucket "%s" did not complete.', $location->key, $location->bucket)
 			);
 		}
 
 		if ($result['status'] < 200 || $result['status'] >= 300) {
 			throw new RuntimeException(
-				sprintf(
-					'S3 write of "%s" to bucket "%s" was rejected upstream (status %d).',
-					$key,
-					$bucket,
-					$result['status']
-				)
+				sprintf('S3 write of "%s" to bucket "%s" was rejected upstream (status %d).', $location->key, $location->bucket, $result['status'])
 			);
 		}
 
-		return [
-			'bucket' => $bucket,
-			'key' => $key,
-			'status' => $result['status'],
-		];
-
-	}//end putObject()
+	}//end assertWritten()
 }//end class

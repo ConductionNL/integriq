@@ -24,6 +24,9 @@
  * @spec exclude One-off openconnector->integriq app-id rename plumbing; it
  *       moves oc_preferences rows between namespaces and adds no domain
  *       behaviour.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

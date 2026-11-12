@@ -62,6 +62,14 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	private const RESUME_STATUS_BY_MESSAGE = ['approval_superseded' => Http::STATUS_CONFLICT];
 
 	/**
+	 * The run references an approval_request can carry, in the order the
+	 * approve resumes them: the first one set wins.
+	 *
+	 * @var array<int, string>
+	 */
+	private const RESUME_KINDS = ['endpointId', 'synchronizationId', 'flowRunId', 'engineRunUuid'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request; the endpoint resume falls back to its method.
@@ -103,7 +111,9 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-a-decision-taken-on-the-shared-task-resumes-the-run
 	 */
 	public function approve(ObjectEntity $approvalRequest, IUser $user, ?string $comment): JSONResponse {
-		return $this->routeApproval(approvalRequest: $approvalRequest, user: $user, comment: $comment);
+		$run          = new ApprovalDecisionRun(approvalRequest: $approvalRequest, user: $user);
+		$run->comment = $comment;
+		return $this->routeApproval(run: $run);
 
 	}//end approve()
 
@@ -121,8 +131,10 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 * @spec openspec/specs/hitl-on-shared-tasks/spec.md#requirement-a-decision-taken-on-the-shared-task-resumes-the-run
 	 */
 	public function reject(ObjectEntity $approvalRequest, IUser $user, string $comment): ObjectEntity {
-		$rejected = $this->approvalService->reject(approvalRequest: $approvalRequest, approver: $user, comment: $comment);
-		$this->propagateRejection(approvalRequest: $rejected, data: $rejected->getObject(), user: $user, comment: $comment);
+		$rejected     = $this->approvalService->reject(approvalRequest: $approvalRequest, approver: $user, comment: $comment);
+		$run          = new ApprovalDecisionRun(approvalRequest: $rejected, user: $user);
+		$run->comment = $comment;
+		$this->propagateRejection(run: $run);
 
 		return $rejected;
 
@@ -131,39 +143,55 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	/**
 	 * Dispatch an authorized approve to the resume path its FK selects.
 	 *
-	 * @param ObjectEntity $approvalRequest The pending, authorized-to-act-on request.
-	 * @param IUser $user The approving user.
-	 * @param string|null $comment Optional approve comment.
+	 * @param ApprovalDecisionRun $run The pending, authorized-to-act-on decision.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
-	private function routeApproval(ObjectEntity $approvalRequest, IUser $user, ?string $comment): JSONResponse {
-		$data = $approvalRequest->getObject();
+	private function routeApproval(ApprovalDecisionRun $run): JSONResponse {
+		return match ($this->resumeKind(data: $run->data)) {
+			'endpointId' => $this->approveEndpointSuspension(run: $run),
+			'synchronizationId' => $this->approveSynchronizationGate(approvalRequest: $run->approvalRequest, data: $run->data, user: $run->user, comment: $run->comment),
+			'flowRunId' => $this->approveFlowSuspension(run: $run),
+			'engineRunUuid' => $this->approveEngineSuspension(run: $run),
+			default => $this->refuseMalformed(run: $run),
+		};
+	}//end routeApproval()
 
-		if (empty($data['endpointId']) === false) {
-			return $this->approveEndpointSuspension(approvalRequest: $approvalRequest, data: $data, user: $user, comment: $comment);
+	/**
+	 * The first run reference an approval_request carries, in resume order.
+	 *
+	 * @param array<string,mixed> $data The approval_request's object data.
+	 *
+	 * @return string|null The key of the run reference, or null when it carries none.
+	 */
+	private function resumeKind(array $data): ?string {
+		foreach (self::RESUME_KINDS as $key) {
+			if (empty($data[$key]) === false) {
+				return $key;
+			}
 		}
 
-		if (empty($data['synchronizationId']) === false) {
-			return $this->approveSynchronizationGate(approvalRequest: $approvalRequest, data: $data, user: $user, comment: $comment);
-		}
+		return null;
 
-		if (empty($data['flowRunId']) === false) {
-			return $this->approveFlowSuspension(approvalRequest: $approvalRequest, user: $user, comment: $comment);
-		}
+	}//end resumeKind()
 
-		if (empty($data['engineRunUuid']) === false) {
-			return $this->approveEngineSuspension(approvalRequest: $approvalRequest, data: $data, user: $user, comment: $comment);
-		}
-
+	/**
+	 * Answer an approval_request that names no run to resume.
+	 *
+	 * @param ApprovalDecisionRun $run The decision.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 */
+	private function refuseMalformed(ApprovalDecisionRun $run): JSONResponse {
 		$this->logger->error(
 			'ApprovalDecisionService: approval_request has neither endpointId, synchronizationId, flowRunId nor engineRunUuid',
-			['id' => $approvalRequest->getUuid()]
+			['id' => $run->approvalRequest->getUuid()]
 		);
 		return new JSONResponse(['error' => $this->l->t('Malformed approval request')], Http::STATUS_INTERNAL_SERVER_ERROR);
-	}//end routeApproval()
+
+	}//end refuseMalformed()
 
 	/**
 	 * Let the suspended run reflect a rejection, per its FK kind.
@@ -179,22 +207,19 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 * heartbeat re-reads it, so a lost signal costs one heartbeat rather
 	 * than the flow.
 	 *
-	 * @param ObjectEntity $approvalRequest The just-rejected request.
-	 * @param array $data The approval_request's object data.
-	 * @param IUser $user The rejecting user.
-	 * @param string $comment The rejection comment.
+	 * @param ApprovalDecisionRun $run The just-rejected decision.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
 	 */
-	private function propagateRejection(ObjectEntity $approvalRequest, array $data, IUser $user, string $comment): void {
-		if (empty($data['flowRunId']) === false) {
-			$this->flowRunnerService->stopFromApprovalOutcome(approvalRequest: $approvalRequest);
+	private function propagateRejection(ApprovalDecisionRun $run): void {
+		if (empty($run->data['flowRunId']) === false) {
+			$this->flowRunnerService->stopFromApprovalOutcome(approvalRequest: $run->approvalRequest);
 		}
 
-		if (empty($data['engineRunUuid']) === false) {
-			$this->signalEngineRun(data: $data, decision: 'rejected', user: $user, comment: $comment);
+		if (empty($run->data['engineRunUuid']) === false) {
+			$this->signalEngineRun(run: $run, decision: 'rejected');
 		}
 
 	}//end propagateRejection()
@@ -203,48 +228,20 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 * Resume a suspended endpoint rule-pipeline run and finalize the
 	 * approval_request with the resumed chain's outcome.
 	 *
-	 * @param ObjectEntity $approvalRequest The pending, authorized-to-act-on request.
-	 * @param array $data The approval_request's object data.
-	 * @param IUser $user The approving user.
-	 * @param string|null $comment Optional approve comment.
+	 * @param ApprovalDecisionRun $run The pending, authorized-to-act-on decision.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
-	private function approveEndpointSuspension(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse {
-		$endpoint = $this->endpointService->getEndpointById((string)$data['endpointId']);
+	private function approveEndpointSuspension(ApprovalDecisionRun $run): JSONResponse {
+		$endpoint = $this->endpointService->getEndpointById((string)$run->data['endpointId']);
 		if ($endpoint === null) {
 			return new JSONResponse(['error' => $this->l->t('The suspended endpoint no longer exists')], Http::STATUS_NOT_FOUND);
 		}
 
-		$flowToken = $this->approvalService->rehydrateFlowToken(($data['snapshot'] ?? []));
-		$path = (string)($flowToken->getRequestAmended()['path'] ?? '');
-		// Execution-trace REQ-004: reconstruct the SAME trace this run was
-		// suspended under (null when the suspended run predates this change
-		// or was otherwise untraced) so resume appends rather than creates.
-		$trace = $this->approvalService->rehydrateTraceContext(($data['snapshot'] ?? []));
-
-		$resumed = $this->endpointService->resumeFromApproval(
-			endpoint: $endpoint,
-			request: $this->request,
-			flowToken: $flowToken,
-			resumeAfterOrder: (int)($data['resumeOrder'] ?? 0),
-			path: $path,
-			trace: $trace
-		);
-
-		$resumeResult = 'error';
-		if ($resumed->getStatus() >= 200 && $resumed->getStatus() < 300) {
-			$resumeResult = 'success';
-		}
-
-		$approvalRequest = $this->approvalService->completeApproval(
-			approvalRequest: $approvalRequest,
-			approver: $user,
-			resumeResult: $resumeResult,
-			comment: $comment
-		);
+		$resumed         = $this->resumeEndpointRun(run: $run, endpoint: $endpoint);
+		$approvalRequest = $this->completeDecision(run: $run, resumeResult: $this->endpointResumeResult(resumed: $resumed));
 
 		return new JSONResponse(
 			$this->envelopeApprovalOutcome(resumed: $resumed, approvalRequest: $approvalRequest),
@@ -252,6 +249,67 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 		);
 
 	}//end approveEndpointSuspension()
+
+	/**
+	 * Re-invoke the suspended endpoint rule pipeline after the approved rule.
+	 *
+	 * @param ApprovalDecisionRun $run      The decision.
+	 * @param ObjectEntity        $endpoint The suspended endpoint.
+	 *
+	 * @return Response The resumed pipeline's final response.
+	 */
+	private function resumeEndpointRun(ApprovalDecisionRun $run, ObjectEntity $endpoint): Response {
+		$flowToken = $this->approvalService->rehydrateFlowToken(($run->data['snapshot'] ?? []));
+		$path      = (string)($flowToken->getRequestAmended()['path'] ?? '');
+		// Execution-trace REQ-004: reconstruct the SAME trace this run was
+		// suspended under (null when the suspended run predates this change
+		// or was otherwise untraced) so resume appends rather than creates.
+		$trace = $this->approvalService->rehydrateTraceContext(($run->data['snapshot'] ?? []));
+
+		return $this->endpointService->resumeFromApproval(
+			endpoint: $endpoint,
+			request: $this->request,
+			flowToken: $flowToken,
+			resumeAfterOrder: (int)($run->data['resumeOrder'] ?? 0),
+			path: $path,
+			trace: $trace
+		);
+
+	}//end resumeEndpointRun()
+
+	/**
+	 * The resume result of an endpoint run: success on a 2xx answer.
+	 *
+	 * @param Response $resumed The resumed pipeline's final response.
+	 *
+	 * @return string `success` or `error`.
+	 */
+	private function endpointResumeResult(Response $resumed): string {
+		if ($resumed->getStatus() >= 200 && $resumed->getStatus() < 300) {
+			return 'success';
+		}
+
+		return 'error';
+
+	}//end endpointResumeResult()
+
+	/**
+	 * Store the approve with the resume result.
+	 *
+	 * @param ApprovalDecisionRun $run          The decision.
+	 * @param string              $resumeResult `success` or `error`.
+	 *
+	 * @return ObjectEntity The finalized approval_request.
+	 */
+	private function completeDecision(ApprovalDecisionRun $run, string $resumeResult): ObjectEntity {
+		return $this->approvalService->completeApproval(
+			approvalRequest: $run->approvalRequest,
+			approver: $run->user,
+			resumeResult: $resumeResult,
+			comment: $run->comment
+		);
+
+	}//end completeDecision()
 
 	/**
 	 * Resume a gated Synchronization batch by re-invoking `synchronize()`
@@ -335,49 +393,59 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 * Resume a suspended flow run via `FlowRunnerService::resumeFromApproval()`
 	 * and finalize the approval_request with the resumed run's outcome.
 	 *
-	 * @param ObjectEntity $approvalRequest The pending, authorized-to-act-on request.
-	 * @param IUser $user The approving user.
-	 * @param string|null $comment Optional approve comment.
+	 * @param ApprovalDecisionRun $run The pending, authorized-to-act-on decision.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
 	 */
-	private function approveFlowSuspension(ObjectEntity $approvalRequest, IUser $user, ?string $comment): JSONResponse {
-		$resumeResult = 'success';
-		$statusCode = Http::STATUS_OK;
-		$flowRunData = [];
+	private function approveFlowSuspension(ApprovalDecisionRun $run): JSONResponse {
+		$flowRunData = $this->resumeFlowRun(run: $run);
+		$approvalRequest = $this->completeDecision(run: $run, resumeResult: $run->resumeResult);
 
+		$flowRunData['_approval'] = $this->approvalSummary(approvalRequest: $approvalRequest);
+
+		return new JSONResponse($flowRunData, $run->statusCode);
+	}//end approveFlowSuspension()
+
+	/**
+	 * Resume the flow run and note on the decision how that went.
+	 *
+	 * @param ApprovalDecisionRun $run The decision.
+	 *
+	 * @return array<string,mixed> The resumed flow run's data, or the error.
+	 */
+	private function resumeFlowRun(ApprovalDecisionRun $run): array {
 		try {
-			$flowRun = $this->flowRunnerService->resumeFromApproval(approvalRequest: $approvalRequest);
+			$flowRun = $this->flowRunnerService->resumeFromApproval(approvalRequest: $run->approvalRequest);
 			$flowRunData = $flowRun->getObject();
-			$flowRunErrorStatuses = ['stopped', 'dead_letter', 'failed'];
-			if (in_array(($flowRunData['status'] ?? ''), $flowRunErrorStatuses, true) === true) {
-				$resumeResult = 'error';
-			}
+			$run->resumeResult = $this->flowResumeResult(flowRunData: $flowRunData);
+			return $flowRunData;
 		} catch (Throwable $e) {
 			$this->logger->error('ApprovalDecisionService: resumed flow run failed: ' . $e->getMessage(), ['exception' => $e]);
-			$resumeResult = 'error';
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			$flowRunData = ['error' => $e->getMessage()];
+			$run->resumeResult = 'error';
+			$run->statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+			return ['error' => $e->getMessage()];
 		}
 
-		$approvalRequest = $this->approvalService->completeApproval(
-			approvalRequest: $approvalRequest,
-			approver: $user,
-			resumeResult: $resumeResult,
-			comment: $comment
-		);
+	}//end resumeFlowRun()
 
-		$approvalRequestData = $approvalRequest->getObject();
-		$flowRunData['_approval'] = [
-			'id' => $approvalRequest->getUuid(),
-			'status' => ($approvalRequestData['status'] ?? 'approved'),
-			'resumedAt' => ($approvalRequestData['approvedAt'] ?? null),
-		];
+	/**
+	 * The resume result of a flow run: error when it stopped, dead-lettered or failed.
+	 *
+	 * @param array<string,mixed> $flowRunData The resumed flow run's data.
+	 *
+	 * @return string `success` or `error`.
+	 */
+	private function flowResumeResult(array $flowRunData): string {
+		$flowRunErrorStatuses = ['stopped', 'dead_letter', 'failed'];
+		if (in_array(($flowRunData['status'] ?? ''), $flowRunErrorStatuses, true) === true) {
+			return 'error';
+		}
 
-		return new JSONResponse($flowRunData, $statusCode);
-	}//end approveFlowSuspension()
+		return 'success';
+
+	}//end flowResumeResult()
 
 	/**
 	 * Resolve an ENGINE-run approval: finalize the approval_request, then
@@ -390,41 +458,27 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 * decision. `resumeResult` therefore reports the DELIVERY, not the run's
 	 * eventual outcome, which the engine owns.
 	 *
-	 * @param ObjectEntity $approvalRequest The pending, authorized-to-act-on request.
-	 * @param array $data The approval_request's object data.
-	 * @param IUser $user The approving user.
-	 * @param string|null $comment Optional approve comment.
+	 * @param ApprovalDecisionRun $run The pending, authorized-to-act-on decision.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
 	 */
-	private function approveEngineSuspension(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse {
-		$signalled = $this->signalEngineRun(data: $data, decision: 'approved', user: $user, comment: $comment);
+	private function approveEngineSuspension(ApprovalDecisionRun $run): JSONResponse {
+		$signalled = $this->signalEngineRun(run: $run, decision: 'approved');
 
 		$resumeResult = 'error';
 		if ($signalled === true) {
 			$resumeResult = 'success';
 		}
 
-		$approvalRequest = $this->approvalService->completeApproval(
-			approvalRequest: $approvalRequest,
-			approver: $user,
-			resumeResult: $resumeResult,
-			comment: $comment
-		);
-
-		$approvalRequestData = $approvalRequest->getObject();
+		$approvalRequest = $this->completeDecision(run: $run, resumeResult: $resumeResult);
 
 		return new JSONResponse(
 			[
-				'engineRunUuid' => (string)($data['engineRunUuid'] ?? ''),
+				'engineRunUuid' => (string)($run->data['engineRunUuid'] ?? ''),
 				'signalled' => $signalled,
-				'_approval' => [
-					'id' => $approvalRequest->getUuid(),
-					'status' => ($approvalRequestData['status'] ?? 'approved'),
-					'resumedAt' => ($approvalRequestData['approvedAt'] ?? null),
-				],
+				'_approval' => $this->approvalSummary(approvalRequest: $approvalRequest),
 			]
 		);
 
@@ -438,25 +492,23 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 * defaulted (nullable) so pre-existing positional test instantiations
 	 * keep working; the container always injects it in production.
 	 *
-	 * @param array $data The approval_request's object data (`engineRunUuid`/`signalNodeId`).
-	 * @param string $decision `approved` or `rejected`.
-	 * @param IUser $user The deciding user.
-	 * @param string|null $comment Optional decision comment.
+	 * @param ApprovalDecisionRun $run      The decision (`engineRunUuid`/`signalNodeId` in its data).
+	 * @param string              $decision `approved` or `rejected`.
 	 *
 	 * @return boolean True when the signal was delivered.
 	 *
 	 * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#1-the-missing-node
 	 */
-	private function signalEngineRun(array $data, string $decision, IUser $user, ?string $comment): bool {
+	private function signalEngineRun(ApprovalDecisionRun $run, string $decision): bool {
 		if ($this->engineSignal === null) {
 			$this->logger->warning(
 				'ApprovalDecisionService: no EngineSignalService wired; the engine run resumes on its next heartbeat instead',
-				['engineRunUuid' => ($data['engineRunUuid'] ?? '')]
+				['engineRunUuid' => ($run->data['engineRunUuid'] ?? '')]
 			);
 			return false;
 		}
 
-		return $this->engineSignal->deliver(data: $data, decision: $decision, user: $user, comment: $comment);
+		return $this->engineSignal->deliver(data: $run->data, decision: $decision, user: $run->user, comment: $run->comment);
 
 	}//end signalEngineRun()
 
@@ -478,13 +530,25 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 			$body = ['data' => $body];
 		}
 
+		$body['_approval'] = $this->approvalSummary(approvalRequest: $approvalRequest);
+
+		return $body;
+	}//end envelopeApprovalOutcome()
+
+	/**
+	 * The `_approval` block of a resumed run's answer.
+	 *
+	 * @param ObjectEntity $approvalRequest The finalized approval_request.
+	 *
+	 * @return array{id: string|null, status: mixed, resumedAt: mixed} The block.
+	 */
+	private function approvalSummary(ObjectEntity $approvalRequest): array {
 		$data = $approvalRequest->getObject();
-		$body['_approval'] = [
+		return [
 			'id' => $approvalRequest->getUuid(),
 			'status' => ($data['status'] ?? 'approved'),
 			'resumedAt' => ($data['approvedAt'] ?? null),
 		];
 
-		return $body;
-	}//end envelopeApprovalOutcome()
+	}//end approvalSummary()
 }//end class

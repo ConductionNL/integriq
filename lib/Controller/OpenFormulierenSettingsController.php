@@ -221,15 +221,7 @@ class OpenFormulierenSettingsController extends Controller {
 			return null;
 		}
 
-		$fieldError = $this->accountError(userId: $submitted->userId, warnings: $warnings);
-		if ($fieldError === null) {
-			return null;
-		}
-
-		return new JSONResponse(
-			['errors' => [$fieldError], 'fieldErrors' => ['userId' => $fieldError]],
-			Http::STATUS_BAD_REQUEST
-		);
+		return $this->accountCheck()->refusal(fieldError: $this->accountError(userId: $submitted->userId, warnings: $warnings));
 	}//end accountRefusal()
 
 	/**
@@ -252,7 +244,7 @@ class OpenFormulierenSettingsController extends Controller {
 			return $this->saveFailed(exception: $exception);
 		}
 
-		$this->withdrawPrevious(consumer: $consumer, userId: $submitted->userId);
+		$this->accountCheck()->withdrawPrevious(consumer: $consumer, userId: $submitted->userId);
 		return null;
 	}//end save()
 
@@ -303,6 +295,21 @@ class OpenFormulierenSettingsController extends Controller {
 	}//end accountState()
 
 	/**
+	 * The checks on the connection's account.
+	 *
+	 * @return IntakeAccountCheck
+	 */
+	private function accountCheck(): IntakeAccountCheck {
+		return new IntakeAccountCheck(
+			connection: $this->connection,
+			groups: $this->groups,
+			groupManager: $this->groupManager,
+			l: $this->l,
+			intakeGroup: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE
+		);
+	}//end accountCheck()
+
+	/**
 	 * The consumer data to save, keeping the stored secret when none was sent.
 	 *
 	 * @param ObjectEntity|null   $consumer  The existing consumer, or null.
@@ -346,24 +353,6 @@ class OpenFormulierenSettingsController extends Controller {
 	}//end ambiguous()
 
 	/**
-	 * Take the account the connection used before out of the intake group.
-	 *
-	 * @param ObjectEntity|null $consumer The consumer as it was before the save.
-	 * @param string            $userId   The account it has now, or ''.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#requirement-submissions-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-008
-	 */
-	private function withdrawPrevious(?ObjectEntity $consumer, string $userId): void {
-		$previous = (string)(($consumer?->getObject() ?? [])['userId'] ?? '');
-		if ($previous !== '' && $previous !== $userId) {
-			$this->groups->withdraw(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $previous);
-		}
-
-	}//end withdrawPrevious()
-
-	/**
 	 * Why the account cannot be the intake account, or null when it can.
 	 *
 	 * @param string       $userId   The chosen uid.
@@ -377,16 +366,7 @@ class OpenFormulierenSettingsController extends Controller {
 			return $unresolvable;
 		}
 
-		// The authorization block grants the intake group, so the chosen
-		// account joins it before its rights are checked. It leaves again when
-		// the check still refuses it and it was not a member before.
-		$wasMember = $this->groups->isMember(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $userId);
-		$this->groups->enrol(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $userId);
-
-		$missing = $this->connection->missingRights(userId: $userId);
-		if ($missing !== null && $missing !== [] && $wasMember === false) {
-			$this->groups->withdraw(groupId: IntakeGroupsInterface::OPEN_FORMULIEREN_INTAKE, userId: $userId);
-		}
+		$missing = $this->accountCheck()->missingRights(userId: $userId);
 
 		if ($missing === null) {
 			$warnings[] = $this->l->t('The rights of account %s could not be checked. Submissions are refused until they can be.', [$userId]);
@@ -394,9 +374,7 @@ class OpenFormulierenSettingsController extends Controller {
 			return $this->l->t('Account %1$s lacks the %2$s right on Open Formulieren submissions.', [$userId, implode(', ', $missing)]);
 		}
 
-		if ($this->groupManager->isAdmin($userId) === true) {
-			$warnings[] = $this->l->t('Account %s is an administrator. A dedicated account keeps the audit trail readable.', [$userId]);
-		}
+		$this->accountCheck()->warnAdministrator(userId: $userId, warnings: $warnings);
 
 		return null;
 

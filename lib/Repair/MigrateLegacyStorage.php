@@ -3,6 +3,9 @@
 /**
  * Declares the legacy → OpenRegister cutover complete, on a path that runs.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `integriq.storage_migrated` gates
  * {@see \OCA\Integriq\Service\Integration\SynchronizationContractProvider::isEnabled()}
  * — while it is false, "Synced from" provenance is absent from every object in
@@ -27,9 +30,6 @@
  * `repair-steps.install` is the only hook that runs unconditionally on a first
  * install, which is why this work lives in a repair step wired under BOTH
  * `<install>` and `<post-migration>`.
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Repair
  * @package  OCA\Integriq\Repair

@@ -25,6 +25,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

@@ -3,6 +3,9 @@
 /**
  * Integriq InitializeActions Repair Step — AppHost adapter.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin app-namespace subclass of the OpenRegister AppHost
  * {@see \OCA\OpenRegister\AppHost\Repair\GenericInitializeActions}. It
  * carries no seeding logic of its own: the engine's

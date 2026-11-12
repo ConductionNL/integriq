@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\DigitalPost;
 
-use OCA\Integriq\Service\Helper\ProviderIds;
+use OCA\Integriq\Service\Helper\ProviderIndex;
 use RuntimeException;
 
 /**
@@ -35,9 +35,9 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	/**
 	 * Bindings keyed by provider id.
 	 *
-	 * @var array<string,DigitalPostProviderInterface>
+	 * @var ProviderIndex<DigitalPostProviderInterface>
 	 */
-	private array $providers = [];
+	private readonly ProviderIndex $index;
 
 	/**
 	 * Constructor.
@@ -45,13 +45,7 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 * @param iterable<DigitalPostProviderInterface> $providers The bindings.
 	 */
 	public function __construct(iterable $providers = []) {
-		foreach ($providers as $provider) {
-			if (isset($this->providers[$provider->getProviderId()]) === true) {
-				continue;
-			}
-
-			$this->providers[$provider->getProviderId()] = $provider;
-		}
+		$this->index = new ProviderIndex(kind: 'digital post', providers: $providers);
 	}//end __construct()
 
 	/**
@@ -64,7 +58,7 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function has(string $providerId): bool {
-		return isset($this->providers[$providerId]);
+		return $this->index->has(providerId: $providerId);
 	}//end has()
 
 	/**
@@ -79,17 +73,7 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function get(string $providerId): DigitalPostProviderInterface {
-		if (isset($this->providers[$providerId]) === false) {
-			throw new RuntimeException(
-				sprintf(
-					'No digital post provider is registered under "%s". Registered providers: %s. Nothing was sent.',
-					$providerId,
-					ProviderIds::listed(ids: $this->ids())
-				)
-			);
-		}
-
-		return $this->providers[$providerId];
+		return $this->index->get(providerId: $providerId);
 	}//end get()
 
 	/**
@@ -100,7 +84,7 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 * @spec openspec/changes/berichtenbox-digital-post-adapter/specs/digital-post-adapter/spec.md
 	 */
 	public function ids(): array {
-		return array_keys($this->providers);
+		return $this->index->ids();
 	}//end ids()
 
 	/**
@@ -112,8 +96,8 @@ class DigitalPostProviderRegistry implements DigitalPostProviderRegistryInterfac
 	 */
 	public function describeAll(): array {
 		$described = [];
-		foreach ($this->providers as $id => $provider) {
-			$described[] = ['providerId' => $id, 'configSchema' => $provider->getConfigSchema()];
+		foreach ($this->index->ids() as $id) {
+			$described[] = ['providerId' => $id, 'configSchema' => $this->index->get(providerId: $id)->getConfigSchema()];
 		}
 
 		return $described;

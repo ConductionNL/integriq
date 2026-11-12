@@ -36,3 +36,22 @@ Integriq MUST serve a connection authorization route that a web server or MQTT b
 - WHEN one client connects with a valid key and another without
 - THEN only the first connection opens, and the call log shows one allowed and one refused connection
 - @e2e exclude needs a real web server; walked once against nginx in the dev compose
+
+### Requirement: WebSocket, gRPC and MQTT traffic reaches the upstream through a documented server (REQ-GQLP-003)
+
+Integriq MUST ship a tested web server configuration for WebSocket and gRPC and a tested broker configuration for MQTT. Each configuration MUST carry the traffic between the client and the upstream service, and MUST ask integriq's connection authorization route before it opens a connection. Integriq MUST NOT hold the long-lived connection itself.
+
+#### Scenario: a gRPC call passes to the upstream
+- GIVEN the documented nginx configuration and a stream endpoint for a gRPC service
+- WHEN a consumer with a valid key calls a method of that service
+- THEN the call reaches the upstream service and the answer returns to the consumer
+- AND the call log shows the allowed connection
+- @e2e exclude needs a real web server; walked once against nginx in the dev compose
+
+#### Scenario: an MQTT client publishes through the broker
+- GIVEN the documented Mosquitto configuration and a stream endpoint for a topic
+- WHEN a consumer with a valid key publishes on that topic
+- THEN a subscriber on the upstream side receives the message
+- AND a client without a key cannot connect to the broker
+- @e2e exclude needs a real broker; walked once against Mosquitto in the dev compose
+

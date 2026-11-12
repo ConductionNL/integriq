@@ -3,6 +3,9 @@
 /**
  * `findRule()` reads a rule the way the MIGRATION needs it read.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY THIS TEST EXISTS, WITH THE NUMBER THAT PAID FOR IT.
  *
  * `openconnector.fetch-file` shipped complete and was unreachable. A sweep of
@@ -27,9 +30,6 @@
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

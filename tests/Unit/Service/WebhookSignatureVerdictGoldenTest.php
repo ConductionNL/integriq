@@ -16,6 +16,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/webhook-signing/spec.md#requirement-inbound-verification-reads-the-microsoft-teams-scheme-req-whs-005
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

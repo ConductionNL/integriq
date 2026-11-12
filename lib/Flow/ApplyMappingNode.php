@@ -3,6 +3,9 @@
 /**
  * Integriq Apply Mapping flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.apply-mapping` — applies one configured Mapping to EVERY
  * item's record inside ONE step execution, through the existing
  * `MappingService`. This is the "[Map the page]" step of the decomposed
@@ -40,9 +43,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -175,14 +175,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 					'Item key the mapped result is written under. Leave empty to replace the item with the result.'
 				),
 			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('On error'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What a failed item does to the run: stop, continue or dead_letter.'
-				),
-			],
+			FlowNodeSupport::onErrorField(l10n: $this->l10n),
 			[
 				'key' => 'ownership',
 				'label' => $this->l10n->t('Field ownership'),

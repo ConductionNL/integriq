@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 // Resource block intentionally omitted: chain-C deleted every
 // index/show/create/update/destroy from the per-schema controllers. CRUD now
 // lives at OR's `/api/objects/integriq/{schema}/*`. Re-adding a
@@ -20,6 +25,8 @@ return [
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+		// The OpenAPI document, public (spec api-contract).
+		['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
 
 		// DSO / Omgevingsloket STAM koppelvlak.
 		//

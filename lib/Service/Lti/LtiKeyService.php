@@ -17,6 +17,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,8 +27,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Lti;
 
 use DateTime;
-use Jose\Component\KeyManagement\JWKFactory;
 use OCA\Integriq\Exception\LtiValidationException;
+use OCA\Integriq\Service\PemKeyFile;
+use OCA\Integriq\Service\PemKeyFileRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -241,25 +245,9 @@ class LtiKeyService implements LtiKeyServiceInterface {
 	 * @throws RuntimeException When a secure temp file cannot be allocated.
 	 */
 	private function derivePublicJwk(string $pem, string $kid, string $algorithm): array {
-		$filename = tempnam(sys_get_temp_dir(), 'oc-lti-key-');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(request: new PemKeyFileRequest(prefix: 'oc-lti-key-', pem: $pem, kid: $kid, algorithm: $algorithm));
+		if ($jwk === null) {
 			throw new RuntimeException('Could not allocate temp file for LTI key generation');
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, $pem);
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['kid' => $kid, 'alg' => $algorithm, 'use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		return $jwk->toPublic()->jsonSerialize();

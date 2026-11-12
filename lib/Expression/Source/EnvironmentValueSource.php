@@ -3,6 +3,9 @@
 /**
  * `env:` — the process environment, and only what an administrator named.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * 🔴 IT RESOLVES NOTHING THAT IS NOT ON THE LIST, and refuses by throwing
  * rather than by answering empty. A source that returns `''` for a key nobody
  * allowed hands its caller a value that renders as nothing: an email with a
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.conduction.nl
  *

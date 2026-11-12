@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -2639,4 +2642,52 @@ class CallServiceTest extends TestCase {
 		$this->assertLessThanOrEqual($finishedAt, $startedAt);
 
 	}//end testAFinishedCallLogsItsExchangeAndTracesIt()
+
+	/**
+	 * An asynchronous call classifies its outcome for the breaker as the retry loop does:
+	 * a retryable status counts a failure, a success below 400 resets the count, and a
+	 * non-retryable error (404) records neither.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+	 */
+	public function testCallAsyncRecordsTheBreakerOutcomeLikeTheRetryLoop(): void {
+		$outcomes = [];
+		foreach (['retryable' => 503, 'not-retryable' => 404, 'success' => 200] as $name => $status) {
+			$this->saved = [];
+			$brokered = $this->createMock(BrokeredCallService::class);
+			$brokered->method('hasCredentialRef')->willReturn(false);
+			$service = $this->buildBrokeredCallService($brokered);
+
+			$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+			$mockClient->method('requestAsync')->willReturn(\GuzzleHttp\Promise\Create::promiseFor(new Response($status, [], '{}')));
+			$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+			$clientProperty->setAccessible(true);
+			$clientProperty->setValue($service, $mockClient);
+
+			$source = new ObjectEntity();
+			$source->setUuid('source-uuid-async-breaker');
+			$source->setObject(
+				[
+					'name' => 'async-source',
+					'isEnabled' => true,
+					'location' => 'https://api.example.invalid',
+					'configuration' => [],
+					'circuitBreakerFailureCount' => 2,
+				]
+			);
+
+			$service->callAsync(source: $source, endpoint: '/things')->wait();
+
+			$sourceSaves = array_values(array_filter($this->saved, static fn ($row) => $row['schema'] === 'source'));
+			$outcomes[$name] = array_map(
+				static fn (array $row): array => [($row['object']['circuitBreakerFailureCount'] ?? null), ($row['object']['circuitBreakerState'] ?? null)],
+				$sourceSaves
+			);
+		}
+
+		$this->assertSame(['retryable' => [[3, null]], 'not-retryable' => [], 'success' => [[0, 'closed']]], $outcomes);
+
+	}//end testCallAsyncRecordsTheBreakerOutcomeLikeTheRetryLoop()
 }//end class

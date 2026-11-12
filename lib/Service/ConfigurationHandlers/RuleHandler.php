@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
@@ -106,36 +109,11 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	private function convertIdsToSlugs(array $config, array $mappings, array &$mappingIds = []): array {
-		$entityTypes = ['source', 'job', 'endpoint', 'mapping', 'register', 'schema', 'synchronization'];
-
-		foreach ($config as $key => $value) {
-			if (is_array($value) === true) {
-				// Recursively process nested arrays.
-				$config[$key] = $this->convertIdsToSlugs(config: $value, mappings: $mappings, mappingIds: $mappingIds);
-				continue;
-			}
-
-			// Check if the key is an entity reference.
-			foreach ($entityTypes as $type) {
-				// Check for exact match (e.g., 'source').
-				if ($key === $type && isset($mappings[$type]['idToSlug'][$value]) === true) {
-					if ($type === 'mapping') {
-						$mappingIds[] = $value;
-					}
-
-					$config[$key] = $mappings[$type]['idToSlug'][$value];
-				}
-
-				// Check for ID suffix (e.g., 'sourceId').
-				if (str_ends_with($key, $type . 'Id') === true && isset($mappings[$type]['idToSlug'][$value]) === true) {
-					if ($type === 'mapping') {
-						$mappingIds[] = $value;
-					}
-
-					$config[$key] = $mappings[$type]['idToSlug'][$value];
-				}
-			}
-		}//end foreach
+		$translator = ConfigurationReferenceTranslator::idsToSlugs(mappings: $mappings);
+		$config = $translator->translate(config: $config);
+		foreach ($translator->mappingIds as $mappingId) {
+			$mappingIds[] = $mappingId;
+		}
 
 		return $config;
 	}//end convertIdsToSlugs()
@@ -198,30 +176,7 @@ class RuleHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	private function convertSlugsToIds(array $config, array $mappings): array {
-		$entityTypes = ['source', 'job', 'endpoint', 'mapping', 'register', 'schema', 'synchronization'];
-
-		foreach ($config as $key => $value) {
-			if (is_array($value) === true) {
-				// Recursively process nested arrays.
-				$config[$key] = $this->convertSlugsToIds(config: $value, mappings: $mappings);
-				continue;
-			}
-
-			// Check if the key is an entity reference.
-			foreach ($entityTypes as $type) {
-				// Check for exact match (e.g., 'source').
-				if ($key === $type && isset($mappings[$type]['slugToId'][$value]) === true) {
-					$config[$key] = $mappings[$type]['slugToId'][$value];
-				}
-
-				// Check for ID suffix (e.g., 'sourceId').
-				if (str_ends_with($key, $type . 'Id') === true && isset($mappings[$type]['slugToId'][$value]) === true) {
-					$config[$key] = $mappings[$type]['slugToId'][$value];
-				}
-			}
-		}
-
-		return $config;
+		return ConfigurationReferenceTranslator::slugsToIds(mappings: $mappings)->translate(config: $config);
 	}//end convertSlugsToIds()
 
 	/**

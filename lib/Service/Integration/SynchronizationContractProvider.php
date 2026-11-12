@@ -3,6 +3,9 @@
 /**
  * Synchronization contract integration provider.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Exposes Integriq SyncContract objects as "leaves" on the OR objects they
  * synchronise. Registered with OR's IntegrationRegistry at app boot (see
  * {@see \OCA\Integriq\Service\ServiceRegistrar::boot()}). When a user opens any
@@ -168,6 +171,47 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
+		$rows = $this->contractRows(objectId: $objectId, filters: $filters);
+
+		// Only an object a synchronization wrote is read for a refused
+		// write-back: this list runs on every sidebar of every app.
+		$listing = new ContractListing();
+		$listing->writeBackConflict = ($rows !== [] && $this->writeBack->hasConflict(register: $register, schema: $schema, objectId: $objectId) === true);
+
+		return array_map(
+			fn ($contract): array => $this->row(contract: $contract, listing: $listing),
+			$rows
+		);
+
+	}//end list()
+
+	/**
+	 * The contracts naming an object as their target, one page of them.
+	 *
+	 * @param string $objectId The OR object id being viewed.
+	 * @param array $filters Optional filters with `_limit` and `_page` for pagination.
+	 *
+	 * @return array The contracts; empty when none can be read.
+	 */
+	private function contractRows(string $objectId, array $filters): array {
+		$matches = $this->findContracts(config: $this->contractQuery(objectId: $objectId, filters: $filters));
+
+		$rows = $matches['results'] ?? $matches;
+		if (is_array($rows) === false) {
+			return [];
+		}
+
+		return $rows;
+	}//end contractRows()
+
+	/**
+	 * The page a list asks for: 50 contracts from the start unless `_limit` / `_page` say otherwise.
+	 *
+	 * @param array $filters Optional filters with `_limit` and `_page`.
+	 *
+	 * @return array{limit:int,offset:int}
+	 */
+	private function pageOf(array $filters): array {
 		$limit = 50;
 		if (isset($filters['_limit']) === true) {
 			$limit = (int)$filters['_limit'];
@@ -178,6 +222,31 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 			$offset = (max((int)$filters['_page'], 1) - 1) * $limit;
 		}
 
+		return ['limit' => $limit, 'offset' => $offset];
+	}//end pageOf()
+
+	/**
+	 * The contract query for one target and page: filter on the target id only.
+	 *
+	 * @param string $objectId The OR object id being viewed.
+	 * @param array $filters Optional filters with `_limit` and `_page` for pagination.
+	 *
+	 * @return array{filters:array{targetId:string},limit:int,offset:int} The findAll() config.
+	 */
+	private function contractQuery(string $objectId, array $filters): array {
+		$page = $this->pageOf(filters: $filters);
+
+		return ['filters' => ['targetId' => $objectId], 'limit' => $page['limit'], 'offset' => $page['offset']];
+	}//end contractQuery()
+
+	/**
+	 * Query the contract schema.
+	 *
+	 * @param array{filters:array{targetId:string},limit:int,offset:int} $config The findAll() config.
+	 *
+	 * @return mixed The query answer; an empty list when the query fails.
+	 */
+	private function findContracts(array $config): mixed {
 		// Pre-set the register/schema context, then filter by targetId only.
 		// Passing 'register'/'schema' *inside* `filters` sets the context but
 		// ALSO leaks them as object-property filters — slug strings compared
@@ -195,96 +264,100 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider {
 		// by a synchronization" state rather than a broken tab. The register
 		// import (occ) restores the real contracts without a code change.
 		try {
-			$matches = $this->objectService
+			return $this->objectService
 				->setRegister(self::REGISTER_SLUG)
 				->setSchema(self::SCHEMA_SLUG)
-				->findAll(
-					config: [
-						'filters' => ['targetId' => $objectId],
-						'limit' => $limit,
-						'offset' => $offset,
-					]
-				);
+				->findAll(config: $config);
 		} catch (\Throwable $e) {
 			return [];
 		}
-
-		$rows = $matches['results'] ?? $matches;
-		if (is_array($rows) === false) {
-			return [];
-		}
-
-		// Per-call memo so repeated synchronizationIds across contracts
-		// resolve their display name once (avoids N+1 lookups).
-		$syncNameCache = [];
-
-		// Only an object a synchronization wrote is read for a refused
-		// write-back: this list runs on every sidebar of every app.
-		$writeBackConflict = ($rows !== [] && $this->writeBack->hasConflict(register: $register, schema: $schema, objectId: $objectId) === true);
-
-		return array_map(
-			// A closure, not an arrow function: the name memo must be shared by reference.
-			function ($contract) use (&$syncNameCache, $writeBackConflict): array {
-				return $this->row(contract: $contract, cache: $syncNameCache, writeBackConflict: $writeBackConflict);
-			},
-			$rows
-		);
-
-	}//end list()
+	}//end findContracts()
 
 	/**
 	 * One contract as a sidebar row.
 	 *
-	 * @param mixed                $contract          The contract entity or array.
-	 * @param array<string,string> $cache             By-ref synchronization name memo.
-	 * @param bool                 $writeBackConflict Whether the object records a refused write-back.
+	 * @param mixed           $contract The contract entity or array.
+	 * @param ContractListing $listing  The listing: the name memo and the write-back state.
 	 *
 	 * @return array The row.
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
-	private function row(mixed $contract, array &$cache, bool $writeBackConflict): array {
+	private function row(mixed $contract, ContractListing $listing): array {
+		$data = $this->contractData(contract: $contract);
+		$data['name'] = $this->resolveSynchronizationName(
+			synchronizationId: (string)($data['body']['synchronizationId'] ?? null),
+			cache: $listing->synchronizationNames
+		);
+
+		return $this->card(data: $data) + $this->provenance(data: $data, listing: $listing);
+	}//end row()
+
+	/**
+	 * A contract's body and uuid, from an entity or an array.
+	 *
+	 * @param mixed $contract The contract entity or array.
+	 *
+	 * @return array{body:array,uuid:string}
+	 */
+	private function contractData(mixed $contract): array {
 		// ObjectEntity exposes getObject() as a real method but getUuid()
 		// only via the Nextcloud Entity __call magic — so method_exists()
 		// is false for it. Call getUuid() directly inside the object branch
 		// rather than gating it behind method_exists (which would fall
 		// through to `$contract['uuid']` and fatal on the object).
 		if (is_object($contract) === true && method_exists($contract, 'getObject') === true) {
-			$body = $contract->getObject();
-			$uuid = (string)$contract->getUuid();
-		} else {
-			$body = (array)($contract['object'] ?? $contract);
-			$uuid = (string)($contract['uuid'] ?? '');
+			return ['body' => $contract->getObject(), 'uuid' => (string)$contract->getUuid()];
 		}
 
-		$synchronizationId = ($body['synchronizationId'] ?? null);
-		$syncName = $this->resolveSynchronizationName(synchronizationId: (string)$synchronizationId, cache: $cache);
-		$lastSynced = ($body['targetLastSynced'] ?? null);
-		$lastAction = ($body['targetLastAction'] ?? null);
+		return ['body' => (array)($contract['object'] ?? $contract), 'uuid' => (string)($contract['uuid'] ?? '')];
+	}//end contractData()
+
+	/**
+	 * The generic-card display keys (CnIntegrationCard reads title / subtitle / url).
+	 *
+	 * Title is the human sync name; subtitle summarises the last sync; url
+	 * deep-links into the Integriq synchronization detail page.
+	 *
+	 * @param array{body:array,uuid:string,name:string} $data The contract and its synchronization name.
+	 *
+	 * @return array The id, title, subtitle and url.
+	 */
+	private function card(array $data): array {
+		$body = $data['body'];
 
 		return [
-			'id' => $uuid,
-			// Generic-card display keys (CnIntegrationCard reads
-			// title / subtitle / url). Title is the human sync name;
-			// subtitle summarises the last sync; url deep-links into
-			// the Integriq synchronization detail page.
-			'title' => $syncName,
-			'subtitle' => $this->buildSubtitle(lastSynced: $lastSynced, lastAction: $lastAction),
-			'url' => $this->buildSyncUrl(synchronizationId: (string)$synchronizationId),
-			// Raw provenance fields — preserved for the bespoke
-			// "Synced from" component + any programmatic consumer.
-			'synchronizationId' => $synchronizationId,
-			'synchronizationName' => $syncName,
+			'id' => $data['uuid'],
+			'title' => $data['name'],
+			'subtitle' => $this->buildSubtitle(lastSynced: ($body['targetLastSynced'] ?? null), lastAction: ($body['targetLastAction'] ?? null)),
+			'url' => $this->buildSyncUrl(synchronizationId: (string)($body['synchronizationId'] ?? null)),
+		];
+	}//end card()
+
+	/**
+	 * The raw provenance fields, for the bespoke "Synced from" component and any programmatic consumer.
+	 *
+	 * @param array{body:array,uuid:string,name:string} $data The contract and its synchronization name.
+	 * @param ContractListing $listing The listing's write-back state.
+	 *
+	 * @return array The provenance keys.
+	 */
+	private function provenance(array $data, ContractListing $listing): array {
+		$body = $data['body'];
+
+		return [
+			'synchronizationId' => $body['synchronizationId'] ?? null,
+			'synchronizationName' => $data['name'],
 			'originId' => $body['originId'] ?? null,
 			'originHash' => $body['originHash'] ?? null,
-			'targetLastAction' => $lastAction,
-			'targetLastSynced' => $lastSynced,
+			'targetLastAction' => $body['targetLastAction'] ?? null,
+			'targetLastSynced' => $body['targetLastSynced'] ?? null,
 			'sourceLastChecked' => $body['sourceLastChecked'] ?? null,
 			// The connected system refused the last local change; the
 			// object keeps the edit (zgw-connectors-for-dossiq D4).
-			'writeBackConflict' => $writeBackConflict,
+			'writeBackConflict' => $listing->writeBackConflict,
 		];
-	}//end row()
+	}//end provenance()
 
 	/**
 	 * Resolve a synchronization's human-readable name from its id.

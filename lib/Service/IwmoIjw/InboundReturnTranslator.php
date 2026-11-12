@@ -3,6 +3,9 @@
 /**
  * Integriq iWMO/iJW Inbound Retour Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates a retour XML envelope (berichttype 302, 304, 305, 306, 307,
  * 308, or 322 — Wmo or Jw prefixed) into an OR case status update. See
  * design.md "Message-shape assumptions" / "Inbound retour field table" for
@@ -31,9 +34,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

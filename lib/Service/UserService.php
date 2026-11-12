@@ -17,13 +17,18 @@
  * @version 1.0.0
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
+use OCP\Accounts\IAccountProperty;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -55,6 +60,23 @@ class UserService implements UserServiceInterface {
 		'displayName' => ['permission' => 'canChangeDisplayName', 'setter' => 'setDisplayName'],
 		'email' => ['permission' => 'canChangeMailAddress', 'setter' => 'setEMailAddress'],
 		'password' => ['permission' => 'canChangePassword', 'setter' => 'setPassword'],
+	];
+
+	/**
+	 * The standard profile fields the API may update via the AccountManager:
+	 * the request key and the account property.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ACCOUNT_PROFILE_FIELDS = [
+		'phone' => IAccountManager::PROPERTY_PHONE,
+		'address' => IAccountManager::PROPERTY_ADDRESS,
+		'website' => IAccountManager::PROPERTY_WEBSITE,
+		'fediverse' => IAccountManager::PROPERTY_FEDIVERSE,
+		'organisation' => IAccountManager::PROPERTY_ORGANISATION,
+		'role' => IAccountManager::PROPERTY_ROLE,
+		'headline' => IAccountManager::PROPERTY_HEADLINE,
+		'biography' => IAccountManager::PROPERTY_BIOGRAPHY,
 	];
 	/**
 	 * UserService constructor
@@ -608,31 +630,68 @@ class UserService implements UserServiceInterface {
 	 * @spec openspec/specs/user-management-and-login/spec.md
 	 */
 	private function getLanguageAndLocale(IUser $user): array {
-		$language = '';
-		$locale = '';
+		$language = $this->userLanguage(user: $user);
 
-		if (method_exists($user, 'getLanguage') === true) {
-			$language = $user->getLanguage();
-			// If empty, try to get from browser or system default.
-			if (empty($language) === true) {
-				$language = $this->l10nFactory->findLanguage();
-			}
-		}
-
-		if (method_exists($user, 'getLocale') === true) {
-			$locale = $user->getLocale();
-			// If empty, try to get from language.
-			if (empty($locale) === true && empty($language) === false) {
-				if ($language === 'en') {
-					$locale = 'en_US';
-				} else {
-					$locale = $language . '_' . strtoupper($language);
-				}
-			}
-		}
-
-		return [$language, $locale];
+		return [$language, $this->userLocale(user: $user, language: $language)];
 	}//end getLanguageAndLocale()
+
+	/**
+	 * The user's language, or the browser/system default when it is empty;
+	 * '' for a user without a language.
+	 *
+	 * @param IUser $user The user object.
+	 *
+	 * @return mixed The language.
+	 */
+	private function userLanguage(IUser $user): mixed {
+		if (method_exists($user, 'getLanguage') === false) {
+			return '';
+		}
+
+		$language = $user->getLanguage();
+		if (empty($language) === true) {
+			return $this->l10nFactory->findLanguage();
+		}
+
+		return $language;
+	}//end userLanguage()
+
+	/**
+	 * The user's locale, or one derived from the language when it is empty;
+	 * '' for a user without a locale.
+	 *
+	 * @param IUser $user     The user object.
+	 * @param mixed $language The resolved language.
+	 *
+	 * @return mixed The locale.
+	 */
+	private function userLocale(IUser $user, mixed $language): mixed {
+		if (method_exists($user, 'getLocale') === false) {
+			return '';
+		}
+
+		$locale = $user->getLocale();
+		if (empty($locale) === false || empty($language) === true) {
+			return $locale;
+		}
+
+		return $this->localeForLanguage(language: $language);
+	}//end userLocale()
+
+	/**
+	 * The default locale of a language: en_US for English, xx_XX otherwise.
+	 *
+	 * @param string $language The language.
+	 *
+	 * @return string The locale.
+	 */
+	private function localeForLanguage(string $language): string {
+		if ($language === 'en') {
+			return 'en_US';
+		}
+
+		return $language . '_' . strtoupper($language);
+	}//end localeForLanguage()
 
 	/**
 	 * Get additional profile information from various sources
@@ -839,62 +898,106 @@ class UserService implements UserServiceInterface {
 	 */
 	private function updateProfileProperties(IUser $user, array $data): void {
 		try {
-			// Get the user's account from AccountManager.
-			$account = $this->accountManager->getAccount($user);
-			$accountUpdated = false;
-
-			// Define the standard profile fields we can update via AccountManager.
-			$standardFields = [
-				'phone' => IAccountManager::PROPERTY_PHONE,
-				'address' => IAccountManager::PROPERTY_ADDRESS,
-				'website' => IAccountManager::PROPERTY_WEBSITE,
-				'fediverse' => IAccountManager::PROPERTY_FEDIVERSE,
-				'organisation' => IAccountManager::PROPERTY_ORGANISATION,
-				'role' => IAccountManager::PROPERTY_ROLE,
-				'headline' => IAccountManager::PROPERTY_HEADLINE,
-				'biography' => IAccountManager::PROPERTY_BIOGRAPHY,
-			];
-
-			// Update standard AccountManager fields.
-			foreach ($standardFields as $apiField => $accountProperty) {
-				if (isset($data[$apiField]) === true) {
-					$value = (string)$data[$apiField];
-
-					// Update existing account property (getProperty() always returns non-null).
-					$property = $account->getProperty($accountProperty);
-					if ($property->getValue() !== $value) {
-						$property->setValue($value);
-						$accountUpdated = true;
-					}
-				}//end if
-			}//end foreach
-
-			// Save the account if any properties were updated.
-			if ($accountUpdated === true) {
-				$this->accountManager->updateAccount($account);
-			}
+			$this->updateAccountProperties(user: $user, data: $data);
 		} catch (\Exception $e) {
 			// Log error but don't fail the entire update.
-			$this->logger->warning(
-				'Failed to update AccountManager properties for user: ' . $user->getUID(),
-				[
-					'exception' => $e->getMessage(),
-				]
-			);
-		}//end try
+			$this->logAccountFailure(user: $user, exception: $e);
+		}
 
 		// Handle custom name fields separately (accessible to other apps via 'core' namespace).
-		$customFields = ['firstName', 'lastName', 'middleName'];
-		$nameFields = [];
+		$nameFields = $this->customNameFieldsIn(data: $data);
+		if (empty($nameFields) === false) {
+			$this->setCustomNameFields(user: $user, nameFields: $nameFields);
+		}
+	}//end updateProfileProperties()
 
-		foreach ($customFields as $field) {
+	/**
+	 * Update the standard profile fields held by the AccountManager and save
+	 * the account once when any of them changed.
+	 *
+	 * @param IUser $user The user object to update.
+	 * @param array $data The data array containing updates.
+	 *
+	 * @return void
+	 */
+	private function updateAccountProperties(IUser $user, array $data): void {
+		$account = $this->accountManager->getAccount($user);
+		if ($this->applyAccountChanges(account: $account, data: $data) === true) {
+			$this->accountManager->updateAccount($account);
+		}
+	}//end updateAccountProperties()
+
+	/**
+	 * Set every standard profile field the data carries on the account.
+	 *
+	 * @param IAccount $account The user's account.
+	 * @param array    $data    The data array containing updates.
+	 *
+	 * @return bool True when any property changed.
+	 */
+	private function applyAccountChanges(IAccount $account, array $data): bool {
+		$accountUpdated = false;
+		foreach (self::ACCOUNT_PROFILE_FIELDS as $apiField => $accountProperty) {
+			if (isset($data[$apiField]) === true
+				&& $this->setAccountProperty(value: (string)$data[$apiField], property: $account->getProperty($accountProperty)) === true
+			) {
+				$accountUpdated = true;
+			}
+		}
+
+		return $accountUpdated;
+	}//end applyAccountChanges()
+
+	/**
+	 * Set one account property when its value differs.
+	 *
+	 * @param string           $value    The new value.
+	 * @param IAccountProperty $property The property (getProperty() always returns non-null).
+	 *
+	 * @return bool True when the value changed.
+	 */
+	private function setAccountProperty(string $value, IAccountProperty $property): bool {
+		if ($property->getValue() === $value) {
+			return false;
+		}
+
+		$property->setValue($value);
+
+		return true;
+	}//end setAccountProperty()
+
+	/**
+	 * Log an AccountManager failure without failing the whole update.
+	 *
+	 * @param IUser      $user      The user object.
+	 * @param \Exception $exception The failure.
+	 *
+	 * @return void
+	 */
+	private function logAccountFailure(IUser $user, \Exception $exception): void {
+		$this->logger->warning(
+			'Failed to update AccountManager properties for user: ' . $user->getUID(),
+			[
+				'exception' => $exception->getMessage(),
+			]
+		);
+	}//end logAccountFailure()
+
+	/**
+	 * The custom name fields the data carries (null values excluded).
+	 *
+	 * @param array $data The data array containing updates.
+	 *
+	 * @return array<string,mixed> The name fields, in firstName/lastName/middleName order.
+	 */
+	private function customNameFieldsIn(array $data): array {
+		$nameFields = [];
+		foreach (['firstName', 'lastName', 'middleName'] as $field) {
 			if (isset($data[$field]) === true) {
 				$nameFields[$field] = $data[$field];
 			}
 		}
 
-		if (empty($nameFields) === false) {
-			$this->setCustomNameFields(user: $user, nameFields: $nameFields);
-		}
-	}//end updateProfileProperties()
+		return $nameFields;
+	}//end customNameFieldsIn()
 }//end class

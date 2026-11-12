@@ -3,6 +3,9 @@
 /**
  * Integriq Inline Secret Migration Executor.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Phase C (executor half) of ocon#151 / ADR-064 §6. Where
  * {@see InlineSecretMigrationPlanner} only REPORTS what would migrate, this
  * class actually REWRITES LIVE CREDENTIALS: for every `source` object that
@@ -57,9 +60,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -144,6 +144,31 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 	 * @var string
 	 */
 	private const ORG_RESOLUTION_PARAMETER = 'actingOrganisationId';
+
+	/**
+	 * The four count buckets of a run, at zero.
+	 *
+	 * @var array{migrated: int, failed: int, blocked: int, skipped: int}
+	 */
+	private const NO_COUNTS = [
+		'migrated' => 0,
+		'failed' => 0,
+		'blocked' => 0,
+		'skipped' => 0,
+	];
+
+	/**
+	 * The record outcome and count bucket of each reason a field is left alone.
+	 *
+	 * @var array<string, string>
+	 */
+	private const REFUSAL_BUCKETS = [
+		'already-migrated' => 'skipped',
+		'needs-manual-review' => 'blocked',
+		'nothing-to-do' => 'skipped',
+		'no-organisation' => 'blocked',
+		'empty-on-reread' => 'skipped',
+	];
 
 	/**
 	 * Lazily resolved broker instance (per-process memo).
@@ -299,208 +324,247 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 		$this->currentSchema = $schema;
 
 		$prePlan = $this->planner->planSchema(schema: $schema, limit: $limit);
-
-		$objects = [];
-		$totals = ['migrated' => 0, 'failed' => 0, 'blocked' => 0, 'skipped' => 0];
-
-		foreach ((array)$prePlan['objects'] as $planned) {
-			$uuid = (string)($planned['uuid'] ?? '');
-			$name = (string)($planned['name'] ?? $uuid);
-			if ($uuid === '') {
-				continue;
-			}
-
-			// Per-object isolation: one object's failure never aborts the batch.
-			$result = $this->migrateSource(broker: $broker, uuid: $uuid, name: $name);
-
-			$objects[] = $result['record'];
-			$totals['migrated'] += $result['migrated'];
-			$totals['failed'] += $result['failed'];
-			$totals['blocked'] += $result['blocked'];
-			$totals['skipped'] += $result['skipped'];
-		}//end foreach
+		$migration = $this->migrateObjects(broker: $broker, planned: (array)$prePlan['objects']);
 
 		// Re-plan from FRESH raw reads so the gate reflects the true post-run
 		// state — a field we could not migrate keeps it closed.
 		$postPlan = $this->planner->planSchema(schema: $schema, limit: $limit);
 
-		return [
-			'schema' => $schema,
-			'objects' => $objects,
-			'totalObjects' => (int)$prePlan['totalObjects'],
-			'migrated' => $totals['migrated'],
-			'failed' => $totals['failed'],
-			'blocked' => $totals['blocked'],
-			'skipped' => $totals['skipped'],
-			'postRun' => [
-				'clean' => (bool)$postPlan['clean'],
-				'pending' => (int)$postPlan['wouldMigrate'],
-				'manual' => (int)$postPlan['needsReview'],
-			],
-		];
+		return ['schema' => $schema, 'objects' => $migration['objects'], 'totalObjects' => (int)$prePlan['totalObjects']]
+			+ $migration['totals']
+			+ ['postRun' => $this->postRunGate(postPlan: $postPlan)];
 
 	}//end migrateSchema()
+
+	/**
+	 * Migrate every planned object, each on its own.
+	 *
+	 * @param object $broker The resolved credential broker.
+	 * @param array<int, array<string, mixed>> $planned The pre-plan's objects, each with `uuid` and `name`.
+	 *
+	 * @return array{objects: array<int, array<string, mixed>>, totals: array{migrated: int, failed: int, blocked: int, skipped: int}}
+	 */
+	private function migrateObjects(object $broker, array $planned): array {
+		$objects = [];
+		$totals = self::NO_COUNTS;
+
+		foreach ($planned as $entry) {
+			$run = new InlineSecretSourceRun(broker: $broker, uuid: (string)($entry['uuid'] ?? ''));
+			$run->name = (string)($entry['name'] ?? $run->uuid);
+			if ($run->uuid === '') {
+				continue;
+			}
+
+			// Per-object isolation: one object's failure never aborts the batch.
+			$result = $this->migrateSource(run: $run);
+
+			$objects[] = $result['record'];
+			$totals = $this->addCounts(totals: $totals, result: $result);
+		}
+
+		return ['objects' => $objects, 'totals' => $totals];
+	}//end migrateObjects()
+
+	/**
+	 * Add one source's counts to the running totals.
+	 *
+	 * @param array{migrated: int, failed: int, blocked: int, skipped: int} $totals The totals so far.
+	 * @param array{migrated: int, failed: int, blocked: int, skipped: int} $result The source's outcome.
+	 *
+	 * @return array{migrated: int, failed: int, blocked: int, skipped: int}
+	 */
+	private function addCounts(array $totals, array $result): array {
+		foreach (array_keys($totals) as $bucket) {
+			$totals[$bucket] += $result[$bucket];
+		}
+
+		return $totals;
+	}//end addCounts()
+
+	/**
+	 * The post-run gate a fresh plan gives.
+	 *
+	 * @param array<string, mixed> $postPlan The plan read after the run.
+	 *
+	 * @return array{clean: bool, pending: int, manual: int}
+	 */
+	private function postRunGate(array $postPlan): array {
+		return [
+			'clean' => (bool)$postPlan['clean'],
+			'pending' => (int)$postPlan['wouldMigrate'],
+			'manual' => (int)$postPlan['needsReview'],
+		];
+	}//end postRunGate()
 
 	/**
 	 * Migrate one source. Reads the ENTITY raw (for organisation + owner, which
 	 * live as columns and are NOT in getObject()) and re-classifies from the
 	 * fresh raw data before touching any field.
 	 *
-	 * @param object $broker The resolved credential broker.
-	 * @param string $uuid The source UUID.
-	 * @param string $name The source's human-readable name (not a secret).
+	 * @param InlineSecretSourceRun $run The object, with its broker, uuid and name.
 	 *
 	 * @return array{record: array<string, mixed>, migrated: int, failed: int, blocked: int, skipped: int}
 	 *
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
-	private function migrateSource(object $broker, string $uuid, string $name): array {
-		$entity = $this->readRawEntity(uuid: $uuid);
+	private function migrateSource(InlineSecretSourceRun $run): array {
+		$entity = $this->readRawEntity(uuid: $run->uuid);
 		if ($entity instanceof ObjectEntity === false) {
-			// Fail closed for the whole source; the post-run plan keeps the gate
-			// closed while its secret survives. Secret-free by construction.
-			$this->logger->warning(
-				'[integriq] inline-secret executor: raw source read failed; source left untouched',
-				['uuid' => $uuid]
-			);
-			return [
-				'record' => ['uuid' => $uuid, 'name' => $name, 'organisation' => null, 'fields' => [], 'readFailed' => true],
-				'migrated' => 0,
-				'failed' => 0,
-				'blocked' => 0,
-				'skipped' => 0,
-			];
+			return $this->unreadSource(run: $run);
 		}
 
-		$organisation = trim((string)($entity->getOrganisation() ?? ''));
-		$owner = trim((string)($entity->getOwner() ?? ''));
-		$rawData = $entity->getObject();
+		$run->organisation = trim((string)($entity->getOrganisation() ?? ''));
+		$run->owner = trim((string)($entity->getOwner() ?? ''));
+		$run->working = $entity->getObject();
 
 		// Re-classify from the fresh raw read: this is what makes the executor
 		// idempotent (a concurrently-migrated field now reads as a placeholder).
-		$freshPlan = $this->planner->planSource(uuid: $uuid, name: $name, rawData: $rawData, schema: $this->currentSchema);
+		$freshPlan = $this->planner->planSource(uuid: $run->uuid, name: $run->name, rawData: $run->working, schema: $this->currentSchema);
 
-		$working = $rawData;
+		return $this->migrateFields(run: $run, fields: (array)$freshPlan['fields']);
+	}//end migrateSource()
+
+	/**
+	 * The outcome of a source whose raw read failed: left untouched.
+	 *
+	 * Fail closed for the whole source; the post-run plan keeps the gate
+	 * closed while its secret survives. Secret-free by construction.
+	 *
+	 * @param InlineSecretSourceRun $run The object.
+	 *
+	 * @return array{record: array<string, mixed>, migrated: int, failed: int, blocked: int, skipped: int}
+	 */
+	private function unreadSource(InlineSecretSourceRun $run): array {
+		$this->logger->warning(
+			'[integriq] inline-secret executor: raw source read failed; source left untouched',
+			['uuid' => $run->uuid]
+		);
+		return ['record' => ['uuid' => $run->uuid, 'name' => $run->name, 'organisation' => null, 'fields' => [], 'readFailed' => true]]
+			+ self::NO_COUNTS;
+	}//end unreadSource()
+
+	/**
+	 * Migrate each freshly classified field of one source, in plan order.
+	 *
+	 * @param InlineSecretSourceRun $run The object.
+	 * @param array<int, array<string, mixed>> $fields The fresh plan's field classifications.
+	 *
+	 * @return array{record: array<string, mixed>, migrated: int, failed: int, blocked: int, skipped: int}
+	 */
+	private function migrateFields(InlineSecretSourceRun $run, array $fields): array {
 		$outcomes = [];
-		$counts = [
-			'migrated' => 0,
-			'failed' => 0,
-			'blocked' => 0,
-			'skipped' => 0,
-		];
+		$counts = self::NO_COUNTS;
 
-		foreach ((array)$freshPlan['fields'] as $classified) {
-			$field = (string)$classified['field'];
-			$state = (string)$classified['state'];
-			$provider = ($classified['provider'] ?? null);
-
-			$outcome = $this->migrateField(
-				broker: $broker,
-				uuid: $uuid,
-				name: $name,
-				field: $field,
-				state: $state,
-				provider: $provider,
-				organisation: $organisation,
-				owner: $owner,
-				working: $working
-			);
-
+		foreach ($fields as $classified) {
+			$outcome = $this->migrateField(run: $run, classified: $classified);
 			$outcomes[] = $outcome['record'];
 			$counts[$outcome['bucket']] += 1;
-		}//end foreach
+		}
 
-		$organisationOut = $organisation;
-		if ($organisation === '') {
+		$organisationOut = $run->organisation;
+		if ($run->organisation === '') {
 			$organisationOut = null;
 		}
 
-		return [
-			'record' => [
-				'uuid' => $uuid,
-				'name' => $name,
-				'organisation' => $organisationOut,
-				'fields' => $outcomes,
-			],
-			'migrated' => $counts['migrated'],
-			'failed' => $counts['failed'],
-			'blocked' => $counts['blocked'],
-			'skipped' => $counts['skipped'],
-		];
-	}//end migrateSource()
+		return ['record' => ['uuid' => $run->uuid, 'name' => $run->name, 'organisation' => $organisationOut, 'fields' => $outcomes]] + $counts;
+	}//end migrateFields()
 
 	/**
 	 * Classify-and-dispatch a single field: skip, block, or run mint→verify→null.
 	 *
-	 * `$working` is the source's in-progress data; on a successful migration it is
-	 * mutated IN PLACE (the ref written, the inline value nulled) — but only after
-	 * the save has persisted, so a half-written field never leaks into a later
-	 * field's save.
+	 * `$run->working` is the source's in-progress data; on a successful migration
+	 * it is mutated IN PLACE (the ref written, the inline value nulled) — but only
+	 * after the save has persisted, so a half-written field never leaks into a
+	 * later field's save.
 	 *
-	 * @param object $broker The resolved credential broker.
-	 * @param string $uuid The source UUID.
-	 * @param string $name The source name (label only, never a secret).
-	 * @param string $field The inline secret field name.
-	 * @param string $state The planner classification for this field.
-	 * @param string|null $provider The mapped broker provider (null unless would-migrate).
-	 * @param string $organisation The source's organisation UUID (may be empty).
-	 * @param string $owner The source's owner UID.
-	 * @param array<string, mixed> $working The source's in-progress data (mutated on success only).
+	 * @param InlineSecretSourceRun $run The object.
+	 * @param array<string, mixed> $classified The planner's `field`, `state` and `provider` for this field.
 	 *
 	 * @return array{record: array<string, mixed>, bucket: string}
 	 *
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
 	 */
-	private function migrateField(
-		object $broker,
-		string $uuid,
-		string $name,
-		string $field,
-		string $state,
-		?string $provider,
-		string $organisation,
-		string $owner,
-		array &$working,
-	): array {
-		if ($state === 'already-migrated') {
-			return $this->fieldRecord(field: $field, provider: $provider, outcome: 'skipped', reason: 'already-migrated', bucket: 'skipped');
+	private function migrateField(InlineSecretSourceRun $run, array $classified): array {
+		$field = (string)$classified['field'];
+		$reason = $this->classificationRefusal(classified: $classified) ?? $this->sourceRefusal(run: $run, field: $field);
+		if ($reason !== null) {
+			$bucket = self::REFUSAL_BUCKETS[$reason];
+			return $this->fieldRecord(field: $field, provider: ($classified['provider'] ?? null), outcome: $bucket, reason: $reason, bucket: $bucket);
 		}
 
+		return $this->mintField(run: $run, classified: $classified);
+	}//end migrateField()
+
+	/**
+	 * Why the planner's classification leaves a field alone, or null when it would migrate.
+	 *
+	 * @param array<string, mixed> $classified The planner's `state` and `provider` for this field.
+	 *
+	 * @return string|null `already-migrated`, `needs-manual-review` or `nothing-to-do`; null to continue.
+	 */
+	private function classificationRefusal(array $classified): ?string {
 		// `authenticationConfig` (and any other unmappable field) is a multi-value
 		// bag no single inject-only provider can hold — a human must split it.
-		if ($state === 'needs-manual-review') {
-			return $this->fieldRecord(field: $field, provider: $provider, outcome: 'blocked', reason: 'needs-manual-review', bucket: 'blocked');
+		$state = (string)$classified['state'];
+		if (in_array($state, ['already-migrated', 'needs-manual-review'], true) === true) {
+			return $state;
 		}
 
-		if ($state !== 'would-migrate' || $provider === null) {
+		if ($state !== 'would-migrate' || ($classified['provider'] ?? null) === null) {
 			// Defensive: the planner already drops `empty`; anything else is a no-op.
-			return $this->fieldRecord(field: $field, provider: $provider, outcome: 'skipped', reason: 'nothing-to-do', bucket: 'skipped');
+			return 'nothing-to-do';
 		}
 
+		return null;
+	}//end classificationRefusal()
+
+	/**
+	 * Why the source itself stops a would-migrate field, or null when it can be minted.
+	 *
+	 * @param InlineSecretSourceRun $run The object.
+	 * @param string $field The inline secret field name.
+	 *
+	 * @return string|null `no-organisation` or `empty-on-reread`; null to mint.
+	 */
+	private function sourceRefusal(InlineSecretSourceRun $run, string $field): ?string {
 		// ADR-064 Rule 4: NEVER mint infrastructure at personal scope. No
 		// organisation ⇒ block, keeping the Phase D gate closed for a human.
-		if ($organisation === '') {
-			return $this->fieldRecord(field: $field, provider: $provider, outcome: 'blocked', reason: 'no-organisation', bucket: 'blocked');
+		if ($run->organisation === '') {
+			return 'no-organisation';
 		}
 
-		$secret = ($working[$field] ?? null);
+		$secret = ($run->working[$field] ?? null);
 		if (is_string($secret) === false || $secret === '') {
 			// The fresh read no longer carries a plaintext secret here.
-			return $this->fieldRecord(field: $field, provider: $provider, outcome: 'skipped', reason: 'empty-on-reread', bucket: 'skipped');
+			return 'empty-on-reread';
 		}
 
+		return null;
+	}//end sourceRefusal()
+
+	/**
+	 * Run mint → verify → null for a field every check admitted.
+	 *
+	 * @param InlineSecretSourceRun $run The object.
+	 * @param array<string, mixed> $classified The planner's `field` and `provider` for this field.
+	 *
+	 * @return array{record: array<string, mixed>, bucket: string}
+	 */
+	private function mintField(InlineSecretSourceRun $run, array $classified): array {
+		$field = (string)$classified['field'];
+
 		return $this->mintVerifyNull(
-			broker: $broker,
-			uuid: $uuid,
-			name: $name,
+			broker: $run->broker,
+			uuid: $run->uuid,
+			name: $run->name,
 			field: $field,
-			provider: $provider,
-			secret: $secret,
-			organisation: $organisation,
-			owner: $owner,
-			working: $working
+			provider: $classified['provider'],
+			secret: $run->working[$field],
+			organisation: $run->organisation,
+			owner: $run->owner,
+			working: $run->working
 		);
-	}//end migrateField()
+	}//end mintField()
 
 	/**
 	 * The safety-critical core: mint → VERIFY → (only then) write ref + null + save.

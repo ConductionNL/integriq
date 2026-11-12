@@ -112,49 +112,110 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 	 */
 	private function performance(string $sourceId, int $since): array {
 		$calls = $this->callsSince(sourceId: $sourceId, since: $since);
+
+		return array_merge(
+			['calls' => count($calls)],
+			$this->errorReport(errors: $this->errorsByKind(calls: $calls)),
+			$this->timingReport(durations: $this->durationsOf(calls: $calls))
+		);
+	}//end performance()
+
+	/**
+	 * Every call's duration in whole milliseconds, where it has one.
+	 *
+	 * CallRecorder and the dispatchers write durationMs; CallService keeps it
+	 * in response.responseTime.
+	 *
+	 * @param array<int, array<string, mixed>> $calls The calls in the period.
+	 *
+	 * @return array<int, int> The durations.
+	 */
+	private function durationsOf(array $calls): array {
 		$durations = [];
-		$errors = ['timeout' => 0, 'client' => 0, 'server' => 0, 'tls' => 0];
 		foreach ($calls as $call) {
-			// CallRecorder and the dispatchers write durationMs; CallService keeps it in response.responseTime.
 			$duration = ($call['durationMs'] ?? ($call['response']['responseTime'] ?? null));
 			if (is_numeric($duration) === true) {
 				$durations[] = (int)round((float)$duration);
 			}
+		}
 
+		return $durations;
+	}//end durationsOf()
+
+	/**
+	 * The failed calls counted per kind of error.
+	 *
+	 * @param array<int, array<string, mixed>> $calls The calls in the period.
+	 *
+	 * @return array<string, int> Errors per kind.
+	 */
+	private function errorsByKind(array $calls): array {
+		$errors = ['timeout' => 0, 'client' => 0, 'server' => 0, 'tls' => 0];
+		foreach ($calls as $call) {
 			$kind = $this->errorKind(call: $call);
 			if ($kind !== null) {
 				$errors[$kind]++;
 			}
 		}
 
+		return $errors;
+	}//end errorsByKind()
+
+	/**
+	 * The error part of the performance block.
+	 *
+	 * @param array<string, int> $errors Errors per kind.
+	 *
+	 * @return array<string, mixed> The error count, the counts per kind and their summary.
+	 */
+	private function errorReport(array $errors): array {
+		$errorCount = array_sum($errors);
+
+		return [
+			'errors' => $errorCount,
+			'errorsByKind' => $errors,
+			'errorSummary' => $this->errorSummary(errors: $errors, total: $errorCount),
+		];
+	}//end errorReport()
+
+	/**
+	 * The timing part of the performance block.
+	 *
+	 * @param array<int, int> $durations The call durations in milliseconds.
+	 *
+	 * @return array<string, mixed> The slowest call, the slow calls and the average.
+	 */
+	private function timingReport(array $durations): array {
 		$slowest = 0;
 		if ($durations !== []) {
 			$slowest = max($durations);
 		}
 
 		$slow = count(array_filter($durations, static fn (int $duration): bool => $duration > self::SLOW_MS));
-		$timed = count($durations);
-		$durationSum = array_sum($durations);
-		$calls = count($calls);
-
-		$errorCount = array_sum($errors);
-		$average = null;
-		if ($timed > 0) {
-			$average = (int)round($durationSum / $timed);
-		}
 
 		return [
-			'calls' => $calls,
-			'errors' => $errorCount,
-			'errorsByKind' => $errors,
-			'errorSummary' => $this->errorSummary(errors: $errors, total: $errorCount),
 			'slowestMs' => $slowest,
 			'slowestSeconds' => round($slowest / 1000, 1),
 			'slowCount' => $slow,
 			'slowSummary' => $this->l10n->n('%n call slower than 1 s', '%n calls slower than 1 s', $slow),
-			'averageMs' => $average,
+			'averageMs' => $this->averageOf(durations: $durations),
 		];
-	}//end performance()
+	}//end timingReport()
+
+	/**
+	 * The average duration, rounded, or null without timed calls.
+	 *
+	 * @param array<int, int> $durations The call durations in milliseconds.
+	 *
+	 * @return int|null
+	 */
+	private function averageOf(array $durations): ?int {
+		if ($durations === []) {
+			return null;
+		}
+
+		return (int)round(array_sum($durations) / count($durations));
+	}//end averageOf()
 
 	/**
 	 * The source's call log entries since a moment, newest first, paged.
@@ -168,25 +229,39 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 		$calls = [];
 		for ($page = 0; $page < self::MAX_PAGES; $page++) {
 			$rows = $this->read(schema: 'call_log', filters: ['source' => $sourceId], page: $page);
-			$older = false;
-			foreach ($rows as $row) {
-				$call = ($row->getObject() ?? []);
-				$time = strtotime((string)($call['created'] ?? ''));
-				if ($time === false || $time < $since) {
-					$older = true;
-					continue;
-				}
+			$inPeriod = $this->callsInPeriod(rows: $rows, since: $since);
+			$calls = array_merge($calls, $inPeriod);
 
-				$calls[] = $call;
-			}
-
-			if ($older === true || count($rows) < self::PAGE_SIZE) {
+			// A page that held an older call, or a short page, is the last one.
+			if (count($inPeriod) < count($rows) || count($rows) < self::PAGE_SIZE) {
 				break;
 			}
 		}
 
 		return $calls;
 	}//end callsSince()
+
+	/**
+	 * The calls of one page created at or after a moment; a call without a
+	 * readable creation time counts as older.
+	 *
+	 * @param array<int, ObjectEntity> $rows  One page of call log rows.
+	 * @param integer                  $since Unix time the period starts.
+	 *
+	 * @return array<int, array<string, mixed>> The calls in the period.
+	 */
+	private function callsInPeriod(array $rows, int $since): array {
+		$calls = [];
+		foreach ($rows as $row) {
+			$call = ($row->getObject() ?? []);
+			$time = strtotime((string)($call['created'] ?? ''));
+			if ($time !== false && $time >= $since) {
+				$calls[] = $call;
+			}
+		}
+
+		return $calls;
+	}//end callsInPeriod()
 
 	/**
 	 * The kind of failure one call had, or null when it succeeded.
@@ -197,26 +272,47 @@ class ConnectionMonitorService implements ConnectionMonitorServiceInterface {
 	 */
 	private function errorKind(array $call): ?string {
 		$status = (int)($call['statusCode'] ?? 0);
-		$message = strtolower((string)($call['statusMessage'] ?? ''));
-
 		if ($status >= 200 && $status < 400) {
 			return null;
 		}
 
+		if ($status >= 400) {
+			return $this->httpErrorKind(status: $status);
+		}
+
+		return $this->transportErrorKind(message: strtolower((string)($call['statusMessage'] ?? '')));
+	}//end errorKind()
+
+	/**
+	 * The kind of an HTTP error status: `server` from 500, else `client`.
+	 *
+	 * @param integer $status The status code, 400 or above.
+	 *
+	 * @return string
+	 */
+	private function httpErrorKind(int $status): string {
 		if ($status >= 500) {
 			return 'server';
 		}
 
-		if ($status >= 400) {
-			return 'client';
-		}
+		return 'client';
+	}//end httpErrorKind()
 
+	/**
+	 * The kind of a call that got no HTTP answer: `tls` when the message
+	 * names SSL, TLS or a certificate, else `timeout`.
+	 *
+	 * @param string $message The lower-cased status message.
+	 *
+	 * @return string
+	 */
+	private function transportErrorKind(string $message): string {
 		if (preg_match('/ssl|tls|certificate/', $message) === 1) {
 			return 'tls';
 		}
 
 		return 'timeout';
-	}//end errorKind()
+	}//end transportErrorKind()
 
 	/**
 	 * One line naming the kinds of error.

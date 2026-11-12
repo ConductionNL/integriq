@@ -81,38 +81,77 @@ class OutboundRetryService implements OutboundRetryServiceInterface {
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
 	 */
 	public function retry(string $uuid, string $actorUid): array {
-		$record = $this->recorder->read($uuid);
-		$failed = $this->failedRecipients(record: $record);
+		$message = new RetryMessage(uuid: $uuid, record: $this->recorder->read($uuid));
+		$message->actorUid = $actorUid;
+
+		$failed = $this->failedRecipients(record: $message->record);
 		if ($failed === []) {
-			return [
-				'message' => $uuid,
-				'retried' => [],
-				'skipped' => [],
-				'succeeded' => false,
-				'detail' => 'Nothing to retry: no recipient of this message is failed.',
-			];
+			return $this->nothingToRetry(uuid: $uuid);
 		}
 
-		[$addresses, $skipped] = $this->askOptOuts(uuid: $uuid, record: $record, addresses: $failed);
+		$addresses = $this->askOptOuts(message: $message, addresses: $failed);
 		if ($addresses === []) {
-			$detail = 'Not retried: every failed recipient opted out since the first attempt.';
-			$this->recorder->appendAttempt($uuid, $actorUid, [], false, $detail);
-
-			return ['message' => $uuid, 'retried' => [], 'skipped' => $skipped, 'succeeded' => false, 'detail' => $detail];
+			return $this->noneLeftToRetry(message: $message);
 		}
 
-		[$succeeded, $detail] = $this->redispatch(uuid: $uuid, record: $record, addresses: $addresses);
-		$this->recorder->appendAttempt($uuid, $actorUid, $addresses, $succeeded, $detail);
+		return $this->resend(message: $message, addresses: $addresses);
 
+	}//end retry()
+
+	/**
+	 * The outcome of a message none of whose recipients failed.
+	 *
+	 * @param string $uuid The record uuid.
+	 *
+	 * @return array{message:string,retried:array<int,string>,skipped:array<int,string>,succeeded:bool,detail:string} The outcome.
+	 */
+	private function nothingToRetry(string $uuid): array {
 		return [
 			'message' => $uuid,
+			'retried' => [],
+			'skipped' => [],
+			'succeeded' => false,
+			'detail' => 'Nothing to retry: no recipient of this message is failed.',
+		];
+
+	}//end nothingToRetry()
+
+	/**
+	 * Record and answer a retry every failed recipient of which opted out since.
+	 *
+	 * @param RetryMessage $message The message, its skipped recipients set.
+	 *
+	 * @return array{message:string,retried:array<int,string>,skipped:array<int,string>,succeeded:bool,detail:string} The outcome.
+	 */
+	private function noneLeftToRetry(RetryMessage $message): array {
+		$detail = 'Not retried: every failed recipient opted out since the first attempt.';
+		$this->recorder->appendAttempt($message->uuid, $message->actorUid, [], false, $detail);
+
+		return ['message' => $message->uuid, 'retried' => [], 'skipped' => $message->skipped, 'succeeded' => false, 'detail' => $detail];
+
+	}//end noneLeftToRetry()
+
+	/**
+	 * Re-dispatch the recipients the opt-out list allows, and record the attempt.
+	 *
+	 * @param RetryMessage      $message   The message, its skipped recipients set.
+	 * @param array<int,string> $addresses The recipients to re-send.
+	 *
+	 * @return array{message:string,retried:array<int,string>,skipped:array<int,string>,succeeded:bool,detail:string} The outcome.
+	 */
+	private function resend(RetryMessage $message, array $addresses): array {
+		[$succeeded, $detail] = $this->redispatch(message: $message, addresses: $addresses);
+		$this->recorder->appendAttempt($message->uuid, $message->actorUid, $addresses, $succeeded, $detail);
+
+		return [
+			'message' => $message->uuid,
 			'retried' => $addresses,
-			'skipped' => $skipped,
+			'skipped' => $message->skipped,
 			'succeeded' => $succeeded,
 			'detail' => $detail,
 		];
 
-	}//end retry()
+	}//end resend()
 
 	/**
 	 * Retry several messages, reporting each one.
@@ -156,81 +195,80 @@ class OutboundRetryService implements OutboundRetryServiceInterface {
 
 	/**
 	 * Ask the opt-out list about each failed recipient, through the gate a
-	 * first send uses.
+	 * first send uses; the ones it refuses are kept on the message as skipped.
 	 *
-	 * @param string $uuid The record uuid.
-	 * @param array<string,mixed> $record The record payload.
+	 * @param RetryMessage      $message   The message.
 	 * @param array<int,string> $addresses The failed recipients.
 	 *
-	 * @return array{0:array<int,string>,1:array<int,string>} The recipients to re-send, and the skipped ones.
+	 * @return array<int,string> The recipients to re-send.
 	 */
-	private function askOptOuts(string $uuid, array $record, array $addresses): array {
-		$context = ($record['context']['optOut'] ?? []);
-		if (is_array($context) === false) {
-			$context = [];
-		}
-
-		// A record without the first decision (one written before this change,
-		// or a forward) is asked as `service`: never exempt.
-		$category = (string)($context['category'] ?? 'service');
-		$options = [
-			'caseRef' => (string)($context['caseRef'] ?? ''),
-			'sourceApp' => (string)($record['sourceApp'] ?? 'integriq'),
-			'correlationId' => (string)($record['correlationId'] ?? $uuid),
-		];
-
+	private function askOptOuts(RetryMessage $message, array $addresses): array {
 		$allowed = [];
-		$skipped = [];
 		foreach ($addresses as $address) {
-			$decision = $this->gate->check(
-				channel: (string)($record['channel'] ?? ''),
-				category: $category,
-				address: $address,
-				options: $options
-			);
-			if ($decision['send'] === true) {
+			if ($this->mayResendTo(message: $message, address: $address) === true) {
 				$allowed[] = $address;
 				continue;
 			}
 
-			$skipped[] = $address;
-			$this->recorder->recipientFailed(
-				uuid: $uuid,
-				address: $address,
-				step: OutboundSendGate::STEP_OPT_OUT,
-				reason: (string)$decision['code'] . ': ' . (string)$decision['reason']
-			);
+			$message->skipped[] = $address;
 		}
 
-		return [$allowed, $skipped];
+		return $allowed;
 
 	}//end askOptOuts()
 
 	/**
+	 * Ask the opt-out list about one recipient; a refused one is marked failed in the opt-out step.
+	 *
+	 * @param RetryMessage $message The message.
+	 * @param string       $address The recipient.
+	 *
+	 * @return bool True when the recipient may be sent to again.
+	 */
+	private function mayResendTo(RetryMessage $message, string $address): bool {
+		$decision = $this->optOutDecision(message: $message, address: $address);
+		if ($decision['send'] === true) {
+			return true;
+		}
+
+		$this->recorder->recipientFailed(
+			uuid: $message->uuid,
+			address: $address,
+			step: OutboundSendGate::STEP_OPT_OUT,
+			reason: (string)$decision['code'] . ': ' . (string)$decision['reason']
+		);
+		return false;
+
+	}//end mayResendTo()
+
+	/**
+	 * The opt-out list's decision on one recipient, asked with the first send's category.
+	 *
+	 * @param RetryMessage $message The message.
+	 * @param string       $address The recipient.
+	 *
+	 * @return array<string,mixed> The gate's decision.
+	 */
+	private function optOutDecision(RetryMessage $message, string $address): array {
+		return $this->gate->check(
+			channel: (string)($message->record['channel'] ?? ''),
+			category: $message->optOutCategory(),
+			address: $address,
+			options: $message->optOutOptions()
+		);
+
+	}//end optOutDecision()
+
+	/**
 	 * Re-dispatch one message through the delivery pipeline.
 	 *
-	 * @param string $uuid The record uuid.
-	 * @param array<string,mixed> $record The record payload.
+	 * @param RetryMessage      $message   The message.
 	 * @param array<int,string> $addresses The recipients being retried.
 	 *
 	 * @return array{0:bool,1:string} Whether it was accepted and routed, and what happened.
 	 */
-	private function redispatch(string $uuid, array $record, array $addresses): array {
-		$request = new DeliveryRequestedEvent(
-			sourceApp: (string)($record['sourceApp'] ?? 'integriq'),
-			subjectRegister: MessageRecorder::REGISTER,
-			subjectSchema: MessageRecorder::SCHEMA,
-			subjectId: $uuid,
-			subjectLabel: (string)($record['subject'] ?? ''),
-			deliveryKind: self::DELIVERY_KIND,
-			channel: (string)($record['channel'] ?? ''),
-			payload: [
-				'subjectRef' => (string)($record['subjectRef'] ?? ''),
-				'subject' => (string)($record['subject'] ?? ''),
-				'recipients' => $addresses,
-				'attachments' => ($record['attachments'] ?? []),
-			],
-			correlationId: (string)($record['correlationId'] ?? $uuid));
+	private function redispatch(RetryMessage $message, array $addresses): array {
+		$request = $this->deliveryRequest(message: $message, addresses: $addresses);
 
 		try {
 			$result = $this->eventService->ingestDeliveryRequest(request: $request);
@@ -238,6 +276,60 @@ class OutboundRetryService implements OutboundRetryServiceInterface {
 			return [false, 'The delivery pipeline refused the retry: ' . $exception->getMessage()];
 		}
 
+		return $this->routedOutcome(result: $result);
+
+	}//end redispatch()
+
+	/**
+	 * The delivery request a retry re-dispatches.
+	 *
+	 * @param RetryMessage      $message   The message.
+	 * @param array<int,string> $addresses The recipients being retried.
+	 *
+	 * @return DeliveryRequestedEvent The request.
+	 */
+	private function deliveryRequest(RetryMessage $message, array $addresses): DeliveryRequestedEvent {
+		$record = $message->record;
+
+		return new DeliveryRequestedEvent(
+			sourceApp: (string)($record['sourceApp'] ?? 'integriq'),
+			subjectRegister: MessageRecorder::REGISTER,
+			subjectSchema: MessageRecorder::SCHEMA,
+			subjectId: $message->uuid,
+			subjectLabel: (string)($record['subject'] ?? ''),
+			deliveryKind: self::DELIVERY_KIND,
+			channel: (string)($record['channel'] ?? ''),
+			payload: $this->deliveryPayload(record: $record, addresses: $addresses),
+			correlationId: (string)($record['correlationId'] ?? $message->uuid));
+
+	}//end deliveryRequest()
+
+	/**
+	 * The payload a retry carries: the message's subject and attachments, and the retried recipients.
+	 *
+	 * @param array<string,mixed> $record    The record payload.
+	 * @param array<int,string>   $addresses The recipients being retried.
+	 *
+	 * @return array<string,mixed> The payload.
+	 */
+	private function deliveryPayload(array $record, array $addresses): array {
+		return [
+			'subjectRef' => (string)($record['subjectRef'] ?? ''),
+			'subject' => (string)($record['subject'] ?? ''),
+			'recipients' => $addresses,
+			'attachments' => ($record['attachments'] ?? []),
+		];
+
+	}//end deliveryPayload()
+
+	/**
+	 * Whether a re-dispatch the pipeline accepted was picked up by a delivery route.
+	 *
+	 * @param array<string,mixed> $result The pipeline's answer.
+	 *
+	 * @return array{0:bool,1:string} Whether it was routed, and what happened.
+	 */
+	private function routedOutcome(array $result): array {
 		$matched = count(($result['messages'] ?? []));
 		if ($matched === 0) {
 			return [
@@ -248,7 +340,7 @@ class OutboundRetryService implements OutboundRetryServiceInterface {
 
 		return [true, 'Re-dispatched to ' . $matched . ' delivery route(s).'];
 
-	}//end redispatch()
+	}//end routedOutcome()
 
 	/**
 	 * The addresses of every failed recipient on a record.

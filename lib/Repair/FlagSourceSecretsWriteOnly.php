@@ -3,6 +3,9 @@
 /**
  * Integriq — flag the source schema's credential fields write-only.
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Phase 2 of ocon#147 (openregister#380). The register fragment marks apikey/secret/
  * password/jwt/authenticationConfig `writeOnly: true` so OpenRegister's render boundary
  * strips them from every API response — but OR's descriptor import only applies a
@@ -27,9 +30,6 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

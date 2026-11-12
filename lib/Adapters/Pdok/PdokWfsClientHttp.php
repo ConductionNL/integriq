@@ -29,7 +29,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\Adapters\Pdok;
 
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,14 +46,14 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	/**
 	 * Default request timeout in seconds.
 	 */
-	public const DEFAULT_TIMEOUT = 15;
+	public const DEFAULT_TIMEOUT = PdokHttpGet::DEFAULT_TIMEOUT;
 
 	/**
-	 * Base URI template used for all WFS requests.
+	 * The GET every WFS request goes through.
 	 *
-	 * @var string
+	 * @var PdokHttpGet
 	 */
-	private string $baseUri;
+	private readonly PdokHttpGet $get;
 
 	/**
 	 * Constructor.
@@ -64,15 +63,16 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 * @param string|null $baseUri Optional override of the base URI template (must contain `{dataset}`).
 	 */
 	public function __construct(
-		private readonly ClientInterface $httpClient,
+		ClientInterface $httpClient,
 		private readonly LoggerInterface $logger,
 		?string $baseUri = null,
 	) {
+		$template = self::DEFAULT_BASE_URI;
 		if ($baseUri !== null && $baseUri !== '') {
-			$this->baseUri = $baseUri;
-		} else {
-			$this->baseUri = self::DEFAULT_BASE_URI;
+			$template = $baseUri;
 		}
+
+		$this->get = new PdokHttpGet(httpClient: $httpClient, logger: $logger, baseUri: $template, failureEvent: 'pdok-wfs.http.transport');
 
 	}//end __construct()
 
@@ -84,7 +84,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 * @return string The raw XML capabilities document.
 	 */
 	public function getCapabilities(string $dataset): string {
-		return $this->requestRaw(
+		return $this->get->body(request: new PdokGetRequest(
 			dataset: $dataset,
 			query: [
 				'service' => 'WFS',
@@ -92,7 +92,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 				'version' => '2.0.0',
 			],
 			expectedAccept: 'application/xml'
-		);
+		));
 
 	}//end getCapabilities()
 
@@ -105,7 +105,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 	 * @return string The raw XML feature-type schema.
 	 */
 	public function describeFeatureType(string $dataset, string $featureType): string {
-		return $this->requestRaw(
+		return $this->get->body(request: new PdokGetRequest(
 			dataset: $dataset,
 			query: [
 				'service' => 'WFS',
@@ -114,7 +114,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 				'typeNames' => $featureType,
 			],
 			expectedAccept: 'application/xml'
-		);
+		));
 
 	}//end describeFeatureType()
 
@@ -154,7 +154,7 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 			$query['filter'] = $this->buildOgcFilter(filterFields: $filterFields);
 		}
 
-		$body = $this->requestRaw(dataset: $dataset, query: $query, expectedAccept: 'application/json');
+		$body = $this->get->body(request: new PdokGetRequest(dataset: $dataset, query: $query, expectedAccept: 'application/json'));
 
 		return $this->featureCollection(body: $body, logContext: ['dataset' => $dataset, 'featureType' => $featureType]);
 	}//end getFeature()
@@ -249,41 +249,4 @@ final class PdokWfsClientHttp extends PdokWfsClient {
 		return '<fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"><fes:And>' . implode('', $parts) . '</fes:And></fes:Filter>';
 	}//end buildOgcFilter()
 
-	/**
-	 * Issue a WFS GET request and return the raw response body.
-	 *
-	 * @param string $dataset Dataset slug to interpolate.
-	 * @param array<string,mixed> $query Query-string parameters.
-	 * @param string $expectedAccept The expected response MIME type.
-	 *
-	 * @return string The raw response body (empty on transport failure).
-	 */
-	private function requestRaw(string $dataset, array $query, string $expectedAccept): string {
-		$uri = str_replace('{dataset}', rawurlencode($dataset), $this->baseUri);
-
-		try {
-			$response = $this->httpClient->request(
-				'GET',
-				$uri,
-				[
-					'query' => $query,
-					'timeout' => self::DEFAULT_TIMEOUT,
-					'headers' => ['Accept' => $expectedAccept],
-				]
-			);
-		} catch (GuzzleException $e) {
-			$this->logger->error(
-				'pdok-wfs.http.transport',
-				[
-					'uri' => $uri,
-					'dataset' => $dataset,
-					'request' => ($query['request'] ?? null),
-					'message' => $e->getMessage(),
-				]
-			);
-			return '';
-		}//end try
-
-		return (string)$response->getBody();
-	}//end requestRaw()
 }//end class

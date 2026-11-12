@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/stuf-adapter/tasks.md#task-1
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Util\SafeXmlParser;
+use OCA\Integriq\Service\Stuf\StufNamespaces;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
 use SimpleXMLElement;
@@ -710,16 +714,6 @@ class StUFBGService {
 	 * @spec openspec/changes/stuf-adapter/tasks.md#task-1
 	 */
 	private function resolveNamespace(array $namespaces, string $hint): string {
-		foreach ($namespaces as $prefix => $uri) {
-			if (str_contains(haystack: strtolower($prefix), needle: $hint) === true) {
-				return (string)$uri;
-			}
-
-			if (str_contains(haystack: strtolower($uri), needle: $hint) === true) {
-				return (string)$uri;
-			}
-		}
-
-		return '';
+		return StufNamespaces::byHint(namespaces: $namespaces, hint: $hint);
 	}//end resolveNamespace()
 }//end class

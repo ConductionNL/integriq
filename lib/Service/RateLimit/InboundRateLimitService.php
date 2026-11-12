@@ -3,6 +3,9 @@
 /**
  * Integriq — inbound per-consumer rate-limit + quota enforcement.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The inbound counterpart to the outbound source rate-limiting in
  * {@see \OCA\Integriq\Service\CallService}. After a consumer is resolved
  * and authenticated on an endpoint request, this service counts the request
