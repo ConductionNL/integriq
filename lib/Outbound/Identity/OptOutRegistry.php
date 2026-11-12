@@ -738,14 +738,8 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @return void
 	 */
 	private function matchRecipient(SendDecisionRun $run, AddressedRecipient $addressed): void {
-		$recipient = $addressed->recipient;
-		$addressed->mine = $this->matcher->rowsOf(rows: $run->rows, key: (string)$addressed->key, contactRef: (string)($recipient['contactRef'] ?? ''));
-		$addressed->optOut = $this->matcher->matchingOptOut(
-			rows: $addressed->mine,
-			recipient: $recipient,
-			channel: $run->channel,
-			category: $run->category
-		);
+		$addressed->mine = $this->matcher->rowsOf(run: $run, addressed: $addressed);
+		$addressed->optOut = $this->matcher->matchingOptOut(run: $run, addressed: $addressed);
 
 	}//end matchRecipient()
 
@@ -809,7 +803,7 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 */
 	private function consentPermits(SendDecisionRun $run, AddressedRecipient $addressed): bool {
 		return $run->requiresConsent === false
-			|| $this->matcher->hasConsent(rows: $addressed->mine, recipient: $addressed->recipient, channel: $run->channel, category: $run->category) === true;
+			|| $this->matcher->hasConsent(run: $run, addressed: $addressed) === true;
 
 	}//end consentPermits()
 
