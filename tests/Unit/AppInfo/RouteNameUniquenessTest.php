@@ -153,4 +153,38 @@ class RouteNameUniquenessTest extends TestCase {
 
 	}//end testTheTwoRoutesThatWereLostAreRoutedAgain()
 
+
+	/**
+	 * Every /api/ route also answers under /api/v1/ (the OpenAPI server URL),
+	 * with the same controller method, verb and requirements, and nothing else
+	 * is versioned.
+	 *
+	 * @return void
+	 */
+	public function testEveryApiRouteAnswersUnderTheVersionedBase(): void {
+		$entries = $this->routeFile()['routes'];
+
+		$plain     = [];
+		$versioned = [];
+		foreach ($entries as $entry) {
+			$verb = ($entry['verb'] ?? 'GET');
+			if (str_starts_with($entry['url'], '/api/v1/') === true && ($entry['postfix'] ?? '') !== '' && str_ends_with($entry['postfix'], 'V1') === true) {
+				$versioned[$verb.' '.$entry['url']] = $entry;
+			} else if (str_starts_with($entry['url'], '/api/') === true) {
+				$plain[$verb.' '.$entry['url']] = $entry;
+			}
+		}
+
+		$this->assertNotEmpty($plain);
+		$this->assertCount(count($plain), $versioned);
+		foreach ($plain as $key => $entry) {
+			[$verb, $url] = explode(' ', $key, 2);
+			$twin         = ($versioned[$verb.' /api/v1/'.substr($url, 5)] ?? null);
+			$this->assertNotNull($twin, $key.' has no /api/v1/ twin');
+			$this->assertSame($entry['name'], $twin['name']);
+			$this->assertSame(($entry['postfix'] ?? '').'V1', $twin['postfix']);
+			$this->assertSame(($entry['requirements'] ?? null), ($twin['requirements'] ?? null));
+			$this->assertSame(($entry['defaults'] ?? null), ($twin['defaults'] ?? null));
+		}
+	}//end testEveryApiRouteAnswersUnderTheVersionedBase()
 }//end class
