@@ -163,19 +163,31 @@ class IntegriqAgentTools {
 		?string $approvalId=null,
 		?bool $forceDeletion=null
 	): array {
+		$this->refuseForceDeletion(forceDeletion: $forceDeletion);
+
+		$batch = new AgentToolBatch(tool: 'runSynchronization', store: 'synchronization');
+		$batch->ids = [$synchronizationId];
+		$batch->agentId = $agentId;
+
+		return $this->twoPhase(batch: $batch, approval: new BatchApproval(proposalId: $proposalId, approvalId: $approvalId));
+	}//end runSynchronization()
+
+	/**
+	 * Refuse the deletion guard override: it stays a human act in the app.
+	 *
+	 * @param bool|null $forceDeletion The override, as the agent passed it.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the agent passed it at all.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function refuseForceDeletion(?bool $forceDeletion): void {
 		if ($forceDeletion !== null) {
 			throw new InvalidArgumentException('forceDeletion is not available to agents; the deletion guard override stays a human act in the app.');
 		}
-
-		return $this->twoPhase(
-			tool: 'runSynchronization',
-			store: 'synchronization',
-			ids: [$synchronizationId],
-			agentId: $agentId,
-			proposalId: $proposalId,
-			approvalId: $approvalId
-		);
-	}//end runSynchronization()
+	}//end refuseForceDeletion()
 
 	/**
 	 * Replay a batch of dead letters, after a person approved the batch in Hermiq.
@@ -208,14 +220,11 @@ class IntegriqAgentTools {
 		?string $proposalId=null,
 		?string $approvalId=null
 	): array {
-		return $this->twoPhase(
-			tool: 'replayDeadLetters',
-			store: $this->deadLetterStore(store: $store),
-			ids: $ids,
-			agentId: $agentId,
-			proposalId: $proposalId,
-			approvalId: $approvalId
-		);
+		$batch = new AgentToolBatch(tool: 'replayDeadLetters', store: $this->deadLetterStore(store: $store));
+		$batch->ids = $ids;
+		$batch->agentId = $agentId;
+
+		return $this->twoPhase(batch: $batch, approval: new BatchApproval(proposalId: $proposalId, approvalId: $approvalId));
 	}//end replayDeadLetters()
 
 	/**
@@ -248,14 +257,11 @@ class IntegriqAgentTools {
 		?string $proposalId=null,
 		?string $approvalId=null
 	): array {
-		return $this->twoPhase(
-			tool: 'discardDeadLetters',
-			store: $this->deadLetterStore(store: $store),
-			ids: $ids,
-			agentId: $agentId,
-			proposalId: $proposalId,
-			approvalId: $approvalId
-		);
+		$batch = new AgentToolBatch(tool: 'discardDeadLetters', store: $this->deadLetterStore(store: $store));
+		$batch->ids = $ids;
+		$batch->agentId = $agentId;
+
+		return $this->twoPhase(batch: $batch, approval: new BatchApproval(proposalId: $proposalId, approvalId: $approvalId));
 	}//end discardDeadLetters()
 
 	/**
@@ -388,88 +394,140 @@ class IntegriqAgentTools {
 	}//end listDeadLetters()
 
 	/**
-	 * Stage a batch (phase 1) or run it on a verified approval (phase 2).
+	 * Stage a batch (phase 1), or run it on a server-verified approval (phase 2).
 	 *
-	 * @param string           $tool       The tool name.
-	 * @param string           $store      `synchronization`, `sync` or `event`.
-	 * @param array<int,mixed> $ids        The target ids.
-	 * @param string|null      $agentId    The acting agent.
-	 * @param string|null      $proposalId The staged batch, in phase 2.
-	 * @param string|null      $approvalId The Hermiq approval, in phase 2.
+	 * @param AgentToolBatch $batch    The tool, the store, the target ids and the acting agent.
+	 * @param BatchApproval  $approval The staged batch and the Hermiq approval, in phase 2.
 	 *
 	 * @return array<string,mixed> The staged batch, or the outcomes.
 	 *
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
 	 */
-	private function twoPhase(string $tool, string $store, array $ids, ?string $agentId, ?string $proposalId, ?string $approvalId): array {
-		$ids             = $this->validIds(ids: $ids);
-		$user            = $this->authorize(tool: $tool, agentId: $agentId, ids: $ids);
-		$record          = $this->record(tool: $tool, user: $user, agentId: $agentId, ids: $ids, outcome: 'staged');
-		$record['store'] = $store;
-		if ($proposalId === null || $proposalId === '') {
-			foreach ($ids as $id) {
-				$this->findObject(schema: self::STORE_SCHEMAS[$store], id: $id);
-			}
-
-			$staged = $this->gate->stage(record: $record);
-			return [
-				'status'    => 'staged',
-				'proposal'  => $staged['proposal'],
-				'tool'      => $record['tool'],
-				'targetIds' => $ids,
-				'binding'   => $staged['binding'],
-				'message'   => 'Nothing ran. A person must approve this batch in Hermiq; then call again with proposalId and approvalId.',
-			];
+	private function twoPhase(AgentToolBatch $batch, BatchApproval $approval): array {
+		$batch->ids = $this->validIds(ids: $batch->ids);
+		$call = new AgentToolCall(tool: $batch->tool, user: $this->authorize(tool: $batch->tool, agentId: $batch->agentId, ids: $batch->ids));
+		$call->agentId = $batch->agentId;
+		$call->ids = $batch->ids;
+		$batch->record = $this->record(call: $call, outcome: 'staged');
+		$batch->record['store'] = $batch->store;
+		if ($approval->isFirstPhase() === true) {
+			return $this->stageBatch(batch: $batch);
 		}
 
-		$admitted = $this->gate->admit(proposalId: $proposalId, approvalId: (string)$approvalId, record: $record);
-		$results  = [];
-		foreach ($ids as $id) {
-			$results[] = $this->execute(tool: $tool, store: $store, id: $id, actorUid: $user->getUID());
+		return $this->runBatch(batch: $batch, approval: $approval);
+	}//end twoPhase()
+
+	/**
+	 * Phase 1: prove every target exists and stage the batch; nothing runs.
+	 *
+	 * @param AgentToolBatch $batch The checked batch, its record set.
+	 *
+	 * @return array<string,mixed> The staged batch.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function stageBatch(AgentToolBatch $batch): array {
+		foreach ($batch->ids as $id) {
+			$this->findObject(schema: self::STORE_SCHEMAS[$batch->store], id: $id);
+		}
+
+		$staged = $this->gate->stage(record: $batch->record);
+		return [
+			'status'    => 'staged',
+			'proposal'  => $staged['proposal'],
+			'tool'      => $batch->record['tool'],
+			'targetIds' => $batch->ids,
+			'binding'   => $staged['binding'],
+			'message'   => 'Nothing ran. A person must approve this batch in Hermiq; then call again with proposalId and approvalId.',
+		];
+	}//end stageBatch()
+
+	/**
+	 * Phase 2: admit the approval, run each target once, and close the batch.
+	 *
+	 * @param AgentToolBatch $batch    The checked batch, its record set.
+	 * @param BatchApproval  $approval The staged batch and the Hermiq approval.
+	 *
+	 * @return array<string,mixed> The outcomes.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function runBatch(AgentToolBatch $batch, BatchApproval $approval): array {
+		$proposalId = (string)$approval->proposalId;
+		$admitted   = $this->gate->admit(proposalId: $proposalId, approvalId: (string)$approval->approvalId, record: $batch->record);
+		$results    = [];
+		foreach ($batch->ids as $id) {
+			$results[] = $this->execute(batch: $batch, id: $id);
 		}
 
 		$this->gate->finish(proposalId: $proposalId, proposal: $admitted['proposal'], results: $results);
 
 		return ['status' => 'executed', 'proposal' => $proposalId, 'approvedBy' => $admitted['approvedBy'], 'results' => $results];
-	}//end twoPhase()
+	}//end runBatch()
 
 	/**
 	 * Run one target through its existing service path.
 	 *
-	 * @param string $tool     The tool name.
-	 * @param string $store    The target store.
-	 * @param string $id       The target id.
-	 * @param string $actorUid The granting user, recorded by the audited paths.
+	 * @param AgentToolBatch $batch The admitted batch; its record names the granting user, recorded by the audited paths.
+	 * @param string         $id    The target id.
 	 *
 	 * @return array<string,mixed> The id and its outcome.
 	 *
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-106--every-curated-tool-must-run-the-existing-adr-023-action-check-and-delegate-to-the-existing-controller-backed-service-path
 	 */
-	private function execute(string $tool, string $store, string $id, string $actorUid): array {
+	private function execute(AgentToolBatch $batch, string $id): array {
 		try {
-			if ($tool === 'runSynchronization') {
-				$found  = $this->findObject(schema: 'synchronization', id: $id);
-				$result = $this->synchronization->synchronize(synchronization: $found, isTest: false, force: false, forceDeletion: false);
-				return ['id' => $id, 'outcome' => 'done', 'objects' => ($result['result']['objects'] ?? [])];
+			if ($batch->tool === 'runSynchronization') {
+				return $this->runOneSynchronization(id: $id);
 			}
 
-			$service = $this->syncDeadLetters;
-			if ($store === 'event') {
-				$service = $this->events;
-			}
-
-			if ($tool === 'replayDeadLetters') {
-				$service->replayMessage(id: $id, actorUid: $actorUid);
-				return ['id' => $id, 'outcome' => 'done'];
-			}
-
-			$service->discardMessage(id: $id, actorUid: $actorUid);
+			$this->handleDeadLetter(batch: $batch, id: $id);
 		} catch (Throwable $e) {
 			return ['id' => $id, 'outcome' => 'failed', 'message' => $this->projection->truncate(value: $e->getMessage())];
-		}//end try
+		}
 
 		return ['id' => $id, 'outcome' => 'done'];
 	}//end execute()
+
+	/**
+	 * Run one synchronization through its guarded path, never with the deletion override.
+	 *
+	 * @param string $id The synchronization id.
+	 *
+	 * @return array<string,mixed> The id, its outcome and the objects it touched.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-106--every-curated-tool-must-run-the-existing-adr-023-action-check-and-delegate-to-the-existing-controller-backed-service-path
+	 */
+	private function runOneSynchronization(string $id): array {
+		$found  = $this->findObject(schema: 'synchronization', id: $id);
+		$result = $this->synchronization->synchronize(synchronization: $found, isTest: false, force: false, forceDeletion: false);
+		return ['id' => $id, 'outcome' => 'done', 'objects' => ($result['result']['objects'] ?? [])];
+	}//end runOneSynchronization()
+
+	/**
+	 * Replay or discard one dead letter through its store's audited path, as the granting user.
+	 *
+	 * @param AgentToolBatch $batch The admitted batch.
+	 * @param string         $id    The dead letter id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-106--every-curated-tool-must-run-the-existing-adr-023-action-check-and-delegate-to-the-existing-controller-backed-service-path
+	 */
+	private function handleDeadLetter(AgentToolBatch $batch, string $id): void {
+		$service = $this->syncDeadLetters;
+		if ($batch->store === 'event') {
+			$service = $this->events;
+		}
+
+		$actorUid = (string)$batch->record['grantingUser'];
+		if ($batch->tool === 'replayDeadLetters') {
+			$service->replayMessage(id: $id, actorUid: $actorUid);
+			return;
+		}
+
+		$service->discardMessage(id: $id, actorUid: $actorUid);
+	}//end handleDeadLetter()
 
 	/**
 	 * The ADR-023 check, recorded when it denies.
@@ -519,7 +577,10 @@ class IntegriqAgentTools {
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-108--every-invocation-including-refusals-must-be-attributed-to-the-agent-principal-in-the-audit-trail
 	 */
 	private function recordSingle(string $tool, IUser $user, ?string $agentId, array $ids, string $outcome, string $reason): void {
-		$record = $this->record(tool: $tool, user: $user, agentId: $agentId, ids: $ids, outcome: $outcome);
+		$call = new AgentToolCall(tool: $tool, user: $user);
+		$call->agentId = $agentId;
+		$call->ids = $ids;
+		$record = $this->record(call: $call, outcome: $outcome);
 		if ($reason !== '') {
 			$record['reason'] = $reason;
 		}
@@ -530,23 +591,20 @@ class IntegriqAgentTools {
 	/**
 	 * The fields every record carries.
 	 *
-	 * @param string            $tool    The tool name.
-	 * @param IUser             $user    The granting user.
-	 * @param string|null       $agentId The acting agent.
-	 * @param array<int,string> $ids     The target ids.
-	 * @param string            $outcome The outcome.
+	 * @param AgentToolCall $call    The tool, the granting user, the acting agent and the target ids.
+	 * @param string        $outcome The outcome.
 	 *
 	 * @return array<string,mixed> The agent_action object.
 	 *
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-108--every-invocation-including-refusals-must-be-attributed-to-the-agent-principal-in-the-audit-trail
 	 */
-	private function record(string $tool, IUser $user, ?string $agentId, array $ids, string $outcome): array {
+	private function record(AgentToolCall $call, string $outcome): array {
 		return [
-			'tool'         => 'integriq.' . $tool,
-			'agent'        => $this->agent(agentId: $agentId),
-			'grantingUser' => $user->getUID(),
+			'tool'         => 'integriq.' . $call->tool,
+			'agent'        => $this->agent(agentId: $call->agentId),
+			'grantingUser' => $call->user->getUID(),
 			'outcome'      => $outcome,
-			'targetIds'    => array_values($ids),
+			'targetIds'    => array_values($call->ids),
 			'at'           => (new DateTimeImmutable())->format(DATE_ATOM),
 		];
 	}//end record()

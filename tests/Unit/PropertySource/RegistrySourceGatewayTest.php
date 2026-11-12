@@ -31,6 +31,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\Integriq\PropertySource\RegistrySourceGateway
  */
 class RegistrySourceGatewayTest extends TestCase {
+
+	/**
+	 * The golden outcomes, taken before the answer handling was split.
+	 *
+	 * @var string
+	 */
+	private const GOLDEN_ANSWERS = '{"json-string:read":{"returned":{"a":[1,2]},"logs":[]},"json-string:readWithoutBodies":{"returned":{"a":[1,2]},"logs":[]},"array-body:read":{"returned":{"b":true},"logs":[]},"array-body:readWithoutBodies":{"returned":{"b":true},"logs":[]},"not-json:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered a body this binding cannot read.","provider":"kvk","logs":[]},"not-json:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered a body this binding cannot read.","provider":"kvk","logs":[]},"scalar-json:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered a body this binding cannot read.","provider":"kvk","logs":[]},"scalar-json:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered a body this binding cannot read.","provider":"kvk","logs":[]},"no-body:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered a body this binding cannot read.","provider":"kvk","logs":[]},"no-body:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered a body this binding cannot read.","provider":"kvk","logs":[]},"no-status:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 0.","provider":"kvk","logs":[]},"no-status:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 0.","provider":"kvk","logs":[]},"below-200:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 199.","provider":"kvk","logs":[]},"below-200:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 199.","provider":"kvk","logs":[]},"above-299:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 300.","provider":"kvk","logs":[]},"above-299:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 300.","provider":"kvk","logs":[]},"not-found:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 404.","provider":"kvk","logs":[]},"not-found:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" answered HTTP 404.","provider":"kvk","logs":[]},"transport:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" did not answer: connection refused","provider":"kvk","logs":[["property-source.gateway.transport",{"provider":"kvk","source":"kvk-source","error":"connection refused"}]]},"transport:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\SourceUnreachableException","message":"Source \\"kvk-source\\" did not answer: connection refused","provider":"kvk","logs":[["property-source.gateway.transport",{"provider":"kvk","source":"kvk-source","error":"connection refused"}],["property-source.gateway.transport",{"provider":"kvk","source":"kvk-source","error":"connection refused"}]]},"no-source:read":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\MissingSourceConfigurationException","message":"Provider \\"kvk\\" has no source configured under \\"kvk-source\\", so no call was made.","provider":"kvk","logs":[]},"no-source:readWithoutBodies":{"threw":"OCA\\\\Integriq\\\\PropertySource\\\\Exception\\\\MissingSourceConfigurationException","message":"Provider \\"kvk\\" has no source configured under \\"kvk-source\\", so no call was made.","provider":"kvk","logs":[]}}';
 	/**
 	 * The call the gateway made: method and config.
 	 *
@@ -120,4 +127,65 @@ class RegistrySourceGatewayTest extends TestCase {
 		$gateway = new RegistrySourceGateway($store, $this->createMock(CallService::class), $this->createMock(LoggerInterface::class));
 		$this->assertNull($gateway->configuration('brp-haalcentraal'));
 	}//end testASourceConfigurationIsReadBySlug()
+
+	/**
+	 * GOLDEN: what a read returns or throws for every answer the call engine
+	 * can give, and what it logs. Pinned before the answer handling was split.
+	 *
+	 * @return void
+	 */
+	public function testGoldenAnswersAndFailures(): void {
+		$cases = [
+			'json-string' => ['statusCode' => 200, 'response' => ['body' => '{"a":[1,2]}']],
+			'array-body' => ['statusCode' => 299, 'response' => ['body' => ['b' => true]]],
+			'not-json' => ['statusCode' => 201, 'response' => ['body' => 'not json']],
+			'scalar-json' => ['statusCode' => 200, 'response' => ['body' => '42']],
+			'no-body' => ['statusCode' => 204],
+			'no-status' => ['response' => ['body' => '{}']],
+			'below-200' => ['statusCode' => 199, 'response' => ['body' => '{}']],
+			'above-299' => ['statusCode' => 300, 'response' => ['body' => '{}']],
+			'not-found' => ['statusCode' => '404', 'response' => ['body' => '{}']],
+			'transport' => null,
+			'no-source' => false,
+		];
+
+		$outcomes = [];
+		foreach ($cases as $name => $callLog) {
+			$logs = [];
+			$logger = $this->createMock(LoggerInterface::class);
+			$logger->method('warning')->willReturnCallback(
+				function (string $message, array $context) use (&$logs): void {
+					$logs[] = [$message, $context];
+				}
+			);
+			$store = $this->createMock(ConnectionStore::class);
+			$store->method('findSourceBySlug')->willReturn($callLog === false ? null : new ObjectEntity());
+			$calls = $this->createMock(CallService::class);
+			$calls->method('call')->willReturnCallback(
+				function () use ($callLog): ObjectEntity {
+					if ($callLog === null) {
+						throw new \RuntimeException('connection refused');
+					}
+
+					$log = new ObjectEntity();
+					$log->setObject($callLog);
+					return $log;
+				}
+			);
+			$gateway = new RegistrySourceGateway($store, $calls, $logger);
+
+			foreach (['read', 'readWithoutBodies'] as $method) {
+				try {
+					$outcome = ['returned' => $gateway->$method('kvk', 'kvk-source', '/zoeken', ['q' => 1])];
+				} catch (\Throwable $exception) {
+					$outcome = ['threw' => get_class($exception), 'message' => $exception->getMessage(), 'provider' => $exception->getProviderId()];
+				}
+
+				$outcomes[$name . ':' . $method] = $outcome + ['logs' => $logs];
+			}
+		}//end foreach
+
+		$this->assertSame(self::GOLDEN_ANSWERS, json_encode($outcomes));
+	}//end testGoldenAnswersAndFailures()
+
 }//end class

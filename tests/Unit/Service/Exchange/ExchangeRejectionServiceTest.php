@@ -277,4 +277,70 @@ class ExchangeRejectionServiceTest extends TestCase {
 		$this->assertNull($this->service->find('dl-plain'));
 
 	}//end testAPlainDeadLetterIsNotAnExchangeRejection()
+
+	/**
+	 * The whole row of a recorded rejection and of two migrated ones, in key order.
+	 *
+	 * @return void
+	 */
+	public function testTheStoredRowsInFull(): void {
+		$id = $this->failedRejection();
+		$recorded = $this->store[$id];
+		$this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\dT/', $recorded['attempts'][0]['at']);
+		$recorded['attempts'][0]['at'] = 'NOW';
+		$this->assertSame(
+			[
+				'exchangeJob' => 'job-1',
+				'exchangeTarget' => 'bron-rod',
+				'originId' => 'lp-9',
+				'ownerRef' => 'learner-profile/lp-9',
+				'sourceKind' => 'learner-profile',
+				'phase' => $recorded['phase'],
+				'errorCode' => 'BRON-102',
+				'offendingFields' => ['geboorteDatum'],
+				'error' => 'Ontbrekende geboortedatum',
+				'payload' => [],
+				'status' => 'failed',
+				'retryCount' => 0,
+				'attempts' => [['at' => 'NOW', 'error' => 'BRON-102']],
+				'ownerApp' => 'learniq',
+			],
+			$recorded
+		);
+
+		$job = $this->entity('job-9', ['ownerApp' => 'learniq', 'exchangeTarget' => 'bron-rod']);
+		$waived = $this->service->migrate($job, [
+			'recordId' => 'lp-1',
+			'ownerRef' => 'own/1',
+			'errorCode' => 'BRON-201',
+			'status' => 'waived',
+			'detectedAt' => '2026-01-02T03:04:05+00:00',
+			'correctedBy' => 'teacher',
+			'correctedAt' => '',
+			'correctionDeadlineAt' => '2026-02-01',
+			'waivedBy' => 'admin',
+		])->getObject();
+		$this->assertSame(
+			[
+				'exchangeJob', 'exchangeTarget', 'originId', 'ownerRef', 'sourceKind', 'phase', 'errorCode', 'offendingFields',
+				'error', 'payload', 'status', 'retryCount', 'attempts', 'ownerApp', 'correctedBy', 'correctionDeadlineAt',
+				'discardedBy', 'discardedAt', 'discardReason',
+			],
+			array_keys($waived)
+		);
+		$this->assertSame('own/1', $waived['ownerRef']);
+		$this->assertSame('', $waived['sourceKind']);
+		$this->assertSame('job-9', $waived['exchangeJob']);
+		$this->assertSame([['at' => '2026-01-02T03:04:05+00:00', 'error' => 'BRON-201']], $waived['attempts']);
+		$this->assertSame(['teacher', '2026-02-01'], [$waived['correctedBy'], $waived['correctionDeadlineAt']]);
+		$this->assertSame(['admin', '2026-01-02T03:04:05+00:00', ''], [$waived['discardedBy'], $waived['discardedAt'], $waived['discardReason']]);
+
+		$open = $this->service->migrate($job, ['sourceKind' => 'learner-profile'])->getObject();
+		$this->assertSame('failed', $open['status']);
+		$this->assertSame('send-failed', $open['errorCode']);
+		$this->assertSame('', $open['ownerRef']);
+		$this->assertArrayNotHasKey('discardedBy', $open);
+		$this->assertSame('learniq', $open['ownerApp']);
+
+	}//end testTheStoredRowsInFull()
 }//end class

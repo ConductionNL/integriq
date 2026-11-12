@@ -115,41 +115,65 @@ class MsgParser {
 		$entries = $reader->getEntries();
 		$properties = [];
 		foreach ($reader->getChildren($storageId) as $childId) {
-			$entry = $entries[$childId];
-			if ((int)$entry['type'] !== CompoundFileReader::TYPE_STREAM) {
+			$tag = $this->propertyTag(entry: $entries[$childId]);
+			if ($tag === null) {
 				continue;
 			}
 
-			$name = (string)$entry['name'];
-			if (str_starts_with($name, self::PROPERTY_PREFIX) === false) {
-				continue;
-			}
-
-			$tag = substr($name, strlen(self::PROPERTY_PREFIX));
-			if (strlen($tag) < 8) {
-				continue;
-			}
-
-			$propertyId = strtoupper(substr($tag, 0, 4));
-			$type = strtoupper(substr($tag, 4, 4));
-			$value = $reader->readStream($childId);
-			if ($type === '001F') {
-				$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $value);
-				$value = $converted;
-				if ($converted === false) {
-					$value = '';
-				}
-			}
-
+			$value = $this->decodeProperty(tag: $tag, value: $reader->readStream($childId));
 			// A property present twice keeps the first, matching the EML reader.
-			if (isset($properties[$propertyId]) === false) {
-				$properties[$propertyId] = $value;
-			}
+			$properties += [strtoupper(substr($tag, 0, 4)) => $value];
 		}
 
 		return $properties;
 
 	}//end readProperties()
+
+	/**
+	 * The tag (property id and type, 8+ hex characters) of a property
+	 * stream, or null for any other entry.
+	 *
+	 * @param array<string,mixed> $entry The directory entry.
+	 *
+	 * @return string|null The tag.
+	 */
+	private function propertyTag(array $entry): ?string {
+		$name = (string)$entry['name'];
+		if ((int)$entry['type'] !== CompoundFileReader::TYPE_STREAM || str_starts_with($name, self::PROPERTY_PREFIX) === false) {
+			return null;
+		}
+
+		$tag = substr($name, strlen(self::PROPERTY_PREFIX));
+		if (strlen($tag) < 8) {
+			return null;
+		}
+
+		return $tag;
+
+	}//end propertyTag()
+
+	/**
+	 * Decode a property stream: unicode strings (type 001F) to UTF-8,
+	 * every other type as the raw bytes.
+	 *
+	 * @param string $tag   The property tag.
+	 * @param string $value The stream bytes.
+	 *
+	 * @return string The value.
+	 */
+	private function decodeProperty(string $tag, string $value): string {
+		if (strtoupper(substr($tag, 4, 4)) !== '001F') {
+			return $value;
+		}
+
+		$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $value);
+		if ($converted === false) {
+			return '';
+		}
+
+		return $converted;
+
+	}//end decodeProperty()
 
 	/**
 	 * Read every attachment storage.
@@ -162,42 +186,70 @@ class MsgParser {
 		$entries = $reader->getEntries();
 		$attachments = [];
 		foreach ($reader->getChildren(0) as $childId) {
-			$entry = $entries[$childId];
-			if ((int)$entry['type'] !== CompoundFileReader::TYPE_STORAGE) {
-				continue;
+			if ($this->isAttachmentStorage(entry: $entries[$childId]) === true) {
+				$attachments[] = $this->attachment(properties: $this->readProperties(reader: $reader, storageId: $childId));
 			}
-
-			if (str_starts_with((string)$entry['name'], self::ATTACHMENT_PREFIX) === false) {
-				continue;
-			}
-
-			$properties = $this->readProperties(reader: $reader, storageId: $childId);
-			$name = $this->property(properties: $properties, propertyId: '3707');
-			if ($name === '') {
-				$name = $this->property(properties: $properties, propertyId: '3704');
-			}
-
-			$content = $this->property(properties: $properties, propertyId: '3701');
-			$mime = $this->property(properties: $properties, propertyId: '370E');
-			if ($name === '') {
-				$name = 'attachment';
-			}
-
-			if ($mime === '') {
-				$mime = 'application/octet-stream';
-			}
-
-			$attachments[] = [
-				'name' => $name,
-				'mime' => $mime,
-				'size' => strlen($content),
-				'content' => $content,
-			];
 		}
 
 		return $attachments;
 
 	}//end readAttachments()
+
+	/**
+	 * Whether a directory entry is an attachment storage.
+	 *
+	 * @param array<string,mixed> $entry The directory entry.
+	 *
+	 * @return boolean
+	 */
+	private function isAttachmentStorage(array $entry): bool {
+		return (int)$entry['type'] === CompoundFileReader::TYPE_STORAGE
+			&& str_starts_with((string)$entry['name'], self::ATTACHMENT_PREFIX) === true;
+
+	}//end isAttachmentStorage()
+
+	/**
+	 * One attachment from its storage's properties: the long file name, else
+	 * the short one, else "attachment", and an unknown mime type as
+	 * application/octet-stream.
+	 *
+	 * @param array<string,string> $properties The attachment's properties.
+	 *
+	 * @return array<string,mixed> The attachment as `{name, mime, size, content}`.
+	 */
+	private function attachment(array $properties): array {
+		$name = $this->property(properties: $properties, propertyId: '3707');
+		if ($name === '') {
+			$name = $this->property(properties: $properties, propertyId: '3704');
+		}
+
+		$content = $this->property(properties: $properties, propertyId: '3701');
+
+		return [
+			'name' => $this->orDefault(value: $name, default: 'attachment'),
+			'mime' => $this->orDefault(value: $this->property(properties: $properties, propertyId: '370E'), default: 'application/octet-stream'),
+			'size' => strlen($content),
+			'content' => $content,
+		];
+
+	}//end attachment()
+
+	/**
+	 * A value, or the default when it is empty.
+	 *
+	 * @param string $value   The value.
+	 * @param string $default The default.
+	 *
+	 * @return string
+	 */
+	private function orDefault(string $value, string $default): string {
+		if ($value === '') {
+			return $default;
+		}
+
+		return $value;
+
+	}//end orDefault()
 
 	/**
 	 * One property's value.
@@ -237,32 +289,62 @@ class MsgParser {
 	 * @return array<int,string> The recipients.
 	 */
 	private function recipients(string $displayTo, array $headers): array {
-		$source = (string)($headers['to'] ?? '');
-		if ($displayTo !== '') {
-			$source = $displayTo;
-		}
 		$recipients = [];
-		$parts = preg_split('/[;,]/', $source);
-		if ($parts === false) {
-			$parts = [];
-		}
-
-		foreach ($parts as $entry) {
-			$entry = trim($entry);
-			if ($entry === '') {
-				continue;
+		foreach ($this->recipientEntries(displayTo: $displayTo, headers: $headers) as $entry) {
+			$address = $this->recipientAddress(entry: $entry);
+			if ($address !== null) {
+				$recipients[] = $address;
 			}
-
-			if (preg_match('/<([^>]+)>/', $entry, $matches) === 1) {
-				$recipients[] = trim($matches[1]);
-				continue;
-			}
-
-			$recipients[] = $entry;
 		}
 
 		return $recipients;
 
 	}//end recipients()
+
+	/**
+	 * The raw recipient entries: the display-to property split on ; and ,
+	 * or, without it, the stored To header.
+	 *
+	 * @param string               $displayTo The `PR_DISPLAY_TO` value.
+	 * @param array<string,string> $headers   The stored internet headers.
+	 *
+	 * @return array<int,string> The entries, untrimmed.
+	 */
+	private function recipientEntries(string $displayTo, array $headers): array {
+		$source = (string)($headers['to'] ?? '');
+		if ($displayTo !== '') {
+			$source = $displayTo;
+		}
+
+		$parts = preg_split('/[;,]/', $source);
+		if ($parts === false) {
+			return [];
+		}
+
+		return $parts;
+
+	}//end recipientEntries()
+
+	/**
+	 * One recipient's address: the part inside angle brackets when present,
+	 * otherwise the trimmed entry; null for an empty entry.
+	 *
+	 * @param string $entry The raw entry.
+	 *
+	 * @return string|null The address.
+	 */
+	private function recipientAddress(string $entry): ?string {
+		$entry = trim($entry);
+		if ($entry === '') {
+			return null;
+		}
+
+		if (preg_match('/<([^>]+)>/', $entry, $matches) === 1) {
+			return trim($matches[1]);
+		}
+
+		return $entry;
+
+	}//end recipientAddress()
 
 }//end class
