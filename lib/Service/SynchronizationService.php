@@ -1466,22 +1466,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	private function contractIdentity(array $object): ?string {
-		$uuid = ($object['uuid'] ?? null);
-		if ($uuid !== null && (string)$uuid !== '') {
-			return (string)$uuid;
-		}
-
-		$id = ($object['id'] ?? null);
-		if ($id === null || is_numeric($id) === true) {
-			return null;
-		}
-
-		$id = (string)$id;
-		if ($id === '') {
-			return null;
-		}
-
-		return $id;
+		return ContractIdentity::forUpsert(object: $object);
 	}//end contractIdentity()
 
 	/**
