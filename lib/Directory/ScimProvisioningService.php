@@ -39,12 +39,10 @@ declare(strict_types=1);
 namespace OCA\Integriq\Directory;
 
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
-use OCP\Group\ISubAdmin;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Security\ISecureRandom;
-use OCP\Settings\IManager as ISettingsManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -74,18 +72,6 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 	 * @var integer
 	 */
 	private const GENERATED_PASSWORD_LENGTH = 48;
-
-	/**
-	 * The groups SCIM may never write, whatever the caller presents.
-	 *
-	 * Not configurable, by design. A deployment that could switch this off would
-	 * eventually be a deployment that had.
-	 *
-	 * @var array<int,string>
-	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
-	 */
-	private const PRIVILEGED_GROUPS = ['admin'];
 
 	/**
 	 * What a caller is told when it names a privileged group.
@@ -161,8 +147,7 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 	 * @param LoggerInterface $logger Logger for provisioning outcomes.
 	 * @param DirectorySource $directorySource Supplies the configured directory connections.
 	 * @param GroupMappingResolver $mappingResolver Supplies the groups a connection declares it manages.
-	 * @param ISubAdmin $subAdmin Tells whether an account is a group sub-admin.
-	 * @param ISettingsManager $settingsManager Tells whether an account holds delegated admin settings.
+	 * @param PrivilegedAccountGuard $accountGuard Tells whether an account is too privileged to be written over SCIM.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-scim-provisioning-creates-changes-and-deactivates-accounts-req-ds-003
 	 */
@@ -174,8 +159,7 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly DirectorySource $directorySource,
 		private readonly GroupMappingResolver $mappingResolver,
-		private readonly ISubAdmin $subAdmin,
-		private readonly ISettingsManager $settingsManager,
+		private readonly PrivilegedAccountGuard $accountGuard,
 	) {
 
 	}//end __construct()
@@ -239,59 +223,25 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 			return;
 		}
 
-		$privileged = $this->holdsDelegatedAdminRights(user: $user);
-		foreach (self::PRIVILEGED_GROUPS as $privilegedGroup) {
-			if ($privileged === false && $this->groupManager->isInGroup($userId, $privilegedGroup) !== true) {
-				continue;
-			}
-
-			$this->logger->warning(
-				'[Scim] consumer ' . $consumerLabel . ' was refused a write to the account ' . $userId
-				. ': the account holds a privileged group membership'
-			);
-
-			throw new DirectorySyncRefusalException(
-				message: 'the account holds a privileged group membership and is never writable over SCIM',
-				context: [
-					'user' => $userId,
-					'consumer' => $consumerLabel,
-					'detail' => self::REFUSAL_DETAIL_PRIVILEGED_USER,
-				]
-			);
+		if ($this->accountGuard->isPrivileged(user: $user) === false) {
+			return;
 		}
+
+		$this->logger->warning(
+			'[Scim] consumer ' . $consumerLabel . ' was refused a write to the account ' . $userId
+			. ': the account holds a privileged group membership'
+		);
+
+		throw new DirectorySyncRefusalException(
+			message: 'the account holds a privileged group membership and is never writable over SCIM',
+			context: [
+				'user' => $userId,
+				'consumer' => $consumerLabel,
+				'detail' => self::REFUSAL_DETAIL_PRIVILEGED_USER,
+			]
+		);
 
 	}//end assertWritableUser()
-
-	/**
-	 * Whether the account administers others without being in `admin` (iq-a-f5).
-	 *
-	 * A group sub-admin manages the accounts of their groups, and an account
-	 * with delegated admin settings can configure the instance; rewriting the
-	 * e-mail address of either hands over its password reset. Both are as
-	 * privileged as `admin` for SCIM. Fails closed: when the question cannot be
-	 * answered the account is treated as privileged.
-	 *
-	 * @param IUser $user The account the caller named.
-	 *
-	 * @return bool True when the account must not be written over SCIM.
-	 *
-	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-must-not-write-the-administrator-group-req-ds-008
-	 */
-	private function holdsDelegatedAdminRights(IUser $user): bool {
-		try {
-			if ($this->subAdmin->isSubAdmin($user) === true) {
-				return true;
-			}
-
-			return $this->settingsManager->getAllAllowedAdminSettings($user) !== [];
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				'[Scim] could not decide whether an account holds delegated admin rights; treating it as privileged',
-				['exception' => $e->getMessage()]
-			);
-			return true;
-		}
-	}//end holdsDelegatedAdminRights()
 
 	/**
 	 * Refuse the write unless this group is one SCIM may manage.
@@ -319,7 +269,7 @@ class ScimProvisioningService implements ScimProvisioningServiceInterface {
 		// so it is a narrower exposure, not a closed one (integriq#2104 review
 		// 5264751700). Lifting the assertion to a shared place both routes call is
 		// its own change.
-		if (in_array(needle: $groupId, haystack: self::PRIVILEGED_GROUPS, strict: true) === true) {
+		if (in_array(needle: $groupId, haystack: PrivilegedAccountGuard::PRIVILEGED_GROUPS, strict: true) === true) {
 			$this->refuse(
 				groupId: $groupId,
 				consumerLabel: $consumerLabel,

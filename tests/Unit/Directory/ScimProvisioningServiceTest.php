@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Directory;
 use OCA\Integriq\Directory\DirectorySource;
 use OCA\Integriq\Directory\GroupMappingResolver;
 use OCA\Integriq\Directory\OpenWorkReporter;
+use OCA\Integriq\Directory\PrivilegedAccountGuard;
 use OCA\Integriq\Directory\ScimProvisioningService;
 use OCA\Integriq\Exception\DirectorySyncRefusalException;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -104,8 +105,12 @@ class ScimProvisioningServiceTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			directorySource: $this->directorySource(managedGroups: $managedGroups),
 			mappingResolver: $this->mappingResolver(managedGroups: $managedGroups),
-			subAdmin: $this->subAdmin,
-			settingsManager: $this->settingsManager
+			accountGuard: new PrivilegedAccountGuard(
+				groupManager: $this->groupManager,
+				subAdmin: $this->subAdmin,
+				settingsManager: $this->settingsManager,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end service()
 
