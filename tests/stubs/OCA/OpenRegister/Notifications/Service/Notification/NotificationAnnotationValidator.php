@@ -24,8 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use DateTimeZone;
-
 /**
  * Validates the shape of the `x-openregister-notifications` annotation.
  *
@@ -43,52 +41,88 @@ use DateTimeZone;
  *   Title=`subject`, body=`message`. When absent, the body is auto-derived
  *   ("Open in {AppName}.") if `actions` are declared, else left empty.
  *
+ * @spec openspec/specs/notificatie-engine/spec.md
+ *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-final class NotificationAnnotationValidator {
-
-	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
-
-	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers'];
+final class NotificationAnnotationValidator implements NotificationAnnotationValidatorInterface {
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
 
 	/**
-	 * Transport kinds a rule may declare beside its channels.
+	 * Every diagnostic this class reports: fault => [error code, sprintf format].
 	 */
-	private const VALID_TRANSPORT_KINDS = ['outbound'];
+	private const FAULTS = [
+		'notifications-empty'  => ['notifications-empty', 'x-openregister-notifications must declare at least one notification.'],
+		'bad-name'             => ['notification-bad-name', 'Notification names must be non-empty strings.'],
+		'malformed'            => ['notification-malformed', 'Notification "%s" must be an object.'],
+		'channels-empty'       => ['notification-channels-empty', 'Notification "%s" must declare at least one channel.'],
+		'bad-channel'          => ['notification-bad-channel', 'Notification "%s" channel "%s" is not in [%s].'],
+		'bad-opt-in-channel'   => ['notification-bad-opt-in-channel', 'Notification "%s" opt-in channel "%s" is not in [%s].'],
+		'bad-message-category' => [
+			'notification-bad-message-category',
+			'Notification "%s" messageCategory "%s" is not in [%s].',
+		],
+		'bad-origin-app'       => ['notification-bad-origin-app', 'Notification "%s" originApp must be a non-empty string app id.'],
+		'subject-empty'        => ['notification-no-subject', 'Notification "%s" requires a non-empty subject string.'],
+		'subject-type'         => ['notification-no-subject', 'Notification "%s" requires a subject string or per-locale map.'],
+		'subject-no-locale'    => [
+			'notification-no-subject',
+			'Notification "%s" subject map must declare at least one locale (e.g. nl, en).',
+		],
+		'bad-subject-locale'   => [
+			'notification-bad-subject-locale',
+			'Notification "%s" subject for locale "%s" must be a non-empty string.',
+		],
+		'bad-default-locale'   => [
+			'notification-bad-default-locale',
+			'Notification "%s" defaultLocale "%s" is not declared in the subject map.',
+		],
+		'webhook-no-url'       => [
+			'notification-webhook-no-url',
+			'Notification "%s" declares the `webhook` channel but webhook.url is missing or malformed.',
+		],
+		'talk-no-token'        => [
+			'notification-talk-no-token',
+			'Notification "%s" declares the `talk` channel but talk.token is missing or not a string.',
+		],
+		'domain-malformed'     => ['notification-domain-malformed', 'Notification "%s" domain must be a non-empty string.'],
+		'critical-not-boolean' => ['notification-critical-not-boolean', 'Notification "%s" `critical` must be a boolean.'],
+		'organisation-empty'   => ['notification-bad-organisation', 'Notification "%s" organisation must be a non-empty string.'],
+		'organisation-no-entry' => [
+			'notification-bad-organisation',
+			'Notification "%s" organisation array must declare at least one entry.',
+		],
+		'organisation-bad-entry' => [
+			'notification-bad-organisation',
+			'Notification "%s" organisation array entries must be non-empty strings.',
+		],
+		'organisation-type'    => [
+			'notification-bad-organisation',
+			'Notification "%s" organisation must be a string or an array of strings.',
+		],
+	];
 
 	/**
-	 * Valid action `target.kind` values (foundation contract / ADR-031 dialect).
+	 * Validates each rule's `trigger`.
 	 *
-	 * @var array<int, string>
+	 * @var NotificationTriggerValidator
 	 */
-	private const VALID_ACTION_TARGET_KINDS = ['object-detail', 'route', 'url', 'task-verb'];
+	private NotificationTriggerValidator $triggers;
 
 	/**
-	 * The lifecycle verbs a `task-verb` action target may name. A target
-	 * names a VERB, never an author-composed URL, so a rule cannot aim a
-	 * notification button anywhere it likes (flow-task-inbox-projections,
-	 * design D-1).
+	 * Validates each rule's `recipients`.
 	 *
-	 * @var array<int, string>
+	 * @var NotificationRecipientValidator
 	 */
-	private const VALID_TASK_VERBS = ['claim', 'unclaim', 'complete', 'resolve', 'cancel'];
+	private NotificationRecipientValidator $recipients;
 
 	/**
-	 * Hard cap on declared action buttons — the Web Notification API renders
-	 * at most two action buttons on the desktop OS popup.
+	 * Validates each rule's `actions` and `message`.
 	 *
-	 * @var int
+	 * @var NotificationContentValidator
 	 */
-	private const MAX_ACTIONS = 2;
-
-	/**
-	 * Parses scheduled-trigger filters; the sole authority on what one may say.
-	 *
-	 * @var ScheduledFilterParser
-	 */
-	private ScheduledFilterParser $filterParser;
+	private NotificationContentValidator $content;
 
 	/**
 	 * The administered decisions that are not preferences.
@@ -96,6 +130,20 @@ final class NotificationAnnotationValidator {
 	 * @var ForcedChannelPolicy
 	 */
 	private ForcedChannelPolicy $forcedChannels;
+
+	/**
+	 * Validates each rule's `digest` block.
+	 *
+	 * @var NotificationDigestValidator
+	 */
+	private NotificationDigestValidator $digests;
+
+	/**
+	 * Validates each rule's `transports` block.
+	 *
+	 * @var NotificationTransportValidator
+	 */
+	private NotificationTransportValidator $transports;
 
 	/**
 	 * Constructor.
@@ -112,83 +160,13 @@ final class NotificationAnnotationValidator {
 		?ForcedChannelPolicy $forcedChannels = null,
 	) {
 		$this->forcedChannels = ($forcedChannels ?? new ForcedChannelPolicy());
-		$this->filterParser = ($filterParser ?? new ScheduledFilterParser());
+		$this->triggers       = new NotificationTriggerValidator(filterParser: ($filterParser ?? new ScheduledFilterParser()));
+		$this->recipients     = new NotificationRecipientValidator();
+		$this->content        = new NotificationContentValidator();
+		$this->digests        = new NotificationDigestValidator();
+		$this->transports     = new NotificationTransportValidator();
 
 	}//end __construct()
-
-	/**
-	 * Validate an app-defined trigger event name.
-	 *
-	 * An app event is namespaced with a dot — `booking.confirmed`,
-	 * `generation.draft`, `lifecycle.optIn`. The dot is the whole safeguard, and
-	 * the only part of the name this rule polices: it is required so an app event
-	 * can never
-	 * collide with a reserved trigger type, present or future: `created` is
-	 * always the engine's, `booking.created` is always the app's. Without that
-	 * rule, adding a trigger type later would silently capture somebody's
-	 * event.
-	 *
-	 * @param string $ruleKey The notification rule key, for diagnostics.
-	 * @param mixed  $event   The declared event name.
-	 *
-	 * @return array<int, array<string, mixed>> Errors, empty when the name is well-formed.
-	 *
-	 */
-	private function validateAppEvent(string $ruleKey, $event): array {
-		if (is_string($event) === false || $event === '') {
-			return [
-				[
-					'code' => 'notification-bad-app-event',
-					'ruleKey' => $ruleKey,
-					'field' => 'trigger',
-					'value' => $event,
-					'message' => sprintf(
-						'Notification "%s" declares an app event that is not a non-empty string.',
-						$ruleKey
-					),
-				],
-			];
-		}
-
-		if (in_array($event, self::VALID_TRIGGERS, true) === true) {
-			return [
-				[
-					'code' => 'notification-app-event-reserved',
-					'ruleKey' => $ruleKey,
-					'field' => 'trigger',
-					'value' => $event,
-					'message' => sprintf(
-						'Notification "%s" names "%s" as an app event, but that is a reserved trigger type; '
-						. 'use the object form {"type": "%s"} instead.',
-						$ruleKey,
-						$event,
-						$event
-					),
-				],
-			];
-		}
-
-		if (preg_match('/^[a-z][A-Za-z0-9-]*(\.[A-Za-z0-9-]+)+$/', $event) !== 1) {
-			return [
-				[
-					'code' => 'notification-bad-app-event',
-					'ruleKey' => $ruleKey,
-					'field' => 'trigger',
-					'value' => $event,
-					'message' => sprintf(
-						'Notification "%s" app event "%s" must be namespaced with a dot and start lowercase '
-						. '(e.g. "booking.confirmed", "lifecycle.optIn"), so it can never collide with a '
-						. 'reserved trigger type.',
-						$ruleKey,
-						$event
-					),
-				],
-			];
-		}
-
-		return [];
-
-	}//end validateAppEvent()
 
 	/**
 	 * Validate the `x-openregister-notifications` annotation.
@@ -197,827 +175,538 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function validate(array $schema): array {
-		if (isset($schema['x-openregister-notifications']) === false) {
+		$notifications = ($schema['x-openregister-notifications'] ?? null);
+		if ($notifications === null) {
 			return [];
 		}
 
-		$notifications = $schema['x-openregister-notifications'];
 		if (is_array($notifications) === false || count($notifications) === 0) {
-			return [
-				[
-					'code' => 'notifications-empty',
-					'message' => 'x-openregister-notifications must declare at least one notification.',
-				],
-			];
+			return [$this->fault(fault: 'notifications-empty')];
 		}
 
-		$properties = ($schema['properties'] ?? []);
-		$propKeys = [];
-		if (is_array($properties) === true) {
-			$propKeys = array_keys($properties);
-		}
-
-		// The role names this schema assigns, read from the same
-		// `authorization.roles` map the permission handler expands. A rule may
-		// only address a role the schema actually assigns; when the schema
-		// carries no assignment at all the check stands down rather than
-		// refusing every role, because the assignment may live on a register
-		// this validator is not given.
-		$declaredRoles = [];
-		$authorization = ($schema['authorization'] ?? null);
-		if (is_array($authorization) === true && is_array(($authorization['roles'] ?? null)) === true) {
-			$declaredRoles = array_values(array_filter(array_keys($authorization['roles']), 'is_string'));
-		}
-
-		$errors = [];
-		foreach ($notifications as $name => $spec) {
-			if (is_string($name) === false || $name === '') {
-				$errors[] = [
-					'code' => 'notification-bad-name',
-					'message' => 'Notification names must be non-empty strings.',
-				];
-				continue;
-			}
-
-			if (is_array($spec) === false) {
-				$errors[] = [
-					'code' => 'notification-malformed',
-					'message' => sprintf('Notification "%s" must be an object.', $name),
-				];
-				continue;
-			}
-
-			$trigger = ($spec['trigger'] ?? null);
-			$triggerType = '';
-			$appEvent = null;
-			if (is_array($trigger) === true) {
-				$triggerType = (string)($trigger['type'] ?? '');
-				if (isset($trigger['event']) === true) {
-					$appEvent = $trigger['event'];
-				}
-			} elseif (is_string($trigger) === true) {
-				// Bare-string shorthand for an app-defined event.
-				$appEvent = $trigger;
-			}
-
-			if ($appEvent !== null) {
-				foreach ($this->validateAppEvent(ruleKey: (string)$name, event: $appEvent) as $eventError) {
-					$errors[] = $eventError;
-				}
-			} elseif (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
-				$errors[] = [
-					'code' => 'notification-bad-trigger',
-					'message' => sprintf(
-						'Notification "%s" trigger.type must be one of [%s], or the trigger must name an '
-						. 'app-defined event as a namespaced string (e.g. "booking.confirmed").',
-						$name,
-						implode(', ', self::VALID_TRIGGERS)
-					),
-				];
-			}
-
-			if ($triggerType === 'scheduled') {
-				$intervalSec = null;
-				if (is_array($trigger) === true) {
-					$intervalSec = ($trigger['intervalSec'] ?? null);
-				}
-
-				if (is_int($intervalSec) === false || $intervalSec < 60) {
-					$errors[] = [
-						'code' => 'notification-scheduled-bad-interval',
-						'message' => sprintf(
-							'Notification "%s" trigger.type=scheduled requires trigger.intervalSec (integer >= 60).',
-							$name
-						),
-					];
-				}
-
-				// Validate the filter by parsing it with the same parser the
-				// evaluator runs. This class enumerates no operators of its own:
-				// while it did, it accepted "any array without an `operator` key"
-				// as a scalar shortcut, which let 24 unexecutable filter entries
-				// across three apps save cleanly and then match nothing.
-				if (is_array($trigger) === true && isset($trigger['filter']) === true) {
-					$filter = $trigger['filter'];
-					if (is_array($filter) === false) {
-						$errors[] = [
-							'code' => 'notification-scheduled-bad-filter',
-							'ruleKey' => $name,
-							'field' => 'trigger.filter',
-							'value' => $filter,
-							'message' => sprintf(
-								'Notification "%s" trigger.filter must be an object/map.',
-								$name
-							),
-						];
-					} else {
-						// One parse of the whole map, not one call per entry:
-						// `all` / `any` are whole-filter constructs, and parsing
-						// here is what guarantees the shapes this validator
-						// accepts are exactly the shapes the evaluator executes.
-						$parsed = $this->filterParser->parse(filter: $filter, ruleKey: $name);
-						foreach ($parsed['errors'] as $entryError) {
-							$errors[] = $entryError;
-						}
-					}//end if
-				}//end if
-
-				if (is_array($trigger) === true && isset($trigger['dedupeFields']) === true) {
-					$dedupeFields = $trigger['dedupeFields'];
-					if (is_array($dedupeFields) === false || $dedupeFields === []) {
-						$errors[] = [
-							'code' => 'notification-scheduled-bad-dedupe-fields',
-							'ruleKey' => $name,
-							'field' => 'trigger.dedupeFields',
-							'value' => $dedupeFields,
-							'message' => sprintf(
-								'Notification "%s" trigger.dedupeFields must be a non-empty array of strings.',
-								$name
-							),
-						];
-					} else {
-						foreach ($dedupeFields as $idx => $field) {
-							if (is_string($field) === false || $field === '') {
-								$errors[] = [
-									'code' => 'notification-scheduled-bad-dedupe-fields',
-									'ruleKey' => $name,
-									'field' => sprintf('trigger.dedupeFields[%d]', (int)$idx),
-									'value' => $field,
-									'message' => sprintf(
-										'Notification "%s" trigger.dedupeFields entries must be non-empty strings.',
-										$name
-									),
-								];
-								break;
-							}
-						}//end foreach
-					}//end if
-				}//end if
-			}//end if
-
-			if ($triggerType === 'threshold') {
-				$aggregation = '';
-				$op = '';
-				if (is_array($trigger) === true) {
-					$aggregation = (string)($trigger['aggregation'] ?? '');
-					$op = (string)($trigger['op'] ?? '');
-				}
-
-				if ($aggregation === '') {
-					$errors[] = [
-						'code' => 'notification-threshold-no-aggregation',
-						'message' => sprintf(
-							'Notification "%s" trigger.type=threshold requires trigger.aggregation referencing a declared aggregation.',
-							$name
-						),
-					];
-				}
-
-				if (in_array($op, ['gt', 'gte', 'lt', 'lte', 'eq', 'ne'], true) === false) {
-					$errors[] = [
-						'code' => 'notification-threshold-bad-op',
-						'message' => sprintf(
-							'Notification "%s" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got "%s".',
-							$name,
-							$op
-						),
-					];
-				}
-
-				if (is_array($trigger) === true && array_key_exists('value', $trigger) === false) {
-					$errors[] = [
-						'code' => 'notification-threshold-no-value',
-						'message' => sprintf(
-							'Notification "%s" trigger.type=threshold requires trigger.value.',
-							$name
-						),
-					];
-				}
-			}//end if
-
-			if ($triggerType === 'calculatedChange') {
-				$field = null;
-				if (is_array($trigger) === true) {
-					$field = ($trigger['field'] ?? null);
-				}
-
-				if (is_string($field) === false || $field === '') {
-					$errors[] = [
-						'code' => 'notification-calculated-change-no-field',
-						'message' => sprintf(
-							'Notification "%s" trigger.type=calculatedChange requires trigger.field (non-empty string).',
-							$name
-						),
-					];
-				}
-
-				$validOps = ['lt', 'lte', 'gt', 'gte', 'eq', 'ne'];
-
-				foreach (['condition', 'previously'] as $clauseKey) {
-					$clause = null;
-					if (is_array($trigger) === true) {
-						$clause = ($trigger[$clauseKey] ?? null);
-					}
-
-					if ($clause === null) {
-						continue;
-					}
-
-					if (is_array($clause) === false || count($clause) === 0) {
-						$errors[] = [
-							'code' => 'notification-calculated-change-bad-clause',
-							'message' => sprintf(
-								'Notification "%s" trigger.%s must be a non-empty operator map.',
-								$name,
-								$clauseKey
-							),
-						];
-						continue;
-					}
-
-					foreach (array_keys($clause) as $op) {
-						if (in_array((string)$op, $validOps, true) === false) {
-							$errors[] = [
-								'code' => 'notification-calculated-change-bad-op',
-								'message' => sprintf(
-									'Notification "%s" trigger.%s operator "%s" must be one of [%s].',
-									$name,
-									$clauseKey,
-									(string)$op,
-									implode(', ', $validOps)
-								),
-							];
-						}
-					}
-				}//end foreach
-			}//end if
-
-			// The two administered decisions that are not preferences
-			// (notification-kinds-an-administrator-forces). Both fail SILENTLY
-			// at send time: a force with no reason renders as a preference a
-			// user cannot explain, and an internal kind whose only channels
-			// leave the organisation renders as a kind that never sends. The
-			// rules live in ForcedChannelPolicy so the save and the send read
-			// one interpretation of them rather than two.
-			foreach ($this->forcedChannels->validate(declaration: $spec) as $forcedError) {
-				$errors[] = [
-					'code' => $forcedError['code'],
-					'message' => sprintf('Notification "%s": %s', $name, $forcedError['message']),
-				];
-			}
-
-			$channels = ($spec['channels'] ?? []);
-			if (is_array($channels) === false || count($channels) === 0) {
-				$errors[] = [
-					'code' => 'notification-channels-empty',
-					'message' => sprintf(
-						'Notification "%s" must declare at least one channel.',
-						$name
-					),
-				];
-				$channels = [];
-			}
-
-			foreach ($channels as $channel) {
-				if (in_array((string)$channel, self::VALID_CHANNELS, true) === false) {
-					$errors[] = [
-						'code' => 'notification-bad-channel',
-						'message' => sprintf(
-							'Notification "%s" channel "%s" is not in [%s].',
-							$name,
-							(string)$channel,
-							implode(', ', self::VALID_CHANNELS)
-						),
-					];
-				}
-			}
-
-			// Optional `originApp` (foundation contract / ADR-031): identifies
-			// the leaf app that owns the rule. Drives the notification
-			// icon/badge and the deeplink base. When present it MUST be a
-			// non-empty string; absence is valid (defaults to the
-			// register-owning app at dispatch).
-			if (array_key_exists('originApp', $spec) === true) {
-				$originApp = $spec['originApp'];
-				if (is_string($originApp) === false || $originApp === '') {
-					$errors[] = [
-						'code' => 'notification-bad-origin-app',
-						'message' => sprintf(
-							'Notification "%s" originApp must be a non-empty string app id.',
-							$name
-						),
-					];
-				}
-			}
-
-			// Optional `actions[]` (foundation contract / ADR-031): rich
-			// action buttons rendered in the OS notification. Hard cap of 2
-			// (Web Notification API desktop limit). Each action declares an
-			// i18n `label` map, an optional `primary` bool, and a `target`
-			// of kind object-detail | route | url.
-			if (array_key_exists('actions', $spec) === true) {
-				foreach ($this->validateActions(actions: $spec['actions'], name: $name) as $actionError) {
-					$errors[] = $actionError;
-				}
-			}
-
-			// `subject` accepts either a single template string OR a
-			// per-locale map ({nl: "...", en: "..."} optionally prefixed
-			// with `defaultLocale: <code>`). The dispatcher resolves
-			// the active recipient's locale at delivery time; the
-			// broadcast channels (webhook/talk) use the default locale
-			// fallback chain.
-			$subject = ($spec['subject'] ?? null);
-			$subjectString = is_string($subject) === true;
-			$subjectArray = is_array($subject) === true;
-			if ($subjectString === false && $subjectArray === false) {
-				$errors[] = [
-					'code' => 'notification-no-subject',
-					'message' => sprintf(
-						'Notification "%s" requires a subject string or per-locale map.',
-						$name
-					),
-				];
-			}
-
-			if ($subjectString === true && $subject === '') {
-				$errors[] = [
-					'code' => 'notification-no-subject',
-					'message' => sprintf(
-						'Notification "%s" requires a non-empty subject string.',
-						$name
-					),
-				];
-			}
-
-			if ($subjectArray === true) {
-				$localeKeys = array_filter(
-					array_keys($subject),
-					static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
-				);
-				if (count($localeKeys) === 0) {
-					$errors[] = [
-						'code' => 'notification-no-subject',
-						'message' => sprintf(
-							'Notification "%s" subject map must declare at least one locale (e.g. nl, en).',
-							$name
-						),
-					];
-				}
-
-				foreach ($localeKeys as $localeKey) {
-					if (is_string($subject[$localeKey]) === false || $subject[$localeKey] === '') {
-						$errors[] = [
-							'code' => 'notification-bad-subject-locale',
-							'message' => sprintf(
-								'Notification "%s" subject for locale "%s" must be a non-empty string.',
-								$name,
-								$localeKey
-							),
-						];
-					}
-				}
-
-				if (isset($subject['defaultLocale']) === true) {
-					$defaultLocale = $subject['defaultLocale'];
-					$defaultLocaleBad = is_string($defaultLocale) === false;
-					$defaultLocaleBad |= isset($subject[$defaultLocale]) === false;
-					if ((bool)$defaultLocaleBad === true) {
-						$errors[] = [
-							'code' => 'notification-bad-default-locale',
-							'message' => sprintf(
-								'Notification "%s" defaultLocale "%s" is not declared in the subject map.',
-								$name,
-								(string)$defaultLocale
-							),
-						];
-					}
-				}
-			}//end if
-
-			// Optional `message` (foundation contract / ADR-031): the
-			// notification BODY, distinct from the title (`subject`). Same
-			// shape + locale-resolution + `{{prop}}` interpolation as
-			// `subject` — a single template string OR a per-locale map.
-			// Absence is valid (back-compat): rules with `actions` get an
-			// auto-derived "Open in {AppName}." body, rules without get an
-			// empty body. Malformed → notification-bad-message.
-			if (array_key_exists('message', $spec) === true) {
-				foreach ($this->validateMessage(message: $spec['message'], name: $name) as $messageError) {
-					$errors[] = $messageError;
-				}
-			}
-
-			// When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
-			if (in_array('webhook', $channels, true) === true) {
-				$hook = ($spec['webhook'] ?? null);
-				$hookBad = is_array($hook) === false;
-				if ($hookBad === false) {
-					$hookBad = empty($hook['url']) === true
-						|| filter_var($hook['url'], FILTER_VALIDATE_URL) === false;
-				}
-
-				if ($hookBad === true) {
-					$errors[] = [
-						'code' => 'notification-webhook-no-url',
-						'message' => sprintf(
-							'Notification "%s" declares the `webhook` channel but webhook.url is missing or malformed.',
-							$name
-						),
-					];
-				}
-			}
-
-			// When the `talk` channel is declared, the spec MUST include a `talk.token`.
-			if (in_array('talk', $channels, true) === true) {
-				$talk = ($spec['talk'] ?? null);
-				$talkBad = is_array($talk) === false;
-				if ($talkBad === false) {
-					$talkBad = empty($talk['token']) === true || is_string($talk['token']) === false;
-				}
-
-				if ($talkBad === true) {
-					$errors[] = [
-						'code' => 'notification-talk-no-token',
-						'message' => sprintf(
-							'Notification "%s" declares the `talk` channel but talk.token is missing or not a string.',
-							$name
-						),
-					];
-				}
-			}
-
-			// Optional `organisation` gate — the dispatcher skips this
-			// notification unless the saved object's organisation
-			// matches. Accepts a single string (UUID or slug) or an
-			// array of strings (any-of). Closes the spec's
-			// "Notifications MUST be scoped to organisations" item by
-			// letting schema authors pin a rule explicitly without
-			// writing a custom expression resolver.
-			if (array_key_exists('organisation', $spec) === true) {
-				$orgError = $this->validateOrganisationGate(org: $spec['organisation'], name: $name);
-				if ($orgError !== null) {
-					$errors[] = $orgError;
-				}
-			}
-
-			// Optional `domain` — the leaf app's own word for a slice of its
-			// work, which a preference may be scoped to. Only its shape is
-			// checked: the vocabulary belongs to the app, not to this engine.
-			if (array_key_exists('domain', $spec) === true
-				&& (is_string($spec['domain']) === false || $spec['domain'] === '')
-			) {
-				$errors[] = [
-					'code' => 'notification-domain-malformed',
-					'message' => sprintf('Notification "%s" domain must be a non-empty string.', $name),
-				];
-			}
-
-			// Optional `transports` — the outbound calls this rule runs in the
-			// same firing as its notices. Refused at save when malformed,
-			// because a transport that names no handler is an integration
-			// nobody will notice is missing.
-			if (array_key_exists('transports', $spec) === true) {
-				$errors = array_merge($errors, $this->validateTransports(transports: $spec['transports'], name: $name));
-			}
-
-			// Optional `critical` bypass flag and optional fixed-time
-			// `digest` schedule (notification-delivery-windows dialect
-			// additions). See "Users MUST be able to manage their
-			// notification preferences" / "Notifications MUST support
-			// batching and digest delivery" in the notificatie-engine spec.
-			$errors = array_merge($errors, $this->validateCriticalAndDigest(spec: $spec, name: $name));
-
-			$recipients = ($spec['recipients'] ?? []);
-			if (is_array($recipients) === false || count($recipients) === 0) {
-				$errors[] = [
-					'code' => 'notification-no-recipients',
-					'message' => sprintf(
-						'Notification "%s" must declare at least one recipient.',
-						$name
-					),
-				];
-				continue;
-			}
-
-			foreach ($recipients as $i => $recipient) {
-				if (is_array($recipient) === false) {
-					$errors[] = [
-						'code' => 'notification-recipient-malformed',
-						'message' => sprintf(
-							'Notification "%s" recipient[%d] must be an object.',
-							$name,
-							$i
-						),
-					];
-					continue;
-				}
-
-				$kind = (string)($recipient['kind'] ?? '');
-
-				// The watchers block is spelled `{"watchers": true}` — it names
-				// a subscription list rather than a value to look up, so it
-				// carries no `kind`. Anything but boolean true is refused
-				// rather than coerced: `"yes"` is how a rule quietly addresses
-				// nobody, and a rule that addresses nobody should say so at
-				// save time, not at midnight.
-				if (array_key_exists('watchers', $recipient) === true) {
-					if ($recipient['watchers'] !== true) {
-						$errors[] = [
-							'code' => 'notification-recipient-watchers-not-true',
-							'message' => sprintf(
-								'Notification "%s" recipient[%d] watchers must be boolean true.',
-								$name,
-								$i
-							),
-						];
-						continue;
-					}
-
-					$kind = 'watchers';
-				}
-
-				if (in_array($kind, self::VALID_RECIPIENT_KINDS, true) === false) {
-					$errors[] = [
-						'code' => 'notification-bad-recipient-kind',
-						'message' => sprintf(
-							'Notification "%s" recipient[%d] kind "%s" not in [%s].',
-							$name,
-							$i,
-							$kind,
-							implode(', ', self::VALID_RECIPIENT_KINDS)
-						),
-					];
-					continue;
-				}
-
-				// 🔴 A RECIPIENT THAT CAN NEVER RESOLVE IS REFUSED HERE, where
-				// somebody is looking, rather than resolving to nobody every
-				// night in silence. `groups: []` and `users: []` name nobody
-				// structurally: no instance state makes them match, so this is
-				// a stub or a typo rather than an unstaffed group.
-				//
-				// ⚠️ A NON-EMPTY GROUP THAT HAPPENS TO BE EMPTY TODAY IS NOT
-				// REFUSED. Declared groups ship empty on purpose across this
-				// fleet, and refusing them would fail the import of every
-				// correctly written annotation on a fresh install. That case is
-				// recorded at dispatch instead; see RuleReachRecorder.
-				foreach (['groups' => 'groups', 'users' => 'users'] as $listKind => $listKey) {
-					if ($kind !== $listKind) {
-						continue;
-					}
-
-					$named = ($recipient[$listKey] ?? null);
-					if (is_array($named) === true && $named !== []) {
-						continue;
-					}
-
-					$errors[] = [
-						'code' => 'notification-recipient-names-nobody',
-						'message' => sprintf(
-							'Notification "%s" recipient[%d] is kind "%s" but names no %s, so it can never '
-							.'resolve to anybody. An unstaffed group is fine and is reported at dispatch; '
-							.'an empty list is a stub.',
-							$name,
-							$i,
-							$kind,
-							$listKey
-						),
-					];
-				}
-
-				if ($kind === 'field') {
-					$field = (string)($recipient['field'] ?? '');
-					if ($field === '' || in_array($field, $propKeys, true) === false) {
-						$errors[] = [
-							'code' => 'notification-recipient-field-unknown',
-							'message' => sprintf(
-								'Notification "%s" recipient[%d] field "%s" is not declared on the schema.',
-								$name,
-								$i,
-								$field
-							),
-						];
-					}
-				}
-
-				if ($kind === 'object-acl') {
-					$perm = (string)($recipient['permission'] ?? '');
-					if (in_array($perm, ['read', 'manage'], true) === false) {
-						$errors[] = [
-							'code' => 'notification-recipient-acl-bad-permission',
-							'message' => sprintf(
-								'Notification "%s" recipient[%d] kind=object-acl requires permission in [read, manage]; got "%s".',
-								$name,
-								$i,
-								$perm
-							),
-						];
-					}
-				}
-
-				if ($kind === 'role') {
-					// A role entry that names no role addresses nobody. Refusing
-					// it at save is the same posture the dispatcher takes at
-					// midnight: a rule that reaches nobody says so, here first.
-					$role = (string)($recipient['role'] ?? '');
-					if ($role === '') {
-						$errors[] = [
-							'code' => 'notification-recipient-role-missing',
-							'message' => sprintf(
-								'Notification "%s" recipient[%d] kind=role requires a non-empty role name.',
-								$name,
-								$i
-							),
-						];
-					} elseif (in_array($role, $declaredRoles, true) === false && $declaredRoles !== []) {
-						$errors[] = [
-							'code' => 'notification-recipient-role-unknown',
-							'message' => sprintf(
-								'Notification "%s" recipient[%d] role "%s" is not assigned by the schema authorization; declared: [%s].',
-								$name,
-								$i,
-								$role,
-								implode(', ', $declaredRoles)
-							),
-						];
-					}
-				}
-
-				if ($kind === 'expression') {
-					$resolver = (string)($recipient['resolver'] ?? '');
-					if ($resolver === '') {
-						$errors[] = [
-							'code' => 'notification-recipient-expression-no-resolver',
-							'message' => sprintf(
-								'Notification "%s" recipient[%d] kind=expression requires a resolver string (DI tag or FQCN).',
-								$name,
-								$i
-							),
-						];
-					}
-				}
-			}//end foreach
-		}//end foreach
-
-		return $errors;
+		return $this->rulesErrors(notifications: $notifications, schema: new NotificationSchemaFacts(schema: $schema));
 	}//end validate()
 
 	/**
-	 * Validate the optional `actions[]` array (foundation contract / ADR-031).
+	 * Errors for every entry of the annotation, in declaration order.
 	 *
-	 * Rules:
-	 *  - `actions` MUST be an array; more than 2 entries → notification-too-many-actions.
-	 *  - each action's `label` MUST be a per-locale map with at least one
-	 *    non-empty locale value → otherwise notification-action-bad-label.
-	 *  - each action's `target.kind` MUST be one of object-detail | route | url | task-verb
-	 *    → otherwise notification-action-bad-target.
-	 *  - a `task-verb` target MUST name a known lifecycle verb in `verb`
-	 *    → otherwise notification-action-bad-target, naming the value.
+	 * @param array<int|string, mixed> $notifications The declared rules.
+	 * @param NotificationSchemaFacts  $schema        The schema they are declared on.
 	 *
-	 * @param mixed $actions Raw value of the `actions` key.
-	 * @param string $name Notification name (for diagnostics).
-	 *
-	 * @return array<int, array{code: string, message: string}>
-	 *
+	 * @return array<int, array<string, mixed>>
 	 */
-	private function validateActions(mixed $actions, string $name): array {
+	private function rulesErrors(array $notifications, NotificationSchemaFacts $schema): array {
 		$errors = [];
-
-		if (is_array($actions) === false) {
-			return [
-				[
-					'code' => 'notification-action-bad-target',
-					'message' => sprintf('Notification "%s" actions must be an array.', $name),
-				],
-			];
+		foreach ($notifications as $name => $spec) {
+			// Only runs once ruleShapeErrors() found a non-empty string name and an object spec.
+			$rule   = fn (): array => $this->ruleErrors(rule: new NotificationRuleContext(name: (string)$name, spec: $spec, schema: $schema));
+			$errors = array_merge($errors, ($this->ruleShapeErrors(name: $name, spec: $spec) ?? $rule()));
 		}
-
-		if (count($actions) > self::MAX_ACTIONS) {
-			$errors[] = [
-				'code' => 'notification-too-many-actions',
-				'message' => sprintf(
-					'Notification "%s" declares %d actions; the Web Notification API renders at most %d.',
-					$name,
-					count($actions),
-					self::MAX_ACTIONS
-				),
-			];
-		}
-
-		foreach ($actions as $idx => $action) {
-			if (is_array($action) === false) {
-				$errors[] = [
-					'code' => 'notification-action-bad-target',
-					'message' => sprintf('Notification "%s" action[%s] must be an object.', $name, (string)$idx),
-				];
-				continue;
-			}
-
-			// Label MUST be a per-locale map with at least one non-empty string value.
-			$label = ($action['label'] ?? null);
-			$labelOk = false;
-			if (is_array($label) === true && count($label) > 0) {
-				foreach ($label as $localeValue) {
-					if (is_string($localeValue) === true && $localeValue !== '') {
-						$labelOk = true;
-						break;
-					}
-				}
-			}
-
-			if ($labelOk === false) {
-				$errors[] = [
-					'code' => 'notification-action-bad-label',
-					'message' => sprintf(
-						'Notification "%s" action[%s] label must be a per-locale map with at least one non-empty value.',
-						$name,
-						(string)$idx
-					),
-				];
-			}
-
-			// `primary` (optional) MUST be a boolean when present.
-			if (array_key_exists('primary', $action) === true && is_bool($action['primary']) === false) {
-				$errors[] = [
-					'code' => 'notification-action-bad-target',
-					'message' => sprintf(
-						'Notification "%s" action[%s] primary must be a boolean.',
-						$name,
-						(string)$idx
-					),
-				];
-			}
-
-			// Target MUST be an object with a recognised kind.
-			$target = ($action['target'] ?? null);
-			$targetKind = '';
-			if (is_array($target) === true) {
-				$targetKind = (string)($target['kind'] ?? '');
-			}
-
-			if (in_array($targetKind, self::VALID_ACTION_TARGET_KINDS, true) === false) {
-				$errors[] = [
-					'code' => 'notification-action-bad-target',
-					'message' => sprintf(
-						'Notification "%s" action[%s] target.kind "%s" is not in [%s].',
-						$name,
-						(string)$idx,
-						$targetKind,
-						implode(', ', self::VALID_ACTION_TARGET_KINDS)
-					),
-				];
-				continue;
-			}
-
-			if ($targetKind === 'task-verb') {
-				$errors = array_merge($errors, $this->validateTaskVerbTarget(target: $target, name: $name, idx: (string)$idx));
-			}
-		}//end foreach
 
 		return $errors;
-	}//end validateActions()
+	}//end rulesErrors()
 
 	/**
-	 * Validate a `task-verb` action target: it MUST name a lifecycle verb from
-	 * the closed list, never an author-composed URL.
+	 * One error as the annotation reports it.
 	 *
-	 * @param mixed $target The raw target (already known to be kind task-verb).
-	 * @param string $name Notification name (for diagnostics).
-	 * @param string $idx Action index (for diagnostics).
+	 * @param string            $fault A key of self::FAULTS.
+	 * @param array<int, mixed> $args  The values its format interpolates.
 	 *
-	 * @return array<int, array{code: string, message: string}>
-	 *
+	 * @return array{code: string, message: string}
 	 */
-	private function validateTaskVerbTarget(mixed $target, string $name, string $idx): array {
-		$verb = '';
-		if (is_array($target) === true) {
-			$verb = (string)($target['verb'] ?? '');
+	private function fault(string $fault, array $args=[]): array {
+		[$code, $format] = self::FAULTS[$fault];
+
+		return ['code' => $code, 'message' => sprintf($format, ...$args)];
+	}//end fault()
+
+	/**
+	 * The error for an entry that is not a named object, null when it is one.
+	 *
+	 * @param int|string $name The rule key.
+	 * @param mixed      $spec The rule declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}>|null
+	 */
+	private function ruleShapeErrors(int|string $name, mixed $spec): ?array {
+		if (is_string($name) === false || $name === '') {
+			return [$this->fault(fault: 'bad-name')];
 		}
 
-		if (in_array($verb, self::VALID_TASK_VERBS, true) === true) {
+		if (is_array($spec) === false) {
+			return [$this->fault(fault: 'malformed', args: [$name])];
+		}
+
+		return null;
+	}//end ruleShapeErrors()
+
+	/**
+	 * Errors for one well-shaped entry of the annotation.
+	 *
+	 * @param NotificationRuleContext $rule The rule and the schema it is declared on.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function ruleErrors(NotificationRuleContext $rule): array {
+		return array_merge(
+			$this->triggers->validate(name: $rule->name, trigger: ($rule->spec['trigger'] ?? null)),
+			$this->validateDelivery(name: $rule->name, spec: $rule->spec),
+			$this->validateContent(name: $rule->name, spec: $rule->spec),
+			$this->validateScope(name: $rule->name, spec: $rule->spec),
+			$this->validateCriticalAndDigest(spec: $rule->spec, name: $rule->name),
+			$this->recipients->validate(rule: $rule)
+		);
+	}//end ruleErrors()
+
+	/**
+	 * Errors for how a rule is delivered: forced and declared channels,
+	 * opt-in channels, message category, origin app and action buttons.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateDelivery(string $name, array $spec): array {
+		$actions = fn (mixed $actions): array => $this->content->validateActions(actions: $actions, name: $name);
+
+		return array_merge(
+			$this->validateForcedChannels(name: $name, spec: $spec),
+			$this->validateChannels(name: $name, spec: $spec),
+			$this->validateOptInChannels(name: $name, spec: $spec),
+			$this->validateMessageCategory(name: $name, category: ($spec['messageCategory'] ?? '')),
+			$this->validateOriginApp(name: $name, spec: $spec),
+			$this->declaredKeyErrors(spec: $spec, checks: ['actions' => $actions])
+		);
+	}//end validateDelivery()
+
+	/**
+	 * Errors for what a rule says: subject, message and the settings its
+	 * webhook or Talk channel needs.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateContent(string $name, array $spec): array {
+		$message = fn (mixed $message): array => $this->content->validateMessage(message: $message, name: $name);
+
+		return array_merge(
+			$this->validateSubject(name: $name, subject: ($spec['subject'] ?? null)),
+			$this->declaredKeyErrors(spec: $spec, checks: ['message' => $message]),
+			$this->validateChannelTargets(name: $name, spec: $spec)
+		);
+	}//end validateContent()
+
+	/**
+	 * Errors for where a rule applies: organisation gate, domain and transports.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateScope(string $name, array $spec): array {
+		$organisation = fn (mixed $org): array => $this->organisationErrors(org: $org, name: $name);
+		$transports   = fn (mixed $transports): array => $this->transports->validate(transports: $transports, name: $name);
+
+		return array_merge(
+			$this->declaredKeyErrors(spec: $spec, checks: ['organisation' => $organisation]),
+			$this->validateDomain(name: $name, spec: $spec),
+			$this->declaredKeyErrors(spec: $spec, checks: ['transports' => $transports])
+		);
+	}//end validateScope()
+
+	/**
+	 * Run each check on its optional rule key, only when the rule declares that key.
+	 *
+	 * @param array<string, mixed>                                    $spec   The rule declaration.
+	 * @param array<string, callable(mixed): array<int, array<string, mixed>>> $checks Key => check for the key's value.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function declaredKeyErrors(array $spec, array $checks): array {
+		$errors = [];
+		foreach ($checks as $key => $check) {
+			if (array_key_exists($key, $spec) === true) {
+				$errors = array_merge($errors, $check($spec[$key]));
+			}
+		}
+
+		return $errors;
+	}//end declaredKeyErrors()
+
+	/**
+	 * Errors for the administered decisions that are not preferences.
+	 *
+	 * Both fail silently at send time: a force with no reason renders as a
+	 * preference a user cannot explain, and an internal kind whose only
+	 * channels leave the organisation renders as a kind that never sends. The
+	 * rules live in ForcedChannelPolicy so save and send read one
+	 * interpretation of them.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateForcedChannels(string $name, array $spec): array {
+		$errors = [];
+		foreach ($this->forcedChannels->validate(declaration: $spec) as $forcedError) {
+			$errors[] = [
+				'code' => $forcedError['code'],
+				'message' => sprintf('Notification "%s": %s', $name, $forcedError['message']),
+			];
+		}
+
+		return $errors;
+	}//end validateForcedChannels()
+
+	/**
+	 * The rule's declared channels, empty when absent or not a list.
+	 *
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function declaredChannels(array $spec): array {
+		$channels = ($spec['channels'] ?? []);
+		if (is_array($channels) === false) {
 			return [];
 		}
 
-		return [
-			[
-				'code' => 'notification-action-bad-target',
-				'message' => sprintf(
-					'Notification "%s" action[%s] target.verb "%s" is not a task lifecycle verb in [%s].',
-					$name,
-					$idx,
-					$verb,
-					implode(', ', self::VALID_TASK_VERBS)
-				),
-			],
-		];
-	}//end validateTaskVerbTarget()
+		return $channels;
+	}//end declaredChannels()
+
+	/**
+	 * Errors for `channels`: at least one, each a known channel.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateChannels(string $name, array $spec): array {
+		$channels = $this->declaredChannels(spec: $spec);
+		$errors   = [];
+		if ($channels === []) {
+			$errors[] = $this->fault(fault: 'channels-empty', args: [$name]);
+		}
+
+		$known = implode(', ', self::VALID_CHANNELS);
+		foreach ($channels as $channel) {
+			if (in_array((string)$channel, self::VALID_CHANNELS, true) === false) {
+				$errors[] = $this->fault(fault: 'bad-channel', args: [$name, (string)$channel, $known]);
+			}
+		}
+
+		return $errors;
+	}//end validateChannels()
+
+	/**
+	 * Errors for the optional `optInChannels`.
+	 *
+	 * Opt-in channels stay off until a person switches them on, so only a
+	 * per-recipient channel qualifies; webhook and Talk fire once.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateOptInChannels(string $name, array $spec): array {
+		if (array_key_exists('optInChannels', $spec) === false) {
+			return [];
+		}
+
+		$optIn = $spec['optInChannels'];
+		if (is_array($optIn) === false) {
+			$optIn = [null];
+		}
+
+		$errors = array_map(fn (mixed $channel): ?array => $this->optInChannelError(name: $name, channel: $channel), array_values($optIn));
+
+		return array_values(array_filter($errors));
+	}//end validateOptInChannels()
+
+	/**
+	 * The error for one opt-in channel, null when it is a per-recipient channel.
+	 *
+	 * @param string $name    The rule key.
+	 * @param mixed  $channel The declared opt-in channel.
+	 *
+	 * @return array{code: string, message: string}|null
+	 */
+	private function optInChannelError(string $name, mixed $channel): ?array {
+		if (is_string($channel) === true && in_array($channel, NotificationPreferenceService::PER_RECIPIENT_CHANNELS, true) === true) {
+			return null;
+		}
+
+		$shownChannel = gettype($channel);
+		if (is_string($channel) === true) {
+			$shownChannel = $channel;
+		}
+
+		$known = implode(', ', NotificationPreferenceService::PER_RECIPIENT_CHANNELS);
+
+		return $this->fault(fault: 'bad-opt-in-channel', args: [$name, $shownChannel, $known]);
+	}//end optInChannelError()
+
+	/**
+	 * Errors for the optional `messageCategory`.
+	 *
+	 * The category tells integriq's opt-out question what kind of message a
+	 * `parties` mail is. Absent reads as `service`; anything outside the fleet
+	 * list is refused rather than silently asked as `service`.
+	 *
+	 * @param string $name     The rule key.
+	 * @param mixed  $category The declared category, '' when absent.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateMessageCategory(string $name, mixed $category): array {
+		$shown = '';
+		if (is_scalar($category) === true) {
+			$shown = strtolower(trim((string)$category));
+		}
+
+		if (($shown === '' && is_scalar($category) === true) || in_array($shown, OptOutAuthority::CATEGORIES, true) === true) {
+			return [];
+		}
+
+		return [$this->fault(fault: 'bad-message-category', args: [$name, $shown, implode(', ', OptOutAuthority::CATEGORIES)])];
+	}//end validateMessageCategory()
+
+	/**
+	 * Whether an optional key is absent or holds a non-empty string.
+	 *
+	 * @param array<string, mixed> $spec The rule declaration.
+	 * @param string               $key  The optional key.
+	 *
+	 * @return bool
+	 */
+	private function isAbsentOrNonEmptyString(array $spec, string $key): bool {
+		if (array_key_exists($key, $spec) === false) {
+			return true;
+		}
+
+		return is_string($spec[$key]) === true && $spec[$key] !== '';
+	}//end isAbsentOrNonEmptyString()
+
+	/**
+	 * Errors for the optional `originApp`, the leaf app that owns the rule.
+	 *
+	 * It drives the notification icon and the deeplink base. Absence is valid
+	 * and defaults to the register-owning app at dispatch.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateOriginApp(string $name, array $spec): array {
+		if ($this->isAbsentOrNonEmptyString(spec: $spec, key: 'originApp') === true) {
+			return [];
+		}
+
+		return [$this->fault(fault: 'bad-origin-app', args: [$name])];
+	}//end validateOriginApp()
+
+	/**
+	 * Errors for `subject`: a non-empty template string or a per-locale map.
+	 *
+	 * The dispatcher resolves the recipient's locale at delivery; broadcast
+	 * channels use the default locale fallback chain.
+	 *
+	 * @param string $name    The rule key.
+	 * @param mixed  $subject The declared subject, null when absent.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateSubject(string $name, mixed $subject): array {
+		if (is_array($subject) === true) {
+			return $this->validateSubjectMap(name: $name, subject: $subject);
+		}
+
+		if (is_string($subject) === false) {
+			return [$this->fault(fault: 'subject-type', args: [$name])];
+		}
+
+		if ($subject !== '') {
+			return [];
+		}
+
+		return [$this->fault(fault: 'subject-empty', args: [$name])];
+	}//end validateSubject()
+
+	/**
+	 * Errors for a per-locale subject map.
+	 *
+	 * @param string              $name    The rule key.
+	 * @param array<mixed, mixed> $subject The declared subject map.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateSubjectMap(string $name, array $subject): array {
+		$errors        = $this->subjectLocaleErrors(name: $name, subject: $subject);
+		$defaultLocale = $this->content->undeclaredDefaultLocale(map: $subject);
+		if ($defaultLocale !== null) {
+			$errors[] = $this->fault(fault: 'bad-default-locale', args: [$name, $defaultLocale]);
+		}
+
+		return $errors;
+	}//end validateSubjectMap()
+
+	/**
+	 * Errors for the locales of a subject map: at least one locale (every string
+	 * key but `defaultLocale`), each holding a non-empty string.
+	 *
+	 * @param string              $name    The rule key.
+	 * @param array<mixed, mixed> $subject The declared subject map.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function subjectLocaleErrors(string $name, array $subject): array {
+		$localeKeys = array_diff(array_filter(array_keys($subject), 'is_string'), ['defaultLocale']);
+		$errors     = [];
+		if ($localeKeys === []) {
+			$errors[] = $this->fault(fault: 'subject-no-locale', args: [$name]);
+		}
+
+		foreach ($localeKeys as $localeKey) {
+			if (is_string($subject[$localeKey]) === false || $subject[$localeKey] === '') {
+				$errors[] = $this->fault(fault: 'bad-subject-locale', args: [$name, $localeKey]);
+			}
+		}
+
+		return $errors;
+	}//end subjectLocaleErrors()
+
+	/**
+	 * Errors for the settings a declared `webhook` or `talk` channel needs.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateChannelTargets(string $name, array $spec): array {
+		$channels = $this->declaredChannels(spec: $spec);
+		$errors   = [];
+		if (in_array('webhook', $channels, true) === true && $this->isWebhookUrlMissing(hook: ($spec['webhook'] ?? null)) === true) {
+			$errors[] = $this->fault(fault: 'webhook-no-url', args: [$name]);
+		}
+
+		if (in_array('talk', $channels, true) === true && $this->isTalkTokenMissing(talk: ($spec['talk'] ?? null)) === true) {
+			$errors[] = $this->fault(fault: 'talk-no-token', args: [$name]);
+		}
+
+		return $errors;
+	}//end validateChannelTargets()
+
+	/**
+	 * Whether a `webhook` block lacks a valid `url`.
+	 *
+	 * @param mixed $hook The declared webhook block.
+	 *
+	 * @return bool
+	 */
+	private function isWebhookUrlMissing(mixed $hook): bool {
+		if (is_array($hook) === false) {
+			return true;
+		}
+
+		return empty($hook['url']) === true || filter_var($hook['url'], FILTER_VALIDATE_URL) === false;
+	}//end isWebhookUrlMissing()
+
+	/**
+	 * Whether a `talk` block lacks a string `token`.
+	 *
+	 * @param mixed $talk The declared talk block.
+	 *
+	 * @return bool
+	 */
+	private function isTalkTokenMissing(mixed $talk): bool {
+		if (is_array($talk) === false) {
+			return true;
+		}
+
+		return empty($talk['token']) === true || is_string($talk['token']) === false;
+	}//end isTalkTokenMissing()
+
+	/**
+	 * The organisation gate's error as a list.
+	 *
+	 * The dispatcher skips the rule unless the saved object's organisation
+	 * matches: one string (UUID or slug) or a list of strings (any-of).
+	 *
+	 * @param mixed  $org  The declared organisation gate.
+	 * @param string $name The rule key.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function organisationErrors(mixed $org, string $name): array {
+		$error = $this->validateOrganisationGate(org: $org, name: $name);
+		if ($error === null) {
+			return [];
+		}
+
+		return [$error];
+	}//end organisationErrors()
+
+
+	/**
+	 * Errors for the optional `domain`, the leaf app's own word for a slice of its work.
+	 *
+	 * Only the shape is checked: the vocabulary belongs to the app.
+	 *
+	 * @param string               $name The rule key.
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function validateDomain(string $name, array $spec): array {
+		if ($this->isAbsentOrNonEmptyString(spec: $spec, key: 'domain') === true) {
+			return [];
+		}
+
+		return [$this->fault(fault: 'domain-malformed', args: [$name])];
+	}//end validateDomain()
 
 	/**
 	 * Validate the optional `critical` bypass flag and the optional
@@ -1038,274 +727,24 @@ final class NotificationAnnotationValidator {
 	 *    additive to, not a replacement for, the rolling digest window").
 	 *
 	 * @param array<string, mixed> $spec The full notification spec block.
-	 * @param string $name Notification name (for diagnostics).
+	 * @param string               $name Notification name (for diagnostics).
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function validateCriticalAndDigest(array $spec, string $name): array {
 		$errors = [];
-
 		if (array_key_exists('critical', $spec) === true && is_bool($spec['critical']) === false) {
-			$errors[] = [
-				'code' => 'notification-critical-not-boolean',
-				'message' => sprintf('Notification "%s" `critical` must be a boolean.', $name),
-			];
+			$errors[] = $this->fault(fault: 'critical-not-boolean', args: [$name]);
 		}
 
 		if (array_key_exists('digest', $spec) === false) {
 			return $errors;
 		}
 
-		$digest = $spec['digest'];
-		if (is_array($digest) === false) {
-			$errors[] = [
-				'code' => 'notification-digest-malformed',
-				'message' => sprintf('Notification "%s" `digest` must be an object.', $name),
-			];
-			return $errors;
-		}
-
-		$schedule = ($digest['schedule'] ?? null);
-		if (in_array($schedule, ['daily', 'weekly'], true) === false) {
-			$errors[] = [
-				'code' => 'notification-digest-bad-schedule',
-				'message' => sprintf(
-					'Notification "%s" `digest.schedule` must be "daily" or "weekly".',
-					$name
-				),
-			];
-		}
-
-		$at = ($digest['at'] ?? null);
-		if (is_string($at) === false || preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $at) !== 1) {
-			$errors[] = [
-				'code' => 'notification-digest-bad-time',
-				'message' => sprintf('Notification "%s" `digest.at` must be an "HH:MM" time string.', $name),
-			];
-		}
-
-		$hasWeekday = array_key_exists('weekday', $digest);
-		if ($schedule === 'weekly') {
-			$weekday = ($digest['weekday'] ?? null);
-			if ($hasWeekday === false || is_int($weekday) === false || $weekday < 0 || $weekday > 6) {
-				$errors[] = [
-					'code' => 'notification-digest-weekly-missing-weekday',
-					'message' => sprintf(
-						'Notification "%s" `digest.weekday` (0-6) is required when `schedule` is "weekly".',
-						$name
-					),
-				];
-			}
-		} elseif ($hasWeekday === true) {
-			$errors[] = [
-				'code' => 'notification-digest-weekday-not-allowed',
-				'message' => sprintf(
-					'Notification "%s" `digest.weekday` is only allowed when `schedule` is "weekly".',
-					$name
-				),
-			];
-		}
-
-		$timezone = ($digest['timezone'] ?? null);
-		if ($timezone !== null) {
-			$timezoneValid = false;
-			if (is_string($timezone) === true && $timezone !== '') {
-				try {
-					new DateTimeZone($timezone);
-					$timezoneValid = true;
-				} catch (\Throwable $e) {
-					$timezoneValid = false;
-				}
-			}
-
-			if ($timezoneValid === false) {
-				$errors[] = [
-					'code' => 'notification-digest-bad-timezone',
-					'message' => sprintf(
-						'Notification "%s" `digest.timezone` must be a valid IANA timezone name.',
-						$name
-					),
-				];
-			}
-		}//end if
-
-		// Mutually exclusive with the rolling `coalesce` window — a rule
-		// picks one "hold and batch" mechanism, not both.
-		if (is_array($spec['coalesce'] ?? null) === true) {
-			$errors[] = [
-				'code' => 'notification-digest-and-coalesce-mutually-exclusive',
-				'message' => sprintf(
-					'Notification "%s" declares both a rolling `coalesce` window and a fixed-time '
-					. '`digest` schedule; a rule may declare at most one batching mechanism.',
-					$name
-				),
-			];
-		}
-
-		return $errors;
+		return array_merge($errors, $this->digests->validate(spec: $spec, name: $name));
 	}//end validateCriticalAndDigest()
-
-	/**
-	 * Validate the optional `message` field (notification body).
-	 *
-	 * Mirrors the `subject` shape contract exactly: either a single
-	 * non-empty template string OR a per-locale map ({nl: "...", en: "..."}
-	 * optionally prefixed with `defaultLocale: <code>`). Every malformed
-	 * shape returns a single `notification-bad-message` error so leaf
-	 * authors get one canonical error code for a broken body template.
-	 *
-	 * @param mixed $message Raw value of the `message` key.
-	 * @param string $name Notification name (for diagnostics).
-	 *
-	 * @return array<int, array{code: string, message: string}>
-	 *
-	 */
-	private function validateMessage(mixed $message, string $name): array {
-		$code = 'notification-bad-message';
-
-		if (is_string($message) === true) {
-			if ($message === '') {
-				return [
-					[
-						'code' => $code,
-						'message' => sprintf(
-							'Notification "%s" message must be a non-empty string when present.',
-							$name
-						),
-					],
-				];
-			}
-
-			return [];
-		}
-
-		if (is_array($message) === false) {
-			return [
-				[
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" message must be a string or a per-locale map.',
-						$name
-					),
-				],
-			];
-		}
-
-		$errors = [];
-		$localeKeys = array_filter(
-			array_keys($message),
-			static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
-		);
-		if (count($localeKeys) === 0) {
-			$errors[] = [
-				'code' => $code,
-				'message' => sprintf(
-					'Notification "%s" message map must declare at least one locale (e.g. nl, en).',
-					$name
-				),
-			];
-		}
-
-		foreach ($localeKeys as $localeKey) {
-			if (is_string($message[$localeKey]) === false || $message[$localeKey] === '') {
-				$errors[] = [
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" message for locale "%s" must be a non-empty string.',
-						$name,
-						$localeKey
-					),
-				];
-			}
-		}
-
-		if (isset($message['defaultLocale']) === true) {
-			$defaultLocale = $message['defaultLocale'];
-			$defaultLocaleBad = is_string($defaultLocale) === false;
-			$defaultLocaleBad |= isset($message[$defaultLocale]) === false;
-			if ((bool)$defaultLocaleBad === true) {
-				$errors[] = [
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
-						$name,
-						(string)$defaultLocale
-					),
-				];
-			}
-		}
-
-		return $errors;
-	}//end validateMessage()
-
-	/**
-	 * Validate the optional `transports` block.
-	 *
-	 * Only `outbound` is a transport a rule declares here; the in-app notice,
-	 * the e-mail and the activity entry stay in `channels`, which is where
-	 * every existing rule already spells them. A handler is required because a
-	 * transport naming none is an integration that silently never runs.
-	 *
-	 * @param mixed $transports Raw value of the `transports` key.
-	 * @param string $name The notification name (for error messages).
-	 *
-	 * @return array<int, array{code: string, message: string}> One entry per fault.
-	 *
-	 */
-	private function validateTransports(mixed $transports, string $name): array {
-		if (is_array($transports) === false) {
-			return [
-				[
-					'code' => 'notification-transports-malformed',
-					'message' => sprintf('Notification "%s" transports must be an array.', $name),
-				],
-			];
-		}
-
-		$errors = [];
-		foreach ($transports as $i => $transport) {
-			if (is_array($transport) === false) {
-				$errors[] = [
-					'code' => 'notification-transport-malformed',
-					'message' => sprintf('Notification "%s" transports[%s] must be an object.', $name, (string)$i),
-				];
-				continue;
-			}
-
-			$kind = (string)($transport['kind'] ?? '');
-			if (in_array($kind, self::VALID_TRANSPORT_KINDS, true) === false) {
-				$errors[] = [
-					'code' => 'notification-transport-bad-kind',
-					'message' => sprintf(
-						'Notification "%s" transports[%s] kind "%s" not in [%s].',
-						$name,
-						(string)$i,
-						$kind,
-						implode(', ', self::VALID_TRANSPORT_KINDS)
-					),
-				];
-				continue;
-			}
-
-			// `outbound` is the only kind, so reaching here means it: the kind
-			// check above already refused everything else. Kept as one branch
-			// rather than two so adding a second kind adds its own guard here
-			// instead of silently inheriting this one.
-			if ((string)($transport['handler'] ?? '') === '') {
-				$errors[] = [
-					'code' => 'notification-transport-no-handler',
-					'message' => sprintf(
-						'Notification "%s" transports[%s] kind=outbound requires a handler (DI tag or FQCN).',
-						$name,
-						(string)$i
-					),
-				];
-			}
-		}//end foreach
-
-		return $errors;
-	}//end validateTransports()
 
 	/**
 	 * Validate the optional `organisation` gate.
@@ -1316,55 +755,41 @@ final class NotificationAnnotationValidator {
 	 * @return array{code: string, message: string}|null
 	 */
 	private function validateOrganisationGate(mixed $org, string $name): ?array {
-		$code = 'notification-bad-organisation';
-
 		if (is_string($org) === true) {
 			if ($org === '') {
-				return [
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" organisation must be a non-empty string.',
-						$name
-					),
-				];
+				return $this->fault(fault: 'organisation-empty', args: [$name]);
 			}
 
 			return null;
 		}
 
 		if (is_array($org) === true) {
-			if (count($org) === 0) {
-				return [
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" organisation array must declare at least one entry.',
-						$name
-					),
-				];
-			}
+			return $this->validateOrganisationList(org: $org, name: $name);
+		}
 
-			foreach ($org as $candidate) {
-				if (is_string($candidate) === false || $candidate === '') {
-					return [
-						'code' => $code,
-						'message' => sprintf(
-							'Notification "%s" organisation array entries must be non-empty strings.',
-							$name
-						),
-					];
-				}
-			}//end foreach
-
-			return null;
-		}//end if
-
-		return [
-			'code' => $code,
-			'message' => sprintf(
-				'Notification "%s" organisation must be a string or an array of strings.',
-				$name
-			),
-		];
+		return $this->fault(fault: 'organisation-type', args: [$name]);
 	}//end validateOrganisationGate()
+
+	/**
+	 * Validate an `organisation` gate given as a list: at least one entry, each a non-empty string.
+	 *
+	 * @param array<mixed> $org  The organisation list.
+	 * @param string       $name Notification name (for diagnostics).
+	 *
+	 * @return array{code: string, message: string}|null
+	 */
+	private function validateOrganisationList(array $org, string $name): ?array {
+		if (count($org) === 0) {
+			return $this->fault(fault: 'organisation-no-entry', args: [$name]);
+		}
+
+		foreach ($org as $candidate) {
+			if (is_string($candidate) === false || $candidate === '') {
+				return $this->fault(fault: 'organisation-bad-entry', args: [$name]);
+			}
+		}
+
+		return null;
+	}//end validateOrganisationList()
 
 }//end class
