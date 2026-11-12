@@ -24,7 +24,7 @@ decision 389 the row is set back to `specified` with this change as its plan.
 The IqApiProduct board already draws the breakdown ("Per consument", "Per
 endpoint").
 
-This change covers one row: `integriq:obs-analytics`.
+This change covers two rows: `integriq:obs-analytics`, and the "by whom" part of `integriq:acc-product-analytics`.
 
 ## What changes
 
