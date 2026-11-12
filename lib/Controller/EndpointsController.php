@@ -88,6 +88,23 @@ class EndpointsController extends Controller {
 	private int $corsMaxAge;
 
 	/**
+	 * Endpoint keys that each name a processing step the simple fast path
+	 * cannot run; any one of them non-empty routes the request through the
+	 * full EndpointService.
+	 *
+	 * @var string[]
+	 */
+	private const FAST_PATH_EXCLUDED_KEYS = [
+		'rules',
+		'fixedFilters',
+		'anonymousRateLimit',
+		'conditions',
+		'inputMapping',
+		'outputMapping',
+		'configurations',
+	];
+
+	/**
 	 * Constructor for the EndpointsController.
 	 *
 	 * @param string $appName The name of the app.
@@ -339,16 +356,30 @@ class EndpointsController extends Controller {
 		// Check if endpoint has no complex processing requirements. Fixed
 		// filters count as one: the fast path answers a single object without
 		// the id-fetch guard (REQ-EP-012).
-		return empty($data['rules']) === true
-			&& empty($data['fixedFilters']) === true
-			&& empty($data['anonymousRateLimit']) === true
-			&& empty($data['conditions']) === true
-			&& empty($data['inputMapping']) === true
-			&& empty($data['outputMapping']) === true
-			&& empty($data['configurations']) === true
+		return $this->hasNoProcessing(data: $data) === true
 			&& ($data['targetType'] ?? '') === 'register/schema';
 
 	}//end isSimpleEndpoint()
+
+	/**
+	 * Whether the endpoint declares none of the processing steps the fast
+	 * path cannot run (rules, fixed filters, rate limits, conditions,
+	 * mappings, configurations).
+	 *
+	 * @param array $data The endpoint object data.
+	 *
+	 * @return boolean True when every processing key is empty.
+	 */
+	private function hasNoProcessing(array $data): bool {
+		foreach (self::FAST_PATH_EXCLUDED_KEYS as $key) {
+			if (empty($data[$key]) === false) {
+				return false;
+			}
+		}
+
+		return true;
+
+	}//end hasNoProcessing()
 
 	/**
 	 * Handle simple GET-only schema requests directly without EndpointService
@@ -418,105 +449,198 @@ class EndpointsController extends Controller {
 	 */
 	private function dispatchSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse {
 		try {
-			$endpointData = $endpoint->getObject();
-			// Parse target register and schema from targetId (e.g., "20/111").
-			$targetId = ($endpointData['targetId'] ?? '');
-			if (empty($targetId) === true) {
-				$this->logger->error('Simple endpoint has empty targetId', ['endpoint' => $endpointData['endpoint'] ?? '']);
-				return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: empty targetId')], 500);
+			$query = $this->buildSimpleQuery(endpoint: $endpoint, path: $path);
+			if ($query instanceof JSONResponse) {
+				return $query;
 			}
 
-			$target = explode('/', $targetId);
-			if (count($target) !== 2 || is_numeric($target[0]) === false || is_numeric($target[1]) === false) {
-				$this->logger->error(
-					'Simple endpoint has invalid targetId format',
-					[
-						'endpoint' => $endpointData['endpoint'] ?? '',
-						'targetId' => $targetId,
-						'parsed' => $target,
-					]
-				);
-				return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: invalid targetId format. Expected "register/schema"')], 500);
-			}
-
-			$register = (int)$target[0];
-			$schema = (int)$target[1];
-
-			// Get path parameters and request data.
-			$endpointArray = ($endpointData['endpointArray'] ?? explode('/', $endpointData['endpoint'] ?? ''));
-			$pathParams = $this->getPathParameters(endpointArray: $endpointArray, path: $path);
-			$parameters = $this->request->getParams();
-
-			// Get the ObjectService mapper for this register/schema.
-			try {
-				$mapper = $this->objectService->getMapper(schema: $schema, register: $register);
-			} catch (\Exception $e) {
-				$this->logger->error(
-					'Failed to get ObjectService mapper',
-					[
-						'endpoint' => $endpointData['endpoint'] ?? '',
-						'register' => $register,
-						'schema' => $schema,
-						'error' => $e->getMessage(),
-					]
-				);
-				return new JSONResponse(['error' => $this->l->t('Schema or register not found: %s', [$e->getMessage()])], 404);
-			}
-
-			// Only GET is handled here.  isSimpleEndpoint() guarantees this but
-			// we guard defensively so a future refactor cannot silently open write
-			// access without going through OR's RBAC layer.
-			if ($this->request->getMethod() !== 'GET') {
-				return new JSONResponse(['error' => $this->l->t('Method not supported on simple endpoint')], 405);
-			}
-
-			// Handle single object request (has ID in path).
-			if (isset($pathParams['id']) === true && $pathParams['id'] === end($pathParams)) {
-				$object = $mapper->find($pathParams['id']);
-				return new JSONResponse($object->jsonSerialize());
-			}
-
-			// Remove _path as parameters (not needed and breaks things).
-			unset($parameters['_path']);
-
-			// Handle collection request (list objects).
-			$result = $mapper->findAllPaginated(requestParams: $parameters);
-
-			$this->logger->info(
-				'Simple endpoint query',
-				[
-					'endpoint' => $endpointData['endpoint'] ?? '',
-					'register' => $register,
-					'schema' => $schema,
-					'targetId' => $targetId,
-					'parameters' => $parameters,
-					'result_total' => $result['total'] ?? 0,
-				]
-			);
-
-			// Serialize objects and rename 'total' to 'count'.
-			$returnArray = $result;
-			$returnArray['count'] = $result['total'];
-			$returnArray['results'] = array_map(fn ($obj) => $obj->jsonSerialize(), $result['results']);
-			unset($returnArray['total']);
-
-			// Add pagination links if needed.
-			if ($result['page'] < $result['pages']) {
-				$parameters['page'] = ($result['page'] + 1);
-				$returnArray['next'] = $this->buildPaginationUrl(parameters: $parameters, path: $path);
-			}
-
-			if ($result['page'] > 1) {
-				$parameters['page'] = ($result['page'] - 1);
-				$returnArray['previous'] = $this->buildPaginationUrl(parameters: $parameters, path: $path);
-			}
-
-			return new JSONResponse($returnArray);
+			return $this->answerSimpleQuery(query: $query);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $this->l->t('Simple endpoint error: %s', [$e->getMessage()])], 500);
 		}//end try
 
 	}//end dispatchSimpleSchemaRequest()
+
+	/**
+	 * Read the target, path parameters and query parameters of a fast-path
+	 * request, or the 500 a misconfigured target answers.
+	 *
+	 * @param ObjectEntity $endpoint The endpoint configuration.
+	 * @param string       $path     The request path.
+	 *
+	 * @return SimpleSchemaQuery|JSONResponse The query, or the error response.
+	 */
+	private function buildSimpleQuery(ObjectEntity $endpoint, string $path): SimpleSchemaQuery|JSONResponse {
+		$endpointData = $endpoint->getObject();
+		$target = $this->parseSimpleTarget(endpointData: $endpointData);
+		if ($target instanceof JSONResponse) {
+			return $target;
+		}
+
+		$endpointArray = ($endpointData['endpointArray'] ?? explode('/', $endpointData['endpoint'] ?? ''));
+		$query = new SimpleSchemaQuery();
+		$query->target = $target;
+		$query->path = $path;
+		$query->pathParams = $this->getPathParameters(endpointArray: $endpointArray, path: $path);
+		// Remove _path as parameters (not needed and breaks things).
+		$query->parameters = array_diff_key($this->request->getParams(), ['_path' => true]);
+
+		return $query;
+
+	}//end buildSimpleQuery()
+
+	/**
+	 * Parse the register and schema from the endpoint's targetId (e.g. "20/111").
+	 *
+	 * @param array $endpointData The endpoint object data.
+	 *
+	 * @return SimpleSchemaTarget|JSONResponse The target, or the 500 a misconfigured one answers.
+	 */
+	private function parseSimpleTarget(array $endpointData): SimpleSchemaTarget|JSONResponse {
+		$target = SimpleSchemaTarget::fromEndpoint(endpointData: $endpointData);
+		if (empty($target->targetId) === true) {
+			$this->logger->error('Simple endpoint has empty targetId', ['endpoint' => $target->endpoint]);
+			return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: empty targetId')], 500);
+		}
+
+		if ($target->isWellFormed() === false) {
+			return $this->invalidTargetResponse(target: $target);
+		}
+
+		return $target;
+
+	}//end parseSimpleTarget()
+
+	/**
+	 * Log a targetId that is not a "register/schema" pair and answer 500.
+	 *
+	 * @param SimpleSchemaTarget $target The malformed target.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function invalidTargetResponse(SimpleSchemaTarget $target): JSONResponse {
+		$this->logger->error(
+			'Simple endpoint has invalid targetId format',
+			[
+				'endpoint' => $target->endpoint,
+				'targetId' => $target->targetId,
+				'parsed'   => $target->parts(),
+			]
+		);
+
+		return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: invalid targetId format. Expected "register/schema"')], 500);
+
+	}//end invalidTargetResponse()
+
+	/**
+	 * Answer a fast-path query: one object when the path names an id,
+	 * otherwise the paginated collection.
+	 *
+	 * @param SimpleSchemaQuery $query The query.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function answerSimpleQuery(SimpleSchemaQuery $query): JSONResponse {
+		$mapper = $this->resolveSimpleMapper(target: $query->target);
+		if ($mapper instanceof JSONResponse) {
+			return $mapper;
+		}
+
+		// Only GET is handled here.  isSimpleEndpoint() guarantees this but
+		// we guard defensively so a future refactor cannot silently open write
+		// access without going through OR's RBAC layer.
+		if ($this->request->getMethod() !== 'GET') {
+			return new JSONResponse(['error' => $this->l->t('Method not supported on simple endpoint')], 405);
+		}
+
+		if ($query->addressesSingleObject() === true) {
+			return new JSONResponse($mapper->find($query->pathParams['id'])->jsonSerialize());
+		}
+
+		return $this->answerSimpleCollection(query: $query, mapper: $mapper);
+
+	}//end answerSimpleQuery()
+
+	/**
+	 * Get the ObjectService mapper for the target, or the 404 an unknown
+	 * register or schema answers.
+	 *
+	 * @param SimpleSchemaTarget $target The target.
+	 *
+	 * @return mixed The mapper, or the error JSONResponse.
+	 */
+	private function resolveSimpleMapper(SimpleSchemaTarget $target): mixed {
+		try {
+			return $this->objectService->getMapper(schema: $target->schema(), register: $target->register());
+		} catch (\Exception $e) {
+			$this->logger->error('Failed to get ObjectService mapper', array_merge($target->logContext(), ['error' => $e->getMessage()]));
+			return new JSONResponse(['error' => $this->l->t('Schema or register not found: %s', [$e->getMessage()])], 404);
+		}
+
+	}//end resolveSimpleMapper()
+
+	/**
+	 * List the target's objects, log the query and answer the page with its
+	 * count and page links.
+	 *
+	 * @param SimpleSchemaQuery $query  The query.
+	 * @param mixed             $mapper The ObjectService mapper.
+	 *
+	 * @return JSONResponse The collection response.
+	 */
+	private function answerSimpleCollection(SimpleSchemaQuery $query, mixed $mapper): JSONResponse {
+		$result = $mapper->findAllPaginated(requestParams: $query->parameters);
+		$context = [
+			'targetId'     => $query->target->targetId,
+			'parameters'   => $query->parameters,
+			'result_total' => ($result['total'] ?? 0),
+		];
+		$this->logger->info('Simple endpoint query', array_merge($query->target->logContext(), $context));
+
+		return new JSONResponse($this->addPageLinks(page: $this->serializePage(result: $result), query: $query));
+
+	}//end answerSimpleCollection()
+
+	/**
+	 * Serialize a page's objects and rename 'total' to 'count'.
+	 *
+	 * @param array $result The paginated mapper result.
+	 *
+	 * @return array The page as the fast path answers it.
+	 */
+	private function serializePage(array $result): array {
+		$page = $result;
+		$page['count'] = $result['total'];
+		$page['results'] = array_map(fn ($obj) => $obj->jsonSerialize(), $result['results']);
+		unset($page['total']);
+
+		return $page;
+
+	}//end serializePage()
+
+	/**
+	 * Add the next and previous page links when there are such pages.
+	 *
+	 * @param array             $page  The serialized page.
+	 * @param SimpleSchemaQuery $query The query the page answers.
+	 *
+	 * @return array The page with its links.
+	 */
+	private function addPageLinks(array $page, SimpleSchemaQuery $query): array {
+		$parameters = $query->parameters;
+		if ($page['page'] < $page['pages']) {
+			$parameters['page'] = ($page['page'] + 1);
+			$page['next'] = $this->buildPaginationUrl(parameters: $parameters, path: $query->path);
+		}
+
+		if ($page['page'] > 1) {
+			$parameters['page'] = ($page['page'] - 1);
+			$page['previous'] = $this->buildPaginationUrl(parameters: $parameters, path: $query->path);
+		}
+
+		return $page;
+
+	}//end addPageLinks()
 
 	/**
 	 * Parse path parameters from endpoint pattern and actual path.

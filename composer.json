@@ -51,6 +51,12 @@
             "@cs:fix"
         ],
         "test:coverage": "./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always",
+        "coverage:publish": [
+            "@putenv XDEBUG_MODE=coverage",
+            "@php -d pcov.enabled=1 -d pcov.directory=lib -d memory_limit=2G vendor/bin/phpunit -c phpunit.xml --do-not-fail-on-risky --coverage-clover=coverage/clover.xml",
+            "npm run test:coverage",
+            "@php scripts/coverage-publish.php"
+        ],
         "coverage:check": "php tests/scripts/check-coverage.php",
         "quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
         "quality:phpmd-score": "phpmd lib/ json phpmd.xml | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",

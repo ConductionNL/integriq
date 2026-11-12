@@ -132,3 +132,24 @@ message log.
 - WHEN a handler attempts a reply
 - THEN the attempt reports `unsupported by this channel` and nothing is sent over another channel
 - e2e: `tests/e2e/intake-channels.spec.ts`
+
+### Requirement: A handler works a message from the shared inbox (REQ-IC-021)
+
+The intake inbox page MUST offer two row actions to a handler with the `intake.assign` or `intake.reply` action right. Assign MUST link a held or routed message to a case the handler picks, with its attachments, and MUST record who assigned it. Reply MUST send the handler's text through REQ-IC-005 on the channel the message arrived on. A handler without the right MUST NOT see the action.
+
+#### Scenario: a handler assigns a held message to a case
+- GIVEN a Teams message held because no routing rule matched
+- WHEN a handler picks "Toewijzen aan zaak" on its row and chooses a case
+- THEN the message and its attachments are linked to that case
+- AND the row shows the case and who assigned it
+
+#### Scenario: a handler answers from the inbox
+- GIVEN a WhatsApp message in the inbox
+- WHEN a handler picks "Beantwoorden" and sends a short text
+- THEN the reply leaves over WhatsApp to the same correspondent and is recorded
+
+#### Scenario: a reader without the right sees no actions
+- GIVEN a user who may read the inbox but has neither action right
+- WHEN they open the inbox
+- THEN no assign or reply action is shown
+

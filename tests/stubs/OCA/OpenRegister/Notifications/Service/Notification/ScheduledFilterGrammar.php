@@ -29,6 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -39,6 +40,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
  * Constants describing the filter grammar shared by the parser, the evaluator
  * and the validator.
  *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class ScheduledFilterGrammar {
 
@@ -118,6 +120,7 @@ final class ScheduledFilterGrammar {
 	 *
 	 * @return bool True when the operator is part of the grammar.
 	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public static function isOperator(string $operator): bool {
 		return in_array($operator, self::OPERATORS, true);
@@ -131,6 +134,7 @@ final class ScheduledFilterGrammar {
 	 *
 	 * @return bool True when the key is `all` or `any`.
 	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public static function isCombinator(string $key): bool {
 		return in_array($key, self::COMBINATORS, true);
@@ -144,6 +148,7 @@ final class ScheduledFilterGrammar {
 	 *
 	 * @return string Either `values` for membership operators, or `value`.
 	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public static function operandKey(string $operator): string {
 		if (in_array($operator, self::MEMBERSHIP_OPERATORS, true) === true) {

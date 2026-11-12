@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Runs the shipped rule through the real OpenRegister classes (tests/stubs
- * holds verbatim copies of openregister development a5832f2498).
+ * holds verbatim copies of openregister main 0f8e856049).
  */
 final class JobOverdueRuleTest extends TestCase {
 

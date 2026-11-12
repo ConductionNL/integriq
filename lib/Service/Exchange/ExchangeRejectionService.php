@@ -101,17 +101,12 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-006-a-rejected-record-is-a-dead-letter-with-a-correction-loop
 	 */
 	public function record(string $jobId, string $target, array $rejection, string $ownerApp = ''): ObjectEntity {
-		$now = (new DateTime())->format('c');
-		$code = (string)($rejection['errorCode'] ?? 'send-failed');
+		$capture = new RejectionCapture(jobId: $jobId, target: $target);
+		$capture->capturedAt = (new DateTime())->format('c');
+		$capture->code = (string)($rejection['errorCode'] ?? 'send-failed');
+		$capture->status = self::STATUS_FAILED;
 
-		$row = $this->buildRow(
-			jobId: $jobId,
-			target: $target,
-			rejection: $rejection,
-			code: $code,
-			status: self::STATUS_FAILED,
-			now: $now
-		);
+		$row = $this->buildRow(capture: $capture, rejection: $rejection);
 		$row['ownerApp'] = $ownerApp;
 
 		return $this->save(data: $row);
@@ -132,36 +127,83 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
 	 */
 	public function migrate(ObjectEntity $job, array $rejection): ObjectEntity {
-		$jobData = $job->getObject();
-		$code = (string)($rejection['errorCode'] ?? 'send-failed');
-		$status = $this->translateStatus(legacyStatus: (string)($rejection['status'] ?? 'open'));
-		$detected = (string)($rejection['detectedAt'] ?? (new DateTime())->format('c'));
+		$capture = $this->migratedCapture(job: $job, rejection: $rejection);
 
-		$row = $this->buildRow(
-			jobId: $job->getUuid(),
-			target: (string)($jobData['exchangeTarget'] ?? ''),
-			rejection: $rejection,
-			code: $code,
-			status: $status,
-			now: $detected
-		);
-		$row['ownerApp'] = (string)($jobData['ownerApp'] ?? '');
-
-		foreach (['correctedBy', 'correctedAt', 'correctionDeadlineAt'] as $field) {
-			if (empty($rejection[$field]) === false) {
-				$row[$field] = (string)$rejection[$field];
-			}
-		}
-
-		if ($status === self::STATUS_DISCARDED) {
-			$row['discardedBy'] = (string)($rejection['waivedBy'] ?? '');
-			$row['discardedAt'] = (string)($rejection['waivedAt'] ?? $detected);
-			$row['discardReason'] = (string)($rejection['waiveReason'] ?? '');
+		$row = $this->buildRow(capture: $capture, rejection: $rejection);
+		$row['ownerApp'] = (string)($job->getObject()['ownerApp'] ?? '');
+		$row = array_merge($row, $this->correctionFields(rejection: $rejection));
+		if ($capture->status === self::STATUS_DISCARDED) {
+			$row = array_merge($row, $this->discardFields(capture: $capture, rejection: $rejection));
 		}
 
 		return $this->save(data: $row);
 
 	}//end migrate()
+
+	/**
+	 * How a migrated job's former rejection was captured: its translated status and detection time.
+	 *
+	 * @param ObjectEntity        $job       The migrated job.
+	 * @param array<string,mixed> $rejection The former rejection.
+	 *
+	 * @return RejectionCapture The capture.
+	 *
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+	 */
+	private function migratedCapture(ObjectEntity $job, array $rejection): RejectionCapture {
+		$jobData = $job->getObject();
+		$code = (string)($rejection['errorCode'] ?? 'send-failed');
+		$status = $this->translateStatus(legacyStatus: (string)($rejection['status'] ?? 'open'));
+		$detected = (string)($rejection['detectedAt'] ?? (new DateTime())->format('c'));
+
+		$capture = new RejectionCapture(jobId: $job->getUuid(), target: (string)($jobData['exchangeTarget'] ?? ''));
+		$capture->code = $code;
+		$capture->status = $status;
+		$capture->capturedAt = $detected;
+
+		return $capture;
+
+	}//end migratedCapture()
+
+	/**
+	 * The correction fields a former rejection carries, the empty ones left out.
+	 *
+	 * @param array<string,mixed> $rejection The former rejection.
+	 *
+	 * @return array<string,string> The fields.
+	 *
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+	 */
+	private function correctionFields(array $rejection): array {
+		$fields = [];
+		foreach (['correctedBy', 'correctedAt', 'correctionDeadlineAt'] as $field) {
+			if (empty($rejection[$field]) === false) {
+				$fields[$field] = (string)$rejection[$field];
+			}
+		}
+
+		return $fields;
+
+	}//end correctionFields()
+
+	/**
+	 * The discard fields of a former waived rejection.
+	 *
+	 * @param RejectionCapture    $capture   The capture; its time stands in for a missing waive time.
+	 * @param array<string,mixed> $rejection The former rejection.
+	 *
+	 * @return array<string,string> The fields.
+	 *
+	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-002-a-migrated-job-keeps-its-history
+	 */
+	private function discardFields(RejectionCapture $capture, array $rejection): array {
+		return [
+			'discardedBy' => (string)($rejection['waivedBy'] ?? ''),
+			'discardedAt' => (string)($rejection['waivedAt'] ?? $capture->capturedAt),
+			'discardReason' => (string)($rejection['waiveReason'] ?? ''),
+		];
+
+	}//end discardFields()
 
 	/**
 	 * Load an exchange rejection.
@@ -376,49 +418,76 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 	}//end translateStatus()
 
 	/**
-	 * Build a rejection row.
+	 * Build a rejection row: where the record came from, then what went wrong.
 	 *
-	 * @param string              $jobId     The job's uuid.
-	 * @param string              $target    The target.
+	 * @param RejectionCapture    $capture   The job, target, error code, status and capture time.
 	 * @param array<string,mixed> $rejection The rejection.
-	 * @param string              $code      The error code.
-	 * @param string              $status    The status.
-	 * @param string              $now       The capture time.
 	 *
 	 * @return array<string,mixed> The row.
 	 */
-	private function buildRow(
-		string $jobId,
-		string $target,
-		array $rejection,
-		string $code,
-		string $status,
-		string $now
-	): array {
-		$recordId = (string)($rejection['recordId'] ?? '');
-		$sourceKind = (string)($rejection['sourceKind'] ?? '');
-		$ownerRef = (string)($rejection['ownerRef'] ?? '');
-		if ($ownerRef === '' && $recordId !== '') {
-			$ownerRef = trim($sourceKind . '/' . $recordId, '/');
-		}
-
-		return [
-			'exchangeJob' => $jobId,
-			'exchangeTarget' => $target,
-			'originId' => $recordId,
-			'ownerRef' => $ownerRef,
-			'sourceKind' => $sourceKind,
-			'phase' => self::PHASE,
-			'errorCode' => $code,
-			'offendingFields' => $this->fieldNames(fields: ($rejection['offendingFields'] ?? [])),
-			'error' => $this->codes->resolve(target: $target, code: $code)['label'],
-			'payload' => [],
-			'status' => $status,
-			'retryCount' => 0,
-			'attempts' => [['at' => $now, 'error' => $code]],
-		];
+	private function buildRow(RejectionCapture $capture, array $rejection): array {
+		return ($this->originFields(capture: $capture, rejection: $rejection) + $this->failureFields(capture: $capture, rejection: $rejection));
 
 	}//end buildRow()
+
+	/**
+	 * The fields that say which job, target and record a rejection belongs to.
+	 *
+	 * @param RejectionCapture    $capture   The capture.
+	 * @param array<string,mixed> $rejection The rejection.
+	 *
+	 * @return array<string,mixed> The origin fields.
+	 */
+	private function originFields(RejectionCapture $capture, array $rejection): array {
+		return [
+			'exchangeJob' => $capture->jobId,
+			'exchangeTarget' => $capture->target,
+			'originId' => (string)($rejection['recordId'] ?? ''),
+			'ownerRef' => $this->ownerRefOf(rejection: $rejection),
+			'sourceKind' => (string)($rejection['sourceKind'] ?? ''),
+			'phase' => self::PHASE,
+		];
+
+	}//end originFields()
+
+	/**
+	 * The rejection's owner reference, else `<sourceKind>/<recordId>` when it names a record.
+	 *
+	 * @param array<string,mixed> $rejection The rejection.
+	 *
+	 * @return string The owner reference, empty when there is none.
+	 */
+	private function ownerRefOf(array $rejection): string {
+		$recordId = (string)($rejection['recordId'] ?? '');
+		$ownerRef = (string)($rejection['ownerRef'] ?? '');
+		if ($ownerRef === '' && $recordId !== '') {
+			$ownerRef = trim((string)($rejection['sourceKind'] ?? '') . '/' . $recordId, '/');
+		}
+
+		return $ownerRef;
+
+	}//end ownerRefOf()
+
+	/**
+	 * The fields that say what went wrong: code, field names, label, status and first attempt.
+	 *
+	 * @param RejectionCapture    $capture   The capture.
+	 * @param array<string,mixed> $rejection The rejection.
+	 *
+	 * @return array<string,mixed> The failure fields.
+	 */
+	private function failureFields(RejectionCapture $capture, array $rejection): array {
+		return [
+			'errorCode' => $capture->code,
+			'offendingFields' => $this->fieldNames(fields: ($rejection['offendingFields'] ?? [])),
+			'error' => $this->codes->resolve(target: $capture->target, code: $capture->code)['label'],
+			'payload' => [],
+			'status' => $capture->status,
+			'retryCount' => 0,
+			'attempts' => [['at' => $capture->capturedAt, 'error' => $capture->code]],
+		];
+
+	}//end failureFields()
 
 	/**
 	 * The uuid of a stored object, empty when it has none.
