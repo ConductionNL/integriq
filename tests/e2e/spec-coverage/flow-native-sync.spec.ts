@@ -293,7 +293,7 @@ function parseOccJson(raw: string, command: string): unknown {
  * out of `OCA\OpenRegister\Cron` and this string was left behind, so the
  * lookup matched nothing and the assertion below failed on a count of 0. It is
  * a CROSS-REPO reference: the class lives in openregister, which this app's
- * e2e installs at `ref: development` (code-quality.yml), so it must track that
+ * e2e installs at `ref: stable2.1` (code-quality.yml), so it must track that
  * branch's namespace — nothing in this repo's own build can catch it drifting.
  *
  * @return The job id.
