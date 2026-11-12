@@ -1566,7 +1566,7 @@
 				"owner": "ConductionNL/openregister",
 				"evidence": "lib/Settings/register.d/99-source-secrets-writeonly.json marks source.apikey/secret/password/jwt/authenticationConfig writeOnly:true; lib/Settings/register.d/99-source-nested-auth-writeonly.json adds x-openregister-writeonly-paths for nested configuration.authentication.* (client_secret/password/secret/private_key/encryptedToken/encryptedApiKey/mtls) and configuration.directory.authentication.*. Per the fragment's own comment, OpenRegister's render boundary (or#386/or#459/or#460/or#462) strips these on EVERY rendered read, including admin reads and @self.relations, while CallService still reads the raw value via _render:false (CallService.php ~L2141 per the comment).",
 				"spec": "openspec/specs/source-credential-custody",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/source-credential-custody :: A source's secrets are never read back (REQ-SCB-002)"
+				"requirement": "openspec/specs/source-credential-custody :: A source's secrets are never read back (REQ-SCB-002)"
 			},
 			"reachedOn": "/sources index and /sources/:id detail, any generic object read of a source; the value is never present in the response body",
 			"note": "Enforcement mechanism (schema-driven writeOnly stripping) lives in OpenRegister; integriq supplies the schema annotations declaring which fields are secret.",
@@ -1604,7 +1604,7 @@
 				"change": "2026-09-29-migrate-inline-secrets-to-broker",
 				"owner": "ConductionNL/integriq",
 				"evidence": "Built (migrate-inline-secrets-to-broker, archived 29 Sep 2026): `occ integriq:migrate-inline-secrets` moves each source's inline apikey/secret/password/jwt into the OpenRegister credential broker (organisation-scoped, verified round trip before the inline value is nulled; InlineSecretMigrationExecutor), RemoveMigratedSourceSecretFields removes those four properties from the live source schema once a raw gate is clean, and authenticationConfig goes through the operator-gated `occ integriq:authentication-config`. Partial: an instance keeps inline values, stored unencrypted, until an operator runs the migration; the bridge clients (Mtls, Dso, StufZkn, Fsc, Sms) keep their own ICrypto encryption.",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/source-credential-custody :: Migrated secrets live in the credential broker (REQ-SCB-003)"
+				"requirement": "openspec/specs/source-credential-custody :: Migrated secrets live in the credential broker (REQ-SCB-003)"
 			},
 			"reachedOn": "/sources/:id, credentials on a plain REST/SOAP source (apikey/secret/password/jwt, and configuration.authentication.client_secret) are stored as plaintext in the OR object store; only the six named bridge clients (DSO, StufZkn, IWMO/IStandaarden, FSC, KISS, NotifyNL) encrypt their residual token/cert fields via ICrypto",
 			"note": "General field encryption at rest is explicitly not shipped (ADR-007 pending per the schema's own comments); only a handful of hardcoded government-bridge integrations encrypt their secrets today. This is a documented gap, not a silent one.",
@@ -1871,7 +1871,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/CallService.php:1094 renderConfiguration() applies renderValue() (CallService.php:314-336, Twig createTemplate().render(context:['source'=>$sourceData])) recursively over the whole merged call config (headers, query, body) before dispatch; sandboxed Twig environment CallService.php:216-224",
 				"spec": "openspec/specs/http-call-engine",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/http-call-engine :: Templated call values are rendered at call time (REQ-SCB-001)"
+				"requirement": "openspec/specs/http-call-engine :: Templated call values are rendered at call time (REQ-SCB-001)"
 			},
 			"reachedOn": "/sources/:id edit form, any header/body/query value in 'headers' or 'configuration' containing {{ ... }} is rendered against the source's own fields at call time",
 			"provider": "integriq",
@@ -2064,7 +2064,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/EndpointService.php:1400 getPathParameters() extracts named segments from the inbound path against endpointArray; lib/Service/EndpointService.php:2174-2222 buildUpstreamPathContext()/renderEndpointPath() substitutes those (plus query/body) into the upstream path template for a targetType=api proxy, e.g. '/hydra/label/{owner}/{repo}' per the doc comment at line ~2195",
 				"spec": "openspec/specs/endpoint-runtime",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/endpoint-runtime :: Path placeholders reach the upstream path (REQ-SCB-004)"
+				"requirement": "openspec/specs/endpoint-runtime :: Path placeholders reach the upstream path (REQ-SCB-004)"
 			},
 			"reachedOn": "/endpoints/:id edit form, path segments written as {{ name }}/{name} in the endpoint path, consumed by both register/schema (as an object id) and source-proxy (as upstream path template) targets",
 			"provider": "integriq",
@@ -2647,7 +2647,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "appinfo/routes.php + lib/Controller/EndpointsController.php:141-142 handlePath() is #[NoCSRFRequired] #[PublicPage], every endpoint is reachable without a Nextcloud session by construction; lib/Controller/EndpointsController.php:283-286 isSimpleEndpoint() additionally requires isPublic===true to opt an endpoint into the fast GET-only schema path; access restriction (when wanted) is opt-in via an 'authentication' rule in the endpoint's rule pipeline, not the other way around",
 				"spec": "openspec/specs/endpoint-runtime",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/endpoint-runtime :: Endpoints answer without a Nextcloud session (REQ-SCB-005)"
+				"requirement": "openspec/specs/endpoint-runtime :: Endpoints answer without a Nextcloud session (REQ-SCB-005)"
 			},
 			"reachedOn": "/endpoints/:id edit form, isPublic flag (fast-path opt-in) and, more generally, every endpoint is anonymously callable unless an authentication Rule is attached",
 			"note": "The architecture is inverted from a typical gateway: everything is public by default (PublicPage route) and an operator opts INTO auth via a Rule, rather than opting into anonymous access from a default-closed state. isPublic itself only controls eligibility for the optimisation fast-path, not general reachability.",
@@ -2685,7 +2685,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/EventListener/EndpointCacheInvalidationListener.php:69-95 handle() calls endpointCacheService->clearCache() whenever an integriq 'endpoint' object fires ObjectCreatedEvent/ObjectUpdatedEvent/ObjectDeletedEvent; lib/AppInfo/Application.php:311-313 registers this listener for all three OpenRegister events; the next request re-fetches fresh data via EndpointCacheService::refreshCache()/fetchEndpointsFromOr()",
 				"spec": "openspec/specs/endpoint-runtime",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/endpoint-runtime :: A saved endpoint applies on the next request (REQ-SCB-006)"
+				"requirement": "openspec/specs/endpoint-runtime :: A saved endpoint applies on the next request (REQ-SCB-006)"
 			},
 			"reachedOn": "machine path: saving an Endpoint (any page that edits one) fires the OR event, which clears the routing cache for the very next inbound request",
 			"provider": "integriq",
@@ -3594,7 +3594,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/MappingService.php:339 'Unset unwanted key's' loop deletes every key named in mapping.getUnset() from the output dot-array.",
 				"spec": "openspec/specs/mapping-and-search",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/mapping-and-search :: The unset list leaves fields out (REQ-SCB-008)"
+				"requirement": "openspec/specs/mapping-and-search :: The unset list leaves fields out (REQ-SCB-008)"
 			},
 			"reachedOn": "/mappings/:id editor, unset field list",
 			"provider": "integriq",
@@ -3831,7 +3831,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php references mapping-by-id fields at multiple points (sourceHashMapping:3762, sourceTargetMapping-driven executeMapping:4533, updateMapping:8182, deleteMapping:8121, generic save_object.mapping:8300/8310, processMappingRule:8463); lib/Flow/ApplyMappingNode.php:195/200/242 lets a flow step reference a mapping id via config['mapping'] with optionsFrom pointed at /apps/openregister/api/objects/integriq/mapping, the same mapping objects are resolved by id from synchronizations, endpoint rules and flows.",
 				"spec": "openspec/specs/mapping-and-search",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/mapping-and-search :: One mapping is reused by id (REQ-SCB-007)"
+				"requirement": "openspec/specs/mapping-and-search :: One mapping is reused by id (REQ-SCB-007)"
 			},
 			"reachedOn": "any synchronization/endpoint-rule/flow-step mapping picker that references a saved mapping by id",
 			"provider": "integriq",
@@ -3992,7 +3992,7 @@
 				"evidence": "lib/Service/Job/SynchronizationAction.php:35 is the job-runner action; its __invoke path calls this.synchronizationService->synchronize() at line 111. lib/Service/JobService.php:462 executeJob() resolves 'job'.jobClass from the DI container and runs it on a cron pass (JobTask.php:88-90 wraps JobService::run()), so a job record whose jobClass names SynchronizationAction runs a synchronization on schedule.",
 				"spec": "openspec/specs/synchronization-engine",
 				"requirement": [
-					"openspec/changes/spec-coverage-closing-round/specs/synchronization-engine :: A synchronization runs on its job's schedule (REQ-SCB-012)",
+					"openspec/specs/synchronization-engine :: A synchronization runs on its job's schedule (REQ-SCB-012)",
 					"openspec/specs/synchronization-engine :: Synchronization orchestration and direction routing (REQ-001)"
 				]
 			},
@@ -4373,7 +4373,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/SynchronizationService.php:2158-2159 applies JsonLogic::apply(synchronization.conditions, serializedObject) and skips the record when it evaluates false; conditions are configured via the shared conditions builder (syncDraft.js normaliseConditions/EMPTY_ROOT_GROUP).",
 				"spec": "openspec/specs/synchronization-engine",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/synchronization-engine :: Synchronization conditions skip records (REQ-SCB-009)"
+				"requirement": "openspec/specs/synchronization-engine :: Synchronization conditions skip records (REQ-SCB-009)"
 			},
 			"reachedOn": "/synchronizations/:id editor, conditions builder",
 			"provider": "integriq",
@@ -6312,7 +6312,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:420-435 Dashboard page (/, type dashboard) with dateRange enabled; the widgets note (:435) describes four lead counts backed by schema enums (synchronization_run.status, sync_item_dead_letter.status, event_message.status, source.circuitBreakerState) plus volume charts over time.",
 				"spec": "openspec/specs/logs-and-statistics",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/logs-and-statistics :: The dashboard shows traffic over a chosen period (REQ-SCB-010)"
+				"requirement": "openspec/specs/logs-and-statistics :: The dashboard shows traffic over a chosen period (REQ-SCB-010)"
 			},
 			"reachedOn": "/ (Dashboard)",
 			"provider": "integriq",
@@ -6349,7 +6349,7 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "src/manifest.json:2985-2989 OperationalHealth (/reports/operational-health, type dashboard): 'The Reports hub cards six log surfaces, which answer \"what happened to this one thing\". Nothing aggregated them, so \"how is it going\" had no page at all.' Charts read synchronization_run.status, execution_trace.status, event_message.status, sync_item_dead_letter.phase.",
 				"spec": "openspec/specs/logs-and-statistics",
-				"requirement": "openspec/changes/spec-coverage-built-behaviour/specs/logs-and-statistics :: One page shows operational health (REQ-SCB-011)"
+				"requirement": "openspec/specs/logs-and-statistics :: One page shows operational health (REQ-SCB-011)"
 			},
 			"reachedOn": "/reports -> Operational health -> /reports/operational-health",
 			"provider": "integriq",
