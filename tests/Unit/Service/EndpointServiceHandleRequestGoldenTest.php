@@ -81,6 +81,13 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 	private array $trace = [];
 
 	/**
+	 * The organisation the source belongs to; null means none.
+	 *
+	 * @var string|null
+	 */
+	private ?string $sourceOrganisation = null;
+
+	/**
 	 * The rules a find() answers with, by id.
 	 *
 	 * @return array<string, array<string, mixed>>
@@ -164,7 +171,7 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 				$this->trace[] = ['find' => $schema, 'id' => $id];
 				return match ($schema) {
 					'message_schema' => ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Person', 'kind' => 'json-schema', 'version' => '1', 'document' => '{"type":"object","required":["bsn"],"properties":{"bsn":{"type":"string"}}}'], self::SCHEMA_UUID),
-					'source' => ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bron.example.nl', 'isEnabled' => true], 'source-1'),
+					'source' => $this->source(),
 					'rule' => ObjectServiceMockBuilder::objectEntity($this, $this->rules()[$id], (string)$id),
 					default => null,
 				};
@@ -262,6 +269,19 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 	}//end service()
 
 	/**
+	 * The endpoint's source, owned by {@see $sourceOrganisation}.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function source(): ObjectEntity {
+		$source = ObjectServiceMockBuilder::objectEntity($this, ['location' => 'https://bron.example.nl', 'isEnabled' => true], 'source-1');
+		$source->setOrganisation($this->sourceOrganisation);
+
+		return $source;
+
+	}//end source()
+
+	/**
 	 * A request mock.
 	 *
 	 * @param array<string, mixed>  $params  The query parameters.
@@ -341,4 +361,40 @@ class EndpointServiceHandleRequestGoldenTest extends TestCase {
 		$this->assertSame((string)file_get_contents(self::GOLDEN), $encoded);
 
 	}//end testEveryRequestMatchesTheGoldenFile()
+
+	/**
+	 * An endpoint of organisation A never proxies to a source of organisation B:
+	 * the call answers 404 and the source is not called (REQ-TEN-001).
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 *
+	 * @return void
+	 */
+	public function testAnEndpointDoesNotProxyToASourceOfAnotherOrganisation(): void {
+		$this->sourceOrganisation = 'organisation-b';
+		$endpoint = ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'name' => 'Personen',
+				'method' => 'POST',
+				'endpoint' => '/personen',
+				'endpointArray' => ['personen'],
+				'targetType' => 'api',
+				'targetId' => 'source-1',
+			],
+			'endpoint-1'
+		);
+		$endpoint->setOrganisation('organisation-a');
+
+		$response = $this->service(rawBody: '{"bsn":"1"}')->handleRequest($endpoint, $this->request(params: [], headers: []), 'personen');
+
+		$this->assertSame(expected: 404, actual: $response->getStatus());
+		$this->assertSame(expected: [], actual: array_values(array_filter($this->trace, static fn (array $entry): bool => isset($entry['call']))));
+
+		$this->sourceOrganisation = 'organisation-a';
+		$this->trace = [];
+		$response = $this->service(rawBody: '{"bsn":"1"}')->handleRequest($endpoint, $this->request(params: [], headers: []), 'personen');
+		$this->assertSame(expected: 200, actual: $response->getStatus());
+
+	}//end testAnEndpointDoesNotProxyToASourceOfAnotherOrganisation()
 }//end class
