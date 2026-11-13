@@ -1,5 +1,9 @@
 {
     "translations": {
+        "FSC services": "FSC-diensten",
+        "Bank feeds": "Bankkoppelingen",
+        "Card feeds": "Kaartkoppelingen",
+        "Open Formulieren forms": "Open Formulieren-formulieren",
         "synchronizations": "synchronisaties",
         "Load example data?": "Voorbeeldgegevens laden?",
         "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Voorbeeldgegevens vullen de lijsten, detailpagina’s en dashboards, zodat je de app meteen ziet werken. Elke kaart heeft een eigen knop Laden. Kies \"Geen\" op een productieomgeving.",
@@ -2282,11 +2286,7 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
-        "FSC services": "FSC-diensten",
-        "Bank feeds": "Bankkoppelingen",
-        "Card feeds": "Kaartkoppelingen",
-        "Open Formulieren forms": "Open Formulieren-formulieren"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
     },
     "plurals": {}
 }
