@@ -137,8 +137,7 @@ class SynchronizationContractsController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'synchronization_contract',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Contract not found or could not be activated')], 404);
@@ -175,8 +174,7 @@ class SynchronizationContractsController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'synchronization_contract',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deactivated')], 404);
@@ -213,8 +211,7 @@ class SynchronizationContractsController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'synchronization_contract',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Contract not found or could not be executed')], 404);
