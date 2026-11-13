@@ -37,6 +37,7 @@ use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
 use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
+use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
@@ -3665,8 +3666,66 @@ class EndpointService implements EndpointServiceInterface {
 				return new JSONResponse(data: ['error' => 'The authentication method is not supported'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
 		}//end switch
 
+		$refusal = $this->refuseMissingScopes(
+			authentication: (array)$configuration['authentication'],
+			authenticationType: $authenticationType,
+			header: (string)$header,
+			method: (string)($data['method'] ?? 'GET')
+		);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		return $data;
 	}//end processAuthenticationRule()
+
+	/**
+	 * Refuse an authenticated caller that lacks a scope the rule requires for this method.
+	 *
+	 * Runs after authentication succeeded. A rule without `requiredScopes`
+	 * requires none and is never refused here.
+	 *
+	 * @param array<string,mixed> $authentication     The rule's authentication configuration.
+	 * @param string              $authenticationType The rule's authentication type.
+	 * @param string              $header             The credential header the caller presented.
+	 * @param string              $method             The request's HTTP method.
+	 *
+	 * @return JSONResponse|null A 403 naming the missing scopes, or null when the call may go on.
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
+	 */
+	private function refuseMissingScopes(array $authentication, string $authenticationType, string $header, string $method): ?JSONResponse {
+		$required = ConsumerScopeCheck::requiredFor(authentication: $authentication, method: $method);
+		if ($required === []) {
+			return null;
+		}
+
+		$claims = null;
+		if ($authenticationType === 'jwt' || $authenticationType === 'jwt-zgw') {
+			$parts = explode('.', substr(string: $header, offset: strlen('Bearer ')));
+			$decoded = json_decode((string)base64_decode(strtr(($parts[1] ?? ''), '-_', '+/')), true);
+			if (is_array($decoded) === true) {
+				$claims = $decoded;
+			}
+		}
+
+		$missing = ConsumerScopeCheck::missing(
+			required: $required,
+			held: ConsumerScopeCheck::heldBy(consumer: $this->authorizationService->getResolvedConsumer(), tokenClaims: $claims)
+		);
+		if ($missing === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'insufficient_scope',
+				'details' => 'This call requires the scope ' . implode(', ', $missing) . '.',
+				'missingScopes' => $missing,
+			],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end refuseMissingScopes()
 
 	/**
 	 * The 401 answer to a refused credential, with the refusal's message and details.

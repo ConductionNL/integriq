@@ -527,8 +527,16 @@
           },
           "authorizationConfiguration": {
             "type": "object",
-            "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
+            "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The scopes this consumer holds, e.g. `zaken:read`. An endpoint whose authentication rule lists `requiredScopes` (a list, or a map of HTTP method to list) answers 403 naming the missing scope to a caller that does not hold all of them. A JWT caller holds its token's `scope` (space-delimited) or `scp` claim when the token carries one, else these. Absent or empty: the consumer holds none, which only matters on endpoints that require scopes.",
+            "title": "Scopes"
           },
           "created": {
             "type": "string",
