@@ -1,0 +1,34 @@
+{
+  "$comment": "A Zermelo GET /api/v3/appointments answer in the documented envelope (docs.zportal.nl, Appointments), with the fields RosterImportClientZermelo asks for. Shaped from the documentation, not captured from a school's portal.",
+  "response": {
+    "status": 200,
+    "message": "",
+    "details": "",
+    "eventId": 0,
+    "startRow": 0,
+    "endRow": 2,
+    "totalRows": 2,
+    "data": [
+      {
+        "appointmentInstance": 881001,
+        "start": 1790578800,
+        "end": 1790581800,
+        "subjects": ["wi"],
+        "groups": ["3a"],
+        "teachers": ["JAN"],
+        "locations": ["A1.12"],
+        "cancelled": false
+      },
+      {
+        "appointmentInstance": 881002,
+        "start": 1790582400,
+        "end": 1790585400,
+        "subjects": ["ne"],
+        "groups": ["3a"],
+        "teachers": ["PIE"],
+        "locations": ["B2.04"],
+        "cancelled": true
+      }
+    ]
+  }
+}

@@ -216,7 +216,7 @@ class RosterDeliveryServiceTest extends TestCase {
 	}//end testListenerIgnoresOtherEvents()
 
 	/**
-	 * The abstract client is bound to the mock and the listener is registered.
+	 * The abstract client is bound to the mock, or to Zermelo behind the flag, and the listener is registered.
 	 *
 	 * @return void
 	 *
@@ -226,7 +226,7 @@ class RosterDeliveryServiceTest extends TestCase {
 		$source = (string)file_get_contents(__DIR__ . '/../../../../lib/Adapters/AdaptersBindings.php');
 
 		$this->assertMatchesRegularExpression(
-			'/registerService\(\s*RosterImportClient::class,\s*static function \(\$c\) \{\s*return \$c->get\(RosterImportClientMock::class\);/',
+			'/registerService\(\s*RosterImportClient::class,\s*static fn \(\$c\) => \$c->get\(\s*self::liveOrMock\(.*?flagKey: RosterImportSourceAdapter::FLAG_KEY,\s*live: RosterImportClientZermelo::class,\s*mock: RosterImportClientMock::class/s',
 			$source
 		);
 		$this->assertMatchesRegularExpression(
