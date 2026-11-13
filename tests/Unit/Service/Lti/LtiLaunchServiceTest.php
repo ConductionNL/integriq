@@ -643,6 +643,102 @@ class LtiLaunchServiceTest extends TestCase {
 
 	}//end testMissingMessageTypeRejected()
 
+	/**
+	 * A login initiation without an issuer is refused 400 before any lookup.
+	 *
+	 * @return void
+	 */
+	public function testLoginWithoutIssuerRejected(): void {
+		$service = $this->makeService($this->makeResolver(), $this->makeJwksResolver());
+
+		try {
+			$service->initiateLogin(self::DEPLOYMENT_UUID, ['client_id' => self::CLIENT_ID, 'login_hint' => 'user-1', 'target_link_uri' => 'https://tool.example/'], 'https://tool.example/launch');
+			$this->fail('Expected a login without iss to be refused.');
+		} catch (LtiValidationException $exception) {
+			$this->assertSame('Missing iss', $exception->getMessage());
+			$this->assertSame(400, $exception->getHttpStatus());
+		}
+
+	}//end testLoginWithoutIssuerRejected()
+
+	/**
+	 * An array aud holding the client_id with a matching azp is accepted.
+	 *
+	 * @return void
+	 */
+	public function testArrayAudienceWithMatchingAzpAccepted(): void {
+		$service = $this->makeService($this->makeResolver(), $this->makeJwksResolver());
+		$login = $service->initiateLogin(
+			self::DEPLOYMENT_UUID,
+			['iss' => self::PLATFORM_ISS, 'client_id' => self::CLIENT_ID, 'login_hint' => 'user-1', 'target_link_uri' => 'https://tool.example/'],
+			'https://tool.example/launch'
+		);
+
+		$idToken = $this->signAsPlatform($this->baseLaunchClaims($login['nonce'], ['aud' => ['other-client', self::CLIENT_ID], 'azp' => self::CLIENT_ID]));
+		$result = $service->validateLaunch($idToken, self::DEPLOYMENT_UUID, $login['state'], $login['state']);
+
+		$this->assertStringStartsWith('https://tool.example/app', $result['redirectUrl']);
+		$this->assertNotEmpty($result['launchReference']);
+
+	}//end testArrayAudienceWithMatchingAzpAccepted()
+
+	/**
+	 * An array aud is refused 401 when it lacks the client_id, or when azp is not the client_id.
+	 *
+	 * @return void
+	 */
+	public function testArrayAudienceRefusals(): void {
+		$cases = [
+			'aud does not contain the expected client_id' => ['aud' => ['other-client'], 'azp' => self::CLIENT_ID],
+			'azp does not match the expected client_id' => ['aud' => ['other-client', self::CLIENT_ID], 'azp' => 'other-client'],
+		];
+
+		foreach ($cases as $message => $overrides) {
+			$service = $this->makeService($this->makeResolver(), $this->makeJwksResolver());
+			$login = $service->initiateLogin(
+				self::DEPLOYMENT_UUID,
+				['iss' => self::PLATFORM_ISS, 'client_id' => self::CLIENT_ID, 'login_hint' => 'user-1', 'target_link_uri' => 'https://tool.example/'],
+				'https://tool.example/launch'
+			);
+			$idToken = $this->signAsPlatform($this->baseLaunchClaims($login['nonce'], $overrides));
+
+			try {
+				$service->validateLaunch($idToken, self::DEPLOYMENT_UUID, $login['state'], $login['state']);
+				$this->fail('Expected the launch to be refused with "' . $message . '".');
+			} catch (LtiValidationException $exception) {
+				$this->assertSame($message, $exception->getMessage());
+				$this->assertSame(401, $exception->getHttpStatus());
+			}
+		}
+
+	}//end testArrayAudienceRefusals()
+
+	/**
+	 * A launch claiming an LTI version other than 1.3.0 is refused 400.
+	 *
+	 * @return void
+	 */
+	public function testUnsupportedVersionRejected(): void {
+		$service = $this->makeService($this->makeResolver(), $this->makeJwksResolver());
+		$login = $service->initiateLogin(
+			self::DEPLOYMENT_UUID,
+			['iss' => self::PLATFORM_ISS, 'client_id' => self::CLIENT_ID, 'login_hint' => 'user-1', 'target_link_uri' => 'https://tool.example/'],
+			'https://tool.example/launch'
+		);
+		$idToken = $this->signAsPlatform(
+			$this->baseLaunchClaims($login['nonce'], ['https://purl.imsglobal.org/spec/lti/claim/version' => '1.1.0'])
+		);
+
+		try {
+			$service->validateLaunch($idToken, self::DEPLOYMENT_UUID, $login['state'], $login['state']);
+			$this->fail('Expected an unsupported version to be refused.');
+		} catch (LtiValidationException $exception) {
+			$this->assertSame('Missing or unsupported LTI version claim', $exception->getMessage());
+			$this->assertSame(400, $exception->getHttpStatus());
+		}
+
+	}//end testUnsupportedVersionRejected()
+
 	// =========================================================================
 	// REQ-LTI-006 — Platform-role launch initiation + Deep Linking
 	// =========================================================================
