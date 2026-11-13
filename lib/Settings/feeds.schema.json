@@ -1,0 +1,86 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://github.com/ConductionNL/integriq/blob/development/lib/Settings/feeds.schema.json",
+	"title": "Integriq data feed declaration",
+	"description": "The shape of lib/Settings/feeds.json in an app that asks integriq to serve its data feeds (openspec/changes/gateway-declared-data-feeds, REQ-DDF-001). Each feed becomes one read-only, paged endpoint at /api/endpoint/feeds/<app>/<key>. Mirrored rule for rule by lib/Service/Feed/FeedDeclarationValidator.php.",
+	"type": "object",
+	"required": ["feeds"],
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"app": {
+			"type": "string",
+			"description": "The declaring app's id. When present it must be the app that ships the file."
+		},
+		"feeds": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["key", "title", "register", "schema", "fields", "scope", "pageSize"],
+				"additionalProperties": false,
+				"properties": {
+					"key": {
+						"type": "string",
+						"pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+						"description": "Stable dataset key; the last path segment of the feed URL."
+					},
+					"title": {
+						"type": "string",
+						"pattern": "\\S"
+					},
+					"description": {
+						"type": "string"
+					},
+					"register": {
+						"type": "string",
+						"pattern": "\\S"
+					},
+					"schema": {
+						"type": "string",
+						"pattern": "\\S"
+					},
+					"fields": {
+						"type": "array",
+						"minItems": 1,
+						"uniqueItems": true,
+						"items": {
+							"type": "string",
+							"pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+						},
+						"description": "The fields a feed answers with: the privacy boundary the app reviewed."
+					},
+					"filter": {
+						"type": "object",
+						"description": "Fixed equality filters applied to every request, such as only posted lines.",
+						"additionalProperties": {
+							"type": ["string", "number", "boolean"]
+						}
+					},
+					"scope": {
+						"type": "object",
+						"required": ["parameter", "field"],
+						"additionalProperties": false,
+						"properties": {
+							"parameter": {
+								"type": "string",
+								"pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+							},
+							"field": {
+								"type": "string",
+								"pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+							}
+						},
+						"description": "The query parameter a caller names its scope with and the field it filters; a consumer reads only the values bound to it."
+					},
+					"pageSize": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 5000
+					}
+				}
+			}
+		}
+	}
+}

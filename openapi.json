@@ -148,6 +148,10 @@
             "description": "Reads and edits the environment allowlist, and lists the registered sources"
         },
         {
+            "name": "feeds",
+            "description": "Admin only: re-reads the data feeds apps declare in lib/Settings/feeds.json"
+        },
+        {
             "name": "flows",
             "description": "Manual \"Run\" trigger for a `flow` (flow-orchestration REQ-007d)"
         },
@@ -3615,6 +3619,49 @@
                         }
                     }
                 ]
+            }
+        },
+        "/feeds/sync": {
+            "post": {
+                "operationId": "feeds-sync",
+                "summary": "Sync the declared data feeds",
+                "description": "Re-read lib/Settings/feeds.json of every enabled app, or of the app named in `app`, and keep the feed endpoints and API products in step. Admin only.",
+                "tags": [
+                    "feeds"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "app": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`{created, updated, deleted, unchanged, refused}`; `refused` names each refused file or dataset and why.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/flows/{id}/run": {

@@ -10,8 +10,8 @@ Kind: code. Size M. Half for shillinq `reporting-data-delivery` (row shillinq `r
 - **acceptance_criteria**:
   - GIVEN shillinq with a `feeds.json` of four datasets WHEN integriq syncs THEN four feed endpoints and one API product exist
   - GIVEN a dataset naming a field its schema lacks WHEN integriq syncs THEN that feed is refused with the field named and the others are kept
-- [ ] Implement
-- [ ] Test (PHPUnit with a fixture app declaration)
+- [x] Implement
+- [x] Test (PHPUnit with a fixture app declaration)
 
 ### Task 2: Serve a feed with paging and field selection
 - **spec_ref**: `openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-feed-answers-only-its-declared-fields-page-by-page-req-ddf-002`
@@ -19,7 +19,7 @@ Kind: code. Size M. Half for shillinq `reporting-data-delivery` (row shillinq `r
 - **acceptance_criteria**:
   - GIVEN 2,500 ledger lines and a page size of 1,000 WHEN a BI tool follows the next links THEN it receives three pages and every line once
   - GIVEN `$filter=period eq '2026-09'` WHEN requested THEN only that period is returned; GIVEN `$orderby` THEN the answer is 400
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit; Newman collection against a dev instance with shillinq seed data)
 
 ### Task 3: Bind each consumer to its scope

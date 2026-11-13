@@ -66,6 +66,8 @@ use OCA\Integriq\Service\ConnectionProbeService;
 use OCA\Integriq\Service\ConnectionProbeServiceInterface;
 use OCA\Integriq\Service\ConnectionRegistryService;
 use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
+use OCA\Integriq\Service\Feed\FeedSchemaFieldsInterface;
+use OCA\Integriq\Service\Feed\OpenRegisterFeedSchemaFields;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\ConnectionStoreInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
@@ -368,6 +370,7 @@ class ServiceRegistrarTest extends TestCase {
 		ObjectEndpointHandlerInterface::class => ObjectEndpointHandler::class,
 		ExchangeJobRunnerInterface::class => ExchangeJobRunner::class,
 		ConnectionRegistryServiceInterface::class => ConnectionRegistryService::class,
+		FeedSchemaFieldsInterface::class => OpenRegisterFeedSchemaFields::class,
 		EudiStatusListServiceInterface::class => EudiStatusListService::class,
 		PortalRequestParserInterface::class => DSOParserService::class,
 		ApprovalDecisionServiceInterface::class => ApprovalDecisionService::class,

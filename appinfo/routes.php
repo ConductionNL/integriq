@@ -443,6 +443,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'datasource#resolve', 'url' => '/api/datasource/{sourceId}/resolve', 'verb' => 'POST'],
 
 		// Job endpoints
+		// Declared data feeds (gateway-declared-data-feeds): re-read every enabled app's feeds.json on request. Admin only.
+		['name' => 'feeds#sync', 'url' => '/api/feeds/sync', 'verb' => 'POST'],
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],

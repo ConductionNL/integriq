@@ -45,6 +45,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Objecten\\ObjectEndpointHandlerInterface, OCA\\Integriq\\Service\\Objecten\\ObjectEndpointHandler)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Exchange\\ExchangeJobRunnerInterface, OCA\\Integriq\\Service\\Exchange\\ExchangeJobRunner)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ConnectionRegistryServiceInterface, OCA\\Integriq\\Service\\ConnectionRegistryService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\Feed\\FeedSchemaFieldsInterface, OCA\\Integriq\\Service\\Feed\\OpenRegisterFeedSchemaFields)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\EudiStatusListServiceInterface, OCA\\Integriq\\Service\\EudiStatusListService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Portal\\PortalRequestParserInterface, OCA\\Integriq\\Service\\DSOParserService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ApprovalDecisionServiceInterface, OCA\\Integriq\\Service\\ApprovalDecisionService)",
