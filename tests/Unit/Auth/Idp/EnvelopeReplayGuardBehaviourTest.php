@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Integriq\Auth\Idp\EnvelopeReplayGuard
  * @uses \OCA\Integriq\Auth\Idp\AtomicCache
  */
-class EnvelopeReplayGuardTest extends TestCase {
+class EnvelopeReplayGuardBehaviourTest extends TestCase {
 
 	/**
 	 * A cache factory whose distributed cache is the given one, or none.

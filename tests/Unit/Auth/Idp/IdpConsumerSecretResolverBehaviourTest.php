@@ -34,7 +34,7 @@ use stdClass;
  * @covers \OCA\Integriq\Auth\Idp\IdpConsumerSecretResolver
  * @uses \OCA\Integriq\Auth\Idp\IdpConsumer
  */
-class IdpConsumerSecretResolverTest extends TestCase {
+class IdpConsumerSecretResolverBehaviourTest extends TestCase {
 
 	/**
 	 * The mocked container.
