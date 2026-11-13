@@ -35,24 +35,26 @@ use OCP\Settings\IDelegatedSettings;
  * Minimal stand-in mirroring the engine's generic admin settings form.
  */
 class GenericAdminSettings implements IDelegatedSettings {
+	protected readonly string $appId;
+	protected readonly string $sectionId;
+	protected readonly int $priority;
+	protected readonly IAppManager $appManager;
+	protected readonly IInitialState $initialState;
+	protected readonly ?IAppConfig $appConfig;
+
 	/**
-	 * Constructor.
+	 * Construct the admin settings panel.
 	 *
-	 * @param string $appId The leaf app id.
-	 * @param string $sectionId The settings section id.
-	 * @param int $priority Ordering priority within the section.
-	 * @param IAppManager $appManager App manager.
-	 * @param IInitialState $initialState Initial-state service.
-	 * @param IAppConfig|null $appConfig Optional app config.
+	 * @param SettingsPlacement $placement App id, section id and priority.
+	 * @param AdminFormServices $services  App manager, initial state and app config.
 	 */
-	public function __construct(
-		protected readonly string $appId,
-		protected readonly string $sectionId,
-		protected readonly int $priority,
-		protected readonly IAppManager $appManager,
-		protected readonly IInitialState $initialState,
-		protected readonly ?IAppConfig $appConfig = null,
-	) {
+	public function __construct(SettingsPlacement $placement, AdminFormServices $services) {
+		$this->appId        = $placement->appId;
+		$this->sectionId    = $placement->sectionId;
+		$this->priority     = $placement->priority;
+		$this->appManager   = $services->appManager;
+		$this->initialState = $services->initialState;
+		$this->appConfig    = $services->appConfig;
 	}//end __construct()
 
 	/**

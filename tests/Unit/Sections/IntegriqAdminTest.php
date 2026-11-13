@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Sections;
 
 use OCA\Integriq\Sections\IntegriqAdmin;
+use OCA\OpenRegister\AppHost\Settings\SectionAppearance;
+use OCA\OpenRegister\AppHost\Settings\SettingsPlacement;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
@@ -44,11 +46,8 @@ class IntegriqAdminTest extends TestCase {
 		$urlGenerator->method('imagePath')->with('integriq', 'app-dark.svg')->willReturn('/img/app-dark.svg');
 
 		return new IntegriqAdmin(
-			sectionId: 'integriq',
-			name: $name,
-			appId: 'integriq',
-			iconFile: 'app-dark.svg',
-			priority: 97,
+			placement: new SettingsPlacement(appId: 'integriq', sectionId: 'integriq', priority: 97),
+			appearance: new SectionAppearance(name: $name, iconFile: 'app-dark.svg'),
 			urlGenerator: $urlGenerator
 		);
 	}//end makeSection()

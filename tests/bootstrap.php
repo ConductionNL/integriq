@@ -586,6 +586,12 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		// The leaf `IntegriqAdmin` (Settings + Sections) and
 		// `InitializeActions` classes extend these directly, so autoloading
 		// the subclass requires the parent to resolve.
+		foreach (['SettingsPlacement', 'SectionAppearance', 'AdminFormServices'] as $settingsValue) {
+			if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\' . $settingsValue) === false) {
+				require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/' . $settingsValue . '.php';
+			}
+		}
+
 		if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericAdminSettings.php';
 		}
