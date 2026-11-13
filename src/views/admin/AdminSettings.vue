@@ -19,6 +19,7 @@
 			<BerichtenboxSettings />
 			<ExpressionSourceSettings />
 			<ConnectionAlertSettings />
+			<PersonalDataFieldsSettings />
 			<OtelSettings />
 		</div>
 	</CnAdminSettingsShell>
@@ -35,6 +36,7 @@ import DsoPkiSettings from './DsoPkiSettings.vue'
 import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
 import OtelSettings from './OtelSettings.vue'
+import PersonalDataFieldsSettings from './PersonalDataFieldsSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
 
 /**
@@ -60,6 +62,7 @@ import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
  * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
+ * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
  */
 export default {
 	name: 'AdminSettings',
@@ -75,6 +78,7 @@ export default {
 		ExpressionSourceSettings,
 		OpenFormulierenConnectionSettings,
 		OtelSettings,
+		PersonalDataFieldsSettings,
 		WebhookConnectionsSettings,
 	},
 }

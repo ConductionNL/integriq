@@ -327,8 +327,12 @@ class CallServiceWithheldBodiesTest extends TestCase {
 
 		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST');
 
+		// The bodies are stored, so `burgerservicenummer` appears; its values
+		// are masked as personal data (REQ-PDM-001).
 		$stored = (string)json_encode($this->callLogs()[0]);
-		$this->assertStringContainsString(self::ASKED, $stored);
-		$this->assertStringContainsString(self::ANSWERED, $stored);
+		$this->assertStringContainsString('burgerservicenummer', $stored);
+		$this->assertStringContainsString('[afgeschermd]', $stored);
+		$this->assertStringNotContainsString(self::ASKED, $stored);
+		$this->assertStringNotContainsString(self::ANSWERED, $stored);
 	}//end testControlWithoutTheSwitchTheWindowStoresTheBodies()
 }//end class
