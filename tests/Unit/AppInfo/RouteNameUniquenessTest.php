@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\AppInfo;
 
-use OCA\Integriq\Middleware\Support\ApiPathAliases;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -156,10 +155,9 @@ class RouteNameUniquenessTest extends TestCase {
 
 
 	/**
-	 * Every unversioned /api/ route also answers under /api/v1/ (the OpenAPI
-	 * server URL), with the same controller method, verb and requirements.
-	 * Standard protocol paths and the /api/ catch-all keep their own path and
-	 * get no twin; see ApiPathAliases.
+	 * Every /api/ route also answers under /api/v1/ (the OpenAPI server URL),
+	 * with the same controller method, verb and requirements, and nothing else
+	 * is versioned.
 	 *
 	 * @return void
 	 */
@@ -170,9 +168,9 @@ class RouteNameUniquenessTest extends TestCase {
 		$versioned = [];
 		foreach ($entries as $entry) {
 			$verb = ($entry['verb'] ?? 'GET');
-			if (str_starts_with($entry['url'], '/api/v1/') === true && ($entry['postfix'] ?? '') !== '' && str_ends_with($entry['postfix'], 'v1') === true) {
+			if (str_starts_with($entry['url'], '/api/v1/') === true && ($entry['postfix'] ?? '') !== '' && str_ends_with($entry['postfix'], 'V1') === true) {
 				$versioned[$verb.' '.$entry['url']] = $entry;
-			} else if (ApiPathAliases::isDeprecated(path: $entry['url']) === true && ApiPathAliases::isApiFallback(route: $entry) === false) {
+			} else if (str_starts_with($entry['url'], '/api/') === true) {
 				$plain[$verb.' '.$entry['url']] = $entry;
 			}
 		}
@@ -184,7 +182,7 @@ class RouteNameUniquenessTest extends TestCase {
 			$twin         = ($versioned[$verb.' /api/v1/'.substr($url, 5)] ?? null);
 			$this->assertNotNull($twin, $key.' has no /api/v1/ twin');
 			$this->assertSame($entry['name'], $twin['name']);
-			$this->assertSame(($entry['postfix'] ?? '').'v1', $twin['postfix']);
+			$this->assertSame(($entry['postfix'] ?? '').'V1', $twin['postfix']);
 			$this->assertSame(($entry['requirements'] ?? null), ($twin['requirements'] ?? null));
 			$this->assertSame(($entry['defaults'] ?? null), ($twin['defaults'] ?? null));
 		}

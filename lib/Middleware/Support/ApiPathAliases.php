@@ -47,6 +47,13 @@ final class ApiPathAliases {
 	public const VERSION_PREFIX = '/api/v1';
 
 	/**
+	 * The route-name postfix of an alias.
+	 *
+	 * @var string
+	 */
+	public const POSTFIX = 'V1';
+
+	/**
 	 * The date the unversioned paths were deprecated (2026-11-12), as an RFC 9745 `Deprecation` value.
 	 *
 	 * @var string
@@ -127,7 +134,12 @@ final class ApiPathAliases {
 	}//end successorOf()
 
 	/**
-	 * A routes.php declaration with an `/api/v1/` alias of every unversioned API route.
+	 * A routes.php declaration with an `/api/v1/` alias of every API route not already under `/api/v1/`.
+	 *
+	 * Standard protocol paths and paths with a version of their own (`/api/scim/v2/`,
+	 * `/api/v2/objects`) get an alias too, as they always had: they are not
+	 * deprecated, but their `/api/v1/` URLs keep being served. Alias route names
+	 * keep the `V1` postfix they always had.
 	 *
 	 * Routes match in declaration order. The aliases come right after the last
 	 * route the app already declares under `/api/v1/`, so those keep answering
@@ -155,7 +167,7 @@ final class ApiPathAliases {
 		$aliases = [];
 		foreach (($routes['routes'] ?? []) as $route) {
 			$url = '/'.ltrim((string) ($route['url'] ?? ''), '/');
-			if (self::isDeprecated(path: $url) === false || self::isApiFallback(route: $route) === true) {
+			if (self::isAliased(path: $url) === false || self::isApiFallback(route: $route) === true) {
 				continue;
 			}
 
@@ -163,7 +175,7 @@ final class ApiPathAliases {
 				$route,
 				[
 					'url'     => self::versioned(path: self::renamed(path: $url)),
-					'postfix' => ($route['postfix'] ?? '').'v1',
+					'postfix' => ($route['postfix'] ?? '').self::POSTFIX,
 				]
 			);
 			if (isset($declared[self::key(route: $alias)]) === false) {
@@ -176,6 +188,21 @@ final class ApiPathAliases {
 
 		return $routes;
 	}//end withVersionedAliases()
+
+	/**
+	 * Whether a route path gets an `/api/v1/` alias: every API path not already under `/api/v1/`.
+	 *
+	 * @param string $path The route url.
+	 *
+	 * @return bool True when routes.php serves the path under `/api/v1/` too.
+	 *
+	 * @spec openspec/specs/api-contract/spec.md
+	 */
+	public static function isAliased(string $path): bool {
+		$path = '/'.ltrim($path, '/');
+
+		return str_starts_with($path, '/api/') === true && str_starts_with($path, self::VERSION_PREFIX.'/') === false;
+	}//end isAliased()
 
 	/**
 	 * Whether a route is the API fallback, a single placeholder after `/api/` that spans segments.

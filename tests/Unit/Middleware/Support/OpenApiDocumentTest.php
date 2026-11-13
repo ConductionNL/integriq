@@ -83,7 +83,11 @@ class OpenApiDocumentTest extends TestCase {
 		$this->assertSame(expected: [], actual: array_values(array_diff($protocol, $urls)), message: 'documented protocol paths without a route');
 		foreach ($declared['routes'] as $route) {
 			$url = '/'.ltrim((string) $route['url'], '/');
-			if (str_starts_with($url, '/api/v1/') === true && StandardProtocolPaths::matches(path: $url) === false) {
+			// The /api/v1/ twin of a standard protocol path is served too,
+			// but documented at its own path in openapi.standards.json.
+			$source = '/api/'.substr($url, strlen('/api/v1/'));
+			$protocolTwin = (StandardProtocolPaths::matches(path: $url) === true || StandardProtocolPaths::matches(path: $source) === true);
+			if (str_starts_with($url, '/api/v1/') === true && $protocolTwin === false) {
 				$routed[] = strtoupper((string) ($route['verb'] ?? 'GET')).' '.self::shape(path: $url);
 			}
 		}

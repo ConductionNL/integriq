@@ -82,8 +82,8 @@ class ApiPathAliasesTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				$original['routes'][0],
-				['name' => 'things#index', 'url' => '/api/v1/things/{id}/parts', 'verb' => 'GET', 'requirements' => ['id' => '\d+'], 'postfix' => 'v1'],
-				['name' => 'things#update', 'url' => '/api/v1/things/all/parts', 'verb' => 'PUT', 'postfix' => 'putv1'],
+				['name' => 'things#index', 'url' => '/api/v1/things/{id}/parts', 'verb' => 'GET', 'requirements' => ['id' => '\d+'], 'postfix' => 'V1'],
+				['name' => 'things#update', 'url' => '/api/v1/things/all/parts', 'verb' => 'PUT', 'postfix' => 'putV1'],
 			],
 			actual: array_slice($declared['routes'], 0, 3)
 		);
@@ -106,6 +106,45 @@ class ApiPathAliasesTest extends TestCase {
 			actual: array_column(ApiPathAliases::withVersionedAliases(routes: ['routes' => [$fallback, $slug]])['routes'], 'url')
 		);
 	}//end testTheApiFallbackHasNoAlias()
+
+	/**
+	 * A standard protocol path and a path with a version of its own keep an
+	 * `/api/v1/` alias, but are not deprecated.
+	 *
+	 * @return void
+	 */
+	public function testProtocolPathsKeepTheirAliasWithoutDeprecation(): void {
+		$routes = [
+			'routes' => [
+				['name' => 'scim#users', 'url' => '/api/scim/v2/Users', 'verb' => 'GET'],
+				['name' => 'objects#index', 'url' => '/api/v2/objects', 'verb' => 'GET'],
+			],
+		];
+
+		$this->assertFalse(condition: ApiPathAliases::isDeprecated(path: '/api/scim/v2/Users'));
+		$this->assertFalse(condition: ApiPathAliases::isDeprecated(path: '/api/v2/objects'));
+		$this->assertSame(
+			expected: [
+				['name' => 'scim#users', 'url' => '/api/v1/scim/v2/Users', 'verb' => 'GET', 'postfix' => 'V1'],
+				['name' => 'objects#index', 'url' => '/api/v1/v2/objects', 'verb' => 'GET', 'postfix' => 'V1'],
+				$routes['routes'][0],
+				$routes['routes'][1],
+			],
+			actual: ApiPathAliases::withVersionedAliases(routes: $routes)['routes']
+		);
+	}//end testProtocolPathsKeepTheirAliasWithoutDeprecation()
+
+	/**
+	 * Only API paths not already under `/api/v1/` are aliased.
+	 *
+	 * @return void
+	 */
+	public function testWhichPathsAreAliased(): void {
+		$this->assertTrue(condition: ApiPathAliases::isAliased(path: '/api/settings'));
+		$this->assertTrue(condition: ApiPathAliases::isAliased(path: 'api/health'));
+		$this->assertFalse(condition: ApiPathAliases::isAliased(path: '/api/v1/settings'));
+		$this->assertFalse(condition: ApiPathAliases::isAliased(path: '/settings'));
+	}//end testWhichPathsAreAliased()
 
 	/**
 	 * Every deprecated route of the shipped routes.php has a `/api/v1/` twin with
@@ -247,7 +286,7 @@ class ApiPathAliasesTest extends TestCase {
 	 */
 	private static function isAlias(array $route): bool {
 		return $route !== []
-			&& str_ends_with((string) ($route['postfix'] ?? ''), 'v1') === true
+			&& str_ends_with((string) ($route['postfix'] ?? ''), ApiPathAliases::POSTFIX) === true
 			&& str_starts_with(self::url(route: $route), '/api/v1/') === true;
 	}//end isAlias()
 
