@@ -240,6 +240,7 @@ class PurgeEventRecursion extends Command {
 	private function rows(string $schema): \Generator {
 		$offset = 0;
 		do {
+			// System path: an occ remediation over integriq's own events of every organisation.
 			$page = $this->objects->findAll(
 				config: [
 					'filters' => ['register' => 'integriq', 'schema' => $schema],

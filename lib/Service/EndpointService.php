@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\MessageValidation\EndpointMessageGate;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RateLimit\RateLimitDecision;
@@ -86,6 +87,7 @@ use function React\Promise\all;
  * @spec openspec/specs/endpoint-runtime/spec.md
  */
 class EndpointService implements EndpointServiceInterface {
+	use OrganisationBoundary;
 
 	/**
 	 * Body parameter keys stripped before forwarding a request.
@@ -1587,6 +1589,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-inbound-observability-logging-for-api-product-scoped-endpoints-req-ep-009
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function recordInboundCallLog(ObjectEntity $endpoint, ObjectEntity $product, int $statusCode, float $durationMs): void {
 		try {
@@ -1599,7 +1602,7 @@ class EndpointService implements EndpointServiceInterface {
 					'endpoint' => (string)$endpoint->getUuid(),
 					'responseTime' => (int)round($durationMs),
 					'created' => (new DateTime())->format('c'),
-				],
+				] + $this->organisationSelf(object: $endpoint),
 				register: 'integriq',
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
@@ -1628,6 +1631,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/consumer-management/spec.md — Requirement: Rate-limit rejections are observable (REQ-CON-RL-004)
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function recordInboundThrottle(ObjectEntity $consumer, RateLimitDecision $decision): void {
 		try {
@@ -1637,7 +1641,7 @@ class EndpointService implements EndpointServiceInterface {
 					'statusMessage' => 'Inbound rate limit exceeded (' . ((string)$decision->reason) . ')',
 					'direction' => 'inbound',
 					'created' => (new DateTime())->format('c'),
-				],
+				] + $this->organisationSelf(object: $consumer),
 				register: 'integriq',
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
@@ -2710,13 +2714,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function sharesOrganisation(ObjectEntity $endpoint, ?ObjectEntity $source): bool {
-		$endpointOrganisation = (string)($endpoint->getOrganisation() ?? '');
-		$sourceOrganisation = (string)($source?->getOrganisation() ?? '');
-		if ($endpointOrganisation === '' || $sourceOrganisation === '') {
-			return true;
-		}
-
-		return $endpointOrganisation === $sourceOrganisation;
+		return $this->sameOrganisation(first: $this->organisationOf(object: $endpoint), second: $this->organisationOf(object: $source));
 	}//end sharesOrganisation()
 
 	/**

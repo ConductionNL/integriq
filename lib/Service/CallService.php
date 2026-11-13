@@ -61,6 +61,7 @@ use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
@@ -85,6 +86,7 @@ use UnexpectedValueException;
  * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
 class CallService implements CallServiceInterface {
+	use OrganisationBoundary;
 
 	private const BASE_FILENAME_LOCATION = '%s-%s';
 
@@ -751,6 +753,8 @@ class CallService implements CallServiceInterface {
 	 * @return ObjectEntity The persisted CallLog ObjectEntity.
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function saveEarlyErrorLog(
 		ObjectEntity $source,
@@ -769,6 +773,8 @@ class CallService implements CallServiceInterface {
 		if ($formatted !== null) {
 			$object['expires'] = $formatted;
 		}
+
+		$object += $this->organisationSelf(object: $source);
 
 		// The call_log schema is admin-only (REQ-OCD-012): the engine records the call
 		// for whoever triggered it, so the write runs past RBAC.
@@ -1813,6 +1819,7 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function buildAndPersistCallLog(
 		ObjectEntity $source,
@@ -1868,6 +1875,9 @@ class CallService implements CallServiceInterface {
 		if ($withholdBodies === true) {
 			$callLogData = $this->bodyCapturePolicy->withheldRecord(record: $callLogData);
 		}
+
+		// Filed under the source's organisation, so the organisation's scoped log views list it.
+		$callLogData += $this->organisationSelf(object: $source);
 
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
 		// date-time string on call_log, and the register refuses a null in a
