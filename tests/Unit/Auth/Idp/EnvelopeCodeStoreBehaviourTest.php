@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Integriq\Auth\Idp\EnvelopeCodeStore
  * @uses \OCA\Integriq\Auth\Idp\AtomicCache
  */
-class EnvelopeCodeStoreTest extends TestCase {
+class EnvelopeCodeStoreBehaviourTest extends TestCase {
 
 	/**
 	 * A cache factory whose distributed cache is the given one, or none.
