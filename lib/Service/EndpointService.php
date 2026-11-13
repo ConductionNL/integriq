@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\File\FileUpload;
 use OC\AppFramework\Http;
 use OC\Files\Node\File;
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Http\ProblemResponse;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
 use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
@@ -225,6 +226,13 @@ class EndpointService implements EndpointServiceInterface {
 	private array $rateLimitHeaders = [];
 
 	/**
+	 * Whether the answer of the current request is the source's own, proxied unchanged.
+	 *
+	 * @var bool
+	 */
+	private bool $proxiedAnswer = false;
+
+	/**
 	 * RFC 8594 `Deprecation`/`Sunset` response headers to attach to the
 	 * current request's response, populated when the dispatched endpoint
 	 * belongs to a `deprecated` `api_product` (REQ-APG-006/REQ-EP-008).
@@ -303,29 +311,65 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return Response
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function transformError(Response $result, IRequest $request): Response {
 		if ($result->getStatus() < 200 || $result->getStatus() >= 300) {
 			$resultData = $result->getData();
-			$message = $resultData['message'] ?? null;
-			$error = $resultData['error'] ?? null;
+			if (is_array($resultData) === false) {
+				$resultData = [];
+			}
 
-			$responseData = [
-				'type' => $message,
-				'code' => $result->getStatus(),
-				'title' => $message,
-				'status' => $result->getStatus(),
-				'instance' => $request->getId(),
-				'detail' => $error,
-			];
+			$legacy = $this->parseMessage(response: ['code' => $result->getStatus()], responseData: $resultData);
+			$detail = ($legacy['detail'] ?? null);
+			unset($legacy['detail']);
 
-			$responseData = $this->parseMessage(response: $responseData, responseData: $resultData);
+			$error = ($resultData['error'] ?? $detail ?? $resultData['message'] ?? null);
+			if ($error !== null) {
+				$legacy['error'] = $error;
+			}
 
-			return new JSONResponse(data: $responseData, statusCode: $result->getStatus());
+			return ProblemResponse::fromLegacy(
+				data: array_merge($resultData, $legacy),
+				status: $result->getStatus(),
+				instance: $request->getId()
+			);
 		}
 
 		return $result;
 	}//end transformError()
+
+	/**
+	 * Turn a gateway error answer into a problem document, keeping its headers.
+	 *
+	 * A proxied answer from the source is passed through as the source gave it.
+	 *
+	 * @param Response $response The answer.
+	 * @param IRequest $request  The current request, for the instance member.
+	 *
+	 * @return Response The problem document, or the answer unchanged.
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 */
+	private function asProblem(Response $response, IRequest $request): Response {
+		if ($response->getStatus() < 400
+			|| $response instanceof ProblemResponse
+			|| $response instanceof JSONResponse === false
+			|| $this->proxiedAnswer === true
+		) {
+			return $response;
+		}
+
+		$data = $response->getData();
+		if (is_array($data) === false) {
+			$data = ['error' => (string)json_encode($data)];
+		}
+
+		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($response);
+		unset($headers['Content-Type']);
+
+		return ProblemResponse::fromLegacy(data: $data, status: $response->getStatus(), instance: $request->getId(), headers: $headers);
+	}//end asProblem()
 
 	/**
 	 * Handles incoming requests to endpoints, applying inbound rate-limit headers.
@@ -349,6 +393,7 @@ class EndpointService implements EndpointServiceInterface {
 	public function handleRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response {
 		$this->rateLimitHeaders = [];
 		$this->deprecationHeaders = [];
+		$this->proxiedAnswer = false;
 		$startTime = microtime(true);
 
 		// Resolve the endpoint's api_product (if any) once, up front, so both
@@ -360,7 +405,10 @@ class EndpointService implements EndpointServiceInterface {
 			$this->deprecationHeaders = $this->buildDeprecationHeaders(product: $product);
 		}
 
-		$response = $this->doHandleRequest(endpoint: $endpoint, request: $request, path: $path);
+		$response = $this->asProblem(
+			response: $this->doHandleRequest(endpoint: $endpoint, request: $request, path: $path),
+			request: $request
+		);
 
 		foreach ($this->rateLimitHeaders as $headerName => $headerValue) {
 			$response->addHeader($headerName, $headerValue);
@@ -2694,6 +2742,8 @@ class EndpointService implements EndpointServiceInterface {
 		if ($validationFindings !== []) {
 			$this->messageGate?->record(callLog: $callLog, findings: $validationFindings, endpoint: (string)$endpoint->getUuid());
 		}
+
+		$this->proxiedAnswer = true;
 
 		return new JSONResponse(
 			(new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? [])),
