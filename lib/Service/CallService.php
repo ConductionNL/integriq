@@ -1813,6 +1813,8 @@ class CallService implements CallServiceInterface {
 	 * @param boolean $persistLog When false, return a transient (unsaved) CallLog and mutate nothing.
 	 * @param boolean $withholdBodies When true, the record is written without any body and names the user.
 	 *
+	 * The record is filed under the source's organisation, so that organisation's scoped log views list it.
+	 *
 	 * @return ObjectEntity The persisted CallLog ObjectEntity with full response body set.
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure.
@@ -1864,7 +1866,7 @@ class CallService implements CallServiceInterface {
 			'request' => $data['request'],
 			'response' => $this->redactResponseHeaders(response: $data['response']),
 			'created' => (new DateTime())->format('c'),
-		];
+		] + $this->organisationSelf(object: $source);
 
 		// Bodies are stored only inside the source's investigation window, or
 		// for a caller that passed logBody; a failure keeps its request for a
@@ -1875,9 +1877,6 @@ class CallService implements CallServiceInterface {
 		if ($withholdBodies === true) {
 			$callLogData = $this->bodyCapturePolicy->withheldRecord(record: $callLogData);
 		}
-
-		// Filed under the source's organisation, so the organisation's scoped log views list it.
-		$callLogData += $this->organisationSelf(object: $source);
 
 		// A call kept for ever (retention 0) has no expiry. `expires` is a
 		// date-time string on call_log, and the register refuses a null in a
