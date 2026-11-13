@@ -520,7 +520,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 
 		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 5.0);
 
-		$this->assertSame(['organisation' => '0a0a0a0a-0000-4000-8000-00000000000a'], $captured['@self']);
+		$this->assertSame(expected: ['organisation' => '0a0a0a0a-0000-4000-8000-00000000000a'], actual: $captured['@self']);
 	}//end testRecordInboundCallLogIsFiledUnderTheEndpointsOrganisation()
 
 	/**
@@ -545,7 +545,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 		$method = new \ReflectionMethod($this->service, 'recordInboundThrottle');
 		$method->invoke($this->service, $consumer, new \OCA\Integriq\Service\RateLimit\RateLimitDecision(allowed: false, reason: 'rate'));
 
-		$this->assertSame(['organisation' => '0b0b0b0b-0000-4000-8000-00000000000b'], $captured['@self']);
+		$this->assertSame(expected: ['organisation' => '0b0b0b0b-0000-4000-8000-00000000000b'], actual: $captured['@self']);
 	}//end testRecordInboundThrottleIsFiledUnderTheConsumersOrganisation()
 
 }//end class

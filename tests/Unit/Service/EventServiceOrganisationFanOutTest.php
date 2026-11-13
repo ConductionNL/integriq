@@ -97,23 +97,28 @@ class EventServiceOrganisationFanOutTest extends TestCase {
 				$named = array_combine(array_slice($names, 0, count($args)), $args);
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-' . count($this->rows, COUNT_RECURSIVE));
-				$entity->setObject(is_array($args[0]) === true ? $args[0] : []);
+				$body = [];
+				if (is_array($args[0]) === true) {
+					$body = $args[0];
+				}
+
+				$entity->setObject($body);
 				$this->rows[(string)($named['schema'] ?? '')][] = $entity;
 
 				return $entity;
 			}
 		);
 
-		$logger = $this->createMock(LoggerInterface::class);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
 		$this->service = new EventService(
-			$objectService,
-			$this->createMock(IClientService::class),
-			$logger,
-			new WebhookSignatureService($logger),
-			$this->createMock(SynchronizationService::class),
-			$this->createMock(JobService::class),
-			$this->createMock(CallService::class),
-			$this->createMock(FlowRunnerService::class),
+			objectService: $objectService,
+			clientService: $this->createMock(originalClassName: IClientService::class),
+			logger: $logger,
+			signatureService: new WebhookSignatureService(logger: $logger),
+			synchronizationService: $this->createMock(originalClassName: SynchronizationService::class),
+			jobService: $this->createMock(originalClassName: JobService::class),
+			callService: $this->createMock(originalClassName: CallService::class),
+			flowRunnerService: $this->createMock(originalClassName: FlowRunnerService::class),
 		);
 	}//end setUp()
 
@@ -164,8 +169,8 @@ class EventServiceOrganisationFanOutTest extends TestCase {
 		$this->service->handleObjectCreated($object);
 
 		$event = $this->rows['event'][0];
-		$this->assertSame(self::ORG_A, $event->getObject()[EventService::ORGANISATION_ATTRIBUTE]);
-		$this->assertSame(['sub-a', 'sub-none'], $this->subscribers($this->rows['event_message']));
+		$this->assertSame(expected: self::ORG_A, actual: $event->getObject()[EventService::ORGANISATION_ATTRIBUTE]);
+		$this->assertSame(expected: ['sub-a', 'sub-none'], actual: $this->subscribers(messages: $this->rows['event_message']));
 	}//end testAnObjectEventReachesOnlyItsOwnOrganisation()
 
 	/**
@@ -185,7 +190,7 @@ class EventServiceOrganisationFanOutTest extends TestCase {
 		$this->service->handleObjectUpdated($old, $new);
 		$this->service->handleObjectDeleted($new);
 
-		$this->assertSame(['sub-b', 'sub-b', 'sub-none', 'sub-none'], $this->subscribers($this->rows['event_message']));
+		$this->assertSame(expected: ['sub-b', 'sub-b', 'sub-none', 'sub-none'], actual: $this->subscribers(messages: $this->rows['event_message']));
 	}//end testUpdatesAndDeletesStayInTheirOrganisation()
 
 	/**
@@ -196,7 +201,7 @@ class EventServiceOrganisationFanOutTest extends TestCase {
 	public function testAnEventWithoutAnOrganisationReachesEverySubscription(): void {
 		$messages = $this->service->emitCloudEvent(type: 'nl.conduction.test', source: 'integriq', subject: null, data: []);
 
-		$this->assertSame(['sub-a', 'sub-b', 'sub-none'], $this->subscribers($messages));
+		$this->assertSame(expected: ['sub-a', 'sub-b', 'sub-none'], actual: $this->subscribers(messages: $messages));
 	}//end testAnEventWithoutAnOrganisationReachesEverySubscription()
 
 }//end class

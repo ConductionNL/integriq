@@ -76,7 +76,7 @@ class CallServiceCallLogOrganisationTest extends TestCase {
 	 * @return CallService
 	 */
 	private function service(): CallService {
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			function ($object = [], $register = null, $schema = null) {
 				$this->saved[] = ['object' => $object, 'schema' => $schema];
@@ -93,28 +93,32 @@ class CallServiceCallLogOrganisationTest extends TestCase {
 			}
 		);
 
-		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
 		$appConfig->method('getValueInt')->willReturnArgument(2);
 
-		$clock = $this->createMock(ClockInterface::class);
+		$clock = $this->createMock(originalClassName: ClockInterface::class);
 		$clock->method('now')->willReturn(new DateTimeImmutable('2026-11-13T12:00:00+00:00'));
 
-		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered = $this->createMock(originalClassName: BrokeredCallService::class);
 		$brokered->method('hasCredentialRef')->willReturn(false);
 
 		$service = new CallService(
-			$objectService,
-			new ArrayLoader([]),
-			$this->createMock(AuthenticationService::class),
-			$appConfig,
-			$this->createMock(LoggerInterface::class),
-			$brokered,
-			new SensitiveFieldRegistry(),
-			new BodyCapturePolicy($appConfig, $clock, $this->createMock(IUserSession::class)),
+			objectService: $objectService,
+			loader: new ArrayLoader([]),
+			authenticationService: $this->createMock(originalClassName: AuthenticationService::class),
+			appConfig: $appConfig,
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			brokeredCallService: $brokered,
+			sensitiveFieldRegistry: new SensitiveFieldRegistry(),
+			bodyCapturePolicy: new BodyCapturePolicy(
+				appConfig: $appConfig,
+				clock: $clock,
+				userSession: $this->createMock(originalClassName: IUserSession::class)
+			),
 		);
 
-		$client = $this->createMock(Client::class);
+		$client = $this->createMock(originalClassName: Client::class);
 		$client->method('request')->willReturn(new Response(200, [], '{}'));
 		$property = new ReflectionProperty(CallService::class, 'client');
 		$property->setValue($service, $client);
@@ -163,7 +167,7 @@ class CallServiceCallLogOrganisationTest extends TestCase {
 	public function testAnAnsweredCallIsFiledUnderTheSourcesOrganisation(): void {
 		$this->service()->call(source: $this->source(organisation: self::ORG), endpoint: '/personen');
 
-		$this->assertSame(['organisation' => self::ORG], $this->callLogs()[0]['@self']);
+		$this->assertSame(expected: ['organisation' => self::ORG], actual: $this->callLogs()[0]['@self']);
 	}//end testAnAnsweredCallIsFiledUnderTheSourcesOrganisation()
 
 	/**
@@ -178,7 +182,7 @@ class CallServiceCallLogOrganisationTest extends TestCase {
 		$service->call(source: $this->source(organisation: self::ORG), endpoint: '/personen');
 		$service->flushCallLogs();
 
-		$this->assertSame(['organisation' => self::ORG], $this->batches[0][0]['@self']);
+		$this->assertSame(expected: ['organisation' => self::ORG], actual: $this->batches[0][0]['@self']);
 	}//end testABufferedLogIsFiledUnderTheSourcesOrganisation()
 
 	/**
@@ -189,8 +193,8 @@ class CallServiceCallLogOrganisationTest extends TestCase {
 	public function testAnEarlyRefusalIsFiledUnderTheSourcesOrganisation(): void {
 		$this->service()->call(source: $this->source(organisation: self::ORG, enabled: false), endpoint: '/personen');
 
-		$this->assertSame(409, $this->callLogs()[0]['statusCode']);
-		$this->assertSame(['organisation' => self::ORG], $this->callLogs()[0]['@self']);
+		$this->assertSame(expected: 409, actual: $this->callLogs()[0]['statusCode']);
+		$this->assertSame(expected: ['organisation' => self::ORG], actual: $this->callLogs()[0]['@self']);
 	}//end testAnEarlyRefusalIsFiledUnderTheSourcesOrganisation()
 
 	/**
@@ -201,7 +205,7 @@ class CallServiceCallLogOrganisationTest extends TestCase {
 	public function testASourceWithoutAnOrganisationNamesNone(): void {
 		$this->service()->call(source: $this->source(organisation: null), endpoint: '/personen');
 
-		$this->assertArrayNotHasKey('@self', $this->callLogs()[0]);
+		$this->assertArrayNotHasKey(key: '@self', array: $this->callLogs()[0]);
 	}//end testASourceWithoutAnOrganisationNamesNone()
 
 }//end class
