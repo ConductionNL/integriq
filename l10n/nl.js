@@ -2152,7 +2152,7 @@ OC.L10N.register(
         "Runs a configured fetch-file rule against every record in the page, attaching its files to the object that was just written. The fetch is started, not awaited.": "Voert voor elk record van de pagina een ingestelde ophaalregel uit en hangt de bestanden aan het object dat net is geschreven. Het ophalen wordt gestart, er wordt niet op gewacht.",
         "Fetch pages from a source": "Pagina's ophalen uit een bron",
         "Fetch a synchronization's source and emit one item per page, each carrying that page's objects.": "Haal de bron van een synchronisatie op en geef één item per pagina door, met de objecten van die pagina.",
-        "The configured mapping applied to every item in the page.": "De geconfigureerde mapping die op elk item in de pagina wordt toegepast.",
+        "The configured mapping applied to every item in the page. A template such as jobboard-{{ json.channel }} picks the mapping per item.": "De geconfigureerde mapping die op elk item in de pagina wordt toegepast. Een sjabloon zoals jobboard-{{ json.channel }} kiest de mapping per item.",
         "Input path": "Invoerpad",
         "Dot-path within the item to feed the mapping. Leave empty to map the whole item.": "Puntpad binnen het item dat de mapping voedt. Laat leeg om het hele item te mappen.",
         "Item key the mapped result is written under. Leave empty to replace the item with the result.": "Itemsleutel waaronder het gemapte resultaat wordt geschreven. Laat leeg om het item door het resultaat te vervangen.",
@@ -2196,7 +2196,7 @@ OC.L10N.register(
         "The \"%1$s\" field must name a configured %1$s (its uuid, slug or reference).": "Het veld \"%1$s\" moet een geconfigureerde %1$s noemen (de uuid, slug of verwijzing).",
         "Open the source": "De bron openen",
         "Open the call log": "Het aanroeplogboek openen",
-        "The configured source this step calls. The call inherits its base URL, authentication and rate limits.": "De geconfigureerde bron die deze stap aanroept. De aanroep neemt de basis-URL, authenticatie en limieten van de bron over.",
+        "The configured source this step calls. The call inherits its base URL, authentication and rate limits. A template such as jobboard-{{ json.channel }} picks the source per item.": "De geconfigureerde bron die deze stap aanroept. De aanroep neemt de basis-URL, authenticatie en limieten van de bron over. Een sjabloon zoals jobboard-{{ json.channel }} kiest de bron per item.",
         "Path appended to the source's base URL. It must stay within the source — a path that escapes it is refused.": "Pad dat achter de basis-URL van de bron wordt geplaatst. Het moet binnen de bron blijven; een pad dat erbuiten komt, wordt geweigerd.",
         "The HTTP verb: GET, POST, PUT, PATCH or DELETE. GET when empty.": "De HTTP-methode: GET, POST, PUT, PATCH of DELETE. GET als het leeg is.",
         "Field to store the response in": "Veld waarin het antwoord wordt opgeslagen",
@@ -2271,7 +2271,9 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "No source configured: \"%1$s\". This item makes no request.": "Geen bron geconfigureerd: \"%1$s\". Voor dit item wordt geen verzoek gedaan.",
+        "No mapping configured: \"%1$s\". This item is not mapped.": "Geen mapping geconfigureerd: \"%1$s\". Dit item wordt niet gemapt."
     },
     "nplurals=2; plural=(n != 1);"
 )

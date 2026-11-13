@@ -56,6 +56,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use OCA\Integriq\Service\MappingServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -155,7 +156,10 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 				'key' => 'mapping',
 				'label' => $this->l10n->t('Mapping'),
 				'type' => 'select',
-				'help' => $this->l10n->t('The configured mapping applied to every item in the page.'),
+				'help' => $this->l10n->t(
+					'The configured mapping applied to every item in the page. '
+					. 'A template such as jobboard-{{ json.channel }} picks the mapping per item.'
+				),
 				'required' => true,
 				'optionsFrom' => '/apps/openregister/api/objects/integriq/mapping',
 			],
@@ -287,15 +291,39 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 
+		$templated = FlowTemplate::hasPlaceholder(value: $reference);
+		$resolved = [];
+
 		$outputList = [];
 		foreach (array_values($items) as $index => $item) {
 			$json = (array)($item['json'] ?? []);
+			$itemReference = $reference;
 
 			try {
-				$mapped = $this->mapOne(json: $json, reference: $reference, inputPath: $inputPath, ownershipMode: $ownershipMode, existsPath: $existsPath);
+				$mapping = null;
+				if ($templated === true) {
+					$itemReference = FlowTemplate::renderReference(template: $reference, json: $json);
+					if (array_key_exists($itemReference, $resolved) === false) {
+						$resolved[$itemReference] = $this->resolveItemMapping(name: $itemReference);
+					}
+
+					$mapping = $resolved[$itemReference];
+					if ($mapping instanceof FlowNodeException) {
+						throw $mapping;
+					}
+				}
+
+				$mapped = $this->mapOne(
+					json: $json,
+					reference: $itemReference,
+					inputPath: $inputPath,
+					ownershipMode: $ownershipMode,
+					existsPath: $existsPath,
+					resolved: $mapping
+				);
 				$json = $this->applyResult(json: $json, mapped: $mapped, outputKey: $outputKey);
 			} catch (Throwable $exception) {
-				$failure = $this->asNodeFailure(exception: $exception, reference: $reference);
+				$failure = $this->asNodeFailure(exception: $exception, reference: $itemReference);
 
 				$this->logger->error(
 					'[openconnector.apply-mapping] ' . $failure->getMessage(),
@@ -303,7 +331,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 						'file' => __FILE__,
 						'line' => __LINE__,
 						'step' => $stepId,
-						'mapping' => $reference,
+						'mapping' => $itemReference,
 						'item' => $index,
 					]
 				);
@@ -320,7 +348,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 					'node' => self::NODE_ID,
 					'kind' => 'mapping',
 					'message' => $failure->getMessage(),
-					'mapping' => $reference,
+					'mapping' => $itemReference,
 				];
 			}//end try
 
@@ -369,6 +397,7 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 * @param string $inputPath Dot-path to the input, or empty for the whole record.
 	 * @param string $ownershipMode `inbound`, `outbound`, or empty for no ownership rule.
 	 * @param string $existsPath Dot-path to the writing side's record id on the item.
+	 * @param ObjectEntity|null $resolved The mapping already resolved for a templated reference, or null.
 	 *
 	 * @return array The mapped result.
 	 *
@@ -383,7 +412,8 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 		string $reference,
 		string $inputPath,
 		string $ownershipMode='',
-		string $existsPath=''
+		string $existsPath='',
+		?ObjectEntity $resolved=null
 	): array {
 		$input = $json;
 		if ($inputPath !== '') {
@@ -402,10 +432,10 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 		}
 
 		if ($ownershipMode === '') {
-			return $this->mappingService->executeMapping(mapping: $reference, input: $input);
+			return $this->mappingService->executeMapping(mapping: ($resolved ?? $reference), input: $input);
 		}
 
-		$mappingObject = $this->mappingService->findMapping(reference: $reference);
+		$mappingObject = ($resolved ?? $this->mappingService->findMapping(reference: $reference));
 		if ($mappingObject === null) {
 			throw new FlowNodeException(
 				message: $this->l10n->t('The mapping "%1$s" could not be found.', [$reference]),
@@ -428,6 +458,36 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 
 		return MappingOwnership::keepWriterFields(mapped: $mapped, ownership: $ownership, mode: $ownershipMode);
 	}//end mapOne()
+
+	/**
+	 * Resolve one item's rendered mapping name, or say why there is none.
+	 *
+	 * A templated reference (for example `jobboard-{{ json.channel }}`) is
+	 * rendered per item; each distinct name is looked up once per run by the
+	 * caller, and an item whose name does not resolve fails on its own under
+	 * the step's error policy.
+	 *
+	 * @param string $name The rendered mapping name.
+	 *
+	 * @return ObjectEntity|FlowNodeException The mapping, or the item's failure.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function resolveItemMapping(string $name): ObjectEntity|FlowNodeException {
+		$mapping = null;
+		if ($name !== '') {
+			$mapping = $this->mappingService->findMapping(reference: $name);
+		}
+
+		if ($mapping !== null) {
+			return $mapping;
+		}
+
+		return new FlowNodeException(
+			message: $this->l10n->t('No mapping configured: "%1$s". This item is not mapped.', [$name]),
+			details: ['kind' => 'mapping', 'mapping' => $name]
+		);
+	}//end resolveItemMapping()
 
 	/**
 	 * Normalise any failure into a raised node failure.
