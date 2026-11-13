@@ -53,7 +53,7 @@ use RuntimeException;
  * @uses   \OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsResponseReader
  * @uses   \OCA\Integriq\Service\Stuf\StufXmlParser
- * @uses   \OCA\Integriq\Event\StufZdsCaseConcludedEvent
+ * @covers \OCA\Integriq\Event\StufZdsCaseConcludedEvent
  */
 class StufZdsConfirmationReceiverTest extends TestCase {
 
