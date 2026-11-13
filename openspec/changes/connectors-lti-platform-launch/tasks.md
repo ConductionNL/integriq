@@ -23,7 +23,7 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
   - GIVEN another user's hint, a bad redirect URI or a missing nonce WHEN the endpoint runs THEN an error page names the check and nothing is posted
 - [x] Implement
   - Built by #2243: `LtiPlatformController::authorize()` on GET and POST `/api/lti/platform/authorize`, `LtiPlatformLoginService` (user, hint, client id, redirect URI, nonce and state checks), `templates/lti-autopost.php` and `templates/lti-error.php`, the optional nonce on `initiatePlatformLaunch()`.
-  - Still owed from this task: the error page strings are not in `l10n/en.json` / `l10n/nl.json` yet.
+  - The launch page and error page strings are in `l10n/en.json` / `l10n/nl.json`, and `l10n/en.js` / `l10n/nl.js` are rebuilt from them.
 - [ ] Test (PHPUnit per check; `tests/e2e/lti-platform-launch.spec.ts` against a reference tool fixture)
   - PHPUnit half done: `testAuthorizePostsIdTokenWithToolNonceAndState`, `testAuthorizeRefusesAnotherUsersHint`, `testAuthorizeRefusesUnregisteredRedirectUri`, `testAuthorizeRefusesMissingNonce`, `testAuthorizeRefusesAnotherClientId` in `LtiPlatformLaunchTest`. Open: the e2e spec and the reference tool fixture do not exist yet.
 
@@ -50,6 +50,7 @@ Kind: code. Size M. Rows `learniq:cont-embed-external-lti-tool` and
   - The six values come from `LtiPlatformDetailsService::forTool()` behind `GET /api/lti/tools/{id}/platform-details` (`LtiPlatformDetailsController`, admin only). Every URL is generated from a route name of this app; the issuer is computed as `LtiPlatformLoginService::platformIssuer()` computes it, and a test pins the two equal. The tool is read without the approval gate, because an administrator needs the values to register at the vendor before approving.
   - There was no page for `lti_tool` at all. `src/manifest.d/lti-tools.json` adds a read-only index (Gateway > LTI tools) and a detail page with the `LtiPlatformDetails` panel: six rows, each with a copy action. Read-only on purpose: `signingKeys` holds writeOnly key material OpenRegister strips from reads, so a generic edit form would save the registration back without its keys.
 - [ ] Test (`tests/validate-register.js`; `tests/e2e/lti-platform-launch.spec.ts`)
+  - `tests/validate-register.js` passes with `redirectUris` on `lti_tool`. Open: the e2e spec, which needs a running instance and the reference tool fixture.
 
 ### Task 5: Hand learniq its half
 - **spec_ref**: openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
