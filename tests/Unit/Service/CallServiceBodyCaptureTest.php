@@ -235,7 +235,9 @@ class CallServiceBodyCaptureTest extends TestCase {
 		$logs = $this->callLogs();
 		$this->assertCount(1, $logs);
 		$this->assertTrue($logs[0]['bodyCaptured']);
-		$this->assertSame('999993653', $logs[0]['request']['json']['bsn']);
+		// The body is captured with its personal data masked (REQ-PDM-001).
+		$this->assertSame('[afgeschermd]', $logs[0]['request']['json']['bsn']);
+		$this->assertStringNotContainsString('999993653', (string)json_encode($logs[0]));
 		$this->assertSame('{"uuid":"z1"}', $logs[0]['response']['body']);
 		$this->assertSame('2026-10-17T12:00:00+00:00', $logs[0]['bodyExpiresAt']);
 	}//end testASuccessInsideAWindowStoresBothBodies()
@@ -416,7 +418,8 @@ class CallServiceBodyCaptureTest extends TestCase {
 			trace: $windowTrace
 		);
 		$step = $windowTrace->getSteps()[0];
-		$this->assertSame('999993653', $step['input']['json']['bsn']);
+		// The trace snapshot holds the body with its personal data masked (REQ-PDM-001).
+		$this->assertSame('[afgeschermd]', $step['input']['json']['bsn']);
 		$this->assertSame('{"uuid":"z1"}', $step['output']['body']);
 
 		$logBodyTrace = new ExecutionTraceContext('logbody');

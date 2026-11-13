@@ -137,8 +137,9 @@ class CallRecorder implements CallRecorderInterface {
 			'target' => (string)($call['target'] ?? ''),
 			'traceId' => (string)($call['traceId'] ?? ''),
 			'direction' => 'outbound',
-			// The stored request is what a replay sends, so it keeps BodyRedactor's rules only.
-			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? []))),
+			// The stored request is what a replay sends, so it keeps BodyRedactor's secret
+			// rules only until the body policy has copied it to `replayRequest`.
+			'request' => $this->redactor->redactContext($this->asArray(value: ($call['request'] ?? [])), personalData: false),
 			'response' => $this->redactExchange(exchange: $this->asArray(value: ($call['response'] ?? []))),
 			'statusCode' => $statusCode,
 			'statusMessage' => (string)($call['statusMessage'] ?? ''),
@@ -176,6 +177,10 @@ class CallRecorder implements CallRecorderInterface {
 			logBody: false,
 			errorExpires: null
 		);
+
+		// Personal data is masked in what an administrator reads; `replayRequest`
+		// keeps the values a replay sends, and is never listed (REQ-PDM-001).
+		$record = $this->maskPersonalData(record: $record);
 
 		return $this->objectService->saveObject(
 			object: $record,
@@ -227,7 +232,7 @@ class CallRecorder implements CallRecorderInterface {
 				unset($response['body']);
 			}
 
-			$record['response'] = $response;
+			$record['response'] = $this->redactor->maskPersonalData(context: $response);
 		}
 
 		// A replay that succeeded no longer needs the request it replayed (REQ-OCD-009).
@@ -403,6 +408,26 @@ class CallRecorder implements CallRecorderInterface {
 		return $redacted;
 
 	}//end redactExchange()
+
+	/**
+	 * A record with the personal data in its stored request and response masked.
+	 *
+	 * @param array<string,mixed> $record The record.
+	 *
+	 * @return array<string,mixed> The masked record.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	private function maskPersonalData(array $record): array {
+		foreach (['request', 'response'] as $bag) {
+			if (is_array(($record[$bag] ?? null)) === true) {
+				$record[$bag] = $this->redactor->maskPersonalData(context: $record[$bag]);
+			}
+		}
+
+		return $record;
+
+	}//end maskPersonalData()
 
 	/**
 	 * Coerce a request or response bag to an array.

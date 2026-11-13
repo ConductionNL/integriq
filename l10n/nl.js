@@ -2271,7 +2271,11 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Personal data in logs": "Persoonsgegevens in logs",
+        "The values of these fields are masked in the call log, trace snapshots and outbound message records before they are stored. The message that is sent is not changed.": "De waarden van deze velden worden afgeschermd in de berichtenlog, trace-momentopnamen en verzonden berichten voordat ze worden opgeslagen. Het bericht dat wordt verstuurd, verandert niet.",
+        "Always masked: {fields}": "Altijd afgeschermd: {fields}",
+        "Extra field names, separated by commas": "Extra veldnamen, gescheiden door komma’s"
     },
     "nplurals=2; plural=(n != 1);"
 )

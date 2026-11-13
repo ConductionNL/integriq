@@ -28,6 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound;
 
+use OCA\Integriq\Service\Security\PersonalDataMasker;
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+
 /**
  * Removes credential material from a body before it is stored.
  *
@@ -75,14 +78,39 @@ class BodyRedactor {
 	];
 
 	/**
+	 * Constructor.
+	 *
+	 * @param SensitiveFieldRegistry|null $sensitiveFields The personal data field list, with an
+	 *                                                     administrator's additions; the default
+	 *                                                     list when null.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	public function __construct(
+		private readonly ?SensitiveFieldRegistry $sensitiveFields = null,
+	) {
+
+	}//end __construct()
+
+	/**
 	 * Redact one rendered body.
 	 *
 	 * @param string $body The rendered body.
+	 * @param bool   $personalData Whether personal data is masked too; false only for a
+	 *                             request kept to be sent again.
 	 *
 	 * @return string The body with credential material replaced.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
-	public function redactBody(string $body): string {
+	public function redactBody(string $body, bool $personalData = true): string {
+		// Personal data in the same pass (REQ-PDM-001), first, while a JSON or
+		// XML body is still whole: a secret pattern can cut through its syntax.
 		$redacted = $body;
+		if ($personalData === true) {
+			$redacted = (string)$this->registry()->maskPersonalData(value: $body);
+		}
+
 		foreach (self::TEXT_PATTERNS as $pattern) {
 			$redacted = (string)preg_replace_callback(
 				$pattern,
@@ -109,10 +137,14 @@ class BodyRedactor {
 	 * Redact a render context, however deeply nested.
 	 *
 	 * @param array<string,mixed> $context The context.
+	 * @param bool                $personalData Whether personal data is masked too; false only
+	 *                                          for a request kept to be sent again.
 	 *
 	 * @return array<string,mixed> The redacted context.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
 	 */
-	public function redactContext(array $context): array {
+	public function redactContext(array $context, bool $personalData = true): array {
 		$redacted = [];
 		foreach ($context as $key => $value) {
 			if ($this->isSecretKey(key: (string)$key) === true) {
@@ -120,13 +152,20 @@ class BodyRedactor {
 				continue;
 			}
 
+			if ($personalData === true && is_string($key) === true && $value !== null
+				&& $this->registry()->isPersonalDataName(name: $key) === true
+			) {
+				$redacted[$key] = PersonalDataMasker::PLACEHOLDER;
+				continue;
+			}
+
 			if (is_array($value) === true) {
-				$redacted[$key] = $this->redactContext(context: $value);
+				$redacted[$key] = $this->redactContext(context: $value, personalData: $personalData);
 				continue;
 			}
 
 			if (is_string($value) === true) {
-				$redacted[$key] = $this->redactBody(body: $value);
+				$redacted[$key] = $this->redactBody(body: $value, personalData: $personalData);
 				continue;
 			}
 
@@ -136,6 +175,34 @@ class BodyRedactor {
 		return $redacted;
 
 	}//end redactContext()
+
+	/**
+	 * A stored copy with only its personal data masked, for a record whose
+	 * secrets were redacted before (REQ-PDM-001).
+	 *
+	 * @param array<string,mixed> $context The stored copy.
+	 *
+	 * @return array<string,mixed> The masked copy.
+	 *
+	 * @spec openspec/changes/call-log-personal-data-masking/specs/outbound-call-log/spec.md#requirement-personal-data-is-masked-before-a-body-is-logged-req-pdm-001
+	 */
+	public function maskPersonalData(array $context): array {
+		$masked = $this->registry()->maskPersonalData(value: $context);
+		if (is_array($masked) === false) {
+			return $context;
+		}
+
+		return $masked;
+	}//end maskPersonalData()
+
+	/**
+	 * The registry that knows the personal data field names.
+	 *
+	 * @return SensitiveFieldRegistry The registry.
+	 */
+	private function registry(): SensitiveFieldRegistry {
+		return ($this->sensitiveFields ?? new SensitiveFieldRegistry());
+	}//end registry()
 
 	/**
 	 * Whether a context key names a secret.

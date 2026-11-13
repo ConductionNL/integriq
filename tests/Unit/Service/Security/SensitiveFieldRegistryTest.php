@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\Security;
 
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -323,4 +324,86 @@ class SensitiveFieldRegistryTest extends TestCase {
 		$this->assertSame('access_token=a&x=1', $this->registry->redactIssuedTokensInJson(body: 'access_token=a&x=1'));
 		$this->assertSame('{"name": "x"}', $this->registry->redactIssuedTokensInJson(body: '{"name": "x"}'));
 	}//end testIssuedTokensAreMaskedInAJsonBody()
+	/**
+	 * The default personal data list covers BSN, name, address, date of birth, e-mail and telephone.
+	 *
+	 * @return void
+	 */
+	public function testTheDefaultPersonalDataListCoversTheRequiredKinds(): void {
+		foreach (['inp.bsn', 'BSN', 'geslachtsnaam', 'voornamen', 'lastName', 'adres', 'straatnaam', 'postcode', 'geboortedatum', 'dateOfBirth', 'e-mail', 'emailadres', 'telefoonnummer', 'phone'] as $name) {
+			$this->assertTrue($this->registry->isPersonalDataName(name: $name), $name);
+		}
+
+		foreach (['zaaktype', 'omschrijving', 'name', 'status', 'kenteken'] as $name) {
+			$this->assertFalse($this->registry->isPersonalDataName(name: $name), $name);
+		}
+	}//end testTheDefaultPersonalDataListCoversTheRequiredKinds()
+
+	/**
+	 * A JSON and an XML body with a BSN and a name are both masked.
+	 *
+	 * @return void
+	 */
+	public function testPersonalDataIsMaskedInJsonAndXml(): void {
+		$this->assertSame(
+			'{"bsn":"[afgeschermd]","geslachtsnaam":"[afgeschermd]","zaaktype":"z1"}',
+			$this->registry->maskPersonalData(value: '{"bsn":"999993653","geslachtsnaam":"Jansen","zaaktype":"z1"}')
+		);
+		$this->assertSame(
+			'<BG:inp.bsn>[afgeschermd]</BG:inp.bsn><BG:geslachtsnaam>[afgeschermd]</BG:geslachtsnaam>',
+			$this->registry->maskPersonalData(value: '<BG:inp.bsn>999993653</BG:inp.bsn><BG:geslachtsnaam>Jansen</BG:geslachtsnaam>')
+		);
+	}//end testPersonalDataIsMaskedInJsonAndXml()
+
+	/**
+	 * Without app config only the default list applies.
+	 *
+	 * @return void
+	 */
+	public function testWithoutAppConfigNothingIsAdded(): void {
+		$this->assertSame([], $this->registry->addedPersonalDataFields());
+		$this->assertSame(SensitiveFieldRegistry::DEFAULT_PERSONAL_DATA_FIELDS, $this->registry->personalDataFieldNames());
+	}//end testWithoutAppConfigNothingIsAdded()
+
+	/**
+	 * A field an administrator added is masked, next to the default list.
+	 *
+	 * @return void
+	 */
+	public function testAnAddedFieldIsMasked(): void {
+		$registry = new SensitiveFieldRegistry(appConfig: $this->appConfigHolding(value: '["kenteken", " ", 7, "kenteken", "bsn"]'));
+
+		$this->assertSame(['kenteken', 'bsn'], $registry->addedPersonalDataFields());
+		$this->assertContains('kenteken', $registry->personalDataFieldNames());
+		$this->assertSame(count(SensitiveFieldRegistry::DEFAULT_PERSONAL_DATA_FIELDS) + 1, count($registry->personalDataFieldNames()));
+		$this->assertSame('{"kenteken":"[afgeschermd]"}', $registry->maskPersonalData(value: '{"kenteken":"AB-123-C"}'));
+	}//end testAnAddedFieldIsMasked()
+
+	/**
+	 * A stored value that is not a JSON list adds nothing.
+	 *
+	 * @return void
+	 */
+	public function testAMalformedSettingAddsNothing(): void {
+		$registry = new SensitiveFieldRegistry(appConfig: $this->appConfigHolding(value: 'kenteken'));
+
+		$this->assertSame([], $registry->addedPersonalDataFields());
+		$this->assertSame('{"kenteken":"x"}', $registry->maskPersonalData(value: '{"kenteken":"x"}'));
+	}//end testAMalformedSettingAddsNothing()
+
+	/**
+	 * An app config whose personal data setting holds the given value.
+	 *
+	 * @param string $value The stored value.
+	 *
+	 * @return IAppConfig The app config.
+	 */
+	private function appConfigHolding(string $value): IAppConfig {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')
+			->with('integriq', SensitiveFieldRegistry::PERSONAL_DATA_CONFIG_KEY, '[]')
+			->willReturn($value);
+
+		return $appConfig;
+	}//end appConfigHolding()
 }//end class

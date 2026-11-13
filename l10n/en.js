@@ -3536,7 +3536,11 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Personal data in logs": "Personal data in logs",
+        "The values of these fields are masked in the call log, trace snapshots and outbound message records before they are stored. The message that is sent is not changed.": "The values of these fields are masked in the call log, trace snapshots and outbound message records before they are stored. The message that is sent is not changed.",
+        "Always masked: {fields}": "Always masked: {fields}",
+        "Extra field names, separated by commas": "Extra field names, separated by commas"
     },
     "nplurals=2; plural=(n != 1);"
 )
