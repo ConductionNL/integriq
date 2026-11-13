@@ -2282,7 +2282,20 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "EU only mode stays off. These destinations are not shown to be in the EU: %s": "De modus alleen EU blijft uit. Van deze bestemmingen is niet aangetoond dat ze in de EU staan: %s",
+        "Choose a country from the list.": "Kies een land uit de lijst.",
+        "Only an administrator can manage data residency.": "Alleen een beheerder kan de datalocatie beheren.",
+        "A URL or a short text that shows where the endpoint sits.": "Een URL of een korte tekst die laat zien waar het eindpunt staat.",
+        "A URL or a short text, such as the processor agreement.": "Een URL of een korte tekst, zoals de verwerkersovereenkomst.",
+        "ISO 3166-1 alpha-2 code, upper case.": "ISO 3166-1 alpha-2-code, in hoofdletters.",
+        "ISO 3166-1 alpha-2 country code, upper case.": "ISO 3166-1 alpha-2-landcode, in hoofdletters.",
+        "Residency": "Datalocatie",
+        "The user id or app id that recorded the country.": "De gebruikers-id of app-id die het land heeft vastgelegd.",
+        "When the country was recorded.": "Wanneer het land is vastgelegd.",
+        "Where the endpoint sits, for a fixed endpoint the declaring app knows. The sync copies it onto the linked source unless an administrator set one.": "Waar het eindpunt staat, voor een vast eindpunt dat de declarerende app kent. De synchronisatie neemt het over op de gekoppelde bron, tenzij een beheerder er een heeft ingesteld.",
+        "Where this destination sits: an ISO 3166-1 alpha-2 country, who said so (basis) and on what evidence. Without it the destination reads as unknown and blocks the EU only verdict.": "Waar deze bestemming staat: een ISO 3166-1 alpha-2-land, wie dat zegt (basis) en op grond van welk bewijs. Zonder datalocatie geldt de bestemming als onbekend en blokkeert ze het oordeel alleen EU.",
+        "Who recorded the country. An administrator's value always wins over a declared one.": "Wie het land heeft vastgelegd. De waarde van een beheerder gaat altijd voor op een gedeclareerde."
     },
     "plurals": {}
 }

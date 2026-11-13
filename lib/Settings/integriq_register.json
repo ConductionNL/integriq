@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.6"
+    "version": "1.1.7"
   },
   "x-openregister": {
     "type": "application",
@@ -85,7 +85,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.4.0",
+        "version": "1.5.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad: see local ADR-005.",
         "required": [
@@ -413,6 +413,36 @@
             "default": 30,
             "description": "Seconds an open breaker stays open before the next dispatch is treated as a half-open probe. Mirrors PdokConnector::BREAKER_OPEN_SECONDS.",
             "title": "Circuit Breaker Cooldown Seconds"
+          },
+          "residency": {
+            "type": "object",
+            "title": "Residency",
+            "description": "Where this destination sits: an ISO 3166-1 alpha-2 country, who said so (basis) and on what evidence. Without it the destination reads as unknown and blocks the EU only verdict.",
+            "properties": {
+              "country": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$",
+                "description": "ISO 3166-1 alpha-2 country code, upper case."
+              },
+              "basis": {
+                "type": "string",
+                "enum": ["set-by-admin", "declared-by-app", "seeded"],
+                "description": "Who recorded the country. An administrator's value always wins over a declared one."
+              },
+              "evidence": {
+                "type": "string",
+                "description": "A URL or a short text, such as the processor agreement."
+              },
+              "recordedBy": {
+                "type": "string",
+                "description": "The user id or app id that recorded the country."
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the country was recorded."
+              }
+            }
           }
         },
         "x-openregister-seed": [],

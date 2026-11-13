@@ -53,6 +53,20 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 	private const DEFAULT_ORDER = 100;
 
 	/**
+	 * Basis of a residency an administrator set.
+	 *
+	 * @var string
+	 */
+	public const RESIDENCY_ADMIN = 'set-by-admin';
+
+	/**
+	 * Basis of a residency the declaring app declared.
+	 *
+	 * @var string
+	 */
+	public const RESIDENCY_DECLARED = 'declared-by-app';
+
+	/**
 	 * A sync summary before anything happened.
 	 *
 	 * @var array{created:int,updated:int,deleted:int,unchanged:int,skipped:string[]}
@@ -374,6 +388,7 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 		$existing = ($run->existing[(string)$entry['key']] ?? null);
 		$stored = $existing['data'] ?? [];
 		$data = $this->resolveRow(data: array_merge($stored, $this->declaredFields(run: $run, entry: $entry)));
+		$this->copyDeclaredResidency(run: $run, entry: $entry, sourceUuid: (string)($data['source'] ?? ''));
 
 		if ($existing === null) {
 			$this->store->save(data: $data);
@@ -389,6 +404,76 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 		$this->store->save(data: $data, uuid: $existing['uuid']);
 		$run->summary['updated']++;
 	}//end upsert()
+
+	/**
+	 * Copy a declared residency onto the linked source, unless an administrator set one.
+	 *
+	 * An administrator's residency always wins. An unchanged declared residency
+	 * is not written again, so the sync stays idempotent. A failure is logged and
+	 * never stops the sync of the other rows.
+	 *
+	 * @param ConnectionSyncRun   $run        The app's sync.
+	 * @param array<string,mixed> $entry      The declaration entry.
+	 * @param string              $sourceUuid The linked source, or '' when none is linked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private function copyDeclaredResidency(ConnectionSyncRun $run, array $entry, string $sourceUuid): void {
+		$declared = ($entry['residency'] ?? null);
+		if ($sourceUuid === '' || is_array($declared) === false) {
+			return;
+		}
+
+		try {
+			$source = $this->store->findSourceRaw(uuid: $sourceUuid);
+			if ($source === null) {
+				return;
+			}
+
+			$current = ($source->getObject()['residency'] ?? []);
+			if (is_array($current) === false) {
+				$current = [];
+			}
+
+			$next = [
+				'country' => (string)$declared['country'],
+				'basis' => self::RESIDENCY_DECLARED,
+				'evidence' => (string)($declared['evidence'] ?? ''),
+				'recordedBy' => $run->app,
+			];
+			if (($current['basis'] ?? null) === self::RESIDENCY_ADMIN || $this->sameResidency(current: $current, next: $next) === true) {
+				return;
+			}
+
+			$next['recordedAt'] = (new \DateTimeImmutable())->format('c');
+			$this->store->saveSourceResidency(source: $source, residency: $next);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Integriq could not copy the declared residency of {declaringApp} connection {key}: {reason}',
+				['app' => 'integriq', 'declaringApp' => $run->app, 'key' => $entry['key'], 'reason' => $e->getMessage()]
+			);
+		}//end try
+	}//end copyDeclaredResidency()
+
+	/**
+	 * Whether a stored residency already says what the declaration says.
+	 *
+	 * @param array<string,mixed> $current The stored residency.
+	 * @param array<string,string> $next   The declared residency.
+	 *
+	 * @return bool
+	 */
+	private function sameResidency(array $current, array $next): bool {
+		foreach ($next as $field => $value) {
+			if (($current[$field] ?? null) !== $value) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end sameResidency()
 
 	/**
 	 * The fields a declaration entry sets on its row.

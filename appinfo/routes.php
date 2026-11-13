@@ -650,6 +650,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// generic /api/objects/integriq/app_connection (ADR-022).
 		['name' => 'connections#link', 'url' => '/api/connections/{id}/link', 'verb' => 'POST'],
 
+		// Data residency (connections-declare-data-residency): every outbound
+		// destination with where it sits, EU-only mode, and an administrator's
+		// residency on a source. Admin only, checked in each method.
+		['name' => 'egressDestination#index', 'url' => '/api/egress/destinations', 'verb' => 'GET'],
+		['name' => 'egressDestination#setEuOnly', 'url' => '/api/egress/eu-only', 'verb' => 'PUT'],
+		['name' => 'egressDestination#setSourceResidency', 'url' => '/api/sources/{id}/residency', 'verb' => 'PUT'],
+
 		// Configuration import/export UI endpoints (connector-catalog-ui) — a
 		// thin, routed wrapper over the existing, already-tested
 		// ConfigurationService::exportConfiguration()/importConfiguration().

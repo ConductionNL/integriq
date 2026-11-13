@@ -9333,6 +9333,119 @@
                     }
                 }
             }
+        },
+        "/egress/destinations": {
+            "get": {
+                "operationId": "egressDestination-index",
+                "summary": "List every outbound destination with its location and the verdict",
+                "description": "Every enabled source and every host in the call log of the last 30 days, with host, sourceId, country, basis, evidence, zone and lastCallAt, plus the verdict (eu-only or not-proven), the counts per zone and whether EU-only mode is on. Admin only. The same answer is the auditor's JSON export.",
+                "tags": [
+                    "data-residency"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{destinations, verdict, counts, euOnly}`; an `error` with 403 for a non-administrator.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/egress/eu-only": {
+            "put": {
+                "operationId": "egressDestination-setEuOnly",
+                "summary": "Switch EU-only mode",
+                "description": "Body `enabled` (boolean). Switching on is refused with 409 while any destination is not shown to be in the EU, naming those destinations. Admin only.",
+                "tags": [
+                    "data-residency"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{euOnly}`; an `error` with 403 or 409 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    }
+                }
+            }
+        },
+        "/sources/{id}/residency": {
+            "put": {
+                "operationId": "egressDestination-setSourceResidency",
+                "summary": "Record where a source sits",
+                "description": "Body `country` (ISO 3166-1 alpha-2) and `evidence`. Stored with basis set-by-admin, the administrator's user id and the time. Admin only.",
+                "tags": [
+                    "data-residency"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{residency}`; an `error` with 400, 403 or 404 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
         }
     },
     "components": {

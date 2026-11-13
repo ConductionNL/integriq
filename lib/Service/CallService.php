@@ -62,6 +62,7 @@ use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Residency\EgressResidencyPolicy;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
@@ -2916,6 +2917,21 @@ class CallService implements CallServiceInterface {
 		$earlyError = $this->guardCallPreconditions(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
 		if ($earlyError !== null) {
 			$prepared['shortCircuit'] = $earlyError;
+
+			return $prepared;
+		}
+
+		// Phase 6a: EU-only egress (REQ-RES-003). With the mode on, a source
+		// whose residency is not in the EU is refused here, before any request
+		// is built or sent, and the refusal is recorded in the call log.
+		$refusedCountry = (new EgressResidencyPolicy(appConfig: $this->appConfig))->refusedCountry(sourceData: $sourceData);
+		if ($refusedCountry !== null) {
+			$prepared['shortCircuit'] = $this->saveEarlyErrorLog(
+				source: $source,
+				statusCode: 451,
+				statusMessage: EgressResidencyPolicy::REFUSED . ': ' . $refusedCountry,
+				expires: $errorExpires,
+			);
 
 			return $prepared;
 		}
