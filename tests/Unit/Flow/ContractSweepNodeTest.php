@@ -30,6 +30,7 @@ use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -123,6 +124,24 @@ class ContractSweepNodeTest extends TestCase {
 		$this->assertFalse($this->node->isAvailableForScope(-1));
 
 	}//end testPaletteMetadata()
+
+	/**
+	 * This node marks its own type as a legitimate end of a path.
+	 *
+	 * It is the last functional step of every generated synchronization
+	 * pipeline (`SynchronizationFlowGenerator::writeNodesFor()`), with no
+	 * outgoing edge. Without this marker the connectivity check flags it as an
+	 * unintentional dead end, and the generator used to paper over that with a
+	 * trailing `openregister.end` node — which throws `FlowStop` and makes
+	 * `FlowEngine` report the run `stopped` instead of `completed` for a
+	 * perfectly ordinary successful pass.
+	 *
+	 * @return void
+	 */
+	public function testMarksItsTypeAsALegitimateEnd(): void {
+		$this->assertInstanceOf(\OCA\OpenRegister\Service\Flow\IFlowEndNode::class, $this->node);
+
+	}//end testMarksItsTypeAsALegitimateEnd()
 
 	/**
 	 * The config vocabulary is pinned, and the form describes only known keys.
@@ -277,6 +296,32 @@ class ContractSweepNodeTest extends TestCase {
 		$this->assertTrue($sweep['fetchComplete']);
 
 	}//end testSweepPassesCollectedIdsAndFlags()
+
+	/**
+	 * Regression coverage: the swept count was always built into the
+	 * summary() block, but that block only ever reached the emitted item's
+	 * `json.sweep` — never the run log's `report`, so a flow run's log
+	 * carried no way to know how many stale objects were deleted.
+	 *
+	 * @return void
+	 */
+	public function testItReportsTheSweptCountOntoTheRunLog(): void {
+		$this->givenOwner();
+
+		$this->synchronizationService->guardToWrite = ['guarded' => false];
+		$this->synchronizationService->deleteReturn = 3;
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			[['json' => ['uuid' => 'u-1']]],
+			['synchronization' => 'demo-sync'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(['sweep' => ['swept' => ['count' => 3]]], $report->take());
+
+	}//end testItReportsTheSweptCountOntoTheRunLog()
 
 	/**
 	 * An unresolved `fetchComplete` path fails CLOSED, and the guarded skip is

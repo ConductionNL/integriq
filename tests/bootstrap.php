@@ -606,6 +606,24 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeResumeState') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeResumeState.php';
 		}
+
+		// contract-sweep-reports-completed: ContractSweepNode `implements
+		// IFlowEndNode`, a marker interface, so its own type satisfies the
+		// connectivity check without a trailing `openregister.end` node — which
+		// used to make every generated sync report `stopped` instead of
+		// `completed`. Verbatim copy of the real OpenRegister file.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowEndNode') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowEndNode.php';
+		}
+
+		// flow-run-step-summaries: SourcePaginateNode, ContractMatchNode and
+		// ContractSweepNode all write a per-hop summary (fetched/paged counts,
+		// contract outcome tallies, swept count) onto the run log through this
+		// handle, the same mechanism FlowMessagingService already uses for
+		// `report.messaging`. Verbatim copy of the real OpenRegister file.
+		if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowStepReport') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowStepReport.php';
+		}
 	}
 }
 
