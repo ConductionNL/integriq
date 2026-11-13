@@ -207,3 +207,34 @@ describe('merge input', () => {
 		expect(form.updates).toEqual([])
 	})
 })
+
+describe('values JSON cannot serialise', () => {
+	/**
+	 * An object whose JSON serialisation throws, with a readable String().
+	 *
+	 * @return {object} The circular object.
+	 */
+	function circular() {
+		const value = { toString: () => 'circular' }
+		value.self = value
+		return value
+	}
+
+	it('shows an empty merge list when the arguments do not serialise', () => {
+		expect(vm({ merge: [circular()] }).mergeJson).toBe('[]')
+	})
+
+	it('falls back to String() in a slot', () => {
+		const form = vm({ '==': [circular(), 1] })
+		expect(form.slotString(0)).toBe('circular')
+		expect(form.slotJson(0)).toBe('circular')
+	})
+})
+
+describe('fresh arguments for an unknown kind', () => {
+	it('builds a binary shape carrying the path and value', () => {
+		const form = vm(null)
+		expect(form.argsForKind({ kind: 'unknown' }, { carryVar: 'x', carryValue: 3 })).toEqual([{ var: 'x' }, 3])
+		expect(form.argsForKind({ kind: 'unknown' }, { carryVar: 'x', carryValue: null })).toEqual([{ var: 'x' }, ''])
+	})
+})
