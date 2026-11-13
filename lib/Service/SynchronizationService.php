@@ -68,6 +68,7 @@ use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Ownership\DisappearanceApplier;
 use OCA\Integriq\Service\Ownership\DisappearancePolicy;
 use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
 use OCA\Integriq\Util\SafeXmlParser;
@@ -116,6 +117,7 @@ use Twig\Error\SyntaxError;
  *   real reduction is splitting the engine, which is a design change and not a lint fix.
  */
 class SynchronizationService implements SynchronizationServiceInterface {
+	use OrganisationBoundary;
 
 	/**
 	 * Total pages the last fetched page advertised via its `Link` header.
@@ -1654,6 +1656,57 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	private function findSource(string|int $id): array {
 		return $this->findSourceObject(id: $id)->jsonSerialize();
 	}//end findSource()
+
+	/**
+	 * The source or target a synchronization names, refused when it belongs to another organisation.
+	 *
+	 * The source is read unscoped (see findSourceObject()), so the synchronization's
+	 * own organisation bounds which source it may use.
+	 *
+	 * @param array           $synchronization The synchronization payload, with `@self.organisation`.
+	 * @param string|int|null $id              The source id the synchronization names.
+	 *
+	 * @return ObjectEntity The source object.
+	 *
+	 * @throws DoesNotExistException When there is no such source, or it belongs to another organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function findSynchronizationSource(array $synchronization, string|int|null $id): ObjectEntity {
+		if ($id === null || $id === '') {
+			throw new DoesNotExistException('The source you are looking for does not exist');
+		}
+
+		$source = $this->findSourceObject(id: $id);
+		$this->assertSynchronizationOrganisation(synchronization: $synchronization, source: $source);
+
+		return $source;
+	}//end findSynchronizationSource()
+
+	/**
+	 * Refuse a source that belongs to another organisation than the synchronization.
+	 *
+	 * @param array        $synchronization The synchronization payload, with `@self.organisation`.
+	 * @param ObjectEntity $source          The source or target it names.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the source belongs to another organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function assertSynchronizationOrganisation(array $synchronization, ObjectEntity $source): void {
+		if ($this->sameOrganisation(first: $this->organisationOf(object: $synchronization), second: $this->organisationOf(object: $source)) === true) {
+			return;
+		}
+
+		$this->logger->warning(
+			'integriq: synchronization refused a source of another organisation',
+			['synchronizationId' => ($synchronization['id'] ?? null), 'sourceId' => $source->getUuid()]
+		);
+
+		throw new DoesNotExistException('The source you are looking for does not exist');
+	}//end assertSynchronizationOrganisation()
 
 	/**
 	 * Find a source by its `location`, or build a TRANSIENT one if no match exists.
@@ -4335,7 +4388,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$sourceId = $source;
 		}
 
-		$source = $this->findSource(id: $sourceId);
+		$source = $this->findSynchronizationSource(synchronization: $synchronization, id: $sourceId)->jsonSerialize();
 
 		// Let's get the source config.
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
@@ -7009,7 +7062,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			throw new Exception('nextcloud-table target is missing a required targetConfig.tableId');
 		}
 
-		$target = $this->findSourceObject(id: ($synchronization['targetId'] ?? null));
+		$target = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['targetId'] ?? null));
 		$targetId = ($synchronizationContract['targetId'] ?? null);
 
 		if ($action === 'delete') {
@@ -7163,7 +7216,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$viewId = (int)$sourceConfig['viewId'];
 		}
 
-		$source = $this->findSourceObject(id: ($synchronization['sourceId'] ?? null));
+		$source = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null));
 
 		$rows = $this->tablesSyncAdapter->fetchAllRows(source: $source, tableId: $tableId, viewId: $viewId);
 
@@ -7208,7 +7261,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			throw new Exception('nextcloud-form source is missing a required sourceConfig.formId');
 		}
 
-		$source = $this->findSourceObject(id: ($synchronization['sourceId'] ?? null));
+		$source = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null));
 
 		$submissions = $this->formsSyncAdapter->fetchAllSubmissions(source: $source, formId: $formId);
 
@@ -7261,7 +7314,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// findOrCreateSourceByLocation() never persisted) is used directly —
 		// avoiding a findSource(id: ...) lookup that would throw
 		// DoesNotExistException for a source that was never saved (REQ-012).
-		$fetch->source = ($resolvedSource ?? $this->findSource(id: ($synchronization['sourceId'] ?? null)));
+		if ($resolvedSource === null) {
+			$resolvedSource = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null))->jsonSerialize();
+		}
+
+		$fetch->source = $resolvedSource;
 
 		$this->checkRateLimit(source: $fetch->source);
 
@@ -10075,7 +10132,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private function prepareTargetWrite(TargetWrite $write, bool $readOrigin): void {
 		$synchronization = $write->synchronization;
-		$write->target = $this->findSource(id: ($synchronization['targetId'] ?? null));
+		$write->target = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['targetId'] ?? null))->jsonSerialize();
 
 		if (($synchronization['sourceType'] ?? null) === 'register/schema' && ($write->contract['originId'] ?? null) !== null) {
 			$sourceIds = explode(separator: '/', string: ($synchronization['sourceId'] ?? null));
@@ -10483,7 +10540,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 			$file   = $this->zgwDocumentFile(zgw: $stuf, contract: $contract, document: $document, destination: 'the StUF-ZDS case system');
 			$result = $this->containerInterface->get(StufZdsDocumentDelivery::class)->deliver(
-				source: $this->rawSourceObject(id: (string)($synchronization['targetId'] ?? '')),
+				source: $this->rawSourceObject(synchronization: $synchronization, id: (string)($synchronization['targetId'] ?? '')),
 				document: $document,
 				file: $file,
 				zaakIdentificatie: $case,
@@ -10518,13 +10575,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * to the rendered source when the raw read fails, whose missing credential
 	 * the client then refuses.
 	 *
-	 * @param string $id The source id.
+	 * @param array  $synchronization The synchronization, whose organisation bounds the source.
+	 * @param string $id              The source id.
 	 *
 	 * @return array The source object.
 	 *
+	 * @throws DoesNotExistException When the source belongs to another organisation.
+	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
-	private function rawSourceObject(string $id): array {
+	private function rawSourceObject(array $synchronization, string $id): array {
 		try {
 			$raw = $this->orObjectService->find(
 				id: $id,
@@ -10534,14 +10595,18 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				_multitenancy: false,
 				_render: false
 			);
-			if ($raw !== null) {
-				return $raw->getObject();
-			}
 		} catch (\Throwable $e) {
 			$this->logger->warning('Raw source read failed; using the rendered source.', ['sourceId' => $id, 'exception' => $e->getMessage()]);
+			$raw = null;
 		}
 
-		return $this->findSourceObject(id: $id)->getObject();
+		if ($raw === null) {
+			return $this->findSynchronizationSource(synchronization: $synchronization, id: $id)->getObject();
+		}
+
+		$this->assertSynchronizationOrganisation(synchronization: $synchronization, source: $raw);
+
+		return $raw->getObject();
 	}//end rawSourceObject()
 
 	/**
