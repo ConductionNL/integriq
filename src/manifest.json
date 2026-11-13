@@ -2246,6 +2246,7 @@
           "interval",
           "isEnabled",
           "lastRun",
+          "nextRun",
           "status"
         ],
         "includeFields": [
@@ -2254,6 +2255,7 @@
           "jobClass",
           "arguments",
           "interval",
+          "schedule",
           "timeSensitive",
           "allowParallelRuns",
           "isEnabled",

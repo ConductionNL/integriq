@@ -5,6 +5,7 @@
     "source.test": ["admin"],
     "job.logs": ["admin"],
     "job.run": ["admin"],
+    "job.schedule-preview": ["admin"],
     "job.test": ["admin"],
     "endpoint.logs": ["admin"],
     "synchronization.contracts": ["admin"],

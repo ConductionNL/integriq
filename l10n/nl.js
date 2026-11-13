@@ -2271,7 +2271,27 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Every interval": "Elk interval",
+        "On a calendar": "Volgens een kalender",
+        "Weekdays": "Weekdagen",
+        "Day of month": "Dag van de maand",
+        "Any day": "Elke dag",
+        "Times of day": "Tijdstippen",
+        "HH:MM, separated by commas. Jobs are picked up every five minutes, so a 07:00 run starts between 07:00 and 07:05.": "UU:MM, gescheiden door komma’s. Taken worden elke vijf minuten opgepakt, dus een run om 07:00 start tussen 07:00 en 07:05.",
+        "Time zone": "Tijdzone",
+        "An IANA time zone such as Europe/Amsterdam.": "Een IANA-tijdzone, zoals Europe/Amsterdam.",
+        "Dates to skip": "Over te slaan datums",
+        "YYYY-MM-DD, separated by commas. Skipped dates are not working days either.": "JJJJ-MM-DD, gescheiden door komma’s. Overgeslagen datums tellen ook niet als werkdag.",
+        "Next five runs": "Volgende vijf runs",
+        "Computing run times…": "Runtijden berekenen…",
+        "This calendar has no run time.": "Deze kalender heeft geen runtijd.",
+        "First day of the month": "Eerste dag van de maand",
+        "Last day of the month": "Laatste dag van de maand",
+        "First working day of the month": "Eerste werkdag van de maand",
+        "Last working day of the month": "Laatste werkdag van de maand",
+        "Day {day}": "Dag {day}",
+        "The run times could not be computed.": "De runtijden konden niet worden berekend."
     },
     "nplurals=2; plural=(n != 1);"
 )
