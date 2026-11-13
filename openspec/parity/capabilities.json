@@ -3347,14 +3347,14 @@
 			"source": "competitor-derived",
 			"integriq": "yes",
 			"built": {
-				"state": "built",
-				"owner": "ConductionNL/openregister",
-				"evidence": "Integriq's own code confirms OpenRegister organisation-scopes objects by default: lib/Service/ExecutionTraceService.php:154-160 documents deliberately leaving 'OR's [own access-control] layer... at its defaults' for a caller-supplied id read, and every system-context engine lookup (AuthorizationService::findIssuer/resolveConsumerByApiKey, EndpointService::getRuleById/getEndpointById) explicitly passes _multitenancy:false ONLY to bypass that default for cross-tenant auth resolution; ordinary admin CRUD (Consumers/Sources/Endpoints pages) calls the generic /apps/openregister/api/objects/integriq/... endpoints with no such override, leaving OR's default organisation scoping in force.",
-				"spec": "openspec/specs/openconnector-or-adoption",
-				"requirement": "openspec/specs/openconnector-or-adoption :: integriq consumes shared multi-tenancy + i18n specs"
+				"state": "specified",
+				"owner": "ConductionNL/integriq",
+				"evidence": "Not built: integriq switches OpenRegister's organisation filter off (_multitenancy: false) in about 209 places, including user-facing controllers such as lib/Controller/SourcesController.php (test, tripCircuitBreaker, resetCircuitBreaker), SynchronizationsController, EventsController and JobsController, so a user of one organisation can list, read, run or change another organisation's sources, synchronisations and logs. Plan: openspec/changes/integriq-tenant-scoping/ (decision 408, 13 Nov 2026) puts the filter back on every user-facing path and keeps it off only on system paths with a stated reason.",
+				"change": "integriq-tenant-scoping",
+				"requirement": "openspec/changes/integriq-tenant-scoping/specs/tenant-scoping :: A user only reaches their own organisation's integriq objects (REQ-TEN-001)"
 			},
 			"reachedOn": "every integriq admin page (Consumers, Sources, Endpoints, ...) that reads/writes through OpenRegister's generic object API",
-			"note": "Verified from integriq's own comments about OR's behaviour, not from reading OpenRegister's source directly, since it is a sibling app; confidence on the exact mechanism is therefore secondhand.",
+			"note": "Previously marked built from OpenRegister's default scoping; the verify lane found integriq bypasses it on user-facing paths. Security fix, decision 408.",
 			"provider": "openregister",
 			"providerHow": "read-from-code",
 			"feature": "platform-administration",
