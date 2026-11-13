@@ -622,4 +622,23 @@ class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 			);
 		}
 	}//end testRegisterJsonStillDeclaresAllFiveFields()
+
+	/**
+	 * A schema without a usable version starts from 1.0.0, and a short
+	 * version is padded before its patch component moves.
+	 *
+	 * @return void
+	 */
+	public function testAMissingOrShortVersionIsBumpedFromItsPaddedForm(): void {
+		$stored = ['src-1' => ['name' => 'Migrated', 'apikey' => ['credentialRef' => ['credentialId' => 'abc']]]];
+
+		foreach (['' => '1.0.1', '  ' => '1.0.1', '2' => '2.0.1', '3.4' => '3.4.1'] as $before => $after) {
+			$schema = new FakeSourceSchema(self::FIVE_FIELD_PROPS, (string)$before);
+			$built = $this->makeStep($stored, $schema, new RemoveStepAppConfig());
+			$built['step']->run($this->createMock(IOutput::class));
+
+			$this->assertSame($after, $schema->getVersion(), 'version "' . $before . '"');
+			$this->assertTrue($built['mapper']->updated);
+		}
+	}//end testAMissingOrShortVersionIsBumpedFromItsPaddedForm()
 }//end class
