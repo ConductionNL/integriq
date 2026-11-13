@@ -2271,7 +2271,19 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Continue to the tool": "Doorgaan naar de tool",
+        "This launch was started for another user. Sign in as that user, or start the launch again.": "Deze launch is gestart voor een andere gebruiker. Log in als die gebruiker of start de launch opnieuw.",
+        "The launch request is not valid. Start the launch again from the lesson.": "Het launchverzoek is niet geldig. Start de launch opnieuw vanuit de les.",
+        "The launch took too long and has expired. Start the launch again from the lesson.": "De launch duurde te lang en is verlopen. Start de launch opnieuw vanuit de les.",
+        "The tool that answered is not the approved tool of this launch.": "De tool die antwoordde is niet de goedgekeurde tool van deze launch.",
+        "The tool asked to return to an address that is not registered for it.": "De tool vroeg om terug te keren naar een adres dat niet voor de tool is geregistreerd.",
+        "The tool sent no nonce, so the launch cannot be completed.": "De tool stuurde geen nonce, dus de launch kan niet worden voltooid.",
+        "The tool sent no state, so the launch cannot be completed.": "De tool stuurde geen state, dus de launch kan niet worden voltooid.",
+        "The tool could not be opened": "De tool kon niet worden geopend",
+        "The launch could not be completed.": "De launch kon niet worden voltooid.",
+        "Failed check: %s": "Mislukte controle: %s",
+        "If the tool opens inside the page, try opening it in a new tab.": "Als de tool binnen de pagina opent, probeer hem dan in een nieuw tabblad te openen."
     },
     "nplurals=2; plural=(n != 1);"
 )

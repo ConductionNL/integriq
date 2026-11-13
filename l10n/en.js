@@ -3536,7 +3536,19 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Continue to the tool": "Continue to the tool",
+        "This launch was started for another user. Sign in as that user, or start the launch again.": "This launch was started for another user. Sign in as that user, or start the launch again.",
+        "The launch request is not valid. Start the launch again from the lesson.": "The launch request is not valid. Start the launch again from the lesson.",
+        "The launch took too long and has expired. Start the launch again from the lesson.": "The launch took too long and has expired. Start the launch again from the lesson.",
+        "The tool that answered is not the approved tool of this launch.": "The tool that answered is not the approved tool of this launch.",
+        "The tool asked to return to an address that is not registered for it.": "The tool asked to return to an address that is not registered for it.",
+        "The tool sent no nonce, so the launch cannot be completed.": "The tool sent no nonce, so the launch cannot be completed.",
+        "The tool sent no state, so the launch cannot be completed.": "The tool sent no state, so the launch cannot be completed.",
+        "The tool could not be opened": "The tool could not be opened",
+        "The launch could not be completed.": "The launch could not be completed.",
+        "Failed check: %s": "Failed check: %s",
+        "If the tool opens inside the page, try opening it in a new tab.": "If the tool opens inside the page, try opening it in a new tab."
     },
     "nplurals=2; plural=(n != 1);"
 )
