@@ -17,7 +17,7 @@
     "servers": [
         {
             "url": "https://{host}/index.php/apps/integriq/api/v1",
-            "description": "The Integriq API on a Nextcloud instance, version 1.",
+            "description": "The Integriq API, major version 1, on a Nextcloud instance. Every path also answers without `/v1`.",
             "variables": {
                 "host": {
                     "default": "localhost",

@@ -64,7 +64,16 @@ class UnsubscribeTokenService implements UnsubscribeTokenServiceInterface {
 	 *
 	 * @var string
 	 */
-	public const CONFIG_SECRET = 'outbound.unsubscribe_secret';
+	public const SIGNING_CONFIG_NAME = 'outbound.unsubscribe_secret';
+
+	/**
+	 * The former name of SIGNING_CONFIG_NAME.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use SIGNING_CONFIG_NAME.
+	 */
+	public const CONFIG_SECRET = self::SIGNING_CONFIG_NAME;
 
 	/**
 	 * The app-config key holding how many days a new link stays valid.
@@ -143,7 +152,7 @@ class UnsubscribeTokenService implements UnsubscribeTokenServiceInterface {
 		private readonly IURLGenerator $urls,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->secret = new AppSecret(appConfig: $appConfig, random: $random, configKey: self::CONFIG_SECRET);
+		$this->secret = new AppSecret(appConfig: $appConfig, random: $random, configKey: self::SIGNING_CONFIG_NAME);
 
 	}//end __construct()
 

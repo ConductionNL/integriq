@@ -254,7 +254,7 @@ npm run test            # Jest unit tests
 #### Test coverage
 
 <!-- coverage:start -->
-Measured test coverage: 83.9% of statements (PHP 86.7% of 64,694 statements, JavaScript 57.9% of 7,010 statements), at commit `f39bbb134` on 2026-11-12. The figures come from [`coverage-summary.json`](coverage-summary.json); refresh them with `composer coverage:publish`.
+Measured test coverage: 84.7% of statements (PHP 87.6% of 64,753 statements, JavaScript 58.0% of 7,079 statements), at commit `8420a0dd2` on 2026-11-13. The figures come from [`coverage-summary.json`](coverage-summary.json); refresh them with `composer coverage:publish`.
 <!-- coverage:end -->
 
 #### Quality-gate baselines

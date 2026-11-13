@@ -170,6 +170,31 @@ class ApiContractMiddlewareTest extends TestCase {
 	}//end testForeignProtocolErrorsKeepTheirFormat()
 
 	/**
+	 * The versioned base keeps the same split: a protocol path under /api/v1/
+	 * keeps its format, any other path becomes problem details.
+	 *
+	 * @return void
+	 */
+	public function testTheVersionedBaseKeepsTheSameErrorFormats(): void {
+		$oauth = ['error' => 'invalid_grant', 'error_description' => 'Expired'];
+		foreach (['/apps/integriq/api/v1/eudi/token', '/apps/integriq/api/v1/lti/token'] as $path) {
+			$this->assertSame(expected: $oauth, actual: $this->decorate(path: $path, response: new JSONResponse(data: $oauth, statusCode: 400))->getData());
+		}
+
+		$scim = ['schemas' => ['urn:ietf:params:scim:api:messages:2.0:Error'], 'status' => '404'];
+		$this->assertSame(
+			expected: $scim,
+			actual: $this->decorate(path: '/apps/integriq/api/v1/scim/v2/Users/x', response: new JSONResponse(data: $scim, statusCode: 404))->getData()
+		);
+
+		$offer = $this->decorate(
+			path: '/apps/integriq/api/v1/eudi/credential-offers/1',
+			response: new JSONResponse(data: ['error' => 'not_found'], statusCode: 404)
+		);
+		$this->assertSame(expected: 'about:blank', actual: $offer->getData()['type']);
+	}//end testTheVersionedBaseKeepsTheSameErrorFormats()
+
+	/**
 	 * A non-JSON error response gets the header but no body rewrite.
 	 *
 	 * @return void

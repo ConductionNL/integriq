@@ -70,9 +70,9 @@ class ApiContractMiddleware extends Middleware {
 	 * @var list<string>
 	 */
 	private const FOREIGN_ERROR_FORMATS = [
-		'#/api/scim/#',
-		'#/api/eudi/(token|credential)$#',
-		'#/api/lti/token$#',
+		'#/api/(v1/)?scim/#',
+		'#/api/(v1/)?eudi/(token|credential)$#',
+		'#/api/(v1/)?lti/token$#',
 	];
 
 	/**

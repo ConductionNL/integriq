@@ -82,7 +82,16 @@ class RecipientKey implements RecipientKeyInterface {
 	 *
 	 * @var string
 	 */
-	public const CONFIG_SECRET = 'outbound.recipient_key_secret';
+	public const HASHING_CONFIG_NAME = 'outbound.recipient_key_secret';
+
+	/**
+	 * The former name of HASHING_CONFIG_NAME.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use HASHING_CONFIG_NAME.
+	 */
+	public const CONFIG_SECRET = self::HASHING_CONFIG_NAME;
 
 	/**
 	 * The hashing secret, read once per instance.
@@ -103,7 +112,7 @@ class RecipientKey implements RecipientKeyInterface {
 		ISecureRandom $random,
 		private readonly PhoneNumberNormaliserInterface $phoneNumbers,
 	) {
-		$this->secret = new AppSecret(appConfig: $appConfig, random: $random, configKey: self::CONFIG_SECRET);
+		$this->secret = new AppSecret(appConfig: $appConfig, random: $random, configKey: self::HASHING_CONFIG_NAME);
 
 	}//end __construct()
 
