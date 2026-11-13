@@ -40,6 +40,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveObjectsCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -143,7 +144,7 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 		// (`deduplicateIds: true`): the identity write and the outcome write
 		// carry the SAME uuid and must collapse to ONE row. A store that
 		// appended would report two rows and look like a duplicate-contract bug.
-		$this->orObjectService->method('saveObjects')->willReturnCallback(
+		$this->orObjectService->method('saveObjects')->willReturnCallback(SaveObjectsCallShape::callback(
 			function (array $objects, $register = null, $schema = null, ...$rest): array {
 				if ((string)$schema !== 'synchronization_contract') {
 					return ['saved' => [], 'errors' => [], 'statistics' => []];
@@ -159,7 +160,7 @@ class SynchronizationServiceOriginIdMatchingTest extends TestCase {
 
 				return ['saved' => $saved, 'errors' => [], 'statistics' => ['created' => count($saved)]];
 			}
-		);
+		));
 
 		// findAll replays the contract store for contract lookups (filters
 		// carrying an originId, or the cleanup pass's synchronizationId-only

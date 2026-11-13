@@ -32,6 +32,8 @@ namespace OCA\Integriq\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\Uid\Uuid;
 
@@ -361,11 +363,12 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 			what: 'a batch of synchronization contracts',
 			operation: fn (): array => $this->orObjectService->saveObjects(
 				objects: $rows,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
-				validation: false,
-				events: false,
-				_audit: false
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: self::REGISTER, schema: self::SCHEMA),
+					validation: false,
+					events: false,
+					audit: false
+				)
 			)
 		);
 	}//end persistBulk()

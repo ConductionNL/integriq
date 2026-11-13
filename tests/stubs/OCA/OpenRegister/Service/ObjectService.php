@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -223,30 +224,21 @@ class ObjectService {
 	 * here would let a test that forgot to stub it assert against data this file
 	 * made up.
 	 *
+	 * Signature as OpenRegister #9108; tests/Helpers/SaveObjectsCallShape
+	 * flattens a call for the recordings that predate the options object.
+	 *
 	 * @param array $objects The objects to save.
-	 * @param string|null $register The register.
-	 * @param string|null $schema The schema.
+	 * @param BulkSaveOptions $options Batch defaults, validation, events and audit.
 	 * @param bool $_rbac Apply RBAC filters when true.
 	 * @param bool $_multitenancy Apply multitenancy filters when true.
-	 * @param bool $validation Validate each object against its schema.
-	 * @param bool $events Dispatch object events.
-	 * @param bool $deduplicateIds Drop duplicate ids within the batch.
-	 * @param bool $enrich Enrich the saved objects before returning them.
-	 * @param bool $_audit Record audit-trail rows for the batch.
 	 *
 	 * @return array The saved objects.
 	 */
 	public function saveObjects(
 		array $objects,
-		?string $register = null,
-		?string $schema = null,
+		BulkSaveOptions $options = new BulkSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $validation = false,
-		bool $events = false,
-		bool $deduplicateIds = true,
-		bool $enrich = true,
-		bool $_audit = true,
 	): array {
 		return [];
 	}

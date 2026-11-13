@@ -37,6 +37,7 @@ use OCA\Integriq\Service\ObjectService;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveObjectsCallShape;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
@@ -245,7 +246,7 @@ class EndoflifeDateSyncTest extends TestCase {
 		// Keyed by uuid, mirroring the real bulk save's `deduplicateIds: true`:
 		// two writes of one object must collapse to ONE row, or a store that
 		// appended would report a duplicate that production does not create.
-		$this->orObjectService->method('saveObjects')->willReturnCallback(
+		$this->orObjectService->method('saveObjects')->willReturnCallback(SaveObjectsCallShape::callback(
 			function (array $objects, $register = null, $schema = null, ...$rest): array {
 				$saved = [];
 				foreach ($objects as $object) {
@@ -264,7 +265,7 @@ class EndoflifeDateSyncTest extends TestCase {
 
 				return ['saved' => $saved, 'errors' => [], 'statistics' => ['saved' => count($saved)]];
 			}
-		);
+		));
 
 		$this->orObjectService->method('saveObject')->willReturnCallback(
 			function ($object, ?string $register = null, ?string $schema = null, ?string $uuid = null, ...$rest) {

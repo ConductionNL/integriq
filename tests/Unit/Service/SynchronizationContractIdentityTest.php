@@ -28,6 +28,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\Integriq\Tests\Helpers\SaveObjectsCallShape;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
 
@@ -217,13 +218,13 @@ class SynchronizationContractIdentityTest extends TestCase {
 	public function testPersistBulkKeepsAnExistingIdentity(): void {
 		$rows = null;
 
-		$this->orObjectService->method('saveObjects')->willReturnCallback(
+		$this->orObjectService->method('saveObjects')->willReturnCallback(SaveObjectsCallShape::callback(
 			function (...$args) use (&$rows): array {
 				$rows = ($args[0] ?? null);
 
 				return ['statistics' => ['saved' => 0, 'updated' => 1, 'invalid' => 0, 'errors' => 0]];
 			}
-		);
+		));
 
 		$this->service->persistBulk(
 			contracts: [
@@ -245,13 +246,13 @@ class SynchronizationContractIdentityTest extends TestCase {
 	public function testPersistBulkStillMintsWhenThereIsNoIdentity(): void {
 		$rows = null;
 
-		$this->orObjectService->method('saveObjects')->willReturnCallback(
+		$this->orObjectService->method('saveObjects')->willReturnCallback(SaveObjectsCallShape::callback(
 			function (...$args) use (&$rows): array {
 				$rows = ($args[0] ?? null);
 
 				return ['statistics' => ['saved' => 1, 'updated' => 0, 'invalid' => 0, 'errors' => 0]];
 			}
-		);
+		));
 
 		$this->service->persistBulk(contracts: [['originId' => 'o-2']]);
 
@@ -268,13 +269,13 @@ class SynchronizationContractIdentityTest extends TestCase {
 	public function testPersistBulkRefusesANumericId(): void {
 		$rows = null;
 
-		$this->orObjectService->method('saveObjects')->willReturnCallback(
+		$this->orObjectService->method('saveObjects')->willReturnCallback(SaveObjectsCallShape::callback(
 			function (...$args) use (&$rows): array {
 				$rows = ($args[0] ?? null);
 
 				return ['statistics' => ['saved' => 1, 'updated' => 0, 'invalid' => 0, 'errors' => 0]];
 			}
-		);
+		));
 
 		$this->service->persistBulk(contracts: [['id' => 4438, 'originId' => 'o-3']]);
 

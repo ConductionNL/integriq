@@ -67,6 +67,8 @@ use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -1992,13 +1994,14 @@ class CallService implements CallServiceInterface {
 		try {
 			$this->objectService->saveObjects(
 				objects: $batch,
-				register: 'integriq',
-				schema: 'call_log',
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: 'integriq', schema: 'call_log'),
+					validation: false,
+					events: false,
+					audit: false
+				),
 				_rbac: false,
-				_multitenancy: false,
-				validation: false,
-				events: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
