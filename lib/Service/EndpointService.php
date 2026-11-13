@@ -2610,6 +2610,8 @@ class EndpointService implements EndpointServiceInterface {
 		// the app's own proxy surface — the whole point is that a caller reaches the target
 		// WITHOUT being able to see (or authenticate to) it directly. It is the engine that
 		// needs the source; the caller must not be able to read it.
+		// Unscoped because an inbound gateway call carries no organisation; the endpoint's
+		// own organisation bounds which source it may use (REQ-TEN-001).
 		$source = $this->orObjectService->find(
 			id: ($endpointData['targetId'] ?? ''),
 			register: 'integriq',
@@ -2617,6 +2619,13 @@ class EndpointService implements EndpointServiceInterface {
 			_rbac: false,
 			_multitenancy: false
 		);
+		if ($this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+			$this->logger->warning(
+				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
+			);
+
+			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		}
 
 		// Render the upstream path from the inbound request (ocon#1069), so a
 		// `targetType: api` endpoint can proxy `/hydra/label/{owner}/{repo}`
@@ -2687,6 +2696,28 @@ class EndpointService implements EndpointServiceInterface {
 			$callLogData['statusCode'] ?? 200
 		);
 	}//end handleSourceRequest()
+
+	/**
+	 * Whether an endpoint may proxy to a source: both belong to the same
+	 * organisation, or either carries none (an object created before
+	 * multitenancy was configured).
+	 *
+	 * @param ObjectEntity      $endpoint The endpoint being served.
+	 * @param ObjectEntity|null $source   The source it targets.
+	 *
+	 * @return bool False when the source belongs to another organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function sharesOrganisation(ObjectEntity $endpoint, ?ObjectEntity $source): bool {
+		$endpointOrganisation = (string)($endpoint->getOrganisation() ?? '');
+		$sourceOrganisation = (string)($source?->getOrganisation() ?? '');
+		if ($endpointOrganisation === '' || $sourceOrganisation === '') {
+			return true;
+		}
+
+		return $endpointOrganisation === $sourceOrganisation;
+	}//end sharesOrganisation()
 
 	/**
 	 * Check one message against the endpoint's message schema for that direction (REQ-MSV-002).

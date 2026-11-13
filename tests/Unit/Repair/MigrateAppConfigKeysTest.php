@@ -288,4 +288,36 @@ class MigrateAppConfigKeysTest extends TestCase {
 			$infos
 		);
 	}//end testTheSummaryCountsEachOutcome()
+	/**
+	 * The step names what it does.
+	 *
+	 * @return void
+	 */
+	public function testItIsNamed(): void {
+		$step = new MigrateAppConfigKeys($this->createMock(IAppConfig::class), new NullLogger());
+
+		$this->assertSame('Copy Integriq app configuration from the openconnector namespace to integriq', $step->getName());
+	}//end testItIsNamed()
+
+	/**
+	 * Old keys that cannot be listed are logged and the step does nothing,
+	 * rather than aborting the upgrade.
+	 *
+	 * @return void
+	 */
+	public function testUnlistableOldKeysAreLoggedAndNothingIsMigrated(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getKeys')->willThrowException(new \RuntimeException('appconfig cache broken'));
+		$appConfig->expects($this->never())->method('setValueString');
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			'Integriq: could not enumerate openconnector app config keys; skipping the migration',
+			['exception' => 'appconfig cache broken']
+		);
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('info')
+			->with('MigrateAppConfigKeys: no stored openconnector configuration on this install; nothing to do.');
+
+		(new MigrateAppConfigKeys($appConfig, $logger))->run($output);
+	}//end testUnlistableOldKeysAreLoggedAndNothingIsMigrated()
 }//end class

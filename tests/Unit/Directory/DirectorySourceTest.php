@@ -269,4 +269,99 @@ class DirectorySourceTest extends TestCase {
 		$this->assertSame([[], false, []], array_values(array_intersect_key($this->readScimPages(pages: [$page([], 0, 'not json')], configuration: []), ['users' => 1, 'complete' => 1, 'warnings' => 1])));
 		$this->assertSame(false, $this->readScimPages(pages: [['response' => ['statusCode' => 200, 'body' => 42]]], configuration: [])['complete']);
 	}//end testAScimReadPagesAndReportsCompleteness()
+
+	/**
+	 * A source over an object service that answers the given matches and records how it was asked.
+	 *
+	 * @param mixed              $matches The findAll answer.
+	 * @param array<int, mixed>  $calls   Receives the findAll arguments.
+	 *
+	 * @return DirectorySource The source.
+	 */
+	private function sourceFinding(mixed $matches, array &$calls): DirectorySource {
+		$objects = $this->createMock(OrObjectService::class);
+		$objects->method('findAll')->willReturnCallback(
+			function (...$arguments) use ($matches, &$calls): array {
+				$calls[] = $arguments;
+				return $matches;
+			}
+		);
+		$l10n = $this->createMock(IL10N::class);
+
+		return new DirectorySource(
+			orObjectService: $objects,
+			callService: $this->createMock(CallService::class),
+			l10n: $l10n,
+			logger: $this->createMock(LoggerInterface::class)
+		);
+	}//end sourceFinding()
+
+	/**
+	 * A Source row of the given type.
+	 *
+	 * @param string $uuid The uuid.
+	 * @param string $type The source type.
+	 *
+	 * @return ObjectEntity The row.
+	 */
+	private function sourceRow(string $uuid, string $type): ObjectEntity {
+		$row = new ObjectEntity();
+		$row->setUuid($uuid);
+		$row->setObject(['type' => $type]);
+
+		return $row;
+	}//end sourceRow()
+
+	/**
+	 * Connections are looked up as directory Sources, and only directory
+	 * entities are kept even when the register ignores the type filter.
+	 *
+	 * @return void
+	 */
+	public function testFindConnectionsKeepsOnlyDirectorySources(): void {
+		$calls = [];
+		$matches = ['results' => [$this->sourceRow('d1', 'directory'), $this->sourceRow('r1', 'rest'), ['type' => 'directory'], $this->sourceRow('d2', 'directory')]];
+
+		$found = $this->sourceFinding($matches, $calls)->findConnections();
+
+		$this->assertSame(['d1', 'd2'], array_map(static fn (ObjectEntity $row): ?string => $row->getUuid(), $found));
+		$this->assertCount(1, $calls);
+		$this->assertSame(['register' => 'integriq', 'schema' => 'source', 'type' => 'directory'], $calls[0][0]['filters']);
+		$this->assertSame(100, $calls[0][0]['limit']);
+		$this->assertSame([true, true], [$calls[0][1], $calls[0][2]], 'the user lookup keeps the access checks');
+	}//end testFindConnectionsKeepsOnlyDirectorySources()
+
+	/**
+	 * The policy lookup reads every directory Source without the user's access
+	 * checks, and accepts a plain list as well as a results envelope.
+	 *
+	 * @return void
+	 */
+	public function testFindConnectionsForPolicyReadsWithoutAccessChecks(): void {
+		$calls = [];
+
+		$found = $this->sourceFinding([$this->sourceRow('d1', 'directory'), $this->sourceRow('x', '')], $calls)->findConnectionsForPolicy();
+
+		$this->assertSame(['d1'], array_map(static fn (ObjectEntity $row): ?string => $row->getUuid(), $found));
+		$this->assertSame(['register' => 'integriq', 'schema' => 'source', 'type' => 'directory'], $calls[0][0]['filters']);
+		$this->assertSame([false, false], [$calls[0][1], $calls[0][2]]);
+	}//end testFindConnectionsForPolicyReadsWithoutAccessChecks()
+
+	/**
+	 * A directory that keeps answering stops at the page cap, and that read is incomplete.
+	 *
+	 * @return void
+	 */
+	public function testAReadThatHitsThePageCapIsIncomplete(): void {
+		$pages = [];
+		for ($n = 0; $n < 501; $n++) {
+			$pages[] = ['response' => ['statusCode' => 200, 'body' => json_encode(['totalResults' => 100000, 'Resources' => [['userName' => 'user'.$n]]])]];
+		}
+
+		$read = $this->readScimPages(pages: $pages, configuration: ['pageSize' => 1]);
+
+		$this->assertFalse($read['complete']);
+		$this->assertCount(500, $read['queries']);
+		$this->assertSame(['startIndex' => 500, 'count' => 1], $read['queries'][499][2]['query']);
+	}//end testAReadThatHitsThePageCapIsIncomplete()
 }//end class

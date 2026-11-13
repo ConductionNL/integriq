@@ -179,7 +179,7 @@ class TablesBridgeController extends Controller {
 	}//end columns()
 
 	/**
-	 * Resolve a Source by id, admin-context (the acting user need not have
+	 * Resolve a Source of the caller's organisation by id (the acting user need not have
 	 * direct OR access to the admin-only `source` schema — the engine reads
 	 * it on their behalf, mirroring `SynchronizationService::findSourceObject()`).
 	 *
@@ -195,8 +195,7 @@ class TablesBridgeController extends Controller {
 				id: $sourceId,
 				register: 'integriq',
 				schema: 'source',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $exception) {
 			throw new TablesNotFoundException(message: 'Source not found: ' . $sourceId);

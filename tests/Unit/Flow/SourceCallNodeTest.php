@@ -1499,4 +1499,99 @@ class SourceCallNodeTest extends TestCase {
 		$this->assertSame([$error['step'], 'demo-echo-api', '/get', 'GET'], array_slice(array_values($logged[1]), 1));
 
 	}//end testContinueKeepsBinaryAndLogsTheWholeErrorState()
+
+	/**
+	 * A source lookup that fails raises with the reason and makes no request.
+	 *
+	 * @return void
+	 */
+	public function testASourceLookupThatFailsRaisesAndMakesNoRequest(): void {
+		$this->givenOwner();
+		$this->objectService->method('find')->willThrowException(new \RuntimeException('database unavailable'));
+		$this->callService->expects($this->never())->method('callAsync');
+
+		try {
+			$this->node->execute(new FlowNodeCall(
+				[['json' => []]],
+				['source' => 'demo-echo-api', 'endpoint' => '/get', 'method' => 'GET'],
+				$this->context()
+			));
+			$this->fail('Expected the unresolvable source to raise.');
+		} catch (FlowNodeException $exception) {
+			$this->assertSame(
+				'The source "demo-echo-api" named by this step could not be resolved: database unavailable. '
+				. 'No source is created and no request is made.',
+				$exception->getMessage()
+			);
+			$this->assertInstanceOf(\RuntimeException::class, $exception->getPrevious());
+		}
+
+	}//end testASourceLookupThatFailsRaisesAndMakesNoRequest()
+
+	/**
+	 * A logged call links to its source and its call log, under the app's hash router.
+	 *
+	 * @return void
+	 */
+	public function testALoggedCallLinksToItsSourceAndCallLog(): void {
+		$node = $this->nodeWithAppRoot(root: '/index.php/apps/integriq/');
+
+		$actions = $node->logActions([
+			'output' => [
+				'items' => [
+					['json' => ['sourceId' => ' src 1/a ', 'callLog' => 'log-9']],
+					['json' => ['sourceId' => 'src-2', 'callLog' => 'log-10']],
+				],
+			],
+		]);
+
+		$this->assertSame(
+			[
+				['label' => 'Open the source', 'href' => '/index.php/apps/integriq#/sources/src%201%2Fa'],
+				['label' => 'Open the call log', 'href' => '/index.php/apps/integriq#/sources/logs?call=log-9'],
+			],
+			$actions
+		);
+
+	}//end testALoggedCallLinksToItsSourceAndCallLog()
+
+	/**
+	 * An entry without either id offers no links at all.
+	 *
+	 * @return void
+	 */
+	public function testAnEntryWithoutIdsOffersNoLinks(): void {
+		$node = $this->nodeWithAppRoot(root: '/index.php/apps/integriq/');
+
+		$this->assertSame([], $node->logActions(['output' => ['items' => [['json' => ['sourceId' => '  ']]]]]));
+		$this->assertSame([], $node->logActions([]));
+
+	}//end testAnEntryWithoutIdsOffersNoLinks()
+
+	/**
+	 * A node whose URL generator answers the app root for the dashboard route.
+	 *
+	 * @param string $root The app root.
+	 *
+	 * @return SourceCallNode
+	 */
+	private function nodeWithAppRoot(string $root): SourceCallNode {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('linkToRoute')->with('integriq.ui.dashboard', ['path' => ''])->willReturn($root);
+
+		return new SourceCallNode(
+			callService: $this->callService,
+			concurrency: new FlowConcurrency(),
+			objectService: $this->objectService,
+			flowOwner: new FlowOwner(userManager: $this->userManager, userSession: $this->userSession, l10n: $l10n),
+			l10n: $l10n,
+			urlGenerator: $urlGenerator,
+			logger: $this->logger,
+			decoder: new ResponseDecoder()
+		);
+
+	}//end nodeWithAppRoot()
+
 }//end class
