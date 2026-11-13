@@ -7314,7 +7314,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		// findOrCreateSourceByLocation() never persisted) is used directly —
 		// avoiding a findSource(id: ...) lookup that would throw
 		// DoesNotExistException for a source that was never saved (REQ-012).
-		$fetch->source = ($resolvedSource ?? $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null))->jsonSerialize());
+		if ($resolvedSource === null) {
+			$resolvedSource = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['sourceId'] ?? null))->jsonSerialize();
+		}
+
+		$fetch->source = $resolvedSource;
 
 		$this->checkRateLimit(source: $fetch->source);
 
