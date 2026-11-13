@@ -3547,7 +3547,13 @@
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Only an administrator can see the sessions and devices of a source.": "Only an administrator can see the sessions and devices of a source.",
+        "This source is not connected to a workspace manager.": "This source is not connected to a workspace manager.",
+        "This source has no credential yet, so nothing was called. Add a credential to see what it reports.": "This source has no credential yet, so nothing was called. Add a credential to see what it reports.",
+        "Microsoft Intune": "Microsoft Intune",
+        "Jamf Pro": "Jamf Pro",
+        "Citrix DaaS": "Citrix DaaS"
     },
     "plurals": {}
 }

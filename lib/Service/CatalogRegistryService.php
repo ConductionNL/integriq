@@ -291,6 +291,9 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 */
 	private const PROVIDER_CATEGORY_OVERRIDES = [
 		'azure-virtual-desktop' => 'Endpoint / Workspace',
+		'intune' => 'Endpoint / Workspace',
+		'jamf-pro' => 'Endpoint / Workspace',
+		'citrix-daas' => 'Endpoint / Workspace',
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',
