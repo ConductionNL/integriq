@@ -479,7 +479,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -529,6 +529,54 @@
             "type": "object",
             "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "credentials": {
+            "type": "array",
+            "title": "Credentials",
+            "description": "The consumer's credentials, several at once so a key can be rotated without an outage. Each entry: `id`, `label`, `type` (`apiKey` or `clientCertificate`), `createdAt`, optional `expiresAt`, `lastUsedAt`; an API key adds `keyPrefix` (its first six characters) and `keyHash` (an HMAC-SHA256 under an instance pepper, never the key). Generated and revoked through /api/consumers/{id}/credentials; the key is returned only by the call that creates it. WRITE-ONLY on the object API (register.d/99-consumer-secrets-writeonly.json): the credentials route lists entries without their hash.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "apiKey",
+                    "clientCertificate"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expiresAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "lastUsedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "keyPrefix": {
+                  "type": "string"
+                },
+                "keyHash": {
+                  "type": "string"
+                }
+              }
+            },
+            "default": []
           },
           "created": {
             "type": "string",

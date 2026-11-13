@@ -98,11 +98,13 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @param AuthorizationService $authorization OpenRegister's credential checks.
 	 * @param ObjectService        $objectService OpenRegister's object service, read by the consumer source.
 	 * @param IUserSession         $userSession   Nextcloud user session, cleared when the lifetime cap refuses.
+	 * @param ConsumerCredentials|null $credentials The consumers' credentials list rules.
 	 */
 	public function __construct(
 		private readonly AuthorizationService $authorization,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
+		private readonly ?ConsumerCredentials $credentials = null,
 	) {
 	}//end __construct()
 
@@ -360,7 +362,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	private function source(): ConsumerSource {
 		$this->assertEntryPoints();
 		if ($this->consumerSource === null) {
-			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService);
+			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService, credentials: $this->credentials);
 		}
 
 		return $this->consumerSource;

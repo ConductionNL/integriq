@@ -20,10 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Consumer;
 
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\ObjectService;
+use Throwable;
 
 /**
  * Reads integriq's `consumer` schema objects for OpenRegister's AuthorizationService.
@@ -51,10 +53,12 @@ class IntegriqConsumerSource implements ConsumerSource {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister's object service.
+	 * @param ObjectService            $objectService OpenRegister's object service.
+	 * @param ConsumerCredentials|null $credentials   The credentials list rules; null checks the single stored key only.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
+		private readonly ?ConsumerCredentials $credentials = null,
 	) {
 	}//end __construct()
 
@@ -93,14 +97,78 @@ class IntegriqConsumerSource implements ConsumerSource {
 			return null;
 		}
 
+		$now = new DateTimeImmutable();
 		foreach ($this->consumers(filters: []) as $consumer) {
-			if (self::holdsApiKey(data: $consumer->getObject(), apiKey: $apiKey) === true) {
+			$data = $consumer->getObject();
+			if ($this->credentials !== null) {
+				$index = $this->credentials->matchingApiKey(credentials: ($data[ConsumerCredentials::FIELD] ?? null), key: $apiKey, now: $now);
+				if ($index !== null) {
+					$this->recordUse(consumer: $consumer, index: $index, now: $now);
+					return $this->resolve(consumer: $consumer);
+				}
+			}
+
+			if (self::holdsApiKey(data: $data, apiKey: $apiKey) === true) {
 				return $this->resolve(consumer: $consumer);
 			}
 		}
 
 		return null;
 	}//end findByApiKey()
+
+	/**
+	 * Write `lastUsedAt` on the credential a call used, at most once a minute.
+	 *
+	 * A failed write never refuses the call: the key matched, and when it was
+	 * last used is bookkeeping for the administrator.
+	 *
+	 * @param ObjectEntity      $consumer The consumer the key belongs to.
+	 * @param int               $index    The credential's index in the list.
+	 * @param DateTimeImmutable $now      The moment of the call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-key-can-be-replaced-without-downtime-req-cred-003
+	 */
+	private function recordUse(ObjectEntity $consumer, int $index, DateTimeImmutable $now): void {
+		$credential = ($consumer->getObject()[ConsumerCredentials::FIELD][$index] ?? null);
+		if ($this->credentials === null || is_array($credential) === false) {
+			return;
+		}
+
+		$touched = $this->credentials->touched(credential: $credential, now: $now);
+		if ($touched === null) {
+			return;
+		}
+
+		$uuid = self::uuidOf(consumer: $consumer, data: $consumer->getObject());
+		if (is_string($uuid) === false || $uuid === '') {
+			return;
+		}
+
+		try {
+			// Write from the raw object: the list is saved whole, so a rendered
+			// read without the hashes would drop every other key.
+			$raw = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'consumer', _rbac: false, _multitenancy: false, _render: false);
+			$data = $raw?->getObject();
+			if (is_array($data) === false || (($data[ConsumerCredentials::FIELD][$index]['id'] ?? null) !== ($credential['id'] ?? null))) {
+				return;
+			}
+
+			$data[ConsumerCredentials::FIELD][$index]['lastUsedAt'] = $touched['lastUsedAt'];
+			$this->objectService->saveObject(
+				object: $data,
+				register: 'integriq',
+				schema: 'consumer',
+				uuid: $uuid,
+				_rbac: false,
+				_multitenancy: false,
+				silent: true
+			);
+		} catch (Throwable) {
+			return;
+		}
+	}//end recordUse()
 
 	/**
 	 * Whether an API-key consumer stores exactly this key (compared in constant time).

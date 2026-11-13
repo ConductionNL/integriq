@@ -9,7 +9,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **files**: `lib/Settings/integriq_register.json`, `lib/Settings/register.d/99-consumer-secrets-writeonly.json`, `lib/Repair/HashConsumerApiKeys.php`, `lib/Service/AuthorizationService.php`
 - **acceptance_criteria**:
   - GIVEN a consumer with a plaintext apiKey WHEN the repair step runs THEN it has one hashed credential and no plaintext key, and its calls still pass
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit on the repair step including a failure halfway; Newman call with the old key after repair)
 
 ### Task 2: Generate, reveal once, revoke
@@ -26,7 +26,7 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **acceptance_criteria**:
   - GIVEN a consumer with two keys WHEN the partner switches to the new key THEN both pass until the old is revoked, and the list shows when each was last used
 - [ ] Implement
-- [ ] Test (PHPUnit on lookup and throttled lastUsedAt writes)
+- [x] Test (PHPUnit on lookup and throttled lastUsedAt writes)
 
 ### Task 4: Client certificate credentials and the mtls type
 - **spec_ref**: `openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004`

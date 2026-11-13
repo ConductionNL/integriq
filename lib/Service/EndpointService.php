@@ -3577,14 +3577,84 @@ class EndpointService implements EndpointServiceInterface {
 			$normalisedHeaders[strtolower((string)$key)] = $value;
 		}
 
-		// Default to the Authorization header (lowercase-normalised lookup).
-		$header = ($normalisedHeaders['authorization'] ?? '');
-
 		if (isset($configuration['authentication']) === false) {
 			return $data;
 		}
 
-		$authenticationType = (string)($configuration['authentication']['type'] ?? '');
+		$anyOf = ($configuration['authentication']['anyOf'] ?? null);
+		if (is_array($anyOf) === true && $anyOf !== []) {
+			return $this->authenticateAnyOf(methods: $anyOf, normalisedHeaders: $normalisedHeaders, data: $data);
+		}
+
+		$refusal = $this->authenticateOne(authentication: $configuration['authentication'], normalisedHeaders: $normalisedHeaders);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $data;
+	}//end processAuthenticationRule()
+
+	/**
+	 * Pass when any one of several authentication methods passes (`anyOf`).
+	 *
+	 * The methods are tried in order and the first success passes the call.
+	 * When none passes, the 401 gives each method's reason, keyed by its
+	 * position and type.
+	 *
+	 * @param array $methods           The `anyOf` list of method configurations.
+	 * @param array $normalisedHeaders The request headers, keys lowercased.
+	 * @param array $data              The request data.
+	 *
+	 * @return array|JSONResponse The unchanged data, or the 401.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+	 */
+	private function authenticateAnyOf(array $methods, array $normalisedHeaders, array $data): array|JSONResponse {
+		$reasons = [];
+		foreach (array_values($methods) as $position => $method) {
+			if (is_array($method) === false || isset($method['anyOf']) === true) {
+				$reasons[] = ['method' => $position . ':invalid', 'error' => 'The authentication method is not supported'];
+				continue;
+			}
+
+			$refusal = $this->authenticateOne(authentication: $method, normalisedHeaders: $normalisedHeaders);
+			if ($refusal === null) {
+				return $data;
+			}
+
+			$body = $refusal->getData();
+			if (is_array($body) === false) {
+				$body = [];
+			}
+
+			$reasons[] = [
+				'method'  => $position . ':' . (string)($method['type'] ?? ''),
+				'error'   => ($body['error'] ?? ''),
+				'details' => ($body['details'] ?? null),
+			];
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'unauthorized', 'details' => ['anyOf' => $reasons]],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end authenticateAnyOf()
+
+	/**
+	 * Check one authentication method configuration.
+	 *
+	 * @param array $authentication    The method configuration (`type`, `header`, `keys`, `users`, `groups`).
+	 * @param array $normalisedHeaders The request headers, keys lowercased.
+	 *
+	 * @return JSONResponse|null Null when the call passes, else the refusal.
+	 *
+	 * @spec openspec/specs/rule-pipeline/spec.md
+	 */
+	private function authenticateOne(array $authentication, array $normalisedHeaders): ?JSONResponse {
+		// Default to the Authorization header (lowercase-normalised lookup).
+		$header = ($normalisedHeaders['authorization'] ?? '');
+
+		$authenticationType = (string)($authentication['type'] ?? '');
 
 		// The `nc-session` type authorises the CURRENT Nextcloud session user
 		// (ocon#1068). It is dispatched BEFORE the header-presence guard below
@@ -3599,20 +3669,20 @@ class EndpointService implements EndpointServiceInterface {
 		if ($authenticationType === 'nc-session') {
 			try {
 				$this->authorizationService->authorizeNcSession(
-					users: ($configuration['authentication']['users'] ?? []),
-					groups: ($configuration['authentication']['groups'] ?? [])
+					users: ($authentication['users'] ?? []),
+					groups: ($authentication['groups'] ?? [])
 				);
 			} catch (AuthenticationException $exception) {
 				return $this->unauthenticated(exception: $exception);
 			}
 
-			return $data;
+			return null;
 		}//end if
 
-		if (isset($configuration['authentication']['header']) === true) {
+		if (isset($authentication['header']) === true) {
 			// Convert configured header name to lowercase + underscore variant
 			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$configuration['authentication']['header']);
+			$lookupKey = strtolower((string)$authentication['header']);
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
@@ -3626,7 +3696,7 @@ class EndpointService implements EndpointServiceInterface {
 		switch ($authenticationType) {
 			case 'apikey':
 				try {
-					$this->authorizationService->authorizeApiKey(header: $header, keys: $configuration['authentication']['keys']);
+					$this->authorizationService->authorizeApiKey(header: $header, keys: $authentication['keys']);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
 				}
@@ -3643,8 +3713,8 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeBasic(
 						$header,
-						$configuration['authentication']['users'],
-						$configuration['authentication']['groups']
+						$authentication['users'],
+						$authentication['groups']
 					);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
@@ -3654,8 +3724,8 @@ class EndpointService implements EndpointServiceInterface {
 				try {
 					$this->authorizationService->authorizeOAuth(
 						$header,
-						$configuration['authentication']['users'],
-						$configuration['authentication']['groups']
+						$authentication['users'],
+						$authentication['groups']
 					);
 				} catch (AuthenticationException $exception) {
 					return $this->unauthenticated(exception: $exception);
@@ -3665,8 +3735,8 @@ class EndpointService implements EndpointServiceInterface {
 				return new JSONResponse(data: ['error' => 'The authentication method is not supported'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
 		}//end switch
 
-		return $data;
-	}//end processAuthenticationRule()
+		return null;
+	}//end authenticateOne()
 
 	/**
 	 * The 401 answer to a refused credential, with the refusal's message and details.
