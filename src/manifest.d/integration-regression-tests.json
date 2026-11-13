@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 manifest fragment (automation-integration-regression-tests). An index page over integration_test_case, where an integration engineer adds, edits and deletes cases, and a logs page over integration_test_run with the counts each run stored. The run itself starts from POST /api/regression-suites/{subjectType}/{subjectId}/run; the buttons on the mapping and synchronization detail pages are tasks 4 and 5 of the change.",
+  "$comment": "ADR-037 manifest fragment (automation-integration-regression-tests). An index page over integration_test_case, where an integration engineer adds, edits and deletes cases, and a logs page over integration_test_run with the counts each run stored. Test cases are definitions, so they sit under Automation; a run is runtime, so Test runs sits under Operations (src/menu-layout.json). The run itself starts from POST /api/regression-suites/{subjectType}/{subjectId}/run; the buttons on the mapping and synchronization detail pages are tasks 4 and 5 of the change.",
   "pages": [
     {
       "id": "TestCases",
@@ -10,7 +10,12 @@
       "config": {
         "register": "integriq",
         "schema": "integration_test_case",
-        "columns": ["name", "subjectType", "subjectId", "description"],
+        "columns": [
+          "name",
+          "subjectType",
+          "subjectId",
+          "description"
+        ],
         "sidebar": {
           "enabled": true,
           "showMetadata": true
@@ -88,13 +93,18 @@
           "icon": "CheckCircleOutline",
           "route": "TestCases",
           "order": 50
-        },
+        }
+      ]
+    },
+    {
+      "id": "OperationsGroup",
+      "children": [
         {
           "id": "TestRuns",
           "label": "Test runs",
           "icon": "History",
           "route": "TestRuns",
-          "order": 60
+          "order": 50
         }
       ]
     }
