@@ -186,7 +186,7 @@ jobs:
       # min-version="32" instead of by a hand-written array.
       #
       # THE stable35 LEG DEPENDS ON openregister. `additional-apps` below installs
-      # openregister from `development`, and the shared workflow aborts a job whose
+      # openregister from `stable2.1` (its release line; bump it with that line), and the shared workflow aborts a job whose
       # `occ app:enable` fails for an additional app. openregister#3777 (max-version
       # 34 -> 35) is merged, so that leg can enable it; if openregister's declared
       # ceiling ever lags this one again, this leg is where it will show.
@@ -352,7 +352,7 @@ jobs:
       # #132 sets PHP_CLI_SERVER_WORKERS=8 on this job's server, which is what
       # makes the self-referential fixtures serveable. Merged 2026-08-03.
       newman-seed-command: 'SEED_SCOPE=register bash apps/integriq/tests/e2e/ci-seed.sh'
-      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"stable2.1"}]'
 
       # ── E2E browser tests ────────────────────────────────────────────────
       # `playwright-test-path` does double duty in the shared workflow:
