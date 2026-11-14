@@ -119,6 +119,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'servicenow' => 'Service management',
 		'glpi' => 'Service management',
 		'cmcom-sms' => 'Messaging',
+		'smtp-mail' => 'Messaging',
 		'messagebird-sms' => 'Messaging',
 		'twilio-sms' => 'Messaging',
 		'whatsapp-bsp' => 'Messaging',
