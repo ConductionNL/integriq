@@ -10,8 +10,9 @@ Kind: code. Matrix rows `integriq:plt-cli` and `integriq:plt-git`.
   - GIVEN a failed test WHEN the command ends THEN it exits with 1
   - GIVEN an unknown object WHEN the command runs THEN it exits with 2
   - GIVEN `--test` on a synchronization WHEN it runs THEN no object is written
-- [ ] Implement
-- [ ] Test (PHPUnit per command with Symfony's CommandTester and mocked services)
+- [x] Implement
+- [x] Test (PHPUnit per command with Symfony's CommandTester and mocked services)
+      `lib/Command/Integration/`: the six commands over a shared `IntegrationCommand` base (`--output=plain|json`, exit 0, 1 failed, 2 not found) and `IntegrationObjectLookup` (uuid first, else the one object with that slug; a slug two objects share resolves to nothing rather than to a guess). Each calls the screen action's service: `SourceTestServiceInterface::run()`, `SynchronizationServiceInterface::synchronize()` with `isTest` for `--test`, `JobServiceInterface::executeJob()`. The deletion-ratio override is not offered on the command line. Tests: `tests/Unit/Command/Integration/` (15).
 
 ### Task 2: Directory codec and export command
 - **spec_ref**: openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-configuration-exports-to-a-directory-of-stable-files-req-iac-002
