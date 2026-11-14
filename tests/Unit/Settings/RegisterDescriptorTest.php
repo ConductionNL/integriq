@@ -132,6 +132,7 @@ class RegisterDescriptorTest extends TestCase {
 		// RIS connector sync record — added by ibabs-notubiz-connector spec.
 		'RISSyncRecord' => 'ris_sync_record',
 		// Peppol Access Point connector — added by peppol-access-point-connector spec.
+		'PeppolInboundDocument' => 'peppol_inbound_document',
 		'PeppolTransmission' => 'peppol_transmission',
 		// PSD2 AIS bank-feed connector — added by psd2-ais-bank-feed-connector spec.
 		// Was declared in components.schemas but missing from the register's
