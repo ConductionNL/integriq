@@ -11,7 +11,7 @@ Kind: code. Size M. Row `integriq:con-endpoint-workspace`.
 ### Task 2: Sessions and devices tab on a source
 - **spec_ref**: `openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008`
 - **files**: `lib/Controller/EndpointWorkspaceController.php`, `appinfo/routes.php`, `src/manifest.json` (source detail tab), `l10n/nl.json`, `l10n/en.json`
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit for the route; Playwright for the tab)
 
 ## Verification

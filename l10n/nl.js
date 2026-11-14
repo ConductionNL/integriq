@@ -2271,7 +2271,16 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Only an administrator can see the sessions and devices of a source.": "Alleen een beheerder kan de sessies en apparaten van een bron zien.",
+        "This source is not connected to a workspace manager.": "Deze bron is niet gekoppeld aan een werkplekbeheerder.",
+        "This source has no credential yet, so nothing was called. Add a credential to see what it reports.": "Deze bron heeft nog geen inloggegeven, dus er is niets opgevraagd. Voeg een inloggegeven toe om te zien wat de bron meldt.",
+        "Devices": "Apparaten",
+        "Sessions": "Sessies",
+        "No user found": "Geen gebruiker gevonden",
+        "No devices listed. A source without a credential calls nothing: add a credential to see what it reports.": "Geen apparaten gevonden. Een bron zonder inloggegevens roept niets aan: voeg inloggegevens toe om te zien wat de bron meldt.",
+        "No sessions listed. A source without a credential calls nothing: add a credential to see what it reports.": "Geen sessies gevonden. Een bron zonder inloggegevens roept niets aan: voeg inloggegevens toe om te zien wat de bron meldt.",
+        "The workspace manager could not be read.": "De werkplekbeheerder kon niet worden uitgelezen."
     },
     "nplurals=2; plural=(n != 1);"
 )
