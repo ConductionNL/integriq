@@ -129,17 +129,7 @@ class NotifyNlEmailService {
 	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
 	 */
 	public function sendEmail(string $emailAddress, string $templateId, array $personalisation, array $options = []): array {
-		$address = trim($emailAddress);
-		if (self::isEmailAddress(address: $address) === false) {
-			throw new SmsProviderException(
-				message: $this->l->t('"%s" is not an e-mail address.', [$address]),
-				errorCode: self::ERROR_INVALID_ADDRESS
-			);
-		}
-
-		if (trim($templateId) === '') {
-			throw new SmsProviderException(message: $this->l->t('A NotifyNL e-mail needs a template.'), errorCode: self::ERROR_MISSING_TEMPLATE);
-		}
+		$address = $this->validatedAddress(emailAddress: $emailAddress, templateId: $templateId);
 
 		$configuration = $this->sourceConfiguration(sourceSlug: self::optionalString(options: $options, key: 'sourceSlug'));
 
@@ -150,16 +140,11 @@ class NotifyNlEmailService {
 			'sourceApp' => (self::optionalString(options: $options, key: 'sourceApp') ?? 'integriq'),
 			'correlationId' => $objectUri,
 		];
-		$decision = $this->gate->check(
-			channel: self::OPT_OUT_CHANNEL,
-			category: (self::optionalString(options: $options, key: 'category') ?? 'service'),
+		$decision = $this->askOptOutList(
 			address: $address,
-			options: $gateOptions
+			category: (self::optionalString(options: $options, key: 'category') ?? 'service'),
+			gateOptions: $gateOptions
 		);
-		if ($decision['send'] !== true) {
-			$this->gate->recordRefusal(channel: self::LOG_CHANNEL, subjectRef: $objectUri, decision: $decision, options: $gateOptions);
-			throw new SmsProviderException(message: (string)$decision['reason'], errorCode: (string)$decision['code']);
-		}
 
 		$composed = $this->gate->compose(body: '', decision: $decision, channel: self::OPT_OUT_CHANNEL, caseRef: $caseRef);
 		if ((string)($composed['unsubscribeLink'] ?? '') !== '') {
@@ -194,6 +179,67 @@ class NotifyNlEmailService {
 
 		return ['id' => $row, 'reference' => $result->providerMessageId, 'status' => 'sent'];
 	}//end sendEmail()
+
+	/**
+	 * The trimmed recipient address, once the address and the template are both usable.
+	 *
+	 * @param string $emailAddress The recipient address as given.
+	 * @param string $templateId   The NotifyNL template id or name.
+	 *
+	 * @return string The trimmed address.
+	 *
+	 * @throws SmsProviderException With code `invalid-address` or `missing-template`.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 */
+	private function validatedAddress(string $emailAddress, string $templateId): string {
+		$address = trim($emailAddress);
+		if (self::isEmailAddress(address: $address) === false) {
+			throw new SmsProviderException(
+				message: $this->l->t('"%s" is not an e-mail address.', [$address]),
+				errorCode: self::ERROR_INVALID_ADDRESS
+			);
+		}
+
+		if (trim($templateId) === '') {
+			throw new SmsProviderException(message: $this->l->t('A NotifyNL e-mail needs a template.'), errorCode: self::ERROR_MISSING_TEMPLATE);
+		}
+
+		return $address;
+	}//end validatedAddress()
+
+	/**
+	 * Ask the opt-out list whether the e-mail may go out, recording and refusing it when not.
+	 *
+	 * @param string              $address     The recipient address.
+	 * @param string              $category    The message category (`service` by default).
+	 * @param array<string,mixed> $gateOptions The caseRef, sourceApp and correlationId the gate records.
+	 *
+	 * @return array The gate's decision to send.
+	 *
+	 * @throws SmsProviderException With the opt-out decision code when the list refuses.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 */
+	private function askOptOutList(string $address, string $category, array $gateOptions): array {
+		$decision = $this->gate->check(
+			channel: self::OPT_OUT_CHANNEL,
+			category: $category,
+			address: $address,
+			options: $gateOptions
+		);
+		if ($decision['send'] !== true) {
+			$this->gate->recordRefusal(
+				channel: self::LOG_CHANNEL,
+				subjectRef: (string)$gateOptions['correlationId'],
+				decision: $decision,
+				options: $gateOptions
+			);
+			throw new SmsProviderException(message: (string)$decision['reason'], errorCode: (string)$decision['code']);
+		}
+
+		return $decision;
+	}//end askOptOutList()
 
 	/**
 	 * Apply a NotifyNL delivery callback to the e-mail it reports on.

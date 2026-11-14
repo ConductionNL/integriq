@@ -182,21 +182,7 @@ class CmComSmsProvider extends BrokeredSmsProvider {
 	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function readStatusCallback(array $sourceConfiguration, SmsStatusCallback $callback): DeliveryResult {
-		$report = $callback->params;
-		$nested = ($report['messages']['msg'] ?? null);
-		if (is_array($nested) === true) {
-			if (array_is_list($nested) === true) {
-				$nested = ($nested[0] ?? []);
-			}
-
-			$report = (array)$nested;
-		}
-
-		$status = ($report['status'] ?? null);
-		if (is_array($status) === true) {
-			$report['statuscode'] = ($status['code'] ?? null);
-			$report['errordescription'] = ($status['errorDescription'] ?? ($report['errordescription'] ?? null));
-		}
+		$report = self::flatReport(report: $callback->params);
 
 		$reference = self::callbackField(params: $report, names: ['reference']);
 		if ($reference === '') {
@@ -212,4 +198,36 @@ class CmComSmsProvider extends BrokeredSmsProvider {
 
 		return new DeliveryResult(providerMessageId: $reference, status: (self::STATUS_MAP[$code] ?? 'sent'), detail: $detail);
 	}//end readStatusCallback()
+
+	/**
+	 * A CM.com status report in its flat form.
+	 *
+	 * The JSON report nests the message under `messages.msg` (one object or a
+	 * list, of which the first counts) and gives `status` as an object with a
+	 * `code` and an `errorDescription`; both are lifted to the flat fields.
+	 *
+	 * @param array $report The report as it arrived.
+	 *
+	 * @return array The report with `reference`, `statuscode`/`status` and `errordescription` at the top.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	private static function flatReport(array $report): array {
+		$nested = ($report['messages']['msg'] ?? null);
+		if (is_array($nested) === true) {
+			if (array_is_list($nested) === true) {
+				$nested = ($nested[0] ?? []);
+			}
+
+			$report = (array)$nested;
+		}
+
+		$status = ($report['status'] ?? null);
+		if (is_array($status) === true) {
+			$report['statuscode'] = ($status['code'] ?? null);
+			$report['errordescription'] = ($status['errorDescription'] ?? ($report['errordescription'] ?? null));
+		}
+
+		return $report;
+	}//end flatReport()
 }//end class

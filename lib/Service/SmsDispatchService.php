@@ -176,41 +176,19 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		$sourceData = $source->getObject();
 		$configuration = self::configurationOf(source: $source);
 
-		$callingCode = (string)($configuration['defaultCallingCode'] ?? PhoneNumberValidator::DEFAULT_CALLING_CODE);
-		$e164 = PhoneNumberValidator::toE164(rawNumber: $to, callingCode: $callingCode);
-		if ($e164 === null) {
-			throw new SmsProviderException(
-				message: $this->l->t('Invalid phone number') . ': "' . $to . '" could not be normalised to E.164.'
-			);
-		}
+		$e164 = $this->normaliseRecipient(to: $to, configuration: $configuration);
 
 		$caseRef = (string)($options['caseRef'] ?? '');
 		$gateOptions = ['caseRef' => $caseRef, 'sourceApp' => ($sourceApp ?? 'integriq'), 'correlationId' => ($objectUri ?? '')];
-		$decision = $this->gate->check(
-			channel: 'sms',
-			category: (string)($options['category'] ?? 'service'),
+		$decision = $this->askOptOutList(
 			address: $e164,
-			options: $gateOptions
+			category: (string)($options['category'] ?? 'service'),
+			gateOptions: $gateOptions
 		);
-		if ($decision['send'] !== true) {
-			$this->gate->recordRefusal(channel: 'sms', subjectRef: ($objectUri ?? ''), decision: $decision, options: $gateOptions);
-			throw new SmsProviderException(message: (string)$decision['reason'], errorCode: (string)$decision['code']);
-		}
 
 		$composed = $this->gate->compose(body: $body, decision: $decision, channel: 'sms', caseRef: $caseRef);
 		$body = $composed['body'];
-		$smsText = (string)($decision['unsubscribe']['smsText'] ?? '');
-		if ($smsText !== '') {
-			$personalisation = ($options['personalisation'] ?? []);
-			if (is_array($personalisation) === false) {
-				$personalisation = [];
-			}
-
-			// A NotifyNL template renders this as ((unsubscribe)); the body above
-			// carries it for a provider that sends the body as is.
-			$personalisation['unsubscribe'] = $smsText;
-			$options['personalisation'] = $personalisation;
-		}
+		$options = self::withUnsubscribeText(options: $options, decision: $decision);
 
 		unset($options['category'], $options['caseRef']);
 
@@ -218,7 +196,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 		$logRow = $this->gate->open(
 			channel: 'sms',
-			subjectRef: ($objectUri ?? ''),
+			subjectRef: $gateOptions['correlationId'],
 			subject: '',
 			body: $body,
 			address: $e164,
@@ -226,21 +204,15 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 			decision: $decision
 		);
 
-		$message = $this->objectService->saveObject(
-			object: [
+		$message = $this->queueMessage(
+			record: [
 				'sourceApp' => ($sourceApp ?? ''),
-				'objectUri' => ($objectUri ?? ''),
+				'objectUri' => $gateOptions['correlationId'],
 				'recipientMsisdn' => $e164,
 				'templateId' => (string)($options['templateId'] ?? ''),
 				'provider' => $provider->getProviderId(),
 				'sourceSlug' => (string)($sourceData['slug'] ?? ($sourceSlug ?? '')),
-				'providerMessageId' => null,
-				'status' => 'queued',
-				'detail' => $this->l->t('Message queued'),
-				'attempts' => [],
-			],
-			register: self::REGISTER,
-			schema: self::SCHEMA_MESSAGE
+			]
 		);
 
 		$sent = $this->attemptSend(
@@ -249,16 +221,141 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 			configuration: $configuration,
 			send: ['to' => $e164, 'body' => $body, 'options' => $options]
 		);
-		$sentData = $sent->getObject();
-		if ((string)($sentData['status'] ?? '') === 'failed') {
-			$this->gate->failed(uuid: $logRow, address: $e164, step: OutboundSendGateInterface::STEP_SEND, reason: (string)($sentData['detail'] ?? ''));
-			return $sent;
-		}
-
-		$this->gate->handedOver(uuid: $logRow, address: $e164, reference: (string)($sentData['providerMessageId'] ?? ''));
+		$this->settleLogRow(sent: $sent, logRow: $logRow, address: $e164);
 
 		return $sent;
 	}//end sendMessage()
+
+	/**
+	 * Ask the opt-out list whether the send may go out, recording and refusing it when not.
+	 *
+	 * @param string $address The E.164 recipient.
+	 * @param string $category The message category (`service` by default).
+	 * @param array $gateOptions The caseRef, sourceApp and correlationId the gate records.
+	 *
+	 * @return array The gate's decision to send.
+	 *
+	 * @throws SmsProviderException With the gate's code (`opted-out`, `no-consent` or
+	 *                              `authority-unavailable`) when the send is refused.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	private function askOptOutList(string $address, string $category, array $gateOptions): array {
+		$decision = $this->gate->check(
+			channel: 'sms',
+			category: $category,
+			address: $address,
+			options: $gateOptions
+		);
+		if ($decision['send'] !== true) {
+			$this->gate->recordRefusal(channel: 'sms', subjectRef: (string)$gateOptions['correlationId'], decision: $decision, options: $gateOptions);
+			throw new SmsProviderException(message: (string)$decision['reason'], errorCode: (string)$decision['code']);
+		}
+
+		return $decision;
+	}//end askOptOutList()
+
+	/**
+	 * The recipient in E.164 form, using the source's default calling code.
+	 *
+	 * @param string $to The recipient as the caller gave it.
+	 * @param array $configuration The sending source's `configuration` object.
+	 *
+	 * @return string The E.164 recipient.
+	 *
+	 * @throws SmsProviderException When the number cannot be normalised to E.164.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 */
+	private function normaliseRecipient(string $to, array $configuration): string {
+		$callingCode = (string)($configuration['defaultCallingCode'] ?? PhoneNumberValidator::DEFAULT_CALLING_CODE);
+		$e164 = PhoneNumberValidator::toE164(rawNumber: $to, callingCode: $callingCode);
+		if ($e164 === null) {
+			throw new SmsProviderException(
+				message: $this->l->t('Invalid phone number') . ': "' . $to . '" could not be normalised to E.164.'
+			);
+		}
+
+		return $e164;
+	}//end normaliseRecipient()
+
+	/**
+	 * The send options with the opt-out decision's unsubscribe text in `personalisation`.
+	 *
+	 * A NotifyNL template renders it as ((unsubscribe)); the composed body carries
+	 * it for a provider that sends the body as is. Without an unsubscribe text the
+	 * options come back unchanged.
+	 *
+	 * @param array $options The provider-specific send options.
+	 * @param array $decision The opt-out gate's decision.
+	 *
+	 * @return array The options.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	private static function withUnsubscribeText(array $options, array $decision): array {
+		$smsText = (string)($decision['unsubscribe']['smsText'] ?? '');
+		if ($smsText === '') {
+			return $options;
+		}
+
+		$personalisation = ($options['personalisation'] ?? []);
+		if (is_array($personalisation) === false) {
+			$personalisation = [];
+		}
+
+		$personalisation['unsubscribe'] = $smsText;
+		$options['personalisation'] = $personalisation;
+
+		return $options;
+	}//end withUnsubscribeText()
+
+	/**
+	 * Save a new `sms_message` record in the queued state.
+	 *
+	 * @param array $record The message's sourceApp, objectUri, recipientMsisdn, templateId, provider
+	 *                      and sourceSlug.
+	 *
+	 * @return ObjectEntity The saved message.
+	 *
+	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 */
+	private function queueMessage(array $record): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: array_merge(
+				$record,
+				[
+					'providerMessageId' => null,
+					'status' => 'queued',
+					'detail' => $this->l->t('Message queued'),
+					'attempts' => [],
+				]
+			),
+			register: self::REGISTER,
+			schema: self::SCHEMA_MESSAGE
+		);
+	}//end queueMessage()
+
+	/**
+	 * Record on the outbound log row whether the provider took the message or the send failed.
+	 *
+	 * @param ObjectEntity $sent The message after the send attempt.
+	 * @param string|null $logRow The outbound log row's uuid.
+	 * @param string $address The E.164 recipient.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 */
+	private function settleLogRow(ObjectEntity $sent, ?string $logRow, string $address): void {
+		$sentData = $sent->getObject();
+		if ((string)($sentData['status'] ?? '') === 'failed') {
+			$this->gate->failed(uuid: $logRow, address: $address, step: OutboundSendGateInterface::STEP_SEND, reason: (string)($sentData['detail'] ?? ''));
+			return;
+		}
+
+		$this->gate->handedOver(uuid: $logRow, address: $address, reference: (string)($sentData['providerMessageId'] ?? ''));
+	}//end settleLogRow()
 
 	/**
 	 * Attempt one provider send for a `queued` `sms_message` and persist the outcome.
