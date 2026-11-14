@@ -118,4 +118,21 @@ class LogPaymentProviderTest extends TestCase {
 		$this->assertSame('open', $result['paymentStatus']);
 
 	}//end testFetchPaymentStatusDefaultsToOpenWhenUnseeded()
+	/**
+	 * The sandbox has no point of sale, no settlements and no terminals
+	 * (REQ-LPP-008, REQ-LPP-009).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function testTheSandboxHasNoPointOfSaleSettlementsOrTerminals(): void {
+		$provider = new LogPaymentProvider();
+		$this->assertSame([], $provider->fetchSettlements(['provider' => 'log'], '2026-09-01T00:00:00Z'));
+		$this->assertSame([], $provider->listTerminals(['provider' => 'log']));
+
+		$this->expectException(\OCA\Integriq\Exception\PaymentMethodUnsupportedException::class);
+		$provider->createPayment(['provider' => 'log'], ['amount' => ['value' => '23.50', 'currency' => 'EUR'], 'description' => 'Kassa', 'method' => 'pointofsale', 'terminalId' => 'term_1']);
+	}//end testTheSandboxHasNoPointOfSaleSettlementsOrTerminals()
+
 }//end class

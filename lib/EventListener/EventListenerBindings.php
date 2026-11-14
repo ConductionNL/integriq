@@ -45,12 +45,15 @@ use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\OptOutChangeRequestedEvent;
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
+use OCA\Integriq\Event\PaymentRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\Event\RouteDistanceRequestedEvent;
+use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
+use OCA\Integriq\Event\SubmissionRegistrationRequestedEvent;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -187,6 +190,13 @@ final class EventListenerBindings {
 		$context->registerEventListener(
 			GatewayDeliveryRequestedEvent::class,
 			GatewayDeliveryRequestedListener::class
+		);
+		// A sibling creates a payment without a session (messaging-payment-
+		// command-settlements-and-point-of-sale REQ-LPP-007): shillinq's
+		// payment links from a portal forward, a job or an intake.
+		$context->registerEventListener(
+			PaymentRequestedEvent::class,
+			PaymentRequestedListener::class
 		);
 	}//end registerConnectionAndDocumentListeners()
 
@@ -368,12 +378,17 @@ final class EventListenerBindings {
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
 		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
+		// Forms-service-fetch-for-apps (REQ-SF-002): a sibling app runs a service
+		// fetch an administrator defined, and gets its declared outputs or a refusal.
+		$dispatcher->addServiceListener(eventName: ServiceFetchRequestedEvent::class, className: ServiceFetchRequestedListener::class);
 		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
 		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
 		// Sources-route-distance-and-rdw-lookup: a sibling app calls a connection it declared, and asks a road distance.
 		$dispatcher->addServiceListener(eventName: ConnectionCallRequestedEvent::class, className: ConnectionCallRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: RouteDistanceRequestedEvent::class, className: RouteDistanceRequestedListener::class);
+		// Form-submission-registration-targets D2: portaliq registers a form submission at an outside system.
+		$dispatcher->addServiceListener(eventName: SubmissionRegistrationRequestedEvent::class, className: SubmissionRegistrationListener::class);
 	}//end registerSiblingRequestListeners()
 
 	/**
