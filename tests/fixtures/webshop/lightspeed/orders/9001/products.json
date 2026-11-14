@@ -1,0 +1,26 @@
+{
+	"orderProducts": [
+		{
+			"id": 1,
+			"supplierTitle": "",
+			"brandTitle": "Theehandel",
+			"productTitle": "Earl Grey los",
+			"variantTitle": "250 g",
+			"articleCode": "EG-250",
+			"ean": "",
+			"sku": "EG-250",
+			"quantityOrdered": 2,
+			"quantityInvoiced": 0,
+			"quantityShipped": 0,
+			"quantityRefunded": 0,
+			"quantityReturned": 0,
+			"basePriceExcl": 8.21,
+			"basePriceIncl": 8.95,
+			"priceExcl": 16.42,
+			"priceIncl": 17.9,
+			"discountExcl": 0,
+			"discountIncl": 0,
+			"taxRate": 0.09
+		}
+	]
+}

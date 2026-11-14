@@ -253,6 +253,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				schema: self::SCHEMA_PAYMENT_INTENT,
 				uuid: $record->getUuid(),
 				_rbac: false,
+				// Unscoped: the payment provider's webhook carries no user session.
 				_multitenancy: false
 			);
 			return ['result' => 'noop', 'outcome' => null];
@@ -268,6 +269,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				schema: self::SCHEMA_PAYMENT_INTENT,
 				uuid: $record->getUuid(),
 				_rbac: false,
+				// Unscoped: the payment provider's webhook carries no user session.
 				_multitenancy: false
 			);
 			return ['result' => 'noop', 'outcome' => $outcome];
@@ -280,6 +282,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			schema: self::SCHEMA_PAYMENT_INTENT,
 			uuid: $record->getUuid(),
 			_rbac: false,
+			// Unscoped: the payment provider's webhook carries no user session.
 			_multitenancy: false
 		);
 
