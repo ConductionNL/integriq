@@ -96,6 +96,21 @@ class RetentionSettings {
 	}//end get()
 
 	/**
+	 * The error retention of a log kind and the success retention, in that order.
+	 *
+	 * @param string $kind One of the keys of KINDS.
+	 *
+	 * @return array{0: int, 1: int} Milliseconds; 0 keeps the log indefinitely.
+	 *
+	 * @throws InvalidArgumentException When the kind is unknown.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-one-resolver-supplies-retention-with-the-schemas-defaults-req-adef-001
+	 */
+	public function errorAndSuccess(string $kind): array {
+		return [$this->get(kind: $kind), $this->get(kind: 'success')];
+	}//end errorAndSuccess()
+
+	/**
 	 * Every retention, keyed by the stored JSON's keys, defaults filled in.
 	 *
 	 * A stored value is taken as it was set through `occ`, a number or a

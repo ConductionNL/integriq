@@ -124,17 +124,7 @@ class SettingsService implements SettingsServiceInterface {
 	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
 	 */
 	public function rebase(array $kinds=[]): array {
-		if ($kinds === []) {
-			$kinds = array_keys(RetentionRebaseJob::SCHEMAS);
-		}
-
-		foreach ($kinds as $kind) {
-			if (is_string($kind) === false || isset(RetentionRebaseJob::SCHEMAS[$kind]) === false) {
-				throw new InvalidArgumentException('kinds: ' . (string)json_encode($kind) . ' is not a log kind that can be rebased.');
-			}
-		}
-
-		$kinds = array_values(array_unique($kinds));
+		$kinds = self::rebaseKinds(kinds: $kinds);
 		$this->config->setValueString(
 			app: 'integriq',
 			key: RetentionRebaseJob::PROGRESS_KEY,
@@ -145,6 +135,31 @@ class SettingsService implements SettingsServiceInterface {
 
 		return ['queued' => true, 'kinds' => $kinds];
 	}//end rebase()
+
+	/**
+	 * The distinct log kinds a rebase covers; every kind with an expiry when none is named.
+	 *
+	 * @param array<int,mixed> $kinds The requested kinds.
+	 *
+	 * @return list<string>
+	 *
+	 * @throws InvalidArgumentException When a kind has no logs to rebase.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private static function rebaseKinds(array $kinds): array {
+		if ($kinds === []) {
+			$kinds = array_keys(RetentionRebaseJob::SCHEMAS);
+		}
+
+		foreach ($kinds as $kind) {
+			if (is_string($kind) === false || isset(RetentionRebaseJob::SCHEMAS[$kind]) === false) {
+				throw new InvalidArgumentException('kinds: ' . (string)json_encode($kind) . ' is not a log kind that can be rebased.');
+			}
+		}
+
+		return array_values(array_unique($kinds));
+	}//end rebaseKinds()
 
 	/**
 	 * A retention value as it is stored, or the refusal naming the field.

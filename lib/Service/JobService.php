@@ -138,9 +138,7 @@ class JobService implements JobServiceInterface {
 		$this->timeFactory = $timeFactory;
 		// One resolver for every log writer: the configured value, else the
 		// default the job_log schema declares (platform-admin-defaults).
-		$retention = new RetentionSettings(appConfig: $appConfig);
-		$this->errorRetention = $retention->get(kind: 'jobLog');
-		$this->successRetention = $retention->get(kind: 'success');
+		[$this->errorRetention, $this->successRetention] = (new RetentionSettings(appConfig: $appConfig))->errorAndSuccess(kind: 'jobLog');
 
 	}//end __construct()
 

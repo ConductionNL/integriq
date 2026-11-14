@@ -118,37 +118,76 @@ class RetentionRebaseJob extends QueuedJob {
 			return;
 		}
 
-		$progress = $this->progress();
-		$progress['status'] = 'running';
-		$retention = new RetentionSettings(appConfig: $this->appConfig);
+		$this->runPages(cursor: $cursor, progress: array_merge($this->progress(), ['status' => 'running']));
+	}//end run()
 
+	/**
+	 * Rebase up to PAGES_PER_RUN pages from the cursor, then queue the next run or finish.
+	 *
+	 * @param array{kinds: list<string>, kind: int, offset: int} $cursor   Where to start.
+	 * @param array<string,mixed>                                 $progress The progress so far.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private function runPages(array $cursor, array $progress): void {
+		$retention = new RetentionSettings(appConfig: $this->appConfig);
 		for ($page = 0; $page < self::PAGES_PER_RUN; $page++) {
 			if ($cursor['kind'] >= count($cursor['kinds'])) {
-				$progress['status'] = 'done';
-				$progress['finishedAt'] = $this->time->getDateTime()->format(DateTimeInterface::ATOM);
-				$this->saveProgress(progress: $progress);
+				$this->finish(progress: $progress);
 				return;
 			}
 
-			$kind = $cursor['kinds'][$cursor['kind']];
-			$rows = $this->page(schema: self::SCHEMAS[$kind], offset: $cursor['offset']);
-			$progress['processed'] = (int)($progress['processed'] ?? 0) + count($rows);
-			$progress['updated'] = (int)($progress['updated'] ?? 0) + $this->rebasePage(
-				rows: $rows,
-				retention: ['kind' => $kind, 'error' => $retention->get(kind: $kind), 'success' => $retention->get(kind: 'success')]
-			);
-			$progress['current'] = $kind;
-
-			$cursor['offset'] += self::PAGE_SIZE;
-			if (count($rows) < self::PAGE_SIZE) {
-				$cursor['kind']++;
-				$cursor['offset'] = 0;
-			}
-		}//end for
+			$this->runPage(cursor: $cursor, progress: $progress, retention: $retention);
+		}
 
 		$this->saveProgress(progress: $progress);
 		$this->jobList->add(self::class, $cursor);
-	}//end run()
+	}//end runPages()
+
+	/**
+	 * Rebase the page the cursor points at, then move the cursor on.
+	 *
+	 * @param array{kinds: list<string>, kind: int, offset: int} $cursor    The cursor, moved on.
+	 * @param array<string,mixed>                                 $progress The progress, counted on.
+	 * @param RetentionSettings                                   $retention The retention settings.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private function runPage(array &$cursor, array &$progress, RetentionSettings $retention): void {
+		$kind = $cursor['kinds'][$cursor['kind']];
+		$rows = $this->page(schema: self::SCHEMAS[$kind], offset: $cursor['offset']);
+		$progress['processed'] = (int)($progress['processed'] ?? 0) + count($rows);
+		$progress['updated'] = (int)($progress['updated'] ?? 0) + $this->rebasePage(
+			rows: $rows,
+			retention: ['kind' => $kind, 'error' => $retention->get(kind: $kind), 'success' => $retention->get(kind: 'success')]
+		);
+		$progress['current'] = $kind;
+
+		$cursor['offset'] += self::PAGE_SIZE;
+		if (count($rows) < self::PAGE_SIZE) {
+			$cursor['kind']++;
+			$cursor['offset'] = 0;
+		}
+	}//end runPage()
+
+	/**
+	 * Mark the rebase done and save the progress.
+	 *
+	 * @param array<string,mixed> $progress The progress so far.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private function finish(array $progress): void {
+		$progress['status'] = 'done';
+		$progress['finishedAt'] = $this->time->getDateTime()->format(DateTimeInterface::ATOM);
+		$this->saveProgress(progress: $progress);
+	}//end finish()
 
 	/**
 	 * Set `expires` on the rows whose expiry the retention moves.
@@ -161,43 +200,86 @@ class RetentionRebaseJob extends QueuedJob {
 	private function rebasePage(array $rows, array $retention): int {
 		$updated = 0;
 		foreach ($rows as $row) {
-			if (($row instanceof ObjectEntity) === false) {
-				continue;
-			}
-
-			$object = $row->getObject();
-			$retentionMs = $retention['error'];
-			if (self::isSuccess(kind: $retention['kind'], object: $object) === true) {
-				$retentionMs = $retention['success'];
-			}
-
-			$expires = self::expiresFor(created: (string)($object['created'] ?? ''), retentionMs: $retentionMs);
-			if ($expires === false || $expires === ($object['expires'] ?? null)) {
-				continue;
-			}
-
-			$object['expires'] = $expires;
-			try {
-				$this->objectService->saveObject(
-					object: $object,
-					register: 'integriq',
-					schema: self::SCHEMAS[$retention['kind']],
-					uuid: (string)$row->getUuid(),
-					_rbac: false,
-					_multitenancy: false,
-					silent: true,
-				);
+			if (($row instanceof ObjectEntity) === true && $this->rebaseRow(row: $row, retention: $retention) === true) {
 				$updated++;
-			} catch (Throwable $exception) {
-				$this->logger->warning(
-					'[RetentionRebaseJob] could not save the new expiry of ' . $retention['kind'] . ' ' . $row->getUuid(),
-					['exception' => $exception->getMessage()]
-				);
 			}
-		}//end foreach
+		}
 
 		return $updated;
 	}//end rebasePage()
+
+	/**
+	 * Set `expires` on one log when its retention moves it.
+	 *
+	 * @param ObjectEntity        $row       The log object.
+	 * @param array<string,mixed> $retention `kind`, and the `error` and `success` retention in milliseconds.
+	 *
+	 * @return bool Whether the log was saved with a new expiry.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private function rebaseRow(ObjectEntity $row, array $retention): bool {
+		$object = $row->getObject();
+		$retentionMs = $retention['error'];
+		if (self::isSuccess(kind: $retention['kind'], object: $object) === true) {
+			$retentionMs = $retention['success'];
+		}
+
+		$expires = self::expiresFor(created: (string)($object['created'] ?? ''), retentionMs: $retentionMs);
+		if ($expires === false || $expires === ($object['expires'] ?? null)) {
+			return false;
+		}
+
+		$object['expires'] = $expires;
+		return $this->saveExpiry(row: $row, object: $object, kind: $retention['kind']);
+	}//end rebaseRow()
+
+	/**
+	 * Save a log with its new expiry; a failed save is logged, not thrown.
+	 *
+	 * @param ObjectEntity        $row    The log object.
+	 * @param array<string,mixed> $object The log data with the new expiry.
+	 * @param string              $kind   The log kind.
+	 *
+	 * @return bool Whether it was saved.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private function saveExpiry(ObjectEntity $row, array $object, string $kind): bool {
+		try {
+			$this->persist(row: $row, object: $object, kind: $kind);
+			return true;
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[RetentionRebaseJob] could not save the new expiry of ' . $kind . ' ' . $row->getUuid(),
+				['exception' => $exception->getMessage()]
+			);
+			return false;
+		}
+	}//end saveExpiry()
+
+	/**
+	 * Save a log object in its schema, outside RBAC and multitenancy and without events.
+	 *
+	 * @param ObjectEntity        $row    The log object.
+	 * @param array<string,mixed> $object The log data.
+	 * @param string              $kind   The log kind.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private function persist(ObjectEntity $row, array $object, string $kind): void {
+		$this->objectService->saveObject(
+			object: $object,
+			register: 'integriq',
+			schema: self::SCHEMAS[$kind],
+			uuid: (string)$row->getUuid(),
+			_rbac: false,
+			_multitenancy: false,
+			silent: true,
+		);
+	}//end persist()
 
 	/**
 	 * One page of a schema's log objects, oldest offset first.
@@ -208,15 +290,8 @@ class RetentionRebaseJob extends QueuedJob {
 	 * @return array<int,mixed> The rows.
 	 */
 	private function page(string $schema, int $offset): array {
-		$found = $this->objectService->findAll(
-			config: [
-				'filters' => ['register' => 'integriq', 'schema' => $schema],
-				'limit' => self::PAGE_SIZE,
-				'offset' => $offset,
-			],
-			_rbac: false,
-			_multitenancy: false
-		);
+		$config = ['filters' => ['register' => 'integriq', 'schema' => $schema], 'limit' => self::PAGE_SIZE, 'offset' => $offset];
+		$found = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
 		$rows = ($found['results'] ?? $found);
 		if (is_array($rows) === false) {
 			return [];
@@ -287,19 +362,30 @@ class RetentionRebaseJob extends QueuedJob {
 			$argument = [];
 		}
 
-		$kinds = array_values(
-			array_filter(
-				(array)($argument['kinds'] ?? []),
-				static fn ($kind): bool => is_string($kind) === true && isset(self::SCHEMAS[$kind]) === true
-			)
-		);
-
 		return [
-			'kinds' => $kinds,
+			'kinds' => self::kindsOf(kinds: ($argument['kinds'] ?? [])),
 			'kind' => max(0, (int)($argument['kind'] ?? 0)),
 			'offset' => max(0, (int)($argument['offset'] ?? 0)),
 		];
 	}//end cursorOf()
+
+	/**
+	 * The known log kinds in a job argument's `kinds`, in their order.
+	 *
+	 * @param mixed $kinds The `kinds` of a job argument.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private static function kindsOf(mixed $kinds): array {
+		return array_values(
+			array_filter(
+				(array)$kinds,
+				static fn ($kind): bool => is_string($kind) === true && isset(self::SCHEMAS[$kind]) === true
+			)
+		);
+	}//end kindsOf()
 
 	/**
 	 * The progress so far.

@@ -120,11 +120,24 @@ class SettingsController extends Controller {
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $exception) {
-			$this->logger->error('Failed to queue the retention rebase', ['exception' => $exception->getMessage()]);
-			return new JSONResponse(
-				['error' => $this->l->t('Failed to perform rebase operation')],
-				Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->rebaseFailed(exception: $exception);
 		}
 	}//end rebase()
+
+	/**
+	 * Log a rebase that could not be queued and answer 500.
+	 *
+	 * @param Throwable $exception What went wrong.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	private function rebaseFailed(Throwable $exception): JSONResponse {
+		$this->logger->error('Failed to queue the retention rebase', ['exception' => $exception->getMessage()]);
+		return new JSONResponse(
+			['error' => $this->l->t('Failed to perform rebase operation')],
+			Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end rebaseFailed()
 }//end class

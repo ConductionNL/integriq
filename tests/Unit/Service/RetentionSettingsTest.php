@@ -70,6 +70,22 @@ class RetentionSettingsTest extends TestCase {
 	}//end testAnUnsetKeyGivesTheSchemasDefaults()
 
 	/**
+	 * errorAndSuccess() gives a kind's own retention first and the success
+	 * retention second, and refuses an unknown kind like get().
+	 *
+	 * @return void
+	 */
+	public function testErrorAndSuccessGivesTheKindThenTheSuccessRetention(): void {
+		$resolver = new RetentionSettings(appConfig: $this->config(stored: '{"jobLogRetention":86400000,"successLogRetention":0}'));
+
+		$this->assertSame([86400000, 0], $resolver->errorAndSuccess(kind: 'jobLog'));
+		$this->assertSame([2592000000, 0], $resolver->errorAndSuccess(kind: 'callLog'));
+
+		$this->expectException(InvalidArgumentException::class);
+		$resolver->errorAndSuccess(kind: 'auditLog');
+	}//end testErrorAndSuccessGivesTheKindThenTheSuccessRetention()
+
+	/**
 	 * A value set through `occ` applies unchanged, a number or a numeric
 	 * string alike, and a kind not set keeps its default.
 	 *
