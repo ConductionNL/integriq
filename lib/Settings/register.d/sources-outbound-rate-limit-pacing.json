@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (sources-outbound-rate-limit-pacing). Merges a `pace` object onto `source`: calls per window held in a budget every worker shares (lib/Service/Call/SourcePacer.php), with how long a live gateway call and background work may wait for their turn (design D2, D3). Merges `pacedMs` (the time a call waited for its turn) and `retryAfter` (the seconds a refused call was told to wait) onto `call_log` (design D4). Does NOT edit lib/Settings/integriq_register.json.",
+  "$comment": "ADR-037 register fragment (sources-outbound-rate-limit-pacing). Merges a `pace` object onto `source`: calls per window held in a budget every worker shares (lib/Service/Call/SourcePacer.php), with how long a live gateway call and background work may wait for their turn (design D2, D3). Merges `pacedMs` (the time a call waited for its turn) and `retryAfter` (the seconds a refused call was told to wait) onto `call_log`, with the `pacedMsPerSource` aggregation the source page reads (design D4). Does NOT edit lib/Settings/integriq_register.json.",
   "components": {
     "schemas": {
       "source": {
@@ -59,6 +59,13 @@
             "minimum": 1,
             "title": "Retry after (s)",
             "description": "For a call refused because its paced turn was too far away: the seconds until its turn"
+          }
+        },
+        "x-openregister-aggregations": {
+          "pacedMsPerSource": {
+            "metric": "sum",
+            "field": "pacedMs",
+            "groupBy": ["source"]
           }
         }
       }

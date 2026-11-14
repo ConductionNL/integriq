@@ -33,7 +33,7 @@ Kind: code. Size S to M. Row `integriq:src-ratelimit-out`.
 - **files**: the source detail page, `lib/Settings/integriq_register.json` (aggregation), `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN a paced source WHEN the administrator opens it THEN the pace, the remaining budget and the last day's waiting time are shown
-- [ ] Implement
+- [x] Implement (SourceDetail widget `src-kpis-pacing`: the announced budget left and the time waited for a paced turn over the last day, from the `pacedMsPerSource` aggregation on `call_log`; the configured pace shows as a source field in the Connection widget. Checked by `tests/vitest/sourcePacingManifest.spec.js`)
 - [ ] Test (Playwright)
 
 ## Verification
