@@ -114,16 +114,11 @@ class JobService implements JobServiceInterface {
 		private readonly IUserManager $userManager,
 		IAppConfig $appConfig,
 	) {
-		$this->errorRetention = 2592000000;
-		$this->successRetention = 3600000;
-		if ($appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
-			$retentionPayload = json_decode(
-				$appConfig->getValueString(app: 'integriq', key: 'retention'),
-				true
-			);
-			$this->errorRetention = ($retentionPayload['jobLogRetention'] ?? 2592000000);
-			$this->successRetention = ($retentionPayload['successLogRetention'] ?? 3600000);
-		}
+		// One resolver for every log writer: the configured value, else the
+		// default the job_log schema declares (platform-admin-defaults).
+		$retention = new RetentionSettings(appConfig: $appConfig);
+		$this->errorRetention = $retention->get(kind: 'jobLog');
+		$this->successRetention = $retention->get(kind: 'success');
 
 	}//end __construct()
 

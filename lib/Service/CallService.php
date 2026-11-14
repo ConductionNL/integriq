@@ -272,16 +272,11 @@ class CallService implements CallServiceInterface {
 
 		$this->cookieJar = new CookieJar();
 
-		$this->errorRetention = 2592000000;
-		$this->successRetention = 3600000;
-		if ($this->appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
-			$retentionPayload = json_decode(
-				$this->appConfig->getValueString(app: 'integriq', key: 'retention'),
-				true
-			);
-			$this->errorRetention = ($retentionPayload['callLogRetention'] ?? 2592000000);
-			$this->successRetention = ($retentionPayload['successLogRetention'] ?? 3600000);
-		}
+		// One resolver for every log writer: the configured value, else the
+		// default the call_log schema declares (platform-admin-defaults).
+		$retention = new RetentionSettings(appConfig: $this->appConfig);
+		$this->errorRetention = $retention->get(kind: 'callLog');
+		$this->successRetention = $retention->get(kind: 'success');
 
 	}//end __construct()
 

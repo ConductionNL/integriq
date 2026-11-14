@@ -7327,17 +7327,17 @@
                 ]
             }
         },
-        "/settings/rebase": {
-            "post": {
-                "operationId": "settings-rebase",
-                "summary": "Rebase all logs with current retention settings",
-                "description": "Rebase all logs with current retention settings.  Recomputes deletion timestamps for CallLog/JobLog/SynchronizationLog rows based on the current retention windows. This is the integriq-specific action that has no OR equivalent (OR's archival workflow uses ISO durations + per-object retention; the connector mixes service-level constants with per-source overrides, see local ADR-004).  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
+        "/settings": {
+            "get": {
+                "operationId": "settings-index",
+                "summary": "Read the log retention",
+                "description": "The retention every log kind gets now in milliseconds, its default, and the progress of the last rebase.  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
                 "tags": [
                     "settings"
                 ],
                 "responses": {
                     "200": {
-                        "description": "JSON response with the rebase result.",
+                        "description": "The settings.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
@@ -7351,6 +7351,75 @@
                                 }
                             }
                         }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "settings-update",
+                "summary": "Change the log retention",
+                "description": "Change the retention of one or more log kinds. The body is `retention`, an object of setting key to whole milliseconds, 0 keeping a log indefinitely. A refused value answers 400 naming the field.  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The settings after the change.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/settings/rebase": {
+            "post": {
+                "operationId": "settings-rebase",
+                "summary": "Queue the retention rebase of existing logs",
+                "description": "Queue the job that applies the current retention to existing logs. The body may name `kinds` (callLog, jobLog, syncLog, syncContractLog); none means all. The job pages through the OpenRegister log objects and sets `expires` from `created`; its progress is in the settings read.  Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "What was queued.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
                     },
                     "500": {
                         "$ref": "#/components/responses/Problem500"

@@ -41,7 +41,7 @@ use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
+use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -180,9 +180,9 @@ class SynchronizationServiceRetentionDefaultTest extends TestCase {
 	 */
 	private function reportedRetention(): array {
 		$settings = new SettingsService(
-			$this->createMock(IDBConnection::class),
-			$this->appConfig(retention: null),
-			$this->createMock(LoggerInterface::class)
+			config: $this->appConfig(retention: null),
+			jobList: $this->createMock(IJobList::class),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		return $settings->getSettings()['retention'];

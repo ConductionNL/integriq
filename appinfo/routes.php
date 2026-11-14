@@ -683,11 +683,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
 		// Settings endpoints
-		// Settings routes shrunk in chain-C OR-cutover:
 		// - GET /api/settings/stats — replaced by manifest dashboard widgets resolving against OR's aggregate endpoint
-		// - GET /api/settings + PUT /api/settings — replaced by OR's /api/settings/* surface
-		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
-		// rebase is admin-only (AuthorizedAdminSetting).
+		// - GET /api/settings + PUT /api/settings — integriq's log retention (platform-admin-defaults).
+		//   OpenRegister's /api/settings/retention reads and writes OpenRegister's own retention,
+		//   not the `integriq` / `retention` key, so it cannot stand in for these.
+		// - POST /api/settings/rebase — queues RetentionRebaseJob over the log objects.
+		// All three are admin-only (AuthorizedAdminSetting).
+		['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+		['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])

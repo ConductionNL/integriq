@@ -478,8 +478,8 @@ final class ServiceBindings {
 			SettingsService::class,
 			function ($c) {
 				return new SettingsService(
-					db: $c->get('OCP\IDBConnection'),
 					config: $c->get('OCP\IAppConfig'),
+					jobList: $c->get('OCP\BackgroundJob\IJobList'),
 					logger: $c->get('Psr\Log\LoggerInterface')
 				);
 			}

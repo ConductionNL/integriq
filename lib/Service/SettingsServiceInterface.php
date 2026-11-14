@@ -27,26 +27,37 @@ namespace OCA\Integriq\Service;
  */
 interface SettingsServiceInterface {
 	/**
-	 * Retrieve the current retention settings from app configuration.
+	 * The retention every log kind gets now, its default, and the last rebase's progress.
 	 *
-	 * @return array The current retention settings configuration.
+	 * @return array{retention: array<string,int>, defaults: array<string,int>, rebase: array<string,mixed>}
 	 *
-	 * @throws \RuntimeException If settings retrieval fails.
-	 *
-	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md#requirement-settingscontroller-must-shrink-to-connector-specific-actions-only
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function getSettings(): array;
 
 	/**
-	 * Rebase all logs with current retention settings.
+	 * Change the retention of one or more log kinds.
 	 *
-	 * This method sets expiry dates for all logs based on current retention settings,
-	 * using database operations for optimal performance.
+	 * @param array<string,mixed> $payload `retention`, an object of setting key to milliseconds.
 	 *
-	 * @return array Array containing the rebase operation results
-	 * @throws \RuntimeException If the rebase operation fails
+	 * @return array The settings after the change.
 	 *
-	 * @spec openspec/specs/logs-and-statistics/spec.md
+	 * @throws \InvalidArgumentException When a field is unknown or its value is not a whole non-negative number.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
-	public function rebase(): array;
-}
+	public function updateSettings(array $payload): array;
+
+	/**
+	 * Queue the job that applies the current retention to existing logs.
+	 *
+	 * @param array<int,string> $kinds The log kinds to rebase; empty means every kind with an expiry.
+	 *
+	 * @return array{queued: bool, kinds: list<string>}
+	 *
+	 * @throws \InvalidArgumentException When a kind has no logs to rebase.
+	 *
+	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-changed-retention-can-be-applied-to-existing-logs-req-adef-003
+	 */
+	public function rebase(array $kinds=[]): array;
+}//end interface
