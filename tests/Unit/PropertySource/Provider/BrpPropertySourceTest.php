@@ -199,4 +199,43 @@ class BrpPropertySourceTest extends TestCase {
 		}
 
 	}//end testTheFirstObjectRecordIsThePerson()
+
+	/**
+	 * The provider id is brp.
+	 *
+	 * @return void
+	 */
+	public function testTheIdIsBrp(): void {
+		$this->assertSame('brp', (new BrpPropertySource($this->gateway()))->id());
+	}//end testTheIdIsBrp()
+
+	/**
+	 * A whole number the registry knows no person for suggests nothing.
+	 *
+	 * @return void
+	 */
+	public function testANumberWithoutAPersonSuggestsNothing(): void {
+		$gateway = $this->gateway();
+		$gateway->expects($this->once())->method('read')->willReturn(['personen' => []]);
+
+		$this->assertSame([], (new BrpPropertySource($gateway))->suggest(' 999993653 '));
+	}//end testANumberWithoutAPersonSuggestsNothing()
+
+	/**
+	 * A person without a name is suggested under the number asked.
+	 *
+	 * @return void
+	 */
+	public function testAPersonWithoutANameIsLabelledWithTheNumber(): void {
+		$gateway = $this->gateway();
+		$gateway->method('read')->willReturnOnConsecutiveCalls(
+			['personen' => [['burgerservicenummer' => '999993653']]],
+			['personen' => [['naam' => ['voornamen' => 'Jan']]]]
+		);
+		$source = new BrpPropertySource($gateway);
+
+		$expected = [['identifier' => '999993653', 'label' => '999993653']];
+		$this->assertSame($expected, $source->suggest('999993653'));
+		$this->assertSame($expected, $source->suggest('999993653'));
+	}//end testAPersonWithoutANameIsLabelledWithTheNumber()
 }//end class

@@ -177,4 +177,25 @@ class MigrateOpenFormulierenConnectionTest extends TestCase {
 		);
 
 	}//end worldMigrator()
+
+	/**
+	 * Without OpenRegister the step warns and creates nothing.
+	 *
+	 * @return void
+	 */
+	public function testWithoutOpenRegisterTheMigrationIsSkipped(): void {
+		$this->addSource(secret: 'shared-secret');
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('openregister is disabled'));
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('warning')
+			->with('Open Formulieren connection migration skipped: OpenRegister is not available (openregister is disabled).');
+		$output->expects($this->never())->method('info');
+
+		(new MigrateOpenFormulierenConnection(container: $container))->run($output);
+
+		$this->assertSame([], $this->worldConsumers);
+		$this->assertSame([], $this->worldWrites);
+	}//end testWithoutOpenRegisterTheMigrationIsSkipped()
 }//end class

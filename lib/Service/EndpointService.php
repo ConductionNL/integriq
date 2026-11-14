@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\MessageValidation\EndpointMessageGate;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RateLimit\RateLimitDecision;
@@ -86,6 +87,7 @@ use function React\Promise\all;
  * @spec openspec/specs/endpoint-runtime/spec.md
  */
 class EndpointService implements EndpointServiceInterface {
+	use OrganisationBoundary;
 
 	/**
 	 * Body parameter keys stripped before forwarding a request.
@@ -181,6 +183,9 @@ class EndpointService implements EndpointServiceInterface {
 	 *                                              the endpoint's message schemas (REQ-MSV-002);
 	 *                                              nullable for the same reason, and a declared
 	 *                                              validation without it is refused, never skipped.
+	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
+	 *                                                        channels; built from the object service and
+	 *                                                        logger when not injected.
 	 *
 	 * @return void
 	 */
@@ -211,8 +216,25 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?EndpointTargetResolver $targetResolver = null,
 		private readonly ?EndpointMessageGate $messageGate = null,
+		?ProductPolicyService $productPolicyService = null,
 	) {
+		$this->productPolicy = $productPolicyService;
 	}//end __construct()
+
+	/**
+	 * The product policy shared with product channels; built from this service's own collaborators when not injected.
+	 *
+	 * @return ProductPolicyService The policy.
+	 *
+	 * @spec openspec/changes/events-async-api-products/tasks.md#task-1
+	 */
+	private function productPolicy(): ProductPolicyService {
+		if ($this->productPolicy === null) {
+			$this->productPolicy = new ProductPolicyService(orObjectService: $this->orObjectService, logger: $this->logger);
+		}
+
+		return $this->productPolicy;
+	}//end productPolicy()
 
 	/**
 	 * IETF RateLimit-* response headers to attach to the current request's
@@ -221,6 +243,13 @@ class EndpointService implements EndpointServiceInterface {
 	 * @var array<string, string>
 	 */
 	private array $rateLimitHeaders = [];
+
+	/**
+	 * The API product policy (subscription, tier, counter key, deprecation), shared with product channels.
+	 *
+	 * @var ProductPolicyService|null
+	 */
+	private ?ProductPolicyService $productPolicy = null;
 
 	/**
 	 * RFC 8594 `Deprecation`/`Sunset` response headers to attach to the
@@ -1200,7 +1229,7 @@ class EndpointService implements EndpointServiceInterface {
 
 		$product = $this->resolveProductForEndpoint(endpoint: $endpoint);
 		if ($product !== null) {
-			$subscription = $this->resolveActiveSubscription(
+			$subscription = $this->productPolicy()->resolveActiveSubscription(
 				consumerUuid: $consumerKey,
 				productUuid: (string)$product->getUuid()
 			);
@@ -1217,9 +1246,9 @@ class EndpointService implements EndpointServiceInterface {
 				);
 			}
 
-			$tierPolicy = $this->resolveTierPolicy(product: $product, subscription: $subscription);
+			$tierPolicy = $this->productPolicy()->resolveTierPolicy(product: $product, subscription: $subscription);
 			if ($tierPolicy !== null) {
-				$key = 'product:' . ((string)$product->getUuid()) . ':consumer:' . $consumerKey;
+				$key = $this->productPolicy()->counterKey(product: $product, consumerUuid: $consumerKey);
 
 				return $this->applyRateLimitDecision(
 					key: $key,
@@ -1453,91 +1482,6 @@ class EndpointService implements EndpointServiceInterface {
 	}//end resolveProductForEndpoint()
 
 	/**
-	 * Resolve a consumer's `active` `api_product_subscription` to a given
-	 * product, or null when it has none (pending_approval/rejected/revoked/
-	 * absent all collapse to the same null — REQ-APG-004).
-	 *
-	 * @param string $consumerUuid The resolved consumer's uuid.
-	 * @param string $productUuid The api_product's uuid.
-	 *
-	 * @return ObjectEntity|null The active subscription, or null.
-	 *
-	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
-	 */
-	private function resolveActiveSubscription(string $consumerUuid, string $productUuid): ?ObjectEntity {
-		try {
-			$matches = $this->orObjectService->findAll(
-				config: [
-					'filters' => [
-						'register' => 'integriq',
-						'schema' => 'api_product_subscription',
-						'consumer' => $consumerUuid,
-						'product' => $productUuid,
-						'status' => 'active',
-					],
-					'limit' => 5,
-				]
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning('integriq: failed to resolve api_product_subscription: ' . $e->getMessage());
-			return null;
-		}
-
-		$results = ($matches['results'] ?? $matches);
-		if (is_array($results) === false || $results === []) {
-			return null;
-		}
-
-		$first = reset($results);
-		if ($first instanceof ObjectEntity) {
-			return $first;
-		}
-
-		return null;
-	}//end resolveActiveSubscription()
-
-	/**
-	 * Resolve a subscription's tier to its `rateLimit`/`quota` policy on
-	 * the owning product, or null when the tier no longer exists on the
-	 * product (e.g. removed after the subscription was created).
-	 *
-	 * @param ObjectEntity $product The api_product.
-	 * @param ObjectEntity $subscription The active api_product_subscription.
-	 *
-	 * @return array{rateLimit: array|null, quota: array|null}|null
-	 *
-	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
-	 */
-	private function resolveTierPolicy(ObjectEntity $product, ObjectEntity $subscription): ?array {
-		$tiers = ($product->getObject()['tiers'] ?? []);
-		$tierName = (string)($subscription->getObject()['tier'] ?? '');
-
-		if (is_array($tiers) === false || $tierName === ''
-			|| isset($tiers[$tierName]) === false || is_array($tiers[$tierName]) === false
-		) {
-			return null;
-		}
-
-		$tier = $tiers[$tierName];
-		$rateLimit = ($tier['rateLimit'] ?? null);
-		$quota = ($tier['quota'] ?? null);
-
-		if (is_array($rateLimit) === false) {
-			$rateLimit = null;
-		}
-
-		if (is_array($quota) === false) {
-			$quota = null;
-		}
-
-		return [
-			'rateLimit' => $rateLimit,
-			'quota' => $quota,
-		];
-
-	}//end resolveTierPolicy()
-
-	/**
 	 * Build the RFC 8594 `Deprecation`/`Sunset` header pair for a product's
 	 * dispatched endpoint, or `[]` when the product is not `deprecated`
 	 * (REQ-APG-006/REQ-EP-008).
@@ -1550,25 +1494,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-deprecated-product-version-dispatch-attaches-sunset-deprecation-headers-req-ep-008
 	 */
 	public function buildDeprecationHeaders(ObjectEntity $product): array {
-		$data = $product->getObject();
-		if (($data['status'] ?? '') !== 'deprecated') {
-			return [];
-		}
-
-		$headers = ['Deprecation' => 'true'];
-		$sunsetDate = ($data['sunsetDate'] ?? null);
-
-		if (is_string($sunsetDate) === true && $sunsetDate !== '') {
-			try {
-				$sunset = new DateTime($sunsetDate);
-				$sunset->setTimezone(new \DateTimeZone('UTC'));
-				$headers['Sunset'] = $sunset->format('D, d M Y H:i:s') . ' GMT';
-			} catch (\Throwable $e) {
-				$this->logger->warning('integriq: invalid api_product.sunsetDate: ' . $e->getMessage());
-			}
-		}
-
-		return $headers;
+		return $this->productPolicy()->buildDeprecationHeaders(product: $product);
 	}//end buildDeprecationHeaders()
 
 	/**
@@ -1587,6 +1513,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md#requirement-inbound-observability-logging-for-api-product-scoped-endpoints-req-ep-009
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function recordInboundCallLog(ObjectEntity $endpoint, ObjectEntity $product, int $statusCode, float $durationMs): void {
 		try {
@@ -1599,7 +1526,7 @@ class EndpointService implements EndpointServiceInterface {
 					'endpoint' => (string)$endpoint->getUuid(),
 					'responseTime' => (int)round($durationMs),
 					'created' => (new DateTime())->format('c'),
-				],
+				] + $this->organisationSelf(object: $endpoint),
 				register: 'integriq',
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
@@ -1628,6 +1555,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/consumer-management/spec.md — Requirement: Rate-limit rejections are observable (REQ-CON-RL-004)
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function recordInboundThrottle(ObjectEntity $consumer, RateLimitDecision $decision): void {
 		try {
@@ -1637,7 +1565,7 @@ class EndpointService implements EndpointServiceInterface {
 					'statusMessage' => 'Inbound rate limit exceeded (' . ((string)$decision->reason) . ')',
 					'direction' => 'inbound',
 					'created' => (new DateTime())->format('c'),
-				],
+				] + $this->organisationSelf(object: $consumer),
 				register: 'integriq',
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
@@ -2610,6 +2538,8 @@ class EndpointService implements EndpointServiceInterface {
 		// the app's own proxy surface — the whole point is that a caller reaches the target
 		// WITHOUT being able to see (or authenticate to) it directly. It is the engine that
 		// needs the source; the caller must not be able to read it.
+		// Unscoped because an inbound gateway call carries no organisation; the endpoint's
+		// own organisation bounds which source it may use (REQ-TEN-001).
 		$source = $this->orObjectService->find(
 			id: ($endpointData['targetId'] ?? ''),
 			register: 'integriq',
@@ -2617,6 +2547,13 @@ class EndpointService implements EndpointServiceInterface {
 			_rbac: false,
 			_multitenancy: false
 		);
+		if ($this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+			$this->logger->warning(
+				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
+			);
+
+			return new JSONResponse(['error' => 'Source not found'], Http::STATUS_NOT_FOUND);
+		}
 
 		// Render the upstream path from the inbound request (ocon#1069), so a
 		// `targetType: api` endpoint can proxy `/hydra/label/{owner}/{repo}`
@@ -2687,6 +2624,22 @@ class EndpointService implements EndpointServiceInterface {
 			$callLogData['statusCode'] ?? 200
 		);
 	}//end handleSourceRequest()
+
+	/**
+	 * Whether an endpoint may proxy to a source: both belong to the same
+	 * organisation, or either carries none (an object created before
+	 * multitenancy was configured).
+	 *
+	 * @param ObjectEntity      $endpoint The endpoint being served.
+	 * @param ObjectEntity|null $source   The source it targets.
+	 *
+	 * @return bool False when the source belongs to another organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function sharesOrganisation(ObjectEntity $endpoint, ?ObjectEntity $source): bool {
+		return $this->sameOrganisation(first: $this->organisationOf(object: $endpoint), second: $this->organisationOf(object: $source));
+	}//end sharesOrganisation()
 
 	/**
 	 * Check one message against the endpoint's message schema for that direction (REQ-MSV-002).

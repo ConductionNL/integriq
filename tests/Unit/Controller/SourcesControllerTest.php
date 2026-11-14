@@ -23,11 +23,14 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\SourcesController;
 use OCA\Integriq\Service\ActionAuthService;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\SourceTestServiceInterface;
+use OCA\Integriq\Tests\Helpers\ForeignOrganisation;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
@@ -68,6 +71,7 @@ class SourcesControllerTest extends TestCase {
 		$l->method('t')->willReturnArgument(0);
 
 		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn($this->createMock(originalClassName: IUser::class));
 		$actionAuth = $this->createMock(ActionAuthService::class);
 
 		$this->controller = new SourcesController(
@@ -168,5 +172,43 @@ class SourcesControllerTest extends TestCase {
 
 		$this->assertSame(404, $response->getStatus());
 	}//end testResetCircuitBreakerReturns404OnUnknownSource()
+
+	/**
+	 * REQ-TEN-001: testing a source of another organisation answers 404 and
+	 * never calls the source.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 *
+	 * @return void
+	 */
+	public function testTestRefusesSourceOfAnotherOrganisation(): void {
+		$foreign = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'other-org-source'], 'source-b');
+		$this->orObjectService->method('find')->willReturnCallback(ForeignOrganisation::find($foreign));
+
+		$sourceTestService = $this->createMock(originalClassName: SourceTestServiceInterface::class);
+		$sourceTestService->expects($this->never())->method('run');
+
+		$response = $this->controller->test($sourceTestService, 'source-b');
+
+		$this->assertSame(expected: 404, actual: $response->getStatus());
+	}//end testTestRefusesSourceOfAnotherOrganisation()
+
+	/**
+	 * REQ-TEN-001: tripping or resetting the breaker of another organisation's
+	 * source answers 404 and changes nothing.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 *
+	 * @return void
+	 */
+	public function testCircuitBreakerRefusesSourceOfAnotherOrganisation(): void {
+		$foreign = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'other-org-source'], 'source-b');
+		$this->orObjectService->method('find')->willReturnCallback(ForeignOrganisation::find($foreign));
+		$this->callService->expects($this->never())->method('tripCircuitBreaker');
+		$this->callService->expects($this->never())->method('resetCircuitBreaker');
+
+		$this->assertSame(expected: 404, actual: $this->controller->tripCircuitBreaker($this->callService, 'source-b')->getStatus());
+		$this->assertSame(expected: 404, actual: $this->controller->resetCircuitBreaker($this->callService, 'source-b')->getStatus());
+	}//end testCircuitBreakerRefusesSourceOfAnotherOrganisation()
 
 }//end class
