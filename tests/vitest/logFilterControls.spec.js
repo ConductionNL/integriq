@@ -133,8 +133,12 @@ describe('a row action and a picker agree', () => {
 	})
 })
 
-describe('endpoint logs show only their own direction', () => {
+describe('source and endpoint logs show only their own direction', () => {
 	it('scopes the endpoint logs to inbound calls through the page filter', () => {
 		expect(page('EndpointLogs').config.filter).toEqual({ direction: 'inbound' })
+	})
+
+	it('scopes the source logs to outbound calls through the page filter', () => {
+		expect(page('SourceLogs').config.filter).toEqual({ direction: 'outbound' })
 	})
 })
