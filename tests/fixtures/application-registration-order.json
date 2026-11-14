@@ -172,6 +172,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Outbound\\Identity\\DomainAlignmentCheckerInterface, OCA\\Integriq\\Outbound\\Identity\\DomainAlignmentChecker)",
 	"context.registerServiceAlias(OCA\\Integriq\\Outbound\\Identity\\OptOutTableMigratorInterface, OCA\\Integriq\\Outbound\\Identity\\OptOutTableMigrator)",
 	"context.registerServiceAlias(OCA\\Integriq\\Outbound\\Identity\\HoldQueueInterface, OCA\\Integriq\\Outbound\\Identity\\HoldQueue)",
+	"context.registerServiceAlias(OCA\\Integriq\\Outbound\\Identity\\HeldMessageReleaseInterface, OCA\\Integriq\\Outbound\\Identity\\HeldMessageRelease)",
 	"context.registerServiceAlias(OCA\\Integriq\\Outbound\\Identity\\RecipientKeyInterface, OCA\\Integriq\\Outbound\\Identity\\RecipientKey)",
 	"context.registerServiceAlias(OCA\\Integriq\\Outbound\\Call\\VerdictServiceInterface, OCA\\Integriq\\Outbound\\Call\\VerdictService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Outbound\\ForwardServiceInterface, OCA\\Integriq\\Outbound\\ForwardService)",

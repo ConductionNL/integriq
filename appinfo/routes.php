@@ -121,6 +121,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'senderIdentity#index', 'url' => '/api/outbound/identities', 'verb' => 'GET'],
 		['name' => 'senderIdentity#checkAlignment', 'url' => '/api/outbound/identities/{id}/alignment', 'verb' => 'POST'],
 		['name' => 'senderIdentity#withdraw', 'url' => '/api/outbound/messages/{id}/withdraw', 'verb' => 'POST'],
+		['name' => 'senderIdentity#release', 'url' => '/api/outbound/messages/{id}/release', 'verb' => 'POST'],
 		['name' => 'senderIdentity#unsubscribe', 'url' => '/unsubscribe/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[A-Za-z0-9\\-_\\.]+']],
 		// opt-out-before-send: GET only shows the page, POST writes (also the
 		// RFC 8058 one-click), and an SMS carries a short id resolved here.
