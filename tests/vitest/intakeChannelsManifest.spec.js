@@ -59,6 +59,28 @@ describe('intake channels manifest fragment', () => {
 		expect(rules.config.sortOrder).toBe('asc')
 	})
 
+	it('makes the rules page an editor that saves through its own dialog', () => {
+		expect(rules.type).toBe('index')
+		expect(rules.slots['form-dialog']).toBe('IntakeRuleEditorModal')
+		expect(rules.config.showCopyAction).toBe(false)
+		const handlers = rules.config.actions.map((action) => action.handler)
+		expect(handlers).toEqual([
+			'moveIntakeRuleUpHandler',
+			'moveIntakeRuleDownHandler',
+			'toggleIntakeRuleHandler',
+			'toggleIntakeRuleHandler',
+		])
+		const enable = rules.config.actions.find((action) => action.id === 'enable')
+		const disable = rules.config.actions.find((action) => action.id === 'disable')
+		expect(enable.visibleWhen).toEqual({ field: 'isEnabled', op: 'eq', value: false })
+		expect(disable.visibleWhen).toEqual({ field: 'isEnabled', op: 'neq', value: false })
+	})
+
+	it('offers Route again in the inbox, per row and for a selection', () => {
+		expect(inbox.slots['row-actions']).toBe('IntakeMessageRowActions')
+		expect(inbox.actionsComponent).toBe('IntakeMessageActions')
+	})
+
 	it('puts both pages in the Connections group', () => {
 		const group = merged.menu.find((entry) => entry.id === 'ConnectionsGroup')
 		const ids = group.children.map((child) => child.id)
