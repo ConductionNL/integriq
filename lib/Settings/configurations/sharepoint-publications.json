@@ -1,0 +1,148 @@
+{
+  "slug": "sharepoint-publications",
+  "title": "SharePoint to publications",
+  "version": "1.0.0",
+  "description": "Each subfolder of one SharePoint library folder becomes a draft publication with the folder's files attached, read over Microsoft Graph through the credential broker. The mapping never writes a publication date, so nothing goes live until an editor publishes it.",
+  "component": "Microsoft Graph",
+  "auth": "broker",
+  "synchronizations": [
+    "sharepoint-publications-pull"
+  ],
+  "mappings": [
+    "sharepoint-folder-to-publication"
+  ],
+  "rules": [
+    "sharepoint-publication-documents"
+  ],
+  "storageStrategy": "internal",
+  "writesBack": false,
+  "target": {
+    "register": "",
+    "schema": "",
+    "chosenBy": "operator"
+  },
+  "settings": [
+    "credentialId",
+    "siteId",
+    "driveId",
+    "folderId",
+    "catalog",
+    "requiresApproval"
+  ],
+  "components": {
+    "sources": {
+      "sharepoint-publications-source": {
+        "slug": "sharepoint-publications-source",
+        "name": "SharePoint publications (%folderName%)",
+        "description": "Microsoft Graph for the SharePoint library folder whose subfolders become draft publications. The secret stays in the credential broker; this source holds only a reference to it.",
+        "type": "api",
+        "location": "https://graph.microsoft.com/v1.0",
+        "isEnabled": true,
+        "configuration": {
+          "authentication": {
+            "credentialRef": {
+              "credentialId": "%credentialId%"
+            }
+          },
+          "headers": {
+            "Accept": "application/json"
+          },
+          "siteId": "%siteId%",
+          "driveId": "%driveId%",
+          "folderId": "%folderId%"
+        }
+      }
+    },
+    "mappings": {
+      "sharepoint-folder-to-publication": {
+        "slug": "sharepoint-folder-to-publication",
+        "name": "SharePoint folder to publication (%folderName%)",
+        "description": "One dossier folder to one draft publication: the title column, else the folder name; summary and description from their columns when filled; the chosen catalogue; the folder's web address as its source; every file in the folder as an attachment. No publication date: an editor publishes.",
+        "version": "1.0.0",
+        "passThrough": false,
+        "mapping": {
+          "title": "{{ listItem.fields.Title|default(name) }}",
+          "summary": "{{ listItem.fields.Summary|default('') }}",
+          "description": "{{ listItem.fields.Description|default('') }}",
+          "catalog": "%catalog%",
+          "source": "{{ webUrl|default('') }}",
+          "attachments": "[{% for doc in documents.value|default([]) %}{% if doc.file is defined %}{% if not loop.first %},{% endif %}{\"filename\": {{ doc.name|json_encode|raw }}, \"endpoint\": {{ ('/drives/' ~ (doc.parentReference.driveId|default(parentReference.driveId|default(''))) ~ '/items/' ~ doc.id ~ '/content')|json_encode|raw }}}{% endif %}{% endfor %}]"
+        },
+        "unset": [],
+        "cast": {
+          "summary": "unsetIfValue==",
+          "description": "unsetIfValue==",
+          "source": "unsetIfValue==",
+          "attachments": "jsonToArray"
+        }
+      }
+    },
+    "rules": {
+      "sharepoint-publication-documents": {
+        "slug": "sharepoint-publication-documents",
+        "name": "Attach SharePoint documents (%folderName%)",
+        "description": "Fetches every file of a dossier folder through the Graph source and attaches it to the publication object. It runs inside the synchronization, so a cron run keeps the files; nothing is written to anyone's Files folder.",
+        "version": "1.0.0",
+        "action": "create",
+        "timing": "after",
+        "conditions": {
+          "==": [
+            1,
+            1
+          ]
+        },
+        "type": "fetch_file",
+        "configuration": {
+          "fetch_file": {
+            "source": "sharepoint-publications-source",
+            "filePath": "attachments",
+            "method": "GET",
+            "sourceConfiguration": []
+          }
+        },
+        "order": 0
+      }
+    },
+    "synchronizations": {
+      "sharepoint-publications-pull": {
+        "slug": "sharepoint-publications-pull",
+        "name": "SharePoint to publications (%folderName%)",
+        "description": "Lists the subfolders of one SharePoint library folder and writes each as a draft publication with its files.",
+        "version": "1.0.0",
+        "sourceId": "sharepoint-publications-source",
+        "sourceType": "api",
+        "sourceTargetMapping": "sharepoint-folder-to-publication",
+        "sourceConfig": {
+          "endpoint": "%listEndpoint%",
+          "query": {
+            "$expand": "listItem($expand=fields)"
+          },
+          "resultsPosition": "value",
+          "idPosition": "id",
+          "usesPagination": "true",
+          "paginationMode": "nextLink",
+          "requiresApproval": false,
+          "extraDataConfigs": [
+            {
+              "staticEndpoint": "/drives/%driveIdPath%/items/{{ originId }}/children",
+              "keyToSetExtraData": "documents",
+              "mergeExtraData": "true"
+            }
+          ]
+        },
+        "conditions": {
+          "!!": [
+            {
+              "var": "folder"
+            }
+          ]
+        },
+        "actions": [
+          "sharepoint-publication-documents"
+        ],
+        "targetId": "%register%/%schema%",
+        "targetType": "register/schema"
+      }
+    }
+  }
+}

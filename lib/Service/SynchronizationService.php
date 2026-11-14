@@ -7965,6 +7965,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$usesNextEndpoint = true;
 		}
 
+		// `paginationMode: nextLink` (Microsoft Graph): the answer carries its next page as
+		// `@odata.nextLink` and has none on its last page, where a page number would refetch
+		// the first page (connectors-sharepoint-publication-intake).
+		$mode = strtolower(trim((string)($synchronization['sourceConfig']['paginationMode'] ?? '')));
+		if ($usesNextEndpoint === null && $mode === 'nextlink') {
+			$usesNextEndpoint = true;
+		}
+
 		if ($usesNextEndpoint === true) {
 			// Use next endpoint URL pagination.
 			$nextEndpoint = $this->getNextEndpoint(body: $result, url: (string)($source['location'] ?? ''), currentEndpoint: $currentEndpoint);
@@ -9936,7 +9944,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @return string|null The URL for the next page of results, or null if there is no next page.
 	 */
 	public function getNextlinkFromCall(array $body): ?string {
-		return $body['next'] ?? null;
+		return $body['next'] ?? $body['@odata.nextLink'] ?? null;
 	}//end getNextlinkFromCall()
 
 	/**
