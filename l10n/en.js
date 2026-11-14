@@ -3634,7 +3634,27 @@ OC.L10N.register(
         "Created: {created}. Already present: {skipped}.": "Created: {created}. Already present: {skipped}.",
         "The list of Woo information categories cannot be read. Nothing was created.": "The list of Woo information categories cannot be read. Nothing was created.",
         "No catalogue is configured yet. Set one up first.": "No catalogue is configured yet. Set one up first.",
-        "The Woo starter set could not be created.": "The Woo starter set could not be created."
+        "The Woo starter set could not be created.": "The Woo starter set could not be created.",
+        "Every interval": "Every interval",
+        "On a calendar": "On a calendar",
+        "Weekdays": "Weekdays",
+        "Day of month": "Day of month",
+        "Any day": "Any day",
+        "Times of day": "Times of day",
+        "HH:MM, separated by commas. Jobs are picked up every five minutes, so a 07:00 run starts between 07:00 and 07:05.": "HH:MM, separated by commas. Jobs are picked up every five minutes, so a 07:00 run starts between 07:00 and 07:05.",
+        "Time zone": "Time zone",
+        "An IANA time zone such as Europe/Amsterdam.": "An IANA time zone such as Europe/Amsterdam.",
+        "Dates to skip": "Dates to skip",
+        "YYYY-MM-DD, separated by commas. Skipped dates are not working days either.": "YYYY-MM-DD, separated by commas. Skipped dates are not working days either.",
+        "Next five runs": "Next five runs",
+        "Computing run times…": "Computing run times…",
+        "This calendar has no run time.": "This calendar has no run time.",
+        "First day of the month": "First day of the month",
+        "Last day of the month": "Last day of the month",
+        "First working day of the month": "First working day of the month",
+        "Last working day of the month": "Last working day of the month",
+        "Day {day}": "Day {day}",
+        "The run times could not be computed.": "The run times could not be computed."
     },
     "nplurals=2; plural=(n != 1);"
 )

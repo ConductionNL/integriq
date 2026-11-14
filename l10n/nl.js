@@ -2369,7 +2369,27 @@ OC.L10N.register(
         "Created: {created}. Already present: {skipped}.": "Aangemaakt: {created}. Al aanwezig: {skipped}.",
         "The list of Woo information categories cannot be read. Nothing was created.": "De lijst met Woo-informatiecategorieën kan niet worden gelezen. Er is niets aangemaakt.",
         "No catalogue is configured yet. Set one up first.": "Er is nog geen catalogus ingesteld. Stel er eerst een in.",
-        "The Woo starter set could not be created.": "De Woo-startset kon niet worden aangemaakt."
+        "The Woo starter set could not be created.": "De Woo-startset kon niet worden aangemaakt.",
+        "Every interval": "Elk interval",
+        "On a calendar": "Volgens een kalender",
+        "Weekdays": "Weekdagen",
+        "Day of month": "Dag van de maand",
+        "Any day": "Elke dag",
+        "Times of day": "Tijdstippen",
+        "HH:MM, separated by commas. Jobs are picked up every five minutes, so a 07:00 run starts between 07:00 and 07:05.": "UU:MM, gescheiden door komma’s. Taken worden elke vijf minuten opgepakt, dus een run om 07:00 start tussen 07:00 en 07:05.",
+        "Time zone": "Tijdzone",
+        "An IANA time zone such as Europe/Amsterdam.": "Een IANA-tijdzone, zoals Europe/Amsterdam.",
+        "Dates to skip": "Over te slaan datums",
+        "YYYY-MM-DD, separated by commas. Skipped dates are not working days either.": "JJJJ-MM-DD, gescheiden door komma’s. Overgeslagen datums tellen ook niet als werkdag.",
+        "Next five runs": "Volgende vijf runs",
+        "Computing run times…": "Runtijden berekenen…",
+        "This calendar has no run time.": "Deze kalender heeft geen runtijd.",
+        "First day of the month": "Eerste dag van de maand",
+        "Last day of the month": "Laatste dag van de maand",
+        "First working day of the month": "Eerste werkdag van de maand",
+        "Last working day of the month": "Laatste werkdag van de maand",
+        "Day {day}": "Dag {day}",
+        "The run times could not be computed.": "De runtijden konden niet worden berekend."
     },
     "nplurals=2; plural=(n != 1);"
 )
