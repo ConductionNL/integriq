@@ -2282,7 +2282,27 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "A link to the API in the vendor's own console or Admin API": "Een link naar de API in de eigen console of Admin API van de leverancier",
+        "Base URL": "Basis-URL",
+        "External API": "Externe API",
+        "Gateway API id": "API-id op de gateway",
+        "No longer seen since": "Niet meer gezien sinds",
+        "On the gateway": "Op de gateway",
+        "OpenAPI description": "OpenAPI-beschrijving",
+        "The API version the gateway reports; empty when it reports none": "De API-versie die de gateway opgeeft; leeg als die er geen opgeeft",
+        "The API's name on its gateway": "De naam van de API op zijn gateway",
+        "The OpenAPI document the gateway exports for this API, when it exposes one": "Het OpenAPI-document dat de gateway voor deze API exporteert, als die er een aanbiedt",
+        "The discovery source the API was found on (its source slug), so two Kong instances stay apart": "De ontdekkingsbron waarop de API is gevonden (de slug van de bron), zodat twee Kong-installaties uit elkaar blijven",
+        "The gateway product": "Het gatewayproduct",
+        "The stage or environment on the gateway (an Amazon stage, an Azure revision); empty when the gateway has none": "De stage of omgeving op de gateway (een Amazon-stage, een Azure-revisie); leeg als de gateway die niet heeft",
+        "The vendor's own id for the API": "Het eigen id van de leverancier voor de API",
+        "Vendor": "Leverancier",
+        "When a discovery run last found the API": "Wanneer een ontdekkingsrun de API voor het laatst vond",
+        "Where the gateway serves the API": "Waar de gateway de API aanbiedt",
+        "Written by the markEnded disappearance policy: the first run that no longer found the API": "Geschreven door het verdwijningsbeleid markEnded: de eerste run die de API niet meer vond",
+        "API inventory": "API-overzicht",
+        "APIs found on other gateways, next to the API products integriq serves itself. Amazon API Gateway discovery waits on OpenRegister: its credential broker cannot sign AWS Signature Version 4 yet.": "API's die op andere gateways zijn gevonden, naast de API-producten die integriq zelf aanbiedt. Het ontdekken op Amazon API Gateway wacht op OpenRegister: de credential broker kan nog niet ondertekenen met AWS Signature Version 4."
     },
     "plurals": {}
 }

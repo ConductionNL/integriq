@@ -1,0 +1,55 @@
+{
+  "$comment": "ADR-037 manifest fragment (gateway-federated-api-discovery Task 1, REQ-FEDG-001). The API inventory: every API the discovery synchronizations found on Kong, Azure API Management and Amazon API Gateway, filterable by gateway and vendor through the schema's facetable properties. Read-only: external_api rows are written by the synchronization engine, so the index offers no add, edit or delete. The description says what the Amazon connector waits for (REQ-FEDG-002).",
+  "pages": [
+    {
+      "id": "ApiInventory",
+      "route": "/inventory",
+      "type": "index",
+      "title": "API inventory",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "external_api",
+        "description": "APIs found on other gateways, next to the API products integriq serves itself. Amazon API Gateway discovery waits on OpenRegister: its credential broker cannot sign AWS Signature Version 4 yet.",
+        "columns": [
+          "gateway",
+          "vendor",
+          "name",
+          "version",
+          "baseUrl",
+          "lastSeen",
+          "sourceEndedAt"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "actionToggles": {
+          "showAdd": false,
+          "showFormDialog": false,
+          "showEditAction": false,
+          "showCopyAction": false,
+          "showDeleteAction": false,
+          "showMassImport": false,
+          "showMassCopy": false,
+          "showMassDelete": false
+        },
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "GatewayGroup",
+      "children": [
+        {
+          "id": "ApiInventory",
+          "label": "API inventory",
+          "icon": "ApiOff",
+          "route": "ApiInventory",
+          "order": 25
+        }
+      ]
+    }
+  ]
+}

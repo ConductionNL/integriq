@@ -1,0 +1,18 @@
+{
+  "value": [
+    {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-api/providers/Microsoft.ApiManagement/service/apim-gemeente/apis/vergunningen",
+      "type": "Microsoft.ApiManagement/service/apis",
+      "name": "vergunningen",
+      "properties": {"displayName": "Vergunningen API", "apiRevision": "1", "isCurrent": true, "path": "vergunningen", "protocols": ["https"], "serviceUrl": "https://backend.gemeente.example/vergunningen", "apiVersion": "v2"}
+    },
+    {
+      "id": "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-api/providers/Microsoft.ApiManagement/service/apim-gemeente/apis/afval;rev=3",
+      "type": "Microsoft.ApiManagement/service/apis",
+      "name": "afval;rev=3",
+      "properties": {"displayName": "Afvalkalender", "apiRevision": "3", "isCurrent": false, "path": "afval", "protocols": ["https"], "serviceUrl": "https://backend.gemeente.example/afval"}
+    }
+  ],
+  "count": 2,
+  "nextLink": null
+}

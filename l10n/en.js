@@ -3536,7 +3536,27 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "A link to the API in the vendor's own console or Admin API": "A link to the API in the vendor's own console or Admin API",
+        "Base URL": "Base URL",
+        "External API": "External API",
+        "Gateway API id": "Gateway API id",
+        "No longer seen since": "No longer seen since",
+        "On the gateway": "On the gateway",
+        "OpenAPI description": "OpenAPI description",
+        "The API version the gateway reports; empty when it reports none": "The API version the gateway reports; empty when it reports none",
+        "The API's name on its gateway": "The API's name on its gateway",
+        "The OpenAPI document the gateway exports for this API, when it exposes one": "The OpenAPI document the gateway exports for this API, when it exposes one",
+        "The discovery source the API was found on (its source slug), so two Kong instances stay apart": "The discovery source the API was found on (its source slug), so two Kong instances stay apart",
+        "The gateway product": "The gateway product",
+        "The stage or environment on the gateway (an Amazon stage, an Azure revision); empty when the gateway has none": "The stage or environment on the gateway (an Amazon stage, an Azure revision); empty when the gateway has none",
+        "The vendor's own id for the API": "The vendor's own id for the API",
+        "Vendor": "Vendor",
+        "When a discovery run last found the API": "When a discovery run last found the API",
+        "Where the gateway serves the API": "Where the gateway serves the API",
+        "Written by the markEnded disappearance policy: the first run that no longer found the API": "Written by the markEnded disappearance policy: the first run that no longer found the API",
+        "API inventory": "API inventory",
+        "APIs found on other gateways, next to the API products integriq serves itself. Amazon API Gateway discovery waits on OpenRegister: its credential broker cannot sign AWS Signature Version 4 yet.": "APIs found on other gateways, next to the API products integriq serves itself. Amazon API Gateway discovery waits on OpenRegister: its credential broker cannot sign AWS Signature Version 4 yet."
     },
     "nplurals=2; plural=(n != 1);"
 )

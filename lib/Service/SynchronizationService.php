@@ -59,6 +59,7 @@ use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
 use OCA\Integriq\Service\Synchronization\PagedFetch;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
+use OCA\Integriq\Service\Synchronization\BrokerSigningGuard;
 use OCA\Integriq\Service\Synchronization\RunPrerequisiteGuard;
 use OCA\Integriq\Service\Synchronization\SourceItemRequest;
 use OCA\Integriq\Service\Synchronization\TargetWrite;
@@ -611,6 +612,16 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @var RunPrerequisiteGuard|null
 	 */
 	private ?RunPrerequisiteGuard $prerequisiteGuard = null;
+
+	/**
+	 * Refuses a run whose source needs a signature the credential broker cannot make
+	 * (gateway-federated-api-discovery Task 2). Resolved by {@see signingRefusal()}
+	 * only for a run that declares `sourceConfig.brokerSigning`, so every other run
+	 * asks the container for nothing new.
+	 *
+	 * @var BrokerSigningGuard|null
+	 */
+	private ?BrokerSigningGuard $signingGuard = null;
 
 	/**
 	 * Checks source objects and target bodies against their message schemas
@@ -2808,6 +2819,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$this->failExternRun(run: $run, message: 'sourceId of synchronization cannot be empty. Canceling synchronization...');
 		}
 
+		// Gateway-federated-api-discovery REQ-FEDG-002: a source the broker cannot
+		// sign for is never called.
+		$signingRefusal = $this->signingRefusal(sourceConfig: $run->sourceConfig);
+		if ($signingRefusal !== null) {
+			$this->failExternRun(run: $run, message: $signingRefusal);
+		}
+
 		$missingPrerequisite = $this->prerequisiteGuard?->missing(sourceConfig: $run->sourceConfig);
 		if ($missingPrerequisite !== null) {
 			$this->failExternRun(run: $run, message: $missingPrerequisite);
@@ -2818,6 +2836,39 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			'description' => 'Configuration loading and source validation',
 		];
 	}//end validateExternRun()
+
+	/**
+	 * Why a run that needs the broker to sign may not start.
+	 *
+	 * Only a synchronization declaring `sourceConfig.brokerSigning` asks the
+	 * container for the guard. When the guard cannot be resolved the run is
+	 * refused too: a declared signing need is never read as "none".
+	 *
+	 * @param array $sourceConfig The run's source configuration.
+	 *
+	 * @return string|null The refusal, or null when the run may start.
+	 *
+	 * @spec openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-each-vendor-is-read-on-a-schedule-req-fedg-002
+	 */
+	private function signingRefusal(array $sourceConfig): ?string {
+		if (array_key_exists(BrokerSigningGuard::KEY, $sourceConfig) === false) {
+			return null;
+		}
+
+		if ($this->signingGuard === null) {
+			$guard = $this->containerInterface->get(BrokerSigningGuard::class);
+			if ($guard instanceof BrokerSigningGuard) {
+				$this->signingGuard = $guard;
+			}
+		}
+
+		if ($this->signingGuard === null) {
+			return 'Canceled: this synchronization needs the credential broker to sign, and the signing check is not available. '
+				. 'Nothing was fetched or written.';
+		}
+
+		return $this->signingGuard->refusal(sourceConfig: $sourceConfig);
+	}//end signingRefusal()
 
 	/**
 	 * Records a refusal on the run log and stops the run.

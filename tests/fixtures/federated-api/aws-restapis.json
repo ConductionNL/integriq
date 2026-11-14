@@ -1,0 +1,6 @@
+{
+  "item": [
+    {"id": "a1b2c3d4e5", "name": "parkeren", "version": "2026-06", "createdDate": 1762000000, "endpointConfiguration": {"types": ["REGIONAL"]}},
+    {"id": "f6g7h8i9j0", "name": "meldingen", "createdDate": 1762000000, "endpointConfiguration": {"types": ["REGIONAL"]}}
+  ]
+}

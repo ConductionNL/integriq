@@ -1,0 +1,104 @@
+{
+  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Tasks 2-3, REQ-FEDG-002). Dormant discovery of the services on a Kong gateway, read daily into external_api through the Kong Admin API 3.x. No code: the synchronization engine pages (Kong answers a `next` link), maps and upserts, and an API Kong no longer returns is marked ended, never deleted.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "kong-gateway-discovery"
+        },
+        "name": "Kong gateway (API discovery)",
+        "description": "The Admin API of one Kong gateway, 3.x (https://docs.konghq.com/gateway/api/admin-oss/latest/). List call: GET /services, at most `size` per call, the next page in the `next` link. Auth: an admin token in the `Kong-Admin-Token` header, held by the credential broker. Set the location to the Admin API URL of your gateway (for example https://kong-admin.example.org:8444), add the credential, then enable the source and the job.",
+        "type": "api",
+        "location": "",
+        "auth": "apikey",
+        "documentation": "https://docs.konghq.com/gateway/api/admin-oss/latest/#/Services/list-service",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Kong-Admin-Token": "{{ source.configuration.authentication.token }}"
+          },
+          "authentication": {
+            "token": {
+              "credentialRef": {
+                "credentialName": "kong-gateway-discovery-admin-token"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "kong-gateway-discovery-to-external-api"
+        },
+        "name": "Kong service to external_api",
+        "description": "One Kong service as an external_api. The base URL is the upstream Kong proxies to (protocol, host, port and path of the service). Kong attaches no OpenAPI document to a service, so `openApiDocument` is left empty.",
+        "mapping": {
+          "gateway": "kong-gateway-discovery",
+          "vendor": "kong",
+          "name": "{{ name|default(id) }}",
+          "version": "{{ (tags|default([])|filter(t => t starts with 'version:')|first|default(''))|replace({'version:': ''}) }}",
+          "baseUrl": "{{ protocol|default('http') }}://{{ host }}{{ port|default('') is empty ? '' : ':' ~ port }}{{ path|default('') }}",
+          "environment": "",
+          "gatewayApiId": "{{ id }}",
+          "gatewayUrl": "",
+          "lastSeen": "{{ 'now'|date('Y-m-d\\\\TH:i:sP', 'UTC') }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "kong-gateway-discovery"
+        },
+        "name": "Kong services to the API inventory",
+        "description": "Reads every service of the Kong gateway into the API inventory. A service Kong stops returning is marked no longer seen (`markEnded`), never deleted.",
+        "sourceId": "kong-gateway-discovery",
+        "sourceType": "api",
+        "sourceTargetMapping": "kong-gateway-discovery-to-external-api",
+        "sourceConfig": {
+          "endpoint": "/services",
+          "query": {
+            "size": 100
+          },
+          "idPosition": "id",
+          "resultsPosition": "data",
+          "maxPages": 20,
+          "disappearancePolicy": "markEnded"
+        },
+        "conditions": [],
+        "targetId": "integriq/external_api",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "kong-gateway-discovery-daily"
+        },
+        "name": "Kong API discovery, daily",
+        "description": "Runs the Kong discovery synchronization once a day. Off until the source has a location and a credential.",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "kong-gateway-discovery"
+        },
+        "interval": 86400,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
