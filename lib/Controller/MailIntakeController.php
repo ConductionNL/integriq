@@ -257,6 +257,102 @@ class MailIntakeController extends Controller {
 	}//end importedResponse()
 
 	/**
+	 * Whether the signed-in user may import a mail file, and into which mailboxes.
+	 *
+	 * The inbox page asks this before it offers "Import file (.eml or .msg)",
+	 * so a user without the import right is not offered an action that would
+	 * only answer 403. The mailboxes are listed only to a user who may import.
+	 *
+	 * @return JSONResponse `{"allowed": bool, "mailboxes": [{"id", "name"}]}`, or 401.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
+	 */
+	#[NoAdminRequired]
+	public function importOptions(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->actionAuth->can(user: $user, action: self::ACTION_IMPORT) === false) {
+			return new JSONResponse(['allowed' => false, 'mailboxes' => []]);
+		}
+
+		return new JSONResponse(['allowed' => true, 'mailboxes' => $this->mailboxes()]);
+
+	}//end importOptions()
+
+	/**
+	 * The mailbox sources a file can be imported under, by name.
+	 *
+	 * @return array<int, array{id: string, name: string}> The mailboxes.
+	 *
+	 * @spec openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
+	 */
+	private function mailboxes(): array {
+		$found = $this->orObjectService->findAll(
+			config: [
+				'filters' => [
+					'register' => MailIntakeServiceInterface::REGISTER,
+					'schema'   => 'source',
+					'type'     => MailIntakeServiceInterface::SOURCE_TYPE,
+				],
+			]
+		);
+		if (isset($found['results']) === true && is_array($found['results']) === true) {
+			$found = $found['results'];
+		}
+
+		$mailboxes = [];
+		foreach ($found as $source) {
+			$mailbox = $this->mailboxOf(source: $source);
+			if ($mailbox !== null) {
+				$mailboxes[] = $mailbox;
+			}
+		}
+
+		usort($mailboxes, static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+
+		return $mailboxes;
+
+	}//end mailboxes()
+
+	/**
+	 * One listed source as a mailbox option, or null when it is not a mailbox.
+	 *
+	 * @param mixed $source The source, as an entity or as its data.
+	 *
+	 * @return array{id: string, name: string}|null The option.
+	 */
+	private function mailboxOf(mixed $source): ?array {
+		$data = $source;
+		$id   = '';
+		if ($source instanceof ObjectEntity) {
+			$data = $source->getObject();
+			$id   = (string)$source->getUuid();
+		}
+
+		if (is_array($data) === false
+			|| strtolower((string)($data['type'] ?? '')) !== MailIntakeServiceInterface::SOURCE_TYPE
+		) {
+			return null;
+		}
+
+		if ($id === '') {
+			$id = (string)($data['id'] ?? ($data['uuid'] ?? ''));
+		}
+
+		if ($id === '') {
+			return null;
+		}
+
+		return ['id' => $id, 'name' => (string)($data['name'] ?? $id)];
+
+	}//end mailboxOf()
+
+	/**
 	 * Run one poll of a mailbox source now.
 	 *
 	 * @param string $id The mailbox source id.
