@@ -11,7 +11,8 @@ nextcloud-vue change; these tasks are integriq's.
   - GIVEN inbound and outbound calls WHEN the endpoint logs page opens THEN only inbound calls are listed
 - [x] Implement the endpoint half: `EndpointLogs` has `filter: {direction: inbound}`; every inbound writer (`EndpointService`) already sets it.
 - [x] Fix found while building: `CallService` never wrote `direction` on a source call (only `CallRecorder` and the inbound path did), so scoping `SourceLogs` to outbound would have emptied it. Both write paths (`buildAndPersistCallLog`, `saveEarlyErrorLog`) now write `direction: outbound` (tests/Unit/Service/CallServiceTest.php `testACallToASourceIsLoggedAsOutbound`, `testARefusedCallIsLoggedAsOutbound`).
-- [ ] Implement the source half: `SourceLogs` gets `filter: {direction: outbound}` once the failed calls written before the fix above have expired (call_log keeps errors 30 days). Until then the page would hide them. See design D4.
+- [x] Implement the source half: `SourceLogs` gets `filter: {direction: outbound}` once the failed calls written before the fix above have expired (call_log keeps errors 30 days). Until then the page would hide them. See design D4.
+      > 2026-11-14: the fix landed 2026-09-29, more than 30 days ago, and every call_log writer (`CallService`, `CallRecorder`, `EndpointService`, `EndpointMessageGate`) now sets `direction`. `SourceLogs` is scoped to outbound (tests/vitest/logFilterControls.spec.js 'scopes the source logs to outbound calls through the page filter').
 - [x] Test (tests/vitest/logFilterControls.spec.js 'scopes the endpoint logs to inbound calls'; Playwright `tests/e2e/observability-log-filters.spec.ts` not written: it needs the nextcloud-vue rendering)
 
 ### Task 2: Declare filter controls on the six log pages
@@ -31,6 +32,7 @@ nextcloud-vue change; these tasks are integriq's.
   - GIVEN the nextcloud-vue release WHEN integriq updates its lockfile within `^2.37.0` THEN the controls render on all six pages
 - [x] Ask: ConductionNL/nextcloud-vue#1291 names the `filterControls` shape, the three control types and the address-bar behaviour.
 - [ ] Take the release: move `package-lock.json` inside `^2.37.0` once #1291 ships.
+      > 2026-11-14: not yet: the latest @conduction/nextcloud-vue (2.180.0) does not read `filterControls`.
 - [ ] Test (Playwright `tests/e2e/observability-log-filters.spec.ts` covering a filtered view reopened from its address)
 
 ## Verification
