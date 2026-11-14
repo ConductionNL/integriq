@@ -373,6 +373,7 @@ class SynchronizationRunProgressService implements SynchronizationRunProgressSer
 				schema: self::SCHEMA,
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: system write of synchronisation run progress.
 				_multitenancy: false,
 				silent: true,
 				_validation: false,

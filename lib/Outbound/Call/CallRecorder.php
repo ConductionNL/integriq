@@ -182,6 +182,7 @@ class CallRecorder implements CallRecorderInterface {
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
 			_rbac: false,
+			// Unscoped: system write of an outbound call record, made for whoever triggered the call.
 			_multitenancy: false,
 		);
 
@@ -274,6 +275,7 @@ class CallRecorder implements CallRecorderInterface {
 			register: MessageRecorder::REGISTER,
 			schema: self::SCHEMA,
 			_rbac: false,
+			// Unscoped: read by the forward and hold queues as the system; CallLogController::show gates the user read with ActionAuthService.
 			_multitenancy: false,
 		);
 
@@ -339,6 +341,7 @@ class CallRecorder implements CallRecorderInterface {
 				register: MessageRecorder::REGISTER,
 				schema: 'source',
 				_rbac: false,
+				// Unscoped: the source of a call the recorder already holds, read to describe it.
 				_multitenancy: false,
 			);
 		} catch (Throwable) {
@@ -439,6 +442,7 @@ class CallRecorder implements CallRecorderInterface {
 			schema: self::SCHEMA,
 			uuid: $uuid,
 			_rbac: false,
+			// Unscoped: system write of an outbound call record.
 			_multitenancy: false,
 		);
 
