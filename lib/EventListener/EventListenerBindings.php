@@ -44,6 +44,7 @@ use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\OptOutChangeRequestedEvent;
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
+use OCA\Integriq\Event\PaymentRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
@@ -185,6 +186,13 @@ final class EventListenerBindings {
 		$context->registerEventListener(
 			GatewayDeliveryRequestedEvent::class,
 			GatewayDeliveryRequestedListener::class
+		);
+		// A sibling creates a payment without a session (messaging-payment-
+		// command-settlements-and-point-of-sale REQ-LPP-007): shillinq's
+		// payment links from a portal forward, a job or an intake.
+		$context->registerEventListener(
+			PaymentRequestedEvent::class,
+			PaymentRequestedListener::class
 		);
 	}//end registerConnectionAndDocumentListeners()
 

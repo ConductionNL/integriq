@@ -6266,6 +6266,57 @@
                 }
             }
         },
+        "/payments/sources/{slug}/terminals": {
+            "get": {
+                "operationId": "payments-terminals",
+                "summary": "The point-of-sale terminals of a payment source",
+                "description": "The point-of-sale terminals of a payment source, for an administrator registering a device. Needs the payments.create action.",
+                "tags": [
+                    "payments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{terminals: [{terminalId, label, status}]}`; empty for a provider without terminals.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The payment source slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/pdok/free": {
             "get": {
                 "operationId": "pdok-free-action",

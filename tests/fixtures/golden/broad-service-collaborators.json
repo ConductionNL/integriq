@@ -32,6 +32,7 @@
     "OCA\\Integriq\\Service\\Lti\\LtiAgsService::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\NotificatiesSubscriberService::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\PaymentIntentService::$eventService": "OCA\\Integriq\\Service\\EventService",
+    "OCA\\Integriq\\Service\\Payment\\PaymentSettlementService::$events": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\PeppolTransmissionService::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\SmsDispatchService::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\SourceDestructionService::$engine": "OCA\\Integriq\\Service\\SynchronizationService",
