@@ -107,39 +107,71 @@ class ApiDesignFindingStore {
 			$fresh[self::matchKey(finding: $finding)] = $finding;
 		}
 
-		$result = [];
-		foreach ($this->findingsOf(productId: $productId, version: $version) as $entity) {
-			$data = $entity->getObject();
-			$key = self::matchKey(finding: $data);
-			if (($data['status'] ?? 'open') === 'waived' && isset($fresh[$key]) === true) {
-				unset($fresh[$key]);
-				$result[] = $data + ['id' => (string)$entity->getUuid()];
-				continue;
-			}
-
-			$this->objectService->deleteObject(uuid: (string)$entity->getUuid(), register: self::REGISTER, schema: self::FINDING_SCHEMA);
-		}
-
+		$result = $this->keptWaivers(of: ['productId' => $productId, 'version' => $version], fresh: $fresh);
 		foreach ($fresh as $finding) {
-			$object = [
-				'product' => $productId,
-				'productVersion' => $version,
-				'ruleset' => (string)($finding['ruleset'] ?? ''),
-				'ruleId' => (string)($finding['ruleId'] ?? ''),
-				'severity' => (string)($finding['severity'] ?? 'error'),
-				'path' => (string)($finding['path'] ?? ''),
-				'message' => (string)($finding['message'] ?? ''),
-				'url' => (string)($finding['url'] ?? ''),
-				'status' => 'open',
-				'checkedAt' => $checkedAt,
-			];
-			$saved = $this->objectService->saveObject(object: $object, register: self::REGISTER, schema: self::FINDING_SCHEMA);
+			$object = self::openFinding(finding: $finding, context: ['product' => $productId, 'productVersion' => $version, 'checkedAt' => $checkedAt]);
+			$saved  = $this->objectService->saveObject(object: $object, register: self::REGISTER, schema: self::FINDING_SCHEMA);
 			$result[] = $object + ['id' => (string)$saved->getUuid()];
 		}
 
 		return $result;
 
 	}//end replace()
+
+	/**
+	 * Keep the stored waivers the new check still finds and delete every other
+	 * stored finding of the version. A kept waiver leaves the fresh list.
+	 *
+	 * @param array{productId: string, version: string} $of    The product uuid and version.
+	 * @param array<string, array<string, mixed>>       $fresh The new check's findings by match key; kept ones are removed.
+	 *
+	 * @return list<array<string, mixed>> The kept waivers.
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private function keptWaivers(array $of, array &$fresh): array {
+		$kept = [];
+		foreach ($this->findingsOf(productId: $of['productId'], version: $of['version']) as $entity) {
+			$data = $entity->getObject();
+			$key  = self::matchKey(finding: $data);
+			if (($data['status'] ?? 'open') === 'waived' && isset($fresh[$key]) === true) {
+				unset($fresh[$key]);
+				$kept[] = $data + ['id' => (string)$entity->getUuid()];
+				continue;
+			}
+
+			$this->objectService->deleteObject(uuid: (string)$entity->getUuid(), register: self::REGISTER, schema: self::FINDING_SCHEMA);
+		}
+
+		return $kept;
+
+	}//end keptWaivers()
+
+	/**
+	 * A new check's finding as the open finding object it is stored as.
+	 *
+	 * @param array<string, mixed>                                             $finding The finding.
+	 * @param array{product: string, productVersion: string, checkedAt: string} $context The product, its version and when the check ran.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private static function openFinding(array $finding, array $context): array {
+		return [
+			'product' => $context['product'],
+			'productVersion' => $context['productVersion'],
+			'ruleset' => (string)($finding['ruleset'] ?? ''),
+			'ruleId' => (string)($finding['ruleId'] ?? ''),
+			'severity' => (string)($finding['severity'] ?? 'error'),
+			'path' => (string)($finding['path'] ?? ''),
+			'message' => (string)($finding['message'] ?? ''),
+			'url' => (string)($finding['url'] ?? ''),
+			'status' => 'open',
+			'checkedAt' => $context['checkedAt'],
+		];
+
+	}//end openFinding()
 
 	/**
 	 * Waive an open finding with a reason.

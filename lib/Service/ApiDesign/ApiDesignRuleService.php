@@ -130,7 +130,21 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 			return $problems;
 		}
 
-		$seen = [];
+		return array_merge($problems, $this->ruleListProblems(rules: $rules));
+	}//end problemsOf()
+
+	/**
+	 * The problems of a rule set's rules: a label used twice, and each rule's own.
+	 *
+	 * @param list<mixed> $rules The rules.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private function ruleListProblems(array $rules): array {
+		$problems = [];
+		$seen     = [];
 		foreach ($rules as $index => $rule) {
 			if (is_array($rule) === false) {
 				$rule = [];
@@ -148,7 +162,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 		}
 
 		return $problems;
-	}//end problemsOf()
+	}//end ruleListProblems()
 
 	/**
 	 * What is missing from a rule set's name and version.
@@ -203,25 +217,45 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 				continue;
 			}
 
-			$name = (string) ($ruleSet['name'] ?? '');
-			foreach ((array) ($ruleSet['rules'] ?? []) as $rule) {
-				if (is_array($rule) === false) {
-					continue;
-				}
-
-				if (($rule['manual'] ?? false) === true) {
-					$manual[] = self::manualEntry(ruleSetName: $name, rule: $rule);
-					continue;
-				}
-
-				foreach ($this->evaluate(document: $document, rule: $rule) as $failure) {
-					$findings[] = self::finding(ruleSetName: $name, rule: $rule, failure: $failure);
-				}
-			}//end foreach
-		}//end foreach
+			$checked = $this->checkRuleSet(document: $document, ruleSet: $ruleSet);
+			array_push($findings, ...$checked['findings']);
+			array_push($manual, ...$checked['manual']);
+		}
 
 		return ['findings' => $findings, 'manual' => $manual];
 	}//end check()
+
+	/**
+	 * The findings and the manual entries of one enabled rule set.
+	 *
+	 * @param array<string, mixed> $document The inlined API description.
+	 * @param array<string, mixed> $ruleSet  The rule set.
+	 *
+	 * @return array{findings: list<array<string, mixed>>, manual: list<array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private function checkRuleSet(array $document, array $ruleSet): array {
+		$name     = (string) ($ruleSet['name'] ?? '');
+		$findings = [];
+		$manual   = [];
+		foreach ((array) ($ruleSet['rules'] ?? []) as $rule) {
+			if (is_array($rule) === false) {
+				continue;
+			}
+
+			if (($rule['manual'] ?? false) === true) {
+				$manual[] = self::manualEntry(ruleSetName: $name, rule: $rule);
+				continue;
+			}
+
+			foreach ($this->evaluate(document: $document, rule: $rule) as $failure) {
+				$findings[] = self::finding(ruleSetName: $name, rule: $rule, failure: $failure);
+			}
+		}
+
+		return ['findings' => $findings, 'manual' => $manual];
+	}//end checkRuleSet()
 
 	/**
 	 * A manual rule as an entry of the manual checklist.
@@ -359,20 +393,32 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 		}
 
 		foreach ($thens as $then) {
-			$check = $this->checks[(string) ($then['function'] ?? '')] ?? null;
-			if ($check === null) {
-				$problems[] = sprintf('check "%s" is not one of %s', (string) ($then['function'] ?? ''), implode(', ', array_keys($this->checks)));
-				continue;
-			}
-
-			$invalid = $check->invalidOptions(options: (array) ($then['functionOptions'] ?? []));
-			if ($invalid !== null) {
-				$problems[] = $invalid;
+			$problem = $this->thenProblem(then: $then);
+			if ($problem !== null) {
+				$problems[] = $problem;
 			}
 		}
 
 		return $problems;
 	}//end thenProblems()
+
+	/**
+	 * The problem of one `then`: an unknown check or options it refuses, or null.
+	 *
+	 * @param array<string, mixed> $then The `then`.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private function thenProblem(array $then): ?string {
+		$check = $this->checks[(string) ($then['function'] ?? '')] ?? null;
+		if ($check === null) {
+			return sprintf('check "%s" is not one of %s', (string) ($then['function'] ?? ''), implode(', ', array_keys($this->checks)));
+		}
+
+		return $check->invalidOptions(options: (array) ($then['functionOptions'] ?? []));
+	}//end thenProblem()
 
 	/**
 	 * Run one rule over a document.
@@ -393,27 +439,63 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 			}
 
 			foreach ($nodes as $node) {
-				foreach (self::thens(rule: $rule) as $then) {
-					$check = $this->checks[(string) ($then['function'] ?? '')] ?? null;
-					if ($check === null) {
-						$failures[] = [
-							'path' => $node['pointer'],
-							'message' => sprintf('The rule cannot be evaluated: unknown check "%s"', (string) ($then['function'] ?? '')),
-						];
-						continue;
-					}
-
-					[$present, $value, $pointer] = self::field(node: $node, field: $then['field'] ?? null);
-					$error = $check->check(value: $value, present: $present, options: (array) ($then['functionOptions'] ?? []));
-					if ($error !== null) {
-						$failures[] = ['path' => $pointer, 'message' => self::message(rule: $rule, error: $error, value: $value, key: $node['key'])];
-					}
-				}
+				array_push($failures, ...$this->nodeFailures(node: $node, rule: $rule));
 			}
-		}//end foreach
+		}
 
 		return $failures;
 	}//end evaluate()
+
+	/**
+	 * The failures of every `then` of a rule on one selected node.
+	 *
+	 * @param array<string, mixed> $node The selected node.
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return list<array{path: string, message: string}>
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private function nodeFailures(array $node, array $rule): array {
+		$failures = [];
+		foreach (self::thens(rule: $rule) as $then) {
+			$failure = $this->thenFailure(node: $node, ruleThen: ['rule' => $rule, 'then' => $then]);
+			if ($failure !== null) {
+				$failures[] = $failure;
+			}
+		}
+
+		return $failures;
+	}//end nodeFailures()
+
+	/**
+	 * The failure of one `then` on one node, or null when it holds.
+	 *
+	 * @param array<string, mixed>                                           $node     The selected node.
+	 * @param array{rule: array<string, mixed>, then: array<string, mixed>} $ruleThen The rule and the `then` to apply.
+	 *
+	 * @return array{path: string, message: string}|null
+	 *
+	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 */
+	private function thenFailure(array $node, array $ruleThen): ?array {
+		['rule' => $rule, 'then' => $then] = $ruleThen;
+		$check = $this->checks[(string) ($then['function'] ?? '')] ?? null;
+		if ($check === null) {
+			return [
+				'path' => $node['pointer'],
+				'message' => sprintf('The rule cannot be evaluated: unknown check "%s"', (string) ($then['function'] ?? '')),
+			];
+		}
+
+		[$present, $value, $pointer] = self::field(node: $node, field: $then['field'] ?? null);
+		$error = $check->check(value: $value, present: $present, options: (array) ($then['functionOptions'] ?? []));
+		if ($error === null) {
+			return null;
+		}
+
+		return ['path' => $pointer, 'message' => self::message(rule: $rule, error: $error, value: $value, key: $node['key'])];
+	}//end thenFailure()
 
 	/**
 	 * A rule's `then` as a list.
