@@ -3537,7 +3537,21 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "A slug is lower-case letters, digits and dashes, starting with a letter or digit.": "A slug is lower-case letters, digits and dashes, starting with a letter or digit.",
+        "Add channel": "Add channel",
+        "AsyncAPI document of these channels": "AsyncAPI document of these channels",
+        "Channel saved": "Channel saved",
+        "Channel slug": "Channel slug",
+        "Channel title": "Channel title",
+        "CloudEvent types, one per line": "CloudEvent types, one per line",
+        "Edit channel": "Edit channel",
+        "Give the channel a title.": "Give the channel a title.",
+        "Name at least one CloudEvent type.": "Name at least one CloudEvent type.",
+        "Remove channel": "Remove channel",
+        "Save channel": "Save channel",
+        "This product version already has a channel with this slug.": "This product version already has a channel with this slug.",
+        "This product version carries no event channels yet.": "This product version carries no event channels yet."
     },
     "nplurals=2; plural=(n != 1);"
 )

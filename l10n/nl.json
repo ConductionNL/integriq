@@ -1852,6 +1852,7 @@
         "Every samenloop rule needs the imow-id of the other activity.": "Elke samenloopregel heeft het imow-id van de andere activiteit nodig.",
         "Fill in the imow-id or the activity id. A row without either never matches a verzoek.": "Vul het imow-id of het activiteit-id in. Een regel zonder een van beide matcht nooit met een verzoek.",
         "Another active row already maps imow-id %s. Edit that row, or deactivate it first.": "Een andere actieve regel koppelt imow-id %s al. Bewerk die regel, of deactiveer hem eerst.",
+        "Two channels of this product version are called %s. Give each channel its own slug.": "Twee kanalen van deze productversie heten %s. Geef elk kanaal een eigen slug.",
         "{count} activity arrived without an imow-id or activity id and cannot be mapped.": [
             "{count} activiteit kwam binnen zonder imow-id of activiteit-id en kan niet worden gekoppeld.",
             "{count} activiteiten kwamen binnen zonder imow-id of activiteit-id en kunnen niet worden gekoppeld."

@@ -2275,7 +2275,21 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "A slug is lower-case letters, digits and dashes, starting with a letter or digit.": "Een slug bestaat uit kleine letters, cijfers en streepjes, en begint met een letter of cijfer.",
+        "Add channel": "Kanaal toevoegen",
+        "AsyncAPI document of these channels": "AsyncAPI-document van deze kanalen",
+        "Channel saved": "Kanaal opgeslagen",
+        "Channel slug": "Slug van het kanaal",
+        "Channel title": "Titel van het kanaal",
+        "CloudEvent types, one per line": "CloudEvent-typen, één per regel",
+        "Edit channel": "Kanaal bewerken",
+        "Give the channel a title.": "Geef het kanaal een titel.",
+        "Name at least one CloudEvent type.": "Noem ten minste één CloudEvent-type.",
+        "Remove channel": "Kanaal verwijderen",
+        "Save channel": "Kanaal opslaan",
+        "This product version already has a channel with this slug.": "Deze productversie heeft al een kanaal met deze slug.",
+        "This product version carries no event channels yet.": "Deze productversie heeft nog geen eventkanalen."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -203,6 +203,9 @@ class EventService implements EventServiceInterface {
 	 *                                                        a personal recipient (opt-out-before-send). Null
 	 *                                                        (unit tests that predate it) answers such a
 	 *                                                        delivery closed unless its category is exempt.
+	 * @param ProductDeliveryGate|null $productGate Stops a product channel's push delivery once its product
+	 *                                              subscription is not active, and defers one over quota
+	 *                                              (events-async-api-products). Null gates nothing.
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-broker-kind-req-013
 	 * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
@@ -229,6 +232,7 @@ class EventService implements EventServiceInterface {
 		private readonly ?BrokerCredentialResolver $brokerCredentials = null,
 		private readonly ?EventFanOutSchedulerInterface $fanOutScheduler = null,
 		private readonly ?OutboundSendGateInterface $sendGate = null,
+		private readonly ?ProductDeliveryGate $productGate = null,
 	) {
 		$this->egressGuard = ($egressGuard ?? new EgressGuard());
 
@@ -702,6 +706,10 @@ class EventService implements EventServiceInterface {
 				return false;
 			}
 
+			if ($this->holdForProduct(message: $message, subscriptionData: $delivery->subscriptionData) === true) {
+				return false;
+			}
+
 			$response = $this->clientService->newClient()->post(
 				$delivery->subscriptionData['sink'],
 				[
@@ -1001,6 +1009,50 @@ class EventService implements EventServiceInterface {
 		];
 
 	}//end resolveRetryPolicy()
+
+	/**
+	 * Hold a product channel's push delivery the product subscription does not allow now.
+	 *
+	 * A revoked product subscription abandons the delivery at once. A spent
+	 * tier budget defers it to the end of the window without spending a retry,
+	 * so the event is delivered later rather than dropped.
+	 *
+	 * @param ObjectEntity $message          The message under delivery.
+	 * @param array        $subscriptionData The owning push subscription.
+	 *
+	 * @return bool True when the delivery was held.
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function holdForProduct(ObjectEntity $message, array $subscriptionData): bool {
+		$held = $this->productGate?->hold(subscriptionData: $subscriptionData);
+		if ($held === null) {
+			return false;
+		}
+
+		if ($held['abandon'] === true) {
+			$this->recordFailure(message: $message, error: $held['reason'], statusCode: null, retryAfter: null, retryPolicy: ['maxRetries' => 0]);
+			return true;
+		}
+
+		// Deferred, not failed: the retry count is left alone, so waiting for the
+		// quota window never spends the subscription's retry budget.
+		$messageData = $message->getObject();
+		$messageData['status'] = 'failed';
+		$messageData['error'] = $held['reason'];
+		$messageData['retryAfter'] = (int)$held['retryAfter'];
+		$messageData['nextAttempt'] = (new DateTime())->modify('+' . (int)$held['retryAfter'] . ' seconds')->format('c');
+		$this->objectService->saveObject(
+			object: $messageData,
+			register: 'integriq',
+			schema: 'event_message',
+			uuid: $message->getUuid(),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		return true;
+	}//end holdForProduct()
 
 	/**
 	 * Abandon a push delivery whose sink the egress guard refuses.
