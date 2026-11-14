@@ -55,8 +55,20 @@ Kind: code. Size M. Row `integriq:plt-connector-sdk`.
 - **acceptance_criteria**:
   - GIVEN the skeleton WHEN CI runs THEN its adapter passes the intake channel contract test case
   - GIVEN the guide WHEN a developer follows it THEN every file it names exists in the skeleton
-- [ ] Implement
+- [x] Implement
+  > Built: `tests/Contract/IntakeChannelContractTestCase.php`, `PaymentProviderContractTestCase.php` and
+  > `DigitalPostProviderContractTestCase.php` (abstract PHPUnit cases: stable slug ids, capabilities naming the
+  > same channel, a delivery becoming a message of that channel with its own id, refusal of an unreadable
+  > payload, an honest unsupported reply; created payments that can be looked up; valid configurations not
+  > refused). The built-ins pass them (`tests/Unit/Contract/*ContractTest.php`). The skeleton
+  > `examples/connector-extension/` is an app that adds the `example-webhook` channel through the collect
+  > event and passes the intake case; `docs/developers/connector-kit.md` walks through it file by file, and
+  > `tests/Unit/Docs/ConnectorKitGuideTest.php` fails when the guide names a file the skeleton lacks.
+  > `.github/workflows/connector-extension-kit.yml` runs the skeleton's tests on changes to the kit. The
+  > skeleton is out of the analysis scope in `sigrid.yaml` (an example to copy, not shipped).
 - [ ] Test (the skeleton's PHPUnit run in CI; `tests/e2e/connector-extension-kit.spec.ts` with the skeleton enabled)
+  > The skeleton's PHPUnit run passes locally (`vendor/bin/phpunit -c examples/connector-extension/phpunit.xml`,
+  > 6 tests) and the workflow runs it in CI. Left: the e2e spec with the skeleton enabled (browser, live instance).
 
 ## Verification
 
