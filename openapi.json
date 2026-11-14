@@ -264,6 +264,10 @@
             "description": "Answers only for a record the caller may read: the read is checked first, under OpenRegister's rights"
         },
         {
+            "name": "regression-suites",
+            "description": "Runs the stored test cases of a mapping or synchronization, behind the action `regression-suite.run`"
+        },
+        {
             "name": "run-summary",
             "description": "GET /api/sources/{id}/run-summary, behind the action `source.logs`"
         },
