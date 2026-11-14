@@ -3581,6 +3581,7 @@
         "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
         "Give a label of at most %1$s characters.": "Give a label of at most %1$s characters.",
         "Give the expiry as a date and time.": "Give the expiry as a date and time.",
+        "Give a PEM certificate, or an issuing CA certificate and a subject pattern.": "Give a PEM certificate, or an issuing CA certificate and a subject pattern.",
         "The consumer could not be saved. Nothing changed.": "The consumer could not be saved. Nothing changed.",
         "Only an administrator can manage consumer credentials.": "Only an administrator can manage consumer credentials."
     },

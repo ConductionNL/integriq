@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
@@ -57,6 +58,20 @@ interface OpenRegisterCredentialBridgeInterface {
 	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function authorizeApiKey(string $header, array $keys): void;
+
+	/**
+	 * Check a web-server-verified client certificate against the consumers' pinned certificates.
+	 *
+	 * @param ClientCertificate|null $certificate The verified certificate, or null when the request carried none.
+	 * @param array                  $consumers   Consumers allowed on the endpoint, by name or uuid; empty allows any.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the certificate is refused.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function authorizeClientCertificate(?ClientCertificate $certificate, array $consumers = []): void;
 
 	/**
 	 * Check HTTP Basic credentials against Nextcloud's users.

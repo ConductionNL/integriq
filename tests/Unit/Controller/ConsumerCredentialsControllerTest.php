@@ -15,6 +15,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 
 use OCA\Integriq\Controller\ConsumerCredentialsController;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
+use OCA\Integriq\Tests\Unit\Service\Auth\ClientCertificateFixtures;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -41,6 +42,50 @@ final class ConsumerCredentialsControllerTest extends TestCase {
 	 * @var array<string, array<string, mixed>>
 	 */
 	private array $stored = [];
+
+	/**
+	 * A client certificate is pinned by its fingerprint; the response carries no key.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 *
+	 * @return void
+	 */
+	public function testAClientCertificateIsPinnedByFingerprint(): void {
+		$pem = ClientCertificateFixtures::pems()['pkio'];
+		$this->params = ['label' => 'Zaaksysteem', 'type' => 'clientCertificate', 'certificate' => $pem];
+
+		$created = $this->controller()->create('c-1');
+
+		$this->assertSame(201, $created->getStatus());
+		$this->assertArrayNotHasKey('key', $created->getData());
+		$credential = $created->getData()['credential'];
+		$this->assertSame('clientCertificate', $credential['type']);
+		$this->assertSame(strtolower((string)openssl_x509_fingerprint($pem, 'sha256')), $credential['fingerprint']);
+		$this->assertSame(ClientCertificateFixtures::OIN, $credential['oin']);
+		$this->assertSame($credential, end($this->stored['c-1'][ConsumerCredentials::FIELD]));
+	}//end testAClientCertificateIsPinnedByFingerprint()
+
+	/**
+	 * An issuing CA with a subject pattern is pinned; neither, or garbage, is a 400 that stores nothing.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 *
+	 * @return void
+	 */
+	public function testAnIssuerPinAndAnIncompleteOne(): void {
+		$this->params = ['label' => 'Gemeente', 'type' => 'clientCertificate', 'issuerCertificate' => ClientCertificateFixtures::pems()['ca'], 'subjectPattern' => '*/serialNumber=' . ClientCertificateFixtures::OIN];
+		$created = $this->controller()->create('c-1');
+		$this->assertSame(201, $created->getStatus());
+		$this->assertSame('*/serialNumber=' . ClientCertificateFixtures::OIN, $created->getData()['credential']['subjectPattern']);
+		$this->assertCount(3, $this->stored['c-1'][ConsumerCredentials::FIELD]);
+
+		foreach ([['certificate' => 'garbage'], ['issuerCertificate' => ClientCertificateFixtures::pems()['ca']], []] as $extra) {
+			$this->params = ['label' => 'x', 'type' => 'clientCertificate'] + $extra;
+			$response = $this->controller()->create('c-1');
+			$this->assertSame(400, $response->getStatus());
+			$this->assertCount(3, $this->stored['c-1'][ConsumerCredentials::FIELD]);
+		}
+	}//end testAnIssuerPinAndAnIncompleteOne()
 
 	/**
 	 * Request parameters.

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\AuthenticationException as OpenRegisterAuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
@@ -168,6 +169,55 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 
 		$this->resolvedConsumer = $this->record();
 	}//end authorizeApiKey()
+
+	/**
+	 * Check a web-server-verified client certificate against the consumers' pinned certificates.
+	 *
+	 * OpenRegister has no certificate check, so integriq matches the
+	 * certificate against its consumers' `clientCertificate` credentials and
+	 * records the consumer it belongs to as the resolved one, for rate limits,
+	 * quotas and scopes.
+	 *
+	 * @param ClientCertificate|null $certificate The verified certificate, or null when the request carried none.
+	 * @param array                  $consumers   Consumers allowed on the endpoint, by name or uuid; empty allows any.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When there is no certificate, it is pinned to no consumer, or that consumer is not allowed.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function authorizeClientCertificate(?ClientCertificate $certificate, array $consumers = []): void {
+		$this->resolvedConsumer = null;
+		if ($certificate === null) {
+			throw new AuthenticationException(message: 'No verified client certificate', details: []);
+		}
+
+		$source = $this->source();
+		$consumer = null;
+		if ($source instanceof IntegriqConsumerSource) {
+			$consumer = $source->findByClientCertificate(certificate: $certificate);
+		}
+
+		if ($consumer === null) {
+			throw new AuthenticationException(
+				message: 'The client certificate is not pinned to a consumer',
+				details: ['fingerprint' => $certificate->fingerprint]
+			);
+		}
+
+		$data = $consumer->getObject();
+		$allowed = array_values(array_filter($consumers, static fn ($entry): bool => is_string($entry) === true && $entry !== ''));
+		$named = (in_array(($data['name'] ?? null), $allowed, true) === true || in_array(($data['id'] ?? $consumer->getUuid()), $allowed, true) === true);
+		if ($allowed !== [] && $named === false) {
+			throw new AuthenticationException(
+				message: 'The consumer of this client certificate may not call this endpoint',
+				details: ['consumer' => (string)($data['name'] ?? '')]
+			);
+		}
+
+		$this->resolvedConsumer = $consumer;
+	}//end authorizeClientCertificate()
 
 	/**
 	 * Check HTTP Basic credentials against Nextcloud's users.

@@ -22,6 +22,7 @@ namespace OCA\Integriq\Service\Consumer;
 
 use DateTimeImmutable;
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
@@ -170,6 +171,38 @@ class IntegriqConsumerSource implements ConsumerSource {
 
 		return null;
 	}//end findByApiKey()
+
+	/**
+	 * The consumer a client certificate credential of which pins the certificate, or null.
+	 *
+	 * Records the use on the credential, at most once a minute, like an API key.
+	 *
+	 * @param ClientCertificate $certificate The web-server-verified certificate.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function findByClientCertificate(ClientCertificate $certificate): ?ObjectEntity {
+		if ($this->credentials === null) {
+			return null;
+		}
+
+		$now = new DateTimeImmutable();
+		foreach ($this->consumers(filters: []) as $consumer) {
+			$index = $this->credentials->matchingCertificate(
+				credentials: ($consumer->getObject()[ConsumerCredentials::FIELD] ?? null),
+				certificate: $certificate,
+				now: $now
+			);
+			if ($index !== null) {
+				$this->recordUse(consumer: $consumer, index: $index, now: $now);
+				return $consumer;
+			}
+		}
+
+		return null;
+	}//end findByClientCertificate()
 
 	/**
 	 * Write `lastUsedAt` on the credential a call used, at most once a minute.

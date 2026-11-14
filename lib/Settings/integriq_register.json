@@ -586,6 +586,35 @@
                 },
                 "keyHash": {
                   "type": "string"
+                },
+                "fingerprint": {
+                  "type": "string",
+                  "description": "A client certificate pinned by the lowercase hex SHA-256 of its DER bytes."
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "The pinned certificate's subject, one line."
+                },
+                "oin": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The OIN from a PKIoverheid certificate's subject serialNumber."
+                },
+                "issuerCertificate": {
+                  "type": "string",
+                  "description": "The issuing CA certificate (public, PEM) that must have signed the presented certificate."
+                },
+                "issuerFingerprint": {
+                  "type": "string"
+                },
+                "issuer": {
+                  "type": "string"
+                },
+                "subjectPattern": {
+                  "type": "string",
+                  "description": "Shell pattern the presented certificate's one-line subject must fit, with an issuer pin."
                 }
               }
             },

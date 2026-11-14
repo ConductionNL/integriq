@@ -23,6 +23,7 @@ namespace OCA\Integriq\Service\Consumer;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\Integriq\Service\Helper\RandomUuid;
 use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
@@ -203,6 +204,127 @@ class ConsumerCredentials {
 
 		return null;
 	}//end matchingApiKey()
+
+	/**
+	 * A client certificate credential.
+	 *
+	 * It pins the certificate itself by its SHA-256 fingerprint, or, with an
+	 * issuing CA and a subject pattern, every certificate that CA signed for a
+	 * matching subject, so a renewed PKIoverheid certificate keeps working.
+	 * The pinned material is public; nothing on the entry is a secret.
+	 *
+	 * @param string                 $label             The label.
+	 * @param ClientCertificate|null $certificate       The certificate to pin by fingerprint, or null.
+	 * @param ClientCertificate|null $issuer            The issuing CA, with a subject pattern, or null.
+	 * @param string|null            $subjectPattern    Shell pattern on the one-line subject, e.g. `/C=NL/O=Gemeente/serialNumber=0000*`.
+	 * @param string|null            $expiresAt         ISO-8601 expiry, or null for none.
+	 * @param DateTimeImmutable|null $now               The moment of creation.
+	 *
+	 * @return array<string, mixed>|null The entry, or null when neither pin is complete.
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function certificateEntry(
+		string $label,
+		?ClientCertificate $certificate = null,
+		?ClientCertificate $issuer = null,
+		?string $subjectPattern = null,
+		?string $expiresAt = null,
+		?DateTimeImmutable $now = null,
+	): ?array {
+		$entry = [
+			'id'         => RandomUuid::version4(),
+			'label'      => $label,
+			'type'       => self::TYPE_CLIENT_CERTIFICATE,
+			'createdAt'  => ($now ?? new DateTimeImmutable())->format(DateTimeInterface::ATOM),
+			'expiresAt'  => $expiresAt,
+			'lastUsedAt' => null,
+		];
+
+		if ($certificate !== null) {
+			return $entry + [
+				'fingerprint' => $certificate->fingerprint,
+				'subject'     => $certificate->subject,
+				'oin'         => $certificate->oin,
+			];
+		}
+
+		if ($issuer === null || $subjectPattern === null || trim($subjectPattern) === '') {
+			return null;
+		}
+
+		return $entry + [
+			'issuerCertificate' => $issuer->pem,
+			'issuerFingerprint' => $issuer->fingerprint,
+			'issuer'            => $issuer->subject,
+			'subjectPattern'    => trim($subjectPattern),
+		];
+	}//end certificateEntry()
+
+	/**
+	 * The index of the live client certificate credential a certificate matches, or null.
+	 *
+	 * A certificate outside its validity never matches. A fingerprint pin
+	 * matches that certificate only; an issuer pin matches a certificate whose
+	 * signature the pinned CA verifies and whose subject fits the pattern.
+	 *
+	 * @param mixed             $credentials The consumer's `credentials` value.
+	 * @param ClientCertificate $certificate The presented, web-server-verified certificate.
+	 * @param DateTimeImmutable $now         The moment of the call.
+	 *
+	 * @return int|null
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	public function matchingCertificate(mixed $credentials, ClientCertificate $certificate, DateTimeImmutable $now): ?int {
+		if (is_array($credentials) === false || array_is_list($credentials) === false) {
+			return null;
+		}
+
+		if ($certificate->isValidAt(now: $now->getTimestamp()) === false) {
+			return null;
+		}
+
+		foreach ($credentials as $index => $credential) {
+			if (is_array($credential) === false || ($credential['type'] ?? '') !== self::TYPE_CLIENT_CERTIFICATE) {
+				continue;
+			}
+
+			$pinned = self::pins(credential: $credential, certificate: $certificate);
+			if ($pinned === true && $this->isLive(credential: $credential, now: $now) === true) {
+				return $index;
+			}
+		}
+
+		return null;
+	}//end matchingCertificate()
+
+	/**
+	 * Whether one client certificate credential pins a certificate.
+	 *
+	 * @param array<string, mixed> $credential  The credential.
+	 * @param ClientCertificate    $certificate The certificate.
+	 *
+	 * @return bool
+	 */
+	private static function pins(array $credential, ClientCertificate $certificate): bool {
+		$fingerprint = ($credential['fingerprint'] ?? null);
+		if (is_string($fingerprint) === true && $fingerprint !== '') {
+			return hash_equals(strtolower($fingerprint), $certificate->fingerprint);
+		}
+
+		$issuer  = ($credential['issuerCertificate'] ?? null);
+		$pattern = ($credential['subjectPattern'] ?? null);
+		if (is_string($issuer) === false || $issuer === '' || is_string($pattern) === false || $pattern === '') {
+			return false;
+		}
+
+		if (fnmatch($pattern, $certificate->subject, FNM_NOESCAPE) === false) {
+			return false;
+		}
+
+		return @openssl_x509_verify($certificate->pem, $issuer) === 1;
+	}//end pins()
 
 	/**
 	 * Whether a credential is not expired at a moment.

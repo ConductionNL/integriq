@@ -38,6 +38,7 @@ use OCA\Integriq\Http\ProblemResponse;
 use OCA\Integriq\Rule\AvgBsnPolicyRuleInterface;
 use OCA\Integriq\Rule\CompositeFanoutRuleInterface;
 use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
+use OCA\Integriq\Service\Auth\ClientCertificateReader;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
@@ -194,6 +195,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
 	 *                                                        channels; built from the object service and
 	 *                                                        logger when not injected.
+	 * @param ClientCertificateReader|null $certificateReader Reads the web-server-verified client certificate for `mtls` rules.
 	 *
 	 * @return void
 	 */
@@ -226,6 +228,7 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?EndpointMessageGate $messageGate = null,
 		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
+		private readonly ?ClientCertificateReader $certificateReader = null,
 	) {
 		$this->productPolicy = $productPolicyService;
 		$this->upstreamRouter = $upstreamRouter;
@@ -3741,6 +3744,27 @@ class EndpointService implements EndpointServiceInterface {
 			}
 
 			return null;
+		}//end if
+
+		// The `mtls` type presents no header either: the web server verified a
+		// client certificate, which the reader takes from the server
+		// environment or, only from a trusted proxy, its forwarding header.
+		if ($authenticationType === 'mtls') {
+			try {
+				$this->authorizationService->authorizeClientCertificate(
+					certificate: $this->certificateReader?->fromRequest(),
+					consumers: (array)($authentication['consumers'] ?? [])
+				);
+			} catch (AuthenticationException $exception) {
+				return $this->unauthenticated(exception: $exception);
+			}
+
+			return $this->refuseMissingScopes(
+				authentication: $authentication,
+				authenticationType: $authenticationType,
+				header: '',
+				method: $method
+			);
 		}//end if
 
 		if (isset($authentication['header']) === true) {

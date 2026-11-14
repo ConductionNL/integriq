@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use DateTimeImmutable;
+use OCA\Integriq\Service\Auth\ClientCertificateReader;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -139,6 +140,10 @@ class ConsumerCredentialsController extends Controller {
 			return new JSONResponse(['error' => $this->l->t('Not Found')], Http::STATUS_NOT_FOUND);
 		}
 
+		if ($this->request->getParam('type') === ConsumerCredentials::TYPE_CLIENT_CERTIFICATE) {
+			return $this->pinCertificate(consumer: $consumer, label: $label, expiresAt: $expiresAt);
+		}
+
 		$generated = $this->credentials->generate(label: $label, expiresAt: $expiresAt);
 		$data = $consumer->getObject();
 		$list = $this->listOf(data: $data);
@@ -153,6 +158,59 @@ class ConsumerCredentialsController extends Controller {
 			Http::STATUS_CREATED
 		);
 	}//end create()
+
+	/**
+	 * Pin a client certificate on a consumer: the certificate itself, or an
+	 * issuing CA with a subject pattern. Nothing secret is stored or returned.
+	 *
+	 * @param ObjectEntity $consumer  The consumer.
+	 * @param string       $label     The label.
+	 * @param string|null  $expiresAt ISO-8601 expiry, or null.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
+	 */
+	private function pinCertificate(ObjectEntity $consumer, string $label, ?string $expiresAt): JSONResponse {
+		$certificate = null;
+		$issuer = null;
+		$pem = $this->request->getParam('certificate');
+		if (is_string($pem) === true && trim($pem) !== '') {
+			$certificate = ClientCertificateReader::parse(pem: $pem);
+		}
+
+		$issuerPem = $this->request->getParam('issuerCertificate');
+		if ($certificate === null && is_string($issuerPem) === true && trim($issuerPem) !== '') {
+			$issuer = ClientCertificateReader::parse(pem: $issuerPem);
+		}
+
+		$pattern = $this->request->getParam('subjectPattern');
+		if (is_string($pattern) === false) {
+			$pattern = null;
+		}
+
+		$entry = $this->credentials->certificateEntry(
+			label: $label,
+			certificate: $certificate,
+			issuer: $issuer,
+			subjectPattern: $pattern,
+			expiresAt: $expiresAt
+		);
+		if ($entry === null) {
+			return new JSONResponse(
+				['error' => $this->l->t('Give a PEM certificate, or an issuing CA certificate and a subject pattern.')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$data = $consumer->getObject();
+		$data[ConsumerCredentials::FIELD] = array_merge($this->listOf(data: $data), [$entry]);
+		if ($this->save(consumer: $consumer, data: $data) === false) {
+			return new JSONResponse(['error' => $this->l->t('The consumer could not be saved. Nothing changed.')], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		return new JSONResponse(['credential' => ConsumerCredentials::shown(credential: $entry)], Http::STATUS_CREATED);
+	}//end pinCertificate()
 
 	/**
 	 * Revoke one credential, leaving the others as they are.
