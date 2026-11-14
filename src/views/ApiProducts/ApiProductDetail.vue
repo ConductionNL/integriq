@@ -223,6 +223,55 @@
 						{{ formatMs(analytics.latency && analytics.latency.p99) }}
 					</dd>
 				</dl>
+				<!-- @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001 -->
+				<template v-if="analytics && !loadingAnalytics">
+					<div
+						v-for="split in analyticsSplits"
+						:key="split.key"
+						class="apiProductDetail__usage"
+						:data-testid="`analytics-${split.key}`">
+						<h4>{{ split.title }}</h4>
+						<p v-if="split.entries.length === 0" class="apiProductDetail__empty">
+							{{ t('integriq', 'No traffic in this period.') }}
+						</p>
+						<table v-else class="apiProductDetail__table">
+							<thead>
+								<tr>
+									<th scope="col">
+										{{ split.column }}
+									</th>
+									<th scope="col">
+										{{ t('integriq', 'Requests') }}
+									</th>
+									<th scope="col">
+										{{ t('integriq', 'Error rate') }}
+									</th>
+									<th scope="col">
+										{{ t('integriq', 'p50 latency') }}
+									</th>
+									<th scope="col">
+										{{ t('integriq', 'p95 latency') }}
+									</th>
+									<th scope="col">
+										{{ t('integriq', 'p99 latency') }}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(entry, index) in split.entries" :key="`${split.key}-${index}`">
+									<th scope="row">
+										{{ entryLabel(entry, split.key) }}
+									</th>
+									<td>{{ entry.requestCount }}</td>
+									<td>{{ formatPercent(entry.errorRate) }}</td>
+									<td>{{ formatMs(entry.latency && entry.latency.p50) }}</td>
+									<td>{{ formatMs(entry.latency && entry.latency.p95) }}</td>
+									<td>{{ formatMs(entry.latency && entry.latency.p99) }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</template>
 			</section>
 
 			<!-- Subscriptions -->
@@ -273,6 +322,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import { usageLabel, usageSplits } from './productUsage.js'
 
 let uidCounter = 0
 
@@ -340,6 +390,11 @@ export default {
 					label: e.name || e.endpoint || e.id,
 				}))
 		},
+
+		/** @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001 */
+		analyticsSplits() {
+			return usageSplits(this.analytics, t)
+		},
 	},
 
 	/**
@@ -387,6 +442,19 @@ export default {
 		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
 		 */
+		/**
+		 * The row label of one usage entry.
+		 *
+		 * @param {object} entry A `byConsumer` or `byEndpoint` entry.
+		 * @param {string} key `consumer` or `endpoint`.
+		 * @return {string} The entry's name, id, or "Anonymous".
+		 *
+		 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+		 */
+		entryLabel(entry, key) {
+			return usageLabel(entry, key, t)
+		},
+
 		formatPercent(value) {
 			if (typeof value !== 'number') return '—'
 			return `${(value * 100).toFixed(2)}%`
@@ -734,6 +802,31 @@ export default {
 	color: var(--color-main-text);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
+}
+
+.apiProductDetail__usage {
+	margin-top: 16px;
+	overflow-x: auto;
+}
+
+.apiProductDetail__table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.apiProductDetail__table th,
+.apiProductDetail__table td {
+	padding: 4px 12px 4px 0;
+	text-align: start;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.apiProductDetail__table thead th {
+	color: var(--color-text-maxcontrast);
+}
+
+.apiProductDetail__table tbody th {
+	font-weight: normal;
 }
 
 .apiProductDetail__fields {

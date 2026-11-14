@@ -34,6 +34,7 @@ namespace OCA\Integriq\Controller;
 use DateTime;
 use OCA\Integriq\Exception\ApprovalStateException;
 use OCA\Integriq\Service\ApprovalServiceInterface;
+use OCA\Integriq\Service\ProductUsageFigures;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -282,7 +283,9 @@ class ProductSubscriptionsController extends Controller {
 	 * Per-product gateway analytics — request count, error rate, and
 	 * p50/p95/p99 response-time latency percentiles computed from the most
 	 * recent inbound `call_log` rows carrying this product's uuid
-	 * (design.md `GET /api/products/{productId}/analytics`).
+	 * (design.md `GET /api/products/{productId}/analytics`), plus the same
+	 * figures per consumer (`byConsumer`) and per endpoint (`byEndpoint`),
+	 * highest request count first (REQ-APGU-001).
 	 *
 	 * The figures are PRODUCT-WIDE: they aggregate the call_log rows of every
 	 * consumer of this product, so one subscriber could read another's traffic
@@ -295,6 +298,7 @@ class ProductSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
 	 *
 	 * ADMIN ONLY, and now declared rather than implied. The previous revision
 	 * argued in prose that "absence of the attribute IS the admin gate" — but a
@@ -319,42 +323,74 @@ class ProductSubscriptionsController extends Controller {
 		}
 
 		$rows = $this->fetchProductCallLogRows(productId: $productId);
-
-		$requestCount = count($rows);
-		$errorCount = 0;
-		$responseTimes = [];
-
-		foreach ($rows as $row) {
-			$statusCode = (int)($row['statusCode'] ?? 0);
-			if ($statusCode >= 400) {
-				$errorCount++;
-			}
-
-			if (isset($row['responseTime']) === true && is_numeric($row['responseTime']) === true) {
-				$responseTimes[] = (float)$row['responseTime'];
-			}
-		}
-
-		sort($responseTimes);
-
-		$errorRate = 0;
-		if ($requestCount > 0) {
-			$errorRate = round(($errorCount / $requestCount), 4);
-		}
+		$figures = new ProductUsageFigures();
 
 		return new JSONResponse(
-			[
-				'requestCount' => $requestCount,
-				'errorRate' => $errorRate,
-				'latency' => [
-					'p50' => $this->percentile(sortedValues: $responseTimes, fraction: 0.5),
-					'p95' => $this->percentile(sortedValues: $responseTimes, fraction: 0.95),
-					'p99' => $this->percentile(sortedValues: $responseTimes, fraction: 0.99),
-				],
+			$figures->figures(rows: $rows) + [
+				'byConsumer' => $this->named(entries: $figures->breakdown(rows: $rows, field: 'consumer'), schema: 'consumer', key: 'consumer'),
+				'byEndpoint' => $this->named(entries: $figures->breakdown(rows: $rows, field: 'endpoint'), schema: 'endpoint', key: 'endpoint'),
 			]
 		);
 
 	}//end analytics()
+
+	/**
+	 * Breakdown entries keyed by `$key` and carrying the object's name.
+	 *
+	 * The name is looked up best-effort with RBAC off, like the rows themselves:
+	 * a consumer or endpoint that can no longer be read keeps its id and has no
+	 * name. An entry for rows without an id (an anonymous caller) has neither.
+	 *
+	 * @param list<array<string, mixed>> $entries The entries from ProductUsageFigures::breakdown().
+	 * @param string                     $schema  The schema the ids point at.
+	 * @param string                     $key     The key the id is returned under.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	private function named(array $entries, string $schema, string $key): array {
+		$named = [];
+		foreach ($entries as $entry) {
+			$id = $entry['id'];
+			unset($entry['id']);
+			$named[] = [$key => $id, 'name' => $this->nameOf(id: $id, schema: $schema)] + $entry;
+		}
+
+		return $named;
+	}//end named()
+
+	/**
+	 * The `name` of one object, or null when it has none or cannot be read.
+	 *
+	 * @param string|null $id     The object id.
+	 * @param string      $schema The object's schema.
+	 *
+	 * @return string|null
+	 */
+	private function nameOf(?string $id, string $schema): ?string {
+		if ($id === null) {
+			return null;
+		}
+
+		try {
+			$object = $this->orObjectService->find(id: $id, register: self::REGISTER, schema: $schema, _rbac: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		$data = [];
+		if ($object instanceof ObjectEntity) {
+			$data = $object->getObject();
+		}
+
+		$name = ($data['name'] ?? null);
+		if (is_string($name) === false || $name === '') {
+			return null;
+		}
+
+		return $name;
+	}//end nameOf()
 
 	/**
 	 * Fetch the bounded most-recent inbound `call_log` rows for a product
@@ -413,26 +449,6 @@ class ProductSubscriptionsController extends Controller {
 
 		return $rows;
 	}//end fetchProductCallLogRows()
-
-	/**
-	 * Nearest-rank percentile of a pre-sorted (ascending) value list.
-	 *
-	 * @param array<int, float> $sortedValues Ascending-sorted values.
-	 * @param float $fraction The percentile as a fraction (e.g. 0.95 for p95).
-	 *
-	 * @return float The percentile value, or 0 when the list is empty (REQ-APG-007 "zero, not an error").
-	 */
-	private function percentile(array $sortedValues, float $fraction): float {
-		$count = count($sortedValues);
-		if ($count === 0) {
-			return 0.0;
-		}
-
-		$index = ((int)ceil($fraction * $count) - 1);
-		$index = max(0, min(($count - 1), $index));
-
-		return (float)$sortedValues[$index];
-	}//end percentile()
 
 	/**
 	 * Resolve a subscription's linked, actionable `approval_request` and
