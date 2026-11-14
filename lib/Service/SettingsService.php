@@ -30,8 +30,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use InvalidArgumentException;
-use OCA\Integriq\BackgroundJob\RetentionRebaseJob;
-use OCP\BackgroundJob\IJobList;
+use OCA\Integriq\BackgroundJob\RetentionRebaseSchedulerInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -45,15 +44,15 @@ class SettingsService implements SettingsServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig      $config  The `integriq` app config the retention is kept in.
-	 * @param IJobList        $jobList Queues the rebase job.
-	 * @param LoggerInterface $logger  Records a change and a queued rebase.
+	 * @param IAppConfig                        $config          The `integriq` app config the retention is kept in.
+	 * @param RetentionRebaseSchedulerInterface $rebaseScheduler Queues the rebase job.
+	 * @param LoggerInterface                   $logger          Records a change and a queued rebase.
 	 *
 	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function __construct(
 		private readonly IAppConfig $config,
-		private readonly IJobList $jobList,
+		private readonly RetentionRebaseSchedulerInterface $rebaseScheduler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -66,7 +65,7 @@ class SettingsService implements SettingsServiceInterface {
 	 * @spec openspec/changes/platform-admin-defaults/specs/logs-and-statistics/spec.md#requirement-an-administrator-sets-retention-on-the-admin-page-req-adef-002
 	 */
 	public function getSettings(): array {
-		$rebase = json_decode($this->config->getValueString(app: 'integriq', key: RetentionRebaseJob::PROGRESS_KEY, default: ''), true);
+		$rebase = json_decode($this->config->getValueString(app: 'integriq', key: RetentionSettings::REBASE_PROGRESS_KEY, default: ''), true);
 		if (is_array($rebase) === false) {
 			$rebase = [];
 		}
@@ -127,10 +126,10 @@ class SettingsService implements SettingsServiceInterface {
 		$kinds = self::rebaseKinds(kinds: $kinds);
 		$this->config->setValueString(
 			app: 'integriq',
-			key: RetentionRebaseJob::PROGRESS_KEY,
+			key: RetentionSettings::REBASE_PROGRESS_KEY,
 			value: (string)json_encode(['status' => 'queued', 'kinds' => $kinds, 'processed' => 0, 'updated' => 0])
 		);
-		$this->jobList->add(RetentionRebaseJob::class, ['kinds' => $kinds, 'kind' => 0, 'offset' => 0]);
+		$this->rebaseScheduler->scheduleRebase(kinds: $kinds);
 		$this->logger->info('Integriq retention rebase queued', ['kinds' => $kinds]);
 
 		return ['queued' => true, 'kinds' => $kinds];
@@ -149,11 +148,11 @@ class SettingsService implements SettingsServiceInterface {
 	 */
 	private static function rebaseKinds(array $kinds): array {
 		if ($kinds === []) {
-			$kinds = array_keys(RetentionRebaseJob::SCHEMAS);
+			$kinds = array_keys(RetentionSettings::REBASE_SCHEMAS);
 		}
 
 		foreach ($kinds as $kind) {
-			if (is_string($kind) === false || isset(RetentionRebaseJob::SCHEMAS[$kind]) === false) {
+			if (is_string($kind) === false || isset(RetentionSettings::REBASE_SCHEMAS[$kind]) === false) {
 				throw new InvalidArgumentException('kinds: ' . (string)json_encode($kind) . ' is not a log kind that can be rebased.');
 			}
 		}

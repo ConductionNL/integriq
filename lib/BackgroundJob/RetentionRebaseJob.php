@@ -57,7 +57,7 @@ class RetentionRebaseJob extends QueuedJob {
 	/**
 	 * The app config key progress is kept under.
 	 */
-	public const PROGRESS_KEY = 'retention_rebase';
+	public const PROGRESS_KEY = RetentionSettings::REBASE_PROGRESS_KEY;
 
 	/**
 	 * Objects read per page.
@@ -75,12 +75,7 @@ class RetentionRebaseJob extends QueuedJob {
 	 *
 	 * @var array<string,string>
 	 */
-	public const SCHEMAS = [
-		'callLog' => 'call_log',
-		'jobLog' => 'job_log',
-		'syncLog' => 'synchronization_log',
-		'syncContractLog' => 'synchronization_contract_log',
-	];
+	public const SCHEMAS = RetentionSettings::REBASE_SCHEMAS;
 
 	/**
 	 * Constructor.

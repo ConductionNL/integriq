@@ -49,6 +49,24 @@ class RetentionSettings {
 	public const CONFIG_KEY = 'retention';
 
 	/**
+	 * The app config key a retention rebase keeps its progress under.
+	 */
+	public const REBASE_PROGRESS_KEY = 'retention_rebase';
+
+	/**
+	 * The log kinds a rebase can apply to, with the schema their logs live in.
+	 * Event messages carry no expiry, so there is nothing to rebase on them.
+	 *
+	 * @var array<string,string>
+	 */
+	public const REBASE_SCHEMAS = [
+		'callLog' => 'call_log',
+		'jobLog' => 'job_log',
+		'syncLog' => 'synchronization_log',
+		'syncContractLog' => 'synchronization_contract_log',
+	];
+
+	/**
 	 * Each log kind and the key it has in the stored retention JSON.
 	 *
 	 * @var array<string,string>

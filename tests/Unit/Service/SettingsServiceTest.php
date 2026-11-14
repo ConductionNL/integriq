@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\Integriq\BackgroundJob\RetentionRebaseJob;
+use OCA\Integriq\BackgroundJob\RetentionRebaseJobScheduler;
 use OCA\Integriq\Service\RetentionDefaults;
 use OCA\Integriq\Service\SettingsService;
 use OCP\BackgroundJob\IJobList;
@@ -37,6 +38,7 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\Integriq\Service\SettingsService
  * @uses   \OCA\Integriq\Service\RetentionSettings
+ * @uses   \OCA\Integriq\BackgroundJob\RetentionRebaseJobScheduler
  */
 class SettingsServiceTest extends TestCase {
 
@@ -192,6 +194,6 @@ class SettingsServiceTest extends TestCase {
 			}
 		);
 
-		return new SettingsService(config: $config, jobList: $this->jobList, logger: new NullLogger());
+		return new SettingsService(config: $config, rebaseScheduler: new RetentionRebaseJobScheduler(jobList: $this->jobList), logger: new NullLogger());
 	}//end service()
 }//end class
