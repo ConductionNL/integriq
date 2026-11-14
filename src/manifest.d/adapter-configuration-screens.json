@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 manifest fragment (adapter-configuration-screens, task 4). Manifest-driven index pages over the four single-record configurations an administrator owns. Placement follows the proposal's answer to open question 3: by data direction (src/menu-layout.json), so the outbound FSC services, bank feeds and card feeds sit under Connections and the inbound Open Formulieren forms under Gateway. Every column is a property its schema declares.",
+  "$comment": "ADR-037 manifest fragment (adapter-configuration-screens, task 4). Manifest-driven index pages over the four single-record configurations an administrator owns. Placement follows the proposal's answer to open question 3: by data direction (src/menu-layout.json), so the outbound FSC services, bank feeds and card feeds sit under Connections and the inbound Open Formulieren forms under Gateway. Every column is a property its schema declares. Tasks 2 and 3 add the LTI platform and tool index and detail pages, inbound, under Gateway, with the four lifecycle actions on the records they act on.",
   "pages": [
     {
       "id": "FscServices",
@@ -76,6 +76,422 @@
         "showEditAction": true,
         "documentationUrl": "https://integriq.conduction.nl"
       }
+    },
+    {
+      "id": "LtiPlatforms",
+      "route": "/lti-platforms",
+      "type": "index",
+      "title": "LTI platforms",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "lti_platform",
+        "columns": ["name", "issuer", "clientId", "status", "identityPolicy", "updated"],
+        "includeFields": ["name", "description", "issuer", "clientId", "authLoginUrl", "authTokenUrl", "jwksUri", "identityPolicy", "defaultProvisionGroup"],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "actions": [
+          {
+            "id": "view",
+            "label": "View",
+            "icon": "EyeOutline",
+            "handler": "navigate",
+            "route": "LtiPlatformDetail"
+          },
+          {
+            "id": "approve",
+            "label": "Approve",
+            "icon": "CheckCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/approve",
+            "method": "POST",
+            "successMessage": "The platform is approved.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "neq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "suspend",
+            "label": "Suspend",
+            "icon": "PauseCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/suspend",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Suspend this platform",
+            "confirmMessage": "Suspending this platform stops every launch from its LMS. Learners who start from that LMS are refused until the platform is approved again.",
+            "confirmLabel": "Suspend",
+            "successMessage": "The platform is suspended.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "eq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "generate-key",
+            "label": "Generate signing key",
+            "icon": "KeyPlus",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/keys/generate",
+            "method": "POST",
+            "successMessage": "A signing key was generated."
+          },
+          {
+            "id": "rotate-key",
+            "label": "Rotate signing key",
+            "icon": "KeyChange",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/keys/rotate",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Rotate the signing key",
+            "confirmMessage": "Rotating the key replaces the key the LMS holds for this platform. Launches signed with the old key are refused once the LMS has fetched the new one from the key set; give the LMS the new key before you continue.",
+            "confirmLabel": "Rotate key",
+            "successMessage": "The signing key was rotated."
+          }
+        ],
+        "_note": "The four lifecycle actions (lti#approve, lti#suspend, lti#generateKey, lti#rotateKey) sit on the record they act on: row actions on the index, header actions on the detail. Suspend and rotate key confirm and name what they cut off (proposal, Answers 1); approve and generate key run at once. No errorMessage is set, so a refusal shows the server's own reason (for example 'already has an active signing key; use rotate instead'). signingKeys is write-only (register.d/99-lti-*-secrets-writeonly.json) and written only by the key actions, so the edit form leaves it out and never reads or sends a stored key; status changes only through approve and suspend.",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "LtiPlatformDetail",
+      "route": "/lti-platforms/:id",
+      "type": "detail",
+      "title": "LTI platform",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "lti_platform",
+        "includeFields": ["name", "description", "issuer", "clientId", "authLoginUrl", "authTokenUrl", "jwksUri", "identityPolicy", "defaultProvisionGroup"],
+        "headerActions": [
+          {
+            "id": "approve",
+            "label": "Approve",
+            "icon": "CheckCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/approve",
+            "method": "POST",
+            "successMessage": "The platform is approved.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "neq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "suspend",
+            "label": "Suspend",
+            "icon": "PauseCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/suspend",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Suspend this platform",
+            "confirmMessage": "Suspending this platform stops every launch from its LMS. Learners who start from that LMS are refused until the platform is approved again.",
+            "confirmLabel": "Suspend",
+            "successMessage": "The platform is suspended.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "eq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "generate-key",
+            "label": "Generate signing key",
+            "icon": "KeyPlus",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/keys/generate",
+            "method": "POST",
+            "successMessage": "A signing key was generated."
+          },
+          {
+            "id": "rotate-key",
+            "label": "Rotate signing key",
+            "icon": "KeyChange",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_platform/@objectId/keys/rotate",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Rotate the signing key",
+            "confirmMessage": "Rotating the key replaces the key the LMS holds for this platform. Launches signed with the old key are refused once the LMS has fetched the new one from the key set; give the LMS the new key before you continue.",
+            "confirmLabel": "Rotate key",
+            "successMessage": "The signing key was rotated."
+          }
+        ],
+        "widgets": [
+          {
+            "id": "ltip-data",
+            "type": "data",
+            "icon": "LinkVariant",
+            "title": "Registration",
+            "content": {
+              "columns": 2
+            }
+          },
+          {
+            "id": "ltip-related",
+            "type": "related",
+            "icon": "LinkVariant",
+            "title": "Related"
+          }
+        ],
+        "layout": [
+          {
+            "id": "1",
+            "widgetId": "ltip-data",
+            "gridX": 0,
+            "gridY": 0,
+            "gridWidth": 8,
+            "gridHeight": 7
+          },
+          {
+            "id": "2",
+            "widgetId": "ltip-related",
+            "gridX": 8,
+            "gridY": 0,
+            "gridWidth": 4,
+            "gridHeight": 7
+          }
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true,
+          "tabs": [
+            {
+              "id": "audit",
+              "label": "Audit trail",
+              "icon": "History",
+              "widgets": [
+                {
+                  "type": "audit"
+                }
+              ]
+            }
+          ]
+        },
+        "_note": "The four lifecycle actions (lti#approve, lti#suspend, lti#generateKey, lti#rotateKey) sit on the record they act on: row actions on the index, header actions on the detail. Suspend and rotate key confirm and name what they cut off (proposal, Answers 1); approve and generate key run at once. No errorMessage is set, so a refusal shows the server's own reason (for example 'already has an active signing key; use rotate instead'). signingKeys is write-only (register.d/99-lti-*-secrets-writeonly.json) and written only by the key actions, so the edit form leaves it out and never reads or sends a stored key; status changes only through approve and suspend.",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "LtiTools",
+      "route": "/lti-tools",
+      "type": "index",
+      "title": "LTI tools",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "lti_tool",
+        "columns": ["name", "clientId", "launchUrl", "status", "updated"],
+        "includeFields": ["name", "description", "clientId", "oidcLoginUrl", "launchUrl", "redirectUris", "jwksUri"],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "actions": [
+          {
+            "id": "view",
+            "label": "View",
+            "icon": "EyeOutline",
+            "handler": "navigate",
+            "route": "LtiToolDetail"
+          },
+          {
+            "id": "approve",
+            "label": "Approve",
+            "icon": "CheckCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/approve",
+            "method": "POST",
+            "successMessage": "The tool is approved.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "neq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "suspend",
+            "label": "Suspend",
+            "icon": "PauseCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/suspend",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Suspend this tool",
+            "confirmMessage": "Suspending this tool stops every launch into it from this instance until the tool is approved again.",
+            "confirmLabel": "Suspend",
+            "successMessage": "The tool is suspended.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "eq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "generate-key",
+            "label": "Generate signing key",
+            "icon": "KeyPlus",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/keys/generate",
+            "method": "POST",
+            "successMessage": "A signing key was generated."
+          },
+          {
+            "id": "rotate-key",
+            "label": "Rotate signing key",
+            "icon": "KeyChange",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/keys/rotate",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Rotate the signing key",
+            "confirmMessage": "Rotating the key replaces the key this tool uses to check our launches. The tool must fetch the new key from our key set; until it does, its launches fail.",
+            "confirmLabel": "Rotate key",
+            "successMessage": "The signing key was rotated."
+          }
+        ],
+        "_note": "The four lifecycle actions (lti#approve, lti#suspend, lti#generateKey, lti#rotateKey) sit on the record they act on: row actions on the index, header actions on the detail. Suspend and rotate key confirm and name what they cut off (proposal, Answers 1); approve and generate key run at once. No errorMessage is set, so a refusal shows the server's own reason (for example 'already has an active signing key; use rotate instead'). signingKeys is write-only (register.d/99-lti-*-secrets-writeonly.json) and written only by the key actions, so the edit form leaves it out and never reads or sends a stored key; status changes only through approve and suspend.",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "LtiToolDetail",
+      "route": "/lti-tools/:id",
+      "type": "detail",
+      "title": "LTI tool",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "lti_tool",
+        "includeFields": ["name", "description", "clientId", "oidcLoginUrl", "launchUrl", "redirectUris", "jwksUri"],
+        "headerActions": [
+          {
+            "id": "approve",
+            "label": "Approve",
+            "icon": "CheckCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/approve",
+            "method": "POST",
+            "successMessage": "The tool is approved.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "neq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "suspend",
+            "label": "Suspend",
+            "icon": "PauseCircleOutline",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/suspend",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Suspend this tool",
+            "confirmMessage": "Suspending this tool stops every launch into it from this instance until the tool is approved again.",
+            "confirmLabel": "Suspend",
+            "successMessage": "The tool is suspended.",
+            "visibleWhen": {
+              "field": "status",
+              "op": "eq",
+              "value": "approved"
+            }
+          },
+          {
+            "id": "generate-key",
+            "label": "Generate signing key",
+            "icon": "KeyPlus",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/keys/generate",
+            "method": "POST",
+            "successMessage": "A signing key was generated."
+          },
+          {
+            "id": "rotate-key",
+            "label": "Rotate signing key",
+            "icon": "KeyChange",
+            "type": "api-call",
+            "url": "/apps/integriq/api/lti/lti_tool/@objectId/keys/rotate",
+            "method": "POST",
+            "confirm": true,
+            "variant": "error",
+            "confirmTitle": "Rotate the signing key",
+            "confirmMessage": "Rotating the key replaces the key this tool uses to check our launches. The tool must fetch the new key from our key set; until it does, its launches fail.",
+            "confirmLabel": "Rotate key",
+            "successMessage": "The signing key was rotated."
+          }
+        ],
+        "widgets": [
+          {
+            "id": "ltit-data",
+            "type": "data",
+            "icon": "LinkVariant",
+            "title": "Registration",
+            "content": {
+              "columns": 2
+            }
+          },
+          {
+            "id": "ltit-related",
+            "type": "related",
+            "icon": "LinkVariant",
+            "title": "Related"
+          }
+        ],
+        "layout": [
+          {
+            "id": "1",
+            "widgetId": "ltit-data",
+            "gridX": 0,
+            "gridY": 0,
+            "gridWidth": 8,
+            "gridHeight": 7
+          },
+          {
+            "id": "2",
+            "widgetId": "ltit-related",
+            "gridX": 8,
+            "gridY": 0,
+            "gridWidth": 4,
+            "gridHeight": 7
+          }
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true,
+          "tabs": [
+            {
+              "id": "audit",
+              "label": "Audit trail",
+              "icon": "History",
+              "widgets": [
+                {
+                  "type": "audit"
+                }
+              ]
+            }
+          ]
+        },
+        "_note": "The four lifecycle actions (lti#approve, lti#suspend, lti#generateKey, lti#rotateKey) sit on the record they act on: row actions on the index, header actions on the detail. Suspend and rotate key confirm and name what they cut off (proposal, Answers 1); approve and generate key run at once. No errorMessage is set, so a refusal shows the server's own reason (for example 'already has an active signing key; use rotate instead'). signingKeys is write-only (register.d/99-lti-*-secrets-writeonly.json) and written only by the key actions, so the edit form leaves it out and never reads or sends a stored key; status changes only through approve and suspend.",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
     }
   ],
   "menu": [
@@ -114,6 +530,20 @@
           "icon": "FormSelect",
           "route": "OpenFormulierenForms",
           "order": 50
+        },
+        {
+          "id": "LtiPlatforms",
+          "label": "LTI platforms",
+          "icon": "SchoolOutline",
+          "route": "LtiPlatforms",
+          "order": 60
+        },
+        {
+          "id": "LtiTools",
+          "label": "LTI tools",
+          "icon": "ApplicationOutline",
+          "route": "LtiTools",
+          "order": 70
         }
       ]
     }
