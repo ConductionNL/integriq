@@ -318,4 +318,119 @@ class WebhookConnectionsSettingsControllerTest extends TestCase {
 		$this->assertNull($rows['rod-webhook']);
 
 	}//end testGetSaysWhetherTheHandlerGroupIsEmpty()
+
+	/**
+	 * An unknown signature scheme is refused on its field, and nothing is written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+	 */
+	public function testAnUnknownSchemeIsRefused(): void {
+		$this->params = ['userId' => 'rod-acc', 'scheme' => 'rot13'];
+
+		$response = $this->controller()->setConfig(authorizationType: 'rod-webhook');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('rot13', $response->getData()['fieldErrors']['scheme']);
+		$this->assertSame([], $this->worldWrites);
+	}//end testAnUnknownSchemeIsRefused()
+
+	/**
+	 * Two connections for one webhook: a save is refused with 409, and the list says it is ambiguous.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-the-settings-list-every-webhook-without-its-secret
+	 */
+	public function testTwoConnectionsForOneWebhookAreNamedAndNotOverwritten(): void {
+		$this->addWebhookConsumer(profile: WebhookProfiles::rod(), userId: 'rod-acc', uuid: 'consumer-rod-1');
+		$this->addWebhookConsumer(profile: WebhookProfiles::rod(), userId: 'rod-acc', uuid: 'consumer-rod-2');
+		$this->params = ['userId' => 'rod-acc', 'secret' => 's'];
+
+		$response = $this->controller()->setConfig(authorizationType: 'rod-webhook');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertStringContainsString('More than one', $response->getData()['errors'][0]);
+		$this->assertSame([], $this->worldWrites);
+
+		$rows = array_column($this->controller()->getConfig()->getData()['connections'], null, 'authorizationType');
+		$this->assertTrue($rows['rod-webhook']['ambiguous']);
+		$this->assertFalse($rows['rod-webhook']['configured']);
+	}//end testTwoConnectionsForOneWebhookAreNamedAndNotOverwritten()
+
+	/**
+	 * A blank header falls back to the webhook's own header.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+	 */
+	public function testABlankHeaderKeepsTheWebhooksHeader(): void {
+		$this->params = ['userId' => 'rod-acc', 'secret' => 's', 'header' => '   ', 'toleranceSeconds' => '0'];
+
+		$this->controller()->setConfig(authorizationType: 'rod-webhook');
+
+		$trust = array_values($this->worldConsumers)[0]['authorizationConfiguration'];
+		$this->assertSame(WebhookProfiles::rod()->defaultHeader, $trust['header']);
+		$this->assertSame(1, $trust['toleranceSeconds'], 'the tolerance is at least one second');
+	}//end testABlankHeaderKeepsTheWebhooksHeader()
+
+	/**
+	 * A save OpenRegister refuses is answered with 400 and the reason.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+	 */
+	public function testARefusedSaveIsReported(): void {
+		$this->worldRefuseWritesTo = ['consumer'];
+		$this->params = ['userId' => 'rod-acc', 'secret' => 's'];
+
+		$response = $this->controller()->setConfig(authorizationType: 'rod-webhook');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('connection was not saved', $response->getData()['errors'][0]);
+		$this->assertSame([], $this->worldConsumers);
+	}//end testARefusedSaveIsReported()
+
+	/**
+	 * When the account's rights cannot be checked, the save goes through with a warning.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-administrator-chooses-a-webhooks-account
+	 */
+	public function testUncheckableRightsSaveWithAWarning(): void {
+		$this->worldHasPermissionHandler = false;
+		$this->params = ['userId' => 'rod-acc', 'secret' => 's'];
+
+		$response = $this->controller()->setConfig(authorizationType: 'rod-webhook');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertStringContainsString('could not be checked', $response->getData()['warnings'][0]);
+		$this->assertSame('rod-acc', array_values($this->worldConsumers)[0]['userId']);
+	}//end testUncheckableRightsSaveWithAWarning()
+
+	/**
+	 * The list says when a stored account is disabled or gone, and reads a broken trust block as unset.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-the-settings-list-every-webhook-without-its-secret
+	 */
+	public function testTheListNamesDisabledAndMissingAccounts(): void {
+		$this->addAccount(uid: 'off', enabled: false);
+		$this->addWebhookConsumer(profile: WebhookProfiles::rod(), userId: 'off', uuid: 'consumer-rod');
+		$this->addWebhookConsumer(profile: WebhookProfiles::peppol(), userId: 'ghost', uuid: 'consumer-peppol');
+		$this->worldConsumers['consumer-peppol']['authorizationConfiguration'] = 'not a block';
+
+		$rows = array_column($this->controller()->getConfig()->getData()['connections'], null, 'authorizationType');
+
+		$this->assertSame(['state' => 'disabled', 'displayName' => 'off'], $rows['rod-webhook']['account']);
+		$this->assertSame(['state' => 'unknown', 'displayName' => 'ghost'], $rows['peppol-webhook']['account']);
+		$this->assertFalse($rows['peppol-webhook']['secretConfigured']);
+		$this->assertSame(WebhookProfiles::peppol()->defaultHeader, $rows['peppol-webhook']['header']);
+	}//end testTheListNamesDisabledAndMissingAccounts()
 }//end class
+

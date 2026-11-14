@@ -28,6 +28,21 @@ Two distinct mechanisms control dormancy, and the detail dialog dispatches accor
 
 The detail dialog re-checks the live status when it opens (`GET /api/catalog/items/{id}/status`), so a stale card never offers an action that has already been taken.
 
+## Bookkeeping connectors
+
+shillinq's integrations page lists integriq's catalogue filtered on six bookkeeping categories: `Bank`, `Payments`, `E-invoicing`, `Tax filing`, `Commerce` and `Payroll`. These names are a contract (`CatalogRegistryService::BOOKKEEPING_CATEGORIES`): a bookkeeping connector template gets one of them through `SLUG_CATEGORY_OVERRIDES`, and `CatalogRegistryServiceTest::testEveryBookkeepingTemplateHasABookkeepingCategory` fails, naming the slug, when one does not. Add a new bookkeeping slug to that test's list.
+
+| Template | Slug | Category |
+|---|---|---|
+| Peppol access point | `peppol-access-point` | E-invoicing |
+| PSD2 bank aggregator | `psd2-bank-aggregator` | Bank |
+| Corporate card feed | `corporate-card-feed` | Bank |
+| Mollie payments | `mollie-payments` | Payments |
+| ECB euro reference rates | `ecb-eurofxref-daily` | Bank |
+| WooCommerce, Shopify, Lightspeed shops | `woocommerce-shop`, `shopify-shop`, `lightspeed-shop` | Commerce |
+
+Each ships dormant, with its live binding (`rest` or `mollie`) and its credential as a broker reference (`configuration.authentication.credentialRef`), never a key: instantiating the template is the step where an administrator creates that credential. The sandbox sources of the same connectors in `lib/Settings/integriq_seed_data.json` (`peppol-sandbox`, `bank-aggregator-sandbox`, `card-provider-sandbox`, `payment-sandbox`) are for demos only; they are not catalogue items.
+
 ## Authorization
 
 Enable/Instantiate is gated twice, per ADR-023:

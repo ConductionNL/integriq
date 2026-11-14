@@ -142,6 +142,7 @@ class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: a migration reads the legacy webhook trust, run as the system.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -206,6 +207,7 @@ class WebhookTrustMigrator implements WebhookTrustMigratorInterface {
 			register: DsoConnection::REGISTER,
 			schema: self::SCHEMA_SOURCE,
 			_rbac: false,
+			// Unscoped: a migration reads the raw stored source, run as the system.
 			_multitenancy: false,
 			_render: false
 		);

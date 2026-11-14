@@ -1436,6 +1436,13 @@
             "colSpan": 12
           },
           {
+            "id": "src-body-capture",
+            "component": "BodyCaptureWindow",
+            "title": "Investigation window",
+            "placement": "before-body",
+            "colSpan": 12
+          },
+          {
             "id": "src-document-generation",
             "component": "DocumentGenerationSourcePanel",
             "placement": "after-data",
@@ -1474,9 +1481,13 @@
       "title": "Source logs",
       "actionsComponent": "CallLogActions",
       "slots": {
-        "row-actions": "CallLogRowActions"
+        "row-actions": "CallLogRowActions",
+        "row-detail": "CallLogDetail"
       },
       "config": {
+        "filter": {
+          "direction": "outbound"
+        },
         "filterControls": [
           {
             "key": "statusCode",
@@ -2344,6 +2355,7 @@
           "interval",
           "isEnabled",
           "lastRun",
+          "nextRun",
           "status"
         ],
         "includeFields": [
@@ -2352,6 +2364,7 @@
           "jobClass",
           "arguments",
           "interval",
+          "schedule",
           "timeSensitive",
           "allowParallelRuns",
           "isEnabled",

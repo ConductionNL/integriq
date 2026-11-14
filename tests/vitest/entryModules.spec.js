@@ -7,8 +7,8 @@
  * "Synced from" integration registration, the public path, the pinia
  * instance and the admin settings entry.
  *
- * main.js is not covered: it reads the manifest fragments through webpack's
- * require.context, which only exists inside a webpack build.
+ * main.js is covered separately in mainEntry.spec.js, which stands in for
+ * the webpack-only require.context it reads the manifest fragments through.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

@@ -68,6 +68,7 @@ final class StandardProtocolPaths {
 		'NotifyNL inbound'                                                      => '#^/api/notifynl/inbound$#',
 		'Open Formulieren submissions'                                          => '#^/api/open-formulieren/submissions$#',
 		'Inbound intake channels'                                               => '#^/api/intake/channels/[^/]+/inbound$#',
+		'CloudEvents receivers'                                                 => '#^/api/cloudevents/sources/[^/]+$#',
 		'Telephony (CTI) events'                                                => '#^/api/cti/[^/]+/events$#',
 		'Inbound verdicts'                                                      => '#^/api/verdicts/inbound$#',
 		'Proxied endpoints'                                                     => '#^/api/endpoint/#',
