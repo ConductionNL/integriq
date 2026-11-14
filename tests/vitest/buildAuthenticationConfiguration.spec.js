@@ -80,4 +80,16 @@ describe('buildAuthenticationConfiguration', () => {
 			groups: ['admin'],
 		})
 	})
+
+	it('OMITS keys when apiKeys is explicitly null (the default only covers undefined)', () => {
+		const auth = buildAuthenticationConfiguration({
+			type: 'jwt',
+			users: ['alice'],
+			groups: [],
+			apiKeys: null,
+		})
+
+		expect(Object.hasOwn(auth, 'keys')).toBe(false)
+		expect(auth).toEqual({ type: 'jwt', users: ['alice'], groups: [] })
+	})
 })

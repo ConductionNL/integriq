@@ -405,6 +405,7 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 				schema: self::SCHEMA,
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: system write of an alert raised by the connection monitor.
 				_multitenancy: false,
 			);
 		} catch (\Throwable $exception) {
