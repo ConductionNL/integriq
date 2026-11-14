@@ -88,24 +88,36 @@ class ConnectionHandoverListener implements IEventListener {
 		}
 
 		$slug = self::sourceSlug(event: $event, defaultSlug: $defaultSlug);
+		self::answer(event: $event, answer: $this->takeOver(slug: $slug, settings: $settings));
 
+	}//end handle()
+
+	/**
+	 * Hand the settings to the handover service; every given part fails when it throws.
+	 *
+	 * @param string               $slug     The source slug.
+	 * @param array<string, mixed> $settings The handed-over settings.
+	 *
+	 * @return array<string, string> Per given part: taken, already-set, conflict or failed.
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private function takeOver(string $slug, array $settings): array {
 		try {
-			$answer = $this->container->get(ConnectionHandoverService::class)->takeOver(sourceSlug: $slug, settings: $settings);
+			return $this->container->get(ConnectionHandoverService::class)->takeOver(sourceSlug: $slug, settings: $settings);
 		} catch (Throwable $e) {
 			// Only the class: a message could carry a handed-over value.
 			$this->logger->error(
 				'[integriq] connection handover failed',
 				['app' => 'integriq', 'errorClass' => get_class($e)]
 			);
-			$answer = array_fill_keys(
+			return array_fill_keys(
 				array_keys(array_intersect_key($settings, ConnectionHandoverService::PLAIN_PARTS + ConnectionHandoverService::SECRET_PARTS)),
 				ConnectionHandoverService::FAILED
 			);
 		}
 
-		self::answer(event: $event, answer: $answer);
-
-	}//end handle()
+	}//end takeOver()
 
 	/**
 	 * The trimmed source slug the event names, else the default slug for its class.
