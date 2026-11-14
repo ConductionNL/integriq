@@ -1379,6 +1379,9 @@
         "row-actions": "CallLogRowActions"
       },
       "config": {
+        "filter": {
+          "direction": "outbound"
+        },
         "filterControls": [
           {
             "key": "statusCode",
