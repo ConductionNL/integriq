@@ -118,6 +118,9 @@
 		<job>OCA\Integriq\BackgroundJob\EventRetryJob</job>
 		<job>OCA\Integriq\BackgroundJob\LtiKeyRetirementJob</job>
 		<job>OCA\Integriq\BackgroundJob\BankfeedSyncJob</job>
+		<!-- messaging-payment-command-settlements-and-point-of-sale: once a day,
+		     report each new provider settlement as nl.conduction.payment.settlement. -->
+		<job>OCA\Integriq\BackgroundJob\PaymentSettlementPullJob</job>
 		<job>OCA\Integriq\BackgroundJob\CardfeedSyncJob</job>
 		<job>OCA\Integriq\BackgroundJob\EudiStatusListRefreshJob</job>
 		<job>OCA\Integriq\BackgroundJob\KissPullJob</job>
@@ -280,6 +283,10 @@
 			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
 			     is seeded first and this step then has nothing to do. Never throws. -->
 			<step>OCA\Integriq\Repair\BroadenExchangeReadDefault</step>
+			<!-- portal-idp-broker-config: warns, never writes. One warning per
+			     superseded idp broker key that still holds a value, never the value.
+			     Upgrade only: a first install has none of these keys. -->
+			<step>OCA\Integriq\Repair\WarnSupersededIdpBrokerKeys</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\FlagSourceSecretsWriteOnly</step>
 			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
@@ -580,6 +587,14 @@
 		     not written with their leading dashes here.) -->
 		<command>OCA\Integriq\Command\FlowStepsToGraph</command>
 		<command>OCA\Integriq\Command\IdpConsumerCommand</command>
+		<!-- platform-integrations-as-code: list, run and test sources,
+		     synchronizations and jobs from the shell; exit 0, 1 failed, 2 not found. -->
+		<command>OCA\Integriq\Command\Integration\SourceList</command>
+		<command>OCA\Integriq\Command\Integration\SourceTest</command>
+		<command>OCA\Integriq\Command\Integration\SynchronizationList</command>
+		<command>OCA\Integriq\Command\Integration\SynchronizationRun</command>
+		<command>OCA\Integriq\Command\Integration\JobList</command>
+		<command>OCA\Integriq\Command\Integration\JobRun</command>
 	</commands>
 
 	<settings>
