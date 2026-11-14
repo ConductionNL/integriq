@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (connectors-webshop-orders). The dormant Lightspeed eCom shop template. Its mapping and synchronization are not shipped yet: see the template's description.",
+  "$comment": "ADR-037 register fragment (connectors-webshop-orders). The dormant Lightspeed eCom shop template, its mapping onto shillinq's WebshopOrder and an incremental synchronization of the shop's orders. No code: the synchronization engine does the work, and fetches each order's lines from its products resource before the mapping runs.",
   "components": {
     "objects": [
       {
@@ -9,7 +9,7 @@
           "slug": "lightspeed-shop"
         },
         "name": "Lightspeed eCom shop",
-        "description": "A Lightspeed eCom (C-Series) shop (https://developers.lightspeedhq.com/ecom/). Orders: GET <cluster>/<language>/orders.json, changed-since filter `updated_at_min`. Auth: an API key and secret over HTTP Basic, the secret held by the credential broker. Set the location to your cluster and shop language (for example https://api.webshopapp.com/nl), the API key and the credential. The order list names an order's lines only as a link to a separate resource, so the mapping onto shillinq's WebshopOrder is not shipped with this template yet.",
+        "description": "A Lightspeed eCom (C-Series) shop (https://developers.lightspeedhq.com/ecom/). Orders: GET <cluster>/<language>/orders.json, at most 250 per page, changed-since filter `updated_at_min`; an order's lines: GET <cluster>/<language>/orders/<id>/products.json, which the synchronization fetches per order. Auth: an API key and secret over HTTP Basic, the secret held by the credential broker. Set the location to your cluster and shop language (for example https://api.webshopapp.com/nl), the username to the API key, add the credential, then enable.",
         "type": "api",
         "location": "",
         "auth": "basic",
@@ -33,6 +33,103 @@
         },
         "isEnabled": false,
         "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "lightspeed-shop-to-webshop-order"
+        },
+        "name": "Lightspeed eCom order to shillinq WebshopOrder",
+        "description": "One Lightspeed eCom order as shillinq's WebshopOrder (shillinq sales-webshop-orders, design D2). The lines come from the order's products resource, which the synchronization fetches and merges in as `orderProducts` before this mapping runs. Fill `channelId` and `administrationId` with the ids of this shop's WebshopChannel in shillinq (Sales, Web shops): the synchronization does not run while either is empty. Lightspeed gives every price with and without VAT; the lines, shipping and discount are written including VAT. The order carries the buyer's VAT and Chamber of Commerce numbers, which are passed on. The mapping never writes shillinq's own fields (`intakeState`, `arInvoiceId`, `creditNoteId`, `refusalReason`). `payment.status` is paid, pending, refunded or cancelled; a later fetch of the same order updates it on the same object.",
+        "mapping": {
+          "channelId": "",
+          "administrationId": "",
+          "shopOrderId": "{{ number|default(id) }}",
+          "orderedAt": "{{ createdAt|date('Y-m-d\\\\TH:i:s\\\\Z', 'UTC') }}",
+          "buyer.type": "{{ isCompany|default(false) or companyName|default('') is not empty ? 'business' : 'consumer' }}",
+          "buyer.name": "{{ addressBillingName|default('') is not empty ? addressBillingName : ([firstname|default(''), middlename|default(''), lastname|default('')]|filter(p => p is not empty))|join(' ') }}",
+          "buyer.email": "{{ email|default('') }}",
+          "buyer.companyName": "{{ companyName|default('') }}",
+          "buyer.vatId": "{{ companyVatNumber|default('') }}",
+          "buyer.kvkNumber": "{{ companyCoCNumber|default('') }}",
+          "buyer.address": "{{ ([([addressBillingStreet|default(''), (addressBillingNumber|default('') ~ addressBillingExtension|default(''))]|filter(p => p is not empty))|join(' '), addressBillingStreet2|default(''), (addressBillingZipcode|default('') ~ ' ' ~ addressBillingCity|default(''))|trim]|filter(p => p is not empty))|join(', ') }}",
+          "buyer.countryCode": "{{ addressBillingCountry.code|default('')|upper }}",
+          "currency": "{{ currency|default('EUR')|upper }}",
+          "pricesIncludeVat": "true",
+          "lines": "{{ orderProducts|default([])|map(l => {sku: l.sku|default('') is not empty ? l.sku : l.articleCode|default(''), description: ([l.productTitle|default(''), l.variantTitle|default('')]|filter(p => p is not empty))|join(' - '), quantity: l.quantityOrdered, unitPrice: (l.basePriceIncl + 0)|round(2), vatRate: ((l.taxRate|default(0)) * 100)|round(0)})|json_encode }}",
+          "shipping": "{{ (shipmentPriceIncl|default(0) + 0)|round(2) }}",
+          "discountTotal": "{{ (discountAmount|default(0) + 0)|round(2) }}",
+          "totals.net": "{{ (priceExcl + 0)|round(2) }}",
+          "totals.vat": "{{ (priceIncl - priceExcl)|round(2) }}",
+          "totals.gross": "{{ (priceIncl + 0)|round(2) }}",
+          "payment.status": "{{ status == 'cancelled' or paymentStatus == 'cancelled' ? 'cancelled' : (paymentStatus == 'refunded' ? 'refunded' : (paymentStatus in ['paid', 'partially_refunded'] ? 'paid' : 'pending')) }}",
+          "payment.method": "{{ paymentTitle|default('') }}",
+          "payment.providerPaymentId": ""
+        },
+        "unset": [],
+        "cast": {
+          "pricesIncludeVat": "bool",
+          "lines": "jsonToArray",
+          "shipping": "float",
+          "discountTotal": "float",
+          "totals.net": "float",
+          "totals.vat": "float",
+          "totals.gross": "float"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "lightspeed-shop-orders"
+        },
+        "name": "Lightspeed eCom orders to shillinq",
+        "description": "Writes the Lightspeed eCom shop's orders into shillinq as one WebshopOrder each, incrementally: each run asks only for orders changed since the last complete run (`updated_at_min`, read from each order's `updatedAt`), page by page at 250 orders, and the cursor moves only after a complete fetch. For every order its lines are fetched from orders/<id>/products.json and merged in before the mapping. Each order is kept on its Lightspeed order id, so a later refund or cancellation updates the payment status of the WebshopOrder already written and never makes a second one. Nothing is deleted. Off until the source and the mapping's channel and administration ids are filled.",
+        "sourceId": "lightspeed-shop",
+        "sourceType": "api",
+        "sourceTargetMapping": "lightspeed-shop-to-webshop-order",
+        "sourceConfig": {
+          "requiredMappingValues": [
+            {
+              "mapping": "lightspeed-shop-to-webshop-order",
+              "key": "channelId",
+              "name": "the shillinq WebshopChannel id of this Lightspeed eCom shop"
+            },
+            {
+              "mapping": "lightspeed-shop-to-webshop-order",
+              "key": "administrationId",
+              "name": "the shillinq administration id of this Lightspeed eCom shop"
+            }
+          ],
+          "endpoint": "/orders.json",
+          "query": {
+            "updated_at_min": "{{ cursor }}",
+            "limit": 250
+          },
+          "idPosition": "id",
+          "resultsPosition": "orders",
+          "usesPagination": true,
+          "paginationMode": "page",
+          "paginationQuery": "page",
+          "pageSize": 250,
+          "cursorField": "updatedAt",
+          "extraDataConfigs": [
+            {
+              "staticEndpoint": "/orders/{{ originId }}/products.json",
+              "mergeExtraData": true,
+              "unsetConfigKey": "query"
+            }
+          ]
+        },
+        "syncMode": "incremental",
+        "conditions": [],
+        "targetId": "shillinq/WebshopOrder",
+        "targetType": "register/schema",
+        "isEnabled": false,
         "version": "1.0.0"
       }
     ]

@@ -162,38 +162,35 @@ class IdpBrokerConfigTest extends TestCase {
 	}//end testSaveConsumerKeepsTheOthers()
 
 	/**
-	 * Entity ids and salts are looked up case- and whitespace-insensitively, empty when absent.
+	 * The entity ids, salts and assurance aliases are no longer read from app
+	 * config: each organisation's registration carries them (task 7). Values
+	 * still stored under the superseded keys are ignored.
 	 *
 	 * @return void
 	 */
-	public function testEntityIdAndSaltLookupsNormaliseTheKey(): void {
-		$this->settings[IdpBrokerConfig::KEY_ENTITY_IDS] = json_encode(['digid' => 'urn:sp:1']);
-		$this->settings[IdpBrokerConfig::KEY_SALTS] = json_encode(['gemeente-x' => 'salt-x']);
-		$config = $this->config();
+	public function testTheSupersededKeysAreNoLongerRead(): void {
+		foreach (['entityId', 'organisationSalt', 'trustAliases'] as $method) {
+			$this->assertFalse(method_exists(IdpBrokerConfig::class, $method), $method . ' is still read');
+		}
 
-		$this->assertSame('urn:sp:1', $config->entityId(provider: ' DigiD '));
-		$this->assertSame('', $config->entityId(provider: 'eidas'));
-		$this->assertSame('salt-x', $config->organisationSalt(organisation: 'Gemeente-X'));
-		$this->assertSame('', $config->organisationSalt(organisation: 'gemeente-y'));
-
-	}//end testEntityIdAndSaltLookupsNormaliseTheKey()
-
-	/**
-	 * Trust aliases are narrowed to strings; a non-map entry reads as none.
-	 *
-	 * @return void
-	 */
-	public function testTrustAliasesAreNarrowedOrEmpty(): void {
-		$this->settings[IdpBrokerConfig::KEY_TRUST_ALIASES] = json_encode(
-			['digid' => ['Midden+' => 'substantieel', '2' => 3], 'eidas' => 'high']
+		$read = [];
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			function (string $app, string $key, string $default = '') use (&$read) {
+				$read[] = $key;
+				return ($this->settings[$key] ?? $default);
+			}
 		);
-		$config = $this->config();
+		$config = new IdpBrokerConfig($appConfig);
+		$config->isEnabled();
+		$config->consumer(consumer: 'portaliq');
+		$config->hasConsumer(consumer: 'portaliq');
 
-		$this->assertSame(['Midden+' => 'substantieel', '2' => '3'], $config->trustAliases(provider: 'DIGID'));
-		$this->assertSame([], $config->trustAliases(provider: 'eidas'));
-		$this->assertSame([], $config->trustAliases(provider: 'eherkenning'));
+		$this->assertNotContains(IdpBrokerConfig::KEY_ENTITY_IDS, $read);
+		$this->assertNotContains(IdpBrokerConfig::KEY_SALTS, $read);
+		$this->assertNotContains(IdpBrokerConfig::KEY_TRUST_ALIASES, $read);
 
-	}//end testTrustAliasesAreNarrowedOrEmpty()
+	}//end testTheSupersededKeysAreNoLongerRead()
 
 	/**
 	 * A setting that is not a JSON object reads as an empty map.
@@ -202,12 +199,10 @@ class IdpBrokerConfigTest extends TestCase {
 	 */
 	public function testANonObjectSettingReadsAsEmpty(): void {
 		$this->settings[IdpBrokerConfig::KEY_CONSUMERS] = '"legacy"';
-		$this->settings[IdpBrokerConfig::KEY_SALTS] = '{not json';
 		$config = $this->config();
 
 		$this->assertFalse($config->hasConsumer(consumer: 'legacy'));
 		$this->assertNull($config->consumer(consumer: '0'));
-		$this->assertSame('', $config->organisationSalt(organisation: 'gemeente-x'));
 
 	}//end testANonObjectSettingReadsAsEmpty()
 }//end class

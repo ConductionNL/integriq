@@ -77,8 +77,8 @@ the flag is `1`.
   - GIVEN `polymorphic` and an assertion with a plain BSN WHEN the callback runs THEN it is refused and the BSN is in no log line
   - GIVEN `hmac` WHEN the same BSN logs in to two organisations THEN the pseudonyms differ, and stay stable per organisation
   - GIVEN `IdpBrokerConfig` WHEN read THEN it no longer reads `idp_broker_entity_ids`, `idp_broker_salts` or `idp_broker_trust_aliases`; the assurance aliases come from the registration's `assuranceMapping`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 8: The assurance floor and its refusal page
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006`
