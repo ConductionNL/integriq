@@ -1,0 +1,37 @@
+{
+  "$comment": "ADR-037 manifest fragment (gateway-api-design-rules-check, task 3). The rule set pages: the API design rule sets an API product is checked against, the built-in Dutch API Design Rules beside the ones an administrator adds (api_design_ruleset, admin only). The findings panel and the check action live on the custom ApiProductDetail page.",
+  "pages": [
+    {
+      "id": "ApiDesignRulesets",
+      "route": "/api-design-rules",
+      "type": "index",
+      "title": "API design rules",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "api_design_ruleset",
+        "columns": ["name", "version", "source", "enabled", "updated"],
+        "includeFields": ["name", "version", "source", "enabled", "rules"],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "GatewayGroup",
+      "children": [
+        {
+          "id": "ApiDesignRulesets",
+          "label": "API design rules",
+          "icon": "RulerSquare",
+          "route": "ApiDesignRulesets",
+          "order": 25
+        }
+      ]
+    }
+  ]
+}

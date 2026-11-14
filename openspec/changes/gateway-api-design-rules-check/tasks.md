@@ -29,7 +29,8 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
 - **files**: `lib/Settings/register.d/api-design-rules.json`, `src/manifest.json` (panel and check action on `ApiProductDetail`, rule set pages), `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an administrator on a product WHEN they press check THEN findings are listed by severity with a link to each rule
-- [ ] Implement
+- [x] Implement
+  - Frontend (2026-11-14): `src/components/ApiDesignFindingsPanel.vue` on `ApiProductDetail` loads the product's stored findings, "Check design" runs the check endpoint, findings are grouped errors first with a link to each rule, the manual rules are listed to check by hand, and an open error is waived with a reason through `src/dialogs/WaiveDesignFindingDialog.vue`. Rule set pages: `src/manifest.d/gateway-api-design-rules-check.json` (index of `api_design_ruleset`, admin only, under Gateway). Strings in `l10n/en.js` and `l10n/nl.js`. Vitest: `tests/vitest/apiDesignFindingsPanel.spec.js` (12).
   - Backend done: `lib/Settings/register.d/api-design-rules.json` adds `api_design_ruleset` and `api_design_finding` (admin-only). `ApiProductDesignCheck` checks the product's description, which it gets from `OpenApiPublishService` (looked up by class name). It uses the built-in and stored rule sets, and `ApiDesignFindingStore` replaces the open findings and keeps matching waivers. `POST /api/products/{productId}/design-check` answers the findings errors first. Still left: the findings panel and check button on the custom `ApiProductDetail` component, its frontend strings, and the rule set pages.
 - [ ] Test (Playwright)
   - PHPUnit: `ApiProductDesignCheckTest`, `ApiDesignFindingStoreTest`, `ApiDesignCheckControllerTest`, `Settings/ApiDesignRulesFragmentTest`. Playwright waits for the panel.
