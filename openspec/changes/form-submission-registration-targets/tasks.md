@@ -29,7 +29,7 @@ Kind: code. Size L. Row: portaliq `int-registration-per-form`. Builds on `zgw-co
   - GIVEN a KvK applicant WHEN the role is created THEN it is a `niet_natuurlijk_persoon` with the KvK number
 - [ ] Implement
 - [ ] Test
-- note: Not started: needs zgw-connectors-for-dossiq and the document upload of connectors-case-system-document-delivery. A zgw target is refused as source-unavailable, not retryable.
+- note: Built: `ZgwRegistrationLeg` over the case-system transport: `POST /zaken` with the mapped case, the target's zaaktype, bronorganisatie and verantwoordelijkeOrganisatie, the dates and the submission reference as a kenmerk; `POST /rollen` with the applicant as initiator (BSN as `natuurlijk_persoon`, KvK as `niet_natuurlijk_persoon`); the target's `zaakeigenschappen`; each call a step, so a repeated hand-over skips what is done; a 4xx as outside-refused with the API's detail, a 5xx, 429 or no answer as source-unavailable retryable (`ZgwRegistrationLegTest`, 13). Left: the informatieobjecten for the PDF and attachments, which wait for reading the hand-over's files (Task 2), so a hand-over with files is refused as source-unavailable, not retryable; the outside lookup of a case by kenmerk when no record exists; `tests/postman/registration-zgw.json`, a live check.
 
 ## Task 4: The Objects API leg
 - **spec_ref**: `specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002`
@@ -66,7 +66,7 @@ Kind: code. Size L. Row: portaliq `int-registration-per-form`. Builds on `zgw-co
   - GIVEN a record in `done` WHEN the hand-over repeats THEN no outside call is made
 - [ ] Implement
 - [ ] Test
-- note: Built: a done record answers without an outside call (RegistrationResumeTest), and an unfinished one hands its steps to the leg, which skips what is done. Left: the ZGW criterion (only the missing documents) comes with Task 3.
+- note: Built: a done record answers without an outside call (RegistrationResumeTest), and an unfinished one hands its steps to the leg, which skips what is done. The ZGW leg resumes after its last step (case, role, each zaakeigenschap). Left: only the missing documents, which come with the ZGW files (Task 3).
 
 ## Task 8: The list endpoint and the admin page
 - **spec_ref**: `specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001`
