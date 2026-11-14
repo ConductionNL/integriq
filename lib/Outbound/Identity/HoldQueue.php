@@ -11,6 +11,10 @@
  *
  * A zero window, which is the default, means the message is due immediately.
  *
+ * A message a send check refused is held for review instead: it waits for a
+ * person with the send right, who releases it to be sent or withdraws it,
+ * and both acts are recorded with that person (REQ-OSI-010).
+ *
  * @category Outbound
  * @package  OCA\Integriq\Outbound\Identity
  *
@@ -64,6 +68,20 @@ class HoldQueue implements HoldQueueInterface {
 	 * @var string
 	 */
 	public const STATUS_WITHDRAWN = 'withdrawn';
+
+	/**
+	 * A send check refused the message and it waits for a person.
+	 *
+	 * @var string
+	 */
+	public const STATUS_REVIEW = 'review';
+
+	/**
+	 * A person released a message held for review, to be sent.
+	 *
+	 * @var string
+	 */
+	public const STATUS_RELEASED = 'released';
 
 	/**
 	 * Constructor.
@@ -144,6 +162,14 @@ class HoldQueue implements HoldQueueInterface {
 	 *                          to recall something that has already left.
 	 */
 	public function withdraw(string $uuid, string $actorUid): ObjectEntity {
+		$record = $this->recorder->read($uuid);
+		if (self::holdStatusOf(record: $record) === self::STATUS_REVIEW) {
+			return $this->write(
+				uuid: $uuid,
+				record: $this->markWithdrawn(record: $record, actorUid: $actorUid, detail: 'Withdrawn by ' . $actorUid . ' after review; it was not sent.')
+			);
+		}
+
 		if ($this->isWithdrawable(uuid: $uuid) === false) {
 			throw new RuntimeException(
 				'This message has left; nothing can be recalled after the hold window.'
@@ -151,6 +177,94 @@ class HoldQueue implements HoldQueueInterface {
 		}
 
 		$record = $this->recorder->read($uuid);
+
+		return $this->write(
+			uuid: $uuid,
+			record: $this->markWithdrawn(record: $record, actorUid: $actorUid, detail: 'Withdrawn by ' . $actorUid . ' before the hold window closed.')
+		);
+
+	}//end withdraw()
+
+	/**
+	 * Hold a message a send check refused, until a person releases or withdraws it.
+	 *
+	 * Nothing is sent and nothing is dropped: the record keeps the check that
+	 * stopped it and why, and lists as held for review.
+	 *
+	 * @param string $uuid   The message record uuid.
+	 * @param string $check  The send check that refused it.
+	 * @param string $reason Why the check refused it.
+	 *
+	 * @return ObjectEntity The record, now held for review.
+	 *
+	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+	 */
+	public function holdForReview(string $uuid, string $check, string $reason): ObjectEntity {
+		$record = $this->recorder->read($uuid);
+		$now = $this->now()->format('c');
+		$record['hold'] = [
+			'status' => self::STATUS_REVIEW,
+			'check' => $check,
+			'reason' => $reason,
+			'heldAt' => $now,
+		];
+		$record['steps'][] = [
+			'step' => 'held',
+			'outcome' => MessageRecorder::OUTCOME_FAILED,
+			'at' => $now,
+			'detail' => 'Held for review: the ' . $check . ' check refused it (' . $reason . ').',
+		];
+
+		return $this->write(uuid: $uuid, record: $record);
+
+	}//end holdForReview()
+
+	/**
+	 * Release a message held for review, so it can be sent.
+	 *
+	 * Records who released it and when; the send itself goes through the
+	 * delivery pipeline, which asks the send checks again.
+	 *
+	 * @param string $uuid     The message record uuid.
+	 * @param string $actorUid Who released it.
+	 *
+	 * @return ObjectEntity The record, now released.
+	 *
+	 * @throws RuntimeException When the message is not held for review.
+	 *
+	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+	 */
+	public function releaseHeld(string $uuid, string $actorUid): ObjectEntity {
+		$record = $this->recorder->read($uuid);
+		if (self::holdStatusOf(record: $record) !== self::STATUS_REVIEW) {
+			throw new RuntimeException('Only a message held for review can be released.');
+		}
+
+		$now = $this->now()->format('c');
+		$record['hold']['status'] = self::STATUS_RELEASED;
+		$record['hold']['releasedBy'] = $actorUid;
+		$record['hold']['releasedAt'] = $now;
+		$record['steps'][] = [
+			'step' => 'released',
+			'outcome' => MessageRecorder::OUTCOME_SUCCEEDED,
+			'at' => $now,
+			'detail' => 'Released by ' . $actorUid . ' to be sent.',
+		];
+
+		return $this->write(uuid: $uuid, record: $record);
+
+	}//end releaseHeld()
+
+	/**
+	 * The record marked withdrawn by a person: not sent, for every recipient.
+	 *
+	 * @param array<string,mixed> $record   The record.
+	 * @param string              $actorUid Who withdrew it.
+	 * @param string              $detail   The step's detail.
+	 *
+	 * @return array<string,mixed> The record, withdrawn.
+	 */
+	private function markWithdrawn(array $record, string $actorUid, string $detail): array {
 		$record['hold']['status'] = self::STATUS_WITHDRAWN;
 		$record['hold']['withdrawnBy'] = $actorUid;
 		$record['hold']['withdrawnAt'] = $this->now()->format('c');
@@ -159,7 +273,7 @@ class HoldQueue implements HoldQueueInterface {
 			'step' => 'withdrawn',
 			'outcome' => MessageRecorder::OUTCOME_FAILED,
 			'at' => $this->now()->format('c'),
-			'detail' => 'Withdrawn by ' . $actorUid . ' before the hold window closed.',
+			'detail' => $detail,
 		];
 
 		foreach ($record['recipients'] as $index => $recipient) {
@@ -168,9 +282,26 @@ class HoldQueue implements HoldQueueInterface {
 			$record['recipients'][$index]['reason'] = 'Withdrawn before it was sent.';
 		}
 
-		return $this->write(uuid: $uuid, record: $record);
+		return $record;
 
-	}//end withdraw()
+	}//end markWithdrawn()
+
+	/**
+	 * The hold status a record carries, or empty when it has none.
+	 *
+	 * @param array<string,mixed> $record The record.
+	 *
+	 * @return string The status.
+	 */
+	private static function holdStatusOf(array $record): string {
+		$hold = ($record['hold'] ?? []);
+		if (is_array($hold) === false) {
+			return '';
+		}
+
+		return (string)($hold['status'] ?? '');
+
+	}//end holdStatusOf()
 
 	/**
 	 * Mark a held message due, once its window has passed.
@@ -207,6 +338,12 @@ class HoldQueue implements HoldQueueInterface {
 	 * @return ObjectEntity The saved record.
 	 */
 	private function write(string $uuid, array $record): ObjectEntity {
+		$status = self::holdStatusOf(record: $record);
+		if ($status !== '') {
+			// Mirrored to the top level, so the held-messages list can filter on it.
+			$record['holdStatus'] = $status;
+		}
+
 		return $this->objectService->saveObject(
 			object: $record,
 			register: MessageRecorder::REGISTER,

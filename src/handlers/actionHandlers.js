@@ -21,6 +21,7 @@
 //   POST /api/jobs/{run,test}/{id}          — RunActionModal
 //   POST /api/synchronizations/{id}/{run,test} — RunActionModal
 
+import { releaseHeldMessage, withdrawHeldMessage } from './heldMessage.js'
 import { logsLocation, VIEW_LOGS_TARGETS } from './logTargets.js'
 import {
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
@@ -114,6 +115,28 @@ export function runSynchronizationHandler({ item }) {
  */
 export function rerunFailedRunHandler({ item }) {
 	return runAgain(item)
+}
+
+/**
+ * Release a message held for review and send it, from the held-messages list.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The server's answer.
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+ */
+export function releaseHeldMessageHandler({ item }) {
+	return releaseHeldMessage(item)
+}
+
+/**
+ * Withdraw a message held for review, from the held-messages list.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The server's answer.
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+ */
+export function withdrawHeldMessageHandler({ item }) {
+	return withdrawHeldMessage(item)
 }
 
 /**

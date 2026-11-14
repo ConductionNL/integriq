@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Outbound;
 
+use OCA\Integriq\Outbound\Identity\HoldQueueInterface;
 use OCA\Integriq\Outbound\Identity\MessageComposer;
 use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use Psr\Log\LoggerInterface;
@@ -58,12 +59,15 @@ class OutboundSendGate implements OutboundSendGateInterface {
 	 * @param MessageComposer $composer Adds the unsubscribe material.
 	 * @param MessageRecorder $recorder Keeps the outbound log row.
 	 * @param LoggerInterface $logger Records a log row that could not be written.
+	 * @param HoldQueueInterface|null $holdQueue Holds a refused message for review (REQ-OSI-010);
+	 *                                           without it a refusal is only recorded.
 	 */
 	public function __construct(
 		private readonly OptOutRegistry $optOuts,
 		private readonly MessageComposer $composer,
 		private readonly MessageRecorder $recorder,
 		private readonly LoggerInterface $logger,
+		private readonly ?HoldQueueInterface $holdQueue = null,
 	) {
 
 	}//end __construct()
@@ -236,7 +240,10 @@ class OutboundSendGate implements OutboundSendGateInterface {
 	}//end failed()
 
 	/**
-	 * Open a row for a refused send and mark it refused in one go.
+	 * Open a row for a refused send, mark it refused, and hold it for review in one go.
+	 *
+	 * The message is neither sent nor dropped: it lists as held with the check
+	 * that stopped it, until a person with the send right releases or withdraws it.
 	 *
 	 * @param string $channel The channel.
 	 * @param string $subjectRef What the message is about.
@@ -246,6 +253,7 @@ class OutboundSendGate implements OutboundSendGateInterface {
 	 * @return string|null The row uuid.
 	 *
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
+	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
 	 */
 	public function recordRefusal(string $channel, string $subjectRef, array $decision, array $options = []): ?string {
 		$address = (string)($decision['address'] ?? '');
@@ -254,15 +262,44 @@ class OutboundSendGate implements OutboundSendGateInterface {
 		}
 
 		$uuid = $this->open(channel: $channel, subjectRef: $subjectRef, subject: '', body: '', address: $address, options: $options, decision: $decision);
+		$reason = (string)($decision['code'] ?? '') . ': ' . (string)($decision['reason'] ?? '');
 		$this->failed(
 			uuid: $uuid,
 			address: $address,
 			step: self::STEP_OPT_OUT,
-			reason: (string)($decision['code'] ?? '') . ': ' . (string)($decision['reason'] ?? '')
+			reason: $reason
 		);
+		$this->holdForReview(uuid: $uuid, check: self::STEP_OPT_OUT, reason: $reason);
 
 		return $uuid;
 
 	}//end recordRefusal()
+
+	/**
+	 * Hold a refused message for review; a hold that cannot be written does not affect the refusal.
+	 *
+	 * @param string|null $uuid   The row, or null when none was opened.
+	 * @param string      $check  The send check that refused it.
+	 * @param string      $reason Why.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-message-that-fails-a-send-check-is-held-for-review
+	 */
+	private function holdForReview(?string $uuid, string $check, string $reason): void {
+		if ($uuid === null || $this->holdQueue === null) {
+			return;
+		}
+
+		try {
+			$this->holdQueue->holdForReview(uuid: $uuid, check: $check, reason: $reason);
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[OutboundSendGate] could not hold the refused message for review',
+				['uuid' => $uuid, 'exception' => $exception->getMessage()]
+			);
+		}
+
+	}//end holdForReview()
 
 }//end class

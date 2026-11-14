@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.6"
+    "version": "1.1.7"
   },
   "x-openregister": {
     "type": "application",
@@ -5050,7 +5050,7 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "authorization": {
           "create": [
             "digitale-post-verzenders"
@@ -5071,6 +5071,79 @@
         ],
         "type": "object",
         "properties": {
+          "holdStatus": {
+            "type": "string",
+            "enum": [
+              "held",
+              "due",
+              "withdrawn",
+              "review",
+              "released"
+            ],
+            "description": "Where the message stands on hold, mirrored from hold.status so a list can filter on it: held (waiting out its identity's window) | due (the window passed) | withdrawn (taken back, not sent) | review (a send check refused it and it waits for a person) | released (a person released it to be sent)",
+            "title": "Hold Status"
+          },
+          "hold": {
+            "type": "object",
+            "description": "The message's hold: its identity's window, or the send check that stopped it and what a person did about that",
+            "properties": {
+              "status": {
+                "type": "string",
+                "description": "held, due, withdrawn, review or released",
+                "title": "Status"
+              },
+              "check": {
+                "type": "string",
+                "description": "The send check that stopped the message",
+                "title": "Check"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why the check stopped it",
+                "title": "Reason"
+              },
+              "heldAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was held",
+                "title": "Held At"
+              },
+              "releasedBy": {
+                "type": "string",
+                "description": "Who released it",
+                "title": "Released By"
+              },
+              "releasedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was released",
+                "title": "Released At"
+              },
+              "withdrawnBy": {
+                "type": "string",
+                "description": "Who withdrew it",
+                "title": "Withdrawn By"
+              },
+              "withdrawnAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it was withdrawn",
+                "title": "Withdrawn At"
+              },
+              "windowSeconds": {
+                "type": "integer",
+                "description": "The identity's hold window in seconds",
+                "title": "Window Seconds"
+              },
+              "releaseAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the window closes",
+                "title": "Release At"
+              }
+            },
+            "title": "Hold"
+          },
           "subjectRef": {
             "type": "string",
             "description": "What the message is about, as the sending app references it. The log answers questions per subject, never by writing a field onto the sending app's record",

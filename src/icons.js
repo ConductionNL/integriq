@@ -32,6 +32,7 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import Broadcast from 'vue-material-design-icons/Broadcast.vue'
 import CalendarClock from 'vue-material-design-icons/CalendarClock.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CardAccountDetailsOutline from 'vue-material-design-icons/CardAccountDetailsOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
@@ -84,6 +85,7 @@ import MedicalBag from 'vue-material-design-icons/MedicalBag.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import Package from 'vue-material-design-icons/Package.vue'
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
+import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PhoneLog from 'vue-material-design-icons/PhoneLog.vue'
@@ -95,6 +97,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SchoolOutline from 'vue-material-design-icons/SchoolOutline.vue'
+import SendCheckOutline from 'vue-material-design-icons/SendCheckOutline.vue'
 import SendOutline from 'vue-material-design-icons/SendOutline.vue'
 import ServerNetwork from 'vue-material-design-icons/ServerNetwork.vue'
 import ShieldCheckOutline from 'vue-material-design-icons/ShieldCheckOutline.vue'
@@ -141,6 +144,7 @@ export default {
 	BookOpenVariantOutline,
 	Broadcast,
 	CalendarClock,
+	Cancel,
 	CardAccountDetailsOutline,
 	ChartBoxOutline,
 	CheckCircleOutline,
@@ -193,6 +197,7 @@ export default {
 	MessageTextOutline,
 	Package,
 	PackageVariantClosed,
+	PauseCircleOutline,
 	Pencil,
 	PencilOutline,
 	PhoneLog,
@@ -204,6 +209,7 @@ export default {
 	RocketLaunchOutline,
 	ScaleBalance,
 	SchoolOutline,
+	SendCheckOutline,
 	SendOutline,
 	ServerNetwork,
 	ShieldCheckOutline,

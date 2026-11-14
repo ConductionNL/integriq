@@ -1,0 +1,97 @@
+{
+  "$comment": "ADR-037 manifest fragment (outbound-sender-identity-and-deliverability, task 11.2, REQ-OSI-010). A message a send check refused is held, not dropped: this page lists every message held for review with the check that stopped it and why, so a person with the send right can release it (it is sent through the delivery pipeline, which asks the opt-out list again) or withdraw it (it is recorded as not sent). Both acts go through POST /api/outbound/messages/{id}/release and /withdraw, which check the send right and log the actor. The list filters on holdStatus, the top-level mirror of hold.status that HoldQueue writes for exactly this.",
+  "pages": [
+    {
+      "id": "HeldMessages",
+      "route": "/messages/held",
+      "type": "index",
+      "title": "Held messages",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "outbound_message",
+        "filter": {
+          "holdStatus": "review"
+        },
+        "defaultSort": {
+          "key": "createdAt",
+          "direction": "desc"
+        },
+        "columns": [
+          {
+            "key": "createdAt",
+            "label": "Created",
+            "sortable": true,
+            "width": "16%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "subjectRef",
+            "label": "Subject reference",
+            "sortable": true,
+            "width": "20%"
+          },
+          {
+            "key": "channel",
+            "label": "Channel",
+            "sortable": true,
+            "width": "12%"
+          },
+          {
+            "key": "hold.check",
+            "label": "Held by check",
+            "width": "14%"
+          },
+          {
+            "key": "hold.reason",
+            "label": "Why it was held",
+            "width": "38%"
+          }
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "actionToggles": {
+          "showAdd": false,
+          "showFormDialog": false,
+          "showEditAction": false,
+          "showCopyAction": false,
+          "showDeleteAction": false,
+          "showMassImport": false,
+          "showMassCopy": false,
+          "showMassDelete": false
+        },
+        "actions": [
+          {
+            "id": "release-held",
+            "label": "Release and send",
+            "icon": "SendCheckOutline",
+            "handler": "releaseHeldMessageHandler"
+          },
+          {
+            "id": "withdraw-held",
+            "label": "Withdraw",
+            "icon": "Cancel",
+            "handler": "withdrawHeldMessageHandler"
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "OperationsGroup",
+      "children": [
+        {
+          "id": "HeldMessages",
+          "label": "Held messages",
+          "icon": "PauseCircleOutline",
+          "route": "HeldMessages",
+          "order": 23
+        }
+      ]
+    }
+  ]
+}

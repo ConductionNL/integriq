@@ -38,6 +38,8 @@ use OCA\Integriq\Outbound\Call\VerdictServiceInterface;
 use OCA\Integriq\Outbound\Identity\DnsResolverInterface;
 use OCA\Integriq\Outbound\Identity\DomainAlignmentChecker;
 use OCA\Integriq\Outbound\Identity\DomainAlignmentCheckerInterface;
+use OCA\Integriq\Outbound\Identity\HeldMessageRelease;
+use OCA\Integriq\Outbound\Identity\HeldMessageReleaseInterface;
 use OCA\Integriq\Outbound\Identity\HoldQueue;
 use OCA\Integriq\Outbound\Identity\HoldQueueInterface;
 use OCA\Integriq\Outbound\Identity\OptOutCategories;
@@ -88,6 +90,7 @@ final class OutboundBindings {
 		$context->registerServiceAlias(DomainAlignmentCheckerInterface::class, DomainAlignmentChecker::class);
 		$context->registerServiceAlias(OptOutTableMigratorInterface::class, OptOutTableMigrator::class);
 		$context->registerServiceAlias(HoldQueueInterface::class, HoldQueue::class);
+		$context->registerServiceAlias(HeldMessageReleaseInterface::class, HeldMessageRelease::class);
 		$context->registerServiceAlias(RecipientKeyInterface::class, RecipientKey::class);
 		$context->registerServiceAlias(VerdictServiceInterface::class, VerdictService::class);
 		$context->registerServiceAlias(ForwardServiceInterface::class, ForwardService::class);
