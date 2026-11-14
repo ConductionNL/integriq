@@ -28,6 +28,8 @@ use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
 use OCA\Integriq\Service\Sms\LogSmsProvider;
 use OCA\Integriq\Service\Sms\RestNotifyNlProvider;
+use OCA\Integriq\Service\Sms\SmsProviderRegistry;
+use OCA\Integriq\Service\Sms\TwilioSmsProvider;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -152,6 +154,77 @@ class SmsDispatchServiceTest extends TestCase {
 		$this->assertSame($this->notifyNlProvider, $this->service->resolveProvider(['provider' => 'notifynl']));
 
 	}//end testResolveProviderSelectsNotifyNlWhenConfigured()
+
+	/**
+	 * A provider value no binding answers to resolves to a refusing binding naming it, not to log.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+	 */
+	public function testResolveProviderRefusesAnUnknownValue(): void {
+		$provider = $this->service->resolveProvider(['provider' => 'twillio']);
+
+		$this->assertNotSame($this->logProvider, $provider);
+		$this->assertSame('twillio', $provider->getProviderId());
+
+	}//end testResolveProviderRefusesAnUnknownValue()
+
+	/**
+	 * A registry given to the dispatcher answers for the providers it holds.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
+	 */
+	public function testResolveProviderAsksTheRegistry(): void {
+		$twilio = $this->createMock(TwilioSmsProvider::class);
+		$twilio->method('getProviderId')->willReturn('twilio');
+		$service = new SmsDispatchService(
+			$this->objectService,
+			$this->logProvider,
+			$this->notifyNlProvider,
+			$this->eventService,
+			$this->l,
+			$this->logger,
+			new RawSourceResolver($this->objectService, $this->logger),
+			$this->optOuts->gate(),
+			new SmsProviderRegistry(logProvider: $this->logProvider, notifyNl: $this->notifyNlProvider, twilio: $twilio)
+		);
+
+		$this->assertSame($twilio, $service->resolveProvider(['provider' => 'twilio']));
+		$this->assertSame($this->logProvider, $service->resolveProvider([]));
+
+	}//end testResolveProviderAsksTheRegistry()
+
+	/**
+	 * A send through a mistyped provider is stored failed, naming the value, and the log binding sends nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-an-unknown-sms-provider-value-is-refused-req-smsp-002
+	 */
+	public function testSendThroughAnUnknownProviderIsStoredFailedNamingIt(): void {
+		$source = $this->entity(['type' => 'sms', 'configuration' => ['provider' => 'twillio']]);
+		$this->objectService->method('findAll')->willReturn(['results' => [$source], 'total' => 1]);
+		$this->logProvider->expects($this->never())->method('send');
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved): ObjectEntity {
+				$saved[] = $object;
+				return $this->entity($object, 'sms-uuid-unknown');
+			}
+		);
+
+		$result = $this->service->sendMessage(to: '0612345678', body: 'hello');
+		$data = $result->getObject();
+
+		$this->assertSame('twillio', $saved[0]['provider']);
+		$this->assertSame('failed', $data['status']);
+		$this->assertStringContainsString('"twillio"', (string)$data['detail']);
+
+	}//end testSendThroughAnUnknownProviderIsStoredFailedNamingIt()
 
 	/**
 	 * sendMessage throws a descriptive error when no active SMS source exists.
