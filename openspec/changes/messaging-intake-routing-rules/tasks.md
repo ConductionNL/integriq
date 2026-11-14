@@ -11,8 +11,9 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN the "Intake routing" page WHEN an administrator adds a rule for `teams` with a case type THEN it is saved through `POST /api/intake/routing-rules` and listed
   - GIVEN a mapping onto a field the case type lacks WHEN the administrator saves THEN the dialog stays open and shows the refusal on that field
   - GIVEN the channel select WHEN it opens THEN it lists only what `GET /api/intake/channels` returns
-- [ ] Implement
-- [ ] Test (Vitest on the dialog payload and error mapping; `tests/e2e/intake-routing-rules.spec.ts`)
+- [x] Implement
+  - `IntakeRoutingRules` is `type: index` with `slots.form-dialog: IntakeRuleEditorModal`; the dialog saves through `saveRule()` (`src/modals/v2/intakeRuleApi.js`) and maps a refusal onto its field (`src/modals/v2/intakeRuleDraft.js`).
+- [ ] Test (Vitest done in `tests/vitest/intakeRuleDraft.spec.js` and `tests/vitest/intakeRoutingEditor.spec.js`; e2e left. Vitest on the dialog payload and error mapping; `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 2: Reorder, enable and delete from the list
 - **spec_ref**: openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-an-administrator-writes-a-routing-rule-on-the-intake-routing-page-req-ire-001
@@ -20,8 +21,9 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
 - **acceptance_criteria**:
   - GIVEN two rules on one channel WHEN an administrator moves the second above the first THEN both `order` values are written through `saveRule()` and the first match changes
   - GIVEN an enabled rule WHEN the administrator disables it THEN `firstMatchingRule()` no longer returns it
-- [ ] Implement
-- [ ] Test (`tests/e2e/intake-routing-rules.spec.ts`)
+- [x] Implement
+  - Move up, Move down, Enable and Disable row actions (`src/handlers/intakeRuleHandlers.js`) write through `saveRule()`; delete is the built-in action, copy is off.
+- [ ] Test (Vitest on the handlers done in `tests/vitest/intakeRoutingEditor.spec.js`; e2e left. `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 3: Test a draft rule
 - **spec_ref**: openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-draft-rule-is-tested-against-a-sample-message-without-side-effects-req-ire-002
@@ -29,8 +31,8 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
 - **acceptance_criteria**:
   - GIVEN a draft rule and a sample message WHEN the test runs THEN the response says whether it matches, shows the target payload and names the saved rule that wins today
   - GIVEN any test WHEN it completes THEN no object is written and no `IntakeMessageRoutedEvent` is dispatched
-- [ ] Implement
-  - Server half done: `POST /api/intake/routing-rules/test` on `IntakeChannelsController::testRule()`. The editor's Test button waits for the Task 1 dialog.
+- [x] Implement
+  - Server half: `POST /api/intake/routing-rules/test` on `IntakeChannelsController::testRule()`. Editor half: the "Test this rule" section of `IntakeRuleEditorModal`, with typed text or a held message as the sample.
 - [ ] Test (PHPUnit done in `tests/Unit/Controller/IntakeRuleTestAndRouteAgainTest.php`; e2e left. PHPUnit on `testRule()` asserting no `saveObject` and no `dispatchTyped` call; e2e in `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 4: Keep a held message's files
@@ -49,8 +51,8 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN a held report and a matching rule added since WHEN an administrator chooses "Route again" THEN the same `intake_message` becomes `routed` with the rule name and the case reference
   - GIVEN a selection of three held messages, one of which still matches nothing WHEN they are routed in bulk THEN the response answers each one and two are routed
   - GIVEN a saved rule WHEN nobody chooses "Route again" THEN held messages stay held
-- [ ] Implement
-  - Server half done: `IntakeRoutingService::reroute()`, `POST /api/intake/messages/{id}/route` and `POST /api/intake/messages/route`. The inbox row and bulk actions wait for the frontend pass.
+- [x] Implement
+  - Server half: `IntakeRoutingService::reroute()`, `POST /api/intake/messages/{id}/route` and `POST /api/intake/messages/route`. Inbox half: `IntakeMessageRowActions` (row, held and failed only) and `IntakeMessageActions` with `IntakeRouteAgainModal` (a selection, answered per message). The inbox stays a log page, so the action files sit in `src/components/intake/` and `src/modals/Intake/` rather than `src/handlers/actionHandlers.js`.
 - [ ] Test (PHPUnit done in `tests/Unit/Intake/IntakeRerouteTest.php`; e2e left. PHPUnit on `reroute()` with files read back; `tests/e2e/intake-routing-rules.spec.ts`)
 
 ### Task 6: The Outlook add-in manifest and task pane

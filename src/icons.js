@@ -22,6 +22,8 @@ import AccountVoice from 'vue-material-design-icons/AccountVoice.vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
+import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
+import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
 import Bank from 'vue-material-design-icons/Bank.vue'
 import BankOutline from 'vue-material-design-icons/BankOutline.vue'
 import Bell from 'vue-material-design-icons/Bell.vue'
@@ -110,6 +112,8 @@ import SyncCircle from 'vue-material-design-icons/SyncCircle.vue'
 import TableArrowRight from 'vue-material-design-icons/TableArrowRight.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Timeline from 'vue-material-design-icons/Timeline.vue'
+import ToggleSwitchOffOutline from 'vue-material-design-icons/ToggleSwitchOffOutline.vue'
+import ToggleSwitchOutline from 'vue-material-design-icons/ToggleSwitchOutline.vue'
 import TransitConnectionVariant from 'vue-material-design-icons/TransitConnectionVariant.vue'
 import Translate from 'vue-material-design-icons/Translate.vue'
 import Update from 'vue-material-design-icons/Update.vue'
@@ -131,6 +135,8 @@ export default {
 	AlertOutline,
 	Api,
 	ApplicationOutline,
+	ArrowDown,
+	ArrowUp,
 	Bank,
 	BankOutline,
 	Bell,
@@ -219,6 +225,8 @@ export default {
 	TableArrowRight,
 	TextBoxOutline,
 	Timeline,
+	ToggleSwitchOffOutline,
+	ToggleSwitchOutline,
 	TransitConnectionVariant,
 	Translate,
 	Update,

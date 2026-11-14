@@ -66,55 +66,76 @@
             }
           }
         ]
+      },
+      "actionsComponent": "IntakeMessageActions",
+      "slots": {
+        "row-actions": "IntakeMessageRowActions"
       }
     },
     {
       "id": "IntakeRoutingRules",
       "route": "/intake/routing-rules",
-      "type": "logs",
+      "type": "index",
       "title": "Intake routing",
+      "_note": "An editor, not a log (messaging-intake-routing-rules D1). Create and Edit open IntakeRuleEditorModal through slots['form-dialog'], which saves through POST/PUT /api/intake/routing-rules so validateRule() refuses a channel no adapter answers to and a mapping onto a field the case type lacks; CnFormDialog never mounts, and it could not reach `condition` or `fieldMapping` (type: object) anyway. Move up, Move down, Enable and Disable are handlers that write through the same endpoint. Delete is the built-in action on OpenRegister's objects endpoint, which the lockdown fragment allows for administrators. Copy is off: a copy written through the objects endpoint would skip that validation.",
       "config": {
         "register": "integriq",
         "schema": "intake_routing_rule",
         "sortKey": "order",
         "sortOrder": "asc",
-        "pagination": {
-          "limit": 50
-        },
-        "rowDetail": true,
-        "fixedLayout": true,
         "columns": [
+          "order",
+          "name",
+          "channelId",
+          "targetSchema",
+          "isEnabled"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "showCopyAction": false,
+        "actions": [
           {
-            "key": "order",
-            "label": "Order",
-            "sortable": true,
-            "width": "10%"
+            "id": "move-up",
+            "label": "Move up",
+            "icon": "ArrowUp",
+            "handler": "moveIntakeRuleUpHandler"
           },
           {
-            "key": "name",
-            "label": "Name",
-            "sortable": true,
-            "width": "25%"
+            "id": "move-down",
+            "label": "Move down",
+            "icon": "ArrowDown",
+            "handler": "moveIntakeRuleDownHandler"
           },
           {
-            "key": "channelId",
-            "label": "Channel",
-            "sortable": true,
-            "width": "20%"
+            "id": "disable",
+            "label": "Disable",
+            "icon": "ToggleSwitchOffOutline",
+            "handler": "toggleIntakeRuleHandler",
+            "visibleWhen": {
+              "field": "isEnabled",
+              "op": "neq",
+              "value": false
+            }
           },
           {
-            "key": "targetSchema",
-            "label": "Opens",
-            "sortable": true,
-            "width": "25%"
-          },
-          {
-            "key": "isEnabled",
-            "label": "Enabled",
-            "sortable": true,
-            "width": "20%"
+            "id": "enable",
+            "label": "Enable",
+            "icon": "ToggleSwitchOutline",
+            "handler": "toggleIntakeRuleHandler",
+            "visibleWhen": {
+              "field": "isEnabled",
+              "op": "eq",
+              "value": false
+            }
           }
         ]
+      },
+      "slots": {
+        "form-dialog": "IntakeRuleEditorModal"
       }
     }
   ],
