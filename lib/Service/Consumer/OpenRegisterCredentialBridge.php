@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Consumer;
 
 use OCA\Integriq\Exception\AuthenticationException;
+use OCA\Integriq\Service\OAuth\IssuerKeyService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\AuthenticationException as OpenRegisterAuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
@@ -99,12 +100,14 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @param ObjectService        $objectService OpenRegister's object service, read by the consumer source.
 	 * @param IUserSession         $userSession   Nextcloud user session, cleared when the lifetime cap refuses.
 	 * @param ConsumerKeySourceResolver|null $keySources Resolves the key of a consumer with key source `jwks` or `oidc`.
+	 * @param IssuerKeyService|null          $ownIssuer  Integriq's own issuer, so a token it issued is accepted (REQ-TOKV-003).
 	 */
 	public function __construct(
 		private readonly AuthorizationService $authorization,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
 		private readonly ?ConsumerKeySourceResolver $keySources = null,
+		private readonly ?IssuerKeyService $ownIssuer = null,
 	) {
 	}//end __construct()
 
@@ -388,7 +391,11 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	private function source(): ConsumerSource {
 		$this->assertEntryPoints();
 		if ($this->consumerSource === null) {
-			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService, keySources: $this->keySources);
+			$this->consumerSource = new IntegriqConsumerSource(
+				objectService: $this->objectService,
+				keySources: $this->keySources,
+				ownIssuer: $this->ownIssuer
+			);
 		}
 
 		return $this->consumerSource;

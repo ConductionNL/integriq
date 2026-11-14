@@ -21,6 +21,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Metrics and health
 		// First-time setup wizard (ADR-042) - the standard CnSetupWizard contract.
+		// access-oauth-and-token-validation (REQ-TOKV-003): the client credentials token endpoint, the key set, and the admin acts behind them.
+		['name' => 'oAuthToken#token',           'url' => '/api/oauth/token',                'verb' => 'POST'],
+		['name' => 'oAuthToken#jwks',            'url' => '/.well-known/jwks.json',          'verb' => 'GET'],
+		['name' => 'oAuthToken#createIssuerKey', 'url' => '/api/oauth/issuer-key',           'verb' => 'POST'],
+		['name' => 'oAuthToken#clientSecret',    'url' => '/api/consumers/{id}/client-secret', 'verb' => 'POST'],
 		['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
 		['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],

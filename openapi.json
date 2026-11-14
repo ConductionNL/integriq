@@ -338,6 +338,10 @@
         {
             "name": "registration-targets",
             "description": "Where a sibling app may register form submissions."
+        },
+        {
+            "name": "oauth",
+            "description": "Integriq as an OAuth 2.0 authorization server for its consumers."
         }
     ],
     "paths": {
@@ -9821,6 +9825,131 @@
                     },
                     "501": {
                         "$ref": "#/components/responses/Problem501"
+                    }
+                }
+            }
+        },
+        "/oauth/token": {
+            "post": {
+                "operationId": "oauth-token",
+                "summary": "Get a client credentials access token",
+                "description": "The OAuth 2.0 client credentials grant (RFC 6749 section 4.4) for a consumer of authorizationType client_credentials. The client authenticates with HTTP Basic or the client_id and client_secret form fields; the answer is a five-minute RS256 JWT whose sub is the consumer and whose scope is the granted scopes. Public: it needs no login.",
+                "tags": [
+                    "oauth"
+                ],
+                "security": [],
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "grant_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "client_credentials"
+                                        ]
+                                    },
+                                    "client_id": {
+                                        "type": "string"
+                                    },
+                                    "client_secret": {
+                                        "type": "string"
+                                    },
+                                    "scope": {
+                                        "type": "string"
+                                    },
+                                    "resource": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "grant_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "An RFC 6749 error: unsupported_grant_type or invalid_scope."
+                    },
+                    "401": {
+                        "description": "invalid_client."
+                    },
+                    "503": {
+                        "description": "No issuer key has been created."
+                    }
+                }
+            }
+        },
+        "/oauth/issuer-key": {
+            "post": {
+                "operationId": "oauth-issuer-key-create",
+                "summary": "Create or replace integriq's token-signing key",
+                "description": "Create or replace the issuer key. The private key is minted into OpenRegister's credential broker; the answer is the public JWK. Needs a Nextcloud admin.",
+                "tags": [
+                    "oauth"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The public JWK.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "No credential broker or default organisation."
+                    }
+                }
+            }
+        },
+        "/consumers/{id}/client-secret": {
+            "post": {
+                "operationId": "oauth-consumer-client-secret",
+                "summary": "Set a new client secret on a client credentials consumer",
+                "description": "Set a new client secret on a client credentials consumer and show it once; only its hash is stored. Needs a Nextcloud admin.",
+                "tags": [
+                    "oauth"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The consumer uuid, its client id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The client id and secret, shown once.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No client credentials consumer with this id."
                     }
                 }
             }

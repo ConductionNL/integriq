@@ -27,8 +27,13 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 - **acceptance_criteria**:
   - GIVEN a consumer with a client secret WHEN it posts grant_type client_credentials THEN it receives a signed JWT with its scopes
   - GIVEN the issuer key WHEN any object is read over the OpenRegister API THEN no private key material appears
-- [ ] Implement
-- [ ] Test (PHPUnit for issue and refuse; Newman for the token endpoint; an assertion that the key is a credentialRef)
+- **status**: built.
+  - `IssuerKeyService` mints an RSA key as an organisation-scope credential in OpenRegister's broker (default organisation, provider `generic-apikey`). Only the credentialRef, the organisation and the public key, as JWK and PEM, are kept in the app config. The key is published at `/.well-known/jwks.json`, and an admin creates or replaces it with `POST /api/oauth/issuer-key`.
+  - `TokenIssuer` serves the `client_credentials` grant at `POST /api/oauth/token`, with HTTP Basic or form fields. The answer is a five-minute RS256 JWT with `iss` the instance, `sub` the consumer, `aud` the resource and `scope` the granted scopes, sent no-store, with RFC 6749 errors.
+  - An admin sets a consumer's secret with `POST /api/consumers/{id}/client-secret`. The secret is shown once and only its password hash is stored, as `clientSecretHash` (consumer 1.2.0).
+  - `IntegriqConsumerSource` accepts integriq's own tokens, finding the consumer by `sub` and checking against the published key only.
+- [x] Implement
+- [ ] Test (PHPUnit for issue and refuse; Newman for the token endpoint; an assertion that the key is a credentialRef). The PHPUnit part is done in `tests/Unit/Service/OAuth/TokenIssuerTest.php`, including that the private key reaches only the broker. Newman is not done.
 
 ### Task 4: Protected-resource metadata and the 401 header
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004`
