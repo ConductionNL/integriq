@@ -16,6 +16,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Flow nodes](flow-nodes.md) | Contributed step types for OpenRegister's flow engine | Implemented |
 | [Service desk connectors](service-desk-connectors.md) | TOPdesk, ServiceNow and GLPI sources with two-way presets that say who owns each field | Implemented |
 | [Events & Webhooks](events.md) | CloudEvents emission, subscription, and consumer processing | Implemented |
+| [Nextcloud event triggers](nextcloud-event-triggers.md) | Files, Calendar, Tables and Forms events start a webhook, synchronization, job or flow, with retries and per-family self-service | Implemented |
 | [Logging & Monitoring](logging.md) | Call logs, sync logs, and Prometheus metrics | Implemented |
 | [Configuration Management](configuration-management.md) | Import/export, configuration groups, slug-based references | Implemented |
 | [StUF Adapter](stuf-adapter.md) | REST/ZGW to StUF-BG/ZKN SOAP translation | Partial |
