@@ -280,6 +280,10 @@
             "description": "First-time setup wizard endpoints"
         },
         {
+            "name": "sharepoint",
+            "description": "Graph lookups for setting up SharePoint to publication intake."
+        },
+        {
             "name": "source-destroyed",
             "description": "`POST /api/synchronizations/{id}/destroyed`, for a source without a ZGW Notificaties component: one call per destroyed record, signed with the synchronization's source's webhook secret"
         },
@@ -7702,6 +7706,102 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/sharepoint/lookup": {
+            "get": {
+                "operationId": "sharepoint-setup-lookup",
+                "summary": "Look up SharePoint sites, libraries or folders in Microsoft Graph",
+                "description": "The Graph lookups behind the SharePoint to publication setup dialog, through the credential broker with the credential the administrator picked. `kind` is `sites` (needs `search`), `drives` (needs `siteId`) or `children` (needs `driveId`, optionally `itemId`). A Graph refusal answers 403 naming the Graph permission the step needs. Integriq administrators only; nothing is stored.",
+                "tags": [
+                    "sharepoint"
+                ],
+                "parameters": [
+                    {
+                        "name": "credential",
+                        "in": "query",
+                        "required": true,
+                        "description": "The brokered credential's uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "kind",
+                        "in": "query",
+                        "required": true,
+                        "description": "sites, drives or children.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "description": "Text to search site names for (kind sites).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "siteId",
+                        "in": "query",
+                        "required": false,
+                        "description": "The Graph site id (kind drives).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "driveId",
+                        "in": "query",
+                        "required": false,
+                        "description": "The document library id (kind children).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "query",
+                        "required": false,
+                        "description": "The folder id; the library root when absent (kind children).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
                     }
                 }
             }

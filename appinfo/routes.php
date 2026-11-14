@@ -621,6 +621,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
 		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
 
+		// connectors-sharepoint-publication-intake REQ-SPPI-001: the Graph lookups behind
+		// the SharePoint to publication setup dialog (sites, libraries, folders).
+		['name' => 'sharePointSetup#lookup', 'url' => '/api/sharepoint/lookup', 'verb' => 'GET'],
+
 		// registry-backed-field-source: openregister resolves a property that
 		// declares `x-openregister-property-source` through these routes, and the
 		// administration screen resyncs a list-shaped provider through the last
