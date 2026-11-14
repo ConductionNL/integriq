@@ -35,11 +35,15 @@ use OCA\Integriq\Auth\Idp\IdpLoginCallback;
 use OCA\Integriq\Auth\Idp\IdpLoginService;
 use OCA\Integriq\Auth\Idp\IdpLoginStart;
 use OCA\Integriq\Auth\Idp\IdpLoginStateStore;
+use OCA\Integriq\Auth\Idp\IdpRegistration;
+use OCA\Integriq\Auth\Idp\IdpRegistrationService;
+use OCA\Integriq\Auth\Idp\IdpSecretSeam;
 use OCA\Integriq\Auth\Idp\SubjectEnvelope;
 use OCA\Integriq\Auth\Idp\SubjectEnvelopeService;
 use OCA\Integriq\Auth\Idp\SubjectPseudonymService;
 use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
+use OCA\Integriq\Exception\IdpSecretRefusedException;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -64,11 +68,13 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(IdpLoginCallback::class)]
 #[UsesClass(IdpLoginStart::class)]
 #[UsesClass(IdpLoginStateStore::class)]
+#[UsesClass(IdpRegistration::class)]
 #[UsesClass(SubjectEnvelope::class)]
 #[UsesClass(SubjectEnvelopeService::class)]
 #[UsesClass(SubjectPseudonymService::class)]
 #[UsesClass(TrustLevelMapper::class)]
 #[UsesClass(IdpAssertionException::class)]
+#[UsesClass(IdpSecretRefusedException::class)]
 class IdpLoginServiceEdgesTest extends TestCase {
 
 	/**
@@ -96,6 +102,34 @@ class IdpLoginServiceEdgesTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Per-test changes to gemeente-x's registration.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $registrationOverrides = [];
+
+	/**
+	 * The salt reads: registration, organisation, role, reference.
+	 *
+	 * @var list<array{0: string, 1: string, 2: string, 3: string}>
+	 */
+	private array $saltReads = [];
+
+	/**
+	 * Every message and context the login service logged.
+	 *
+	 * @var list<string>
+	 */
+	private array $logLines = [];
+
+	/**
+	 * Whether the secret seam refuses the salt.
+	 *
+	 * @var bool
+	 */
+	private bool $saltRefused = false;
+
 	protected function setUp(): void {
 		$this->cache = new FakeMemcache();
 		$this->settings = [
@@ -104,8 +138,6 @@ class IdpLoginServiceEdgesTest extends TestCase {
 			IdpBrokerConfig::KEY_CONSUMERS => (string)json_encode(
 				['portaliq' => ['enabled' => true, 'returnUrls' => [self::RETURN_URL], 'secretRef' => 'cred-1']]
 			),
-			IdpBrokerConfig::KEY_SALTS => (string)json_encode(['gemeente-x' => str_repeat('s', 40)]),
-			IdpBrokerConfig::KEY_ENTITY_IDS => (string)json_encode(['digid' => self::ENTITY_ID]),
 		];
 
 	}//end setUp()
@@ -156,7 +188,9 @@ class IdpLoginServiceEdgesTest extends TestCase {
 			trustMapper: new TrustLevelMapper(),
 			pseudonyms: new SubjectPseudonymService(),
 			exchange: $exchange,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->recordingLogger(),
+			registrations: $this->registrations(),
+			secrets: $this->secrets()
 		);
 
 	}//end service()
@@ -282,4 +316,191 @@ class IdpLoginServiceEdgesTest extends TestCase {
 		$this->assertMatchesRegularExpression('#^https://portal\.example\.nl/cb\?tenant=x&code=[^&]+&relayState=relay-7$#', $back);
 
 	}//end testAPolymorphicPseudonymEarnsACode()
+
+	/**
+	 * A logger that keeps every message with its context.
+	 *
+	 * @return LoggerInterface
+	 */
+	private function recordingLogger(): LoggerInterface {
+		$logger = $this->createMock(LoggerInterface::class);
+		foreach (['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				function (string $message, array $context = []): void {
+					$this->logLines[] = $message . ' ' . (string) json_encode($context);
+				}
+			);
+		}
+
+		return $logger;
+
+	}//end recordingLogger()
+
+	/**
+	 * Run one DigiD login for gemeente-x and answer where the browser is sent back.
+	 *
+	 * @param ScriptedGovernmentIdpAdapter $adapter The adapter.
+	 *
+	 * @return string The return address.
+	 */
+	private function login(ScriptedGovernmentIdpAdapter $adapter): string {
+		$service = $this->service($adapter);
+		$service->start(provider: 'digid', params: $this->startParams());
+
+		return $service->callback(provider: 'digid', callback: ['inResponseTo' => $adapter->lastRequestId]);
+
+	}//end login()
+
+	/**
+	 * An assertion naming another organisation's EntityID is refused on the
+	 * audience check: the audience is this organisation's registration.
+	 *
+	 * @return void
+	 */
+	public function testAnAssertionForAnotherOrganisationsEntityIdIsRefused(): void {
+		$this->registrationOverrides = ['spEntityId' => 'urn:nl:gemeente-x:sp'];
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringContainsString('error=', $back);
+		$this->assertStringNotContainsString('code=', $back);
+		$this->assertStringContainsString('another audience', implode("\n", $this->logLines));
+
+	}//end testAnAssertionForAnotherOrganisationsEntityIdIsRefused()
+
+	/**
+	 * Without an enabled registration for the organisation and provider, no code is issued.
+	 *
+	 * @return void
+	 */
+	public function testWithoutAnEnabledRegistrationNoCodeIsIssued(): void {
+		$this->registrationOverrides = ['enabled' => false];
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringContainsString('error=', $back);
+		$this->assertStringNotContainsString('code=', $back);
+
+	}//end testWithoutAnEnabledRegistrationNoCodeIsIssued()
+
+	/**
+	 * In `polymorphic` mode a plain BSN is refused, no salt is read, and the
+	 * BSN is in no log line.
+	 *
+	 * @return void
+	 */
+	public function testAPlainBsnInPolymorphicModeIsRefusedAndNeverLogged(): void {
+		$this->registrationOverrides = ['pseudonymisation' => 'polymorphic'];
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringContainsString('error=', $back);
+		$this->assertStringNotContainsString('code=', $back);
+		$this->assertSame([], $this->saltReads);
+		$this->assertNotSame([], $this->logLines);
+		$this->assertStringNotContainsString('999993653', implode("\n", $this->logLines));
+
+	}//end testAPlainBsnInPolymorphicModeIsRefusedAndNeverLogged()
+
+	/**
+	 * In `hmac` mode the salt is read from Keepiq through the registration's
+	 * own salt credential, for its own organisation, and the login earns a code.
+	 *
+	 * @return void
+	 */
+	public function testInHmacModeTheSaltComesFromTheRegistrationsCredential(): void {
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringContainsString('code=', $back);
+		$this->assertSame([['reg-digid', 'gemeente-x', 'salt', 'cred-salt']], $this->saltReads);
+
+	}//end testInHmacModeTheSaltComesFromTheRegistrationsCredential()
+
+	/**
+	 * A salt the seam refuses ends the login without a code.
+	 *
+	 * @return void
+	 */
+	public function testARefusedSaltEndsTheLogin(): void {
+		$this->registrationOverrides = ['credentials' => []];
+		$this->saltRefused = true;
+
+		$back = $this->login($this->digid('999993653', 'bsn'));
+
+		$this->assertStringContainsString('error=', $back);
+		$this->assertStringNotContainsString('code=', $back);
+
+	}//end testARefusedSaltEndsTheLogin()
+
+	/**
+	 * The identity provider's own spelling of a level is read through the
+	 * registration's `assuranceMapping`; without the mapping it is refused.
+	 *
+	 * @return void
+	 */
+	public function testTheAssuranceSpellingIsMappedByTheRegistration(): void {
+		$adapter = $this->digid('pp-0123456789abcdef', 'bsn-pseudonym');
+		$adapter->assertion['assuranceLevel'] = 'urn:digid:substantieel';
+		$this->assertStringContainsString('error=', $this->login($adapter));
+
+		$this->registrationOverrides = ['assuranceMapping' => ['urn:digid:substantieel' => 'substantieel']];
+		$adapter = $this->digid('pp-0123456789abcdef', 'bsn-pseudonym');
+		$adapter->assertion['assuranceLevel'] = 'urn:digid:substantieel';
+		$this->assertStringContainsString('code=', $this->login($adapter));
+
+	}//end testTheAssuranceSpellingIsMappedByTheRegistration()
+
+	/**
+	 * The registrations: gemeente-x has an enabled `hmac` registration for DigiD
+	 * and eHerkenning, with our EntityID and a salt credential.
+	 *
+	 * @return IdpRegistrationService
+	 */
+	private function registrations(): IdpRegistrationService {
+		$registrations = $this->createMock(IdpRegistrationService::class);
+		$registrations->method('find')->willReturnCallback(
+			function (string $organisation, string $provider): ?IdpRegistration {
+				if ($organisation !== 'gemeente-x' || in_array($provider, ['digid', 'eherkenning'], true) === false) {
+					return null;
+				}
+
+				return new IdpRegistration(
+					id: 'reg-' . $provider,
+					data: $this->registrationOverrides + [
+						'organisation' => $organisation,
+						'provider' => $provider,
+						'enabled' => true,
+						'spEntityId' => self::ENTITY_ID,
+						'pseudonymisation' => 'hmac',
+						'credentials' => ['salt' => 'cred-salt'],
+					]
+				);
+			}
+		);
+
+		return $registrations;
+
+	}//end registrations()
+
+	/**
+	 * The secret seam, answering the salt credential.
+	 *
+	 * @return IdpSecretSeam
+	 */
+	private function secrets(): IdpSecretSeam {
+		$secrets = $this->createMock(IdpSecretSeam::class);
+		$secrets->method('read')->willReturnCallback(
+			function (string $registration, string $organisation, string $role, string $reference): string {
+				$this->saltReads[] = [$registration, $organisation, $role, $reference];
+				if ($this->saltRefused === true) {
+					throw new IdpSecretRefusedException(reason: IdpSecretSeam::REASON_SECRET_MISSING, detail: 'no credential is referenced');
+				}
+
+				return str_repeat('s', 40);
+			}
+		);
+
+		return $secrets;
+
+	}//end secrets()
 }//end class
