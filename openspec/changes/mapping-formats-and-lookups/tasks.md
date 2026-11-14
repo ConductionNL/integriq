@@ -38,8 +38,8 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 - **acceptance_criteria**:
   - GIVEN a target mapping with `xml` WHEN an object is written THEN CallService receives `body` and `Content-Type: application/xml`, and no `json`
   - GIVEN a target mapping without `outputFormat` WHEN an object is written THEN CallService receives `json` as before
-- [ ] Implement
-- [ ] Test (PHPUnit with a mocked CallService)
+- [x] Implement
+- [x] Test (PHPUnit with a mocked CallService)
 
 ### Task 5: The lookup function and its allowlist
 - **spec_ref**: openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
@@ -54,7 +54,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 
 ## Build notes
 
-Task 1 and the implementation of task 2 are built: `CsvCodec` reads through `fgetcsv()`, the file migration source uses it, a synchronization with `sourceConfig.format: csv` hands one array per row to the mapping, and the file format field is a select with the three CSV options for `csv`. Task 2's PHPUnit half is in `SynchronizationFetchSinglePageTest`; its Playwright half needs a running instance and is open, so its Test box stays unchecked. Task 3 is built: `ArrayToXml` holds the writer `XMLResponse::arrayToXml()` now calls (the xml-response tests pass unchanged), `MappingOutput` writes a result as XML or CSV and leaves JSON to the caller, `MappingService::renderOutput()` reads the mapping's `outputFormat` and `outputOptions` from the fragment `mapping-formats-and-lookups.json` (which also seeds `person-to-xml`), the mapping test answers `renderedOutput` for an XML or CSV mapping only, and the preview shows it read-only. Its PHPUnit half is `MappingOutputTest` and `MappingsControllerRenderedOutputTest`; the Playwright half is open. Tasks 4 and 5 are open.
+Task 1 and the implementation of task 2 are built: `CsvCodec` reads through `fgetcsv()`, the file migration source uses it, a synchronization with `sourceConfig.format: csv` hands one array per row to the mapping, and the file format field is a select with the three CSV options for `csv`. Task 2's PHPUnit half is in `SynchronizationFetchSinglePageTest`; its Playwright half needs a running instance and is open, so its Test box stays unchecked. Task 3 is built: `ArrayToXml` holds the writer `XMLResponse::arrayToXml()` now calls (the xml-response tests pass unchanged), `MappingOutput` writes a result as XML or CSV and leaves JSON to the caller, `MappingService::renderOutput()` reads the mapping's `outputFormat` and `outputOptions` from the fragment `mapping-formats-and-lookups.json` (which also seeds `person-to-xml`), the mapping test answers `renderedOutput` for an XML or CSV mapping only, and the preview shows it read-only. Its PHPUnit half is `MappingOutputTest` and `MappingsControllerRenderedOutputTest`; the Playwright half is open. Task 4 is built: `SynchronizationService::formattedTargetConfig()` reads the output format of the mapping that made the payload (the synchronization's `sourceTargetMapping`, or `updateMapping` on an update, each read once per engine) and sends XML or CSV as `body` with its `Content-Type` and no `json`; a JSON mapping, an unknown one or none send JSON as before (`SynchronizationTargetOutputFormatTest`). Task 5 is open.
 
 ## Verification
 
