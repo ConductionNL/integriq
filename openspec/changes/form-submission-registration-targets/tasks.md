@@ -48,7 +48,7 @@ Kind: code. Size L. Row: portaliq `int-registration-per-form`. Builds on `zgw-co
   - GIVEN a Fo03 answer WHEN `creeerZaak` is refused THEN the refusal is `outside-refused` with the fault text
 - [ ] Implement
 - [ ] Test
-- note: Not started: needs the StUF-ZDS message builders. A stuf-zds target is refused as source-unavailable, not retryable.
+- note: Built: StufZdsRegistrationLeg over StufZdsCaseClient: creeerZaak with the mapped case, a BSN applicant as heeftAlsInitiator and the target's zaaktype (a source with `caseIdentificationStrategy: vooraf` asks genereerZaakIdentificatie first), the zaak identificatie as externalReference, a repeated hand-over answered from its zaak step, a Fo03 as outside-refused with the fault text, an open circuit or retrying message as source-unavailable retryable (StufZdsRegistrationLegTest). Left: the files (genereerDocumentidentificatie_Di02 and voegZaakdocumentToe_Lk01), which wait for reading the hand-over's files (Task 2), and a KvK applicant, which the StUF-ZDS message builder cannot name yet; both are refused as source-unavailable, not retryable. The XSD check of the messages is the builder's own (StufZdsMessageBuilderGoldenTest).
 
 ## Task 6: The JSON leg
 - **spec_ref**: `specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002`
