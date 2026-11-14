@@ -24,6 +24,7 @@ use DateTimeImmutable;
 use OCA\Integriq\BackgroundJob\ConnectionHealthJob;
 use OCA\Integriq\Service\CatalogRegistryService;
 use OCA\Integriq\Service\ConnectionDeclarationValidator;
+use OCA\Integriq\Service\CertificateExpiryAlertService;
 use OCA\Integriq\Service\ConnectionProbeService;
 use OCA\Integriq\Service\ConnectionProbeServiceInterface;
 use OCA\Integriq\Service\ConnectionRegistryService;
@@ -57,17 +58,27 @@ class ConnectionHealthJobTest extends TestCase {
 	/**
 	 * Build a container answering with the two services.
 	 *
-	 * @param ConnectionRegistryService $registry The registry double.
-	 * @param ConnectionProbeService $probe The probe double.
+	 * @param ConnectionRegistryService          $registry The registry double.
+	 * @param ConnectionProbeService             $probe    The probe double.
+	 * @param CertificateExpiryAlertService|null $expiry   The expiry alert double; a quiet one when null.
 	 *
 	 * @return ContainerInterface
 	 */
-	private function container(ConnectionRegistryService $registry, ConnectionProbeService $probe): ContainerInterface {
+	private function container(ConnectionRegistryService $registry, ConnectionProbeService $probe, ?CertificateExpiryAlertService $expiry = null): ContainerInterface {
+		if ($expiry === null) {
+			$expiry = $this->createMock(originalClassName: CertificateExpiryAlertService::class);
+			$expiry->method('evaluate')->willReturn(['opened' => 0, 'cleared' => 0]);
+		}
+
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static function (string $id) use ($registry, $probe): object {
+			static function (string $id) use ($registry, $probe, $expiry): object {
 				if ($id === ConnectionProbeServiceInterface::class) {
 					return $probe;
+				}
+
+				if ($id === CertificateExpiryAlertService::class) {
+					return $expiry;
 				}
 
 				return $registry;
@@ -275,4 +286,48 @@ class ConnectionHealthJobTest extends TestCase {
 			)
 		);
 	}//end testFailingPhaseDoesNotStopTheNext()
+
+	/**
+	 * After the status refresh the job opens the certificate expiry alerts, and a failure there is logged.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md#requirement-an-expiring-certificate-opens-an-alert-req-crun-008
+	 */
+	public function testOpensCertificateExpiryAlertsLast(): void {
+		$calls = [];
+		$registry = $this->getMockBuilder(className: ConnectionRegistryService::class)->disableOriginalConstructor()
+			->onlyMethods(['syncChangedDeclarations', 'refresh'])->getMock();
+		$registry->method('syncChangedDeclarations')->willReturn([]);
+		$registry->method('refresh')->willReturnCallback(
+			static function () use (&$calls): int {
+				$calls[] = 'refresh';
+				return 0;
+			}
+		);
+		$probe = $this->getMockBuilder(className: ConnectionProbeService::class)->disableOriginalConstructor()
+			->onlyMethods(['probeDue'])->getMock();
+		$probe->method('probeDue')->willReturn(0);
+
+		$expiry = $this->createMock(originalClassName: CertificateExpiryAlertService::class);
+		$expiry->expects($this->once())->method('evaluate')->with($this->isInstanceOf(\DateTimeImmutable::class))->willReturnCallback(
+			static function () use (&$calls): array {
+				$calls[] = 'expiry';
+				throw new \RuntimeException('keepiq gone');
+			}
+		);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$logger->expects($this->once())->method('error')
+			->with($this->anything(), $this->callback(static fn (array $context): bool => $context['phase'] === 'certificate expiry alerts'));
+
+		$this->runJob(
+			job: new ConnectionHealthJob(
+				time: $this->createMock(originalClassName: ITimeFactory::class),
+				container: $this->container(registry: $registry, probe: $probe, expiry: $expiry),
+				logger: $logger
+			)
+		);
+
+		$this->assertSame(expected: ['refresh', 'expiry'], actual: $calls);
+	}//end testOpensCertificateExpiryAlertsLast()
 }//end class

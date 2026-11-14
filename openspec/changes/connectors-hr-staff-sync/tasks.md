@@ -19,8 +19,8 @@ Kind: code. Size M. Row `planninq:tt-hr-sync`.
   - GIVEN a request approved WHEN it is saved THEN one absence create goes to Untis with dates and a neutral reason
   - GIVEN an approved request later rejected WHEN it is saved THEN the absence is deleted in Untis
   - GIVEN a submitted request WHEN it is saved THEN nothing is sent
-- [ ] Implement
-- [ ] Test (PHPUnit on the trigger condition and mapping)
+- [ ] Implement (engine part done: `targetConfig.deleteWhenConditionsFail` deletes an earlier-pushed object at the target once the conditions stop holding; the `LeaveRequest` synchronization and mapping in the set are not built yet)
+- [ ] Test (PHPUnit on the withdrawal done; the set's mapping left)
 
 ### Task 3: Allow-list mappings and the install check
 - **spec_ref**: openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-allow-listed-fields-leave-the-hr-register-req-hrs-003
@@ -28,8 +28,8 @@ Kind: code. Size M. Row `planninq:tt-hr-sync`.
 - **acceptance_criteria**:
   - GIVEN an employee fixture with BSN and IBAN WHEN it is mapped THEN neither is in the output
   - GIVEN a mapping with `passThrough: true` in the set WHEN the set is installed THEN the install is refused naming the mapping
-- [ ] Implement
-- [ ] Test (PHPUnit on the mappings and the guard)
+- [ ] Implement (guard done: `PersonalDataSetGuard` refuses a configuration import marked `personalData: true` with a pass-through mapping; the set's own allow-list mappings are not built yet)
+- [ ] Test (PHPUnit on the guard done; on the set's mappings left)
 
 ### Task 4: Nightly reconciliation
 - **spec_ref**: openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
