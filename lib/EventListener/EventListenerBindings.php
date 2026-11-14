@@ -45,6 +45,7 @@ use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\OptOutChangeRequestedEvent;
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
+use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
@@ -367,6 +368,9 @@ final class EventListenerBindings {
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
 		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
+		// Forms-service-fetch-for-apps (REQ-SF-002): a sibling app runs a service
+		// fetch an administrator defined, and gets its declared outputs or a refusal.
+		$dispatcher->addServiceListener(eventName: ServiceFetchRequestedEvent::class, className: ServiceFetchRequestedListener::class);
 		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
 		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);

@@ -272,6 +272,10 @@
             "description": "Identity, alignment, unsubscribe and withdraw endpoints"
         },
         {
+            "name": "service-fetch",
+            "description": "Service fetches other apps may call (forms-service-fetch-for-apps)."
+        },
+        {
             "name": "settings",
             "description": "Controller exposing Integriq-specific settings actions"
         },
@@ -7565,6 +7569,48 @@
                         "in": "path",
                         "required": true,
                         "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/service-fetches": {
+            "get": {
+                "operationId": "service-fetch-index",
+                "summary": "The enabled service fetches an app may call, for a form designer",
+                "description": "The enabled service fetches the given app may call, projected to slug, title, description, inputs and outputs. The source, path, query and mappings are never included (forms-service-fetch-for-apps, REQ-SF-003).",
+                "tags": [
+                    "service-fetch"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "app",
+                        "in": "query",
+                        "required": true,
+                        "description": "The app whose fetches to list.",
                         "schema": {
                             "type": "string"
                         }
