@@ -39,3 +39,9 @@ Kind: code. Size M. Row `integriq:gw-federated`.
 ## Verification
 - [ ] `openspec validate gateway-federated-api-discovery --type change --strict` passes
 - [ ] PHPUnit and Playwright run, exit codes read
+
+## Build notes (continuation)
+
+- Seed data: three demo `external_api` objects (two Kong, one Azure API Management, matching the recorded fixtures) in `lib/Settings/integriq_mock_register.json`, so the inventory is not empty on a demo install.
+- Task 1 stays open: the `ApiInventory` index lists and filters `external_api`; listing integriq's own `api_product` rows in the same filterable list needs an index page over two schemas, which the shared `@conduction/nextcloud-vue` index page does not offer yet.
+- Task 4 stays open: "Bring behind integriq" opens the import dialog of `gateway-openapi-import-and-publish`, which is not built yet.

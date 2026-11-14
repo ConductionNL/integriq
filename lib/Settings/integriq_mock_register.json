@@ -12651,6 +12651,49 @@
         "agentId": "demo-agent",
         "at": "2026-03-01T09:04:20+00:00",
         "durationSeconds": 252
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "external_api",
+          "slug": "external-api-kong-orders"
+        },
+        "gateway": "kong-gateway-discovery",
+        "vendor": "kong",
+        "name": "orders",
+        "version": "1.4",
+        "baseUrl": "http://orders.internal:8080/v1",
+        "gatewayApiId": "a3ad71a8-7d4a-4c2b-9a83-3f1e0f6b7c11",
+        "lastSeen": "2026-11-13T06:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "external_api",
+          "slug": "external-api-kong-invoices"
+        },
+        "gateway": "kong-gateway-discovery",
+        "vendor": "kong",
+        "name": "invoices",
+        "version": "",
+        "baseUrl": "https://invoices.internal:443/api",
+        "gatewayApiId": "5b8e2f04-1c6d-4e7a-b2f9-0d4c6a1e9b37",
+        "lastSeen": "2026-11-13T06:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "external_api",
+          "slug": "external-api-azure-vergunningen"
+        },
+        "gateway": "azure-apim-discovery",
+        "vendor": "azure-apim",
+        "name": "Vergunningen API",
+        "version": "v2",
+        "baseUrl": "https://apim-gemeente.azure-api.net/vergunningen",
+        "environment": "1",
+        "gatewayApiId": "vergunningen",
+        "lastSeen": "2026-11-13T06:00:00+00:00"
       }
     ]
   }
