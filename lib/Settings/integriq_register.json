@@ -751,6 +751,68 @@
             "description": "When true, GET requests to this endpoint translate VNG double-underscore lookup operators (field__icontains, field__gte, partijIdentificator__codeSoortObjectId/__objectId) onto OpenRegister search filters, and an `expand=` query parameter embeds named relations inline (bounded depth). Opt-in per endpoint; existing endpoints default to false. Added by the vng-klantinteracties-adapter change.",
             "default": false,
             "title": "Enable VNG Filter/Expand Translation"
+          },
+          "cache": {
+            "type": "object",
+            "description": "The endpoint's response cache (gateway-response-cache-and-problem-errors REQ-RCPE-001). Only a source endpoint's answers to safe methods are cached; the authentication and rate limit rules run before a lookup. An upstream answer marked private or no-store is never cached, and a lower upstream max-age shortens the lifetime unless ignoreUpstreamMaxAge is set. The key holds the consumer unless sharedAcrossConsumers is set. An administrator clears it with POST /api/endpoints/{id}/cache/clear.",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false,
+                "title": "Cache answers"
+              },
+              "ttlSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 86400,
+                "default": 60,
+                "title": "Lifetime (seconds)"
+              },
+              "methods": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "GET",
+                    "HEAD"
+                  ]
+                },
+                "default": [
+                  "GET",
+                  "HEAD"
+                ],
+                "title": "Cached methods"
+              },
+              "statusCodes": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "default": [
+                  200
+                ],
+                "title": "Cached status codes"
+              },
+              "varyHeaders": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "title": "Headers that vary the answer"
+              },
+              "sharedAcrossConsumers": {
+                "type": "boolean",
+                "default": false,
+                "title": "Same answer for every consumer"
+              },
+              "ignoreUpstreamMaxAge": {
+                "type": "boolean",
+                "default": false,
+                "title": "Ignore the upstream max-age"
+              }
+            },
+            "title": "Response cache"
           }
         },
         "x-openregister-mcp": {
@@ -2330,6 +2392,12 @@
             "type": "integer",
             "description": "Combined request+response byte size for storage accounting",
             "title": "Size (Bytes)"
+          },
+          "cacheHit": {
+            "type": "boolean",
+            "description": "True when an endpoint answered this call from its response cache, without an upstream request (REQ-RCPE-001).",
+            "default": false,
+            "title": "Cache hit"
           }
         },
         "x-openregister-mcp": {

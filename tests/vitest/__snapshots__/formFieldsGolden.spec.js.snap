@@ -593,6 +593,62 @@ exports[`EndpointFormFields > hands every listener value to updateField as recor
     ],
   ],
   [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "typed",
+    [
+      [
+        "cache",
+        {
+          "enabled": "typed",
+        },
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "",
+    [
+      [
+        "cache",
+        {
+          "enabled": "",
+        },
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    "7",
+    [
+      [
+        "cache",
+        {
+          "enabled": "7",
+        },
+      ],
+    ],
+  ],
+  [
+    "NcCheckboxRadioSwitch",
+    null,
+    "onUpdate:modelValue",
+    true,
+    [
+      [
+        "cache",
+        {
+          "enabled": true,
+        },
+      ],
+    ],
+  ],
+  [
     "textarea",
     "cn-endpoint-form-e_textarea",
     [
@@ -653,6 +709,11 @@ exports[`EndpointFormFields > renders every widget as recorded 1`] = `
     <div class="NcSelect" data-label="Request schema"></div>
     <div class="NcSelect" data-label="Answer schema"></div>
     <p class="CnFieldHelper" data-text="Record lets the message through and logs the errors. Refuse stops it"></p>
+  </fieldset>
+  <fieldset class="cn-endpoint-form-fields__validation">
+    <legend class="cn-endpoint-form-fields__label">Response cache</legend>
+    <div class="NcCheckboxRadioSwitch" data-value="false" data-type="switch">Cache answers</div>
+    <p class="CnFieldHelper" data-text="Answers to GET and HEAD from a source are kept for the lifetime, per consumer unless shared. Answers the source marks private or no-store are never kept."></p>
   </fieldset>
 </div>"
 `;

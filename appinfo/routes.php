@@ -466,6 +466,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Endpoint endpoints
 		// endpoints#test route removed — controller method was deleted by agent.
 		['name' => 'endpoints#logs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
+		// gateway-response-cache-and-problem-errors D3: clear one endpoint's response cache (action endpoint.cache.clear).
+		['name' => 'endpointResponseCache#clear', 'url' => '/api/endpoints/{id}/cache/clear', 'verb' => 'POST'],
 		// endpoints#statistics route removed — controller method was deleted by agent.
 
 		// Synchronization endpoints

@@ -41,6 +41,7 @@ use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\EndpointResponseCache;
 use OCA\Integriq\Service\Endpoint\UpstreamRequest;
 use OCA\Integriq\Service\Endpoint\UpstreamRouter;
 use OCA\Integriq\Service\Endpoint\UpstreamSelector;
@@ -194,6 +195,10 @@ class EndpointService implements EndpointServiceInterface {
 	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
 	 *                                                        channels; built from the object service and
 	 *                                                        logger when not injected.
+	 * @param EndpointResponseCache|null $responseCache The endpoints' response cache
+	 *                                                  (gateway-response-cache-and-problem-errors);
+	 *                                                  nullable like the others, and without it no
+	 *                                                  answer is cached.
 	 *
 	 * @return void
 	 */
@@ -226,6 +231,7 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?EndpointMessageGate $messageGate = null,
 		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
+		private readonly ?EndpointResponseCache $responseCache = null,
 	) {
 		$this->productPolicy = $productPolicyService;
 		$this->upstreamRouter = $upstreamRouter;
@@ -2677,6 +2683,18 @@ class EndpointService implements EndpointServiceInterface {
 			);
 		}//end try
 
+		// A cached answer is served without reaching the source
+		// (REQ-RCPE-001). The authentication and rate limit rules ran before
+		// this point, so a hit never reaches a caller that could not have
+		// made the call.
+		$cache = $this->responseCacheOf(endpointData: $endpointData, request: $request, path: $path);
+		if ($cache !== null) {
+			$hit = $this->responseCache?->lookup(endpointId: (string)$endpoint->getUuid(), settings: $cache['settings'], request: $cache['request']);
+			if ($hit !== null) {
+				return $this->answerFromCache(endpoint: $endpoint, source: $source, hit: $hit);
+			}
+		}
+
 		// Proxy the request to the source via CallService, or to the target the
 		// router picks (gateway-upstream-routing REQ-UPRT-001/002).
 		if ($routed === true) {
@@ -2733,11 +2751,103 @@ class EndpointService implements EndpointServiceInterface {
 
 		$this->proxiedAnswer = true;
 
-		return new JSONResponse(
-			(new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? [])),
-			$callLogData['statusCode'] ?? 200
-		);
+		$answer = (new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? []));
+		$response = new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
+		if ($cache !== null) {
+			$this->responseCache?->store(
+				endpointId: (string)$endpoint->getUuid(),
+				settings: $cache['settings'],
+				request: $cache['request'],
+				status: (int)($callLogData['statusCode'] ?? 200),
+				answer: $answer
+			);
+			$response->addHeader(EndpointResponseCache::HEADER, 'MISS');
+		}
+
+		return $response;
 	}//end handleSourceRequest()
+
+	/**
+	 * The endpoint's cache settings and the request as the cache keys it, or
+	 * null when the endpoint does not cache this request.
+	 *
+	 * @param array    $endpointData The endpoint object.
+	 * @param IRequest $request      The incoming request.
+	 * @param string   $path         The inbound sub-path.
+	 *
+	 * @return array{settings: array<string, mixed>, request: array<string, mixed>}|null
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function responseCacheOf(array $endpointData, IRequest $request, string $path): ?array {
+		$settings = $this->responseCache?->settings(endpointData: $endpointData);
+		if ($settings === null || $this->responseCache->cachesMethod(settings: $settings, method: $request->getMethod()) === false) {
+			return null;
+		}
+
+		$headers = [];
+		foreach ($settings['varyHeaders'] as $name) {
+			$headers[$name] = (string)$request->getHeader($name);
+		}
+
+		return [
+			'settings' => $settings,
+			'request' => [
+				'method' => $request->getMethod(),
+				'path' => $path,
+				'query' => $request->getParams(),
+				'headers' => $headers,
+				'consumer' => $this->authorizationService->getResolvedConsumer()?->getUuid(),
+			],
+		];
+	}//end responseCacheOf()
+
+	/**
+	 * Answer from the cache: the stored status and answer with `X-Cache: HIT`,
+	 * and a call log entry marking the hit, with no upstream request.
+	 *
+	 * @param ObjectEntity                                   $endpoint The endpoint served.
+	 * @param ObjectEntity|null                              $source   The source it targets, null when routed.
+	 * @param array{status: int, answer: array<string, mixed>} $hit    The cached answer.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 */
+	private function answerFromCache(ObjectEntity $endpoint, ?ObjectEntity $source, array $hit): JSONResponse {
+		$log = [
+			'statusCode' => $hit['status'],
+			'statusMessage' => 'Answered from the endpoint response cache',
+			'direction' => 'inbound',
+			'endpoint' => (string)$endpoint->getUuid(),
+			'cacheHit' => true,
+			'created' => (new DateTime())->format('c'),
+		];
+		if ($source !== null) {
+			$log['source'] = (string)$source->getUuid();
+		}
+
+		try {
+			// System write, unscoped: the log carries the endpoint's organisation; an inbound caller has none.
+			$this->orObjectService->saveObject(
+				object: $log + $this->organisationSelf(object: $endpoint),
+				register: 'integriq',
+				schema: 'call_log',
+				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning('integriq: failed to record a response cache hit: ' . $e->getMessage());
+		}
+
+		$this->proxiedAnswer = true;
+
+		$response = new JSONResponse($hit['answer'], $hit['status']);
+		$response->addHeader(EndpointResponseCache::HEADER, 'HIT');
+
+		return $response;
+	}//end answerFromCache()
 
 	/**
 	 * Whether an endpoint may proxy to a source: both belong to the same

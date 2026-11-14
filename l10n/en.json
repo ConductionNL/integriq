@@ -1,5 +1,17 @@
 {
     "translations": {
+        "Response cache": "Response cache",
+        "Cache answers": "Cache answers",
+        "Lifetime in seconds": "Lifetime in seconds",
+        "Headers that vary the answer": "Headers that vary the answer",
+        "Same answer for every consumer": "Same answer for every consumer",
+        "Ignore the source's max-age": "Ignore the source's max-age",
+        "Answers to GET and HEAD from a source are kept for the lifetime, per consumer unless shared. Answers the source marks private or no-store are never kept.": "Answers to GET and HEAD from a source are kept for the lifetime, per consumer unless shared. Answers the source marks private or no-store are never kept.",
+        "Clear cache": "Clear cache",
+        "The cache of this endpoint is cleared.": "The cache of this endpoint is cleared.",
+        "The cache could not be cleared.": "The cache could not be cleared.",
+        "You may not clear the cache of this endpoint.": "You may not clear the cache of this endpoint.",
+        "This endpoint does not exist.": "This endpoint does not exist.",
         "FSC services": "FSC services",
         "Bank feeds": "Bank feeds",
         "Card feeds": "Card feeds",

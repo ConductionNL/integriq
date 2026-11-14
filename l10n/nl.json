@@ -1,5 +1,17 @@
 {
     "translations": {
+        "Response cache": "Antwoordcache",
+        "Cache answers": "Antwoorden cachen",
+        "Lifetime in seconds": "Levensduur in seconden",
+        "Headers that vary the answer": "Headers die het antwoord bepalen",
+        "Same answer for every consumer": "Hetzelfde antwoord voor elke afnemer",
+        "Ignore the source's max-age": "De max-age van de bron negeren",
+        "Answers to GET and HEAD from a source are kept for the lifetime, per consumer unless shared. Answers the source marks private or no-store are never kept.": "Antwoorden van een bron op GET en HEAD worden de levensduur lang bewaard, per afnemer tenzij gedeeld. Antwoorden die de bron als private of no-store markeert, worden nooit bewaard.",
+        "Clear cache": "Cache legen",
+        "The cache of this endpoint is cleared.": "De cache van dit endpoint is geleegd.",
+        "The cache could not be cleared.": "De cache kon niet worden geleegd.",
+        "You may not clear the cache of this endpoint.": "U mag de cache van dit endpoint niet legen.",
+        "This endpoint does not exist.": "Dit endpoint bestaat niet.",
         "FSC services": "FSC-diensten",
         "Bank feeds": "Bankkoppelingen",
         "Card feeds": "Kaartkoppelingen",

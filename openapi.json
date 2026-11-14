@@ -2387,6 +2387,65 @@
                 ]
             }
         },
+        "/endpoints/{id}/cache/clear": {
+            "post": {
+                "operationId": "endpoint-response-cache-clear",
+                "summary": "Clear an endpoint's response cache",
+                "description": "Forget every cached answer of one endpoint, so the next call reaches the source again (gateway-response-cache-and-problem-errors REQ-RCPE-001). Gated by the action endpoint.cache.clear, admin by default.",
+                "tags": [
+                    "endpoints"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The endpoint's cache was cleared.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "endpoint": {
+                                            "type": "string"
+                                        },
+                                        "cleared": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "endpoint",
+                                        "cleared"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The endpoint uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/environments": {
             "get": {
                 "operationId": "environment-index",
