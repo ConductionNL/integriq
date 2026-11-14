@@ -1,0 +1,60 @@
+{
+  "$comment": "ADR-037 register fragment (events-async-api-products). Deep-merges `channels` onto api_product, so a product carries event channels next to its endpoints and one product subscription covers both (design.md D1), and `productSubscription`/`productChannel` onto event_subscription, so a consumer's channel push subscription names the product subscription it rides on (REQ-AAPI-003). See openspec/changes/events-async-api-products/design.md and specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001.",
+  "components": {
+    "schemas": {
+      "api_product": {
+        "properties": {
+          "channels": {
+            "type": "array",
+            "title": "Channels",
+            "description": "Event channels this product version carries next to its endpoints. A consumer with an active subscription to the product reaches a channel under the same key, tier rate limit and quota as the product's endpoints. Each channel's slug is unique within the product version.",
+            "default": [],
+            "items": {
+              "type": "object",
+              "required": ["slug", "title", "types"],
+              "properties": {
+                "slug": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$",
+                  "description": "The channel's id in the product's routes and AsyncAPI document, e.g. 'publications'",
+                  "title": "Slug"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Human-readable channel name",
+                  "title": "Title"
+                },
+                "types": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string" },
+                  "description": "The CloudEvent types the channel carries, e.g. 'nl.woo.publication.created'",
+                  "title": "CloudEvent types"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "What the channel carries, for the AsyncAPI document and the product page",
+                  "title": "Description"
+                }
+              }
+            }
+          }
+        }
+      },
+      "event_subscription": {
+        "properties": {
+          "productSubscription": {
+            "type": "string",
+            "description": "The api_product_subscription uuid a consumer's channel subscription rides on. Set only on subscriptions created through a product channel; a push delivery checks it is still active before sending (REQ-AAPI-003).",
+            "title": "Product subscription"
+          },
+          "productChannel": {
+            "type": "string",
+            "description": "The slug of the product channel this subscription was created through.",
+            "title": "Product channel"
+          }
+        }
+      }
+    }
+  }
+}
