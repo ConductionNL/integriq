@@ -3577,7 +3577,27 @@ OC.L10N.register(
         "Every delivery attempt, with the error of each one that failed.": "Every delivery attempt, with the error of each one that failed.",
         "When the delivery was tried.": "When the delivery was tried.",
         "Why the attempt failed. Empty when it succeeded.": "Why the attempt failed. Empty when it succeeded.",
-        "How many statuses Digipoort reported that integriq has already read.": "How many statuses Digipoort reported that integriq has already read."
+        "How many statuses Digipoort reported that integriq has already read.": "How many statuses Digipoort reported that integriq has already read.",
+        "Every interval": "Every interval",
+        "On a calendar": "On a calendar",
+        "Weekdays": "Weekdays",
+        "Day of month": "Day of month",
+        "Any day": "Any day",
+        "Times of day": "Times of day",
+        "HH:MM, separated by commas. Jobs are picked up every five minutes, so a 07:00 run starts between 07:00 and 07:05.": "HH:MM, separated by commas. Jobs are picked up every five minutes, so a 07:00 run starts between 07:00 and 07:05.",
+        "Time zone": "Time zone",
+        "An IANA time zone such as Europe/Amsterdam.": "An IANA time zone such as Europe/Amsterdam.",
+        "Dates to skip": "Dates to skip",
+        "YYYY-MM-DD, separated by commas. Skipped dates are not working days either.": "YYYY-MM-DD, separated by commas. Skipped dates are not working days either.",
+        "Next five runs": "Next five runs",
+        "Computing run times…": "Computing run times…",
+        "This calendar has no run time.": "This calendar has no run time.",
+        "First day of the month": "First day of the month",
+        "Last day of the month": "Last day of the month",
+        "First working day of the month": "First working day of the month",
+        "Last working day of the month": "Last working day of the month",
+        "Day {day}": "Day {day}",
+        "The run times could not be computed.": "The run times could not be computed."
     },
     "nplurals=2; plural=(n != 1);"
 )
