@@ -24,8 +24,8 @@ the flag is `1`.
   - GIVEN a second registration for the same organisation and provider WHEN it is saved THEN the save is refused with a message naming the existing one
   - GIVEN a user outside the admin group WHEN they list `idpRegistration` objects THEN nothing is returned
   - GIVEN the re-import WHEN the log is read THEN there is no `PARTIAL IMPORT` line for this schema
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: The secret seam
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-identity-provider-secrets-are-read-from-keepiq-and-fail-closed-req-idpc-004`
@@ -46,8 +46,8 @@ the flag is `1`.
   - GIVEN each of the six statuses WHEN readiness is computed THEN it returns that status with reasons naming properties and roles only
   - GIVEN any status but `ready` WHEN `forRegistration()` is called THEN the Log adapter is returned
   - GIVEN `ready` WHEN `forRegistration()` is called THEN the adapter of the registration's kind is returned
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: The SAML Service Provider adapter
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001`
