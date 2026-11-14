@@ -40,6 +40,9 @@ import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
+import IntakeMessageActions from './components/intake/IntakeMessageActions.vue'
+import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions.vue'
+import MailImportAction from './components/intake/MailImportAction.vue'
 import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
 import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
@@ -47,6 +50,7 @@ import SubscriptionActionFields from './modals/EventSubscription/SubscriptionAct
 import ColumnMappingEditorModal from './modals/Migration/ColumnMappingEditorModal.vue'
 import ConsumerEditorModal from './modals/v2/ConsumerEditorModal.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
+import IntakeRuleEditorModal from './modals/v2/IntakeRuleEditorModal.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
 import RuleEditorModal from './modals/v2/RuleEditorModal.vue'
@@ -85,6 +89,11 @@ import {
 	testSynchronizationHandler,
 	viewLogsHandler,
 } from './handlers/actionHandlers.js'
+import {
+	moveIntakeRuleDownHandler,
+	moveIntakeRuleUpHandler,
+	toggleIntakeRuleHandler,
+} from './handlers/intakeRuleHandlers.js'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -127,6 +136,12 @@ export default {
 	// Sources page header action (statutory-gateways-and-frameworks): the
 	// gateway catalogue and where data goes.
 	openGatewayCatalogueHandler,
+	// Intake routing page row actions (messaging-intake-routing-rules REQ-IRE-001):
+	// reorder and enable/disable a rule, each written through saveRule() so
+	// its validation runs on every write.
+	moveIntakeRuleUpHandler,
+	moveIntakeRuleDownHandler,
+	toggleIntakeRuleHandler,
 	// App connections page header action (connection-registry D9): open the
 	// link-a-source dialog via the modal bus.
 	openLinkSourceHandler,
@@ -170,6 +185,23 @@ export default {
 	// investigation window was open (outbound-call-log-investigation-window-page-and-allowlist).
 	CallLogDetail,
 	CallLogActions,
+
+	// The intake inbox (IntakeMessages) routes a held or failed message again:
+	// per row through `slots["row-actions"]`, a selection through
+	// `actionsComponent`. messaging-intake-routing-rules REQ-IRE-003.
+	IntakeMessageRowActions,
+	IntakeMessageActions,
+	// The mail inbox (MailMessages) imports a saved .eml or .msg file, offered
+	// only to a holder of the mail import right. The intake inbox shows the
+	// same action inside IntakeMessageActions. mail-intake REQ-MAIL-002.
+	MailImportAction,
+
+	// The Intake routing page wires `form-dialog` to IntakeRuleEditorModal,
+	// which owns its submit: it saves through saveRule() so validateRule()
+	// refuses a channel without an adapter and a mapping onto a field the case
+	// type lacks, and reads the list again through the slot's `refresh`.
+	// messaging-intake-routing-rules REQ-IRE-001 and REQ-IRE-002.
+	IntakeRuleEditorModal,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
