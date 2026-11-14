@@ -1,0 +1,33 @@
+{
+  "$comment": "ADR-037 register fragment (sources-route-distance-and-rdw-lookup D3). Seeds the DORMANT `route-planner-tomtom` source that OCA\\Integriq\\Service\\RouteDistanceService asks for the road distance between two postcodes (GET /1/calculateRoute/{lat,lon}:{lat,lon}/json?travelMode=...). configuration.routeProvider 'tomtom' selects that request shape. To go live: create a credential named tomtom-routing for your TomTom API key, link the app's route planner connection to this source, and enable it.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "route-planner-tomtom"
+        },
+        "name": "TomTom route planner",
+        "description": "Answers the road distance between two places, for example for a commuting allowance. Create a credential named tomtom-routing for your API key, link the app's route planner connection to this source and enable it.",
+        "type": "api",
+        "location": "https://api.tomtom.com/routing",
+        "auth": "none",
+        "configuration": {
+          "routeProvider": "tomtom",
+          "headers": {
+            "Accept": "application/json"
+          },
+          "authentication": {
+            "credentialRef": {
+              "credentialName": "tomtom-routing"
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

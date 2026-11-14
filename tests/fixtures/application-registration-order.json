@@ -323,6 +323,8 @@
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\ServiceFetchRequestedEvent, OCA\\Integriq\\EventListener\\ServiceFetchRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\DocumentSearchRequestedEvent, OCA\\Integriq\\EventListener\\DocumentSearchRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\DocumentFetchRequestedEvent, OCA\\Integriq\\EventListener\\DocumentFetchRequestedListener, int)",
+	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\ConnectionCallRequestedEvent, OCA\\Integriq\\EventListener\\ConnectionCallRequestedListener, int)",
+	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\RouteDistanceRequestedEvent, OCA\\Integriq\\EventListener\\RouteDistanceRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\SubmissionRegistrationRequestedEvent, OCA\\Integriq\\EventListener\\SubmissionRegistrationListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatedEvent, OCA\\Integriq\\EventListener\\EndpointCacheInvalidationListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatedEvent, OCA\\Integriq\\EventListener\\EndpointCacheInvalidationListener, int)",
