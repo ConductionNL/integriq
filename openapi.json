@@ -80,6 +80,10 @@
             "description": "Admin-only link-and-probe endpoint for connection rows"
         },
         {
+            "name": "data-residency",
+            "description": "Where each connection sends data: the residency zone of every egress destination, the EU-only switch, and a source's declared residency"
+        },
+        {
             "name": "datasource",
             "description": "Controller for the `dashboard-http-datasource` resolve endpoint"
         },
