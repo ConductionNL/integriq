@@ -454,6 +454,36 @@ class EndpointServiceTierPolicyTest extends TestCase {
 	}//end testRecordInboundCallLogPersistsRowWithProductAndEndpoint()
 
 	/**
+	 * REQ-APGU-001: the inbound call_log row names the consumer the request
+	 * authenticated as, so the analytics can split per consumer; without a
+	 * resolved consumer the row carries no consumer at all.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	public function testRecordInboundCallLogNamesTheResolvedConsumer(): void {
+		$endpoint = ObjectServiceMockBuilder::objectEntity($this, [], 'endpoint-uuid-1');
+		$product = ObjectServiceMockBuilder::objectEntity($this, [], 'product-uuid-1');
+		$consumer = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Partner'], 'consumer-uuid-1');
+
+		$captured = [];
+		$this->orObjectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$captured) {
+				$captured[] = $object;
+				return ObjectServiceMockBuilder::objectEntity($this, $object, 'call-log-1');
+			}
+		);
+		$this->authorizationService->method('getResolvedConsumer')->willReturnOnConsecutiveCalls($consumer, null);
+
+		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 5.0);
+		$this->service->recordInboundCallLog(endpoint: $endpoint, product: $product, statusCode: 200, durationMs: 5.0);
+
+		$this->assertSame('consumer-uuid-1', $captured[0]['consumer']);
+		$this->assertArrayNotHasKey('consumer', $captured[1]);
+	}//end testRecordInboundCallLogNamesTheResolvedConsumer()
+
+	/**
 	 * REQ-EP-009 — a call_log write failure never blocks the response
 	 * (best-effort logging); recordInboundCallLog() must not throw.
 	 *

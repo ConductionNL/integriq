@@ -341,6 +341,66 @@ class ProductSubscriptionsControllerTest extends TestCase {
 	}//end testAnalyticsReadsTheAdminOnlyCallLogWithoutRbac()
 
 	/**
+	 * REQ-APGU-001: the analytics split per consumer and per endpoint, busiest
+	 * first, each entry named, and the consumer entries add up to the total.
+	 * A consumer that can no longer be read keeps its id without a name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-usage-per-consumer-and-endpoint/specs/api-product-gateway/spec.md#requirement-product-usage-is-split-per-consumer-and-per-endpoint-req-apgu-001
+	 */
+	public function testAnalyticsAreSplitPerConsumerAndPerEndpoint(): void {
+		$names = ['partner' => 'Partner B.V.', 'ep-orders' => 'Orders', 'ep-items' => 'Items', 'ep-slow' => 'Reports'];
+		$lookups = [];
+		$this->orObjectService->method('find')->willReturnCallback(
+			function ($id, ?string $register = null, ?string $schema = null, bool $_rbac = true) use ($names, &$lookups) {
+				$id = (string)$id;
+				if ($id === 'product-1') {
+					return ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Product'], 'product-1');
+				}
+
+				$lookups[] = [$schema, $id, $_rbac];
+				if (isset($names[$id]) === false) {
+					throw new DoesNotExistException('gone');
+				}
+
+				return ObjectServiceMockBuilder::objectEntity($this, ['name' => $names[$id]], $id);
+			}
+		);
+
+		$rows = [];
+		$traffic = [
+			['partner', 'ep-orders', 200], ['partner', 'ep-orders', 500], ['partner', 'ep-items', 200],
+			['partner', 'ep-slow', 200], ['partner', 'ep-orders', 200], ['removed', 'ep-items', 200],
+		];
+		foreach ($traffic as $i => [$consumer, $endpoint, $code]) {
+			$rows[] = ObjectServiceMockBuilder::objectEntity(
+				$this,
+				['consumer' => $consumer, 'endpoint' => $endpoint, 'statusCode' => $code, 'responseTime' => 10],
+				'row-' . $i
+			);
+		}
+
+		$this->orObjectService->method('findAll')->willReturn(['results' => $rows]);
+
+		$data = $this->controller->analytics(productId: 'product-1')->getData();
+
+		$this->assertSame(6, $data['requestCount']);
+		$this->assertSame(
+			[['partner', 'Partner B.V.', 5, 0.2], ['removed', null, 1, 0.0]],
+			array_map(static fn (array $e): array => [$e['consumer'], $e['name'], $e['requestCount'], $e['errorRate']], $data['byConsumer'])
+		);
+		$this->assertSame($data['requestCount'], array_sum(array_column($data['byConsumer'], 'requestCount')));
+		$this->assertSame(
+			[['ep-orders', 'Orders', 3], ['ep-items', 'Items', 2], ['ep-slow', 'Reports', 1]],
+			array_map(static fn (array $e): array => [$e['endpoint'], $e['name'], $e['requestCount']], $data['byEndpoint'])
+		);
+		$this->assertSame(['p50', 'p95', 'p99'], array_keys($data['byEndpoint'][0]['latency']));
+		$this->assertContains(['consumer', 'partner', false], $lookups);
+		$this->assertContains(['endpoint', 'ep-slow', false], $lookups);
+	}//end testAnalyticsAreSplitPerConsumerAndPerEndpoint()
+
+	/**
 	 * A failed activation answers 400, not 500.
 	 *
 	 * `activateSubscription()` calls OpenRegister's `saveObject()`, which
