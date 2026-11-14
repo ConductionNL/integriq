@@ -36,7 +36,7 @@ Kind: code. Size M. Rows `opencatalogi:int-sharepoint` and
 - **acceptance_criteria**:
   - GIVEN the four choices made WHEN the administrator saves THEN one source, one synchronization and one mapping are created through the configuration import
   - GIVEN "Review before import" on WHEN the first run starts THEN it pauses for approval
-- [ ] Implement
+- [x] Implement
 - [ ] Test (`tests/e2e/sharepoint-publications.spec.ts` against the mock Graph)
 
 ### Task 5: Deprecate the legacy template and seed a demo

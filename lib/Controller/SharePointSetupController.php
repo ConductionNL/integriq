@@ -27,15 +27,21 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Kernel\AppIdentity;
+use InvalidArgumentException;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
+use OCA\Integriq\Service\Adapter\DocumentCms\SharePointPublicationSet;
+use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
- * One read-only route: `GET /api/sharepoint/lookup`, for integriq administrators only.
+ * Two routes for integriq administrators only: `GET /api/sharepoint/lookup` reads Graph,
+ * `POST /api/sharepoint/publication-intake` saves a setup through the configuration import.
  *
  * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
  */
@@ -44,12 +50,18 @@ class SharePointSetupController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                $request The request.
-	 * @param SharePointOnlineAdapter $adapter Makes the brokered Graph calls.
+	 * @param IRequest                      $request       The request.
+	 * @param SharePointOnlineAdapter       $adapter       Makes the brokered Graph calls.
+	 * @param SharePointPublicationSet      $set           Fills the packaged set with the setup's choices.
+	 * @param ConfigurationServiceInterface $configuration Imports the filled set.
+	 * @param LoggerInterface               $logger        Records an import that failed.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly SharePointOnlineAdapter $adapter,
+		private readonly SharePointPublicationSet $set,
+		private readonly ConfigurationServiceInterface $configuration,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -84,4 +96,66 @@ class SharePointSetupController extends Controller {
 
 		return new JSONResponse($answer, $status);
 	}//end lookup()
+
+	/**
+	 * Save a SharePoint to publication setup: one source, one mapping, one rule and one synchronization.
+	 *
+	 * Body: `credentialId`, `siteId`, `driveId`, `folderId` (empty for the
+	 * library root), `folderName`, `catalog`, `register`, `schema` and
+	 * `requiresApproval`. The source holds a broker reference and no secret.
+	 * Answers 201 with the created ids by component; 400 naming the missing
+	 * choice; 500 when the import fails, with nothing reported as created.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
+	 */
+	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
+	public function intake(): JSONResponse {
+		$choices = [];
+		foreach (['credentialId', 'siteId', 'driveId', 'folderId', 'folderName', 'catalog', 'register', 'schema', 'requiresApproval'] as $key) {
+			$choices[$key] = $this->request->getParam($key, '');
+		}
+
+		try {
+			$document = $this->set->build(choices: $choices);
+		} catch (InvalidArgumentException $exception) {
+			return new JSONResponse(['error' => 'invalid_setup', 'message' => $exception->getMessage()], 400);
+		}
+
+		try {
+			$imported = $this->configuration->importConfiguration(oas: ['components' => $document['components']]);
+		} catch (Throwable $exception) {
+			$this->logger->error('SharePoint publication intake: the import failed: ' . $exception->getMessage(), ['exception' => $exception]);
+			return new JSONResponse(['error' => 'import_failed', 'message' => $exception->getMessage()], 500);
+		}
+
+		$created = [];
+		foreach (['sources', 'mappings', 'rules', 'synchronizations'] as $bucket) {
+			foreach ((array)($imported[$bucket] ?? []) as $slug => $entity) {
+				$created[$bucket][] = ['slug' => (string)$slug, 'id' => $this->idOf(entity: $entity)];
+			}
+		}
+
+		return new JSONResponse(['created' => $created], 201);
+	}//end intake()
+
+	/**
+	 * The uuid, else the id, of an imported entity.
+	 *
+	 * @param mixed $entity The imported entity.
+	 *
+	 * @return string|null
+	 */
+	private function idOf(mixed $entity): ?string {
+		if (is_object($entity) === true && method_exists($entity, 'getUuid') === true && $entity->getUuid() !== null) {
+			return (string)$entity->getUuid();
+		}
+
+		if (is_object($entity) === true && method_exists($entity, 'getId') === true && $entity->getId() !== null) {
+			return (string)$entity->getId();
+		}
+
+		return null;
+	}//end idOf()
 }//end class
