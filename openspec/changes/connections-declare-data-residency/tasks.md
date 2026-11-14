@@ -16,9 +16,9 @@ EU-only check exists.
   - GIVEN `residency.country` `XX` WHEN validated THEN the file is refused naming the path
   - GIVEN a linked source with an admin residency WHEN the sync runs with a declared one THEN the admin one stays
   - GIVEN `NO`, `NL`, `US` and null WHEN `zoneOf()` runs THEN `eea`, `eu`, `outside`, `unknown`
-- [ ] Implement
-- [ ] Test: PHPUnit `ConnectionDeclarationValidatorTest::testResidencyIsOptional`, `::testAnInvalidCountryIsRefused`; `ConnectionRegistryServiceTest::testADeclaredResidencyIsCopiedToTheLinkedSource`, `::testAnAdminResidencyWins`; `ResidencyZonesTest::testZones`
-- [ ] A test that `connections.schema.json` and `ConnectionDeclarationValidator` agree on `residency` (feed the same valid and invalid fixture to both), so the two never drift.
+- [x] Implement
+- [x] Test: PHPUnit `ConnectionDeclarationValidatorTest::testResidencyIsOptional`, `::testAnInvalidCountryIsRefused`; `ConnectionRegistryServiceTest::testADeclaredResidencyIsCopiedToTheLinkedSource`, `::testAnAdminResidencyWins`; `ResidencyZonesTest::testZones`
+- [x] A test that `connections.schema.json` and `ConnectionDeclarationValidator` agree on `residency` (feed the same valid and invalid fixture to both), so the two never drift.
 
 ### Task 2: The administrator sets residency on the source page
 - **spec_ref**: `openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001`
@@ -26,8 +26,8 @@ EU-only check exists.
 - **acceptance_criteria**:
   - GIVEN an administrator WHEN she saves `NL` with evidence THEN `basis` is `set-by-admin`, `recordedBy` is her uid, and the audit trail has the change
   - GIVEN a non-administrator WHEN the route is called THEN 403
-- [ ] Implement. The country picker is an `NcSelect` with `inputLabel`.
-- [ ] Test: PHPUnit `SourceResidencyControllerTest::testAnAdminSetsResidency`, `::testANonAdminIsRefused`; the route-reachability gate resolves the new route
+- [x] Implement. The country picker is an `NcSelect` with `inputLabel`. (`PUT /api/sources/{id}/residency` lives in `EgressDestinationController`; the screen is `src/dialogs/SourceResidencyDialog.vue`, opened by the Sources page row action "Set residency" and from a row of the outbound destinations page. The source detail page has no manifest widget for an editable section.)
+- [x] Test: PHPUnit `EgressDestinationControllerTest::testAnAdminSetsResidency`, `::testANonAdminIsRefused`, `::testAnInvalidCountryAndAMissingSource`; vitest `tests/vitest/dataResidency.spec.js` (dialog). The route-reachability gate was not run here.
 
 ### Task 3: The destinations endpoint and page
 - **spec_ref**: `openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-one-page-lists-every-outbound-destination-with-its-location-req-res-002`
@@ -38,8 +38,8 @@ EU-only check exists.
   - GIVEN a call-log host matching no source WHEN listed THEN it is a row with `sourceId` null and zone `unknown`
   - GIVEN a source in `NO` WHEN listed THEN zone `eea` and `not-proven`
   - GIVEN the page WHEN rendered THEN it states that calls made by other apps without integriq are not covered
-- [ ] Implement. Read call-log hosts with one grouped query over the last 30 days, not by loading every record.
-- [ ] Test: PHPUnit `EgressDestinationServiceTest::testAnUnknownDestinationBlocksTheVerdict`, `::testACallLogHostWithoutASourceIsListed`, `::testAnEeaCountryIsNotCountedAsEu`, `::testAllEuGivesEuOnly`; `EgressDestinationControllerTest::testANonAdminIsRefused`. Double OpenRegister's `ObjectService` with `environmentAwareDouble` after reading its real `findAll()` signature on `openregister` `development`.
+- [x] Implement. Read call-log hosts with one grouped query over the last 30 days, not by loading every record. (OpenRegister's `findAll` has no grouped host query: hosts are read newest first in bounded pages and stop at the first record older than 30 days. The page is `src/views/EgressDestinations/EgressDestinationsPage.vue`, a manifest `custom` page under Connections over `CnDataTable`; `docs/features/data-residency.md`.)
+- [x] Test: PHPUnit `EgressDestinationServiceTest::testAnUnknownDestinationBlocksTheVerdict`, `::testACallLogHostWithoutASourceIsListed`, `::testAnEeaCountryIsNotCountedAsEu`, `::testAllEuGivesEuOnly`; `EgressDestinationControllerTest::testANonAdminIsRefused`. Double OpenRegister's `ObjectService` with `environmentAwareDouble` after reading its real `findAll()` signature on `openregister` `development`.
 - [ ] Wiring: the controller test goes through the route name from `appinfo/routes.php`, and the Playwright spec opens the page from the Connections menu, so the page is reachable from the navigation and not only by URL.
 
 ### Task 4: EU-only mode
@@ -51,9 +51,9 @@ EU-only check exists.
   - GIVEN the settings read throws and a source without residency WHEN called THEN the call is refused
   - GIVEN one unknown destination WHEN the mode is switched on THEN the save is refused naming it
   - GIVEN the mode off (the default) WHEN any source is called THEN behaviour is as today
-- [ ] Implement
-- [ ] Test: PHPUnit `CallServiceResidencyTest::testAnUnknownDestinationIsRefusedBeforeSending` (assert the mocked `IClientService` client receives no request), `::testAnEuDestinationIsCalled`, `::testABrokenSettingsReadRefuses`, `::testModeOffChangesNothing`; `SettingsServiceTest::testEuOnlyCannotBeSwitchedOnOverAGap`
-- [ ] `testAnUnknownDestinationIsRefusedBeforeSending` must be shown failing on `development` before the change. Paste the failing line in the PR body.
+- [x] Implement (the switch is `EgressDestinationService::setEuOnly()` behind `PUT /api/egress/eu-only`, because it needs the destinations verdict; the switch on the destinations page shows the refusal naming the blocking destinations)
+- [x] Test: PHPUnit `CallServiceResidencyTest::testAnUnknownDestinationIsRefusedBeforeSending` (assert the mocked `IClientService` client receives no request), `::testAnEuDestinationIsCalled`, `::testABrokenSettingsReadRefuses`, `::testModeOffChangesNothing`; `SettingsServiceTest::testEuOnlyCannotBeSwitchedOnOverAGap`
+- [x] `testAnUnknownDestinationIsRefusedBeforeSending` must be shown failing on `development` before the change. Paste the failing line in the PR body.
 
 ### Task 5: The end-to-end page
 - **spec_ref**: `openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-one-page-lists-every-outbound-destination-with-its-location-req-res-002`

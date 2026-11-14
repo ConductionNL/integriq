@@ -138,6 +138,29 @@ interface ConnectionStoreInterface {
 	public function createSource(array $payload): ObjectEntity;
 
 	/**
+	 * Read a source raw by uuid, so a write back keeps its write-only credentials.
+	 *
+	 * @param string $uuid The source uuid.
+	 *
+	 * @return ObjectEntity|null The raw source, or null when it does not exist.
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	public function findSourceRaw(string $uuid): ?ObjectEntity;
+
+	/**
+	 * Write a residency onto a raw source and keep every other field as stored.
+	 *
+	 * @param ObjectEntity        $source    The source, read raw.
+	 * @param array<string,mixed> $residency The residency to store.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	public function saveSourceResidency(ObjectEntity $source, array $residency): void;
+
+	/**
 	 * Keep only the D3 properties that hold a value.
 	 *
 	 * @param array<string,mixed> $data The row data.

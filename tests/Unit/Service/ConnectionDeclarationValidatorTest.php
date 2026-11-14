@@ -230,8 +230,55 @@ class ConnectionDeclarationValidatorTest extends TestCase {
 			'switch offValues holding a boolean' => [self::withSwitch(switch: ['configKey' => 'x', 'offValues' => [false]]), false],
 			'switch as a string' => [self::withSwitch(switch: 'breach_check_enabled'), false],
 			'disabledMessage not a string' => [self::withSwitch(switch: ['configKey' => 'x'], extra: ['disabledMessage' => false]), false],
+			'residency with country and evidence' => [self::withResidency(residency: ['country' => 'NL', 'evidence' => 'Haal Centraal BRP, RvIG']), true],
+			'residency with country only' => [self::withResidency(residency: ['country' => 'NO']), true],
+			'residency with an unassigned country' => [self::withResidency(residency: ['country' => 'XX']), false],
+			'residency with a lower-case country' => [self::withResidency(residency: ['country' => 'nl']), false],
+			'residency without a country' => [self::withResidency(residency: ['evidence' => 'contract']), false],
+			'residency with an unknown key' => [self::withResidency(residency: ['country' => 'NL', 'basis' => 'seeded']), false],
+			'residency evidence not a string' => [self::withResidency(residency: ['country' => 'NL', 'evidence' => 4]), false],
+			'residency as a string' => [self::withResidency(residency: 'NL'), false],
 		];
 	}//end fixtures()
+
+	/**
+	 * The valid file with a residency on its first connection.
+	 *
+	 * @param mixed $residency The residency value.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function withResidency(mixed $residency): array {
+		$file = self::validFile();
+		$file['connections'][0]['residency'] = $residency;
+
+		return $file;
+	}//end withResidency()
+
+	/**
+	 * A declaration written before residency existed still passes.
+	 *
+	 * @return void
+	 */
+	public function testResidencyIsOptional(): void {
+		$this->assertSame(expected: [], actual: (new ConnectionDeclarationValidator())->validate(self::validFile()));
+		$this->assertSame(
+			expected: [],
+			actual: (new ConnectionDeclarationValidator())->validate(self::withResidency(residency: ['country' => 'NL']))
+		);
+	}//end testResidencyIsOptional()
+
+	/**
+	 * A country that is not an ISO code refuses the file and names the path.
+	 *
+	 * @return void
+	 */
+	public function testAnInvalidCountryIsRefused(): void {
+		$this->assertSame(
+			expected: ['/connections/0/residency/country: must be an ISO 3166-1 alpha-2 country code in upper case'],
+			actual: (new ConnectionDeclarationValidator())->validate(self::withResidency(residency: ['country' => 'XX']))
+		);
+	}//end testAnInvalidCountryIsRefused()
 
 	/**
 	 * The validator gives the expected verdict, and the schema agrees.

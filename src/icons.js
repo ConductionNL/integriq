@@ -52,6 +52,7 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DatabaseSearchOutline from 'vue-material-design-icons/DatabaseSearchOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Earth from 'vue-material-design-icons/Earth.vue'
+import EarthArrowRight from 'vue-material-design-icons/EarthArrowRight.vue'
 import Email from 'vue-material-design-icons/Email.vue'
 import EmailAlertOutline from 'vue-material-design-icons/EmailAlertOutline.vue'
 import EmailFast from 'vue-material-design-icons/EmailFast.vue'
@@ -80,6 +81,7 @@ import KeyOutline from 'vue-material-design-icons/KeyOutline.vue'
 import LanConnect from 'vue-material-design-icons/LanConnect.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
+import MapMarkerRadiusOutline from 'vue-material-design-icons/MapMarkerRadiusOutline.vue'
 import MedicalBag from 'vue-material-design-icons/MedicalBag.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import Package from 'vue-material-design-icons/Package.vue'
@@ -161,6 +163,7 @@ export default {
 	DatabaseSearchOutline,
 	Download,
 	Earth,
+	EarthArrowRight,
 	Email,
 	EmailAlertOutline,
 	EmailFast,
@@ -189,6 +192,7 @@ export default {
 	LanConnect,
 	LinkVariant,
 	MapMarkerPath,
+	MapMarkerRadiusOutline,
 	MedicalBag,
 	MessageTextOutline,
 	Package,

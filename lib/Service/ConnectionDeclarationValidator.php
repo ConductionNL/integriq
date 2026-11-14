@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Residency\ResidencyZones;
+
 /**
  * Validates a connection declaration file.
  *
@@ -68,6 +70,7 @@ class ConnectionDeclarationValidator {
 		'unconfiguredMessage' => [false, 'string'],
 		'sourceTemplate' => [false, 'nonEmptyString'],
 		'reportedOnly' => [false, 'boolean'],
+		'residency' => [false, 'object'],
 	];
 
 	/**
@@ -91,6 +94,18 @@ class ConnectionDeclarationValidator {
 		'configKey' => [true, 'nonEmptyString'],
 		'jsonPath' => [false, 'dotPath'],
 		'offValues' => [false, 'anyStringList'],
+	];
+
+	/**
+	 * Fields of a `residency` object: name => [required, type].
+	 *
+	 * @var array<string,array{0:bool,1:string}>
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private const RESIDENCY_FIELDS = [
+		'country' => [true, 'country'],
+		'evidence' => [false, 'string'],
 	];
 
 	/**
@@ -121,6 +136,7 @@ class ConnectionDeclarationValidator {
 		'anyStringList' => 'must be an array of strings',
 		'dotPath' => 'must match ^[^.]+(\\.[^.]+)*$',
 		'object' => 'must be an object',
+		'country' => 'must be an ISO 3166-1 alpha-2 country code in upper case',
 	];
 
 	/**
@@ -200,7 +216,7 @@ class ConnectionDeclarationValidator {
 		}
 
 		$errors = $this->checkObject(data: $entry, fields: self::ENTRY_FIELDS, path: $path);
-		foreach (['adapter' => self::ADAPTER_FIELDS, 'switch' => self::SWITCH_FIELDS] as $name => $fields) {
+		foreach (['adapter' => self::ADAPTER_FIELDS, 'switch' => self::SWITCH_FIELDS, 'residency' => self::RESIDENCY_FIELDS] as $name => $fields) {
 			if ($this->isObject(value: $entry[$name] ?? null) === true) {
 				$errors = array_merge($errors, $this->checkObject(data: $entry[$name], fields: $fields, path: $path . '/' . $name));
 			}
@@ -299,12 +315,9 @@ class ConnectionDeclarationValidator {
 	 * @return bool
 	 */
 	private function matchesPattern(string $type, mixed $value): bool {
-		if ($type === 'anyStringList') {
-			return $this->isStringList(value: $value);
-		}
-
-		if ($type === 'requiredList') {
-			return $this->isRequiredList(value: $value);
+		$structured = $this->matchesStructuredPattern(type: $type, value: $value);
+		if ($structured !== null) {
+			return $structured;
 		}
 
 		if (is_string($value) === false) {
@@ -319,6 +332,24 @@ class ConnectionDeclarationValidator {
 			default => false,
 		};
 	}//end matchesPattern()
+
+	/**
+	 * Check a value against a type that is not a plain string pattern: a list
+	 * or a country code. Null when the type is a string pattern.
+	 *
+	 * @param string $type  The type name.
+	 * @param mixed  $value The value.
+	 *
+	 * @return bool|null Whether it matches, or null for a string pattern.
+	 */
+	private function matchesStructuredPattern(string $type, mixed $value): ?bool {
+		return match ($type) {
+			'anyStringList' => $this->isStringList(value: $value),
+			'requiredList' => $this->isRequiredList(value: $value),
+			'country' => ResidencyZones::isCountry(country: $value),
+			default => null,
+		};
+	}//end matchesStructuredPattern()
 
 	/**
 	 * Whether a value is a list of strings, empty strings included.

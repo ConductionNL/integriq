@@ -55,6 +55,7 @@ import SynchronizationEditorModal from './modals/v2/SynchronizationEditorModal.v
 import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import EgressDestinationsPage from './views/EgressDestinations/EgressDestinationsPage.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 import FlowDetailSidebar from './views/Flow/FlowDetailSidebar.vue'
@@ -79,6 +80,7 @@ import {
 	runDirectorySyncHandler,
 	runJobHandler,
 	runSynchronizationHandler,
+	setSourceResidencyHandler,
 	testJobHandler,
 	testMappingModalHandler,
 	testSourceHandler,
@@ -130,6 +132,9 @@ export default {
 	// App connections page header action (connection-registry D9): open the
 	// link-a-source dialog via the modal bus.
 	openLinkSourceHandler,
+	// Sources page row action (connections-declare-data-residency): set where a
+	// source processes the data, through the modal bus.
+	setSourceResidencyHandler,
 
 	// Card component for the Catalog index page (connector-catalog-ui):
 	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.
@@ -280,6 +285,10 @@ export default {
 	// different schemas behind different admin-only endpoints.
 	DeadLettersPage,
 
+	// Outbound destinations (connections-declare-data-residency, custom page):
+	// every place integriq sends data, the verdict and the EU-only switch.
+	EgressDestinationsPage,
+
 	// Migrations index over column_mapping: the form-dialog slot checks a
 	// mapping before every save, and the below-header slot picks a migration
 	// source and runs the read-only test.
@@ -351,6 +360,7 @@ export const registry = {
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
 	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
+	EgressDestinationsPage: { kind: 'page', component: EgressDestinationsPage },
 	FlowDetailSidebar: { kind: 'page', component: FlowDetailSidebar },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },
