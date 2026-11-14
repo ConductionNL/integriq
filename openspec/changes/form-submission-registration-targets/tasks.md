@@ -17,9 +17,9 @@ Kind: code. Size L. Row: portaliq `int-registration-per-form`. Builds on `zgw-co
 - **acceptance_criteria**:
   - GIVEN each refusal of design D2 WHEN its condition holds THEN the answer carries the code and the right `retryable` flag, and nothing is thrown
   - GIVEN a hand-over with file ids WHEN files are read THEN they are read as the calling app's service account
-- [ ] Implement
-- [ ] Test
-- note: Built: the event, listener, RegistrationService with every D2 refusal answered (never thrown) and the hand-over check (file ids only). Left: reading the files as the calling app's service account, which no leg needs yet (json and objects-api send no files).
+- [x] Implement
+- [x] Test
+- note: Built: the event, listener, RegistrationService with every D2 refusal answered (never thrown) and the hand-over check (file ids only). `RegistrationFiles` reads each file from the files of the calling app's service account: the `userId` of the one `submission-registration` consumer whose `name` is the app (`RegistrationFilesTest`). No such consumer, two of them, or a missing or disabled account is `source-unavailable`, not retryable; a file the account cannot see is `invalid-handover`. The leg always gets the calling app, whatever app the hand-over names.
 
 ## Task 3: The ZGW leg
 - **spec_ref**: `specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002`
@@ -29,7 +29,7 @@ Kind: code. Size L. Row: portaliq `int-registration-per-form`. Builds on `zgw-co
   - GIVEN a KvK applicant WHEN the role is created THEN it is a `niet_natuurlijk_persoon` with the KvK number
 - [ ] Implement
 - [ ] Test
-- note: Built: `ZgwRegistrationLeg` over the case-system transport: `POST /zaken` with the mapped case, the target's zaaktype, bronorganisatie and verantwoordelijkeOrganisatie, the dates and the submission reference as a kenmerk; `POST /rollen` with the applicant as initiator (BSN as `natuurlijk_persoon`, KvK as `niet_natuurlijk_persoon`); the target's `zaakeigenschappen`; each call a step, so a repeated hand-over skips what is done; a 4xx as outside-refused with the API's detail, a 5xx, 429 or no answer as source-unavailable retryable (`ZgwRegistrationLegTest`, 13). Left: the informatieobjecten for the PDF and attachments, which wait for reading the hand-over's files (Task 2), so a hand-over with files is refused as source-unavailable, not retryable; the outside lookup of a case by kenmerk when no record exists; `tests/postman/registration-zgw.json`, a live check.
+- note: Built: `ZgwRegistrationLeg` over the case-system transport: `POST /zaken` with the mapped case, the target's zaaktype, bronorganisatie and verantwoordelijkeOrganisatie, the dates and the submission reference as a kenmerk; `POST /rollen` with the applicant as initiator (BSN as `natuurlijk_persoon`, KvK as `niet_natuurlijk_persoon`); the target's `zaakeigenschappen`; each call a step, so a repeated hand-over skips what is done; a 4xx as outside-refused with the API's detail, a 5xx, 429 or no answer as source-unavailable retryable (`ZgwRegistrationLegTest`). The PDF and each attachment become an EnkelvoudigInformatieObject (the target's `informatieobjecttypePdf` / `informatieobjecttypeAttachment`, falling back to `informatieobjecttype`), uploaded in parts through `ZgwDocumentDelivery` and linked to the case, each its own `document:<fileId>` step; a target without its Documenten source or types is refused before any call. Left: the outside lookup of a case by kenmerk when no record exists (the Zaken API has no kenmerk filter to ask with); `tests/postman/registration-zgw.json`, a live check against Open Zaak.
 
 ## Task 4: The Objects API leg
 - **spec_ref**: `specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002`
@@ -64,9 +64,9 @@ Kind: code. Size L. Row: portaliq `int-registration-per-form`. Builds on `zgw-co
 - **acceptance_criteria**:
   - GIVEN a record in `started` with the case created WHEN the hand-over repeats THEN only the missing documents are created
   - GIVEN a record in `done` WHEN the hand-over repeats THEN no outside call is made
-- [ ] Implement
-- [ ] Test
-- note: Built: a done record answers without an outside call (RegistrationResumeTest), and an unfinished one hands its steps to the leg, which skips what is done. The ZGW leg resumes after its last step (case, role, each zaakeigenschap). Left: only the missing documents, which come with the ZGW files (Task 3).
+- [x] Implement
+- [x] Test
+- note: Built: a done record answers without an outside call (RegistrationResumeTest), and an unfinished one hands its steps to the leg, which skips what is done. The ZGW leg resumes after its last step (case, role, each document, each zaakeigenschap): a resumed hand-over creates only the missing documents (`ZgwRegistrationLegTest::testAResumedRegistrationCreatesOnlyTheMissingDocuments`).
 
 ## Task 8: The list endpoint and the admin page
 - **spec_ref**: `specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001`

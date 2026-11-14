@@ -172,7 +172,8 @@ class RegistrationService {
 		$uuid   = $this->store->saveRecord(data: $data, uuid: ($record['uuid'] ?? null));
 
 		try {
-			$result = $leg->register(target: $target, mapped: $mapped, handover: $handover, steps: $data['steps']);
+			// The leg reads files as the calling app, so the caller's id wins over anything the hand-over says.
+			$result = $leg->register(target: $target, mapped: $mapped, handover: ['app' => $app] + $handover, steps: $data['steps']);
 		} catch (RegistrationRefusal $refusal) {
 			$this->store->saveRecord(
 				data: ['state' => 'failed', 'lastError' => $refusal->toAnswer(), 'finishedAt' => self::now()] + $data,

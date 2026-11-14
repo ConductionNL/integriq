@@ -132,7 +132,7 @@ class RegistrationServiceTest extends TestCase {
 		$this->store->expects($this->once())->method('findRecord')->with('json-milieu', 'portaliq', 'OF-7Q2K')->willReturn(null);
 		$this->mappings->expects($this->once())->method('executeMapping')->with('map-1', self::HANDOVER)->willReturn(['subject' => 'milieu']);
 		$this->json->expects($this->once())->method('register')
-			->with(self::TARGET, ['subject' => 'milieu'], self::HANDOVER, [])
+			->with(self::TARGET, ['subject' => 'milieu'], ['app' => 'portaliq'] + self::HANDOVER, [])
 			->willReturn(['externalReference' => 'ext-9', 'externalUrl' => 'https://x.example/9', 'steps' => [['step' => 'posted']]]);
 
 		$answer = $this->service()->register(app: 'portaliq', target: 'json-milieu', handover: self::HANDOVER);
@@ -161,7 +161,7 @@ class RegistrationServiceTest extends TestCase {
 		$stuf = $this->createMock(StufZdsRegistrationLeg::class);
 		$stuf->method('kind')->willReturn('stuf-zds');
 		$stuf->expects($this->once())->method('register')
-			->with($target, ['omschrijving' => 'Milieu'], self::HANDOVER, [])
+			->with($target, ['omschrijving' => 'Milieu'], ['app' => 'portaliq'] + self::HANDOVER, [])
 			->willReturn(['externalReference' => '0363-Z-1', 'externalUrl' => '', 'steps' => [['step' => 'zaak', 'reference' => '0363-Z-1']]]);
 		$this->json->expects($this->never())->method('register');
 
@@ -170,6 +170,24 @@ class RegistrationServiceTest extends TestCase {
 
 		$this->assertSame(['ok' => true, 'externalReference' => '0363-Z-1', 'externalUrl' => ''], $answer);
 	}//end testAStufZdsTargetIsRegisteredThroughItsLeg()
+
+	/**
+	 * The leg reads files as the app that called, whatever app the hand-over names.
+	 *
+	 * @return void
+	 */
+	public function testTheLegIsHandedTheCallingAppNotTheOneTheHandOverNames(): void {
+		$this->target(self::TARGET);
+		$this->store->method('findRecord')->willReturn(null);
+		$this->mappings->method('executeMapping')->willReturn([]);
+		$this->json->expects($this->once())->method('register')
+			->with(self::TARGET, [], $this->callback(static fn (array $handover): bool => $handover['app'] === 'portaliq'), [])
+			->willReturn(['externalReference' => 'ext-1', 'externalUrl' => '', 'steps' => []]);
+
+		$answer = $this->service()->register(app: 'portaliq', target: 'json-milieu', handover: ['app' => 'other'] + self::HANDOVER);
+
+		$this->assertTrue($answer['ok']);
+	}//end testTheLegIsHandedTheCallingAppNotTheOneTheHandOverNames()
 
 	/**
 	 * The refusals that never reach a leg.

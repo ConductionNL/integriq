@@ -31,6 +31,7 @@ namespace OCA\Integriq\Service\Registration;
 
 use OCA\Integriq\Service\CaseSystem\CallServiceCaseSystemTransport;
 use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
+use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
 use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
@@ -38,9 +39,11 @@ use OCP\AppFramework\Utility\ITimeFactory;
  *
  * Every outside call is a step in the record, so a repeated hand-over resumes
  * after the last one done: a case already created is not created again
- * (REQ-SREG-003). Files (the PDF and attachments as informatieobjecten) come
- * with reading the hand-over's files as the calling app; until then a
- * hand-over with files is refused rather than registered without them.
+ * (REQ-SREG-003). The PDF and each attachment become an informatieobject
+ * linked to the case, each its own step, so a resumed hand-over creates only
+ * the documents still missing. The files are read as the calling app's
+ * service account; a hand-over with files the leg cannot send is refused
+ * before any call rather than registered without them.
  *
  * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
  */
@@ -52,16 +55,25 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 	private const CRS = ['Accept-Crs' => 'EPSG:4326', 'Content-Crs' => 'EPSG:4326'];
 
 	/**
+	 * The ISO 639-2/B language codes of the hand-over languages, for an informatieobject's `taal`.
+	 */
+	private const LANGUAGES = ['nl' => 'dut', 'en' => 'eng', 'de' => 'ger', 'fr' => 'fre'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CallServiceCaseSystemTransport $transport Sends to the target's ZGW sources.
 	 * @param ITimeFactory                   $time      The registration date.
+	 * @param ZgwDocumentDelivery|null       $documents Creates, uploads and links each informatieobject.
+	 * @param RegistrationFiles|null         $files     Reads the hand-over's files as the calling app.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
 	 */
 	public function __construct(
 		private readonly CallServiceCaseSystemTransport $transport,
 		private readonly ITimeFactory $time,
+		private readonly ?ZgwDocumentDelivery $documents = null,
+		private readonly ?RegistrationFiles $files = null,
 	) {
 	}//end __construct()
 
@@ -77,8 +89,8 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 	}//end kind()
 
 	/**
-	 * Register one submission: the case, its initiator and its properties,
-	 * skipping every step an earlier hand-over already did.
+	 * Register one submission: the case, its initiator, its documents and its
+	 * properties, skipping every step an earlier hand-over already did.
 	 *
 	 * @param array<string,mixed>            $target   The registration target.
 	 * @param array<string,mixed>            $mapped   The hand-over in the outside shape.
@@ -92,8 +104,13 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
 	 */
 	public function register(array $target, array $mapped, array $handover, array $steps): array {
-		$settings = self::settingsOf(target: $target, handover: $handover);
-		$run      = new ZgwRegistrationRun(settings: $settings, steps: $steps);
+		$settings = self::settingsOf(target: $target);
+		$files    = self::filesOf(handover: $handover);
+		if ($files !== []) {
+			$this->checkDocuments(settings: $settings);
+		}
+
+		$run = new ZgwRegistrationRun(settings: $settings, steps: $steps);
 
 		if ($run->done(step: 'zaak') === null) {
 			$case = $this->createCase(settings: $settings, body: self::casePayload(settings: $settings, mapped: $mapped, handover: $handover));
@@ -108,25 +125,25 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 			$run->record(step: ['step' => 'rol']);
 		}
 
+		$this->addDocuments(run: $run, zaak: (string)($zaak['url'] ?? ''), files: $files, handover: $handover);
 		$this->addProperties(run: $run, zaak: (string)($zaak['url'] ?? ''));
 
 		return ['externalReference' => (string)($zaak['reference'] ?? ''), 'externalUrl' => (string)($zaak['url'] ?? ''), 'steps' => $run->steps()];
 	}//end register()
 
 	/**
-	 * The target's ZGW settings, refused when one the leg needs is missing or
-	 * the hand-over carries files.
+	 * The target's ZGW settings, refused when one the leg needs is missing.
 	 *
-	 * @param array<string,mixed> $target   The registration target.
-	 * @param array<string,mixed> $handover The hand-over.
+	 * @param array<string,mixed> $target The registration target.
 	 *
-	 * @return array<string,mixed> `zaken`, `zaaktype`, `bronorganisatie`, `verantwoordelijkeOrganisatie`, `initiatorRoltype`, `zaakeigenschappen`.
+	 * @return array<string,mixed> The sources (`zaken`, `documenten`), the case settings, the
+	 *                             informatieobjecttypen of the PDF and attachments, and `inline`.
 	 *
-	 * @throws RegistrationRefusal When the target is incomplete or files are handed over.
+	 * @throws RegistrationRefusal When the target is incomplete.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
 	 */
-	private static function settingsOf(array $target, array $handover): array {
+	private static function settingsOf(array $target): array {
 		$zgw      = (array)($target['zgw'] ?? []);
 		$settings = [
 			'zaken' => (string)($target['sources']['zaken'] ?? ''),
@@ -135,6 +152,11 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 			'verantwoordelijkeOrganisatie' => (string)($zgw['verantwoordelijkeOrganisatie'] ?? ($zgw['bronorganisatie'] ?? '')),
 			'initiatorRoltype' => (string)($zgw['initiatorRoltype'] ?? ''),
 			'zaakeigenschappen' => (array)($zgw['zaakeigenschappen'] ?? []),
+			'documenten' => (string)($target['sources']['documenten'] ?? ''),
+			'informatieobjecttypePdf' => (string)($zgw['informatieobjecttypePdf'] ?? ($zgw['informatieobjecttype'] ?? '')),
+			'informatieobjecttypeAttachment' => (string)($zgw['informatieobjecttypeAttachment'] ?? ($zgw['informatieobjecttype'] ?? '')),
+			'vertrouwelijkheidaanduiding' => (string)($zgw['vertrouwelijkheidaanduiding'] ?? ''),
+			'inline' => (($zgw['inline'] ?? false) === true),
 		];
 		if (in_array('', [$settings['zaken'], $settings['zaaktype'], $settings['bronorganisatie']], true) === true) {
 			throw new RegistrationRefusal(
@@ -144,16 +166,135 @@ class ZgwRegistrationLeg implements RegistrationLeg {
 			);
 		}
 
-		if (isset($handover['pdf']) === true || ((array)($handover['attachments'] ?? [])) !== []) {
-			throw new RegistrationRefusal(
-				reason: RegistrationRefusal::SOURCE_UNAVAILABLE,
-				retryable: false,
-				message: 'Sending files to a ZGW target is not available yet.'
-			);
-		}
-
 		return $settings;
 	}//end settingsOf()
+
+	/**
+	 * The hand-over's files in document order: the PDF first, then each attachment.
+	 *
+	 * @param array<string,mixed> $handover The hand-over.
+	 *
+	 * @return list<array{file:array<string,mixed>,pdf:bool}>
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
+	 */
+	private static function filesOf(array $handover): array {
+		$files = [];
+		if (is_array($handover['pdf'] ?? null) === true) {
+			$files[] = ['file' => $handover['pdf'], 'pdf' => true];
+		}
+
+		foreach ((array)($handover['attachments'] ?? []) as $attachment) {
+			if (is_array($attachment) === true) {
+				$files[] = ['file' => $attachment, 'pdf' => false];
+			}
+		}
+
+		return $files;
+	}//end filesOf()
+
+	/**
+	 * Refuse, before any call, a hand-over with files the leg cannot send.
+	 *
+	 * @param array<string,mixed> $settings The target's ZGW settings.
+	 *
+	 * @return void
+	 *
+	 * @throws RegistrationRefusal When the documents cannot be sent.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
+	 */
+	private function checkDocuments(array $settings): void {
+		$message = null;
+		if ($this->documents === null || $this->files === null) {
+			$message = 'Sending files to a ZGW target is not available on this instance.';
+		} else if ($settings['documenten'] === '') {
+			$message = 'The target lacks its Documenten API source for the files.';
+		} else if ($settings['informatieobjecttypePdf'] === '' || $settings['informatieobjecttypeAttachment'] === '') {
+			$message = 'The target lacks the informatieobjecttype for the files.';
+		}
+
+		if ($message !== null) {
+			throw new RegistrationRefusal(reason: RegistrationRefusal::SOURCE_UNAVAILABLE, retryable: false, message: $message);
+		}
+	}//end checkDocuments()
+
+	/**
+	 * Add each file not added yet as an informatieobject linked to the case, each as its own step.
+	 *
+	 * @param ZgwRegistrationRun                            $run      The run: settings and steps.
+	 * @param string                                        $zaak     The case url.
+	 * @param list<array{file:array<string,mixed>,pdf:bool}> $files    The files, in document order.
+	 * @param array<string,mixed>                           $handover The hand-over.
+	 *
+	 * @return void
+	 *
+	 * @throws RegistrationRefusal When a file cannot be read or an API refuses a document.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private function addDocuments(ZgwRegistrationRun $run, string $zaak, array $files, array $handover): void {
+		foreach ($files as $entry) {
+			$step = 'document:' . (int)($entry['file']['fileId'] ?? 0);
+			if ($run->done(step: $step) !== null || $this->documents === null || $this->files === null) {
+				continue;
+			}
+
+			$read = $this->files->read(app: (string)($handover['app'] ?? ''), file: $entry['file']);
+			try {
+				$delivered = $this->documents->deliver(
+					document: $this->documentOf(settings: $run->settings, read: $read, pdf: $entry['pdf'], handover: $handover),
+					content: $read['content'],
+					settings: [
+						'documentenSource' => $run->settings['documenten'],
+						'zakenSource' => $run->settings['zaken'],
+						'zaakUrl' => $zaak,
+						'inline' => $run->settings['inline'],
+					]
+				);
+			} catch (CaseSystemRefusal $e) {
+				throw RegistrationRefusal::fromStatus(status: $e->getStatus(), detail: $e->getMessage());
+			}
+
+			$run->record(step: ['step' => $step, 'url' => $delivered['url'], 'zaakinformatieobject' => $delivered['zaakinformatieobject']]);
+		}
+	}//end addDocuments()
+
+	/**
+	 * The informatieobject's metadata for one file.
+	 *
+	 * @param array<string,mixed>                              $settings The target's ZGW settings.
+	 * @param array{content:string,name:string,mimeType:string} $read     The file as read.
+	 * @param bool                                             $pdf      Whether it is the submission's PDF.
+	 * @param array<string,mixed>                              $handover The hand-over.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
+	 */
+	private function documentOf(array $settings, array $read, bool $pdf, array $handover): array {
+		$titel = $read['name'];
+		$type  = $settings['informatieobjecttypeAttachment'];
+		if ($pdf === true) {
+			$titel = (string)($handover['form']['title'] ?? $read['name']);
+			$type  = $settings['informatieobjecttypePdf'];
+		}
+
+		return array_filter(
+			[
+				'bronorganisatie' => $settings['bronorganisatie'],
+				'creatiedatum' => $this->time->getDateTime()->format('Y-m-d'),
+				'titel' => $titel,
+				'auteur' => (string)($handover['app'] ?? 'integriq'),
+				'taal' => (self::LANGUAGES[(string)($handover['language'] ?? 'nl')] ?? 'dut'),
+				'formaat' => $read['mimeType'],
+				'bestandsnaam' => $read['name'],
+				'informatieobjecttype' => $type,
+				'vertrouwelijkheidaanduiding' => $settings['vertrouwelijkheidaanduiding'],
+			],
+			static fn (string $value): bool => $value !== ''
+		);
+	}//end documentOf()
 
 	/**
 	 * The case to create: the mapped case with the target's zaaktype and
