@@ -130,6 +130,7 @@ class DigitalPostAccountCheck implements ISetupCheck {
 			$result = $this->container->get(self::OBJECT_SERVICE)->findAll(
 				config: ['filters' => ['register' => DigitalPostServiceInterface::REGISTER, 'schema' => 'source']],
 				_rbac: false,
+				// Unscoped: a setup check runs as the system and only answers whether a source exists.
 				_multitenancy: false
 			);
 		} catch (Throwable) {
