@@ -183,6 +183,14 @@
             "visibility": "public",
             "status": "active",
             "endpoints": ["@ref:endpoint:echo"],
+            "channels": [
+              {
+                "slug": "publications",
+                "title": "Publications",
+                "types": ["nl.woo.publication.created", "nl.woo.publication.updated"],
+                "description": "A WOO publication was created or updated"
+              }
+            ],
             "tiers": {
               "free": { "rateLimit": { "requestsPerWindow": 60, "windowSeconds": 60 } },
               "gold": { "rateLimit": { "requestsPerWindow": 600, "windowSeconds": 60 }, "requiresApproval": true, "approverGroup": "gateway-approvers" }
