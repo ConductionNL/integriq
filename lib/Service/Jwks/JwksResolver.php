@@ -274,7 +274,7 @@ class JwksResolver {
 		}
 
 		$decoded = json_decode($body, true);
-		if (is_array($decoded) === false || isset($decoded['keys']) === false || is_array($decoded['keys']) === false) {
+		if (self::isKeySetDocument(decoded: $decoded) === false) {
 			$this->logger->info($this->profile->logLabel . ': JWKS response is not a valid JWKS document', ['registrationUuid' => $ownerUuid]);
 			return null;
 		}
@@ -282,6 +282,17 @@ class JwksResolver {
 		return $decoded;
 
 	}//end fetchJwks()
+
+	/**
+	 * Whether a decoded body is a key set document: an object with a `keys` list.
+	 *
+	 * @param mixed $decoded The decoded body.
+	 *
+	 * @return bool Whether it is a key set document.
+	 */
+	private static function isKeySetDocument(mixed $decoded): bool {
+		return is_array($decoded) === true && isset($decoded['keys']) === true && is_array($decoded['keys']) === true;
+	}//end isKeySetDocument()
 
 	/**
 	 * GET a document through an ad-hoc source and answer its body on a 200.

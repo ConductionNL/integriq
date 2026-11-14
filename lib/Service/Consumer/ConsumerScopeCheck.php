@@ -62,8 +62,19 @@ final class ConsumerScopeCheck {
 			return self::strings(values: $required);
 		}
 
+		return self::requiredForMethod(required: $required, method: strtoupper($method));
+	}//end requiredFor()
+
+	/**
+	 * The scopes a method map requires for one method, its `*` entry included.
+	 *
+	 * @param array<string,mixed> $required The map of HTTP method to list.
+	 * @param string              $method   The request's HTTP method, upper case.
+	 *
+	 * @return array<int,string> The required scopes, without duplicates.
+	 */
+	private static function requiredForMethod(array $required, string $method): array {
 		$scopes = [];
-		$method = strtoupper($method);
 		foreach ($required as $key => $list) {
 			$key = strtoupper((string)$key);
 			if (($key === $method || $key === '*') && is_array($list) === true) {
@@ -72,7 +83,7 @@ final class ConsumerScopeCheck {
 		}
 
 		return array_values(array_unique($scopes));
-	}//end requiredFor()
+	}//end requiredForMethod()
 
 	/**
 	 * The scopes a caller holds.
@@ -85,14 +96,9 @@ final class ConsumerScopeCheck {
 	 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
 	 */
 	public static function heldBy(?ObjectEntity $consumer, ?array $tokenClaims): array {
-		if ($tokenClaims !== null) {
-			if (is_string($tokenClaims['scope'] ?? null) === true) {
-				return self::strings(values: preg_split('/\s+/', trim($tokenClaims['scope'])));
-			}
-
-			if (is_array($tokenClaims['scp'] ?? null) === true) {
-				return self::strings(values: $tokenClaims['scp']);
-			}
+		$fromToken = self::tokenScopes(tokenClaims: $tokenClaims);
+		if ($fromToken !== null) {
+			return $fromToken;
 		}
 
 		if ($consumer === null) {
@@ -106,6 +112,25 @@ final class ConsumerScopeCheck {
 
 		return self::strings(values: $stored);
 	}//end heldBy()
+
+	/**
+	 * The scopes a token's `scope` or `scp` claim holds.
+	 *
+	 * @param array<string,mixed>|null $tokenClaims The claims of the caller's JWT, or null for a call without one.
+	 *
+	 * @return array<int,string>|null The held scopes, or null when the token carries neither claim.
+	 */
+	private static function tokenScopes(?array $tokenClaims): ?array {
+		if (is_string($tokenClaims['scope'] ?? null) === true) {
+			return self::strings(values: preg_split('/\s+/', trim($tokenClaims['scope'])));
+		}
+
+		if (is_array($tokenClaims['scp'] ?? null) === true) {
+			return self::strings(values: $tokenClaims['scp']);
+		}
+
+		return null;
+	}//end tokenScopes()
 
 	/**
 	 * The required scopes the caller lacks, in the order they are required.

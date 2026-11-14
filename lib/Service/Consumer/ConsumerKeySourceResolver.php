@@ -164,11 +164,7 @@ class ConsumerKeySourceResolver {
 	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-2
 	 */
 	public static function configuredIssuerOf(array $configuration): ?string {
-		$field = match (self::keySourceOf(configuration: $configuration)) {
-			self::JWKS => 'issuer',
-			self::OIDC => 'issuerUrl',
-			default => null,
-		};
+		$field = self::issuerFieldOf(keySource: self::keySourceOf(configuration: $configuration));
 		if ($field === null) {
 			return null;
 		}
@@ -180,6 +176,21 @@ class ConsumerKeySourceResolver {
 
 		return rtrim(trim($issuer), '/');
 	}//end configuredIssuerOf()
+
+	/**
+	 * The configuration field that holds the issuer for a key source.
+	 *
+	 * @param string $keySource The key source.
+	 *
+	 * @return string|null The field, or null for a key source without an issuer.
+	 */
+	private static function issuerFieldOf(string $keySource): ?string {
+		return match ($keySource) {
+			self::JWKS => 'issuer',
+			self::OIDC => 'issuerUrl',
+			default => null,
+		};
+	}//end issuerFieldOf()
 
 	/**
 	 * The configuration OpenRegister verifies the token against.
@@ -207,15 +218,10 @@ class ConsumerKeySourceResolver {
 			return $configuration;
 		}
 
-		if ($keySource !== self::JWKS && $keySource !== self::OIDC) {
-			throw self::refused(reason: 'The consumer names an unknown key source', details: ['keySource' => $keySource]);
-		}
+		self::assertPublishedKeySource(keySource: $keySource);
 
 		$algorithm = self::acceptedAlgorithm(header: $header);
-		$kid = ($header['kid'] ?? '');
-		if (is_string($kid) === false || $kid === '') {
-			throw self::refused(reason: 'The token names no key id (kid), so no key of the published set can be chosen');
-		}
+		$kid = self::keyIdOf(header: $header);
 
 		$jwksUri = $this->jwksUriFor(consumerUuid: $consumerUuid, configuration: $configuration, keySource: $keySource, payload: $payload);
 		$this->assertAudience(configuration: $configuration, keySource: $keySource, payload: $payload);
@@ -231,6 +237,39 @@ class ConsumerKeySourceResolver {
 			['algorithm' => $algorithm, 'publicKey' => self::publicPem(key: $key, algorithm: $algorithm)]
 		);
 	}//end configurationFor()
+
+	/**
+	 * Refuse a key source other than `jwks` and `oidc`.
+	 *
+	 * @param string $keySource The key source.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the key source is unknown.
+	 */
+	private static function assertPublishedKeySource(string $keySource): void {
+		if ($keySource !== self::JWKS && $keySource !== self::OIDC) {
+			throw self::refused(reason: 'The consumer names an unknown key source', details: ['keySource' => $keySource]);
+		}
+	}//end assertPublishedKeySource()
+
+	/**
+	 * The key id the token's header names.
+	 *
+	 * @param array<string,mixed> $header The token's header.
+	 *
+	 * @return string The key id.
+	 *
+	 * @throws AuthenticationException When the header names no key id.
+	 */
+	private static function keyIdOf(array $header): string {
+		$kid = ($header['kid'] ?? '');
+		if (is_string($kid) === false || $kid === '') {
+			throw self::refused(reason: 'The token names no key id (kid), so no key of the published set can be chosen');
+		}
+
+		return $kid;
+	}//end keyIdOf()
 
 	/**
 	 * The header's algorithm, when it is one a published key set may sign with.
@@ -304,18 +343,15 @@ class ConsumerKeySourceResolver {
 		}
 
 		$cacheKey = 'oidc:' . $consumerUuid;
-		$cached = $this->cache->get($cacheKey);
-		if (is_string($cached) === true) {
-			$document = json_decode($cached, true);
-			if (is_array($document) === true && ($document['configured'] ?? null) === $issuerUrl) {
-				return ['issuer' => $document['issuer'], 'jwks_uri' => $document['jwks_uri']];
-			}
+		$cached = $this->cachedDiscovery(cacheKey: $cacheKey, issuerUrl: $issuerUrl);
+		if ($cached !== null) {
+			return $cached;
 		}
 
 		$document = $this->resolver->fetchDocument(url: $issuerUrl . '/.well-known/openid-configuration', ownerUuid: $consumerUuid);
-		$issuer = ($document['issuer'] ?? null);
-		$jwksUri = ($document['jwks_uri'] ?? null);
-		if (is_string($issuer) === false || $issuer === '' || is_string($jwksUri) === false || $jwksUri === '') {
+		$issuer = self::nonEmptyString(value: ($document['issuer'] ?? null));
+		$jwksUri = self::nonEmptyString(value: ($document['jwks_uri'] ?? null));
+		if ($issuer === null || $jwksUri === null) {
 			throw self::refused(reason: 'The OpenID Connect provider\'s discovery document could not be read');
 		}
 
@@ -329,6 +365,43 @@ class ConsumerKeySourceResolver {
 	}//end discovery()
 
 	/**
+	 * The cached discovery answer, when it was read for the issuer URL configured now.
+	 *
+	 * @param string $cacheKey  The cache key.
+	 * @param string $issuerUrl The configured issuer URL.
+	 *
+	 * @return array{issuer:string,jwks_uri:string}|null The issuer and key set address, or null.
+	 */
+	private function cachedDiscovery(string $cacheKey, string $issuerUrl): ?array {
+		$cached = $this->cache->get($cacheKey);
+		if (is_string($cached) === false) {
+			return null;
+		}
+
+		$document = json_decode($cached, true);
+		if (is_array($document) === false || ($document['configured'] ?? null) !== $issuerUrl) {
+			return null;
+		}
+
+		return ['issuer' => $document['issuer'], 'jwks_uri' => $document['jwks_uri']];
+	}//end cachedDiscovery()
+
+	/**
+	 * The value when it is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null The string, or null.
+	 */
+	private static function nonEmptyString(mixed $value): ?string {
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		return $value;
+	}//end nonEmptyString()
+
+	/**
 	 * Refuse a token whose audience is not the configured one; `oidc` requires an audience.
 	 *
 	 * @param array<string,mixed> $configuration The configuration.
@@ -340,8 +413,8 @@ class ConsumerKeySourceResolver {
 	 * @throws AuthenticationException When the audience is missing or differs.
 	 */
 	private function assertAudience(array $configuration, string $keySource, array $payload): void {
-		$audience = ($configuration['audience'] ?? '');
-		if (is_string($audience) === false || $audience === '') {
+		$audience = self::nonEmptyString(value: ($configuration['audience'] ?? ''));
+		if ($audience === null) {
 			if ($keySource === self::OIDC) {
 				throw self::refused(reason: 'The consumer has no audience configured for its OpenID Connect provider');
 			}
@@ -349,15 +422,27 @@ class ConsumerKeySourceResolver {
 			return;
 		}
 
-		$claimed = ($payload['aud'] ?? []);
-		if (is_string($claimed) === true) {
-			$claimed = [$claimed];
-		}
-
+		$claimed = self::claimedAudiences(payload: $payload);
 		if (is_array($claimed) === false || in_array($audience, $claimed, true) === false) {
 			throw self::refused(reason: 'The token audience does not include ' . $audience, details: ['audience' => $audience]);
 		}
 	}//end assertAudience()
+
+	/**
+	 * The token's `aud` claim, a single audience wrapped in a list.
+	 *
+	 * @param array<string,mixed> $payload The token's claims.
+	 *
+	 * @return mixed The claimed audiences; not an array when the claim is malformed.
+	 */
+	private static function claimedAudiences(array $payload): mixed {
+		$claimed = ($payload['aud'] ?? []);
+		if (is_string($claimed) === true) {
+			return [$claimed];
+		}
+
+		return $claimed;
+	}//end claimedAudiences()
 
 	/**
 	 * Refuse a token that lacks a required claim, or carries another value than the required one.
@@ -379,20 +464,31 @@ class ConsumerKeySourceResolver {
 		}
 
 		foreach ($required as $name => $value) {
-			if (is_int($name) === true) {
-				$name = (string)$value;
-				if (array_key_exists($name, $payload) === false) {
-					throw self::refused(reason: 'The token lacks the required claim ' . $name, details: ['claim' => $name]);
-				}
-
-				continue;
-			}
-
-			if (array_key_exists($name, $payload) === false || $payload[$name] !== $value) {
-				throw self::refused(reason: 'The token lacks the required claim ' . $name, details: ['claim' => $name]);
-			}
+			self::assertClaim(name: $name, value: $value, payload: $payload);
 		}
 	}//end assertRequiredClaims()
+
+	/**
+	 * Refuse a token that lacks one required claim, or carries another value than the required one.
+	 *
+	 * @param int|string          $name    The claim name, or a list index whose value is the name.
+	 * @param mixed               $value   The required value, or the claim name for a list entry.
+	 * @param array<string,mixed> $payload The token's claims.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the claim is missing or differs.
+	 */
+	private static function assertClaim(int|string $name, mixed $value, array $payload): void {
+		$presenceOnly = is_int($name);
+		if ($presenceOnly === true) {
+			$name = (string)$value;
+		}
+
+		if (array_key_exists($name, $payload) === false || ($presenceOnly === false && $payload[$name] !== $value)) {
+			throw self::refused(reason: 'The token lacks the required claim ' . $name, details: ['claim' => $name]);
+		}
+	}//end assertClaim()
 
 	/**
 	 * The key's public PEM, after checking it is an RSA key for this algorithm.
