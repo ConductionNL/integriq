@@ -23,8 +23,9 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Security;
 
 /**
- * The header and issued-token rules of {@see SensitiveFieldRegistry}, for the
- * call log that masks an exchange before it is stored.
+ * The header, issued-token and configuration rules of {@see SensitiveFieldRegistry},
+ * for the call log that masks an exchange before it is stored and for the
+ * configuration files written out of the instance.
  */
 interface SecretRedactorInterface {
 	/**
@@ -48,4 +49,16 @@ interface SecretRedactorInterface {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
 	 */
 	public function redactIssuedTokensInJson(string $body): string;
+
+	/**
+	 * Redacts an exported configuration: secret-named values, header values and
+	 * URL credentials are masked, everything else is kept.
+	 *
+	 * @param array $data The configuration to redact. Not modified; a copy is returned.
+	 *
+	 * @return array The redacted copy.
+	 *
+	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+	 */
+	public function redactConfiguration(array $data): array;
 }
