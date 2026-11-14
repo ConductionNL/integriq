@@ -1616,6 +1616,7 @@ class EndpointService implements EndpointServiceInterface {
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 				_rbac: false,
+				// Unscoped: system write of an inbound call log; the caller is an API consumer, not a user.
 				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
@@ -1655,6 +1656,7 @@ class EndpointService implements EndpointServiceInterface {
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 				_rbac: false,
+				// Unscoped: system write of an inbound throttle record for an API consumer, not a user.
 				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
@@ -3511,6 +3513,7 @@ class EndpointService implements EndpointServiceInterface {
 				register: 'integriq',
 				schema: 'rule',
 				_rbac: false,
+				// Unscoped: resolves a rule of an endpoint already reached for an inbound API consumer.
 				_multitenancy: false,
 				_render: false
 			);
