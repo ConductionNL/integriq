@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Command;
 
 use OCA\Integriq\Intake\IntakeChannelRegistry;
+use OCA\Integriq\Service\Catalog\ContributedTemplates;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
 use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
 use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
@@ -50,6 +51,7 @@ class ExtensionsList extends Command {
 	 * @param IntakeChannelRegistry       $intake      The intake channel registry.
 	 * @param DigitalPostProviderRegistry $digitalPost The digital post provider registry.
 	 * @param PaymentProviderRegistry     $payments    The payment provider registry.
+	 * @param ContributedTemplates|null   $templates   The contributed connector templates, read so they are listed too.
 	 *
 	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
 	 */
@@ -58,6 +60,7 @@ class ExtensionsList extends Command {
 		private readonly IntakeChannelRegistry $intake,
 		private readonly DigitalPostProviderRegistry $digitalPost,
 		private readonly PaymentProviderRegistry $payments,
+		private readonly ?ContributedTemplates $templates = null,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -90,6 +93,7 @@ class ExtensionsList extends Command {
 		$this->intake->getChannelIds();
 		$this->digitalPost->ids();
 		$this->payments->ids();
+		$this->templates?->cards();
 
 		$record  = $this->collector->record();
 		$refused = count(array_filter($record, static fn (array $entry): bool => $entry['refused'] === true));

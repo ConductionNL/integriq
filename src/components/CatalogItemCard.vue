@@ -42,6 +42,12 @@
 				data-testid="catalog-tier">
 				{{ tierLabel }}
 			</p>
+			<p
+				v-if="providedByLabel"
+				class="oc-catalog-card__tier"
+				data-testid="catalog-provided-by">
+				{{ providedByLabel }}
+			</p>
 			<p v-if="catalogItem.description" class="oc-catalog-card__desc">
 				{{ catalogItem.description }}
 			</p>
@@ -163,6 +169,21 @@ export default {
 				return t('integriq', 'Checked against a published interface')
 			}
 			return ''
+		},
+
+		/**
+		 * The extension app that contributed this card, or nothing for
+		 * integriq's own cards.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+		 */
+		providedByLabel() {
+			const app = this.catalogItem.providedBy
+			if (typeof app !== 'string' || app === '') {
+				return ''
+			}
+			return t('integriq', 'Provided by {app}', { app })
 		},
 
 		/**

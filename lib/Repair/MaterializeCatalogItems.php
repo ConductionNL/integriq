@@ -204,7 +204,8 @@ class MaterializeCatalogItems implements IRepairStep {
 		];
 		// Where a template was checked, and the directory snapshot a
 		// generated one came from (connectors-catalogue-expansion).
-		foreach (['verifiedAgainst', 'snapshotDate'] as $key) {
+		// The extension app that contributed a template (platform-connector-extension-kit).
+		foreach (['verifiedAgainst', 'snapshotDate', 'providedBy'] as $key) {
 			if (empty($entry[$key]) === false) {
 				$payload[$key] = (string)$entry[$key];
 			}

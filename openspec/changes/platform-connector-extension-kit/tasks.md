@@ -37,9 +37,17 @@ Kind: code. Size M. Row `integriq:plt-connector-sdk`.
 - **acceptance_criteria**:
   - GIVEN an extension with a template directory WHEN the Store is materialised THEN its templates show as provided by that app
   - GIVEN a refused contribution WHEN `occ integriq:extensions` runs THEN it is listed as refused
-- [ ] Implement
+- [x] Implement
+  > Store and templates: `ContributedTemplates` reads each directory an extension app contributes
+  > with the same template library, marks every card `providedBy` that app and refuses (logs and
+  > records) a slug integriq or an earlier app already holds. `CatalogRegistryService` lists those
+  > cards and finds their payloads; `MaterializeCatalogItems` keeps `providedBy` on the
+  > `catalog_item` (schema 1.2.0); `CatalogItemCard.vue` shows "Provided by <app>";
+  > `occ integriq:extensions` lists the templates too.
 - [ ] Test (PHPUnit on the command and `collect()`; `tests/e2e/connector-extension-kit.spec.ts`)
-  > Partial: `occ integriq:extensions` (`lib/Command/ExtensionsList.php`, registered in `appinfo/info.xml`) lists every contribution with app, seam, id and whether it was refused (`tests/Unit/Command/ExtensionsListTest.php`). Not yet: the Store cards (`CatalogRegistryService` extension list, `CatalogItemCard.vue` "provided by"), materialising contributed template directories, and the e2e test.
+  > PHPUnit: `ContributedTemplatesTest` (cards, refusal, payloads, the Store, the command);
+  > vitest: `catalogItemCardProvidedBy.spec.js`. The e2e spec is left (browser).
+  > Earlier: `occ integriq:extensions` (`lib/Command/ExtensionsList.php`, registered in `appinfo/info.xml`) lists every contribution with app, seam, id and whether it was refused (`tests/Unit/Command/ExtensionsListTest.php`). Not yet: the Store cards (`CatalogRegistryService` extension list, `CatalogItemCard.vue` "provided by"), materialising contributed template directories, and the e2e test.
 
 ### Task 5: Contract tests, the skeleton and the guide
 - **spec_ref**: openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-a-developer-builds-an-extension-from-a-guide-a-skeleton-and-contract-tests-req-cxk-004

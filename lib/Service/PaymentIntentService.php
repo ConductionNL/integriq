@@ -419,7 +419,9 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	}//end resolveSource()
 
 	/**
-	 * Select the provider binding named by `configuration.provider` (default `log`), through the registry; an id nothing answers to falls back to the log binding, as before.
+	 * Select the provider binding named by `configuration.provider` (default `log`), through the registry.
+	 *
+	 * An id nothing answers to falls back to the log binding, as before.
 	 *
 	 * @param array $configuration The payment source's `configuration` object.
 	 *
@@ -435,6 +437,12 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 			if ($binding !== null) {
 				return $binding;
 			}
+		}
+
+		// The built-in Mollie binding answers to its id as it always did, also
+		// when the registry was built without it.
+		if ($provider === 'mollie') {
+			return $this->mollieProvider;
 		}
 
 		return $this->logProvider;
