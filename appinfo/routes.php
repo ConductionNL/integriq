@@ -448,6 +448,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
+		// access-consumer-credentials: list (no hashes), generate (the key is in this one
+		// response only) and revoke one credential. Admin only; there is no read route for a key.
+		['name' => 'consumerCredentials#index', 'url' => '/api/consumers/{id}/credentials', 'verb' => 'GET'],
+		['name' => 'consumerCredentials#create', 'url' => '/api/consumers/{id}/credentials', 'verb' => 'POST'],
+		['name' => 'consumerCredentials#destroy', 'url' => '/api/consumers/{id}/credentials/{credentialId}', 'verb' => 'DELETE'],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
@@ -467,6 +472,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Endpoint endpoints
 		// endpoints#test route removed — controller method was deleted by agent.
 		['name' => 'endpoints#logs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
+		// gateway-response-cache-and-problem-errors D3: clear one endpoint's response cache (action endpoint.cache.clear).
+		['name' => 'endpointResponseCache#clear', 'url' => '/api/endpoints/{id}/cache/clear', 'verb' => 'POST'],
 		// endpoints#statistics route removed — controller method was deleted by agent.
 
 		// Synchronization endpoints

@@ -493,7 +493,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -543,6 +543,83 @@
             "type": "object",
             "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "credentials": {
+            "type": "array",
+            "title": "Credentials",
+            "description": "The consumer's credentials, several at once so a key can be rotated without an outage. Each entry: `id`, `label`, `type` (`apiKey` or `clientCertificate`), `createdAt`, optional `expiresAt`, `lastUsedAt`; an API key adds `keyPrefix` (its first six characters) and `keyHash` (an HMAC-SHA256 under an instance pepper, never the key). Generated and revoked through /api/consumers/{id}/credentials; the key is returned only by the call that creates it. WRITE-ONLY on the object API (register.d/99-consumer-secrets-writeonly.json): the credentials route lists entries without their hash.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "apiKey",
+                    "clientCertificate"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expiresAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "lastUsedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "keyPrefix": {
+                  "type": "string"
+                },
+                "keyHash": {
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "type": "string",
+                  "description": "A client certificate pinned by the lowercase hex SHA-256 of its DER bytes."
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "The pinned certificate's subject, one line."
+                },
+                "oin": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The OIN from a PKIoverheid certificate's subject serialNumber."
+                },
+                "issuerCertificate": {
+                  "type": "string",
+                  "description": "The issuing CA certificate (public, PEM) that must have signed the presented certificate."
+                },
+                "issuerFingerprint": {
+                  "type": "string"
+                },
+                "issuer": {
+                  "type": "string"
+                },
+                "subjectPattern": {
+                  "type": "string",
+                  "description": "Shell pattern the presented certificate's one-line subject must fit, with an issuer pin."
+                }
+              }
+            },
+            "default": []
           },
           "scopes": {
             "type": "array",
@@ -752,6 +829,68 @@
             "description": "When true, GET requests to this endpoint translate VNG double-underscore lookup operators (field__icontains, field__gte, partijIdentificator__codeSoortObjectId/__objectId) onto OpenRegister search filters, and an `expand=` query parameter embeds named relations inline (bounded depth). Opt-in per endpoint; existing endpoints default to false. Added by the vng-klantinteracties-adapter change.",
             "default": false,
             "title": "Enable VNG Filter/Expand Translation"
+          },
+          "cache": {
+            "type": "object",
+            "description": "The endpoint's response cache (gateway-response-cache-and-problem-errors REQ-RCPE-001). Only a source endpoint's answers to safe methods are cached; the authentication and rate limit rules run before a lookup. An upstream answer marked private or no-store is never cached, and a lower upstream max-age shortens the lifetime unless ignoreUpstreamMaxAge is set. The key holds the consumer unless sharedAcrossConsumers is set. An administrator clears it with POST /api/endpoints/{id}/cache/clear.",
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false,
+                "title": "Cache answers"
+              },
+              "ttlSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 86400,
+                "default": 60,
+                "title": "Lifetime (seconds)"
+              },
+              "methods": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "GET",
+                    "HEAD"
+                  ]
+                },
+                "default": [
+                  "GET",
+                  "HEAD"
+                ],
+                "title": "Cached methods"
+              },
+              "statusCodes": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "default": [
+                  200
+                ],
+                "title": "Cached status codes"
+              },
+              "varyHeaders": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": [],
+                "title": "Headers that vary the answer"
+              },
+              "sharedAcrossConsumers": {
+                "type": "boolean",
+                "default": false,
+                "title": "Same answer for every consumer"
+              },
+              "ignoreUpstreamMaxAge": {
+                "type": "boolean",
+                "default": false,
+                "title": "Ignore the upstream max-age"
+              }
+            },
+            "title": "Response cache"
           }
         },
         "x-openregister-mcp": {
@@ -2331,6 +2470,12 @@
             "type": "integer",
             "description": "Combined request+response byte size for storage accounting",
             "title": "Size (Bytes)"
+          },
+          "cacheHit": {
+            "type": "boolean",
+            "description": "True when an endpoint answered this call from its response cache, without an upstream request (REQ-RCPE-001).",
+            "default": false,
+            "title": "Cache hit"
           }
         },
         "x-openregister-mcp": {

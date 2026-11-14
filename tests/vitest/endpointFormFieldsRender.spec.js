@@ -38,7 +38,7 @@ vi.mock('@nextcloud/vue', async () => {
 			return h('div', { class: name, 'data-input-id': this.inputId }, this.$slots.default?.())
 		},
 	})
-	return { NcCheckboxRadioSwitch: control('NcCheckboxRadioSwitch'), NcSelect: control('NcSelect'), NcTextField: control('NcTextField') }
+	return { NcButton: control('NcButton'), NcCheckboxRadioSwitch: control('NcCheckboxRadioSwitch'), NcSelect: control('NcSelect'), NcTextField: control('NcTextField') }
 })
 vi.mock('@conduction/nextcloud-vue', async () => {
 	const { defineComponent, h } = await import('vue')
