@@ -1,5 +1,9 @@
 {
     "translations": {
+        "FSC services": "FSC services",
+        "Bank feeds": "Bank feeds",
+        "Card feeds": "Card feeds",
+        "Open Formulieren forms": "Open Formulieren forms",
         "Marketplace": "Marketplace",
         "synchronizations": "synchronizations",
         "API key": "API Key",

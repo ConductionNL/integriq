@@ -1,5 +1,9 @@
 {
     "translations": {
+        "FSC services": "FSC-diensten",
+        "Bank feeds": "Bankkoppelingen",
+        "Card feeds": "Kaartkoppelingen",
+        "Open Formulieren forms": "Open Formulieren-formulieren",
         "synchronizations": "synchronisaties",
         "Load example data?": "Voorbeeldgegevens laden?",
         "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Voorbeeldgegevens vullen de lijsten, detailpagina’s en dashboards, zodat je de app meteen ziet werken. Elke kaart heeft een eigen knop Laden. Kies \"Geen\" op een productieomgeving.",
