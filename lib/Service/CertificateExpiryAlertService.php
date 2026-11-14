@@ -269,6 +269,7 @@ class CertificateExpiryAlertService {
 				schema: ConnectionAlertService::SCHEMA,
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: system write of an alert raised by the certificate expiry job.
 				_multitenancy: false,
 			);
 		} catch (\Throwable $exception) {
