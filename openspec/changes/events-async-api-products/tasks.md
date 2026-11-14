@@ -8,8 +8,8 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
 - **acceptance_criteria**:
   - GIVEN the existing REQ-APG-004 and REQ-APG-005 tests WHEN they run after the move THEN they pass unchanged
   - GIVEN an endpoint in no product WHEN it is called THEN consumer-level limits apply as before
-- [ ] Implement
-- [ ] Test (existing PHPUnit suites plus a direct test of the new service)
+- [x] Implement
+- [x] Test (existing PHPUnit suites plus a direct test of the new service)
 
 ### Task 2: Channels on the product schema and page
 - **spec_ref**: openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
@@ -18,8 +18,8 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
   - GIVEN the register is imported WHEN a product is saved with a channel THEN OpenRegister accepts it, and a duplicate channel slug is refused
   - GIVEN the product detail page WHEN an administrator adds a channel THEN it is listed
   - GIVEN a fresh install WHEN the seed runs THEN `woo-publications` 2.0.0 has channel `publications`
-- [ ] Implement
-- [ ] Test (`node tests/validate-register.js`; Playwright `tests/e2e/events-async-api-products.spec.ts`)
+- [ ] Implement (schema fragment and seed done; the product page's channels section and refusing a duplicate channel slug on save are not built yet)
+- [ ] Test (`node tests/validate-register.js` and a PHPUnit fragment test done; Playwright left)
 
 ### Task 3: Consumer pull and subscribe routes
 - **spec_ref**: openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-a-consumer-reaches-a-channel-under-the-products-policies-req-aapi-002
@@ -47,8 +47,8 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
 - **acceptance_criteria**:
   - GIVEN a public product with a channel WHEN the document is requested without a session THEN a valid AsyncAPI 3.0 document is returned
   - GIVEN a private product WHEN it is requested without a subscribed consumer THEN 403
-- [ ] Implement
-- [ ] Test (PHPUnit validating the output against the AsyncAPI 3.0 JSON schema fixture)
+- [x] Implement (a private product's consumer authenticates with a JWT; API-key consumers are not accepted on this route yet)
+- [ ] Test (PHPUnit on the document's structure and the route done; validation against the AsyncAPI 3.0 JSON schema fixture left, the fixture is not vendored)
 
 ## Verification
 
