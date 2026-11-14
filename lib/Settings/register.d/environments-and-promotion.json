@@ -73,7 +73,7 @@
         "slug": "promotion_audit",
         "title": "Promotion Audit",
         "icon": "RocketLaunchOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Append-only audit record of one promotion attempt (success or failure)",
         "description": "One row per confirmed promotion attempt (REQ-006). Records who promoted, what configuration, from which environment to which, when, the outcome, a counts-only preview summary (never entity payloads or credential values), how many credentialRef rebindings were applied, and the CallLog id the underlying CallService::call() dispatch produced (Decision 2/4 cross-reference). appendOnly/immutable, matching call_log/job_log. See openspec/specs/environments-and-promotion/spec.md#requirement-every-promotion-attempt-is-recorded-in-an-append-only-promotion-audit-log-req-006.",
         "required": ["configurationId", "fromEnvironmentSlug", "toEnvironmentSlug", "outcome"],
@@ -137,6 +137,18 @@
             "default": 0,
             "description": "Number of credentialRef placeholders that were rewritten via operator-supplied credentialBindings for this promotion",
             "title": "Credential Rebind Count"
+          },
+          "failedTestCount": {
+            "type": "integer",
+            "default": 0,
+            "description": "How many test cases of the promoted configuration's mappings and synchronizations failed when the promotion was confirmed (automation-integration-regression-tests, REQ-IRT-005)",
+            "title": "Failed Test Count"
+          },
+          "overrideFailingTests": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the promoter confirmed the promotion although test cases failed (REQ-IRT-005)",
+            "title": "Override Failing Tests"
           },
           "callLogId": {
             "type": "string",

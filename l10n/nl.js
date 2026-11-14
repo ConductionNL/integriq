@@ -1139,6 +1139,8 @@ OC.L10N.register(
         "The values that mean a mock adapter answers. Compared case-insensitively after trimming. Default: one empty string.": "De waarden die betekenen dat een mock-adapter antwoordt. Hoofdletters en spaties aan de randen tellen niet mee. Standaard: één lege tekst.",
         "true means only the app can tell what answers. Integriq then skips the adapter and settings rules. Default false.": "true betekent dat alleen de app kan zien wat er antwoordt. Integriq slaat dan de regels voor adapter en instellingen over. Standaard false.",
         "Whether the connection works, works in part or not at all, as integriq last worked it out.": "Of de koppeling werkt, deels werkt of niet werkt, zoals Integriq het laatst heeft vastgesteld.",
+        "Failing test cases in this configuration: {count}": "Falende testgevallen in deze configuratie: {count}",
+        "Promote anyway, although test cases fail": "Toch promoveren, ook al falen er testgevallen",
         "The last status the app reported: status, message and time. A report of simulated stands against any probe.": "De laatste status die de app meldde: status, melding en tijd. Een melding van simulated gaat voor elke test.",
         "Last refresh": "Laatst vernieuwd",
         "When the app last asked for a fresh status after a settings save. Older reports and probes no longer count.": "Wanneer de app na het opslaan van instellingen om een nieuwe status vroeg. Oudere meldingen en tests tellen dan niet meer mee.",

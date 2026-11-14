@@ -54,8 +54,8 @@ Kind: code. Matrix row `integriq:auto-regression-tests`.
   - GIVEN a configuration with a failing case WHEN the preview runs THEN the failing case is listed
   - GIVEN a failing case and no override WHEN the promotion is confirmed THEN it is refused and CallService is not called
   - GIVEN a failing case and the override WHEN the promotion is confirmed THEN the audit record stores the failed count and the override
-- [ ] Implement
-- [ ] Test (PHPUnit on PromotionService for refusal and audit; Playwright for the preview list)
+- [x] Implement (`PromotionRegressionCheck` replays the cases of every mapping and synchronization in the exported configuration through `RegressionSuiteService::failures()`, which records no run. The preview answers `failingTestCases`; a confirmed promotion with failures is refused before anything is sent unless the request carries `overrideFailingTests`, and the audit records `failedTestCount` and `overrideFailingTests` (promotion_audit 1.1.0, register 1.1.8). The preview modal lists the failing cases and holds Confirm back until "Promote anyway" is ticked)
+- [ ] Test (PHPUnit done: `PromotionRegressionCheckTest`, refusal, override and audit; vitest on the modal. The Playwright check of the preview list needs a live instance)
 
 ## Verification
 

@@ -113,14 +113,7 @@ class RegressionSuiteService {
 
 		$startedAt = (new DateTimeImmutable())->format('c');
 		$cases = $this->cases(subjectType: $subjectType, subjectId: $subjectId);
-
-		$failures = [];
-		foreach ($cases as $case) {
-			$failure = $this->runCase(case: $case);
-			if ($failure !== null) {
-				$failures[] = $failure;
-			}
-		}
+		$failures = $this->failuresOf(cases: $cases);
 
 		$run = [
 			'subjectType' => $subjectType,
@@ -144,6 +137,47 @@ class RegressionSuiteService {
 
 		return array_merge($run, ['id' => (string)$saved->getUuid()]);
 	}//end run()
+
+	/**
+	 * The failing cases of a subject, run without recording a run.
+	 *
+	 * The promotion preview asks this for every mapping and synchronization of
+	 * the configuration it is about to send, so a look at the preview writes
+	 * nothing (automation-integration-regression-tests, REQ-IRT-005).
+	 *
+	 * @param string $subjectType `mapping` or `synchronization`.
+	 * @param string $subjectId   The subject's uuid or slug, as the cases name it.
+	 *
+	 * @return list<array<string,mixed>> One entry per failing case.
+	 *
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 */
+	public function failures(string $subjectType, string $subjectId): array {
+		if (in_array($subjectType, self::SUBJECT_TYPES, true) === false || $subjectId === '') {
+			return [];
+		}
+
+		return $this->failuresOf(cases: $this->cases(subjectType: $subjectType, subjectId: $subjectId));
+	}//end failures()
+
+	/**
+	 * Run cases and keep what failed.
+	 *
+	 * @param array<int,array<string,mixed>> $cases The cases.
+	 *
+	 * @return list<array<string,mixed>>
+	 */
+	private function failuresOf(array $cases): array {
+		$failures = [];
+		foreach ($cases as $case) {
+			$failure = $this->runCase(case: $case);
+			if ($failure !== null) {
+				$failures[] = $failure;
+			}
+		}
+
+		return $failures;
+	}//end failuresOf()
 
 	/**
 	 * Run one case; null when it passes, else what failed.

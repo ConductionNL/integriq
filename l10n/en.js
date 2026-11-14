@@ -1770,6 +1770,8 @@ OC.L10N.register(
         "Nextcloud user id that created the consumer (null for system-created)": "Nextcloud user id that created the consumer (null for system-created)",
         "Nextcloud user id that owns the job (null for system jobs)": "Nextcloud user id that owns the job (null for system jobs)",
         "Nextcloud user id that owns the subscription": "Nextcloud user id that owns the subscription",
+        "Failing test cases in this configuration: {count}": "Failing test cases in this configuration: {count}",
+        "Promote anyway, although test cases fail": "Promote anyway, although test cases fail",
         "Nextcloud user id that produced this event (null for system-produced)": "Nextcloud user id that produced this event (null for system-produced)",
         "Nextcloud user id that triggered the sync": "Nextcloud user id that triggered the sync",
         "Nextcloud user id that triggered the sync (null for cron-triggered)": "Nextcloud user id that triggered the sync (null for cron-triggered)",
