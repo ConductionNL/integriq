@@ -99,6 +99,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Intake\\WebhookTrustMigratorInterface, OCA\\Integriq\\Service\\Intake\\WebhookTrustMigrator)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Adapter\\Saas\\Microsoft365AdapterInterface, OCA\\Integriq\\Service\\Adapter\\Saas\\Microsoft365Adapter)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Kiss\\CtiEventIntakeInterface, OCA\\Integriq\\Service\\Kiss\\CtiEventIntake)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\Kiss\\CallerSearchInterface, OCA\\Integriq\\Service\\Kiss\\ConfiguredCallerSearch)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Intake\\IntakeGroupsInterface, OCA\\Integriq\\Service\\Intake\\IntakeGroups)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Objecten\\ObjecttypeEndpointHandlerInterface, OCA\\Integriq\\Service\\Objecten\\ObjecttypeEndpointHandler)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\ActionAuthServiceInterface, OCA\\Integriq\\Service\\ActionAuthService)",
