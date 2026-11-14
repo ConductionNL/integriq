@@ -33,6 +33,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
+use OCA\Integriq\Intake\InboundMessage;
 use OCA\Integriq\Intake\IntakeChannelRegistryInterface;
 use OCA\Integriq\Intake\IntakeReplyServiceInterface;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
@@ -237,6 +238,152 @@ class IntakeChannelsController extends Controller {
 		);
 
 	}//end saveRule()
+
+	/**
+	 * Test a draft rule against a sample message, storing nothing.
+	 *
+	 * Runs the save's validation, then the match and the payload the case
+	 * would receive, and names the saved rule that wins for that channel
+	 * today. No object is written and no routed event is dispatched: the app
+	 * that listens for it opens a real case.
+	 *
+	 * @return JSONResponse Whether the draft matches, its payload and today's winner.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-draft-rule-is-tested-against-a-sample-message-without-side-effects-req-ire-002
+	 */
+	#[NoAdminRequired]
+	public function testRule(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RULES);
+
+		$rule = $this->request->getParam('rule', []);
+		$sample = $this->request->getParam('sample', []);
+		if (is_array($rule) === false || is_array($sample) === false) {
+			return new JSONResponse(
+				['error' => $this->l->t('A test needs a rule and a sample message.')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$this->routingService->validateRule($rule, $this->registry);
+		} catch (IntakeRoutingException $exception) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		// The draft is tested on its own channel, whatever the sample says.
+		$sample['channelId'] = (string)($rule['channelId'] ?? '');
+		$message = InboundMessage::fromObject(object: $sample);
+		$matches = $this->routingService->matches(rule: $rule, message: $message);
+
+		$payload = [];
+		if ($matches === true) {
+			$payload = $this->routingService->buildTargetPayload(rule: $rule, message: $message);
+		}
+
+		$winner = $this->routingService->firstMatchingRule(message: $message);
+		$winningRule = null;
+		if ($winner !== null) {
+			$winningRule = ['name' => (string)($winner['name'] ?? ''), 'order' => (int)($winner['order'] ?? 0)];
+		}
+
+		return new JSONResponse(['matches' => $matches, 'payload' => $payload, 'winningRule' => $winningRule]);
+
+	}//end testRule()
+
+	/**
+	 * Route one held or failed message again.
+	 *
+	 * @param string $id The `intake_message` uuid.
+	 *
+	 * @return JSONResponse The message's new state.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
+	 */
+	#[NoAdminRequired]
+	public function routeAgain(string $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RULES);
+
+		$outcome = $this->rerouteOne(id: $id);
+		if (isset($outcome['error']) === true) {
+			return new JSONResponse($outcome, Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse($outcome);
+
+	}//end routeAgain()
+
+	/**
+	 * Route a selection of held or failed messages again, answering each one.
+	 *
+	 * @return JSONResponse One outcome per id, in the order asked.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
+	 */
+	#[NoAdminRequired]
+	public function routeAgainMany(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RULES);
+
+		$ids = $this->request->getParam('ids', []);
+		if (is_array($ids) === false || $ids === []) {
+			return new JSONResponse(
+				['error' => $this->l->t('Choose the messages to route again.')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$results = [];
+		foreach ($ids as $id) {
+			$results[] = $this->rerouteOne(id: (string)$id);
+		}
+
+		return new JSONResponse(['results' => $results]);
+
+	}//end routeAgainMany()
+
+	/**
+	 * Route one message again and describe the outcome, or why it was refused.
+	 *
+	 * @param string $id The `intake_message` uuid.
+	 *
+	 * @return array<string,string> The id with its status, rule, case and reason, or an error.
+	 */
+	private function rerouteOne(string $id): array {
+		try {
+			$object = $this->routingService->reroute($id)->getObject();
+		} catch (IntakeRoutingException $exception) {
+			return ['id' => $id, 'error' => $exception->getMessage()];
+		}
+
+		return [
+			'id' => $id,
+			'status' => (string)($object['status'] ?? ''),
+			'ruleName' => (string)($object['ruleName'] ?? ''),
+			'targetRef' => (string)($object['targetRef'] ?? ''),
+			'reason' => (string)($object['reason'] ?? ''),
+		];
+
+	}//end rerouteOne()
 
 	/**
 	 * Reply to an inbound message on the channel it arrived on.

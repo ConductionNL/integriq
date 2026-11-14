@@ -8,5 +8,5 @@ Kind: code. Matrix row `integriq:src-ws-security`.
 - **acceptance_criteria**:
   - GIVEN encryption on WHEN a call is sent THEN the body is encrypted for the partner certificate after signing
   - GIVEN an encrypted answer WHEN it arrives THEN it is decrypted before verification, and a wrong key fails the call with the reason
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+- [x] Test (PHPUnit)

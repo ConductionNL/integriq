@@ -8,8 +8,10 @@ Kind: code. Matrix rows `integriq:plt-action-matrix` and `integriq:plt-roles`.
 - **acceptance_criteria**:
   - GIVEN the seed WHEN the test runs THEN all 34 missing actions are present with `admin`, a label and an area
   - GIVEN a new unseeded literal in a controller WHEN the test runs THEN it fails naming the action
-- [ ] Implement
-- [ ] Test (PHPUnit ActionSeedCoverageTest, first run red on the current seed)
+- [x] Implement
+  - The seed now lists 106 actions; 37 were enforced but missing (one more than the 34 counted when this was written, plus `propertySource.query.brp`). Every action has `admin`, a label and an area; `exchange.read` keeps its broader default.
+- [x] Test (PHPUnit ActionSeedCoverageTest, first run red on the current seed)
+  - Red on the old seed with the 36 missing names and the unseeded `propertySource.query.` prefix. The test reads the source: literals, own and imported class constants (lists too), a `$parameter` followed to the calls of its helper, and a variable assigned from a method returning literals. Built names must use a listed prefix with a seeded variant. Anything else fails, naming file and line.
 
 ### Task 2: Areas and labels on the screen
 - **spec_ref**: openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
@@ -17,8 +19,10 @@ Kind: code. Matrix rows `integriq:plt-action-matrix` and `integriq:plt-roles`.
 - **acceptance_criteria**:
   - GIVEN the screen WHEN it loads THEN actions appear in area sections with labels
   - GIVEN a group ticked for `stuf-zkn.push` WHEN saved THEN a member can push and a non-member gets 403
-- [ ] Implement
+- [x] Implement
+  - `getMatrix()` returns the seed's `labels` and `areas`; the screen shows one section per area, each action's label with its name beneath.
 - [ ] Test (Playwright `tests/e2e/action-rights-coverage.spec.ts`)
+  - Unit-level: `ActionMatrixControllerTest`, `tests/vitest/actionMatrixSections.spec.js`, `adminSettingsPanelsRender.spec.js`. The Playwright run (delegate, then member and non-member push) needs a live instance.
 
 ### Task 3: Measure today's object posture
 - **spec_ref**: openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
