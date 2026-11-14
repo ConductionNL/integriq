@@ -1209,6 +1209,12 @@
         "Run by": "Run by",
         "The object fed to the subject.": "The object fed to the subject.",
         "The output the subject must produce for the input.": "The output the subject must produce for the input.",
+        "This service needs a stronger login": "This service needs a stronger login",
+        "You logged in with %1$s. This service needs at least %2$s.": "You logged in with %1$s. This service needs at least %2$s.",
+        "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.",
+        "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.",
+        "Log in with a means at eIDAS level substantial or high.": "Log in with a means at eIDAS level substantial or high.",
+        "Go back": "Go back",
         "The user who started the run.": "The user who started the run.",
         "The uuid or slug of the mapping or synchronization that ran.": "The uuid or slug of the mapping or synchronization that ran.",
         "The uuid or slug of the mapping or synchronization under test.": "The uuid or slug of the mapping or synchronization under test.",
@@ -3624,13 +3630,7 @@
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
-        "This service needs a stronger login": "This service needs a stronger login",
-        "You logged in with %1$s. This service needs at least %2$s.": "You logged in with %1$s. This service needs at least %2$s.",
-        "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.",
-        "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.",
-        "Log in with a means at eIDAS level substantial or high.": "Log in with a means at eIDAS level substantial or high.",
-        "Go back": "Go back"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
     },
     "plurals": {}
 }

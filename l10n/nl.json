@@ -788,6 +788,12 @@
         "Run by": "Gestart door",
         "The object fed to the subject.": "Het object dat het onderwerp als invoer krijgt.",
         "The output the subject must produce for the input.": "De uitvoer die het onderwerp voor de invoer moet geven.",
+        "This service needs a stronger login": "Voor deze dienst is een hoger inlogniveau nodig",
+        "You logged in with %1$s. This service needs at least %2$s.": "Je bent ingelogd met %1$s. Voor deze dienst is minimaal %2$s nodig.",
+        "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in met de DigiD app met ID-check, of gebruik een ander DigiD-middel op niveau Substantieel.",
+        "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in met een eHerkenningsmiddel op niveau EH3 of hoger. Je eHerkenningsleverancier vertelt je hoe je er een krijgt.",
+        "Log in with a means at eIDAS level substantial or high.": "Log in met een middel op eIDAS-niveau substantial of high.",
+        "Go back": "Terug",
         "The user who started the run.": "De gebruiker die de run startte.",
         "The uuid or slug of the mapping or synchronization that ran.": "De uuid of slug van de mapping of synchronisatie die draaide.",
         "The uuid or slug of the mapping or synchronization under test.": "De uuid of slug van de geteste mapping of synchronisatie.",
@@ -2362,13 +2368,7 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
-        "This service needs a stronger login": "Voor deze dienst is een hoger inlogniveau nodig",
-        "You logged in with %1$s. This service needs at least %2$s.": "Je bent ingelogd met %1$s. Voor deze dienst is minimaal %2$s nodig.",
-        "Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.": "Log in met de DigiD app met ID-check, of gebruik een ander DigiD-middel op niveau Substantieel.",
-        "Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.": "Log in met een eHerkenningsmiddel op niveau EH3 of hoger. Je eHerkenningsleverancier vertelt je hoe je er een krijgt.",
-        "Log in with a means at eIDAS level substantial or high.": "Log in met een middel op eIDAS-niveau substantial of high.",
-        "Go back": "Terug"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
     },
     "plurals": {}
 }
