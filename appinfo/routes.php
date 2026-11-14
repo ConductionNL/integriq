@@ -95,6 +95,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// provider picker is built from the registry rather than from a list
 		// written beside it and left to go stale.
 		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		// Test a draft rule against a sample and route held messages again
+		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
+		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgainMany', 'url' => '/api/intake/messages/route', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgain', 'url' => '/api/intake/messages/{id}/route', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],

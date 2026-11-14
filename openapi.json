@@ -3992,6 +3992,40 @@
                 }
             }
         },
+        "/intake/messages/route": {
+            "post": {
+                "operationId": "intake-channels-route-again-many",
+                "summary": "Route a selection of held or failed messages again, answering each one",
+                "description": "Route a selection of held or failed messages again, answering each one.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "One outcome per id, in the order asked.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
         "/intake/messages/{id}/reply": {
             "post": {
                 "operationId": "intake-channels-reply",
@@ -4025,6 +4059,51 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/intake/messages/{id}/route": {
+            "post": {
+                "operationId": "intake-channels-route-again",
+                "summary": "Route one held or failed message again",
+                "description": "Route one held or failed message again.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The message's new state.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     }
                 },
                 "parameters": [
@@ -4101,6 +4180,40 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/intake/routing-rules/test": {
+            "post": {
+                "operationId": "intake-channels-test-rule",
+                "summary": "Test a draft rule against a sample message, storing nothing",
+                "description": "Test a draft rule against a sample message, storing nothing.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Whether the draft matches, its payload and today's winner.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     }
                 }
             }

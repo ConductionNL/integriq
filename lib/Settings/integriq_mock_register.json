@@ -9329,61 +9329,65 @@
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-1-1"
+          "slug": "intake-routing-rule-teams-meldingen-naar-algemene-vraag"
         },
-        "name": "Voorbeeld Name 1",
-        "channelId": "Voorbeeld Channelid 1",
-        "targetSchema": "Voorbeeld Targetschema 1",
-        "description": "Voorbeeld Description 1",
-        "condition": {
-          "field": "Voorbeeld Field 1",
-          "operator": "equals",
-          "value": "Voorbeeld Value 1"
+        "name": "Teams meldingen naar algemene vraag",
+        "channelId": "teams",
+        "targetSchema": "case",
+        "description": "Elk Teams-bericht opent een zaak met de tekst van het bericht als titel en omschrijving.",
+        "condition": {},
+        "fieldMapping": {
+          "title": "text",
+          "description": "text"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 1",
-        "order": 1,
+        "locationField": "",
+        "order": 10,
         "isEnabled": true
       },
       {
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-2-2"
+          "slug": "intake-routing-rule-openbare-ruimte-straatverlichting"
         },
-        "name": "Voorbeeld Name 2",
-        "channelId": "Voorbeeld Channelid 2",
-        "targetSchema": "Voorbeeld Targetschema 2",
-        "description": "Voorbeeld Description 2",
+        "name": "Openbare ruimte straatverlichting",
+        "channelId": "public-space-report",
+        "targetSchema": "case",
+        "description": "Een melding over een lantaarnpaal opent een zaak met de omschrijving van de melder.",
         "condition": {
-          "field": "Voorbeeld Field 2",
+          "field": "text",
           "operator": "contains",
-          "value": "Voorbeeld Value 2"
+          "value": "lantaarnpaal"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 2",
-        "order": 2,
-        "isEnabled": false
+        "fieldMapping": {
+          "title": "fields.category",
+          "description": "text"
+        },
+        "locationField": "",
+        "order": 10,
+        "isEnabled": true
       },
       {
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-3-3"
+          "slug": "intake-routing-rule-formulier-bezwaar"
         },
-        "name": "Voorbeeld Name 3",
-        "channelId": "Voorbeeld Channelid 3",
-        "targetSchema": "Voorbeeld Targetschema 3",
-        "description": "Voorbeeld Description 3",
+        "name": "Formulier bezwaar",
+        "channelId": "form-submission",
+        "targetSchema": "case",
+        "description": "Een ingezonden bezwaarformulier opent een zaak. Uitgeschakeld, zodat de demo ook een uitgeschakelde regel laat zien.",
         "condition": {
-          "field": "Voorbeeld Field 3",
-          "operator": "exists",
-          "value": "Voorbeeld Value 3"
+          "field": "fields.formType",
+          "operator": "equals",
+          "value": "bezwaar"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 3",
-        "order": 3,
-        "isEnabled": true
+        "fieldMapping": {
+          "description": "text"
+        },
+        "locationField": "",
+        "order": 20,
+        "isEnabled": false
       },
       {
         "@self": {
