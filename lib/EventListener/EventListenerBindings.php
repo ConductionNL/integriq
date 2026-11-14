@@ -29,6 +29,7 @@ use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\Forms\Events\FormSubmittedEvent;
 use OCA\Integriq\BackgroundJob\ViewDeletedEventListener;
+use OCA\Integriq\Event\ConnectionCallRequestedEvent;
 use OCA\Integriq\Event\ConnectionRefreshRequestedEvent;
 use OCA\Integriq\Event\ConnectionStatusReportedEvent;
 use OCA\Integriq\Event\DeliveryRequestedEvent;
@@ -45,6 +46,7 @@ use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\OptOutChangeRequestedEvent;
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
+use OCA\Integriq\Event\RouteDistanceRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
@@ -369,6 +371,9 @@ final class EventListenerBindings {
 		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
 		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
+		// Sources-route-distance-and-rdw-lookup: a sibling app calls a connection it declared, and asks a road distance.
+		$dispatcher->addServiceListener(eventName: ConnectionCallRequestedEvent::class, className: ConnectionCallRequestedListener::class);
+		$dispatcher->addServiceListener(eventName: RouteDistanceRequestedEvent::class, className: RouteDistanceRequestedListener::class);
 	}//end registerSiblingRequestListeners()
 
 	/**

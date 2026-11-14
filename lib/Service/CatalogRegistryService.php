@@ -133,6 +133,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		// GitHub for the publiccode harvest (sources-github-publiccode).
 		'github-api' => 'Code hosting',
 		'github-raw' => 'Code hosting',
+		// Vehicle register and route planners for sibling apps (sources-route-distance-and-rdw-lookup).
+		'rdw-open-data' => 'Government registers',
+		'route-planner-openrouteservice' => 'Geo / Maps',
+		'route-planner-tomtom' => 'Geo / Maps',
 		// Web shops whose orders go to shillinq (connectors-webshop-orders D4).
 		'woocommerce-shop' => 'Commerce',
 		'shopify-shop' => 'Commerce',
