@@ -40,6 +40,8 @@ use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\ApiDesign\ApiDesignRuleService;
+use OCA\Integriq\Service\ApiDesign\ApiDesignRuleServiceInterface;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
@@ -376,6 +378,7 @@ final class ServiceBindings {
 		MtlsTransportServiceInterface::class => MtlsTransportService::class,
 		ExchangeTargetCatalogueInterface::class => ExchangeTargetCatalogue::class,
 		MessageValidationServiceInterface::class => MessageValidationService::class,
+		ApiDesignRuleServiceInterface::class => ApiDesignRuleService::class,
 		DigitalPostProviderRegistryInterface::class => DigitalPostProviderRegistry::class,
 		DocumentConnectionGuardInterface::class => DocumentConnectionGuard::class,
 		SubscriptionRegistryInterface::class => SubscriptionRegistry::class,
