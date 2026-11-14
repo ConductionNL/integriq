@@ -73,4 +73,18 @@ interface PeppolAccessPointProviderInterface {
 		string $documentType,
 		string $payload,
 	): string;
+
+	/**
+	 * Fetch an inbound document the Access Point announced, with the brokered credential.
+	 *
+	 * @param array $sourceConfiguration The Peppol source's `configuration` object.
+	 * @param string $reference The Access Point's reference to the document, as its notification named it.
+	 *
+	 * @return string The UBL document itself (XML).
+	 *
+	 * @throws PeppolProviderException When the document cannot be fetched.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	public function fetchInboundDocument(array $sourceConfiguration, string $reference): string;
 }//end interface
