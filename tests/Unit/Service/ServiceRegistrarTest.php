@@ -479,6 +479,7 @@ class ServiceRegistrarTest extends TestCase {
 		'OCA\\Integriq\\Service\\SettingsService',
 		'OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry',
 		'OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry',
+		'OCA\\Integriq\\Service\\Payment\\PaymentProviderRegistry',
 		'OCA\\Integriq\\Service\\Rod\\RodProviderRegistry',
 		'OCA\\Integriq\\Service\\Verzuimloket\\VerzuimloketProviderRegistry',
 		'OCA\\Integriq\\Service\\Oso\\OsoProviderRegistry',

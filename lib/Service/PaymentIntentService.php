@@ -37,6 +37,7 @@ use OCA\Integriq\Exception\PaymentProviderException;
 use OCA\Integriq\Service\Payment\LogPaymentProvider;
 use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\Payment\PaymentProviderInterface;
+use OCA\Integriq\Service\Payment\PaymentProviderRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -105,6 +106,13 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	];
 
 	/**
+	 * The payment providers by id.
+	 *
+	 * @var PaymentProviderRegistry
+	 */
+	private readonly PaymentProviderRegistry $providers;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ORObjectService $objectService OR object service for source/payment_intent persistence.
@@ -113,6 +121,8 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	 * @param CloudEventEmitterInterface $eventService Emits the payment-status CloudEvent.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param PaymentProviderRegistry|null $providers Every payment provider by id, an extension app's included;
+	 *                                               without one, Mollie and the log binding.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -121,7 +131,9 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 		private readonly CloudEventEmitterInterface $eventService,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		?PaymentProviderRegistry $providers = null,
 	) {
+		$this->providers = ($providers ?? new PaymentProviderRegistry(providers: [$mollieProvider, $logProvider]));
 
 	}//end __construct()
 
@@ -375,18 +387,22 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	}//end resolveSource()
 
 	/**
-	 * Select the provider binding named by `configuration.provider` (default `log`).
+	 * Select the provider binding named by `configuration.provider` (default `log`), through the registry; an id nothing answers to falls back to the log binding, as before.
 	 *
 	 * @param array $configuration The payment source's `configuration` object.
 	 *
 	 * @return PaymentProviderInterface The resolved provider binding.
 	 *
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
+	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
 	 */
 	private function resolveProvider(array $configuration): PaymentProviderInterface {
 		$provider = ($configuration['provider'] ?? 'log');
-		if ($provider === 'mollie') {
-			return $this->mollieProvider;
+		if (is_string($provider) === true) {
+			$binding = $this->providers->find(providerId: $provider);
+			if ($binding !== null) {
+				return $binding;
+			}
 		}
 
 		return $this->logProvider;

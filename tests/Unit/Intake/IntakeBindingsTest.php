@@ -36,6 +36,7 @@ use OCA\Integriq\Intake\IntakeReplyService;
 use OCA\Integriq\Intake\IntakeReplyServiceInterface;
 use OCA\Integriq\Intake\IntakeRoutingService;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
+use OCA\Integriq\Service\Extension\ConnectorExtensionCollector;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -102,6 +103,7 @@ class IntakeBindingsTest extends TestCase {
 			MessagingChannelAdapter::class => $messaging,
 			PublicSpaceReportAdapter::class => $report,
 			TeamsChannelAdapter::class => $teams,
+			ConnectorExtensionCollector::class => $this->createMock(ConnectorExtensionCollector::class),
 		];
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id) => $services[$id]);

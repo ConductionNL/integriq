@@ -8,8 +8,9 @@ Kind: code. Size M. Row `integriq:plt-connector-sdk`.
 - **acceptance_criteria**:
   - GIVEN no extension WHEN a registry is built THEN it holds exactly today's built-ins
   - GIVEN a listener adding a channel WHEN the intake registry is built THEN the channel is registered with its app id
-- [ ] Implement
-- [ ] Test (PHPUnit on each registry with a real event and a stub listener)
+- [x] Implement
+- [x] Test (PHPUnit on each registry with a real event and a stub listener)
+  > Built: `RegisterConnectorExtensionsEvent` (intake channels, digital post providers, payment providers, template directories, each with an app id) and `ConnectorExtensionCollector`, which dispatches it once per process. `IntakeChannelRegistry` and `DigitalPostProviderRegistry` keep their built-ins and ask the collector on first use; each entry remembers its app (`appIdOf()`). The registries are wired in `IntakeBindings` and `ServiceBindings`, not `Application.php`, where they live today. Tests: `tests/Unit/Service/Extension/ConnectorExtensionKitTest.php` (real event, stub listener).
 
 ### Task 2: The payment provider registry
 - **spec_ref**: openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
@@ -17,16 +18,18 @@ Kind: code. Size M. Row `integriq:plt-connector-sdk`.
 - **acceptance_criteria**:
   - GIVEN provider `mollie` WHEN a payment is created THEN the Mollie binding runs through the registry
   - GIVEN a contributed `buckaroo` provider WHEN a source names it THEN it runs
-- [ ] Implement
-- [ ] Test (PHPUnit on `resolveProvider()` against the registry)
+- [x] Implement
+- [x] Test (PHPUnit on `resolveProvider()` against the registry)
+  > Built: `PaymentProviderRegistry`, keyed by the new `PaymentProviderInterface::getProviderId()` (`mollie`, `log`); `PaymentIntentService::resolveProvider()` reads it, and an id nothing answers to still falls back to the log binding. Tests: `tests/Unit/Service/PaymentIntentServiceProviderRegistryTest.php`.
 
 ### Task 3: Collisions refused and logged
 - **spec_ref**: openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
 - **files**: the three registries
 - **acceptance_criteria**:
   - GIVEN a contribution claiming `teams` WHEN the registry is built THEN the built-in keeps it and the log names the app and class
-- [ ] Implement
-- [ ] Test (PHPUnit per registry)
+- [x] Implement
+- [x] Test (PHPUnit per registry)
+  > Built: a contribution claiming a taken id is refused, the built-in keeps it, and the warning names the app, class and seam (`ConnectorExtensionKitTest`, one case per registry).
 
 ### Task 4: Templates, the Store and the occ command
 - **spec_ref**: openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
@@ -36,6 +39,7 @@ Kind: code. Size M. Row `integriq:plt-connector-sdk`.
   - GIVEN a refused contribution WHEN `occ integriq:extensions` runs THEN it is listed as refused
 - [ ] Implement
 - [ ] Test (PHPUnit on the command and `collect()`; `tests/e2e/connector-extension-kit.spec.ts`)
+  > Partial: `occ integriq:extensions` (`lib/Command/ExtensionsList.php`, registered in `appinfo/info.xml`) lists every contribution with app, seam, id and whether it was refused (`tests/Unit/Command/ExtensionsListTest.php`). Not yet: the Store cards (`CatalogRegistryService` extension list, `CatalogItemCard.vue` "provided by"), materialising contributed template directories, and the e2e test.
 
 ### Task 5: Contract tests, the skeleton and the guide
 - **spec_ref**: openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-a-developer-builds-an-extension-from-a-guide-a-skeleton-and-contract-tests-req-cxk-004
@@ -52,3 +56,5 @@ Kind: code. Size M. Row `integriq:plt-connector-sdk`.
 - Enable the skeleton app on a local instance, post a signed message to its
   channel, and see it in the intake inbox and in `occ integriq:extensions`.
 - `composer check:strict` and `npm run lint` once before push.
+  > Not started: the contract test cases, the skeleton app, the guide and its CI run.
+

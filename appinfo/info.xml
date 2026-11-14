@@ -519,6 +519,8 @@
 		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
 		     row migration (dry-run, per-entity retry, verify). -->
 		<command>OCA\Integriq\Command\MigrateToOpenRegister</command>
+		<!-- platform-connector-extension-kit: what each extension app contributed, and what was refused. -->
+		<command>OCA\Integriq\Command\ExtensionsList</command>
 		<!-- ocon#151 phase C / ADR-064: reports which sources still hold an inline
 		     secret and what each would become in the credential broker. The dry-run
 		     mode writes nothing and emits the "clean" gate phase D must check before

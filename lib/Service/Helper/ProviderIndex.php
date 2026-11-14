@@ -67,6 +67,24 @@ final class ProviderIndex {
 	}//end __construct()
 
 	/**
+	 * Add one binding after construction, unless its id is already taken.
+	 *
+	 * @param T $provider The binding.
+	 *
+	 * @return bool True when it was taken, false when the id was already registered.
+	 *
+	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-adds-and-never-replaces-a-built-in-req-cxk-002
+	 */
+	public function add(object $provider): bool {
+		if (isset($this->providers[$provider->getProviderId()]) === true) {
+			return false;
+		}
+
+		$this->providers[$provider->getProviderId()] = $provider;
+		return true;
+	}//end add()
+
+	/**
 	 * Whether a binding answers to this provider id.
 	 *
 	 * @param string $providerId Provider id.

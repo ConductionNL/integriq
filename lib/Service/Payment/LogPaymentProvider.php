@@ -51,6 +51,17 @@ class LogPaymentProvider implements PaymentProviderInterface {
 	private static int $counter = 0;
 
 	/**
+	 * The id a payment source names this provider by.
+	 *
+	 * @return string `log`.
+	 *
+	 * @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-extension-app-contributes-adapters-through-a-collect-event-req-cxk-001
+	 */
+	public function getProviderId(): string {
+		return 'log';
+	}//end getProviderId()
+
+	/**
 	 * {@inheritDoc}
 	 *
 	 * @param array $sourceConfiguration The payment source's `configuration` object (unused — no secret needed).
