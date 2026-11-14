@@ -76,5 +76,5 @@ Kind: code. Size L. Row: portaliq `int-registration-per-form`. Builds on `zgw-co
   - GIVEN the modal WHEN kind `stuf-zds` is chosen THEN only the StUF-ZDS settings show
 - [ ] Implement
 - [ ] Test
-- note: Built: GET /api/registration-targets (NoAdminRequired, slug, title and kind only) with its OpenAPI entry and RegistrationTargetControllerTest. Left: RegistrationTargetsPage.vue, the modal and the e2e test.
+- note: Built: GET /api/registration-targets (NoAdminRequired, slug, title and kind only) with its OpenAPI entry and RegistrationTargetControllerTest. The admin page is manifest configuration, not a hand-built page: `src/manifest.d/submission-registration-targets.json` adds the *Registration targets* index page (admin-only menu entry under Connections) over `registrationTarget`, whose dialog shows each kind's settings object only when `kind` holds that kind (`visibleWhen`), and keeps sources and settings out of the columns (`registrationTargetsManifest.spec.js`). Left: the "Testen" dry run of design D6 (an admin endpoint that maps a sample hand-over and stops before the first write, plus its page action), and `tests/e2e/registration-targets.spec.ts`, a browser test.
 

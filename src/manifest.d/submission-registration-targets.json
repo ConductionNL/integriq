@@ -1,0 +1,48 @@
+{
+  "$comment": "ADR-037 manifest fragment (form-submission-registration-targets, Task 8, design D6). The administrators' list of registration targets: the outside systems a sibling app registers a form submission in. Admin-only, as the schema is for every verb. The dialog asks the settings of the chosen kind only: each kind's settings object is shown when `kind` holds that kind, so a StUF-ZDS target is never asked for a ZGW zaaktype. The sources and settings never reach a column; apps see a target only through the slug-title-kind projection of GET /api/registration-targets.",
+  "pages": [
+    {
+      "id": "RegistrationTargets",
+      "route": "/registration-targets",
+      "type": "index",
+      "title": "Registration targets",
+      "config": {
+        "register": "integriq",
+        "schema": "registrationTarget",
+        "addLabel": "Add registration target",
+        "columns": ["title", "slug", "kind", "enabled", "updated"],
+        "includeFields": ["title", "slug", "kind", "sources", "mapping", "zgw", "objectsApi", "stufZds", "json", "allowedApps", "enabled"],
+        "fieldOverrides": {
+          "title": { "order": 1 },
+          "slug": { "order": 2 },
+          "kind": { "order": 3 },
+          "sources": { "order": 4 },
+          "mapping": { "order": 5 },
+          "zgw": { "order": 6, "visibleWhen": { "field": "kind", "equals": "zgw" } },
+          "objectsApi": { "order": 7, "visibleWhen": { "field": "kind", "equals": "objects-api" } },
+          "stufZds": { "order": 8, "visibleWhen": { "field": "kind", "equals": "stuf-zds" } },
+          "json": { "order": 9, "visibleWhen": { "field": "kind", "equals": "json" } },
+          "allowedApps": { "order": 10 },
+          "enabled": { "order": 11 }
+        },
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "ConnectionsGroup",
+      "children": [
+        {
+          "id": "RegistrationTargets",
+          "label": "Registration targets",
+          "icon": "SendCheckOutline",
+          "route": "RegistrationTargets",
+          "order": 40,
+          "permission": "admin"
+        }
+      ]
+    }
+  ]
+}
