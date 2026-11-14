@@ -1,0 +1,125 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-webshop-orders). The dormant Shopify shop template, its mapping onto shillinq's WebshopOrder and an incremental synchronization of the shop's orders. No code: the synchronization engine does the work.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "shopify-shop"
+        },
+        "name": "Shopify shop",
+        "description": "A Shopify store (Admin REST API, https://shopify.dev/docs/api/admin-rest). Orders: GET <store>.myshopify.com/admin/api/<version>/orders.json?status=any, at most 250 per call, changed-since filter `updated_at_min`. Auth: an Admin API access token in the `X-Shopify-Access-Token` header, held by the credential broker. The API version is part of the location: set it to https://<store>.myshopify.com/admin/api/2025-07 (or the version your app uses), add the credential, then enable.",
+        "type": "api",
+        "location": "",
+        "auth": "apikey",
+        "documentation": "https://shopify.dev/docs/api/admin-rest/latest/resources/order",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "X-Shopify-Access-Token": "{{ source.configuration.authentication.token }}"
+          },
+          "authentication": {
+            "token": {
+              "credentialRef": {
+                "credentialName": "shopify-shop-admin-token"
+              }
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "shopify-shop-to-webshop-order"
+        },
+        "name": "Shopify order to shillinq WebshopOrder",
+        "description": "One Shopify order as shillinq's WebshopOrder (shillinq sales-webshop-orders, design D2). Fill `channelId` and `administrationId` with the ids of this shop's WebshopChannel in shillinq (Sales, Web shops): the synchronization does not run while either is empty. The mapping never writes shillinq's own fields (`intakeState`, `arInvoiceId`, `creditNoteId`, `refusalReason`). `payment.status` is paid, pending, refunded or cancelled; a later fetch of the same order updates it on the same object.",
+        "mapping": {
+          "channelId": "",
+          "administrationId": "",
+          "shopOrderId": "{{ order_number }}",
+          "orderedAt": "{{ created_at|date('Y-m-d\\\\TH:i:s\\\\Z', 'UTC') }}",
+          "buyer.type": "{{ billing_address.company|default('') is empty ? 'consumer' : 'business' }}",
+          "buyer.name": "{{ billing_address.name|default('') }}",
+          "buyer.email": "{{ email|default('') }}",
+          "buyer.companyName": "{{ billing_address.company|default('') }}",
+          "buyer.vatId": "",
+          "buyer.kvkNumber": "",
+          "buyer.address": "{{ ([billing_address.address1|default(''), billing_address.address2|default(''), (billing_address.zip|default('') ~ ' ' ~ billing_address.city|default(''))|trim]|filter(p => p is not empty))|join(', ') }}",
+          "buyer.countryCode": "{{ billing_address.country_code|default('')|upper }}",
+          "currency": "{{ currency|upper }}",
+          "pricesIncludeVat": "{{ taxes_included ? 'true' : 'false' }}",
+          "lines": "{{ line_items|map(l => {sku: l.sku|default(''), description: l.title, quantity: l.quantity, unitPrice: (l.price + 0)|round(2), vatRate: ((l.tax_lines[0].rate|default(0)) * 100)|round(0)})|json_encode }}",
+          "shipping": "{{ shipping_lines|reduce((sum, s) => sum + s.price, 0)|round(2) }}",
+          "discountTotal": "{{ total_discounts|default(0) }}",
+          "totals.net": "{{ (total_price - total_tax)|round(2) }}",
+          "totals.vat": "{{ total_tax }}",
+          "totals.gross": "{{ total_price }}",
+          "payment.status": "{{ cancelled_at is not empty or financial_status == 'voided' ? 'cancelled' : (financial_status == 'refunded' ? 'refunded' : (financial_status in ['paid', 'partially_refunded'] ? 'paid' : 'pending')) }}",
+          "payment.method": "{{ payment_gateway_names|default([])|first|default('') }}",
+          "payment.providerPaymentId": ""
+        },
+        "unset": [],
+        "cast": {
+          "pricesIncludeVat": "bool",
+          "lines": "jsonToArray",
+          "shipping": "float",
+          "discountTotal": "float",
+          "totals.net": "float",
+          "totals.vat": "float",
+          "totals.gross": "float"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "shopify-shop-orders"
+        },
+        "name": "Shopify orders to shillinq",
+        "description": "Writes the Shopify shop's orders into shillinq as one WebshopOrder each, incrementally: each run asks only for orders changed since the last complete run (`updated_at_min`, read from each order's `updated_at`; a run fetches at most 250 orders and the next run continues from the last one), and the cursor moves only after a complete fetch. Each order is kept on its shop order id, so a later refund or cancellation updates the payment status of the WebshopOrder already written and never makes a second one. Nothing is deleted. Off until the source and the mapping's channel and administration ids are filled.",
+        "sourceId": "shopify-shop",
+        "sourceType": "api",
+        "sourceTargetMapping": "shopify-shop-to-webshop-order",
+        "sourceConfig": {
+          "requiredMappingValues": [
+            {
+              "mapping": "shopify-shop-to-webshop-order",
+              "key": "channelId",
+              "name": "the shillinq WebshopChannel id of this Shopify shop"
+            },
+            {
+              "mapping": "shopify-shop-to-webshop-order",
+              "key": "administrationId",
+              "name": "the shillinq administration id of this Shopify shop"
+            }
+          ],
+          "endpoint": "/orders.json",
+          "query": {
+            "status": "any",
+            "updated_at_min": "{{ cursor }}",
+            "order": "updated_at asc",
+            "limit": 250
+          },
+          "idPosition": "id",
+          "resultsPosition": "orders",
+          "usesPagination": false,
+          "cursorField": "updated_at"
+        },
+        "syncMode": "incremental",
+        "conditions": [],
+        "targetId": "shillinq/WebshopOrder",
+        "targetType": "register/schema",
+        "isEnabled": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

@@ -6878,6 +6878,55 @@
                 ]
             }
         },
+        "/products/{productSlug}/asyncapi.json": {
+            "get": {
+                "operationId": "product-channels-asyncapi",
+                "summary": "The AsyncAPI 3.0 document of an API product's event channels",
+                "description": "Generated from the latest active version of the product: one channel per product channel, one message per CloudEvent type, and a push and a pull operation per channel. Readable without authentication for a public product; a private product needs a consumer with an active subscription (403 `subscription_required` otherwise).",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/promotions": {
             "post": {
                 "operationId": "promotion-confirm",
