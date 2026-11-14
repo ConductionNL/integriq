@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service;
 
 use OCA\Integriq\Service\Catalog\ConnectorTemplateLibrary;
+use OCA\Integriq\Service\Catalog\ContributedTemplates;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -327,6 +328,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @param IAppConfig $appConfig App config, used to resolve flag-gated mechanism status.
 	 * @param LoggerInterface $logger Logger for malformed seed-fragment warnings.
 	 * @param string|null $templateDir The template library to read; the shipped one when null.
+	 * @param ContributedTemplates|null $contributed The templates extension apps contributed, shown as provided by their app.
 	 */
 	public function __construct(
 		private readonly IntegrationRegistry $integrationRegistry,
@@ -334,6 +336,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		?string $templateDir = null,
+		private readonly ?ContributedTemplates $contributed = null,
 	) {
 		$this->templates = new ConnectorTemplateLibrary(directory: ($templateDir ?? self::TEMPLATE_DIR));
 	}//end __construct()
@@ -375,9 +378,15 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	private function collectFromTemplates(): array {
+		$cards = $this->templates->cards();
+		if ($this->contributed !== null) {
+			// @spec openspec/changes/platform-connector-extension-kit/specs/connector-extension-kit/spec.md#requirement-an-administrator-sees-what-each-extension-contributed-req-cxk-003
+			$cards = [...$cards, ...$this->contributed->cards()];
+		}
+
 		return array_map(
 			fn (array $card): array => ['icon' => $this->iconForType(type: (string)$card['sourceType'])] + array_diff_key($card, ['sourceType' => true]),
-			$this->templates->cards()
+			$cards
 		);
 	}//end collectFromTemplates()
 
@@ -589,7 +598,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	 * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
 	 */
 	public function findSeedSourcePayload(string $slug): ?array {
-		$templatePayload = $this->templates->payload(slug: $slug);
+		$templatePayload = ($this->templates->payload(slug: $slug) ?? $this->contributed?->payload(slug: $slug));
 		if ($templatePayload !== null) {
 			return $templatePayload;
 		}

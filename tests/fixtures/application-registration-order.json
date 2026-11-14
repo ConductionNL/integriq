@@ -150,6 +150,7 @@
 	"context.registerService(OCA\\Integriq\\Service\\SettingsService, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry, closure, bool)",
+	"context.registerService(OCA\\Integriq\\Service\\Payment\\PaymentProviderRegistry, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\Rod\\RodProviderRegistry, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\Verzuimloket\\VerzuimloketProviderRegistry, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Service\\Oso\\OsoProviderRegistry, closure, bool)",
