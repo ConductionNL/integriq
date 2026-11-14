@@ -71,6 +71,7 @@ use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Util\CsvCodec;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -8475,8 +8476,38 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			);
 		}
 
+		// mapping-formats-and-lookups REQ-MFL-001: a synchronization reading a
+		// CSV response hands one array per row to the mapping. Per
+		// synchronization, like `jsonl`, because the same source can serve
+		// several formats.
+		if (($synchronization['sourceConfig']['format'] ?? null) === 'csv') {
+			$rows = $this->decodeCsvPage(body: (string)$page->body, sourceConfig: $synchronization['sourceConfig']);
+			return ['objects' => $rows, 'result' => $rows];
+		}
+
 		return ($this->readYamlPage(page: $page, sourceFormat: $sourceFormat) ?? $this->readParsedPage(page: $page));
 	}//end fetchSinglePageData()
+
+	/**
+	 * The rows of a CSV page, with the synchronization's delimiter, enclosure and header flag.
+	 *
+	 * @param string              $body         The page body.
+	 * @param array<string,mixed> $sourceConfig The synchronization's `sourceConfig`.
+	 *
+	 * @return list<array<int|string,string>> The rows.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 */
+	private function decodeCsvPage(string $body, array $sourceConfig): array {
+		return CsvCodec::decode(
+			content: $body,
+			options: [
+				'delimiter' => (string)($sourceConfig['csvDelimiter'] ?? ','),
+				'enclosure' => (string)($sourceConfig['csvEnclosure'] ?? '"'),
+				'header' => (($sourceConfig['csvHeader'] ?? true) !== false),
+			]
+		);
+	}//end decodeCsvPage()
 
 	/**
 	 * The call log of a page: taken from the concurrent prefetch when it is

@@ -10,8 +10,8 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
   - GIVEN a quoted field with a line break WHEN decoded THEN it stays one field
   - GIVEN the existing migration source tests WHEN they run on the codec THEN they pass
   - GIVEN two rows WHEN encoded with a header and `;` THEN three lines are written
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+- [x] Test (PHPUnit)
 
 ### Task 2: CSV branch in the fetch path and the format select
 - **spec_ref**: openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
@@ -19,7 +19,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 - **acceptance_criteria**:
   - GIVEN `sourceConfig.format: csv` WHEN a page is fetched THEN each row reaches the mapping as one object
   - GIVEN the synchronization settings WHEN the engineer opens the format field THEN it is a select and `csv` shows delimiter, enclosure and header options
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit on the fetch path; Playwright `tests/e2e/mapping-formats-and-lookups.spec.ts`)
 
 ### Task 3: Output format on the mapping and the XML writer
@@ -51,6 +51,10 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
   - GIVEN a non-administrator WHEN they change the allowlist THEN 403
 - [ ] Implement
 - [ ] Test (PHPUnit on the runtime and controller; Playwright for the admin list and a mapping preview using `lookup`)
+
+## Build notes
+
+Task 1 and the implementation of task 2 are built: `CsvCodec` reads through `fgetcsv()`, the file migration source uses it, a synchronization with `sourceConfig.format: csv` hands one array per row to the mapping, and the file format field is a select with the three CSV options for `csv`. Task 2's PHPUnit half is in `SynchronizationFetchSinglePageTest`; its Playwright half needs a running instance and is open, so its Test box stays unchecked. Tasks 3, 4 and 5 are open.
 
 ## Verification
 

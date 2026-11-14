@@ -104,7 +104,7 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 	 *
 	 * @return array The page.
 	 */
-	private function fetch(ObjectEntity $callLog, array $source = [], string $endpoint = '/items'): array {
+	private function fetch(ObjectEntity $callLog, array $source = [], string $endpoint = '/items', array $sourceConfig = ['resultsPosition' => '_root']): array {
 		(function (ObjectEntity $callLog): void {
 			$this->pagePrefetch = [1 => $callLog];
 		})->call($this->service, $callLog);
@@ -116,7 +116,7 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 			$source + ['location' => 'https://source.example'],
 			$endpoint,
 			['pagination' => ['index' => 1, 'page' => 1]],
-			['sourceConfig' => ['resultsPosition' => '_root']]
+			['sourceConfig' => $sourceConfig]
 		);
 	}//end fetch()
 
@@ -148,6 +148,45 @@ class SynchronizationFetchSinglePageTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * A synchronization with format csv hands one object per row to the mapping, with the configured delimiter.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#scenario-a-municipal-code-list-served-as-csv
+	 */
+	public function testACsvPageGivesOneObjectPerRow(): void {
+		$page = $this->fetch(
+			$this->callLog(200, ['body' => "code;naam\n0363;Amsterdam\n0599;\"Rotterdam\nCentrum\"\n"]),
+			[],
+			'/gemeenten.csv',
+			['format' => 'csv', 'csvDelimiter' => ';']
+		);
+
+		$this->assertSame(
+			[['code' => '0363', 'naam' => 'Amsterdam'], ['code' => '0599', 'naam' => "Rotterdam\nCentrum"]],
+			$page['objects']
+		);
+	}//end testACsvPageGivesOneObjectPerRow()
+
+	/**
+	 * Without a header row the rows are lists of their values.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 */
+	public function testACsvPageWithoutAHeaderGivesLists(): void {
+		$page = $this->fetch(
+			$this->callLog(200, ['body' => "'a'|'b'\n'c'|'d'"]),
+			[],
+			'/rows',
+			['format' => 'csv', 'csvDelimiter' => '|', 'csvEnclosure' => "'", 'csvHeader' => false]
+		);
+
+		$this->assertSame([['a', 'b'], ['c', 'd']], $page['objects']);
+	}//end testACsvPageWithoutAHeaderGivesLists()
+
 	public function testAPageNotPrefetchedIsCalled(): void {
 		$callService = $this->createMock(CallService::class);
 		$callService->expects($this->once())->method('call')

@@ -207,12 +207,39 @@
 			</div>
 
 			<div class="sync-config__field">
-				<NcTextField
-					:label="t('integriq', 'File format')"
-					:modelValue="configValue('format')"
-					placeholder="json | xml | csv"
-					@update:modelValue="onConfigUpdate('format', $event)" />
+				<NcSelect
+					:inputLabel="t('integriq', 'File format')"
+					:modelValue="formatOption"
+					:options="formatOptions"
+					@update:modelValue="onConfigUpdate('format', $event?.id || '')" />
 			</div>
+
+			<template v-if="configValue('format') === 'csv'">
+				<div class="sync-config__field">
+					<NcTextField
+						:label="t('integriq', 'CSV delimiter')"
+						:modelValue="configValue('csvDelimiter')"
+						placeholder=","
+						maxlength="1"
+						@update:modelValue="onConfigUpdate('csvDelimiter', $event)" />
+				</div>
+				<div class="sync-config__field">
+					<NcTextField
+						:label="t('integriq', 'CSV enclosure')"
+						:modelValue="configValue('csvEnclosure')"
+						placeholder="&quot;"
+						maxlength="1"
+						@update:modelValue="onConfigUpdate('csvEnclosure', $event)" />
+				</div>
+				<div class="sync-config__field">
+					<NcCheckboxRadioSwitch
+						:modelValue="config?.csvHeader !== false"
+						type="switch"
+						@update:modelValue="onConfigUpdate('csvHeader', $event ? null : false)">
+						{{ t('integriq', 'The first row names the columns') }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</template>
 
 			<div class="sync-config__field">
 				<NcTextField
@@ -367,7 +394,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcCheckboxRadioSwitch, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
 import FormsFieldMapping from './FormsFieldMapping.vue'
 import TablesColumnMapping from './TablesColumnMapping.vue'
@@ -402,6 +429,7 @@ export default {
 	components: {
 		NcButton,
 		NcLoadingIcon,
+		NcCheckboxRadioSwitch,
 		NcSelect,
 		NcTextField,
 		FolderOpenOutline,
@@ -484,6 +512,31 @@ export default {
 		 * @return {object[]} The two validation modes.
 		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
 		 */
+		/**
+		 * The file formats a synchronization reads.
+		 *
+		 * @return {Array<{id: string, label: string}>} The options.
+		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+		 */
+		formatOptions() {
+			return [
+				{ id: 'json', label: 'JSON' },
+				{ id: 'jsonl', label: 'JSON Lines' },
+				{ id: 'xml', label: 'XML' },
+				{ id: 'csv', label: 'CSV' },
+			]
+		},
+
+		/**
+		 * The selected file format, or null when none is set.
+		 *
+		 * @return {object|null} The option.
+		 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+		 */
+		formatOption() {
+			return this.formatOptions.find((option) => option.id === this.configValue('format')) || null
+		},
+
 		validationModeOptions() {
 			return [
 				{ id: 'record', label: t('integriq', 'Record') },
