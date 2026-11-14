@@ -110,11 +110,11 @@ class DigitalPostServiceTest extends TestCase {
 	 * Build the service over a configured source.
 	 *
 	 * @param DigitalPostProviderInterface $provider The binding.
-	 * @param array<string,mixed>|null $sourceConfig The source configuration, or null for no such source.
+	 * @param array<string,mixed>|string|null $sourceConfig The source configuration (an array, or as stored JSON text), or null for no such source.
 	 *
 	 * @return DigitalPostService The service under test.
 	 */
-	private function service(DigitalPostProviderInterface $provider, ?array $sourceConfig): DigitalPostService {
+	private function service(DigitalPostProviderInterface $provider, array|string|null $sourceConfig): DigitalPostService {
 		$store = $this->getMockBuilder(ConnectionStore::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['findSourceBySlug', 'readSourceRaw'])
@@ -639,4 +639,103 @@ class DigitalPostServiceTest extends TestCase {
 		$this->assertSame([], $this->dispatched);
 
 	}//end testTheWholeLetterItsSendAndAnUnstorableLetter()
+
+	/**
+	 * A provider that throws on send does not lose the letter: it is stored
+	 * as failed with the provider's message, and the sender gets a refusal.
+	 *
+	 * @return void
+	 */
+	public function testAThrowingProviderIsAFailedSendNotALostLetter(): void {
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$provider->method('send')->willThrowException(new \RuntimeException('connection reset by Logius'));
+		$service = $this->service($provider, ['providerId' => 'berichtenbox']);
+		$event = $this->request();
+
+		$service->handleSendRequest($event);
+
+		$stored = end($this->saved);
+		$this->assertSame(DigitalPostResult::STATUS_FAILED, $stored['status']);
+		$this->assertSame('connection reset by Logius', $stored['lastError']);
+		$this->assertCount(1, $stored['attachments']);
+		$this->assertSame('provider_refused', $event->getRefusal()['code']);
+		$this->assertNull($event->getMessageId());
+
+	}//end testAThrowingProviderIsAFailedSendNotALostLetter()
+
+	/**
+	 * A status poll skips messages it cannot poll (no id, no reference, an
+	 * unknown provider) and one whose provider throws, and still polls the
+	 * rest.
+	 *
+	 * @return void
+	 */
+	public function testAStatusPollSkipsWhatItCannotPoll(): void {
+		$asked = [];
+		$provider = $this->createMock(DigitalPostProviderInterface::class);
+		$provider->method('getProviderId')->willReturn('berichtenbox');
+		$provider->method('status')->willReturnCallback(
+			function (string $reference) use (&$asked): DigitalPostResult {
+				$asked[] = $reference;
+				if ($reference === 'ref-throws') {
+					throw new \RuntimeException('timeout');
+				}
+
+				return DigitalPostResult::accepted(DigitalPostResult::STATUS_DELIVERED, $reference);
+			}
+		);
+		$service = $this->service($provider, ['providerId' => 'berichtenbox']);
+		$base = ['providerId' => 'berichtenbox', 'status' => DigitalPostResult::STATUS_SENT, 'requestedBy' => 'behandelaar1', 'sourceId' => 'bb'];
+
+		$changed = $service->pollStatuses(
+			[
+				['providerReference' => 'ref-no-id'] + $base,
+				['uuid' => 'msg-no-ref'] + $base,
+				['uuid' => 'msg-other', 'providerReference' => 'ref-other', 'providerId' => 'postex'] + $base,
+				['uuid' => 'msg-throws', 'providerReference' => 'ref-throws'] + $base,
+				['id' => 'msg-by-id', 'providerReference' => 'ref-ok'] + $base,
+			]
+		);
+
+		$this->assertSame(['ref-throws', 'ref-ok'], $asked);
+		$this->assertSame(1, $changed);
+		$this->assertCount(1, $this->dispatched);
+		$this->assertSame('msg-by-id', $this->dispatched[0]->getMessageId());
+		$this->assertSame(DigitalPostResult::STATUS_DELIVERED, end($this->saved)['status']);
+
+	}//end testAStatusPollSkipsWhatItCannotPoll()
+
+	/**
+	 * The provider is handed the source configuration: decoded when stored as
+	 * JSON text, empty when it is neither, and empty without a source id.
+	 *
+	 * @return void
+	 */
+	public function testAStatusPollHandsTheProviderTheSourceConfiguration(): void {
+		$cases = [
+			['{"providerId":"berichtenbox","mode":"live"}', 'bb', ['providerId' => 'berichtenbox', 'mode' => 'live']],
+			['not json', 'bb', []],
+			[['mode' => 'test'], '', []],
+		];
+
+		foreach ($cases as [$stored, $sourceId, $expected]) {
+			$handed = null;
+			$provider = $this->createMock(DigitalPostProviderInterface::class);
+			$provider->method('getProviderId')->willReturn('berichtenbox');
+			$provider->method('status')->willReturnCallback(
+				function (string $reference, array $config) use (&$handed): DigitalPostResult {
+					$handed = $config;
+					return DigitalPostResult::accepted(DigitalPostResult::STATUS_SENT, $reference);
+				}
+			);
+
+			$this->service($provider, $stored)->pollStatuses(
+				[['uuid' => 'msg-1', 'providerId' => 'berichtenbox', 'providerReference' => 'ref-1', 'status' => DigitalPostResult::STATUS_SENT, 'sourceId' => $sourceId]]
+			);
+
+			$this->assertSame($expected, $handed, json_encode($stored));
+		}
+
+	}//end testAStatusPollHandsTheProviderTheSourceConfiguration()
 }//end class

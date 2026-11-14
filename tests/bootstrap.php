@@ -335,6 +335,11 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileUpload.php';
 		}
 
+		// The event apps contribute mapping Twig functions on.
+		if (class_exists('OCA\\OpenRegister\\Service\\RegisterMappingFunctionsEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterMappingFunctionsEvent.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\FileService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/FileService.php';
 		}

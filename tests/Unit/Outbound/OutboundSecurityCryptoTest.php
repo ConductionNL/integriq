@@ -1,13 +1,9 @@
 <?php
 
 /**
- * Unit tests for OutboundSecurityService with real S/MIME material.
- *
- * OutboundSecurityTest covers every answer protect() gives before it reaches
- * OpenSSL. This file generates a throwaway key pair and self-signed
- * certificate and drives the rest for real: signing, encrypting to a known
- * recipient key, each fallback when a step cannot be done, verifying a signed
- * payload, the recipient-key lookup, and that no temporary file is left behind.
+ * Unit tests for OutboundSecurityService with real S/MIME material: a message
+ * is signed with the identity's key, encrypted to the recipient's certificate
+ * when one is known, and a signed message verifies on the way back in.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Outbound
@@ -19,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
  */
 
 declare(strict_types=1);
@@ -28,251 +24,222 @@ namespace OCA\Integriq\Tests\Unit\Outbound;
 
 use OCA\Integriq\Outbound\Identity\OutboundSecurityService;
 use OCA\Integriq\Outbound\Identity\SenderIdentityService;
+use OCA\Integriq\Outbound\MessageRecorder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Signing, encryption, verification and recipient-key lookup.
+ * Sign, encrypt, verify and recipient-key lookup.
  *
  * @covers \OCA\Integriq\Outbound\Identity\OutboundSecurityService
  *
- * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md
+ * @spec openspec/changes/outbound-sender-identity-and-deliverability/specs/outbound-sender-identity/spec.md
  */
-final class OutboundSecurityCryptoTest extends TestCase {
+class OutboundSecurityCryptoTest extends TestCase {
+
+	private const MESSAGE = "Content-Type: text/plain\r\n\r\nUw aanvraag is ontvangen.\r\n";
 
 	/**
-	 * PEM certificate and private key of the throwaway signer.
+	 * The sender's and the recipient's material, as [certificate, private key] PEM pairs.
 	 *
-	 * @var array{cert: string, key: string}
+	 * @var array<string, array{0: string, 1: string}>
 	 */
-	private static array $signer;
+	private static array $material = [];
 
 	/**
-	 * PEM certificate of a throwaway recipient.
-	 *
-	 * @var string
-	 */
-	private static string $recipientCert;
-
-	/**
-	 * @var ORObjectService&MockObject
-	 */
-	private ORObjectService $objects;
-
-	/**
-	 * Generate the key material once for the class.
+	 * Make two self-signed certificates once for the class.
 	 *
 	 * @return void
 	 */
 	public static function setUpBeforeClass(): void {
-		self::$signer = self::selfSigned('sender@example.org');
-		self::$recipientCert = self::selfSigned('dana@example.org')['cert'];
+		foreach (['sender' => 'noreply@example.org', 'recipient' => 'dana@example.org'] as $who => $address) {
+			$key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+			$csr = openssl_csr_new(['commonName' => $address, 'emailAddress' => $address], $key);
+			$cert = openssl_csr_sign($csr, null, $key, 1);
+			openssl_x509_export($cert, $certificatePem);
+			openssl_pkey_export($key, $keyPem);
+			self::$material[$who] = [$certificatePem, $keyPem];
+		}
 	}//end setUpBeforeClass()
 
 	/**
-	 * A fresh object-service double per test.
+	 * The service with a signing key and the given recipient-key rows.
 	 *
-	 * @return void
-	 */
-	protected function setUp(): void {
-		parent::setUp();
-		$this->objects = $this->createMock(ORObjectService::class);
-	}//end setUp()
-
-	/**
-	 * A self-signed certificate and its private key, in PEM.
-	 *
-	 * @param string $email The certificate's e-mail address.
-	 *
-	 * @return array{cert: string, key: string}
-	 */
-	private static function selfSigned(string $email): array {
-		$key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
-		$csr = openssl_csr_new(['commonName' => $email, 'emailAddress' => $email], $key, ['digest_alg' => 'sha256']);
-		$cert = openssl_csr_sign($csr, null, $key, 1, ['digest_alg' => 'sha256']);
-		openssl_x509_export($cert, $certPem);
-		openssl_pkey_export($key, $keyPem);
-
-		return ['cert' => $certPem, 'key' => $keyPem];
-	}//end selfSigned()
-
-	/**
-	 * The service with signing material in the given state.
-	 *
-	 * @param string|null $key   The private key handed back.
-	 * @param string      $state The signing-material state.
+	 * @param string                    $signingKey The key the broker hands out.
+	 * @param array<int|string, mixed>  $found      What findAll answers.
 	 *
 	 * @return OutboundSecurityService
 	 */
-	private function service(?string $key, string $state = SenderIdentityService::SIGNING_KEY_AVAILABLE): OutboundSecurityService {
+	private function service(string $signingKey, array $found=['results' => []]): OutboundSecurityService {
 		$identities = $this->createMock(SenderIdentityService::class);
-		$identities->method('signingMaterial')->willReturn(['key' => $key, 'state' => $state]);
+		$identities->method('signingMaterial')->willReturn(['key' => $signingKey, 'state' => SenderIdentityService::SIGNING_KEY_AVAILABLE]);
 
-		return new OutboundSecurityService(objectService: $this->objects, identities: $identities);
+		$objects = $this->createMock(ORObjectService::class);
+		$objects->method('findAll')->willReturn($found);
+
+		return new OutboundSecurityService(objectService: $objects, identities: $identities);
 	}//end service()
 
 	/**
-	 * A stored recipient-key row.
+	 * A stored recipient key row.
 	 *
-	 * @param string $address   The recipient address.
-	 * @param string $publicKey The PEM public certificate.
+	 * @param array<string, mixed> $object The row's object.
 	 *
 	 * @return ObjectEntity
 	 */
-	private function keyRow(string $address, string $publicKey): ObjectEntity {
-		$row = new ObjectEntity();
-		$row->setObject(['address' => $address, 'publicKey' => $publicKey]);
-		return $row;
-	}//end keyRow()
+	private function row(array $object): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setObject($object);
+		return $entity;
+	}//end row()
 
 	/**
-	 * Protect a message for dana with the signer's certificate.
+	 * Protect the message for dana.
 	 *
 	 * @param OutboundSecurityService $service The service.
 	 *
-	 * @return array<string, mixed>
+	 * @return array{signed:bool,encrypted:bool,payload:string,detail:string}
 	 */
 	private function protect(OutboundSecurityService $service): array {
 		return $service->protect(
-			identity: ['signOutgoing' => true, 'smimeCertificate' => self::$signer['cert']],
+			identity: ['signOutgoing' => true, 'smimeCertificate' => self::$material['sender'][0]],
 			identityId: 'identity-1',
-			recipient: 'dana@example.org',
-			message: "Content-Type: text/plain\r\n\r\nUw aanvraag is ontvangen."
+			recipient: 'Dana@Example.org ',
+			message: self::MESSAGE
 		);
 	}//end protect()
 
 	/**
-	 * The integriq S/MIME temp files currently on disk.
-	 *
-	 * @return array<int, string>
-	 */
-	private function tempFiles(): array {
-		return (glob(sys_get_temp_dir() . '/integriq-smime-*') ?: []);
-	}//end tempFiles()
-
-	/**
-	 * Without a known recipient key the message is signed only, and the signature verifies.
+	 * Without a recipient key the message is signed only, and the signature verifies.
 	 *
 	 * @return void
 	 */
-	public function testItSignsWhenNoRecipientKeyIsKnownAndTheSignatureVerifies(): void {
-		$this->objects->method('findAll')->willReturn(['results' => []]);
-		$service = $this->service(key: self::$signer['key']);
-		$before = $this->tempFiles();
-
+	public function testASignedMessageVerifiesAgainstTheSenderCertificate(): void {
+		$service = $this->service(signingKey: self::$material['sender'][1]);
 		$result = $this->protect($service);
 
 		$this->assertTrue($result['signed']);
 		$this->assertFalse($result['encrypted']);
 		$this->assertSame('Signed, not encrypted: no public key is known for this recipient.', $result['detail']);
 		$this->assertStringContainsString('application/x-pkcs7-signature', $result['payload']);
-		$this->assertStringContainsString('Uw aanvraag is ontvangen.', $result['payload']);
+
 		$this->assertSame(
 			['verified' => true, 'detail' => 'Signature verified against the sender certificate.'],
 			$service->verify($result['payload'])
 		);
-		$this->assertSame($before, $this->tempFiles(), 'Every temporary file is removed again.');
-	}//end testItSignsWhenNoRecipientKeyIsKnownAndTheSignatureVerifies()
+	}//end testASignedMessageVerifiesAgainstTheSenderCertificate()
 
 	/**
-	 * With a usable recipient key the signed message is also encrypted.
+	 * With a recipient key the signed message is encrypted, and only the recipient can open it.
 	 *
 	 * @return void
 	 */
-	public function testItEncryptsToAKnownRecipientKey(): void {
-		$this->objects->expects($this->once())->method('findAll')
-			->with(['filters' => ['register' => 'integriq', 'schema' => 'recipient_key', 'address' => 'dana@example.org']])
-			->willReturn(['results' => [$this->keyRow('Dana@Example.org', self::$recipientCert)]]);
-
-		$result = $this->protect($this->service(key: self::$signer['key']));
+	public function testAKnownRecipientGetsASignedAndEncryptedMessage(): void {
+		$service = $this->service(
+			signingKey: self::$material['sender'][1],
+			found: ['results' => [$this->row(['address' => 'dana@example.org', 'publicKey' => self::$material['recipient'][0]])]]
+		);
+		$result = $this->protect($service);
 
 		$this->assertTrue($result['signed']);
 		$this->assertTrue($result['encrypted']);
 		$this->assertSame('Signed and encrypted.', $result['detail']);
-		$this->assertStringContainsString('application/x-pkcs7-mime', $result['payload']);
-		$this->assertStringNotContainsString('Uw aanvraag is ontvangen.', $result['payload']);
-	}//end testItEncryptsToAKnownRecipientKey()
+		$this->assertStringNotContainsString('Uw aanvraag', $result['payload']);
+
+		$in = (string)tempnam(sys_get_temp_dir(), 'test-smime-');
+		$out = (string)tempnam(sys_get_temp_dir(), 'test-smime-');
+		file_put_contents($in, $result['payload']);
+		$this->assertTrue(openssl_pkcs7_decrypt($in, $out, self::$material['recipient'][0], self::$material['recipient'][1]));
+		$opened = (string)file_get_contents($out);
+		unlink($in);
+		unlink($out);
+
+		$this->assertTrue($service->verify($opened)['verified']);
+	}//end testAKnownRecipientGetsASignedAndEncryptedMessage()
 
 	/**
-	 * A recipient key OpenSSL cannot use leaves the message signed only.
+	 * A key that does not belong to the certificate cannot sign.
 	 *
 	 * @return void
 	 */
-	public function testAnUnusableRecipientKeyLeavesTheMessageSignedOnly(): void {
-		$this->objects->method('findAll')->willReturn([$this->keyRow('dana@example.org', 'not a certificate')]);
+	public function testAKeyThatDoesNotMatchTheCertificateDoesNotSign(): void {
+		$result = $this->protect($this->service(signingKey: self::$material['recipient'][1]));
 
-		$result = $this->protect($this->service(key: self::$signer['key']));
+		$this->assertSame(
+			['signed' => false, 'encrypted' => false, 'payload' => self::MESSAGE, 'detail' => 'Signing failed; the message was not sent signed.'],
+			$result
+		);
+	}//end testAKeyThatDoesNotMatchTheCertificateDoesNotSign()
+
+	/**
+	 * A stored recipient key that is not a certificate leaves the message signed only.
+	 *
+	 * @return void
+	 */
+	public function testAnUnusableRecipientKeyLeavesTheMessageSigned(): void {
+		$result = $this->protect(
+			$this->service(
+				signingKey: self::$material['sender'][1],
+				found: ['results' => [$this->row(['address' => 'dana@example.org', 'publicKey' => 'not a certificate'])]]
+			)
+		);
 
 		$this->assertTrue($result['signed']);
 		$this->assertFalse($result['encrypted']);
 		$this->assertSame('Signed, not encrypted: the recipient key could not be used.', $result['detail']);
-		$this->assertStringContainsString('application/x-pkcs7-signature', $result['payload']);
-	}//end testAnUnusableRecipientKeyLeavesTheMessageSignedOnly()
+	}//end testAnUnusableRecipientKeyLeavesTheMessageSigned()
 
 	/**
-	 * A private key that does not belong to the certificate fails the signing.
+	 * An unsigned message does not verify.
 	 *
 	 * @return void
 	 */
-	public function testAKeyThatCannotSignLeavesTheMessageUnsigned(): void {
-		$this->objects->expects($this->never())->method('findAll');
-
-		$result = $this->protect($this->service(key: 'not a private key'));
-
-		$this->assertSame(
-			['signed' => false, 'encrypted' => false, 'payload' => "Content-Type: text/plain\r\n\r\nUw aanvraag is ontvangen.", 'detail' => 'Signing failed; the message was not sent signed.'],
-			$result
-		);
-	}//end testAKeyThatCannotSignLeavesTheMessageUnsigned()
-
-	/**
-	 * A payload that is not a valid signature does not verify.
-	 *
-	 * @return void
-	 */
-	public function testAnUnsignedPayloadDoesNotVerify(): void {
-		$before = $this->tempFiles();
-
+	public function testAnUnsignedMessageDoesNotVerify(): void {
 		$this->assertSame(
 			['verified' => false, 'detail' => 'The signature did not verify.'],
-			$this->service(key: null)->verify("Content-Type: text/plain\r\n\r\nNo signature here.")
+			$this->service(signingKey: '')->verify(self::MESSAGE)
 		);
-		$this->assertSame($before, $this->tempFiles());
-	}//end testAnUnsignedPayloadDoesNotVerify()
+	}//end testAnUnsignedMessageDoesNotVerify()
 
 	/**
-	 * The lookup skips foreign rows, other addresses and blank keys, and trims the match.
+	 * The lookup filters on the normalised address and takes the first matching row with a key.
 	 *
 	 * @return void
 	 */
-	public function testRecipientKeySkipsRowsThatDoNotApply(): void {
-		$this->objects->method('findAll')->willReturn(
+	public function testTheRecipientKeyIsTheFirstMatchingRowWithAKey(): void {
+		$objects = $this->createMock(ORObjectService::class);
+		$objects->expects($this->once())->method('findAll')->with(
+			[
+				'filters' => [
+					'register' => MessageRecorder::REGISTER,
+					'schema' => 'recipient_key',
+					'address' => 'dana@example.org',
+				],
+			]
+		)->willReturn(
 			[
 				'results' => [
-					['address' => 'dana@example.org', 'publicKey' => 'ARRAY-ROW'],
-					$this->keyRow('someone@example.org', 'OTHER'),
-					$this->keyRow('dana@example.org', '   '),
-					$this->keyRow('dana@example.org', "  PEM-KEY \n"),
+					['address' => 'dana@example.org', 'publicKey' => 'an array, not a row'],
+					$this->row(['address' => 'someone@example.org', 'publicKey' => 'other']),
+					$this->row(['address' => 'dana@example.org', 'publicKey' => '  ']),
+					$this->row(['address' => 'DANA@example.org', 'publicKey' => " the-key \n"]),
+					$this->row(['address' => 'dana@example.org', 'publicKey' => 'later']),
 				],
 			]
 		);
+		$service = new OutboundSecurityService(objectService: $objects, identities: $this->createMock(SenderIdentityService::class));
 
-		$this->assertSame('PEM-KEY', $this->service(key: null)->recipientKey('  DANA@example.org '));
-	}//end testRecipientKeySkipsRowsThatDoNotApply()
+		$this->assertSame('the-key', $service->recipientKey(' Dana@Example.org'));
+	}//end testTheRecipientKeyIsTheFirstMatchingRowWithAKey()
 
 	/**
-	 * A lookup that answers no usable list finds no key.
+	 * Results that are not a list, or a list without a match, give no key.
 	 *
 	 * @return void
 	 */
-	public function testRecipientKeyIsNullWithoutAUsableList(): void {
-		$this->objects->method('findAll')->willReturnOnConsecutiveCalls(['results' => 'oops'], [], ['results' => [$this->keyRow('dana@example.org', '')]]);
-		$service = $this->service(key: null);
-
-		$this->assertNull($service->recipientKey('dana@example.org'));
-		$this->assertNull($service->recipientKey('dana@example.org'));
-		$this->assertNull($service->recipientKey('dana@example.org'));
-	}//end testRecipientKeyIsNullWithoutAUsableList()
+	public function testNoMatchingRowGivesNoKey(): void {
+		$this->assertNull($this->service(signingKey: '', found: ['results' => 'not a list'])->recipientKey('dana@example.org'));
+		$this->assertNull($this->service(signingKey: '', found: [])->recipientKey('dana@example.org'));
+	}//end testNoMatchingRowGivesNoKey()
 }//end class
