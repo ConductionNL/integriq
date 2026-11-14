@@ -5199,6 +5199,55 @@
                 }
             }
         },
+        "/mail-intake/import/options": {
+            "get": {
+                "operationId": "mail-intake-import-options",
+                "summary": "Whether the signed-in user may import a mail file, and into which mailboxes",
+                "description": "Whether the signed-in user may import a mail file, and into which mailboxes.",
+                "tags": [
+                    "mail-intake"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`allowed` and the mailbox sources by name.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowed": {
+                                            "type": "boolean"
+                                        },
+                                        "mailboxes": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
         "/mail-intake/sources/{id}/poll": {
             "post": {
                 "operationId": "mail-intake-poll",
