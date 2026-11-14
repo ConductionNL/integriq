@@ -284,7 +284,8 @@ final class FilePickupSynchronizationTest extends TestCase {
 		$cases = [
 			'no id'            => [array_diff_key($this->synchronization, ['id' => true]), 'needs a saved synchronization'],
 			'no owner'         => [['@self' => []] + $this->synchronization, 'has no owner'],
-			'a mapping target' => [array_replace_recursive($this->synchronization, ['sourceConfig' => ['target' => 'mapping']]), 'sourceConfig.target "mapping" is not supported'],
+			'a mapping target' => [array_replace_recursive($this->synchronization, ['sourceConfig' => ['target' => 'mapping']]), 'This pickup runs target "files", the synchronization is configured for "mapping"'],
+			'an unknown target' => [array_replace_recursive($this->synchronization, ['sourceConfig' => ['target' => 'ftp']]), 'sourceConfig.target "ftp" is not supported'],
 			'a scalar config'  => [['sourceConfig' => 'x'] + $this->synchronization, 'sourceConfig must be an object'],
 		];
 

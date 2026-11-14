@@ -205,7 +205,7 @@ final class FilePickupTest extends TestCase {
 		$result = $this->pickup()->run(source: [], config: ['after' => 'keep', 'filesFolder' => 'Partner'], store: $this->store(), seen: $seen, now: self::NOW);
 
 		$this->assertSame([['name' => 'busy.csv', 'reason' => 'modified less than 60 seconds ago']], $result['skipped']);
-		$this->assertSame([['name' => 'resent.csv', 'storedAt' => '/admin/files/Partner/resent.csv', 'after' => 'kept']], $result['picked']);
+		$this->assertSame([['name' => 'resent.csv', 'path' => 'resent.csv', 'storedAt' => '/admin/files/Partner/resent.csv', 'after' => 'kept']], $result['picked']);
 		$this->assertSame((self::NOW - 600) . ':99', $result['seen']['resent.csv']);
 		$this->assertSame([], array_filter($this->events, fn (string $e): bool => str_starts_with($e, 'move') || str_starts_with($e, 'delete')));
 	}//end testStabilityWindowChangedFilesAndKeep()

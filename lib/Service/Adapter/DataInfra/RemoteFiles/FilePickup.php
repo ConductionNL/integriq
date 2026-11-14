@@ -30,7 +30,8 @@ use Psr\Log\LoggerInterface;
  * - `pattern`: which names to pick up, a shell pattern such as `besluiten-*.csv`;
  * - `after`: `move` (to `archivePath`), `delete` or `keep`;
  * - `archivePath`: the archive folder on the server for `move`;
- * - `filesFolder`: the folder in Nextcloud Files the files are written to;
+ * - `filesFolder`: the folder in Nextcloud Files the files are written to
+ *   (required for `target` `files`, the default);
  * - `stableSeconds`: skip files modified more recently than this (default 60),
  *   so a file the partner is still writing is not picked up half.
  *
@@ -69,31 +70,24 @@ class FilePickup {
 	/**
 	 * Run one pickup.
 	 *
-	 * @param array<string, mixed>  $source The source object.
-	 * @param array<string, mixed>  $config The pickup configuration (see the class description).
-	 * @param PickedFileStore       $store  Where the files go.
-	 * @param array<string, string> $seen   The files seen by earlier runs, name to version.
-	 * @param int|null              $now    The current time, for the stability window.
+	 * @param array<string, mixed>  $source  The source object.
+	 * @param array<string, mixed>  $config  The pickup configuration (see the class description).
+	 * @param PickedFileStore       $store   Where the files go.
+	 * @param array<string, string> $seen    The files seen by earlier runs, name to version.
+	 * @param int|null              $now     The current time, for the stability window.
+	 * @param bool                  $archive False leaves every picked file on the server, `after` `pending`,
+	 *                                       for archivePicked() once the caller has kept what was read.
 	 *
-	 * @return array<string, mixed> `picked` (name, storedAt, after), `failed` and `skipped` (name, reason), and `seen` (name to version).
+	 * @return array<string, mixed> `picked` (name, path, storedAt, after), `failed` and `skipped` (name, reason), and `seen` (name to version).
 	 *
 	 * @throws RemoteFileException When the configuration is wrong or the folder cannot be listed.
 	 *
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
-	public function run(array $source, array $config, PickedFileStore $store, array $seen=[], ?int $now=null): array {
-		$after = (string)($config['after'] ?? 'move');
-		if (in_array($after, self::AFTER, true) === false) {
-			throw new RemoteFileException('sourceConfig.after must be move, delete or keep.');
-		}
-
-		$archivePath = trim((string)($config['archivePath'] ?? ''));
-		if ($after === 'move' && $archivePath === '') {
-			throw new RemoteFileException('sourceConfig.archivePath is required when after is move.');
-		}
-
+	public function run(array $source, array $config, PickedFileStore $store, array $seen=[], ?int $now=null, bool $archive=true): array {
+		$target = self::archiveTargetOf(config: $config);
 		$folder = trim((string)($config['filesFolder'] ?? ''));
-		if ($folder === '') {
+		if ($folder === '' && ($config['target'] ?? 'files') === 'files') {
 			throw new RemoteFileException('sourceConfig.filesFolder is required: the Nextcloud folder the files are written to.');
 		}
 
@@ -113,12 +107,62 @@ class FilePickup {
 				continue;
 			}
 
-			$target = ['folder' => $folder, 'after' => $after, 'archivePath' => $archivePath];
-			$result = $this->pickOne(source: $source, file: $file, store: $store, target: $target, result: $result);
+			$fileTarget = $target + ['folder' => $folder, 'archive' => $archive];
+			$result     = $this->pickOne(source: $source, file: $file, store: $store, target: $fileTarget, result: $result);
 		}
 
 		return $result;
 	}//end run()
+
+	/**
+	 * Archive the files a run with `archive: false` picked up, now that the caller has kept what it read.
+	 *
+	 * @param array<string, mixed>       $source The source object.
+	 * @param array<string, mixed>       $config The pickup configuration.
+	 * @param list<array<string, mixed>> $picked The run's `picked` entries.
+	 *
+	 * @return list<array<string, mixed>> The entries, `after` saying what happened on the server.
+	 *
+	 * @throws RemoteFileException When the configuration is wrong.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	public function archivePicked(array $source, array $config, array $picked): array {
+		$target = self::archiveTargetOf(config: $config);
+		foreach ($picked as $index => $entry) {
+			if (($entry['after'] ?? null) !== 'pending') {
+				continue;
+			}
+
+			$file = new RemoteFileEntry(name: (string)$entry['name'], path: (string)($entry['path'] ?? $entry['name']));
+			$picked[$index]['after'] = $this->archive(source: $source, file: $file, target: $target);
+		}
+
+		return $picked;
+	}//end archivePicked()
+
+	/**
+	 * What follows a safe local write, checked.
+	 *
+	 * @param array<string, mixed> $config The pickup configuration.
+	 *
+	 * @return array{after: string, archivePath: string}
+	 *
+	 * @throws RemoteFileException When `after` is unknown or `move` has no archive folder.
+	 */
+	private static function archiveTargetOf(array $config): array {
+		$after = (string)($config['after'] ?? 'move');
+		if (in_array($after, self::AFTER, true) === false) {
+			throw new RemoteFileException('sourceConfig.after must be move, delete or keep.');
+		}
+
+		$archivePath = trim((string)($config['archivePath'] ?? ''));
+		if ($after === 'move' && $archivePath === '') {
+			throw new RemoteFileException('sourceConfig.archivePath is required when after is move.');
+		}
+
+		return ['after' => $after, 'archivePath' => $archivePath];
+	}//end archiveTargetOf()
 
 	/**
 	 * The version of a file a later run compares against.
@@ -139,7 +183,7 @@ class FilePickup {
 	 * @param array<string, mixed> $source The source object.
 	 * @param RemoteFileEntry      $file   The file.
 	 * @param PickedFileStore      $store  The local store.
-	 * @param array{folder: string, after: string, archivePath: string} $target Where it goes and what follows.
+	 * @param array{folder: string, after: string, archivePath: string, archive: bool} $target Where it goes, what follows, and whether it follows now.
 	 * @param array<string, mixed> $result The run result so far.
 	 *
 	 * @return array<string, mixed> The run result with this file added.
@@ -164,8 +208,12 @@ class FilePickup {
 		}
 
 		$result['seen'][$file->name] = self::versionOf(file: $file);
-		$remote = $this->archive(source: $source, file: $file, target: $target);
-		$result['picked'][] = ['name' => $file->name, 'storedAt' => $storedAt, 'after' => $remote];
+		$remote = 'pending';
+		if ($target['archive'] === true) {
+			$remote = $this->archive(source: $source, file: $file, target: $target);
+		}
+
+		$result['picked'][] = ['name' => $file->name, 'path' => $file->path, 'storedAt' => $storedAt, 'after' => $remote];
 
 		return $result;
 	}//end pickOne()
@@ -175,7 +223,7 @@ class FilePickup {
 	 *
 	 * @param array<string, mixed> $source The source object.
 	 * @param RemoteFileEntry      $file   The file.
-	 * @param array{folder: string, after: string, archivePath: string} $target What follows.
+	 * @param array{after: string, archivePath: string} $target What follows.
 	 *
 	 * @return string What happened remotely: moved, deleted, kept, or the failure.
 	 */

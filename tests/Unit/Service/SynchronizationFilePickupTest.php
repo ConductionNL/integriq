@@ -204,4 +204,55 @@ class SynchronizationFilePickupTest extends TestCase {
 
 	}//end testWithoutThePickupTheRunIsRefused()
 
+	/**
+	 * A mapping pickup test run reads the records of the new files through the engine and archives nothing.
+	 *
+	 * @return void
+	 */
+	public function testAMappingPickupTestRunProcessesTheRecordsAndLeavesTheFiles(): void {
+		$service = $this->service();
+		$this->client->method('fetch')->willReturnCallback(
+			static function (array $source, string $path, $target): void {
+				fwrite($target, ($path === 'besluiten-1.csv') ? "id,titel\n1,Eerste\n2,Tweede\n" : "id,titel\n3,Derde\n");
+			}
+		);
+		$this->client->expects($this->never())->method('move');
+		$this->client->expects($this->never())->method('delete');
+		$this->callService->expects($this->never())->method('call');
+
+		$synchronization = $this->synchronization();
+		$synchronization['sourceConfig'] = ['pattern' => 'besluiten-*.csv', 'after' => 'move', 'archivePath' => 'processed', 'target' => 'mapping', 'stableSeconds' => 0];
+
+		$log = $service->synchronize(synchronization: $synchronization, isTest: true);
+
+		$this->assertSame(3, $log['result']['objects']['found'], 'three records from two files');
+		$this->assertSame(0, $log['result']['objects']['deleted'], 'a pickup never deletes objects');
+		$this->assertSame(['pending', 'pending'], array_column($log['result']['files']['picked'], 'after'));
+		$this->assertSame(3, $log['result']['timing']['stages']['file_pickup']['objects_fetched']);
+
+	}//end testAMappingPickupTestRunProcessesTheRecordsAndLeavesTheFiles()
+
+	/**
+	 * A mapping pickup whose configuration cannot run stops with its reason before anything is fetched.
+	 *
+	 * @return void
+	 */
+	public function testAMappingPickupThatCannotRunStopsWithItsReason(): void {
+		$service = $this->service();
+		$this->client->expects($this->never())->method('fetch');
+
+		$synchronization = $this->synchronization();
+		$synchronization['sourceConfig'] = ['pattern' => '*.csv', 'after' => 'sideways', 'target' => 'mapping'];
+
+		try {
+			$service->synchronize(synchronization: $synchronization);
+			$this->fail('the pickup ran with an unknown after');
+		} catch (\Exception $exception) {
+			$this->assertSame('sourceConfig.after must be move, delete or keep.', $exception->getMessage());
+		}
+
+		$this->assertSame('sourceConfig.after must be move, delete or keep.', end($this->messages));
+
+	}//end testAMappingPickupThatCannotRunStopsWithItsReason()
+
 }//end class

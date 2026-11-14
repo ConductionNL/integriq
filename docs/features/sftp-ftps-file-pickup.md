@@ -35,8 +35,11 @@ Make a synchronization with source type "SFTP (file pickup)" or "FTPS (file pick
 |---|---|---|
 | Remote folder | `path` | the root path |
 | File name pattern | `pattern` | every file (`*`) |
-| Nextcloud folder | `filesFolder` | none, required |
-| After a file is stored | `after` | `move`; also `delete` or `keep` |
+| Picked-up files go to | `target` | `files`; also `mapping` |
+| Nextcloud folder | `filesFolder` | none, required with `files` |
+| File format | `fileFormat` | by extension; also `csv`, `json`, `jsonl` or `xml` (with `mapping`) |
+| CSV delimiter | `csvDelimiter` | `,`; one character, or `tab` (with `mapping`) |
+| After a file is stored / read | `after` | `move`; also `delete` or `keep` |
 | Archive folder | `archivePath` | none, required with `move` |
 | Wait before picking up | `stableSeconds` | 60 |
 
@@ -52,9 +55,17 @@ Every picked-up file is remembered in a synchronization contract (`originId` the
 
 The run log reports the files picked up, failed and skipped, with the reason for each.
 
-## Not yet
+### Into the mapping
 
-- Handing a file's content to a mapping instead of storing it (`target: mapping`) is refused for now; a pickup stores files.
+With "Picked-up files go to" set to "The mapping" (`target: mapping`) the files are not written to Files. Instead each file is read into records, and every record goes through the synchronization's mapping into its target, as the objects of any other source do:
+
+- CSV: the first row names the columns; every further row is one record. A row with another number of columns than the header refuses the whole file.
+- JSON: a list gives one record per element, an object one record. `.jsonl` and `.ndjson` files give one record per line.
+- XML: every child element of the root element is one record. A file that declares a document type is refused.
+
+A file that cannot be read is counted as failed, with the reason, and stays on the server. The files are moved or deleted on the server, and remembered, only after their records went through the mapping and were written. A run that stops before that, or waits for approval, reads the same files again next time. A pickup only sees new files, so it never deletes objects that earlier files created. A test run reads the files and shows what the mapping makes of them, and moves, deletes or writes nothing. Files larger than 20 MB are not read into records.
+
+## Not yet
 - SFTP needs `phpseclib3` on the instance. Without it the SFTP adapter reports itself unavailable and says why.
 
 ## Related

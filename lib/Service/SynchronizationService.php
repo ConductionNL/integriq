@@ -2771,12 +2771,17 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$this->validateExternRun(run: $run, source: $source);
 
 		// An SFTP or FTPS source has files, not objects: the run picks them up.
-		if (FilePickupSynchronization::handles(synchronization: $run->synchronization) === true) {
+		$isFilePickup = FilePickupSynchronization::handles(synchronization: $run->synchronization);
+		if ($isFilePickup === true && FilePickupSynchronization::feedsMapping(synchronization: $run->synchronization) === false) {
 			$this->runFilePickup(run: $run);
 			return $this->finishExternRun(run: $run, overallStartTime: $overallStartTime);
 		}
 
-		if ($run->data !== null && $run->mutationType === 'delete') {
+		if ($isFilePickup === true) {
+			if ($this->runFilePickupIntoMapping(run: $run) === false) {
+				return $run->log;
+			}
+		} elseif ($run->data !== null && $run->mutationType === 'delete') {
 			$this->processExternDelete(run: $run);
 		} elseif ($this->runExternBatch(run: $run) === false) {
 			return $run->log;
@@ -2810,28 +2815,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function runFilePickup(ExternSyncRun $run): void {
-		if ($this->filePickupSynchronization === null) {
-			$pickup = $this->containerInterface->get(FilePickupSynchronization::class);
-			if ($pickup instanceof FilePickupSynchronization) {
-				$this->filePickupSynchronization = $pickup;
-			}
-		}
-
-		if ($this->filePickupSynchronization === null) {
-			$this->failExternRun(run: $run, message: 'File pickup is not available on this instance. Canceling synchronization...');
-		}
-
+		$pickup         = $this->filePickupFor(run: $run);
 		$stageStartTime = microtime(true);
-		$source = $run->source;
-		if ($source === null) {
-			$source = $this->findSynchronizationSource(
-				synchronization: $run->synchronization,
-				id: ($run->synchronization['sourceId'] ?? null)
-			)->jsonSerialize();
-		}
+		$source         = $this->filePickupSource(run: $run);
 
 		try {
-			$summary = $this->filePickupSynchronization->run(
+			$summary = $pickup->run(
 				synchronization: $run->synchronization,
 				source: $source,
 				isTest: ($run->isTest === true)
@@ -2850,6 +2839,104 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			'description' => 'List, fetch, store and archive the remote files',
 		];
 	}//end runFilePickup()
+
+	/**
+	 * Run a file pickup whose records go through the mapping, then archive the files.
+	 *
+	 * The records of the new files are processed as any fetched objects are,
+	 * approval gate included. The files are archived on the server and
+	 * remembered only after that processing and its writes completed, so a run
+	 * that stops in between reads the same files again next time. A pickup sees
+	 * only new files, so it never deletes objects that are not in this run.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return bool False when the approval gate paused the run.
+	 *
+	 * @throws Exception When the pickup cannot run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private function runFilePickupIntoMapping(ExternSyncRun $run): bool {
+		$pickup         = $this->filePickupFor(run: $run);
+		$stageStartTime = microtime(true);
+		$source         = $this->filePickupSource(run: $run);
+
+		try {
+			$collected = $pickup->collect(synchronization: $run->synchronization, source: $source);
+		} catch (RemoteFileException $exception) {
+			$this->failExternRun(run: $run, message: $exception->getMessage());
+		}
+
+		$run->objectList = $collected['objects'];
+		$run->fetchInfo  = ['complete' => true, 'pagesFetched' => 1, 'failureReason' => null];
+		$run->result['timing']['stages']['file_pickup'] = [
+			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+			'description' => 'List and fetch the remote files and read their records',
+			'objects_fetched' => count($run->objectList),
+		];
+
+		$this->prepareExternObjectList(run: $run);
+		if ($this->passesApprovalGate(run: $run) === false) {
+			return false;
+		}
+
+		$stageStartTime = microtime(true);
+		$this->processExternObjects(run: $run);
+		$this->embedRunContracts(run: $run);
+		$this->recordProcessingTiming(run: $run, stageStartTime: $stageStartTime);
+		$run->result['objects']['deleted'] = 0;
+
+		$run->result['files'] = $collected['pickup'];
+		if ($run->isTest === false) {
+			$summary = $pickup->complete(synchronization: $run->synchronization, source: $source, pickup: $collected['pickup']);
+			$run->result['files'] = $summary['files'];
+		}
+
+		return true;
+	}//end runFilePickupIntoMapping()
+
+	/**
+	 * The file pickup, resolved from the container on the first pickup run only.
+	 *
+	 * @param ExternSyncRun $run The run, failed when no pickup is available.
+	 *
+	 * @return FilePickupSynchronization
+	 *
+	 * @throws Exception When file pickup is not available on this instance.
+	 */
+	private function filePickupFor(ExternSyncRun $run): FilePickupSynchronization {
+		if ($this->filePickupSynchronization === null) {
+			$pickup = $this->containerInterface->get(FilePickupSynchronization::class);
+			if ($pickup instanceof FilePickupSynchronization) {
+				$this->filePickupSynchronization = $pickup;
+			}
+		}
+
+		if ($this->filePickupSynchronization === null) {
+			$this->failExternRun(run: $run, message: 'File pickup is not available on this instance. Canceling synchronization...');
+		}
+
+		return $this->filePickupSynchronization;
+	}//end filePickupFor()
+
+	/**
+	 * The source a file pickup reads, as every run reads it.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function filePickupSource(ExternSyncRun $run): array {
+		if ($run->source !== null) {
+			return $run->source;
+		}
+
+		return $this->findSynchronizationSource(
+			synchronization: $run->synchronization,
+			id: ($run->synchronization['sourceId'] ?? null)
+		)->jsonSerialize();
+	}//end filePickupSource()
 
 	/**
 	 * Stage 1 of an extern-to-intern run: load the configuration and validate the source.

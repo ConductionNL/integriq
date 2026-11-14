@@ -16,6 +16,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import FilePickupConfigFields, {
 	AFTER_VALUES,
+	FORMAT_VALUES,
+	TARGET_VALUES,
 } from '@/views/Synchronization/FilePickupConfigFields.vue'
 import SyncConfigWidget from '@/views/Synchronization/SyncConfigWidget.vue'
 import syncKindOptions from '@/mixins/syncKindOptions.js'
@@ -171,6 +173,48 @@ describe('FilePickupConfigFields', () => {
 		expect(control(filled, 'NcTextField', '-archive-path').props('error')).toBe(
 			false,
 		)
+	})
+
+	it('offers the targets FilePickupSynchronization runs, files by default', () => {
+		const target = control(mountFields(), 'NcSelect', '-target')
+		expect(target.props('options').map((o) => o.id)).toEqual(['files', 'mapping'])
+		expect(TARGET_VALUES).toEqual(['files', 'mapping'])
+		expect(target.props('modelValue').id).toBe('files')
+
+		const wrapper = mountFields({ filesFolder: 'In' })
+		control(wrapper, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'mapping' })
+		expect(lastEmitted(wrapper)).toEqual({ filesFolder: 'In', target: 'mapping' })
+
+		const back = mountFields({ target: 'mapping' })
+		control(back, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'files' })
+		expect(lastEmitted(back)).toEqual({})
+	})
+
+	it('asks a mapping pickup for its file format and CSV delimiter instead of a Files folder', () => {
+		const files = mountFields()
+		expect(control(files, 'NcTextField', '-files-folder')).toBeDefined()
+		expect(control(files, 'NcSelect', '-file-format')).toBeUndefined()
+		expect(control(files, 'NcTextField', '-csv-delimiter')).toBeUndefined()
+
+		const mapping = mountFields({ target: 'mapping' })
+		expect(control(mapping, 'NcTextField', '-files-folder')).toBeUndefined()
+		const format = control(mapping, 'NcSelect', '-file-format')
+		expect(format.props('options').map((o) => o.id)).toEqual(FORMAT_VALUES)
+		expect(format.props('modelValue').id).toBe('auto')
+		expect(control(mapping, 'NcTextField', '-csv-delimiter')).toBeDefined()
+		expect(control(mapping, 'NcSelect', '-after').props('inputLabel')).toBe('After a file is read')
+
+		format.vm.$emit('update:modelValue', { id: 'xml' })
+		expect(lastEmitted(mapping)).toEqual({ target: 'mapping', fileFormat: 'xml' })
+
+		const xml = mountFields({ target: 'mapping', fileFormat: 'xml' })
+		expect(control(xml, 'NcTextField', '-csv-delimiter')).toBeUndefined()
+		control(xml, 'NcSelect', '-file-format').vm.$emit('update:modelValue', { id: 'auto' })
+		expect(lastEmitted(xml)).toEqual({ target: 'mapping' })
+
+		const csv = mountFields({ target: 'mapping', fileFormat: 'csv' })
+		control(csv, 'NcTextField', '-csv-delimiter').vm.$emit('update:modelValue', ';')
+		expect(lastEmitted(csv)).toEqual({ target: 'mapping', fileFormat: 'csv', csvDelimiter: ';' })
 	})
 
 	it('stores the stability window as whole non-negative seconds, and clears it', () => {

@@ -27,7 +27,7 @@ Kind: code. Size M. Row `integriq:src-sftp`.
 - **acceptance_criteria**:
   - GIVEN three new CSV files WHEN the pickup runs THEN three files are in the Nextcloud folder and moved to the remote archive, and a second run fetches nothing
   - GIVEN a failed local write WHEN the pickup runs THEN the remote file stays where it was
-- [ ] Implement (all but the mapping target, see the note)
+- [x] Implement
 - [ ] Test (PHPUnit; one run against the SFTP container)
 - **note on what is built**: `FilePickup` (the pickup itself) and
   `FilePickupSynchronization`, which `SynchronizationService` runs for a
@@ -41,10 +41,13 @@ Kind: code. Size M. Row `integriq:src-sftp`.
   reason on the run log. The synchronization editor offers "SFTP (file
   pickup)" and "FTPS (file pickup)" as source kinds with
   `FilePickupConfigFields` for the settings.
-- **left**: `target: mapping` (hand the parsed CSV, JSON or XML content to
-  the mapping) is refused with a clear message; it needs the engine's object
-  path fed from a file and is its own piece of work. The PHPUnit run against
-  an SFTP container needs the dev compose.
+  `target: mapping` reads each new file into records (`PickedFileRecords`:
+  CSV by header row, JSON list/object, JSON lines, XML children of the root)
+  through `MappingRecordStore`; `SynchronizationService` processes them as
+  fetched objects (approval gate included, no deletion pass) and only then
+  `FilePickupSynchronization::complete()` archives and remembers the files.
+  The editor offers the target, the file format and the CSV delimiter.
+- **left**: the PHPUnit run against an SFTP container needs the dev compose.
 
 ### Task 4: Source page, seed and documentation
 - **spec_ref**: `openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001`
