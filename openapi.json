@@ -3757,6 +3757,96 @@
                 ]
             }
         },
+        "/execution-traces/{id}/test-case": {
+            "post": {
+                "operationId": "regressionSuite-record",
+                "summary": "Save a step of a traced execution as a test case",
+                "description": "Copies the input and output of one mapping or synchronization step of the trace into a new integration_test_case, replacing whatever the body edits (name, description, input, expectedOutput, ignoredPaths). The answer lists the paths that still carry the redaction marker. Needs the action regression-suite.record.",
+                "tags": [
+                    "regression-suites"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "step"
+                                ],
+                                "properties": {
+                                    "step": {
+                                        "type": "integer",
+                                        "description": "The order of the step in the trace."
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "input": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    "expectedOutput": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    },
+                                    "ignoredPaths": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The case as stored, with `redactedPaths`; an `error` with 400, 401, 403 or 404 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The trace's id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/flows/{id}/run": {
             "post": {
                 "operationId": "flows-run",
