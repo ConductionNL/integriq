@@ -2594,10 +2594,18 @@ class EndpointService implements EndpointServiceInterface {
 				'query' => $request->getParams(),
 				'headers' => $headers,
 				'body' => $rawBody,
+				// A gateway call is live: it waits only briefly for a paced turn (REQ-RLPC-002).
+				'pacing' => 'live',
 			],
 			trace: $trace
 		);
 		$callLogData = $callLog->getObject();
+
+		// REQ-RLPC-002: the source's paced turn was further away than a live
+		// call may wait, so nothing was sent. Tell the consumer when to come back.
+		if ((int)($callLogData['statusCode'] ?? 0) === Http::STATUS_TOO_MANY_REQUESTS && isset($callLogData['retryAfter']) === true) {
+			return $this->pacedRefusal(retryAfter: (int)$callLogData['retryAfter']);
+		}
 
 		// REQ-MSV-002: the proxied answer is checked against the endpoint's
 		// answer schema. Mode refuse answers 502, the fault being upstream.
@@ -2624,6 +2632,26 @@ class EndpointService implements EndpointServiceInterface {
 			$callLogData['statusCode'] ?? 200
 		);
 	}//end handleSourceRequest()
+
+	/**
+	 * The answer to a live call whose paced turn was too far away: 429 with
+	 * `Retry-After`, the seconds until its turn (REQ-RLPC-002).
+	 *
+	 * @param int $retryAfter The seconds until the call's turn.
+	 *
+	 * @return JSONResponse The 429.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	private function pacedRefusal(int $retryAfter): JSONResponse {
+		$response = new JSONResponse(
+			['error' => 'The source behind this endpoint is busy. Try again later.'],
+			Http::STATUS_TOO_MANY_REQUESTS
+		);
+		$response->addHeader('Retry-After', (string)max(1, $retryAfter));
+
+		return $response;
+	}//end pacedRefusal()
 
 	/**
 	 * Whether an endpoint may proxy to a source: both belong to the same

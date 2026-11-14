@@ -13,6 +13,10 @@
         "type": "api",
         "location": "https://api.kvk.nl/api/v2",
         "auth": "apikey",
+        "pace": {
+          "maxCalls": 100,
+          "perSeconds": 60
+        },
         "configuration": {
           "headers": {
             "Accept": "application/json"

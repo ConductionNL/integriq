@@ -29,7 +29,8 @@
                         "headers": {
                             "x_golden": "yes"
                         },
-                        "body": "{\"bsn\":\"1\"}"
+                        "body": "{\"bsn\":\"1\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
@@ -107,7 +108,8 @@
                         "headers": {
                             "x_golden": "yes"
                         },
-                        "body": "{\"naam\":\"Jansen\"}"
+                        "body": "{\"naam\":\"Jansen\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
@@ -416,7 +418,8 @@
                         "headers": {
                             "x_golden": "yes"
                         },
-                        "body": "{\"bsn\":\"1\"}"
+                        "body": "{\"bsn\":\"1\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
@@ -745,7 +748,8 @@
                     "3": {
                         "query": [],
                         "headers": [],
-                        "body": "{\"bsn\":\"1\"}"
+                        "body": "{\"bsn\":\"1\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
@@ -1127,7 +1131,8 @@
                         "headers": {
                             "x_golden": "yes"
                         },
-                        "body": "{\"bsn\":\"1\"}"
+                        "body": "{\"bsn\":\"1\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
@@ -1476,7 +1481,8 @@
                         "headers": {
                             "x_golden": "yes"
                         },
-                        "body": "{\"bsn\":\"1\"}"
+                        "body": "{\"bsn\":\"1\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
@@ -1618,7 +1624,8 @@
                         "headers": {
                             "x_golden": "yes"
                         },
-                        "body": "{\"bsn\":\"1\"}"
+                        "body": "{\"bsn\":\"1\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
@@ -1665,7 +1672,8 @@
                     "3": {
                         "query": [],
                         "headers": [],
-                        "body": "{\"bsn\":\"1\"}"
+                        "body": "{\"bsn\":\"1\"}",
+                        "pacing": "live"
                     },
                     "4": false,
                     "5": true,
