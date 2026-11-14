@@ -62,6 +62,19 @@ interface IntakeRoutingServiceInterface {
 	public function route(InboundMessage $message): ObjectEntity;
 
 	/**
+	 * Route a held or failed message again, onto the same stored object.
+	 *
+	 * @param string $uuid The `intake_message` uuid.
+	 *
+	 * @return ObjectEntity The stored message, in its new state.
+	 *
+	 * @throws IntakeRoutingException When the message is unknown or neither held nor failed.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on IntakeRoutingService::reroute()
+	 */
+	public function reroute(string $uuid): ObjectEntity;
+
+	/**
 	 * Route a batch, one item at a time.
 	 *
 	 * One message that cannot be handled is captured with its reason and the

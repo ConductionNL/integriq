@@ -53,6 +53,7 @@
           "openformulieren_form_mapping",
           "openformulieren_submission",
           "payment_intent",
+          "payment_settlement",
           "peppol_transmission",
           "recipient_key",
           "recipient_opt_out",
@@ -539,8 +540,16 @@
           },
           "authorizationConfiguration": {
             "type": "object",
-            "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
+            "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The scopes this consumer holds, e.g. `zaken:read`. An endpoint whose authentication rule lists `requiredScopes` (a list, or a map of HTTP method to list) answers 403 naming the missing scope to a caller that does not hold all of them. A JWT caller holds its token's `scope` (space-delimited) or `scp` claim when the token carries one, else these. Absent or empty: the consumer holds none, which only matters on endpoints that require scopes.",
+            "title": "Scopes"
           },
           "created": {
             "type": "string",
@@ -3474,6 +3483,11 @@
             "description": "Requested payment method (ideal is the default/primary NL method; creditcard, bancontact, sepadirectdebit are also accepted passthrough)",
             "title": "Method"
           },
+          "terminalId": {
+            "type": "string",
+            "description": "The point-of-sale terminal the payment was sent to, for method pointofsale; empty otherwise",
+            "title": "Terminal"
+          },
           "redirectUrl": {
             "type": "string",
             "description": "Where the payer returns to after checkout",
@@ -3553,6 +3567,93 @@
               "nl": "Betaling mislukt: {{providerPaymentId}} ({{description}})",
               "en": "Payment failed: {{providerPaymentId}} ({{description}})"
             }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "payment_settlement": {
+        "slug": "payment_settlement",
+        "title": "Payment Settlement",
+        "icon": "BankTransferIn",
+        "version": "1.0.0",
+        "summary": "One provider payout, with the payments, refunds and chargebacks it settles",
+        "description": "A Payment Settlement is one payout of a payment provider (e.g. Mollie) to the account of a payment source, pulled once a day and reported once as an nl.conduction.payment.settlement CloudEvent. Unique per source and settlement reference. See openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008.",
+        "required": [
+          "sourceSlug",
+          "provider",
+          "settlementReference",
+          "settledAt",
+          "currency",
+          "amountNet"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceSlug": {
+            "type": "string",
+            "title": "Payment source",
+            "description": "The payment source whose account received the payout"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "The payment provider binding, such as mollie"
+          },
+          "settlementReference": {
+            "type": "string",
+            "title": "Settlement reference",
+            "description": "The provider's reference of the payout, as it appears on the bank statement"
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Settled at",
+            "description": "When the provider paid the payout out"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "description": "ISO 4217 currency of the amounts"
+          },
+          "amountGross": {
+            "type": "string",
+            "title": "Gross amount",
+            "description": "The payments the payout settles, before refunds, chargebacks and fees"
+          },
+          "amountFees": {
+            "type": "string",
+            "title": "Fees",
+            "description": "What the provider kept as fees"
+          },
+          "amountRefunds": {
+            "type": "string",
+            "title": "Refunds",
+            "description": "The refunds the payout deducts"
+          },
+          "amountChargebacks": {
+            "type": "string",
+            "title": "Chargebacks",
+            "description": "The chargebacks the payout deducts"
+          },
+          "amountNet": {
+            "type": "string",
+            "title": "Net amount",
+            "description": "What was paid out to the account"
+          },
+          "transactions": {
+            "type": "array",
+            "title": "Transactions",
+            "description": "One line per payment (positive), refund or chargeback (negative): providerPaymentId, type, amount and fee",
+            "items": {
+              "type": "object"
+            }
+          },
+          "reportedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reported at",
+            "description": "When integriq reported the payout"
           }
         },
         "x-openregister-seed": [],
