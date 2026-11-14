@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
@@ -627,7 +628,7 @@ class CallServiceTest extends TestCase {
 		$service->call(
 			source: $this->makeBrokeredSource(configuration: $configuration),
 			endpoint: '/v1/items',
-			config: ['logBody' => true],
+			config: ['logBody' => SloCurriculumClientHttp::class],
 		);
 
 		$logs = $this->savedCallLogs();
@@ -669,7 +670,7 @@ class CallServiceTest extends TestCase {
 		$callLog = $service->call(
 			source: $this->makeBrokeredSource(configuration: []),
 			endpoint: '/oauth/token',
-			config: ['logBody' => true],
+			config: ['logBody' => SloCurriculumClientHttp::class],
 		);
 
 		$logs = $this->savedCallLogs();
@@ -2588,6 +2589,73 @@ class CallServiceTest extends TestCase {
 	}//end testRedactSecretsFromUrlLeavesCleanUrlsUntouched()
 
 	/**
+	 * App-injected credentials: a refused secret or certificate is a 409 log with nothing
+	 * sent, and the hydrated source data and configuration are what the call is sent with.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	public function testInjectedCredentialsRefuseOrReachTheDispatch(): void {
+		$outcomes = [];
+		foreach (['secret-refused', 'certificate-refused'] as $case) {
+			$brokered = $this->createMock(BrokeredCallService::class);
+			$brokered->method('hasCredentialRef')->willReturn(false);
+			$brokered->method('hasInjectableCredentials')->willReturn(true);
+			$brokered->method('hasInjectableTlsIdentity')->willReturn(true);
+			if ($case === 'secret-refused') {
+				$brokered->method('hydrateInjectableCredentials')->willThrowException(new BrokeredCallConfigurationException(message: 'The secret could not be read.'));
+				$brokered->expects($this->never())->method('hydrateInjectableTlsIdentity');
+			} else {
+				$brokered->method('hydrateInjectableCredentials')->willReturnArgument(0);
+				$brokered->method('hydrateInjectableTlsIdentity')->willThrowException(new BrokeredCallConfigurationException(message: 'The certificate could not be read.'));
+			}
+
+			$service = $this->buildBrokeredCallService($brokered);
+			$this->mockGuzzleSequence($service, []);
+			$service->call(source: $this->makePlainSource(), endpoint: '/v1/items');
+			$logs = $this->savedCallLogs();
+			$outcomes[$case] = [count($logs), $logs[0]['object']['statusCode'], $logs[0]['object']['statusMessage'], $logs[0]['rbac']];
+		}
+
+		$this->assertSame(
+			[
+				'secret-refused' => [1, 409, 'The secret could not be read.', false],
+				'certificate-refused' => [1, 409, 'The certificate could not be read.', false],
+			],
+			$outcomes
+		);
+
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(false);
+		$brokered->method('hasInjectableCredentials')->willReturn(true);
+		$brokered->method('hydrateInjectableCredentials')->willReturnCallback(
+			static fn (array $sourceData): array => (['location' => 'https://hydrated.example.invalid'] + $sourceData)
+		);
+		$brokered->method('hasInjectableTlsIdentity')->willReturn(true);
+		$brokered->method('hydrateInjectableTlsIdentity')->willReturnCallback(
+			static fn (array $config): array => array_merge($config, ['headers' => ['X-Hydrated' => 'yes']])
+		);
+		$service = $this->buildBrokeredCallService($brokered);
+		$sent = [];
+		$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+		$mockClient->method('request')->willReturnCallback(
+			static function (string $method, string $url, array $config) use (&$sent): Response {
+				$sent = [$method, $url, ($config['headers']['X-Hydrated'] ?? null)];
+				return new Response(200, [], '{}');
+			}
+		);
+		$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+		$clientProperty->setAccessible(true);
+		$clientProperty->setValue($service, $mockClient);
+
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items');
+
+		$this->assertSame(['GET', 'https://hydrated.example.invalid/v1/items', 'yes'], $sent);
+
+	}//end testInjectedCredentialsRefuseOrReachTheDispatch()
+
+	/**
 	 * The logged request and response of a finished call, and the trace step it adds:
 	 * a non-UTF-8 body is logged base64, the remote IP falls back from X-Real-IP to
 	 * X-Forwarded-For, and an error status is a failed step with the logged exchange.
@@ -2617,8 +2685,8 @@ class CallServiceTest extends TestCase {
 			}
 		);
 
-		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', config: ['logBody' => true], trace: $trace);
-		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', method: 'POST', config: ['logBody' => true]);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', config: ['logBody' => SloCurriculumClientHttp::class], trace: $trace);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', method: 'POST', config: ['logBody' => SloCurriculumClientHttp::class]);
 		$service->call(source: $this->makePlainSource(), endpoint: '/v1/empty');
 
 		$logs = $this->savedCallLogs();

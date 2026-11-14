@@ -8,8 +8,9 @@ Kind: code. Size M. Row: portaliq `int-service-fetch`. Builds on `sources-route-
 - **acceptance_criteria**:
   - GIVEN the fragment WHEN the register imports THEN `serviceFetch` carries the properties of design D2, each with a `title`, and the log has no `PARTIAL IMPORT` line for it
   - GIVEN a non-admin user WHEN they list `serviceFetch` objects THEN nothing is returned
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - `lib/Settings/register.d/service-fetch.json`: `serviceFetch` with the D2 properties, each titled, admin-only (empty rule lists, the lockdown shape). The import log line is a live check and is not verified here.
+- [x] Test
 
 ## Task 2: The command and its listener
 - **spec_ref**: `specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002`
@@ -18,16 +19,18 @@ Kind: code. Size M. Row: portaliq `int-service-fetch`. Builds on `sources-route-
   - GIVEN each refusal of design D3 WHEN its condition holds THEN the result carries that code and no exception reaches the dispatcher
   - GIVEN a recorded source answer WHEN the fetch runs THEN only declared outputs are in the result, never the body
   - GIVEN `cacheSeconds` 60 WHEN the same inputs are asked twice within a minute THEN the source is called once
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - `ServiceFetchRequestedEvent` with a result slot, `EventListener/ServiceFetchRequestedListener` (the app's listener directory), `Service/ServiceFetch/ServiceFetchService` with `ServiceFetchCatalogue` and `ServiceFetchInputs`; registered in `EventListenerBindings`. Tests: `ServiceFetchServiceTest`, `ServiceFetchInputsTest`.
+- [x] Test
 
 ## Task 3: The call log context
 - **spec_ref**: `specs/service-fetch/spec.md#requirement-an-app-calls-a-service-fetch-with-inputs-and-gets-mapped-outputs-req-sf-002`
 - **files**: `lib/Service/ServiceFetchService.php`, `tests/Unit/Service/ServiceFetchServiceTest.php`
 - **acceptance_criteria**:
   - GIVEN a fetch with a `bsn` input WHEN it runs THEN the call log line carries app and fetch slug and the BSN is redacted
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - The call's own log line is re-saved with `context: {app, fetch}` and every input value redacted from the request and the response body (`ServiceFetchRedactor`), so a BSN never stays; `context` is added to `call_log`. Tests: `ServiceFetchServiceTest::testTheCallLogNamesAppAndFetchWithTheBsnRedacted`, `ServiceFetchRedactorTest`.
+- [x] Test
 
 ## Task 4: The designer list endpoint
 - **spec_ref**: `specs/service-fetch/spec.md#requirement-a-form-designer-can-list-the-fetches-an-app-may-call-req-sf-003`
@@ -35,8 +38,9 @@ Kind: code. Size M. Row: portaliq `int-service-fetch`. Builds on `sources-route-
 - **acceptance_criteria**:
   - GIVEN two fetches, one allowed for portaliq WHEN `GET /api/service-fetches?app=portaliq` is called THEN one fetch is listed without source, path or mappings
   - GIVEN the route WHEN gate 5 runs THEN the method carries `#[NoAdminRequired]`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - `ServiceFetchController::index` on `GET /api/service-fetches?app=`, `#[NoAdminRequired]`, documented in `openapi.json`. Test: `ServiceFetchControllerTest`.
+- [x] Test
 
 ## Task 5: The admin page
 - **spec_ref**: `specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001`
@@ -45,4 +49,5 @@ Kind: code. Size M. Row: portaliq `int-service-fetch`. Builds on `sources-route-
   - GIVEN an administrator WHEN they create a fetch and press "Testen" THEN the raw answer and the mapped outputs show side by side
   - GIVEN the modal WHEN gate `modal-isolation` runs THEN it passes
 - [ ] Implement
+  - Not in this pass: the page, the modal and the admin-only test endpoint behind "Testen" are still to build.
 - [ ] Test

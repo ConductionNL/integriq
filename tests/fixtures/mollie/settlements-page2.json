@@ -1,0 +1,22 @@
+{
+  "count": 1,
+  "_embedded": {
+    "settlements": [
+      {
+        "resource": "settlement",
+        "id": "stl_old0001",
+        "reference": "st_old0001",
+        "createdAt": "2026-08-01T06:00:00+00:00",
+        "settledAt": "2026-08-02T09:00:00+00:00",
+        "status": "paidout",
+        "amount": {
+          "value": "99.00",
+          "currency": "EUR"
+        }
+      }
+    ]
+  },
+  "_links": {
+    "next": null
+  }
+}

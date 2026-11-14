@@ -67,4 +67,34 @@ interface SignedSoapProfileInterface {
 	 * @spec openspec/specs/digikoppeling-adapter/spec.md — Requirement: WUS synchronous profile with WS-Security signing (REQ-DK-002)
 	 */
 	public function verifyResponse(string $responseXml, ?string $expectedCertificatePem = null): string;
+
+	/**
+	 * Build a signed WUS request whose Body is then encrypted for the partner.
+	 *
+	 * @param string $certificateRef        The broker credentialRef for the PKIoverheid certificate.
+	 * @param string $stufBodyXml           The StUF/ZGW message body XML.
+	 * @param string $partnerCertificatePem The partner's X.509 certificate (PEM) held on the source.
+	 *
+	 * @return string The signed and encrypted SOAP request envelope.
+	 *
+	 * @throws DigikoppelingException Fail-closed when signing material is unavailable, or signing or encryption fails.
+	 *
+	 * @spec openspec/changes/sources-ws-security-encryption/specs/digikoppeling-adapter/spec.md#requirement-a-soap-source-encrypts-its-body-and-decrypts-the-answer-req-wse-001
+	 */
+	public function buildSignedEncryptedRequest(string $certificateRef, string $stufBodyXml, string $partnerCertificatePem): string;
+
+	/**
+	 * Decrypt an encrypted WUS response with the organisation's key, then verify its signature.
+	 *
+	 * @param string      $certificateRef         The broker credentialRef whose private key decrypts the answer.
+	 * @param string      $responseXml            The SOAP response envelope.
+	 * @param string|null $expectedCertificatePem Optional certificate to pin the responder to.
+	 *
+	 * @return string The decrypted, verified response XML.
+	 *
+	 * @throws DigikoppelingException When the key is unavailable, decryption fails, or the signature does not verify.
+	 *
+	 * @spec openspec/changes/sources-ws-security-encryption/specs/digikoppeling-adapter/spec.md#requirement-a-soap-source-encrypts-its-body-and-decrypts-the-answer-req-wse-001
+	 */
+	public function decryptAndVerifyResponse(string $certificateRef, string $responseXml, ?string $expectedCertificatePem = null): string;
 }
