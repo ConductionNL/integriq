@@ -1,0 +1,15 @@
+{
+  "vacancyId": "5b7d2c1e-8a44-4f0e-9a71-2f3c6d9e1a01",
+  "title": "Medior Vue-developer",
+  "description": "Wij zoeken een medior Vue-developer voor ons platformteam. Placeholder vacaturetekst (recruiting-ats-basic seed).",
+  "department": "Engineering",
+  "status": "gepubliceerd",
+  "publishedDate": "2026-06-15",
+  "closingDate": "2026-08-31",
+  "channels": ["werk-nl", "linkedin"],
+  "channel": "linkedin",
+  "postedToChannels": true,
+  "minEducationLevel": 6,
+  "minExperienceYears": 3,
+  "administrationId": "ADM-001"
+}
