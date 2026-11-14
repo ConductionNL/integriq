@@ -36,7 +36,7 @@ use Twig\TwigFunction;
 class MappingFunctionRegistrationListenerTest extends TestCase {
 
 	/**
-	 * The three functions are registered by name, each backed by the runtime method of that name.
+	 * The four functions are registered by name, each backed by the runtime method of that name.
 	 *
 	 * @return void
 	 */
@@ -46,7 +46,7 @@ class MappingFunctionRegistrationListenerTest extends TestCase {
 		(new MappingFunctionRegistrationListener())->handle(event: $event);
 
 		$this->assertSame(
-			expected: ['callSource', 'getTargetIdByOriginId', 'getOriginIdByTargetId'],
+			expected: ['callSource', 'getTargetIdByOriginId', 'getOriginIdByTargetId', 'lookup'],
 			actual: $event->getAllowedNames()
 		);
 		$callables = array_map(
@@ -58,6 +58,7 @@ class MappingFunctionRegistrationListenerTest extends TestCase {
 				[MappingRuntime::class, 'callSource'],
 				[MappingRuntime::class, 'getTargetIdByOriginId'],
 				[MappingRuntime::class, 'getOriginIdByTargetId'],
+				[MappingRuntime::class, 'lookup'],
 			],
 			actual: $callables
 		);
