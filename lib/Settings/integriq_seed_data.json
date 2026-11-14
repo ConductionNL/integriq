@@ -587,6 +587,39 @@
       "updatedAt": "2026-07-13T08:02:00+00:00"
     }
   ],
+  "payment_settlement": [
+    {
+      "@self": { "register": "integriq", "schema": "payment_settlement", "slug": "ps-mollie-st-example0001" },
+      "sourceSlug": "payment-sandbox",
+      "provider": "mollie",
+      "settlementReference": "st_example0001",
+      "settledAt": "2026-10-02T00:00:00+00:00",
+      "currency": "EUR",
+      "amountGross": "612.40",
+      "amountFees": "4.06",
+      "amountRefunds": "22.85",
+      "amountChargebacks": "0.00",
+      "amountNet": "585.49",
+      "transactions": [
+        { "providerPaymentId": "tr_example0001", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0002", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0003", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0004", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0005", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0006", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0007", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0008", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0009", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0010", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0011", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0012", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0013", "type": "payment", "amount": "43.70", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0014", "type": "payment", "amount": "44.30", "fee": "0.00" },
+        { "providerPaymentId": "tr_example0003", "type": "refund", "amount": "-22.85", "fee": "0.00" }
+      ],
+      "reportedAt": "2026-10-03T03:00:00+00:00"
+    }
+  ],
   "sender_identity": [
     {
       "@self": { "register": "integriq", "schema": "sender_identity", "slug": "algemeen" },
