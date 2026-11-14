@@ -1181,6 +1181,8 @@ OC.L10N.register(
         "The values that mean a mock adapter answers. Compared case-insensitively after trimming. Default: one empty string.": "De waarden die betekenen dat een mock-adapter antwoordt. Hoofdletters en spaties aan de randen tellen niet mee. Standaard: één lege tekst.",
         "true means only the app can tell what answers. Integriq then skips the adapter and settings rules. Default false.": "true betekent dat alleen de app kan zien wat er antwoordt. Integriq slaat dan de regels voor adapter en instellingen over. Standaard false.",
         "Whether the connection works, works in part or not at all, as integriq last worked it out.": "Of de koppeling werkt, deels werkt of niet werkt, zoals Integriq het laatst heeft vastgesteld.",
+        "Failing test cases in this configuration: {count}": "Falende testgevallen in deze configuratie: {count}",
+        "Promote anyway, although test cases fail": "Toch promoveren, ook al falen er testgevallen",
         "The last status the app reported: status, message and time. A report of simulated stands against any probe.": "De laatste status die de app meldde: status, melding en tijd. Een melding van simulated gaat voor elke test.",
         "Last refresh": "Laatst vernieuwd",
         "When the app last asked for a fresh status after a settings save. Older reports and probes no longer count.": "Wanneer de app na het opslaan van instellingen om een nieuwe status vroeg. Oudere meldingen en tests tellen dan niet meer mee.",
@@ -2351,7 +2353,23 @@ OC.L10N.register(
         "First working day of the month": "Eerste werkdag van de maand",
         "Last working day of the month": "Laatste werkdag van de maand",
         "Day {day}": "Dag {day}",
-        "The run times could not be computed.": "De runtijden konden niet worden berekend."
+        "The run times could not be computed.": "De runtijden konden niet worden berekend.",
+        "Actual": "Werkelijk",
+        "Expected": "Verwacht",
+        "Path": "Pad",
+        "Ignored paths": "Genegeerde paden",
+        "Dot paths left out of the comparison, separated by commas.": "Paden met punten die niet worden vergeleken, gescheiden door komma's.",
+        "Run test cases": "Testgevallen uitvoeren",
+        "Save as test case": "Opslaan als testgeval",
+        "Save test case": "Testgeval opslaan",
+        "Test case saved": "Testgeval opgeslagen",
+        "Test cases": "Testgevallen",
+        "The test case could not be saved.": "Het testgeval kon niet worden opgeslagen.",
+        "The test cases could not be run.": "De testgevallen konden niet worden uitgevoerd.",
+        "There are no test cases for this yet.": "Hiervoor zijn nog geen testgevallen.",
+        "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.": "Deze velden zijn afgeschermd toen de trace werd opgeslagen. Vervang ze door testwaarden, anders slaagt het testgeval niet.",
+        "Passed: {count}": "Geslaagd: {count}",
+        "Failed: {count}": "Mislukt: {count}"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -121,13 +121,16 @@ interface PromotionServiceInterface {
 	 * @param array<int,array<string,string>> $credentialBindings Operator-supplied rebindings (see class docblock for shape).
 	 * @param string $actorUid The confirming operator's Nextcloud user id.
 	 * @param string $fromEnvironmentSlug Origin slug (default "local", the seeded local-instance row).
+	 * @param bool $overrideFailingTests Promote although test cases fail (REQ-IRT-005); recorded on the audit.
 	 *
 	 * @return array<string,mixed> The target's post-import summary plus `auditId`/`callLogId`.
 	 *
-	 * @throws InvalidArgumentException When the target environment does not resolve (still audited as `failed`).
+	 * @throws InvalidArgumentException When the target environment does not resolve, or test cases fail
+	 *                                  without the override (still audited as `failed`).
 	 * @throws RuntimeException When the target's import call fails (still audited as `failed`).
 	 *
 	 * @spec openspec/specs/environments-and-promotion/spec.md#requirement-every-promotion-attempt-is-recorded-in-an-append-only-promotion-audit-log-req-006
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
 	 */
 	public function promote(
 		string $configurationId,
@@ -135,5 +138,6 @@ interface PromotionServiceInterface {
 		array $credentialBindings,
 		string $actorUid,
 		string $fromEnvironmentSlug = 'local',
+		bool $overrideFailingTests = false,
 	): array;
 }

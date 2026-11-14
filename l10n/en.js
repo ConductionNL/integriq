@@ -1812,6 +1812,8 @@ OC.L10N.register(
         "Nextcloud user id that created the consumer (null for system-created)": "Nextcloud user id that created the consumer (null for system-created)",
         "Nextcloud user id that owns the job (null for system jobs)": "Nextcloud user id that owns the job (null for system jobs)",
         "Nextcloud user id that owns the subscription": "Nextcloud user id that owns the subscription",
+        "Failing test cases in this configuration: {count}": "Failing test cases in this configuration: {count}",
+        "Promote anyway, although test cases fail": "Promote anyway, although test cases fail",
         "Nextcloud user id that produced this event (null for system-produced)": "Nextcloud user id that produced this event (null for system-produced)",
         "Nextcloud user id that triggered the sync": "Nextcloud user id that triggered the sync",
         "Nextcloud user id that triggered the sync (null for cron-triggered)": "Nextcloud user id that triggered the sync (null for cron-triggered)",
@@ -3613,7 +3615,23 @@ OC.L10N.register(
         "First working day of the month": "First working day of the month",
         "Last working day of the month": "Last working day of the month",
         "Day {day}": "Day {day}",
-        "The run times could not be computed.": "The run times could not be computed."
+        "The run times could not be computed.": "The run times could not be computed.",
+        "Actual": "Actual",
+        "Expected": "Expected",
+        "Path": "Path",
+        "Ignored paths": "Ignored paths",
+        "Dot paths left out of the comparison, separated by commas.": "Dot paths left out of the comparison, separated by commas.",
+        "Run test cases": "Run test cases",
+        "Save as test case": "Save as test case",
+        "Save test case": "Save test case",
+        "Test case saved": "Test case saved",
+        "Test cases": "Test cases",
+        "The test case could not be saved.": "The test case could not be saved.",
+        "The test cases could not be run.": "The test cases could not be run.",
+        "There are no test cases for this yet.": "There are no test cases for this yet.",
+        "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.": "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.",
+        "Passed: {count}": "Passed: {count}",
+        "Failed: {count}": "Failed: {count}"
     },
     "nplurals=2; plural=(n != 1);"
 )

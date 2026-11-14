@@ -84,12 +84,14 @@ class PromotionService implements PromotionServiceInterface {
 	 * @param EnvironmentService $environmentService Resolves target environments and their connectivity Source.
 	 * @param CallService $callService The existing outbound dispatch pipeline (reused unchanged).
 	 * @param OrObjectService $orObjectService Used only to write `promotion_audit` objects.
+	 * @param PromotionRegressionCheck|null $regressionCheck Replays the configuration's test cases (REQ-IRT-005); none checks nothing.
 	 */
 	public function __construct(
 		private readonly ConfigurationService $configurationService,
 		private readonly EnvironmentService $environmentService,
 		private readonly CallService $callService,
 		private readonly OrObjectService $orObjectService,
+		private readonly ?PromotionRegressionCheck $regressionCheck = null,
 	) {
 
 	}//end __construct()
@@ -292,8 +294,25 @@ class PromotionService implements PromotionServiceInterface {
 		$callLog = $this->dispatchToTarget(source: $targetSource, path: self::IMPORT_PREVIEW_PATH, payload: ['document' => $rewritten]);
 		$targetPreview = $this->decodeCallLogBody(callLog: $callLog);
 
-		return array_merge($targetPreview, ['credentialRefsNeedingRebind' => $flagged]);
+		return array_merge($targetPreview, ['credentialRefsNeedingRebind' => $flagged, 'failingTestCases' => $this->failingTestCases(document: $document)]);
 	}//end preview()
+
+	/**
+	 * The failing test cases of an exported configuration; none without a check.
+	 *
+	 * @param array<string,mixed> $document The exported OAS document.
+	 *
+	 * @return list<array<string,string>>
+	 *
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 */
+	private function failingTestCases(array $document): array {
+		if ($this->regressionCheck === null) {
+			return [];
+		}
+
+		return $this->regressionCheck->failingCases(document: $document);
+	}//end failingTestCases()
 
 	/**
 	 * Confirmed promotion (REQ-002/REQ-005/REQ-006): exports locally,
@@ -305,6 +324,7 @@ class PromotionService implements PromotionServiceInterface {
 	 * @param array<int,array<string,string>> $credentialBindings Operator-supplied rebindings (see class docblock for shape).
 	 * @param string $actorUid The confirming operator's Nextcloud user id.
 	 * @param string $fromEnvironmentSlug Origin slug (default "local", the seeded local-instance row).
+	 * @param bool $overrideFailingTests Promote although test cases fail (REQ-IRT-005); recorded on the audit.
 	 *
 	 * @return array<string,mixed> The target's post-import summary plus `auditId`/`callLogId`.
 	 *
@@ -319,11 +339,13 @@ class PromotionService implements PromotionServiceInterface {
 		array $credentialBindings,
 		string $actorUid,
 		string $fromEnvironmentSlug = 'local',
+		bool $overrideFailingTests = false,
 	): array {
 		$run = new PromotionRun(configurationId: $configurationId, targetEnvironmentSlug: $targetEnvironmentSlug);
 		$run->credentialBindings = $credentialBindings;
 		$run->actorUid = $actorUid;
 		$run->fromEnvironmentSlug = $fromEnvironmentSlug;
+		$run->overrideFailingTests = $overrideFailingTests;
 
 		return $this->promoteRun(run: $run);
 	}//end promote()
@@ -361,6 +383,7 @@ class PromotionService implements PromotionServiceInterface {
 		$targetSource = $this->resolveTargetSource(targetEnvironmentSlug: $run->targetEnvironmentSlug);
 
 		$document = $this->export(configurationId: $run->configurationId);
+		$this->requireTestsPassOrOverride(run: $run, document: $document);
 		$run->rebindCount = $this->countRebound(flagged: $this->scanCredentialRefs(document: $document), index: $index);
 		$rewritten = $this->applyCredentialBindings(document: $document, credentialBindings: $run->credentialBindings);
 
@@ -376,6 +399,33 @@ class PromotionService implements PromotionServiceInterface {
 
 		return array_merge($result, ['auditId' => $audit->getUuid(), 'callLogId' => $run->callLogId]);
 	}//end promoteDocument()
+
+	/**
+	 * Refuse a promotion whose test cases fail, unless the promoter accepted that.
+	 *
+	 * Runs before anything is sent to the target. The failed count is kept on
+	 * the run, so the audit records it either way.
+	 *
+	 * @param PromotionRun        $run      The promotion.
+	 * @param array<string,mixed> $document The exported OAS document.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When cases fail and the override was not given.
+	 *
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 */
+	private function requireTestsPassOrOverride(PromotionRun $run, array $document): void {
+		$run->failedTestCount = count($this->failingTestCases(document: $document));
+		if ($run->failedTestCount > 0 && $run->overrideFailingTests === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'%d test case(s) of this configuration fail. Fix them, or confirm again with overrideFailingTests to promote anyway.',
+					$run->failedTestCount
+				)
+			);
+		}
+	}//end requireTestsPassOrOverride()
 
 	/**
 	 * Write the `success` audit: counts only, never the entities themselves.
@@ -396,9 +446,27 @@ class PromotionService implements PromotionServiceInterface {
 			message: '',
 			previewSummary: $this->previewSummary(result: $result),
 			credentialRebindCount: $run->rebindCount,
-			callLogId: $run->callLogId
+			callLogId: $run->callLogId,
+			tests: self::testFields(run: $run)
 		);
 	}//end auditSuccess()
+
+	/**
+	 * The test-case fields of an audit entry (REQ-IRT-005): written when cases
+	 * failed or the override was given, so a promotion with nothing to say
+	 * about its tests keeps the entry it always had.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 *
+	 * @return array{failedTestCount?:int,overrideFailingTests?:bool}
+	 */
+	private static function testFields(PromotionRun $run): array {
+		if ($run->failedTestCount === 0 && $run->overrideFailingTests === false) {
+			return [];
+		}
+
+		return ['failedTestCount' => $run->failedTestCount, 'overrideFailingTests' => $run->overrideFailingTests];
+	}//end testFields()
 
 	/**
 	 * Write the `failed` audit: the reason, no summary, the call log when the import was sent.
@@ -419,7 +487,8 @@ class PromotionService implements PromotionServiceInterface {
 			message: $exception->getMessage(),
 			previewSummary: [],
 			credentialRebindCount: 0,
-			callLogId: $run->callLogId
+			callLogId: $run->callLogId,
+			tests: self::testFields(run: $run)
 		);
 	}//end auditFailure()
 
@@ -521,6 +590,7 @@ class PromotionService implements PromotionServiceInterface {
 	 * @param array<string,mixed> $previewSummary Counts-only summary (empty on failure).
 	 * @param int $credentialRebindCount Number of credentialRef placeholders rewritten.
 	 * @param string|null $callLogId UUID of the underlying CallLog, if dispatched.
+	 * @param array<string,mixed> $tests The test-case fields (REQ-IRT-005): failedTestCount and overrideFailingTests.
 	 *
 	 * @return ObjectEntity The created `promotion_audit` object.
 	 *
@@ -538,6 +608,7 @@ class PromotionService implements PromotionServiceInterface {
 		array $previewSummary,
 		int $credentialRebindCount,
 		?string $callLogId,
+		array $tests = [],
 	): ObjectEntity {
 		$payload = [
 			'actorUid' => $actorUid,
@@ -551,7 +622,7 @@ class PromotionService implements PromotionServiceInterface {
 			'previewSummary' => $previewSummary,
 			'credentialRebindCount' => $credentialRebindCount,
 			'callLogId' => ($callLogId ?? ''),
-		];
+		] + $tests;
 
 		return $this->orObjectService->saveObject(object: $payload, register: self::REGISTER, schema: self::AUDIT_SCHEMA);
 	}//end writeAudit()

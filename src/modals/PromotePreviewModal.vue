@@ -150,6 +150,33 @@
 					</div>
 				</div>
 
+				<div
+					v-if="preview.failingTestCases && preview.failingTestCases.length"
+					class="oc-promote-modal__tests"
+					data-testid="promote-preview-failing-tests">
+					<NcNoteCard type="warning">
+						{{
+							t('integriq', 'Failing test cases in this configuration: {count}', {
+								count: preview.failingTestCases.length,
+							})
+						}}
+					</NcNoteCard>
+					<ul>
+						<li
+							v-for="entry in preview.failingTestCases"
+							:key="`tc-${entry.caseId}`"
+							:data-testid="`promote-failing-test-${entry.caseId}`">
+							{{ entry.caseName || entry.caseId }}
+							<code>{{ entry.subjectType }} {{ entry.subjectId }}</code>
+						</li>
+					</ul>
+					<NcCheckboxRadioSwitch
+						v-model="overrideFailingTests"
+						data-testid="promote-override-failing-tests">
+						{{ t('integriq', 'Promote anyway, although test cases fail') }}
+					</NcCheckboxRadioSwitch>
+				</div>
+
 				<NcNoteCard v-if="errorMessage" type="error">
 					{{ errorMessage }}
 				</NcNoteCard>
@@ -160,7 +187,7 @@
 					</NcButton>
 					<NcButton
 						variant="primary"
-						:disabled="confirming"
+						:disabled="confirming || testsBlockConfirm"
 						data-testid="promote-confirm"
 						@click="confirmPromotion">
 						<template #icon>
@@ -180,6 +207,7 @@ import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
 	NcModal,
 	NcNoteCard,
@@ -249,6 +277,7 @@ function previewBuckets(data) {
 		updates: data.updates || [],
 		collisions: data.collisions || [],
 		credentialRefsNeedingRebind: data.credentialRefsNeedingRebind || [],
+		failingTestCases: data.failingTestCases || [],
 	}
 }
 
@@ -266,6 +295,7 @@ function selectionState() {
 		selectedEnvironment: null,
 		preview: null,
 		credentialBindings: {},
+		overrideFailingTests: false,
 	}
 }
 
@@ -278,6 +308,7 @@ export default {
 		NcButton,
 		NcSelect,
 		NcLoadingIcon,
+		NcCheckboxRadioSwitch,
 		NcNoteCard,
 	},
 
@@ -303,6 +334,16 @@ export default {
 		/** @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003 */
 		canPreview() {
 			return !!this.selectedConfig && !!this.selectedEnvironment
+		},
+
+		/**
+		 * Whether failing test cases hold the confirm back: until the override is ticked.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+		 */
+		testsBlockConfirm() {
+			return (this.preview?.failingTestCases?.length ?? 0) > 0 && !this.overrideFailingTests
 		},
 	},
 
@@ -476,7 +517,11 @@ export default {
 		 */
 		confirmedRequest() {
 			const bindings = this.buildCredentialBindings()
-			return { ...this.promotionRequest(bindings), confirmed: true }
+			const request = { ...this.promotionRequest(bindings), confirmed: true }
+			if (this.overrideFailingTests) {
+				request.overrideFailingTests = true
+			}
+			return request
 		},
 
 		/**
