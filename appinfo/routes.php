@@ -87,6 +87,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// rule decides what opens a case and a reply leaves the building.
 		['name' => 'intakeChannels#inbound', 'url' => '/api/intake/channels/{channel}/inbound', 'verb' => 'POST', 'requirements' => ['channel' => '[a-z0-9\\-]+']],
 		['name' => 'intakeChannels#channels', 'url' => '/api/intake/channels', 'verb' => 'GET'],
+		// CloudEvents from outside systems (openspec/changes/cloudevents-receiver).
+		// One receiver URL per source, public and gated by that source's webhook
+		// signature or credential over the raw bytes before the body is read.
+		['name' => 'cloudEventReceiver#receive', 'url' => '/api/cloudevents/sources/{source}', 'verb' => 'POST', 'requirements' => ['source' => '[A-Za-z0-9\\-]+']],
 		// Inbound call events from a phone system. #[PublicPage]: a PBX posts
 		// here with no Nextcloud session, authenticated by the source's own
 		// binding, and every refusal is the same undifferentiated 401.
@@ -95,6 +99,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// provider picker is built from the registry rather than from a list
 		// written beside it and left to go stale.
 		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		// Test a draft rule against a sample and route held messages again
+		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
+		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgainMany', 'url' => '/api/intake/messages/route', 'verb' => 'POST'],
+		['name' => 'intakeChannels#routeAgain', 'url' => '/api/intake/messages/{id}/route', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules/{id}', 'verb' => 'PUT', 'postfix' => 'update'],
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
@@ -148,6 +157,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// A source's 24-hour performance and certificate expiry. Administrators only.
 		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		// The registration targets an app may use, by slug, title and kind only (form-submission-registration-targets).
+		['name' => 'registrationTarget#index', 'url' => '/api/registration-targets', 'verb' => 'GET'],
 		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
 		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 
@@ -173,6 +184,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// authoritative status from the provider.
 		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
 		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+		// The point-of-sale terminals of a payment source (REQ-LPP-009), for an
+		// administrator registering a device; gated by the payments.create action.
+		['name' => 'payments#terminals', 'url' => '/api/payments/sources/{slug}/terminals', 'verb' => 'GET'],
 
 		// NotifyNL SMS channel connector (openspec/changes/notifynl-sms-channel).
 		// send/status are authenticated NC-session calls (production binding for
@@ -480,6 +494,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
+		// Regression suites (automation-integration-regression-tests): run every
+		// test case of a mapping or synchronization and record one run.
+		['name' => 'regressionSuite#run', 'url' => '/api/regression-suites/{subjectType}/{subjectId}/run', 'verb' => 'POST'],
 		['name' => 'mappings#saveObject', 'url' => '/api/mappings/objects', 'verb' => 'POST'],
 		['name' => 'mappings#getObjects', 'url' => '/api/mappings/objects', 'verb' => 'GET'],
 
@@ -601,8 +618,11 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// the HITL approvals routes above.
 		['name' => 'productSubscriptions#subscribe', 'url' => '/api/products/{productId}/subscriptions', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
+		// forms-service-fetch-for-apps (REQ-SF-003): the service fetches an app may call, for a form designer.
+		['name' => 'serviceFetch#index', 'url' => '/api/service-fetches', 'verb' => 'GET'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
@@ -610,6 +630,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// See openspec/changes/archive/2026-07-14-connector-catalog-ui/contract.md
 		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
 		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
+
+		// connectors-sharepoint-publication-intake REQ-SPPI-001: the Graph lookups behind
+		// the SharePoint to publication setup dialog (sites, libraries, folders).
+		['name' => 'sharePointSetup#lookup', 'url' => '/api/sharepoint/lookup', 'verb' => 'GET'],
 
 		// registry-backed-field-source: openregister resolves a property that
 		// declares `x-openregister-property-source` through these routes, and the

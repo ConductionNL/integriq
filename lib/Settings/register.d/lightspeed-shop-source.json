@@ -1,0 +1,40 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-webshop-orders). The dormant Lightspeed eCom shop template. Its mapping and synchronization are not shipped yet: see the template's description.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "lightspeed-shop"
+        },
+        "name": "Lightspeed eCom shop",
+        "description": "A Lightspeed eCom (C-Series) shop (https://developers.lightspeedhq.com/ecom/). Orders: GET <cluster>/<language>/orders.json, changed-since filter `updated_at_min`. Auth: an API key and secret over HTTP Basic, the secret held by the credential broker. Set the location to your cluster and shop language (for example https://api.webshopapp.com/nl), the API key and the credential. The order list names an order's lines only as a link to a separate resource, so the mapping onto shillinq's WebshopOrder is not shipped with this template yet.",
+        "type": "api",
+        "location": "",
+        "auth": "basic",
+        "documentation": "https://developers.lightspeedhq.com/ecom/endpoints/order/",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "authentication": {
+            "username": "",
+            "password": {
+              "credentialRef": {
+                "credentialName": "lightspeed-shop-api-secret"
+              }
+            }
+          },
+          "auth": [
+            "{{ source.configuration.authentication.username }}",
+            "{{ source.configuration.authentication.password }}"
+          ]
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

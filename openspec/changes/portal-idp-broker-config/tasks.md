@@ -36,8 +36,8 @@ the flag is `1`.
   - GIVEN an empty, unknown or empty-resolving reference WHEN it is read THEN the seam refuses and logs the registration and the role, never a value
   - GIVEN two reads in two requests and a value changed in between WHEN the second read runs THEN it returns the new value (no cache across requests)
   - GIVEN the class WHEN grepped THEN there is no `catch (Throwable)` that returns null or an empty "skip"
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Readiness
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-readiness-is-one-answer-for-the-screen-and-the-runtime-req-idpc-007`
@@ -123,8 +123,8 @@ the flag is `1`.
 - **acceptance_criteria**:
   - GIVEN any of the three superseded keys holding a value WHEN the repair step runs THEN it logs one warning per key, naming the key and what replaces it, and never the value
   - GIVEN none set WHEN it runs THEN it logs nothing
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 12: End to end, through the stubs
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006`

@@ -98,13 +98,15 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	 * @param AuthorizationService $authorization OpenRegister's credential checks.
 	 * @param ObjectService        $objectService OpenRegister's object service, read by the consumer source.
 	 * @param IUserSession         $userSession   Nextcloud user session, cleared when the lifetime cap refuses.
-	 * @param ConsumerCredentials|null $credentials The consumers' credentials list rules.
+	 * @param ConsumerCredentials|null       $credentials The consumers' credentials list rules.
+	 * @param ConsumerKeySourceResolver|null $keySources  Resolves the key of a consumer with key source `jwks` or `oidc`.
 	 */
 	public function __construct(
 		private readonly AuthorizationService $authorization,
 		private readonly ObjectService $objectService,
 		private readonly IUserSession $userSession,
 		private readonly ?ConsumerCredentials $credentials = null,
+		private readonly ?ConsumerKeySourceResolver $keySources = null,
 	) {
 	}//end __construct()
 
@@ -122,6 +124,7 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	public function authorizeJwt(string $authorization): void {
 		$this->resolvedConsumer = null;
 		$source = $this->source();
+		$this->presentToken(authorization: $authorization, source: $source);
 		$this->refuseWeakHmacSecret(authorization: $authorization, source: $source);
 		try {
 			$this->authorization->authorizeJwt($authorization, $source);
@@ -316,6 +319,31 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	}//end capLifetime()
 
 	/**
+	 * Hand the token's header and claims to the consumer source before any lookup, so a consumer whose key
+	 * comes from a published key set gets the key the token names.
+	 *
+	 * @param string         $authorization The `Bearer <jwt>` header.
+	 * @param ConsumerSource $source        The consumer source.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/tasks.md#task-2
+	 */
+	private function presentToken(string $authorization, ConsumerSource $source): void {
+		if ($source instanceof IntegriqConsumerSource === false) {
+			return;
+		}
+
+		$token = substr(string: $authorization, offset: strlen('Bearer '));
+		$header = json_decode((string)base64_decode(strtr(explode('.', $token)[0], '-_', '+/')), true);
+		if (is_array($header) === false) {
+			$header = [];
+		}
+
+		$source->presentToken(header: $header, payload: $this->payloadOf(token: $token));
+	}//end presentToken()
+
+	/**
 	 * The claims of a compact JWS that OpenRegister already verified.
 	 *
 	 * @param string $token The compact JWS.
@@ -362,7 +390,11 @@ class OpenRegisterCredentialBridge implements OpenRegisterCredentialBridgeInterf
 	private function source(): ConsumerSource {
 		$this->assertEntryPoints();
 		if ($this->consumerSource === null) {
-			$this->consumerSource = new IntegriqConsumerSource(objectService: $this->objectService, credentials: $this->credentials);
+			$this->consumerSource = new IntegriqConsumerSource(
+				objectService: $this->objectService,
+				credentials: $this->credentials,
+				keySources: $this->keySources
+			);
 		}
 
 		return $this->consumerSource;

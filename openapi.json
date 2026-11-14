@@ -264,6 +264,10 @@
             "description": "Answers only for a record the caller may read: the read is checked first, under OpenRegister's rights"
         },
         {
+            "name": "regression-suites",
+            "description": "Runs the stored test cases of a mapping or synchronization, behind the action `regression-suite.run`"
+        },
+        {
             "name": "run-summary",
             "description": "GET /api/sources/{id}/run-summary, behind the action `source.logs`"
         },
@@ -272,12 +276,20 @@
             "description": "Identity, alignment, unsubscribe and withdraw endpoints"
         },
         {
+            "name": "service-fetch",
+            "description": "Service fetches other apps may call (forms-service-fetch-for-apps)."
+        },
+        {
             "name": "settings",
             "description": "Controller exposing Integriq-specific settings actions"
         },
         {
             "name": "setup",
             "description": "First-time setup wizard endpoints"
+        },
+        {
+            "name": "sharepoint",
+            "description": "Graph lookups for setting up SharePoint to publication intake."
         },
         {
             "name": "source-destroyed",
@@ -322,6 +334,10 @@
         {
             "name": "zgw-version-translate",
             "description": "Translate one ZGW resource payload between `1.0` and `1.6`"
+        },
+        {
+            "name": "registration-targets",
+            "description": "Where a sibling app may register form submissions."
         }
     ],
     "paths": {
@@ -1798,6 +1814,69 @@
                 }
             }
         },
+        "/registration-targets": {
+            "get": {
+                "operationId": "registration-targets-index",
+                "summary": "The registration targets an app may use",
+                "description": "The enabled registration targets the app named in `?app=` may hand submissions to, by slug, title and kind only. Sources, mapping and settings stay admin-only (form-submission-registration-targets).",
+                "tags": [
+                    "registration-targets"
+                ],
+                "parameters": [
+                    {
+                        "name": "app",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The app that will hand submissions over, e.g. portaliq."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The targets; empty without an app.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "results": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "slug": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "kind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "zgw",
+                                                            "objects-api",
+                                                            "stuf-zds",
+                                                            "json"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/connections/{id}/link": {
             "post": {
                 "operationId": "connections-link",
@@ -3128,6 +3207,67 @@
                 ]
             }
         },
+        "/regression-suites/{subjectType}/{subjectId}/run": {
+            "post": {
+                "operationId": "regressionSuite-run",
+                "summary": "Run every test case of a mapping or synchronization",
+                "description": "Feeds each stored case through its subject without calling a source or writing anything but one integration_test_run record, and returns that record: total, passed, failed and the differing paths per failed case. Needs the action regression-suite.run.",
+                "tags": [
+                    "regression-suites"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The run record; an `error` with 400, 401 or 403 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "subjectType",
+                        "in": "path",
+                        "required": true,
+                        "description": "`mapping` or `synchronization`.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "mapping",
+                                "synchronization"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "subjectId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The subject's uuid or slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/events/{id}/messages": {
             "get": {
                 "operationId": "events-messages",
@@ -3931,6 +4071,40 @@
                 }
             }
         },
+        "/intake/messages/route": {
+            "post": {
+                "operationId": "intake-channels-route-again-many",
+                "summary": "Route a selection of held or failed messages again, answering each one",
+                "description": "Route a selection of held or failed messages again, answering each one.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "One outcome per id, in the order asked.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
         "/intake/messages/{id}/reply": {
             "post": {
                 "operationId": "intake-channels-reply",
@@ -3964,6 +4138,51 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/intake/messages/{id}/route": {
+            "post": {
+                "operationId": "intake-channels-route-again",
+                "summary": "Route one held or failed message again",
+                "description": "Route one held or failed message again.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The message's new state.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     }
                 },
                 "parameters": [
@@ -4040,6 +4259,40 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/intake/routing-rules/test": {
+            "post": {
+                "operationId": "intake-channels-test-rule",
+                "summary": "Test a draft rule against a sample message, storing nothing",
+                "description": "Test a draft rule against a sample message, storing nothing.",
+                "tags": [
+                    "intake-channels"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Whether the draft matches, its payload and today's winner.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     }
                 }
             }
@@ -6266,6 +6519,57 @@
                 }
             }
         },
+        "/payments/sources/{slug}/terminals": {
+            "get": {
+                "operationId": "payments-terminals",
+                "summary": "The point-of-sale terminals of a payment source",
+                "description": "The point-of-sale terminals of a payment source, for an administrator registering a device. Needs the payments.create action.",
+                "tags": [
+                    "payments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{terminals: [{terminalId, label, status}]}`; empty for a provider without terminals.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The payment source slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/pdok/free": {
             "get": {
                 "operationId": "pdok-free-action",
@@ -6814,6 +7118,55 @@
                 ]
             }
         },
+        "/products/{productSlug}/asyncapi.json": {
+            "get": {
+                "operationId": "product-channels-asyncapi",
+                "summary": "The AsyncAPI 3.0 document of an API product's event channels",
+                "description": "Generated from the latest active version of the product: one channel per product channel, one message per CloudEvent type, and a push and a pull operation per channel. Readable without authentication for a public product; a private product needs a consumer with an active subscription (403 `subscription_required` otherwise).",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/promotions": {
             "post": {
                 "operationId": "promotion-confirm",
@@ -7278,6 +7631,48 @@
                 ]
             }
         },
+        "/service-fetches": {
+            "get": {
+                "operationId": "service-fetch-index",
+                "summary": "The enabled service fetches an app may call, for a form designer",
+                "description": "The enabled service fetches the given app may call, projected to slug, title, description, inputs and outputs. The source, path, query and mappings are never included (forms-service-fetch-for-apps, REQ-SF-003).",
+                "tags": [
+                    "service-fetch"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "app",
+                        "in": "query",
+                        "required": true,
+                        "description": "The app whose fetches to list.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/settings/rebase": {
             "post": {
                 "operationId": "settings-rebase",
@@ -7412,6 +7807,102 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/sharepoint/lookup": {
+            "get": {
+                "operationId": "sharepoint-setup-lookup",
+                "summary": "Look up SharePoint sites, libraries or folders in Microsoft Graph",
+                "description": "The Graph lookups behind the SharePoint to publication setup dialog, through the credential broker with the credential the administrator picked. `kind` is `sites` (needs `search`), `drives` (needs `siteId`) or `children` (needs `driveId`, optionally `itemId`). A Graph refusal answers 403 naming the Graph permission the step needs. Integriq administrators only; nothing is stored.",
+                "tags": [
+                    "sharepoint"
+                ],
+                "parameters": [
+                    {
+                        "name": "credential",
+                        "in": "query",
+                        "required": true,
+                        "description": "The brokered credential's uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "kind",
+                        "in": "query",
+                        "required": true,
+                        "description": "sites, drives or children.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "description": "Text to search site names for (kind sites).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "siteId",
+                        "in": "query",
+                        "required": false,
+                        "description": "The Graph site id (kind drives).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "driveId",
+                        "in": "query",
+                        "required": false,
+                        "description": "The document library id (kind children).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "query",
+                        "required": false,
+                        "description": "The folder id; the library root when absent (kind children).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
                     }
                 }
             }

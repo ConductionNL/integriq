@@ -89,6 +89,58 @@ final class EndpointAuthenticationAnyOfTest extends TestCase {
 	}
 
 	/**
+	 * The rule's own requiredScopes apply to every anyOf method: a key that
+	 * passes but lacks the scope is one more reason, not a pass.
+	 *
+	 * @return void
+	 */
+	public function testTheRulesRequiredScopesApplyToEachMethod(): void {
+		$bridge = $this->createMock(OpenRegisterCredentialBridge::class);
+		$bridge->expects($this->once())->method('authorizeApiKey')->with('Bearer k', ['k1']);
+		$bridge->method('getResolvedConsumer')->willReturn($this->consumerHolding(scopes: ['zaken:read']));
+
+		$response = $this->runRule(bridge: $bridge, anyOf: [['type' => 'apikey', 'keys' => ['k1']]], extra: ['requiredScopes' => ['POST' => ['zaken:write']]], method: 'POST');
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(401, $response->getStatus());
+		$this->assertSame(
+			[['method' => '0:apikey', 'error' => 'insufficient_scope', 'details' => 'This call requires the scope zaken:write.']],
+			$response->getData()['details']['anyOf']
+		);
+	}//end testTheRulesRequiredScopesApplyToEachMethod()
+
+	/**
+	 * A method's own requiredScopes win over the rule's, and a caller holding
+	 * them passes.
+	 *
+	 * @return void
+	 */
+	public function testAMethodsOwnRequiredScopesWin(): void {
+		$bridge = $this->createMock(OpenRegisterCredentialBridge::class);
+		$bridge->method('getResolvedConsumer')->willReturn($this->consumerHolding(scopes: ['zaken:read']));
+
+		$data = self::DATA + ['method' => 'GET'];
+		$this->assertSame(
+			$data,
+			$this->runRule(bridge: $bridge, anyOf: [['type' => 'apikey', 'keys' => ['k1'], 'requiredScopes' => ['zaken:read']]], extra: ['requiredScopes' => ['zaken:write']], method: 'GET')
+		);
+	}//end testAMethodsOwnRequiredScopesWin()
+
+	/**
+	 * A consumer object holding the given scopes.
+	 *
+	 * @param array<int,string> $scopes The scopes.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function consumerHolding(array $scopes): ObjectEntity {
+		$consumer = new ObjectEntity();
+		$consumer->setObject(['name' => 'zaaksysteem', 'scopes' => $scopes]);
+
+		return $consumer;
+	}//end consumerHolding()
+
+	/**
 	 * Run the authentication rule.
 	 *
 	 * @param OpenRegisterCredentialBridge $bridge The bridge double.
@@ -97,17 +149,22 @@ final class EndpointAuthenticationAnyOfTest extends TestCase {
 	 *
 	 * @return array|JSONResponse
 	 */
-	private function runRule(OpenRegisterCredentialBridge $bridge, array $anyOf, ?string $type = null): array|JSONResponse {
+	private function runRule(OpenRegisterCredentialBridge $bridge, array $anyOf, ?string $type = null, array $extra = [], ?string $method = null): array|JSONResponse {
 		$reflection = new ReflectionClass(EndpointService::class);
 		$service = $reflection->newInstanceWithoutConstructor();
 		$reflection->getProperty('authorizationService')->setValue($service, $bridge);
-		$authentication = ['anyOf' => $anyOf];
+		$authentication = ['anyOf' => $anyOf] + $extra;
 		if ($type !== null) {
 			$authentication['type'] = $type;
 		}
 		$rule = new ObjectEntity();
 		$rule->setObject(['configuration' => ['authentication' => $authentication]]);
 
-		return $reflection->getMethod('processAuthenticationRule')->invoke($service, $rule, self::DATA);
+		$data = self::DATA;
+		if ($method !== null) {
+			$data['method'] = $method;
+		}
+
+		return $reflection->getMethod('processAuthenticationRule')->invoke($service, $rule, $data);
 	}
 }

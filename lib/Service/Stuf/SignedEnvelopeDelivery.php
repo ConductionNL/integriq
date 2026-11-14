@@ -124,12 +124,66 @@ final class SignedEnvelopeDelivery {
 		// Unreachable today: resolveSigningMaterial() above always throws
 		// until OpenRegister's credential broker can issue in-process
 		// signing material (see the clients' class docblocks).
-		$signedXml = $this->profile->buildSignedRequest(certificateRef: $certificateRef, stufBodyXml: $request->envelopeXml);
+		$partnerCertificate = $this->partnerCertificate(request: $request);
+		$signedXml = $this->signedRequest(request: $request, certificateRef: $certificateRef, partnerCertificate: $partnerCertificate);
 		$response  = $this->post(url: $endpoint . $request->pathSuffix, options: $this->postOptions(request: $request, signedXml: $signedXml));
 		$this->assertSuccessful(response: $response);
 
-		return $this->reference(response: $response, fallback: $request->kenmerk);
+		return $this->reference(response: $response, fallback: $request->kenmerk, certificateRef: $certificateRef, encrypted: $partnerCertificate !== null);
 	}//end deliver()
+
+	/**
+	 * The partner certificate to encrypt for, or null when the source has encryption off.
+	 *
+	 * A source with `encryption` on and no `partnerCertificate` is refused
+	 * before anything is sent, never sent unencrypted.
+	 *
+	 * @param SignedEnvelopeRequest $request The envelope to deliver.
+	 *
+	 * @return string|null The partner certificate (PEM), or null.
+	 *
+	 * @throws Exception The client's signing refusal when encryption is on without a certificate.
+	 *
+	 * @spec openspec/changes/sources-ws-security-encryption/specs/digikoppeling-adapter/spec.md#requirement-a-soap-source-encrypts-its-body-and-decrypts-the-answer-req-wse-001
+	 */
+	private function partnerCertificate(SignedEnvelopeRequest $request): ?string {
+		$encryption = $request->sourceConfiguration['encryption'] ?? false;
+		if ($encryption !== true && $encryption !== 'true') {
+			return null;
+		}
+
+		$certificate = trim((string)($request->sourceConfiguration['partnerCertificate'] ?? ''));
+		if ($certificate === '') {
+			throw $this->refusals->signingRefused(
+				cause: new DigikoppelingException(message: 'WS-Security encryption is on but the source has no partner certificate to encrypt for.')
+			);
+		}
+
+		return $certificate;
+	}//end partnerCertificate()
+
+	/**
+	 * The signed request, encrypted for the partner when a certificate is given.
+	 *
+	 * @param SignedEnvelopeRequest $request            The envelope to deliver.
+	 * @param string                $certificateRef     The broker credentialRef.
+	 * @param string|null           $partnerCertificate The partner certificate, or null for a signed-only request.
+	 *
+	 * @return string The request body.
+	 *
+	 * @spec openspec/changes/sources-ws-security-encryption/specs/digikoppeling-adapter/spec.md#requirement-a-soap-source-encrypts-its-body-and-decrypts-the-answer-req-wse-001
+	 */
+	private function signedRequest(SignedEnvelopeRequest $request, string $certificateRef, ?string $partnerCertificate): string {
+		if ($partnerCertificate === null) {
+			return $this->profile->buildSignedRequest(certificateRef: $certificateRef, stufBodyXml: $request->envelopeXml);
+		}
+
+		return $this->profile->buildSignedEncryptedRequest(
+			certificateRef: $certificateRef,
+			stufBodyXml: $request->envelopeXml,
+			partnerCertificatePem: $partnerCertificate
+		);
+	}//end signedRequest()
 
 	/**
 	 * The Guzzle options of the POST: the XML content type plus the client's headers, the signed body.
@@ -219,15 +273,24 @@ final class SignedEnvelopeDelivery {
 	/**
 	 * The verified reference in the answer, or the fallback when the answer is empty.
 	 *
-	 * @param ResponseInterface $response The answer.
-	 * @param string            $fallback The caller's kenmerk.
+	 * An answer from a source with encryption on is decrypted with the
+	 * organisation's key before its signature is verified.
+	 *
+	 * @param ResponseInterface $response       The answer.
+	 * @param string            $fallback       The caller's kenmerk.
+	 * @param string            $certificateRef The broker credentialRef whose key decrypts an encrypted answer.
+	 * @param bool              $encrypted      Whether the source has encryption on.
 	 *
 	 * @return string The reference.
 	 */
-	private function reference(ResponseInterface $response, string $fallback): string {
+	private function reference(ResponseInterface $response, string $fallback, string $certificateRef, bool $encrypted): string {
 		$body = trim((string)$response->getBody());
 		if ($body === '') {
 			return $fallback;
+		}
+
+		if ($encrypted === true) {
+			return $this->profile->decryptAndVerifyResponse(certificateRef: $certificateRef, responseXml: $body);
 		}
 
 		return $this->profile->verifyResponse(responseXml: $body);
