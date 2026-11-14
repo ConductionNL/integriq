@@ -18,8 +18,8 @@ Kind: code. Size M. Half for dossiq `woo-requests-gather-documents-from-sources`
 - **files**: `lib/Service/Adapter/Saas/Microsoft365Adapter.php`, the per-user grant lookup from `sources-per-user-oauth`
 - **acceptance_criteria**:
   - GIVEN a person without a delegated grant WHEN they search THEN file hits come back with the notice `delegated-grant-missing`
-- [ ] Implement (not run: the per-user grant lookup waits on `sources-per-user-oauth`; until then mail and chat answer `delegated-grant-missing`, tested in `Microsoft365DocumentSearchTest::testMailAndChatOnlyAnswerTheMissingGrantNotice`)
-- [ ] Test (PHPUnit)
+- [x] Implement (`PersonalCredentialLookup` finds the person's own connected account; `GraphDelegatedSearch` searches and fetches mail and chat with it; none answers `delegated-grant-missing`, two `delegated-grant-ambiguous`)
+- [x] Test (PHPUnit): `Microsoft365DocumentSearchTest` (own grant, no grant, two accounts, limit across types, mail and chat fetch), `PersonalCredentialLookupTest`
 
 ### Task 3: Search and fetch commands
 - **spec_ref**: `openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-sibling-app-searches-and-fetches-through-typed-commands-req-dcc-009`

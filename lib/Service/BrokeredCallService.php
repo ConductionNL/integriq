@@ -929,13 +929,7 @@ class BrokeredCallService implements BrokeredCallServiceInterface {
 	 * @return bool
 	 */
 	private static function isUsablePersonalCredential(mixed $row, string $uid): bool {
-		if ($row instanceof ObjectEntity === false || $row->getOwner() !== $uid) {
-			return false;
-		}
-
-		$data = $row->getObject();
-
-		return (string)($data['scope'] ?? 'personal') === 'personal' && (string)($data['status'] ?? '') !== 'disabled';
+		return PersonalCredentialLookup::isUsable(row: $row, uid: $uid);
 	}//end isUsablePersonalCredential()
 
 	/**

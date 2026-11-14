@@ -18,6 +18,7 @@ Every search is live: integriq builds no index and stores neither the hits nor t
 3. Set the app config key `microsoft-365_credential_id` to the uuid of that broker credential. Without it, every search answers the notice `not-connected` and nothing is called.
 4. Optionally set `microsoft365_search_region` to the Graph search region of the tenant. It defaults to `EUR`; an application grant needs one.
 5. Link the connection to the app that searches (dossiq), so it can dispatch the commands. An app without a linked connection gets the notice `not-linked` on a search and nothing on a fetch.
+6. For mail and chat, each person connects their own Microsoft account in the credential broker (a personal credential, see `sources-per-user-oauth`) with the delegated permissions below. The provider slug of those accounts is read from `microsoft365_delegated_provider`, default `microsoft-entra`.
 
 ### Microsoft Graph permissions
 
@@ -27,7 +28,9 @@ Every search is live: integriq builds no index and stores neither the hits nor t
 | Mail (`message`) | Delegated, as the requesting person | `Mail.Read` |
 | Teams chat and channel messages (`chatMessage`) | Delegated, as the requesting person | `Chat.Read` and `ChannelMessage.Read.All` |
 
-Mail and chat are searched as the person who asks, never with the application grant, so a search finds only what that person may read. The per-person grant comes with `sources-per-user-oauth`, which is not built yet. Until then a search that asks for mail or chat answers the file hits plus the notice `delegated-grant-missing`, rather than an empty list that would read as "nothing found".
+Mail and chat are searched as the person who asks, never with the application grant, so a search finds only what that person may read. The grant is that person's own connected account at the provider: their own, enabled, personal credential, never another person's and never an organisation credential. A person with no such account gets the file hits plus the notice `delegated-grant-missing`, rather than an empty list that would read as "nothing found". A person with more than one gets `delegated-grant-ambiguous`: integriq does not guess which account to use.
+
+A mail search filters the period on the received date, a chat search on the sent date. A delegated search sends no search region.
 
 ## The contract for a calling app
 
@@ -46,7 +49,7 @@ The result is `hits`, `moreCount` (how many more matched than the limit) and `no
 
 ### `DocumentFetchRequestedEvent`
 
-Takes the `remoteId` of a hit as its handle. The result is `fileName`, `mimeType` and `content`. An app without a linked connection, or a handle that names no file, gets no result.
+Takes the `remoteId` of a hit as its handle. The result is `fileName`, `mimeType` and `content`. A file comes back as itself, a mail as its MIME source (`.eml`, `message/rfc822`) and a chat message as its Graph JSON (`application/json`). Mail and chat are fetched with the person's own account. An app without a linked connection, a handle that names nothing, or a mail or chat handle for a person without their own account gets no result.
 
 ### Notices
 
@@ -54,7 +57,8 @@ Takes the `remoteId` of a hit as its handle. The result is `fileName`, `mimeType
 |--------|---------|
 | `not-linked` | The calling app has no linked connection. Nothing is searched. |
 | `not-connected` | No broker credential is configured. Nothing is called. |
-| `delegated-grant-missing` | Mail or chat was asked for, and the person has no delegated grant yet. File hits still come back. |
+| `delegated-grant-missing` | Mail or chat was asked for, and the person has not connected their own Microsoft account. File hits still come back. |
+| `delegated-grant-ambiguous` | Mail or chat was asked for, and the person has more than one connected Microsoft account. File hits still come back. |
 | `not-permitted` | Microsoft 365 refused the search: check the permissions above and the admin consent. |
 | `search-failed` | Microsoft 365 answered with an error or an unreadable body. |
 

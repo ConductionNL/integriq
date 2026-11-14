@@ -48,14 +48,16 @@ final class GraphDriveSearch {
 	/**
 	 * Which entity types run, and the notices for the ones that cannot.
 	 *
-	 * @param string            $terms       The search terms.
-	 * @param array<int,string> $entityTypes The asked types; empty for all.
+	 * @param string            $terms           The search terms.
+	 * @param array<int,string> $entityTypes     The asked types; empty for all.
+	 * @param string|null       $delegatedNotice The notice for asked mail and chat types; null when the
+	 *                                           person's own grant is there and they are searched.
 	 *
 	 * @return array{searchDrive: bool, notices: array<int, string>} Whether drive items are searched.
 	 *
 	 * @spec openspec/changes/connectors-graph-document-search/specs/document-cms-connectors/spec.md#requirement-a-microsoft-365-source-answers-a-document-search-across-files-mail-and-chat-req-dcc-008
 	 */
-	public function plan(string $terms, array $entityTypes): array {
+	public function plan(string $terms, array $entityTypes, ?string $delegatedNotice = 'delegated-grant-missing'): array {
 		$asked = $entityTypes;
 		if ($asked === []) {
 			$asked = self::ENTITY_TYPES;
@@ -63,8 +65,8 @@ final class GraphDriveSearch {
 
 		$types = array_values(array_intersect(self::ENTITY_TYPES, $asked));
 		$notices = [];
-		if (array_intersect($types, self::DELEGATED_TYPES) !== []) {
-			$notices[] = 'delegated-grant-missing';
+		if ($delegatedNotice !== null && array_intersect($types, self::DELEGATED_TYPES) !== []) {
+			$notices[] = $delegatedNotice;
 		}
 
 		return [
