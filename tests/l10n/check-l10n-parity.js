@@ -2,6 +2,9 @@
 /**
  * l10n translation-PARITY gate.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Guards that every REQUIRED locale carries a real translation for every
  * English source key. Without this, a new English string ships and the other
  * languages silently fall back to English with a green pipeline — the app
@@ -30,9 +33,6 @@
  * Exit codes:
  *   0  every required locale is at full parity for every existing source set
  *   1  one or more locales are missing keys, missing files, or empty values
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 'use strict'

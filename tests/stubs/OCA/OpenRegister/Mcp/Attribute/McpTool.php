@@ -3,6 +3,9 @@
 /**
  * #[McpTool] service-method attribute (ADR-063 chain 3/3).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Net-new PHP attribute, php-mcp/server style: a developer marks a public
  * service method with `#[McpTool]` to expose it as an MCP tool without
  * writing a per-app IMcpToolProvider or a hand-written descriptor/dispatch.
@@ -38,9 +41,6 @@
  * caller's ambient Nextcloud session (ADR-041 — no cross-app RPC). The
  * method itself is responsible for its own authorization/IDOR checks;
  * OpenRegister never impersonates or elevates the acting principal.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\Attribute

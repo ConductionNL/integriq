@@ -110,11 +110,11 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	public function kennisgeving(array $source, string $operation, array $message, array $context): array {
-		$request  = new ZdsRequest(source: $source, operation: $operation, message: $message, context: $context);
-		$row      = $this->openRow(request: $request, keepEnvelope: true);
-		$response = $this->transmit(source: $source, operation: $operation, envelope: $message['xml']);
+		$request = new ZdsRequest(source: $source, operation: $operation, message: $message, context: $context);
+		$attempt = $this->firstAttempt(request: $request, keepEnvelope: true);
+		$attempt->response = $this->transmit(attempt: $attempt);
 
-		return $this->classify(source: $source, row: $row, response: $response, attempt: 1);
+		return $this->classify(attempt: $attempt);
 	}//end kennisgeving()
 
 	/**
@@ -132,29 +132,57 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-case-operations
 	 */
 	public function question(array $source, string $operation, array $message, array $context): array {
-		$request  = new ZdsRequest(source: $source, operation: $operation, message: $message, context: $context);
-		$row      = $this->openRow(request: $request, keepEnvelope: false);
-		$response = $this->transmit(source: $source, operation: $operation, envelope: $message['xml']);
+		$request = new ZdsRequest(source: $source, operation: $operation, message: $message, context: $context);
+		$attempt = $this->firstAttempt(request: $request, keepEnvelope: false);
+		$attempt->response = $this->transmit(attempt: $attempt);
 
-		$fout   = null;
-		$caseId = (string)($context['caseIdentification'] ?? '');
-		if ($this->isSuccess(response: $response) === false) {
-			$fout = $this->failureOf(response: $response);
-			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
+		$conclusion = $this->answerConclusion(attempt: $attempt, caseId: (string)($context['caseIdentification'] ?? ''));
+		$row        = $this->concludeRow(row: $attempt->row, conclusion: $conclusion);
+
+		return ($this->result(row: $row, conclusion: $conclusion) + ['answer' => $attempt->response['responseXml']]);
+	}//end question()
+
+	/**
+	 * Open a message's row and start its first attempt.
+	 *
+	 * @param ZdsRequest $request      The source, operation, built message and context.
+	 * @param bool       $keepEnvelope Keep the envelope for a retry (kennisgevingen only).
+	 *
+	 * @return ZdsAttempt The first attempt, not yet transmitted.
+	 */
+	private function firstAttempt(ZdsRequest $request, bool $keepEnvelope): ZdsAttempt {
+		$attempt = new ZdsAttempt(row: $this->openRow(request: $request, keepEnvelope: $keepEnvelope), number: 1);
+		$attempt->source    = $request->source;
+		$attempt->operation = $request->operation;
+		$attempt->envelope  = $request->message['xml'];
+
+		return $attempt;
+	}//end firstAttempt()
+
+	/**
+	 * How an answered question ended, recorded on the circuit breaker.
+	 *
+	 * @param ZdsAttempt $attempt The transmitted question.
+	 * @param string     $caseId  The zaak identificatie the caller named, or ''.
+	 *
+	 * @return ZdsConclusion The conclusion; a generated identificatie replaces the caller's.
+	 */
+	private function answerConclusion(ZdsAttempt $attempt, string $caseId): ZdsConclusion {
+		$fout = null;
+		if ($this->isSuccess(response: $attempt->response) === false) {
+			$fout = $this->failureOf(response: $attempt->response);
+			$this->breakerCall(sourceId: $attempt->source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
 		}
 
 		if ($fout === null) {
-			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
-			if ($operation === 'genereerZaakIdentificatie') {
-				$caseId = (string)$this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
+			$this->breakerCall(sourceId: $attempt->source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
+			if ($attempt->operation === 'genereerZaakIdentificatie') {
+				$caseId = (string)$this->reader->confirmation(xml: $attempt->response['responseXml'])['caseIdentification'];
 			}
 		}
 
-		$conclusion = new ZdsConclusion(sent: ($fout === null), attempt: 1, transport: $response, fout: $fout, caseId: $caseId);
-		$row        = $this->concludeRow(row: $row, conclusion: $conclusion);
-
-		return ($this->result(row: $row, conclusion: $conclusion) + ['answer' => $response['responseXml']]);
-	}//end question()
+		return new ZdsConclusion(sent: ($fout === null), attempt: 1, transport: $attempt->response, fout: $fout, caseId: $caseId);
+	}//end answerConclusion()
 
 	/**
 	 * Re-send a kennisgeving whose last attempt failed transiently (called by the retry job).
@@ -167,36 +195,109 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	 */
 	public function retry(string $messageId): void {
 		$row = $this->log->find(messageId: $messageId);
-		if ($row === null || ($row['status'] ?? '') !== 'retrying' || (string)($row['envelope'] ?? '') === '') {
+		if ($this->isWaitingForRetry(row: $row) === false) {
 			$this->logger->info('StUF-ZDS retry: message {id} is not waiting for a retry', ['id' => $messageId]);
 			return;
 		}
 
-		$attempt = ((int)($row['attempts'] ?? 0) + 1);
+		$attempt = $this->retryAttempt(row: $row);
+		if ($attempt === null || $this->breakerAllowsRetry(messageId: $messageId, attempt: $attempt) === false) {
+			return;
+		}
+
+		$attempt->response = $this->transmit(attempt: $attempt);
+		$this->classify(attempt: $attempt);
+	}//end retry()
+
+	/**
+	 * Whether a row is a kennisgeving waiting for a retry, with its envelope kept.
+	 *
+	 * @param array|null $row The stuf_message row, null when there is none.
+	 *
+	 * @return bool True when it can be retried.
+	 */
+	private function isWaitingForRetry(?array $row): bool {
+		return ($row !== null && ($row['status'] ?? '') === 'retrying' && (string)($row['envelope'] ?? '') !== '');
+	}//end isWaitingForRetry()
+
+	/**
+	 * Start the next attempt of a waiting row, or conclude it when its source cannot take one.
+	 *
+	 * @param array $row The stuf_message row.
+	 *
+	 * @return ZdsAttempt|null The attempt, null when the row was concluded instead.
+	 */
+	private function retryAttempt(array $row): ?ZdsAttempt {
+		$attempt = new ZdsAttempt(row: $row, number: ((int)($row['attempts'] ?? 0) + 1));
+		$attempt->operation = (string)($row['operation'] ?? '');
+		$attempt->envelope  = (string)$row['envelope'];
+		if ($this->resolveRetrySource(attempt: $attempt) === false) {
+			return null;
+		}
+
+		return $attempt;
+	}//end retryAttempt()
+
+	/**
+	 * Find the rest-mode source of a retry, concluding the row as failed when it is gone or left rest mode.
+	 *
+	 * @param ZdsAttempt $attempt The retry.
+	 *
+	 * @return bool True when the source can take the retry.
+	 */
+	private function resolveRetrySource(ZdsAttempt $attempt): bool {
 		try {
-			$source = $this->log->source(sourceId: (string)($row['sourceId'] ?? ''));
+			$attempt->source = $this->log->source(sourceId: (string)($attempt->row['sourceId'] ?? ''));
 		} catch (StufZknProviderException $exception) {
 			$fout = ['code' => 'SOURCE_GONE', 'omschrijving' => $exception->getMessage(), 'details' => '', 'kind' => 'permanent'];
-			$this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: [], fout: $fout, caseId: null));
-			return;
+			$this->refuseRetry(attempt: $attempt, fout: $fout);
+			return false;
 		}
 
-		if (($source['configuration']['provider'] ?? 'log') !== 'rest') {
+		if (($attempt->source['configuration']['provider'] ?? 'log') !== 'rest') {
 			$fout = ['code' => 'SOURCE_NOT_REST', 'omschrijving' => 'The source left rest mode; nothing was sent', 'details' => '', 'kind' => 'permanent'];
-			$this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: [], fout: $fout, caseId: null));
-			return;
+			$this->refuseRetry(attempt: $attempt, fout: $fout);
+			return false;
 		}
 
+		return true;
+	}//end resolveRetrySource()
+
+	/**
+	 * Conclude a retry that was not sent as failed.
+	 *
+	 * @param ZdsAttempt $attempt The retry.
+	 * @param array      $fout    Why it was not sent.
+	 *
+	 * @return void
+	 */
+	private function refuseRetry(ZdsAttempt $attempt, array $fout): void {
+		$refused = new ZdsConclusion(sent: false, attempt: $attempt->number, transport: [], fout: $fout, caseId: null);
+		$this->conclude(row: $attempt->row, conclusion: $refused);
+	}//end refuseRetry()
+
+	/**
+	 * Whether the circuit breaker lets the retry through; when it is open, wait out its cooldown.
+	 *
+	 * @param string     $messageId The stuf_message uuid.
+	 * @param ZdsAttempt $attempt   The retry.
+	 *
+	 * @return bool True when the retry may be sent now.
+	 */
+	private function breakerAllowsRetry(string $messageId, ZdsAttempt $attempt): bool {
 		// Fails open: a breaker that cannot be read must not strand the row with its job consumed.
-		$allowed = $this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->allows(sourceId: $sourceId), fallback: true);
+		$allowed = $this->breakerCall(
+			sourceId: $attempt->source['id'],
+			call: fn (string $sourceId) => $this->breaker->allows(sourceId: $sourceId),
+			fallback: true
+		);
 		if ($allowed === false) {
-			$this->waitOutCooldown(messageId: $messageId, row: $row);
-			return;
+			$this->waitOutCooldown(messageId: $messageId, row: $attempt->row);
+			return false;
 		}
 
-		$response = $this->transmit(source: $source, operation: (string)($row['operation'] ?? ''), envelope: (string)$row['envelope']);
-		$this->classify(source: $source, row: $row, response: $response, attempt: $attempt);
-	}//end retry()
+		return true;
+	}//end breakerAllowsRetry()
 
 	/**
 	 * Not an attempt: wait out the open breaker's cooldown and try again, or conclude the row when that cannot be scheduled.
@@ -219,50 +320,145 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	/**
 	 * Classify the answer to a kennisgeving attempt: sent, retry later, or failed.
 	 *
-	 * @param array $source   The source.
-	 * @param array $row      The stuf_message row.
-	 * @param array $response The transport result.
-	 * @param int   $attempt  The attempt (1-indexed).
+	 * @param ZdsAttempt $attempt The transmitted attempt.
 	 *
 	 * @return array The result (ZdsResult).
 	 */
-	private function classify(array $source, array $row, array $response, int $attempt): array {
-		if ($this->isSuccess(response: $response) === true) {
-			$caseId = $this->reader->confirmation(xml: $response['responseXml'])['caseIdentification'];
-			$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
-			return $this->conclude(row: $row, conclusion: new ZdsConclusion(sent: true, attempt: $attempt, transport: $response, fout: null, caseId: $caseId));
+	private function classify(ZdsAttempt $attempt): array {
+		if ($this->isSuccess(response: $attempt->response) === true) {
+			return $this->concludeSent(attempt: $attempt);
 		}
 
-		$fout = $this->failureOf(response: $response);
-		$this->breakerCall(sourceId: $source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
-		if ($this->isTransient(response: $response, fout: $fout) === false || $attempt > count(self::RETRY_BACKOFF_SECONDS)) {
-			return $this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null));
+		$attempt->fout = $this->failureOf(response: $attempt->response);
+		$this->breakerCall(sourceId: $attempt->source['id'], call: fn (string $sourceId) => $this->breaker->recordFailure(sourceId: $sourceId));
+		if ($this->isTransient(response: $attempt->response, fout: $attempt->fout) === false || $attempt->number > count(self::RETRY_BACKOFF_SECONDS)) {
+			return $this->concludeFailed(attempt: $attempt);
 		}
 
-		// A row that cannot be marked retrying, or a retry that cannot be
-		// scheduled, would leave the message `retrying` with no job behind it and
-		// the owning app waiting for a conclusion that never comes: conclude it as
-		// failed instead.
-		$delay = self::RETRY_BACKOFF_SECONDS[($attempt - 1)];
-		try {
-			$row = $this->log->retrying(row: $row, attempt: $attempt, transport: $response, fout: $fout, retryAfter: $delay);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				'StUF-ZDS message {id} could not be marked for a retry: {error}',
-				['id' => (string)($row['id'] ?? ''), 'error' => $exception->getMessage()]
-			);
-			return $this->conclude(row: $row, conclusion: new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null));
-		}
-
-		if ($this->schedule(messageId: (string)$row['id'], delay: $delay) === false) {
-			$unscheduled = $this->unscheduledFout(previous: $fout);
-			$failed      = new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $unscheduled, caseId: null);
-			return $this->conclude(row: $row, conclusion: $failed);
-		}
-
-		$retrying = new ZdsConclusion(sent: false, attempt: $attempt, transport: $response, fout: $fout, caseId: null, retrying: true);
-		return $this->result(row: $row, conclusion: $retrying);
+		return $this->scheduleRetry(attempt: $attempt);
 	}//end classify()
+
+	/**
+	 * Conclude a confirmed kennisgeving with the zaak identificatie the case system named.
+	 *
+	 * @param ZdsAttempt $attempt The confirmed attempt.
+	 *
+	 * @return array The result (ZdsResult).
+	 */
+	private function concludeSent(ZdsAttempt $attempt): array {
+		$caseId = $this->reader->confirmation(xml: $attempt->response['responseXml'])['caseIdentification'];
+		$this->breakerCall(sourceId: $attempt->source['id'], call: fn (string $sourceId) => $this->breaker->reset(sourceId: $sourceId));
+		$sent = new ZdsConclusion(sent: true, attempt: $attempt->number, transport: $attempt->response, fout: null, caseId: $caseId);
+		return $this->conclude(row: $attempt->row, conclusion: $sent);
+	}//end concludeSent()
+
+	/**
+	 * Conclude a failed kennisgeving attempt with its fout.
+	 *
+	 * @param ZdsAttempt $attempt The failed attempt.
+	 *
+	 * @return array The result (ZdsResult).
+	 */
+	private function concludeFailed(ZdsAttempt $attempt): array {
+		$failed = new ZdsConclusion(sent: false, attempt: $attempt->number, transport: $attempt->response, fout: $attempt->fout, caseId: null);
+		return $this->conclude(row: $attempt->row, conclusion: $failed);
+	}//end concludeFailed()
+
+	/**
+	 * Mark a transiently failed attempt for a retry and schedule it.
+	 *
+	 * A row that cannot be marked retrying, or a retry that cannot be
+	 * scheduled, would leave the message `retrying` with no job behind it and
+	 * the owning app waiting for a conclusion that never comes: it is
+	 * concluded as failed instead.
+	 *
+	 * @param ZdsAttempt $attempt The failed attempt, its fout set.
+	 *
+	 * @return array The result (ZdsResult).
+	 */
+	private function scheduleRetry(ZdsAttempt $attempt): array {
+		$delay = self::RETRY_BACKOFF_SECONDS[($attempt->number - 1)];
+		if ($this->markRetrying(attempt: $attempt, delay: $delay) === false) {
+			return $this->concludeFailed(attempt: $attempt);
+		}
+
+		if ($this->schedule(messageId: (string)$attempt->row['id'], delay: $delay) === false) {
+			return $this->concludeUnscheduled(attempt: $attempt);
+		}
+
+		return $this->retryingResult(attempt: $attempt);
+	}//end scheduleRetry()
+
+	/**
+	 * Conclude a kennisgeving whose retry could not be scheduled as failed.
+	 *
+	 * @param ZdsAttempt $attempt The failed attempt, its fout set.
+	 *
+	 * @return array The result (ZdsResult).
+	 */
+	private function concludeUnscheduled(ZdsAttempt $attempt): array {
+		$unscheduled = $this->unscheduledFout(previous: $attempt->fout);
+		$failed      = new ZdsConclusion(sent: false, attempt: $attempt->number, transport: $attempt->response, fout: $unscheduled, caseId: null);
+		return $this->conclude(row: $attempt->row, conclusion: $failed);
+	}//end concludeUnscheduled()
+
+	/**
+	 * The result of a kennisgeving whose retry is scheduled.
+	 *
+	 * @param ZdsAttempt $attempt The failed attempt, its row marked retrying.
+	 *
+	 * @return array The result (ZdsResult).
+	 */
+	private function retryingResult(ZdsAttempt $attempt): array {
+		$retrying = new ZdsConclusion(
+			sent: false,
+			attempt: $attempt->number,
+			transport: $attempt->response,
+			fout: $attempt->fout,
+			caseId: null,
+			retrying: true
+		);
+		return $this->result(row: $attempt->row, conclusion: $retrying);
+	}//end retryingResult()
+
+	/**
+	 * Save the attempt's row as retrying, logging a save that failed.
+	 *
+	 * @param ZdsAttempt $attempt The failed attempt; its row is replaced by the saved one.
+	 * @param int        $delay   Seconds until the retry.
+	 *
+	 * @return bool True when the row was saved.
+	 */
+	private function markRetrying(ZdsAttempt $attempt, int $delay): bool {
+		try {
+			$attempt->row = $this->log->retrying(
+				row: $attempt->row,
+				attempt: $attempt->number,
+				transport: $attempt->response,
+				fout: $attempt->fout,
+				retryAfter: $delay
+			);
+			return true;
+		} catch (Throwable $exception) {
+			$this->logUnmarkedRetry(row: $attempt->row, exception: $exception);
+			return false;
+		}
+	}//end markRetrying()
+
+	/**
+	 * Log a row that could not be marked for a retry.
+	 *
+	 * @param array     $row       The row as it was.
+	 * @param Throwable $exception Why the save failed.
+	 *
+	 * @return void
+	 */
+	private function logUnmarkedRetry(array $row, Throwable $exception): void {
+		$this->logger->error(
+			'StUF-ZDS message {id} could not be marked for a retry: {error}',
+			['id' => (string)($row['id'] ?? ''), 'error' => $exception->getMessage()]
+		);
+	}//end logUnmarkedRetry()
 
 	/**
 	 * Whether a failed attempt is worth retrying.
@@ -465,51 +661,88 @@ class StufZdsOutbound implements StufZdsOutboundInterface {
 	}//end openRow()
 
 	/**
-	 * Send an envelope to the ZDS service the operation belongs to.
+	 * Send an attempt's envelope to the ZDS service its operation belongs to.
 	 *
-	 * The SOAPAction is `<zkn namespace>/<functie>_<berichtcode>`, the functie
-	 * read from the envelope itself (a vrij bericht is named by its template).
 	 * The WS-Security UsernameToken is added to the envelope here, never before:
 	 * what is persisted on the row for a retry holds no credentials.
 	 *
-	 * @param array  $source    The source.
-	 * @param string $operation The operation.
-	 * @param string $envelope  The envelope.
+	 * @param ZdsAttempt $attempt The attempt: its source, operation and envelope.
 	 *
 	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>|null}
 	 */
-	private function transmit(array $source, string $operation, string $envelope): array {
-		$spec          = (self::OPERATIONS[$operation] ?? self::OPERATIONS['vrijBericht']);
-		$configuration = (array)($source['configuration'] ?? []);
-		$functie       = $operation;
-		$matches       = [];
-		if (preg_match('#<stuf:functie>([^<]+)</stuf:functie>#', $envelope, $matches) === 1) {
-			$functie = html_entity_decode($matches[1], (ENT_XML1 | ENT_QUOTES), 'UTF-8');
-		}
+	private function transmit(ZdsAttempt $attempt): array {
+		$spec          = (self::OPERATIONS[$attempt->operation] ?? self::OPERATIONS['vrijBericht']);
+		$configuration = (array)($attempt->source['configuration'] ?? []);
 
 		// The persisted envelope carries no credentials; the token is added here, for the first
 		// attempt and for every retry alike, and lives only in this request.
 		try {
-			$envelope = $this->builder->withUsernameToken(
-				envelopeXml: $envelope,
-				wsse: $this->credentials->usernameToken(sourceConfiguration: $configuration)
-			);
+			$envelope = $this->signedEnvelope(envelope: $attempt->envelope, configuration: $configuration);
 		} catch (StufZknProviderException $exception) {
-			return [
-				'httpStatus' => 0,
-				'responseXml' => '',
-				'durationMs' => 0,
-				'fout' => ['code' => 'CREDENTIALS', 'omschrijving' => $exception->getMessage(), 'details' => '', 'kind' => 'permanent'],
-			];
+			return $this->credentialsRefusal(exception: $exception);
 		}
 
 		return $this->transport->transmit(
 			sourceConfiguration: $configuration,
-			soapAction: '"' . StufZknNamespaces::ZKN . '/' . $functie . '_' . $spec['code'] . '"',
+			soapAction: $this->soapAction(attempt: $attempt, code: $spec['code']),
 			envelopeXml: $envelope,
 			url: (string)($configuration[$spec['urlKey']] ?? '')
 		);
 	}//end transmit()
+
+	/**
+	 * The SOAPAction of an attempt: `<zkn namespace>/<functie>_<berichtcode>`.
+	 *
+	 * The functie is read from the envelope itself (a vrij bericht is named by
+	 * its template), else the operation.
+	 *
+	 * @param ZdsAttempt $attempt The attempt.
+	 * @param string     $code    The operation's berichtcode.
+	 *
+	 * @return string The quoted SOAPAction.
+	 */
+	private function soapAction(ZdsAttempt $attempt, string $code): string {
+		$functie = $attempt->operation;
+		$matches = [];
+		if (preg_match('#<stuf:functie>([^<]+)</stuf:functie>#', $attempt->envelope, $matches) === 1) {
+			$functie = html_entity_decode($matches[1], (ENT_XML1 | ENT_QUOTES), 'UTF-8');
+		}
+
+		return '"' . StufZknNamespaces::ZKN . '/' . $functie . '_' . $code . '"';
+	}//end soapAction()
+
+	/**
+	 * The envelope with the source's WS-Security UsernameToken added.
+	 *
+	 * @param string $envelope      The envelope, without credentials.
+	 * @param array  $configuration The source configuration.
+	 *
+	 * @return string The envelope to send.
+	 *
+	 * @throws StufZknProviderException When the password is missing or cannot be decrypted.
+	 */
+	private function signedEnvelope(string $envelope, array $configuration): string {
+		return $this->builder->withUsernameToken(
+			envelopeXml: $envelope,
+			wsse: $this->credentials->usernameToken(sourceConfiguration: $configuration)
+		);
+	}//end signedEnvelope()
+
+	/**
+	 * The transport result of an attempt refused for unusable credentials: nothing was sent.
+	 *
+	 * @param StufZknProviderException $exception Why the credentials are unusable.
+	 *
+	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>}
+	 */
+	private function credentialsRefusal(StufZknProviderException $exception): array {
+		return [
+			'httpStatus' => 0,
+			'responseXml' => '',
+			'durationMs' => 0,
+			'fout' => ['code' => 'CREDENTIALS', 'omschrijving' => $exception->getMessage(), 'details' => '', 'kind' => 'permanent'],
+		];
+	}//end credentialsRefusal()
 
 	/**
 	 * Whether an attempt got a 2xx answer.

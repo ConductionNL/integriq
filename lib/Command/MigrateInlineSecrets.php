@@ -3,6 +3,9 @@
 /**
  * OCC command: integriq:migrate-inline-secrets.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Phase C of ocon#151 / ADR-064. Reports which `source` objects still hold an
  * INLINE credential (`apikey`, `secret`, `password`, `jwt`,
  * `authenticationConfig`) and what each would become in the OpenRegister
@@ -36,9 +39,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -125,16 +125,10 @@ class MigrateInlineSecrets extends Command {
 	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$io = new SymfonyStyle($input, $output);
-
-		$limit = CommandConsole::readLimit(input: $input, io: $io);
-		if ($limit === null) {
+		$run = CommandConsole::startRun(input: $input, output: $output);
+		if ($run === null) {
 			return Command::FAILURE;
 		}
-
-		$run = new ConsoleRun(io: $io, output: $output);
-		$run->limit = $limit;
-		$run->json = (bool)$input->getOption('json');
 
 		if ((bool)$input->getOption('dry-run') === false) {
 			return $this->runMigrate(run: $run);

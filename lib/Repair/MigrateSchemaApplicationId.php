@@ -3,6 +3,9 @@
 /**
  * Re-points this app's OpenRegister SCHEMAS at the new application id.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER. OpenRegister
  * resolves the two halves of a configuration by DIFFERENT keys:
  *
@@ -46,9 +49,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://conduction.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

@@ -106,4 +106,18 @@ final class SendDecisionRun {
 		];
 
 	}//end logContext()
+
+	/**
+	 * A decision about one recipient of the batch, in the batch's category.
+	 *
+	 * @param AddressedRecipient $addressed The recipient; an unusable address decides as empty.
+	 *
+	 * @return SendDecision The decision, without a code yet.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-sibling-apps-ask-through-a-public-decision-event-req-ooa-002
+	 */
+	public function decisionFor(AddressedRecipient $addressed): SendDecision {
+		return new SendDecision(address: (string)$addressed->key, category: $this->category);
+
+	}//end decisionFor()
 }//end class

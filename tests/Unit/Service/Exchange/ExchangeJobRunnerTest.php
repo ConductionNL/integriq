@@ -31,6 +31,7 @@ use OCA\Integriq\Service\Job\ExchangeJobAction;
 use OCA\Integriq\Service\MappingService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\IEventDispatcher;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -40,6 +41,28 @@ use RuntimeException;
  * REQ-003, REQ-004, REQ-005, REQ-006 and REQ-009 scenarios.
  */
 class ExchangeJobRunnerTest extends TestCase {
+
+	/**
+	 * The golden snapshots, by scenario, taken before the runner was split into steps.
+	 *
+	 * @var array<string, string>
+	 */
+	private const GOLDEN = [
+		'not-found' => '{"log":{"level":"ERROR","message":"Exchange job \"job-1\" was not found."},"saves":[],"logs":[],"rejections":[],"events":[]}',
+		'not-an-exchange-job' => '{"log":{"level":"WARNING","message":"This job is not an exchange job; nothing to do."},"saves":[],"logs":[],"rejections":[],"events":[]}',
+		'not-queued' => '{"log":{"level":"WARNING","message":"Exchange job is succeeded, not queued; it did not run again."},"saves":[],"logs":[],"rejections":[],"events":[]}',
+		'no-handler' => '{"log":{"level":"ERROR","message":"no-handler: No handler for bron-rod export."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"failed","exchangeError":"no-handler: No handler for bron-rod export.","exchangeResult":{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","failed",{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},null,"no-handler: No handler for bron-rod export."]]}',
+		'mapping-missing' => '{"log":{"level":"ERROR","message":"mapping-missing: No mapping \"missing\"."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"failed","exchangeMapping":"missing","exchangeError":"mapping-missing: No mapping \"missing\".","exchangeResult":{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","failed",{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},null,"mapping-missing: No mapping \"missing\"."]]}',
+		'refused' => '{"log":{"level":"WARNING","message":"Refused by learniq: teldatum-unconfirmed Not confirmed."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"running","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"refused","startedAt":true,"gateDecision":{"decision":"refuse","code":"teldatum-unconfirmed","reason":"Not confirmed.","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeResult":{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","refused",{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},{"decision":"refuse","code":"teldatum-unconfirmed","reason":"Not confirmed.","checkedAt":"2026-10-01T08:00:00+02:00"},null]]}',
+		'mapped-partial' => '{"log":{"level":"WARNING","message":"1 of 3 records accepted by bron-rod."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"running","exchangeMapping":"present","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"partial","exchangeMapping":"present","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeResult":{"recordsProcessed":3,"recordsAccepted":1,"recordsRejected":2,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[["info","[ExchangeJobRunner] mapping failed for a record of job job-1: RuntimeException",[]]],"rejections":[["record","job-1","bron-rod",{"recordId":"b","sourceKind":"k","errorCode":"mapping-failed","offendingFields":[]},"learniq"],["record","job-1","bron-rod",{"recordId":"c","errorCode":"adapter-said-no"},"learniq"]],"events":[["learniq","job-1","bron-rod","export","r\/1","partial",{"recordsProcessed":3,"recordsAccepted":1,"recordsRejected":2,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},null]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":{"berichtsoort":"inschrijving"},"records":[{"recordId":"a","sourceKind":"k","data":{"mapped":{"x":1}}},{"recordId":"c","sourceKind":"k","data":{"mapped":[]}}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+		'no-owner-answer' => '{"log":{"level":"ERROR","message":"no-owner-answer: The owning app did not take the received records."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"running","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"failed","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeError":"no-owner-answer: The owning app did not take the received records.","exchangeResult":{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","failed",{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"no-owner-answer: The owning app did not take the received records."]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":{"berichtsoort":"inschrijving"},"records":[{"recordId":"a","sourceKind":"k","data":{"x":1}},{"recordId":"b","sourceKind":"k","data":{"x":2}},{"recordId":"c","sourceKind":"k","data":[]}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+		'target-refusal' => '{"log":{"level":"ERROR","message":"unsupported: The target cannot run this job."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"running","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"failed","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeError":"unsupported: The target cannot run this job.","exchangeResult":{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","failed",{"recordsProcessed":0,"recordsAccepted":0,"recordsRejected":0,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"unsupported: The target cannot run this job."]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":{"berichtsoort":"inschrijving"},"records":[{"recordId":"a","sourceKind":"k","data":{"x":1}},{"recordId":"b","sourceKind":"k","data":{"x":2}},{"recordId":"c","sourceKind":"k","data":[]}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+		'counted-success' => '{"log":{"level":"SUCCESS","message":"3 of 3 records accepted by bron-rod."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"running","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"succeeded","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeResult":{"recordsProcessed":3,"recordsAccepted":3,"recordsRejected":0,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","succeeded",{"recordsProcessed":3,"recordsAccepted":3,"recordsRejected":0,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},null]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":{"berichtsoort":"inschrijving"},"records":[{"recordId":"a","sourceKind":"k","data":{"x":1}},{"recordId":"b","sourceKind":"k","data":{"x":2}},{"recordId":"c","sourceKind":"k","data":[]}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+		'none-accepted' => '{"log":{"level":"ERROR","message":"0 of 3 records accepted by bron-rod."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":"not-an-array","exchangeStatus":"running","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":"not-an-array","exchangeStatus":"failed","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeResult":{"recordsProcessed":3,"recordsAccepted":0,"recordsRejected":3,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","failed",{"recordsProcessed":3,"recordsAccepted":0,"recordsRejected":3,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},null]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":[],"records":[{"recordId":"a","sourceKind":"k","data":{"x":1}},{"recordId":"b","sourceKind":"k","data":{"x":2}},{"recordId":"c","sourceKind":"k","data":[]}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+		'resubmission' => '{"log":{"level":"SUCCESS","message":"1 of 1 records accepted by bron-rod."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"recordIds":["c"]},"exchangeStatus":"running","resubmissionOf":"rej-9","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"recordIds":["c"]},"exchangeStatus":"succeeded","resubmissionOf":"rej-9","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeResult":{"recordsProcessed":1,"recordsAccepted":1,"recordsRejected":0,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[],"rejections":[["reopen","rej-9",{"recordId":"c","errorCode":"adapter-said-no"}]],"events":[["learniq","job-1","bron-rod","export","r\/1","succeeded",{"recordsProcessed":1,"recordsAccepted":1,"recordsRejected":0,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},null]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":{"recordIds":["c"]},"records":[{"recordId":"c","sourceKind":"k","data":[]}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+		'listener-throws' => '{"log":{"level":"WARNING","message":"1 of 3 records accepted by bron-rod."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"running","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"partial","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeResult":{"recordsProcessed":3,"recordsAccepted":1,"recordsRejected":2,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[["warning","[ExchangeJobRunner] a concluded listener failed: listener broke",[]]],"rejections":[["record","job-1","bron-rod",{"recordId":"c","errorCode":"adapter-said-no"},"learniq"]],"events":[["learniq","job-1","bron-rod","export","r\/1","partial",{"recordsProcessed":3,"recordsAccepted":1,"recordsRejected":2,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},null]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":{"berichtsoort":"inschrijving"},"records":[{"recordId":"a","sourceKind":"k","data":{"x":1}},{"recordId":"b","sourceKind":"k","data":{"x":2}},{"recordId":"c","sourceKind":"k","data":[]}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+		'rejection-not-stored' => '{"log":{"level":"WARNING","message":"1 of 3 records accepted by bron-rod."},"saves":[{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"running","startedAt":true,"savedAs":"job-1"},{"ownerApp":"learniq","ownerRef":"r\/1","exchangeTarget":"bron-rod","exchangeDirection":"export","exchangeScope":{"berichtsoort":"inschrijving"},"exchangeStatus":"partial","startedAt":true,"gateDecision":{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},"exchangeResult":{"recordsProcessed":3,"recordsAccepted":1,"recordsRejected":2,"runId":"","artefactRef":null},"finishedAt":true,"savedAs":"job-1"}],"logs":[["warning","[ExchangeJobRunner] a rejection of job job-1 was not stored: store down",[]]],"rejections":[],"events":[["learniq","job-1","bron-rod","export","r\/1","partial",{"recordsProcessed":3,"recordsAccepted":1,"recordsRejected":2,"runId":"","artefactRef":null},{"decision":"allow","code":"","reason":"","checkedAt":"2026-10-01T08:00:00+02:00"},null]],"handOff":{"jobId":"job-1","target":"bron-rod","direction":"export","scope":{"berichtsoort":"inschrijving"},"records":[{"recordId":"a","sourceKind":"k","data":{"x":1}},{"recordId":"b","sourceKind":"k","data":{"x":2}},{"recordId":"c","sourceKind":"k","data":[]}],"ownerApp":"learniq","ownerRef":"r\/1"}}',
+	];
 
 	/**
 	 * @var ExchangeJobService&MockObject
@@ -396,4 +419,207 @@ class ExchangeJobRunnerTest extends TestCase {
 		$this->assertSame('ERROR', (new ExchangeJobAction($runner))->run([])['level']);
 
 	}//end testTheActionReadsTheJobId()
+
+	/**
+	 * GOLDEN: every path through one run, pinned as the returned log entry, every
+	 * saved job state (start and finish times only as present or absent), every
+	 * concluded event, every stored or reopened rejection and every log line.
+	 *
+	 * @param string $scenario The scenario name.
+	 * @param string $expected The JSON snapshot taken on the code before the split.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('goldenScenarios')]
+	public function testGoldenRunPinsEveryPath(string $scenario, string $expected): void {
+		$this->assertSame($expected, json_encode($this->runScenario(scenario: $scenario)));
+
+	}//end testGoldenRunPinsEveryPath()
+
+	/**
+	 * The golden scenarios and their snapshots.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function goldenScenarios(): array {
+		$snapshots = [];
+		foreach (self::GOLDEN as $scenario => $expected) {
+			$snapshots[$scenario] = [$scenario, $expected];
+		}
+
+		return $snapshots;
+
+	}//end goldenScenarios()
+
+	/**
+	 * Run one golden scenario against a runner whose logger, rejection store and
+	 * event dispatcher record what they receive.
+	 *
+	 * @param string $scenario The scenario name.
+	 *
+	 * @return array<string, mixed> What the run returned and caused.
+	 */
+	private function runScenario(string $scenario): array {
+		$seen = ['logs' => [], 'rejections' => [], 'events' => []];
+		$data = [
+			'ownerApp' => 'learniq',
+			'ownerRef' => 'r/1',
+			'exchangeTarget' => 'bron-rod',
+			'exchangeDirection' => 'export',
+			'exchangeScope' => ['berichtsoort' => 'inschrijving'],
+			'exchangeStatus' => 'queued',
+		];
+		$records = [
+			['recordId' => 'a', 'sourceKind' => 'k', 'data' => ['x' => 1]],
+			['recordId' => 'b', 'sourceKind' => 'k', 'data' => ['x' => 2]],
+			['recordId' => 'c', 'sourceKind' => 'k', 'data' => 'not-an-array'],
+		];
+		$outcome = ['accepted' => ['a'], 'rejected' => [['recordId' => 'c', 'errorCode' => 'adapter-said-no']], 'refusal' => null];
+		$supports = true;
+		$gate = 'allow';
+		$listenerThrows = false;
+		$recordThrows = false;
+
+		switch ($scenario) {
+			case 'not-found':
+				$data = null;
+				break;
+			case 'not-an-exchange-job':
+				$data['exchangeTarget'] = '';
+				break;
+			case 'not-queued':
+				$data['exchangeStatus'] = 'succeeded';
+				break;
+			case 'no-handler':
+				$supports = false;
+				break;
+			case 'mapping-missing':
+				$data['exchangeMapping'] = 'missing';
+				break;
+			case 'refused':
+				$gate = 'refuse';
+				break;
+			case 'mapped-partial':
+				$data['exchangeMapping'] = 'present';
+				break;
+			case 'no-owner-answer':
+				$outcome['refusal'] = ExchangeTargetDispatcher::CODE_NO_OWNER_ANSWER;
+				break;
+			case 'target-refusal':
+				$outcome['refusal'] = 'unsupported';
+				break;
+			case 'counted-success':
+				$outcome = ['accepted' => [], 'acceptedCount' => 3, 'rejected' => [], 'refusal' => null];
+				break;
+			case 'none-accepted':
+				$outcome = ['accepted' => [], 'rejected' => [], 'refusal' => null];
+				$data['exchangeScope'] = 'not-an-array';
+				break;
+			case 'resubmission':
+				$data['exchangeScope'] = ['recordIds' => ['c']];
+				$data['resubmissionOf'] = 'rej-9';
+				break;
+			case 'listener-throws':
+				$listenerThrows = true;
+				break;
+			case 'rejection-not-stored':
+				$recordThrows = true;
+				break;
+		}//end switch
+
+		$jobs = $this->createMock(ExchangeJobService::class);
+		$jobs->method('findJob')->willReturn($data === null ? null : $this->job(data: $data));
+		$jobs->method('saveJob')->willReturnCallback(
+			function (array $saved, ?string $uuid = null): ObjectEntity {
+				foreach (['startedAt', 'finishedAt'] as $time) {
+					if (array_key_exists($time, $saved) === true) {
+						$saved[$time] = is_string($saved[$time]) && $saved[$time] !== '';
+					}
+				}
+
+				$this->saves[] = $saved + ['savedAs' => $uuid];
+				return $this->job(data: $saved, uuid: (string)$uuid);
+			}
+		);
+		$jobs->method('findMapping')->willReturnCallback(
+			fn (string $slug): ?ObjectEntity => $slug === 'present' ? $this->job(data: ['mapping' => []], uuid: 'm-1') : null
+		);
+
+		$gateClient = $this->createMock(ExchangeGateClient::class);
+		$gateClient->method('ask')->willReturn($this->decision($gate, $records));
+
+		$dispatcher = $this->createMock(ExchangeTargetDispatcher::class);
+		$dispatcher->method('supports')->willReturn($supports);
+		$dispatcher->method('dispatch')->willReturnCallback(
+			function (ExchangeHandOff $handOff) use ($outcome, &$seen): array {
+				$seen['handOff'] = get_object_vars($handOff);
+				return $outcome;
+			}
+		);
+
+		$rejections = $this->createMock(ExchangeRejectionService::class);
+		$rejections->method('record')->willReturnCallback(
+			function (string $jobId, string $target, array $rejection, string $ownerApp) use (&$seen, $recordThrows): ObjectEntity {
+				if ($recordThrows === true) {
+					throw new RuntimeException('store down');
+				}
+
+				$seen['rejections'][] = ['record', $jobId, $target, $rejection, $ownerApp];
+				return new ObjectEntity();
+			}
+		);
+		$rejections->method('reopen')->willReturnCallback(
+			function (string $rejectionId, array $rejection) use (&$seen): ObjectEntity {
+				$seen['rejections'][] = ['reopen', $rejectionId, $rejection];
+				return new ObjectEntity();
+			}
+		);
+
+		$mappings = $this->createMock(MappingService::class);
+		$mappings->method('executeMapping')->willReturnCallback(
+			static function ($mapping, array $input): array {
+				if (($input['x'] ?? 0) === 2) {
+					throw new RuntimeException('bsn 123456782 in the message');
+				}
+
+				return ['mapped' => $input];
+			}
+		);
+
+		$events = $this->createMock(IEventDispatcher::class);
+		$events->method('dispatchTyped')->willReturnCallback(
+			function ($event) use (&$seen, $listenerThrows): void {
+				$seen['events'][] = [
+					$event->getOwnerApp(),
+					$event->getJobId(),
+					$event->getTarget(),
+					$event->getDirection(),
+					$event->getOwnerRef(),
+					$event->getStatus(),
+					$event->getResult(),
+					$event->getGateDecision(),
+					$event->getErrorMessage(),
+				];
+				if ($listenerThrows === true) {
+					throw new RuntimeException('listener broke');
+				}
+			}
+		);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		foreach (['info', 'warning', 'error'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				function (string $message, array $context = []) use (&$seen, $level): void {
+					$seen['logs'][] = [$level, $message, $context];
+				}
+			);
+		}
+
+		$runner = new ExchangeJobRunner($jobs, $gateClient, $dispatcher, $rejections, $mappings, $events, $logger);
+		$log = $runner->run('job-1');
+
+		return ['log' => $log, 'saves' => $this->saves] + $seen;
+
+	}//end runScenario()
+
 }//end class

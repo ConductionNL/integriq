@@ -28,109 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * A confirmation envelope a sibling app received, for integriq to conclude.
  *
+ * The envelope and the answer live in {@see StufEnvelopeReceivedEvent}.
+ *
  * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
  */
-class StufZdsConfirmationReceivedEvent extends Event {
-
-	/**
-	 * The HTTP status integriq answered, null while unhandled.
-	 *
-	 * @var integer|null
-	 */
-	private ?int $statusCode = null;
-
-	/**
-	 * The body integriq answered.
-	 *
-	 * @var string
-	 */
-	private string $body = '';
-
-	/**
-	 * Constructor.
-	 *
-	 * @param string $sourceApp The app that received the envelope.
-	 * @param string $rawXml    The raw request body, unchanged.
-	 */
-	public function __construct(
-		private readonly string $sourceApp,
-		private readonly string $rawXml,
-	) {
-		parent::__construct();
-	}//end __construct()
-
-	/**
-	 * The app that received the envelope.
-	 *
-	 * @return string The app id.
-	 *
-	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
-	 */
-	public function getSourceApp(): string {
-		return $this->sourceApp;
-	}//end getSourceApp()
-
-	/**
-	 * The raw request body.
-	 *
-	 * @return string The envelope.
-	 *
-	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
-	 */
-	public function getRawXml(): string {
-		return $this->rawXml;
-	}//end getRawXml()
-
-	/**
-	 * Record integriq's answer.
-	 *
-	 * @param int    $statusCode The HTTP status.
-	 * @param string $body       The SOAP body.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
-	 */
-	public function answer(int $statusCode, string $body): void {
-		$this->statusCode = $statusCode;
-		$this->body       = $body;
-	}//end answer()
-
-	/**
-	 * Whether integriq answered.
-	 *
-	 * @return bool True once answered.
-	 *
-	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
-	 */
-	public function isHandled(): bool {
-		return $this->statusCode !== null;
-	}//end isHandled()
-
-	/**
-	 * The HTTP status integriq answered.
-	 *
-	 * @return int|null The status, null while unhandled.
-	 *
-	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
-	 */
-	public function getStatusCode(): ?int {
-		return $this->statusCode;
-	}//end getStatusCode()
-
-	/**
-	 * The body integriq answered.
-	 *
-	 * @return string The SOAP body, '' while unhandled.
-	 *
-	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-asynchronous-confirmations-conclude-the-message
-	 */
-	public function getBody(): string {
-		return $this->body;
-	}//end getBody()
+class StufZdsConfirmationReceivedEvent extends StufEnvelopeReceivedEvent {
 }//end class

@@ -3,6 +3,9 @@
 /**
  * What the Objecten facade asks of OpenRegister, answered by OpenRegister.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The facade's handlers take their OpenRegister access as callables so each
  * can be tested without an OpenRegister. This class is the production side of
  * every one of them, and the one place that knows which OpenRegister service
@@ -32,9 +35,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.conduction.nl
  *
@@ -80,7 +80,16 @@ class ObjectenOpenRegisterAccess {
 	 *
 	 * @var string
 	 */
-	public const TOKEN_SCHEMA = 'objecten_token';
+	public const CREDENTIAL_SCHEMA = 'objecten_token';
+
+	/**
+	 * The former name of CREDENTIAL_SCHEMA.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use CREDENTIAL_SCHEMA.
+	 */
+	public const TOKEN_SCHEMA = self::CREDENTIAL_SCHEMA;
 
 	/**
 	 * OpenRegister's object service.

@@ -14,6 +14,9 @@ declare(strict_types=1);
  * @license    EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version    1.0.0
  * @link       https://github.com/ConductionNL/openconnector
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Tests\Unit\Controller;

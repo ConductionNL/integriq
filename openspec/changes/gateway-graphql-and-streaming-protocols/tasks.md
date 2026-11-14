@@ -30,7 +30,7 @@ Kind: code. Size M. Rows `integriq:gw-graphql`, `integriq:gw-protocols`.
 - [ ] Test (PHPUnit; Newman for the route)
 
 ### Task 4: Server and broker configurations, tested
-- **spec_ref**: `openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-a-web-server-or-broker-asks-integriq-who-may-connect-req-gqlp-002`
+- **spec_ref**: `openspec/changes/gateway-graphql-and-streaming-protocols/specs/endpoint-runtime/spec.md#requirement-websocket-grpc-and-mqtt-traffic-reaches-the-upstream-through-a-documented-server-req-gqlp-003`
 - **files**: `docs/gateway/streaming/nginx-websocket-grpc.conf`, `docs/gateway/streaming/mosquitto.conf`, `docs/gateway/streaming.md`
 - **acceptance_criteria**:
   - GIVEN the nginx configuration WHEN a WebSocket client connects with and without a key THEN only the keyed client connects and the call log shows one connection

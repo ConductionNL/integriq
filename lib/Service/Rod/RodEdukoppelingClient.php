@@ -3,6 +3,9 @@
 /**
  * Integriq DUO ROD Edukoppeling Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Live binding for {@see RodProviderInterface} against DUO's ROD (Register
  * Onderwijsdeelnemers) koppelvlak over Edukoppeling — the education
  * sector's profile of the Digikoppeling M2M transport standards. Rather
@@ -28,9 +31,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

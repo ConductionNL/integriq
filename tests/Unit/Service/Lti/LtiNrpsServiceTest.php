@@ -16,6 +16,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

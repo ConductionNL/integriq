@@ -24,6 +24,9 @@
  * @spec exclude One-off openconnector->integriq app-id rename plumbing; it
  *       moves oc_preferences rows between namespaces and adds no domain
  *       behaviour.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,6 +39,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -258,4 +262,70 @@ class MigrateUserPreferencesTest extends TestCase {
 
 		$this->assertSame([], $writes);
 	}//end testUserEnumerationFailureIsWarnedNotThrown()
+
+	/**
+	 * An empty stored value is not a preference: nothing is written and the
+	 * step says there was nothing to do.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyOldValueIsSkippedAndNothingToDoIsReported(): void {
+		$writes = [];
+		$store = ['alice' => [self::OLD_APP_ID => ['pref_empty' => '']]];
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('info')->with(
+			'MigrateUserPreferences: no stored openconnector user preferences on this install; nothing to do.'
+		);
+
+		$step = new MigrateUserPreferences(
+			$this->makeConfig($store, $writes),
+			$this->makeUserManager(['alice']),
+			new NullLogger()
+		);
+		$step->run($output);
+
+		$this->assertSame([], $writes);
+	}//end testAnEmptyOldValueIsSkippedAndNothingToDoIsReported()
+
+	/**
+	 * One preference that cannot be written is logged and left alone; the
+	 * next one still migrates and is counted.
+	 *
+	 * @return void
+	 */
+	public function testAFailedWriteIsLoggedAndTheNextPreferenceStillMigrates(): void {
+		$writes = [];
+		$store = ['alice' => [self::OLD_APP_ID => ['pref_broken' => 'x', 'pref_fine' => 'y']]];
+
+		$config = $this->createMock(IConfig::class);
+		$config->method('getUserKeys')->willReturn(['pref_broken', 'pref_fine']);
+		$config->method('getUserValue')->willReturnCallback(
+			static fn (string $uid, string $app, string $key, $default = '') => ($store[$uid][$app][$key] ?? $default)
+		);
+		$config->method('setUserValue')->willReturnCallback(
+			static function (string $uid, string $app, string $key, $value) use (&$writes): void {
+				if ($key === 'pref_broken') {
+					throw new \RuntimeException('database is read-only');
+				}
+
+				$writes[$uid . '/' . $app . '/' . $key] = $value;
+			}
+		);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			'Integriq: could not migrate one user preference; leaving it under the old app id',
+			['key' => 'pref_broken', 'exception' => 'database is read-only']
+		);
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('info')->with(
+			'MigrateUserPreferences: migrated 1 preference(s); 0 already set under integriq.'
+		);
+
+		(new MigrateUserPreferences($config, $this->makeUserManager(['alice']), $logger))->run($output);
+
+		$this->assertSame(['alice/' . self::NEW_APP_ID . '/pref_fine' => 'y'], $writes);
+	}//end testAFailedWriteIsLoggedAndTheNextPreferenceStillMigrates()
 }//end class

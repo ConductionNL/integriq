@@ -3,6 +3,9 @@
 /**
  * Integriq FSC Directory Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The ONE class housing every HTTP and credential operation this change
  * performs — both the FSC Directory lookup (`resolveService()`) and the
  * downstream service invocation (`call()`) — per the task brief's explicit
@@ -65,9 +68,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *
@@ -326,32 +326,38 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 * @spec openspec/specs/fsc-connectivity/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header-on-call
 	 */
 	public function call(array $directoryConfig, array $resolution, string $method, array $payload): array {
-		$endpoint = $this->requireEndpoint(resolution: $resolution);
-		$authConfig = (array)($directoryConfig['authentication'] ?? []);
-		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
-		$requestOptions = [
-			'headers' => $this->callHeaders(directoryConfig: $directoryConfig, useMtls: $useMtls),
+		$run = new FscCallRun(method: strtoupper($method), url: $this->requireEndpoint(resolution: $resolution));
+		$run->authConfig = (array)($directoryConfig['authentication'] ?? []);
+		$run->useMtls    = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $run->authConfig);
+		$run->requestOptions = [
+			'headers' => $this->callHeaders(directoryConfig: $directoryConfig, useMtls: $run->useMtls),
 			'json' => $payload,
 			'http_errors' => false,
 		];
 
+		return $this->callResult(response: $this->send(run: $run));
+
+	}//end call()
+
+	/**
+	 * Send the call, wrapping a transport failure in a connectivity exception.
+	 *
+	 * @param FscCallRun $run The call.
+	 *
+	 * @return ResponseInterface The endpoint's answer.
+	 *
+	 * @throws FscConnectivityException When the mTLS or token-mode transport fails.
+	 */
+	private function send(FscCallRun $run): ResponseInterface {
 		try {
-			$response = $this->dispatch(
-				useMtls: $useMtls,
-				authConfig: $authConfig,
-				method: strtoupper($method),
-				url: $endpoint,
-				requestOptions: $requestOptions
-			);
+			return $this->dispatch(run: $run);
 		} catch (MtlsTransportException $exception) {
 			throw $this->mtlsCallFailure(exception: $exception);
 		} catch (GuzzleException $exception) {
 			throw $this->unexpectedCallFailure(exception: $exception);
 		}
 
-		return $this->callResult(response: $response);
-
-	}//end call()
+	}//end send()
 
 	/**
 	 * The resolution's endpoint; it is required.
@@ -468,11 +474,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 * two: an mTLS resolve/handshake failure propagates as
 	 * {@see MtlsTransportException}.
 	 *
-	 * @param boolean $useMtls Whether `authentication.mode=mtls` is configured.
-	 * @param array $authConfig The source's `configuration.directory.authentication` object.
-	 * @param string $method The already-uppercased HTTP method.
-	 * @param string $url The absolute request URL.
-	 * @param array $requestOptions The Guzzle request options.
+	 * @param FscCallRun $run The call: method, URL, transport and request options.
 	 *
 	 * @return ResponseInterface The Guzzle response.
 	 *
@@ -481,19 +483,13 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 *
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-fscdirectoryclient-routes-through-the-mtls-transport-when-configured
 	 */
-	private function dispatch(
-		bool $useMtls,
-		array $authConfig,
-		string $method,
-		string $url,
-		array $requestOptions,
-	): ResponseInterface {
-		if ($useMtls === true) {
-			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
-			return $this->mtlsTransport->request($this->httpClient, $method, $url, $requestOptions, $bundle);
+	private function dispatch(FscCallRun $run): ResponseInterface {
+		if ($run->useMtls === true) {
+			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $run->authConfig);
+			return $this->mtlsTransport->request($this->httpClient, $run->method, $run->url, $run->requestOptions, $bundle);
 		}
 
-		return $this->httpClient->request($method, $url, $requestOptions);
+		return $this->httpClient->request($run->method, $run->url, $run->requestOptions);
 	}//end dispatch()
 
 	/**

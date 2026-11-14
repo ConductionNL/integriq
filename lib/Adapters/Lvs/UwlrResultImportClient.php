@@ -3,6 +3,9 @@
 /**
  * Integriq UWLR result-import client (abstract base).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Low-level abstract base for pulling normed toets results from the
  * four Dutch PO leerlingvolgsysteem (LVS) suites that exchange
  * results in a UWLR-shaped format: Cito (Leerling in Beeld, via
@@ -28,9 +31,6 @@
  * @link https://www.integriq.nl
  *
  * @spec openspec/specs/lvs-result-import/spec.md#requirement-dormant-uwlr-result-import-client-with-deterministic-mock-default-req-001
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

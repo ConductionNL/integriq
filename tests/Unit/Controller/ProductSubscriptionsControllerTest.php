@@ -325,14 +325,16 @@ class ProductSubscriptionsControllerTest extends TestCase {
 
 	/**
 	 * The call_log rows are read with RBAC off: the schema is admin-only, and a
-	 * delegated administrator would otherwise see zero traffic.
+	 * delegated administrator would otherwise see zero traffic. The
+	 * organisation filter stays on, so only the caller's organisation's
+	 * traffic is counted (REQ-TEN-001).
 	 *
 	 * @return void
 	 */
 	public function testAnalyticsReadsTheAdminOnlyCallLogWithoutRbac(): void {
 		$this->orObjectService->method('find')->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'product-1'));
 		$this->orObjectService->expects($this->once())->method('findAll')
-			->with($this->anything(), false, false)
+			->with($this->anything(), false, true)
 			->willReturn(['results' => []]);
 
 		$this->controller->analytics(productId: 'product-1');

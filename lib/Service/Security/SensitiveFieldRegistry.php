@@ -17,6 +17,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service\Security;
@@ -95,19 +98,19 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 	 *
 	 * @var string
 	 */
-	private const SECRET_NAME_PATTERN = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
+	private const SENSITIVE_NAME_PATTERN = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
 		. '|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret'
 		. '|pass[-_]?phrase|certificate|pkcs12|pfx)/i';
 
 	/**
 	 * Extra pattern for header names only: a session header under its own name
 	 * (X-Session, X-Session-Id) is a credential on the wire. Kept out of
-	 * SECRET_NAME_PATTERN because that pattern also walks payload fields,
+	 * SENSITIVE_NAME_PATTERN because that pattern also walks payload fields,
 	 * where a `sessionId` is a correlation id, not a secret.
 	 *
 	 * @var string
 	 */
-	private const SECRET_HEADER_PATTERN = '/session/i';
+	private const SENSITIVE_HEADER_PATTERN = '/session/i';
 
 	/**
 	 * A value that is only a bare `{{ variable.path }}` template, resolved at call time
@@ -154,7 +157,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 			}
 		}
 
-		return (preg_match(self::SECRET_NAME_PATTERN, $name) === 1);
+		return (preg_match(self::SENSITIVE_NAME_PATTERN, $name) === 1);
 	}//end isSensitiveName()
 
 	/**
@@ -172,7 +175,7 @@ class SensitiveFieldRegistry implements SecretRedactorInterface {
 			return true;
 		}
 
-		return (preg_match(self::SECRET_HEADER_PATTERN, $name) === 1);
+		return (preg_match(self::SENSITIVE_HEADER_PATTERN, $name) === 1);
 	}//end isSensitiveHeaderName()
 
 	/**

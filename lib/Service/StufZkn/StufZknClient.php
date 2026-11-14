@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin binding for {@see StufZknProviderInterface} against a subscribed
  * legacy StUF consumer's inbound endpoint. Deliberately a hand-rolled HTTP
  * client (Guzzle, already an app dependency) rather than a SOAP/XSD library
@@ -46,9 +49,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *
@@ -360,10 +360,7 @@ class StufZknClient implements StufZknProviderInterface {
 	private function transmitCall(SoapCall $call): array {
 		if (str_starts_with($call->url, 'https://') === false) {
 			return $this->transmitFailure(
-				code: 'TRANSPORT_NON_HTTPS',
-				omschrijving: 'Endpoint URL is not HTTPS',
-				details: '',
-				kind: 'permanent',
+				fout: ['code' => 'TRANSPORT_NON_HTTPS', 'omschrijving' => 'Endpoint URL is not HTTPS', 'details' => '', 'kind' => 'permanent'],
 				durationMs: 0
 			);
 		}
@@ -412,19 +409,13 @@ class StufZknClient implements StufZknProviderInterface {
 		if ($exception->getPrevious() === null) {
 			// Refused before sending: no address or no usable credential.
 			return $this->transmitFailure(
-				code: 'TRANSPORT_CONFIGURATION',
-				omschrijving: 'The source cannot send',
-				details: $message,
-				kind: 'permanent',
+				fout: ['code' => 'TRANSPORT_CONFIGURATION', 'omschrijving' => 'The source cannot send', 'details' => $message, 'kind' => 'permanent'],
 				durationMs: 0
 			);
 		}
 
 		return $this->transmitFailure(
-			code: $this->transportFoutCode(message: $message),
-			omschrijving: 'Transport error',
-			details: $message,
-			kind: 'transient',
+			fout: ['code' => $this->transportFoutCode(message: $message), 'omschrijving' => 'Transport error', 'details' => $message, 'kind' => 'transient'],
 			durationMs: (int)round((microtime(true) - $started) * 1000)
 		);
 
@@ -449,20 +440,19 @@ class StufZknClient implements StufZknProviderInterface {
 	/**
 	 * The result of an attempt that got no answer from the case system.
 	 *
-	 * @param string $code         The fout code.
-	 * @param string $omschrijving The short reason.
-	 * @param string $details      The detail text.
-	 * @param string $kind         `transient` or `permanent`.
-	 * @param int    $durationMs   How long the attempt took.
+	 * @param array{code:string,omschrijving:string,details:string,kind:string} $fout The fout: its code, the
+	 *                                                                             short reason, the detail text, and
+	 *                                                                             `transient` or `permanent`.
+	 * @param int $durationMs How long the attempt took.
 	 *
 	 * @return array{httpStatus:int,responseXml:string,durationMs:int,fout:array<string,string>}
 	 */
-	private function transmitFailure(string $code, string $omschrijving, string $details, string $kind, int $durationMs): array {
+	private function transmitFailure(array $fout, int $durationMs): array {
 		return [
 			'httpStatus' => 0,
 			'responseXml' => '',
 			'durationMs' => $durationMs,
-			'fout' => ['code' => $code, 'omschrijving' => $omschrijving, 'details' => $details, 'kind' => $kind],
+			'fout' => $fout,
 		];
 	}//end transmitFailure()
 

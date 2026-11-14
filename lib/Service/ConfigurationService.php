@@ -18,6 +18,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -721,37 +724,17 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * Find synchronizations connected to a given register ID.
 	 *
 	 * @param string $registerId The register ID to search for.
-	 * @param bool $searchSource Whether to check sourceId.
-	 * @param bool $searchTarget Whether to check targetId.
+	 * @param RegisterExportOptions $options Which sides (sourceId, targetId) to check.
 	 *
 	 * @return ObjectEntity[]
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
-	private function getSynchronizationsByTarget(string $registerId, bool $searchSource = true, bool $searchTarget = true): array {
-		$all = $this->fetchBySchema(schema: 'synchronization');
+	private function getSynchronizationsByTarget(string $registerId, RegisterExportOptions $options): array {
 		return array_values(
 			array_filter(
-				$all,
-				function ($entity) use ($registerId, $searchSource, $searchTarget) {
-					$data = $entity->getObject();
-
-					if ($searchSource === true && ($data['sourceType'] ?? '') === 'register/schema') {
-						$sourceId = ($data['sourceId'] ?? '');
-						if (str_starts_with($sourceId, $registerId . '/') === true || $sourceId === $registerId) {
-							return true;
-						}
-					}
-
-					if ($searchTarget === true && ($data['targetType'] ?? '') === 'register/schema') {
-						$targetId = ($data['targetId'] ?? '');
-						if (str_starts_with($targetId, $registerId . '/') === true || $targetId === $registerId) {
-							return true;
-						}
-					}
-
-					return false;
-				}
+				$this->fetchBySchema(schema: 'synchronization'),
+				fn ($entity): bool => $options->linksRegister(data: $entity->getObject(), registerId: $registerId)
 			)
 		);
 	}//end getSynchronizationsByTarget()
@@ -866,9 +849,49 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		bool $searchSource = true,
 		bool $searchTarget = true,
 	): array {
-		$this->resetMappings();
+		$options = new RegisterExportOptions(includeEndpoints: $includeEndpoints, includeSynchronizations: $includeSynchronizations);
+		$options->searchSource = $searchSource;
+		$options->searchTarget = $searchTarget;
 
-		$ids = [
+		return $this->exportRegisterWith(registerId: $registerId, options: $options);
+	}//end exportRegister()
+
+	/**
+	 * Export the entities connected to a register, with the options as given.
+	 *
+	 * @param string $registerId The ID of the register to export entities for.
+	 * @param RegisterExportOptions $options What to include and where to look.
+	 *
+	 * @return array<string,array> JSON-serializable array containing all connected entities.
+	 */
+	private function exportRegisterWith(string $registerId, RegisterExportOptions $options): array {
+		$this->resetMappings();
+		$ids = $this->initialExportIds(registerId: $registerId);
+
+		$endpoints = [];
+		if ($options->includeEndpoints === true) {
+			$endpoints = $this->getEndpointsByTarget(registerId: $registerId);
+			$ids = $this->collectEndpointExportIds(endpoints: $endpoints, ids: $ids);
+		}
+
+		$synchronizations = [];
+		if ($options->includeSynchronizations === true) {
+			$synchronizations = $this->getSynchronizationsByTarget(registerId: $registerId, options: $options);
+			$ids = $this->collectSynchronizationExportIds(synchronizations: $synchronizations, ids: $ids);
+		}
+
+		return $this->exportCollected(collected: ['ids' => $ids, 'endpoints' => $endpoints, 'synchronizations' => $synchronizations]);
+	}//end exportRegisterWith()
+
+	/**
+	 * The ids a register export starts from: the register itself, nothing else yet.
+	 *
+	 * @param string $registerId The register ID.
+	 *
+	 * @return array<string,list<mixed>> The ids by kind.
+	 */
+	private function initialExportIds(string $registerId): array {
+		return [
 			'rule' => [],
 			'mapping' => [],
 			'source' => [],
@@ -877,35 +900,24 @@ class ConfigurationService implements ConfigurationServiceInterface {
 			'register' => [$registerId],
 			'schema' => [],
 		];
+	}//end initialExportIds()
 
-		$endpoints = [];
-		if ($includeEndpoints === true) {
-			$endpoints = $this->getEndpointsByTarget(registerId: $registerId);
-			$ids = $this->collectEndpointExportIds(endpoints: $endpoints, ids: $ids);
-		}
-
-		$synchronizations = [];
-		if ($includeSynchronizations === true) {
-			$synchronizations = $this->getSynchronizationsByTarget(
-				registerId: $registerId,
-				searchSource: $searchSource,
-				searchTarget: $searchTarget
-			);
-			$ids = $this->collectSynchronizationExportIds(synchronizations: $synchronizations, ids: $ids);
-		}
-
+	/**
+	 * Export what a register export collected, once its register and schema slugs are known.
+	 *
+	 * @param array $collected The collected `ids` by kind, and the register's `endpoints` and `synchronizations`.
+	 *
+	 * @return array<string,array> The `components`.
+	 */
+	private function exportCollected(array $collected): array {
 		// Remove duplicates and empty values.
-		$ids = array_map(static fn (array $list): array => array_filter(array_unique($list)), $ids);
+		$collected['ids'] = array_map(static fn (array $list): array => array_filter(array_unique($list)), $collected['ids']);
 
 		// The register and schema slugs must be known before any entity is exported.
-		$this->buildRegisterAndSchemaMappings(registerIds: $ids['register'], schemaIds: $ids['schema']);
+		$this->buildRegisterAndSchemaMappings(registerIds: $collected['ids']['register'], schemaIds: $collected['ids']['schema']);
 
-		return [
-			'components' => $this->exportRegisterComponents(
-				collected: ['ids' => $ids, 'endpoints' => $endpoints, 'synchronizations' => $synchronizations]
-			),
-		];
-	}//end exportRegister()
+		return ['components' => $this->exportRegisterComponents(collected: $collected)];
+	}//end exportCollected()
 
 	/**
 	 * Export the entities a register export collected, keyed by slug per component.
@@ -1140,12 +1152,20 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @throws \InvalidArgumentException If required components are missing or invalid.
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
+	 * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
 	 */
 	public function importConfiguration(array $oas): array {
 		$this->resetMappings();
 
 		if (isset($oas['components']) === false) {
 			throw new \InvalidArgumentException('OAS must contain a components property');
+		}
+
+		// A set marked as carrying personal data imports only with allow-list
+		// mappings; it is refused before anything is written.
+		$refusals = PersonalDataSetGuard::refusals(document: $oas);
+		if ($refusals !== []) {
+			throw new \InvalidArgumentException(implode(' ', $refusals));
 		}
 
 		$result = [];

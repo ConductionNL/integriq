@@ -12,8 +12,14 @@ on:
   pull_request:
     branches: [development]
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
+    permissions:
+      contents: write
+      packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
     # A reusable workflow receives NO secrets by default. Without this block the
     # callee's publish step finds CF_API_TOKEN empty, skips itself on its own

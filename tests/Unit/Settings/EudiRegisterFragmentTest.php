@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-adapter-ships-as-a-catalogue-entry-backed-by-three-register-fragment-schemas-req-eudi-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

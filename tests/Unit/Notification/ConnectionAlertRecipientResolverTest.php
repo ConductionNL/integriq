@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -134,11 +137,20 @@ final class ConnectionAlertRecipientResolverTest extends TestCase {
 		);
 		$rule = $fragment['components']['schemas']['connection_alert']['x-openregister-notifications']['threshold-passed'];
 
-		$this->assertSame(['type' => 'created'], $rule['trigger']);
+		$this->assertSame(
+			['type' => 'created', 'filter' => ['field' => 'rule', 'operator' => 'notIn', 'values' => ['certificateExpiry']]],
+			$rule['trigger']
+		);
 		$this->assertTrue($rule['enabled']);
 		$this->assertSame(
 			[['kind' => 'expression', 'resolver' => ConnectionAlertRecipientResolver::class]],
 			$rule['recipients']
 		);
+
+		// A certificate expiry alert has its own wording, to the same group.
+		$expiring = $fragment['components']['schemas']['connection_alert']['x-openregister-notifications']['certificate-expiring'];
+		$this->assertSame(['type' => 'created', 'filter' => ['field' => 'rule', 'value' => 'certificateExpiry']], $expiring['trigger']);
+		$this->assertTrue($expiring['enabled']);
+		$this->assertSame($rule['recipients'], $expiring['recipients']);
 	}//end testTheRegisterRuleNamesThisResolver()
 }//end class

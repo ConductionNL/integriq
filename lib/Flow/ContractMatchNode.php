@@ -3,6 +3,9 @@
 /**
  * Integriq Contract Match flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.contract` — the "[Contract the page]" step of the decomposed
  * synchronization flow: ONE bulk contract lookup for the whole page, a hash
  * compare per item, and a stamped decision (`create` / `update` / `skip` /
@@ -39,9 +42,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -191,14 +191,7 @@ class ContractMatchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 				'type' => 'text',
 				'help' => $this->l10n->t('Item key the decision block is written under. Defaults to "contract".'),
 			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('On error'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What a failed item does to the run: stop, continue or dead_letter.'
-				),
-			],
+			FlowNodeSupport::onErrorField(l10n: $this->l10n),
 		];
 	}//end configForm()
 

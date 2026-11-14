@@ -77,14 +77,7 @@ class IdpLoginStateStore {
 	 * @param ICacheFactory $cacheFactory The Nextcloud cache factory.
 	 */
 	public function __construct(ICacheFactory $cacheFactory) {
-		if ($cacheFactory->isAvailable() === false) {
-			return;
-		}
-
-		$cache = $cacheFactory->createDistributed(self::CACHE_PREFIX . '.');
-		if ($cache instanceof IMemcache) {
-			$this->cache = $cache;
-		}
+		$this->cache = AtomicCache::distributed(cacheFactory: $cacheFactory, prefix: self::CACHE_PREFIX);
 
 	}//end __construct()
 

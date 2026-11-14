@@ -26,8 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * "Here are the records job X received; which did you take?", answered by the owning app.
  *
@@ -38,9 +36,11 @@ use OCP\EventDispatcher\Event;
  * A rejection carries a record id, a reason code and optional field names,
  * never a value: rejections are stored as dead letters and shown to people.
  *
+ * The job fields live in {@see ExchangeJobRunEvent}.
+ *
  * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
  */
-class ExchangeRecordsReceivedEvent extends Event {
+class ExchangeRecordsReceivedEvent extends ExchangeJobRunEvent {
 
 	/**
 	 * Whether an answer was given.
@@ -76,89 +76,17 @@ class ExchangeRecordsReceivedEvent extends Event {
 	 *                                                    `{recordId, sourceKind, data}`.
 	 */
 	public function __construct(
-		private readonly string $jobId,
-		private readonly string $ownerApp,
-		private readonly string $target,
-		private readonly string $direction,
-		private readonly string $ownerRef = '',
-		private readonly array $scope = [],
+		string $jobId,
+		string $ownerApp,
+		string $target,
+		string $direction,
+		string $ownerRef = '',
+		array $scope = [],
 		private readonly array $records = [],
 	) {
-		parent::__construct();
+		parent::__construct(jobId: $jobId, ownerApp: $ownerApp, target: $target, direction: $direction, ownerRef: $ownerRef, scope: $scope);
 
 	}//end __construct()
-
-	/**
-	 * The job that received the records.
-	 *
-	 * @return string The job uuid.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
-	 */
-	public function getJobId(): string {
-		return $this->jobId;
-
-	}//end getJobId()
-
-	/**
-	 * The owning app a listener must match before answering.
-	 *
-	 * @return string The app id.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
-	 */
-	public function getOwnerApp(): string {
-		return $this->ownerApp;
-
-	}//end getOwnerApp()
-
-	/**
-	 * The exchange target.
-	 *
-	 * @return string The target id.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
-	 */
-	public function getTarget(): string {
-		return $this->target;
-
-	}//end getTarget()
-
-	/**
-	 * The direction.
-	 *
-	 * @return string `import`.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
-	 */
-	public function getDirection(): string {
-		return $this->direction;
-
-	}//end getDirection()
-
-	/**
-	 * The owning app's reference for what the job is about.
-	 *
-	 * @return string The reference.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
-	 */
-	public function getOwnerRef(): string {
-		return $this->ownerRef;
-
-	}//end getOwnerRef()
-
-	/**
-	 * The job's selectors and target parameters.
-	 *
-	 * @return array<string, mixed> The scope.
-	 *
-	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
-	 */
-	public function getScope(): array {
-		return $this->scope;
-
-	}//end getScope()
 
 	/**
 	 * The received records, after the job's mapping row.

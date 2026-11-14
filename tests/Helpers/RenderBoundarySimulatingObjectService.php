@@ -3,6 +3,9 @@
 /**
  * An OpenRegister ObjectService test double that reproduces the RENDER BOUNDARY.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * This is the honest fake at the heart of the inline-secret-migration tests
  * (ocon#151 phase C / ocon#215). The whole defect class it guards is that a
  * `source`'s credential fields are `writeOnly: true`, and OpenRegister strips

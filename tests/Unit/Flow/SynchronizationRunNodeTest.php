@@ -14,6 +14,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -573,5 +576,197 @@ class SynchronizationRunNodeTest extends TestCase {
 
 		return $contracts;
 	}//end contracts()
+
+	/**
+	 * A non-boolean "force" is refused at save time.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsNonBooleanForce(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('The "force" field must be true or false.');
+
+		$this->node->validateConfig(['synchronization' => 'demo-sync', 'force' => 'yes']);
+
+	}//end testValidateRejectsNonBooleanForce()
+
+	/**
+	 * An unknown "onError" policy is refused with the list of allowed policies.
+	 *
+	 * @return void
+	 */
+	public function testValidateRejectsUnknownOnErrorPolicy(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage(
+			'The "onError" field must be one of ' . implode(', ', FlowNodeSupport::ON_ERROR_POLICIES) . '.'
+		);
+
+		$this->node->validateConfig(['synchronization' => 'demo-sync', 'onError' => 'shrug']);
+
+	}//end testValidateRejectsUnknownOnErrorPolicy()
+
+	/**
+	 * A complete, well-formed configuration passes validation.
+	 *
+	 * @return void
+	 */
+	public function testValidateAcceptsCompleteConfig(): void {
+		$this->node->validateConfig(
+			[
+				'synchronization' => 'demo-sync',
+				'force' => true,
+				'output' => 'syncResult',
+				'maxItems' => 5,
+				'onError' => ' Continue ',
+			]
+		);
+
+		$this->addToAssertionCount(1);
+
+	}//end testValidateAcceptsCompleteConfig()
+
+	/**
+	 * Pins the whole item shape: object id fallbacks, the summary and the forwarded flags.
+	 *
+	 * @return void
+	 */
+	public function testItemShapeAndObjectIdFallbacks(): void {
+		$this->givenSynchronization();
+		$this->givenOwner();
+
+		$log = $this->runLog(
+			contracts: [
+				['uuid' => 'c-1', 'originId' => 'o-1', 'targetId' => '', 'targetLastAction' => 'create'],
+				['uuid' => 'c-2'],
+			],
+			counts: ['found' => 2, 'deleted' => 4, 'invalid' => 5]
+		);
+		$log['result']['_embed']['contracts'][1] = 'not-an-array';
+		$log['result']['contracts'][]            = 'c-3';
+
+		$this->synchronizationService->expects($this->once())
+			->method('synchronize')
+			->with($this->anything(), false, true)
+			->willReturn($log);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[['json' => ['keep' => 1], 'binary' => ['b' => 'x']]],
+			['synchronization' => ' demo-sync ', 'force' => true],
+			$this->context()
+		));
+
+		$summary = [
+			'synchronization' => 'demo-sync',
+			'runId' => '44444444-4444-4444-4444-444444444444',
+			'message' => 'Success',
+			'found' => 2,
+			'created' => 0,
+			'updated' => 0,
+			'deleted' => 4,
+			'skipped' => 0,
+			'invalid' => 5,
+		];
+
+		$this->assertSame(
+			[
+				[
+					'json' => [
+						'keep' => 1,
+						'syncResult' => [
+							'objectId' => 'o-1',
+							'originId' => 'o-1',
+							'targetId' => '',
+							'outcome' => 'create',
+							'contract' => 'c-1',
+							'object' => ['uuid' => 'c-1', 'originId' => 'o-1', 'targetId' => '', 'targetLastAction' => 'create'],
+							'summaryOnly' => false,
+							'synchronization' => 'demo-sync',
+							'summary' => $summary,
+						],
+					],
+					'binary' => ['b' => 'x'],
+					'pairedItem' => ['item' => 0],
+				],
+				[
+					'json' => [
+						'keep' => 1,
+						'syncResult' => [
+							'objectId' => 'c-2',
+							'originId' => null,
+							'targetId' => null,
+							'outcome' => 'unchanged',
+							'contract' => 'c-2',
+							'object' => [],
+							'summaryOnly' => false,
+							'synchronization' => 'demo-sync',
+							'summary' => $summary,
+						],
+					],
+					'binary' => ['b' => 'x'],
+					'pairedItem' => ['item' => 0],
+				],
+				[
+					'json' => [
+						'keep' => 1,
+						'syncResult' => [
+							'objectId' => 'c-3',
+							'originId' => null,
+							'targetId' => null,
+							'outcome' => 'unchanged',
+							'contract' => 'c-3',
+							'object' => [],
+							'summaryOnly' => false,
+							'synchronization' => 'demo-sync',
+							'summary' => $summary,
+						],
+					],
+					'binary' => ['b' => 'x'],
+					'pairedItem' => ['item' => 0],
+				],
+			],
+			$out
+		);
+
+	}//end testItemShapeAndObjectIdFallbacks()
+
+	/**
+	 * Under "continue", a failed item carries its error and the next item still runs.
+	 *
+	 * @return void
+	 */
+	public function testContinuePolicyKeepsRunningLaterItems(): void {
+		$this->givenSynchronization();
+		$this->givenOwner();
+
+		$this->synchronizationService->method('synchronize')->willReturnOnConsecutiveCalls(
+			$this->throwException(new RuntimeException('down')),
+			$this->runLog(contracts: [], counts: [])
+		);
+
+		$out = $this->node->execute(new FlowNodeCall(
+			[['json' => ['n' => 1]], ['json' => ['n' => 2]]],
+			['synchronization' => 'demo-sync', 'onError' => 'continue', 'output' => 'r'],
+			$this->context()
+		));
+
+		$this->assertCount(2, $out);
+		$this->assertSame(['item' => 0], $out[0]['pairedItem']);
+		$this->assertSame([], $out[0]['binary']);
+		$this->assertSame(
+			[
+				'kind' => 'synchronization',
+				'synchronization' => 'demo-sync',
+				'step' => 'step-sync',
+				'node' => 'openconnector.synchronization-run',
+				'message' => 'The synchronization "demo-sync" failed: down',
+			],
+			$out[0]['json'][FlowNodeSupport::ERROR_KEY]
+		);
+		$this->assertSame(1, $out[0]['json']['n']);
+		$this->assertSame(['item' => 1], $out[1]['pairedItem']);
+		$this->assertTrue($out[1]['json']['r']['summaryOnly']);
+		$this->assertSame(2, $out[1]['json']['n']);
+
+	}//end testContinuePolicyKeepsRunningLaterItems()
 
 }//end class

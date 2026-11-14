@@ -3,6 +3,9 @@
 /**
  * Integriq Migrate Moved Job Classes Repair Step.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Rewrites the stored names of the job classes listed in
  * {@see MovedJobClasses} to their current name, in the two places they are
  * stored:

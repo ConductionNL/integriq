@@ -3,6 +3,9 @@
 /**
  * Source-schema lockdown regression test (ocon#147).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The `source` schema shipped with NO `authorization` block, so it fell back to
  * OpenRegister's default — readable by ANY authenticated user. Because OpenRegister has no
  * field-level redaction (openregister#380), that meant
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  */

@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,6 +27,7 @@ namespace OCA\Integriq\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
 use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Middleware\ApiContractMiddleware;
 use OCA\Integriq\Outbound\OutboundRegistrar;
 use OCA\Integriq\Expression\ExpressionRegistrar;
 use OCA\Integriq\Flow\FlowRegistrar;
@@ -123,6 +127,9 @@ class Application extends App implements IBootstrap {
 		OpenRegisterAutoloader::register();
 		// Stored job classes may still carry a moved class's old name.
 		MovedJobClasses::registerAliases();
+
+		// API-Version header and problem details on the JSON API (spec api-contract).
+		$context->registerMiddleware(ApiContractMiddleware::class);
 
 		$this->assertStorageMigrated();
 

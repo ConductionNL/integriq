@@ -3,6 +3,9 @@
 /**
  * CallEventDeduplicator — has this exact call event already been handled?
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * A PBX retries. It retries on a timeout it caused itself, on a 500, and often
  * on a 200 it did not read in time. Without this, one ringing event becomes
  * three CallEvents, and the agent's panel pops the same caller three times.
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

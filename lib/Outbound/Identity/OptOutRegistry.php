@@ -323,54 +323,77 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-every-integriq-sender-asks-the-opt-out-list-before-it-sends-req-ooa-001
 	 */
 	public function decideForSend(string $channel, string $category, array $recipients, array $options = []): array {
-		$sourceApp = (string)($options['sourceApp'] ?? 'integriq');
-		if ($this->isAuthorityEnabled() === false) {
-			return $this->uniform(
-				recipients: $recipients,
-				send: true,
-				code: self::CODE_ALLOWED,
-				reason: 'The opt-out check is turned off on this instance (' . self::CONFIG_AUTHORITY . ').',
-				category: $category
-			);
-		}
+		$send = new OwnSendRequest(channel: $channel, category: $category);
+		$send->recipients = $recipients;
+		$send->withOptions(options: $options);
 
-		try {
-			return $this->decideMany(
-				channel: $channel,
-				category: $category,
-				requiresConsent: (bool)($options['requiresConsent'] ?? false),
-				recipients: $recipients,
-				sourceApp: $sourceApp,
-				correlationId: (string)($options['correlationId'] ?? ''),
-				baseUrl: (string)($options['baseUrl'] ?? ''),
-				inReplyTo: $this->replyToOption(options: $options)
-			);
-		} catch (Throwable $exception) {
-			$this->logger->warning(
-				'[OptOutRegistry] the opt-out list could not be read; non-exempt sends are refused',
-				['channel' => $channel, 'category' => $category, 'sourceApp' => $sourceApp, 'exception' => $exception->getMessage()]
-			);
-		}
-
-		return $this->decideWithoutList(category: $category, recipients: $recipients);
+		return $this->decideOwnSend(send: $send);
 
 	}//end decideForSend()
 
 	/**
-	 * The inbound message a send answers, from the sender's options.
+	 * Decide an own sender's request: all allowed when the check is off,
+	 * otherwise from the list, and without the list when it cannot be read.
 	 *
-	 * @param array<string,mixed> $options The sender's options.
+	 * @param OwnSendRequest $send The request.
 	 *
-	 * @return string|null The `inReplyTo` value, or null when absent or empty.
+	 * @return array<string,array<string,mixed>> One decision per recipient, keyed by the address as given.
 	 */
-	private function replyToOption(array $options): ?string {
-		if (isset($options['inReplyTo']) === true && $options['inReplyTo'] !== '') {
-			return (string)$options['inReplyTo'];
+	private function decideOwnSend(OwnSendRequest $send): array {
+		if ($this->isAuthorityEnabled() === false) {
+			return $this->decideWithAuthorityOff(send: $send);
 		}
 
-		return null;
+		try {
+			return $this->decideListed(send: $send);
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[OptOutRegistry] the opt-out list could not be read; non-exempt sends are refused',
+				['channel' => $send->channel, 'category' => $send->category, 'sourceApp' => $send->sourceApp, 'exception' => $exception->getMessage()]
+			);
+		}
 
-	}//end replyToOption()
+		return $this->decideWithoutList(category: $send->category, recipients: $send->recipients);
+
+	}//end decideOwnSend()
+
+	/**
+	 * Decide an own sender's request from the opt-out list.
+	 *
+	 * @param OwnSendRequest $send The request.
+	 *
+	 * @return array<string,array<string,mixed>> One decision per recipient, keyed by the address as given.
+	 */
+	private function decideListed(OwnSendRequest $send): array {
+		return $this->decideMany(
+			channel: $send->channel,
+			category: $send->category,
+			requiresConsent: (bool)($send->options['requiresConsent'] ?? false),
+			recipients: $send->recipients,
+			sourceApp: $send->sourceApp,
+			correlationId: (string)($send->options['correlationId'] ?? ''),
+			baseUrl: (string)($send->options['baseUrl'] ?? ''),
+			inReplyTo: $send->inReplyTo()
+		);
+
+	}//end decideListed()
+
+	/**
+	 * Allow every recipient without a link: the check is turned off (the rollback).
+	 *
+	 * @param OwnSendRequest $send The request.
+	 *
+	 * @return array<string,array<string,mixed>> One decision per recipient, keyed by the address as given.
+	 */
+	private function decideWithAuthorityOff(OwnSendRequest $send): array {
+		$template = (new SendDecision(address: '', category: $send->category))->because(
+			code: self::CODE_ALLOWED,
+			reason: 'The opt-out check is turned off on this instance (' . self::CONFIG_AUTHORITY . ').'
+		);
+
+		return $this->uniform(recipients: $send->recipients, template: $template);
+
+	}//end decideWithAuthorityOff()
 
 	/**
 	 * Decide when the opt-out list cannot be read: an exempt category is sent,
@@ -382,23 +405,16 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @return array<string,array<string,mixed>> One decision per recipient, keyed by the address as given.
 	 */
 	private function decideWithoutList(string $category, array $recipients): array {
+		$template = new SendDecision(address: '', category: $category);
 		if ($this->categories->isExempt($category) === true) {
-			return $this->uniform(
-				recipients: $recipients,
-				send: true,
-				code: self::CODE_ALLOWED,
-				reason: 'Category "' . $category . '" is sent without the opt-out list.',
-				category: $category
-			);
+			$template->because(code: self::CODE_ALLOWED, reason: 'Category "' . $category . '" is sent without the opt-out list.');
+
+			return $this->uniform(recipients: $recipients, template: $template);
 		}
 
-		return $this->uniform(
-			recipients: $recipients,
-			send: false,
-			code: self::CODE_AUTHORITY_UNAVAILABLE,
-			reason: 'The opt-out list could not be read, so this message was not sent.',
-			category: $category
-		);
+		$template->because(code: self::CODE_AUTHORITY_UNAVAILABLE, reason: 'The opt-out list could not be read, so this message was not sent.');
+
+		return $this->uniform(recipients: $recipients, template: $template);
 
 	}//end decideWithoutList()
 
@@ -712,12 +728,13 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	private function decideOne(SendDecisionRun $run, AddressedRecipient $addressed): array {
 		if ($addressed->key === null) {
 			$reason = 'This address cannot be used on the "' . $run->channel . '" channel.';
-			return $this->suppress(code: self::CODE_INVALID_ADDRESS, reason: $reason, key: '', context: $run->logContext(), detail: []);
+			$refusal = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_INVALID_ADDRESS, reason: $reason);
+			return $this->suppress(run: $run, decision: $refusal);
 		}
 
 		if ($run->category === OptOutCategories::REPLY) {
 			$reason = 'A direct reply is sent whatever the opt-outs say.';
-			return $this->decision(send: true, code: self::CODE_ALLOWED, reason: $reason, key: $addressed->key, category: $run->category);
+			return $this->decision(decision: $run->decisionFor(addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: $reason));
 		}
 
 		$this->matchRecipient(run: $run, addressed: $addressed);
@@ -738,14 +755,8 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @return void
 	 */
 	private function matchRecipient(SendDecisionRun $run, AddressedRecipient $addressed): void {
-		$recipient = $addressed->recipient;
-		$addressed->mine = $this->matcher->rowsOf(rows: $run->rows, key: (string)$addressed->key, contactRef: (string)($recipient['contactRef'] ?? ''));
-		$addressed->optOut = $this->matcher->matchingOptOut(
-			rows: $addressed->mine,
-			recipient: $recipient,
-			channel: $run->channel,
-			category: $run->category
-		);
+		$addressed->mine = $this->matcher->rowsOf(run: $run, addressed: $addressed);
+		$addressed->optOut = $this->matcher->matchingOptOut(run: $run, addressed: $addressed);
 
 	}//end matchRecipient()
 
@@ -758,18 +769,17 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @return array<string,mixed> The decision.
 	 */
 	private function decideExempt(SendDecisionRun $run, AddressedRecipient $addressed): array {
-		$category = $run->category;
 		$optOut = $addressed->optOut;
 		if ($optOut === null) {
-			return $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: (string)$addressed->key, category: $category);
+			return $this->decision(decision: $run->decisionFor(addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: ''));
 		}
 
 		$detail = ['scope' => (string)$optOut->getScope(), 'optOutId' => $optOut->getId()];
 		$this->append(kind: OptOutLogEntry::KIND_OVERRIDE, address: (string)$addressed->key, context: $run->logContext(), detail: $detail);
-		$reason = 'Category "' . $category . '" cannot be stopped by an opt-out.';
-		$decision = $this->decision(send: true, code: self::CODE_EXEMPT_OVERRIDE, reason: $reason, key: (string)$addressed->key, category: $category);
-		$decision['overridden'] = true;
-		return $decision;
+		$reason = 'Category "' . $run->category . '" cannot be stopped by an opt-out.';
+		$decision = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_EXEMPT_OVERRIDE, reason: $reason);
+		$decision->overridden = true;
+		return $this->decision(decision: $decision);
 
 	}//end decideExempt()
 
@@ -786,13 +796,15 @@ class OptOutRegistry implements OptOutRegistryInterface {
 		$optOut = $addressed->optOut;
 		if ($optOut !== null) {
 			$reason = 'This address opted out (' . $optOut->getScope() . ').';
-			$detail = ['scope' => (string)$optOut->getScope()];
-			return $this->suppress(code: self::CODE_OPTED_OUT, reason: $reason, key: (string)$addressed->key, context: $run->logContext(), detail: $detail);
+			$decision = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_OPTED_OUT, reason: $reason);
+			$decision->logDetail = ['scope' => (string)$optOut->getScope()];
+			return $this->suppress(run: $run, decision: $decision);
 		}
 
 		if ($this->consentPermits(run: $run, addressed: $addressed) === false) {
 			$reason = 'No recorded consent permits this message.';
-			return $this->suppress(code: self::CODE_NO_CONSENT, reason: $reason, key: (string)$addressed->key, context: $run->logContext(), detail: []);
+			$refusal = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_NO_CONSENT, reason: $reason);
+			return $this->suppress(run: $run, decision: $refusal);
 		}
 
 		return $this->allow(run: $run, addressed: $addressed);
@@ -809,7 +821,7 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 */
 	private function consentPermits(SendDecisionRun $run, AddressedRecipient $addressed): bool {
 		return $run->requiresConsent === false
-			|| $this->matcher->hasConsent(rows: $addressed->mine, recipient: $addressed->recipient, channel: $run->channel, category: $run->category) === true;
+			|| $this->matcher->hasConsent(run: $run, addressed: $addressed) === true;
 
 	}//end consentPermits()
 
@@ -822,33 +834,31 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * @return array<string,mixed> The decision.
 	 */
 	private function allow(SendDecisionRun $run, AddressedRecipient $addressed): array {
-		$decision = $this->decision(send: true, code: self::CODE_ALLOWED, reason: '', key: (string)$addressed->key, category: $run->category);
+		$decision = $run->decisionFor(addressed: $addressed)->because(code: self::CODE_ALLOWED, reason: '');
 		if ($run->probe === true) {
 			// A probe only shows a state: no token, no short link.
-			return $decision;
+			return $this->decision(decision: $decision);
 		}
 
-		$decision['unsubscribe'] = $this->material(run: $run, addressed: $addressed);
+		$decision->unsubscribe = $this->material(run: $run, addressed: $addressed);
 
-		return $decision;
+		return $this->decision(decision: $decision);
 
 	}//end allow()
 
 	/**
 	 * Refuse one recipient and log the suppression.
 	 *
-	 * @param string $code The decision code.
-	 * @param string $reason Why.
-	 * @param string $key The normalised address, or empty.
-	 * @param array{channel:string,category:string,sourceApp:string,correlationId:string,probe:bool} $context The batch.
-	 * @param array<string,mixed> $detail What else the log row says.
+	 * @param SendDecisionRun $run The batch.
+	 * @param SendDecision $decision The refusal, with its code, reason and log detail.
 	 *
 	 * @return array<string,mixed> The decision.
 	 */
-	private function suppress(string $code, string $reason, string $key, array $context, array $detail): array {
-		$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: $key, context: $context, detail: ['code' => $code] + $detail);
+	private function suppress(SendDecisionRun $run, SendDecision $decision): array {
+		$detail = ['code' => $decision->code] + $decision->logDetail;
+		$this->append(kind: OptOutLogEntry::KIND_SUPPRESSED, address: $decision->address, context: $run->logContext(), detail: $detail);
 
-		return $this->decision(send: false, code: $code, reason: $reason, key: $key, category: $context['category']);
+		return $this->decision(decision: $decision);
 
 	}//end suppress()
 
@@ -921,24 +931,12 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	/**
 	 * One decision.
 	 *
-	 * @param bool $send Whether to send.
-	 * @param string $code The code.
-	 * @param string $reason Why.
-	 * @param string $key The normalised address.
-	 * @param string $category The category it was decided as.
+	 * @param SendDecision $decision The decision; whether it sends follows from its code.
 	 *
 	 * @return array<string,mixed> The decision: send, overridden, code, reason, unsubscribe, address, category.
 	 */
-	private function decision(bool $send, string $code, string $reason, string $key, string $category): array {
-		return [
-			'send' => $send,
-			'overridden' => false,
-			'code' => $code,
-			'reason' => $reason,
-			'unsubscribe' => null,
-			'address' => $key,
-			'category' => $category,
-		];
+	private function decision(SendDecision $decision): array {
+		return $decision->toArray(send: in_array($decision->code, [self::CODE_ALLOWED, self::CODE_EXEMPT_OVERRIDE], true));
 
 	}//end decision()
 
@@ -946,24 +944,15 @@ class OptOutRegistry implements OptOutRegistryInterface {
 	 * The same decision for every recipient, with no table read.
 	 *
 	 * @param list<array<string,mixed>> $recipients The recipients.
-	 * @param bool $send Whether to send.
-	 * @param string $code The code.
-	 * @param string $reason Why.
-	 * @param string $category The category.
+	 * @param SendDecision $template The decision, copied per recipient address.
 	 *
 	 * @return array<string,array<string,mixed>> The decisions.
 	 */
-	private function uniform(array $recipients, bool $send, string $code, string $reason, string $category): array {
+	private function uniform(array $recipients, SendDecision $template): array {
 		$decisions = [];
 		foreach ($recipients as $recipient) {
 			$given = (string)($recipient['address'] ?? '');
-			$decisions[$given] = $this->decision(
-				send: $send,
-				code: $code,
-				reason: $reason,
-				key: $given,
-				category: $category
-			);
+			$decisions[$given] = $this->decision(decision: $template->forAddress(address: $given));
 		}
 
 		return $decisions;

@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Outbound\OutboundSendGateInterface;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Sms\DeliveryResult;
 use OCA\Integriq\Service\Sms\LogSmsProvider;
@@ -423,27 +424,16 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-send-endpoint-consumable-by-sibling-apps-req-006
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new SmsProviderException(
 				message: 'No active SMS source is configured (register "openconnector", schema "source", '
 					. 'type "sms", isEnabled=true). Configure one before using the SMS channel.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**

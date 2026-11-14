@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Outbound Kennisgeving Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates an OR/ZGW zaak object (a create, update, or status change) into
  * a `zakLk01` StUF-ZKN 3.10 SOAP kennisgeving XML envelope, so a subscribed
  * legacy StUF consumer (midoffice, DMS, belastingen, KCC) stays in sync
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *
@@ -108,16 +108,61 @@ class OutboundNotificationTranslator {
 		string $zenderOrganisation,
 		string $ontvangerOrg,
 	): array {
+		$kennisgeving = new CaseKennisgeving(case: $case, processingKind: $processingKind);
+		$kennisgeving->zender = $zenderOrganisation;
+		$kennisgeving->ontvanger = $ontvangerOrg;
+
+		return $this->render(kennisgeving: $kennisgeving);
+	}//end translate()
+
+	/**
+	 * Validate, build and scan one kennisgeving envelope.
+	 *
+	 * @param CaseKennisgeving $kennisgeving The zaak, verwerkingssoort and organisations.
+	 *
+	 * @return array{referentienummer: string, xml: string} The generated reference and the envelope XML.
+	 *
+	 * @throws StufZknTranslationException When the verwerkingssoort or a required field is unusable,
+	 *                                     or the envelope still carries a template marker.
+	 */
+	private function render(CaseKennisgeving $kennisgeving): array {
+		$this->assertProcessingKind(processingKind: $kennisgeving->processingKind);
+		$this->assertRequiredFieldsPresent(case: $kennisgeving->case);
+
+		$referenceNumber = 'ZKN-' . bin2hex(random_bytes(8));
+
+		$zakLk01 = $this->zakLk01Element();
+		$this->appendStuurgegevens(parent: $zakLk01, header: $this->header(kennisgeving: $kennisgeving, referenceNumber: $referenceNumber));
+		$this->appendParameters(zakLk01: $zakLk01, processingKind: $kennisgeving->processingKind);
+		$this->appendCaseObject(zakLk01: $zakLk01, kennisgeving: $kennisgeving);
+
+		return ['referentienummer' => $referenceNumber, 'xml' => $this->scannedXml(document: $zakLk01->ownerDocument)];
+	}//end render()
+
+	/**
+	 * Refuse a verwerkingssoort this translator cannot emit.
+	 *
+	 * @param string $processingKind The verwerkingssoort.
+	 *
+	 * @return void
+	 *
+	 * @throws StufZknTranslationException When it is not T, W or V.
+	 */
+	private function assertProcessingKind(string $processingKind): void {
 		if (in_array($processingKind, self::VERWERKINGSSOORTEN, true) === false) {
 			throw new StufZknTranslationException(
 				message: 'Unsupported outbound verwerkingssoort "' . $processingKind . '" (expected T, W, or V).'
 			);
 		}
 
-		$this->assertRequiredFieldsPresent(case: $case);
+	}//end assertProcessingKind()
 
-		$referenceNumber = 'ZKN-' . bin2hex(random_bytes(8));
-
+	/**
+	 * A new SOAP envelope document with its body and an empty `zakLk01`.
+	 *
+	 * @return DOMElement The `zakLk01` element; its owner document is the envelope.
+	 */
+	private function zakLk01Element(): DOMElement {
 		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
 		$envelope = $document->createElementNS(StufZknNamespaces::SOAP, 'soap:Envelope');
 		$envelope->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:StUF', StufZknNamespaces::STUF);
@@ -131,26 +176,67 @@ class OutboundNotificationTranslator {
 		$zakLk01 = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:zakLk01');
 		$body->appendChild($zakLk01);
 
-		$header = new Stuurgegevens(
+		return $zakLk01;
+	}//end zakLk01Element()
+
+	/**
+	 * The `Lk01` stuurgegevens of a kennisgeving.
+	 *
+	 * @param CaseKennisgeving $kennisgeving The organisations.
+	 * @param string $referenceNumber The generated referentienummer.
+	 *
+	 * @return Stuurgegevens The header.
+	 */
+	private function header(CaseKennisgeving $kennisgeving, string $referenceNumber): Stuurgegevens {
+		return new Stuurgegevens(
 			berichtcode: 'Lk01',
 			referentienummer: $referenceNumber,
-			zender: ['organisatie' => $zenderOrganisation],
-			ontvanger: ['organisatie' => $ontvangerOrg],
+			zender: ['organisatie' => $kennisgeving->zender],
+			ontvanger: ['organisatie' => $kennisgeving->ontvanger],
 			tail: ['entiteittype' => 'ZAK']
 		);
-		$this->appendStuurgegevens(parent: $zakLk01, header: $header);
+	}//end header()
 
-		$parameters = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:parameters');
-		$zakLk01->appendChild($parameters);
-		$this->appendStufText(document: $document, parent: $parameters, name: 'mutatiesoort', value: $processingKind);
-		$this->appendStufText(document: $document, parent: $parameters, name: 'indicatorOvername', value: 'V');
+	/**
+	 * Append the `parameters` block: the mutatiesoort and `indicatorOvername`.
+	 *
+	 * @param DOMElement $zakLk01 The `zakLk01` element.
+	 * @param string $processingKind The verwerkingssoort.
+	 *
+	 * @return void
+	 */
+	private function appendParameters(DOMElement $zakLk01, string $processingKind): void {
+		$parameters = new StufChildWriter(parent: (new StufChildWriter(parent: $zakLk01))->zknChild(name: 'parameters'));
+		$parameters->stufText(name: 'mutatiesoort', value: $processingKind);
+		$parameters->stufText(name: 'indicatorOvername', value: 'V');
+	}//end appendParameters()
 
-		$object = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:object');
+	/**
+	 * Append the ZAK `object` with its entiteittype, verwerkingssoort and fields.
+	 *
+	 * @param DOMElement $zakLk01 The `zakLk01` element.
+	 * @param CaseKennisgeving $kennisgeving The zaak and verwerkingssoort.
+	 *
+	 * @return void
+	 */
+	private function appendCaseObject(DOMElement $zakLk01, CaseKennisgeving $kennisgeving): void {
+		$object = $zakLk01->ownerDocument->createElementNS(StufZknNamespaces::ZKN, 'zkn:object');
 		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:entiteittype', 'ZAK');
-		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', $processingKind);
+		$object->setAttributeNS(StufZknNamespaces::STUF, 'StUF:verwerkingssoort', $kennisgeving->processingKind);
 		$zakLk01->appendChild($object);
-		$this->appendCaseObjectFields(document: $document, object: $object, case: $case);
+		$this->appendCaseObjectFields(object: $object, case: $kennisgeving->case);
+	}//end appendCaseObject()
 
+	/**
+	 * The rendered envelope, refused when a template marker survived.
+	 *
+	 * @param DOMDocument $document The envelope.
+	 *
+	 * @return string The XML.
+	 *
+	 * @throws StufZknTranslationException When an unresolved marker is left.
+	 */
+	private function scannedXml(DOMDocument $document): string {
 		$xml = (string)$document->saveXML();
 		if ($this->leakGuard->hasUnresolvedPlaceholder(xml: $xml) === true) {
 			throw new StufZknTranslationException(
@@ -158,8 +244,8 @@ class OutboundNotificationTranslator {
 			);
 		}
 
-		return ['referentienummer' => $referenceNumber, 'xml' => $xml];
-	}//end translate()
+		return $xml;
+	}//end scannedXml()
 
 	/**
 	 * Assert every required zaak field is present and non-empty — the literal-leak guard's first
@@ -196,17 +282,16 @@ class OutboundNotificationTranslator {
 	 * @return void
 	 */
 	private function appendStuurgegevens(DOMElement $parent, Stuurgegevens $header): void {
-		$document      = $parent->ownerDocument;
-		$stuurgegevens = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:stuurgegevens');
-		$parent->appendChild($stuurgegevens);
+		$stuurgegevens = (new StufChildWriter(parent: $parent))->zknChild(name: 'stuurgegevens');
+		$fields = new StufChildWriter(parent: $stuurgegevens);
 
-		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'berichtcode', value: $header->berichtcode);
+		$fields->stufText(name: 'berichtcode', value: $header->berichtcode);
 		$this->appendOrganisations(stuurgegevens: $stuurgegevens, header: $header);
 
-		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'referentienummer', value: $header->referentienummer);
-		$this->appendStufText(document: $document, parent: $stuurgegevens, name: 'tijdstipBericht', value: (new DateTime())->format('YmdHis'));
+		$fields->stufText(name: 'referentienummer', value: $header->referentienummer);
+		$fields->stufText(name: 'tijdstipBericht', value: (new DateTime())->format('YmdHis'));
 		foreach ($header->tail as $name => $value) {
-			$this->appendStufText(document: $document, parent: $stuurgegevens, name: $name, value: $value);
+			$fields->stufText(name: $name, value: $value);
 		}
 	}//end appendStuurgegevens()
 
@@ -223,109 +308,67 @@ class OutboundNotificationTranslator {
 		foreach (['zender' => $header->zender, 'ontvanger' => $header->ontvanger] as $role => $system) {
 			$element = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:' . $role);
 			$stuurgegevens->appendChild($element);
-			$this->appendStufText(document: $document, parent: $element, name: 'organisatie', value: (string)$system['organisatie']);
+			(new StufChildWriter(parent: $element))->stufText(name: 'organisatie', value: (string)$system['organisatie']);
 		}
 	}//end appendOrganisations()
 
 	/**
 	 * Append the ZAK object's domain fields.
 	 *
-	 * @param DOMDocument $document The owning document.
 	 * @param DOMElement $object The `object` element to append into.
 	 * @param array $case The OR/ZGW zaak object fields (already validated present).
 	 *
 	 * @return void
 	 */
-	private function appendCaseObjectFields(DOMDocument $document, DOMElement $object, array $case): void {
-		$this->appendZknText(document: $document, parent: $object, name: 'identificatie', value: (string)$case['identificatie']);
-		$this->appendZknText(document: $document, parent: $object, name: 'omschrijving', value: (string)$case['omschrijving']);
+	private function appendCaseObjectFields(DOMElement $object, array $case): void {
+		$fields = new StufChildWriter(parent: $object);
+		$fields->zknText(name: 'identificatie', value: (string)$case['identificatie']);
+		$fields->zknText(name: 'omschrijving', value: (string)$case['omschrijving']);
+		$this->appendExplanation(fields: $fields, case: $case);
+		$this->appendCaseType(fields: $fields, case: $case);
+		$fields->zknText(name: 'registratiedatum', value: (string)$case['registratiedatum']);
+		$fields->zknText(name: 'startdatum', value: (string)$case['startdatum']);
 
+		foreach (['einddatum', 'status'] as $name) {
+			if (empty($case[$name]) === false) {
+				$fields->zknText(name: $name, value: (string)$case[$name]);
+			}
+		}
+
+	}//end appendCaseObjectFields()
+
+	/**
+	 * Append the `toelichting`: its text, or an explicit nil when it is empty.
+	 *
+	 * @param StufChildWriter $fields The object's writer.
+	 * @param array $case The zaak fields.
+	 *
+	 * @return void
+	 */
+	private function appendExplanation(StufChildWriter $fields, array $case): void {
 		if (empty($case['toelichting']) === true) {
-			$this->appendNilField(document: $document, parent: $object, name: 'toelichting');
+			$fields->zknNil(name: 'toelichting');
+			return;
 		}
 
-		if (empty($case['toelichting']) === false) {
-			$this->appendZknText(document: $document, parent: $object, name: 'toelichting', value: (string)$case['toelichting']);
-		}
+		$fields->zknText(name: 'toelichting', value: (string)$case['toelichting']);
 
-		$caseType = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:zaaktype');
-		$object->appendChild($caseType);
-		$this->appendZknText(document: $document, parent: $caseType, name: 'code', value: (string)$case['zaaktypeCode']);
+	}//end appendExplanation()
+
+	/**
+	 * Append the `zaaktype` with its code and, when set, its omschrijving.
+	 *
+	 * @param StufChildWriter $fields The object's writer.
+	 * @param array $case The zaak fields.
+	 *
+	 * @return void
+	 */
+	private function appendCaseType(StufChildWriter $fields, array $case): void {
+		$caseType = new StufChildWriter(parent: $fields->zknChild(name: 'zaaktype'));
+		$caseType->zknText(name: 'code', value: (string)$case['zaaktypeCode']);
 		if (empty($case['zaaktypeOmschrijving']) === false) {
-			$this->appendZknText(
-				document: $document,
-				parent: $caseType,
-				name: 'omschrijving',
-				value: (string)$case['zaaktypeOmschrijving']
-			);
+			$caseType->zknText(name: 'omschrijving', value: (string)$case['zaaktypeOmschrijving']);
 		}
 
-		$this->appendZknText(
-			document: $document,
-			parent: $object,
-			name: 'registratiedatum',
-			value: (string)$case['registratiedatum']
-		);
-		$this->appendZknText(document: $document, parent: $object, name: 'startdatum', value: (string)$case['startdatum']);
-
-		if (empty($case['einddatum']) === false) {
-			$this->appendZknText(document: $document, parent: $object, name: 'einddatum', value: (string)$case['einddatum']);
-		}
-
-		if (empty($case['status']) === false) {
-			$this->appendZknText(document: $document, parent: $object, name: 'status', value: (string)$case['status']);
-		}
-
-	}//end appendZaakObjectFields()
-
-	/**
-	 * Append a zkn-namespaced text-valued child element.
-	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $parent The parent element.
-	 * @param string $name The child element local name.
-	 * @param string $value The text value.
-	 *
-	 * @return void
-	 */
-	private function appendZknText(DOMDocument $document, DOMElement $parent, string $name, string $value): void {
-		$parent->appendChild(
-			$document->createElementNS(StufZknNamespaces::ZKN, 'zkn:' . $name, htmlspecialchars($value, ENT_XML1 | ENT_QUOTES))
-		);
-
-	}//end appendZknText()
-
-	/**
-	 * Append a StUF-namespaced text-valued child element.
-	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $parent The parent element.
-	 * @param string $name The child element local name.
-	 * @param string $value The text value.
-	 *
-	 * @return void
-	 */
-	private function appendStufText(DOMDocument $document, DOMElement $parent, string $name, string $value): void {
-		$parent->appendChild(
-			$document->createElementNS(StufZknNamespaces::STUF, 'StUF:' . $name, htmlspecialchars($value, ENT_XML1 | ENT_QUOTES))
-		);
-
-	}//end appendStufText()
-
-	/**
-	 * Append an explicitly-nil zkn-namespaced field per StUF's `noValue`/`xsi:nil` convention.
-	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $parent The parent element.
-	 * @param string $name The child element local name.
-	 *
-	 * @return void
-	 */
-	private function appendNilField(DOMDocument $document, DOMElement $parent, string $name): void {
-		$field = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:' . $name);
-		$field->setAttributeNS(StufZknNamespaces::STUF, 'StUF:noValue', 'geenWaarde');
-		$field->setAttributeNS(StufZknNamespaces::XSI, 'xsi:nil', 'true');
-		$parent->appendChild($field);
-
-	}//end appendNilField()
+	}//end appendCaseType()
 }//end class

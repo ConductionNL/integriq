@@ -69,6 +69,16 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
 - [ ] Implement
 - [ ] Test (`tests/validate-register.js`; `tests/e2e/intake-routing-rules.spec.ts`)
 
+### Task 8: Import a saved .eml or .msg file from the inbox page
+- **spec_ref**: openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
+- **files**: `src/manifest.d/mail-intake.json`, `src/manifest.d/intake-channels.json`, `src/handlers/actionHandlers.js`, `src/modals/ImportMailFileModal.vue`
+- **acceptance_criteria**:
+  - GIVEN a handler with the mail import right on the inbox page WHEN they choose "Import file (.eml or .msg)" and pick a saved Outlook message THEN it is posted to `/api/mail-intake/import` under the chosen mailbox source and the new message appears in the list
+  - GIVEN a file that does not parse WHEN it is imported THEN the dialog names the reason and the stored failure is listed
+  - GIVEN a user without the right WHEN they open the inbox THEN the import action is not offered
+- [ ] Implement
+- [ ] Test (`tests/e2e/mail-intake-import.spec.ts`)
+
 ## Verification
 
 - `openspec validate messaging-intake-routing-rules --type change --strict`

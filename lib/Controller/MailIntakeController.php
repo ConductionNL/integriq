@@ -114,24 +114,79 @@ class MailIntakeController extends Controller {
 
 		$this->actionAuth->requireAction(user: $user, action: self::ACTION_IMPORT);
 
-		if ($sourceId === '') {
-			$sourceId = (string)$this->request->getParam('sourceId', '');
-		}
-
+		$sourceId = $this->requestedSourceId(sourceId: $sourceId);
 		$source = $this->findMailbox(sourceId: $sourceId);
 		if ($source === null) {
-			return new JSONResponse(
-				['error' => $this->l->t('No mailbox source with that id.')],
-				Http::STATUS_NOT_FOUND
-			);
+			return $this->noMailbox();
 		}
 
-		$upload = $this->request->getUploadedFile('file');
-		if (is_array($upload) === false || is_string(($upload['tmp_name'] ?? null)) === false) {
-			return new JSONResponse(
-				['error' => $this->l->t('Attach the message file as "file".')],
-				Http::STATUS_BAD_REQUEST
-			);
+		return $this->importUpload(sourceId: $sourceId, source: $source);
+
+	}//end import()
+
+	/**
+	 * The source id from the path, else from the `sourceId` request parameter.
+	 *
+	 * @param string $sourceId The source id from the path.
+	 *
+	 * @return string
+	 */
+	private function requestedSourceId(string $sourceId): string {
+		if ($sourceId === '') {
+			return (string)$this->request->getParam('sourceId', '');
+		}
+
+		return $sourceId;
+
+	}//end requestedSourceId()
+
+	/**
+	 * The 404 for a source that is missing or not a mailbox.
+	 *
+	 * @return JSONResponse
+	 */
+	private function noMailbox(): JSONResponse {
+		return new JSONResponse(
+			['error' => $this->l->t('No mailbox source with that id.')],
+			Http::STATUS_NOT_FOUND
+		);
+
+	}//end noMailbox()
+
+	/**
+	 * Take the uploaded message in on the mailbox and answer it with 201.
+	 *
+	 * @param string       $sourceId The mailbox source id.
+	 * @param ObjectEntity $source   The mailbox source.
+	 *
+	 * @return JSONResponse The created or already known message, or the 400 for a bad upload.
+	 */
+	private function importUpload(string $sourceId, ObjectEntity $source): JSONResponse {
+		$upload = $this->readUpload();
+		if ($upload instanceof JSONResponse) {
+			return $upload;
+		}
+
+		$parsed = $this->messageParser->parse($upload['name'], $upload['raw']);
+		$message = $this->intakeService->intake(
+			$sourceId,
+			$parsed,
+			$this->casePatternOf(source: $source)
+		);
+
+		return $this->importedResponse(message: $message, warning: $parsed->getWarning());
+
+	}//end importUpload()
+
+	/**
+	 * The uploaded `file`'s name and bytes; 400 when it is missing or empty.
+	 *
+	 * @return array{name: string, raw: string}|JSONResponse
+	 */
+	private function readUpload(): array|JSONResponse {
+		$upload = $this->uploadedFile();
+		if ($upload instanceof JSONResponse) {
+			return $upload;
 		}
 
 		$raw = file_get_contents($upload['tmp_name']);
@@ -142,29 +197,64 @@ class MailIntakeController extends Controller {
 			);
 		}
 
-		$parsed = $this->messageParser->parse((string)($upload['name'] ?? 'message.eml'), $raw);
-		$configuration = $this->configurationOf(source: $source);
-		$casePattern = ($configuration['casePattern'] ?? null);
-		if ($casePattern !== null) {
-			$casePattern = (string)$casePattern;
+		return ['name' => (string)($upload['name'] ?? 'message.eml'), 'raw' => $raw];
+
+	}//end readUpload()
+
+	/**
+	 * The uploaded `file` with its temporary path; 400 without one.
+	 *
+	 * @return array<string, mixed>|JSONResponse
+	 */
+	private function uploadedFile(): array|JSONResponse {
+		$upload = $this->request->getUploadedFile('file');
+		if (is_array($upload) === false || is_string(($upload['tmp_name'] ?? null)) === false) {
+			return new JSONResponse(
+				['error' => $this->l->t('Attach the message file as "file".')],
+				Http::STATUS_BAD_REQUEST
+			);
 		}
 
-		$message = $this->intakeService->intake(
-			$sourceId,
-			$parsed,
-			$casePattern
-		);
+		return $upload;
 
+	}//end uploadedFile()
+
+	/**
+	 * The mailbox's case pattern as a string, or null without one.
+	 *
+	 * @param ObjectEntity $source The mailbox source.
+	 *
+	 * @return string|null
+	 */
+	private function casePatternOf(ObjectEntity $source): ?string {
+		$casePattern = ($this->configurationOf(source: $source)['casePattern'] ?? null);
+		if ($casePattern === null) {
+			return null;
+		}
+
+		return (string)$casePattern;
+
+	}//end casePatternOf()
+
+	/**
+	 * The 201 answer naming the message and the parser's warning.
+	 *
+	 * @param ObjectEntity $message The created or already known message.
+	 * @param string|null  $warning What the parser warns about the upload.
+	 *
+	 * @return JSONResponse
+	 */
+	private function importedResponse(ObjectEntity $message, ?string $warning): JSONResponse {
 		return new JSONResponse(
 			[
 				'id' => (string)$message->getUuid(),
 				'message' => $message->getObject(),
-				'warning' => $parsed->getWarning(),
+				'warning' => $warning,
 			],
 			Http::STATUS_CREATED
 		);
 
-	}//end import()
+	}//end importedResponse()
 
 	/**
 	 * Run one poll of a mailbox source now.

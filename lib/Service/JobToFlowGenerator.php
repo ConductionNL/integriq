@@ -3,6 +3,9 @@
 /**
  * Integriq Job → Flow migration generator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Task 3.3 of `flow-native-synchronization` ("Jobs → trigger-schedule flows"):
  * renders an existing Job entity into a GENERATED FLOW DOCUMENT whose start node
  * is `openregister.trigger-schedule`, followed by the one step that does what
@@ -66,9 +69,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -721,21 +721,7 @@ class JobToFlowGenerator implements JobToFlowGeneratorInterface {
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
 	private function edgesFor(array $nodes): array {
-		$ids = array_map(static fn (array $node): string => (string)$node['id'], array_values($nodes));
-
-		$edges = [];
-		$total = count($ids);
-		for ($index = 0; $index < ($total - 1); $index++) {
-			$from = $ids[$index];
-			$to = $ids[($index + 1)];
-			$edges[] = [
-				'id' => $from . '-' . $to,
-				'from' => $from,
-				'to' => $to,
-			];
-		}
-
-		return $edges;
+		return PipelineEdges::chain(nodes: $nodes);
 	}//end edgesFor()
 
 	/**

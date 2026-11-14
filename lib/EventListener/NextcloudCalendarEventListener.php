@@ -3,6 +3,9 @@
 /**
  * Integriq Nextcloud Calendar EventListener.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Normalizes NC calendar object lifecycle events into the CloudEvents
  * `event` envelope. Registered against two event families discovered while
  * verifying this change against a live NC 33 checkout (`discovery.md`):

@@ -3,6 +3,9 @@
 /**
  * Integriq Source Paginate flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.source-paginate` — the "[Fetch a page]" step of the decomposed
  * synchronization flow. It emits ONE FLOW ITEM PER PAGE, each carrying the
  * page's objects as an array, so every downstream step (`apply-mapping`,
@@ -73,9 +76,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

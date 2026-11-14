@@ -55,6 +55,13 @@ class BagObjectReader {
 	public const DATASET = 'bag';
 
 	/**
+	 * The object type the Locatieserver answers for, not the WFS.
+	 *
+	 * @var string
+	 */
+	private const ADDRESS_DESIGNATION = 'nummeraanduiding';
+
+	/**
 	 * The object types this reader answers, with the two digits a BAG
 	 * identificatie carries at positions 5 and 6 for that type.
 	 *
@@ -133,6 +140,32 @@ class BagObjectReader {
 	private function readFeature(string $type, string $identificatie): array {
 		$simulated = $this->wfs->flavour() === 'mock';
 
+		$features = $this->fetchFeatures(type: $type, identificatie: $identificatie);
+		if ($features === null) {
+			return $this->notAvailable(type: $type, reason: self::REASON_UNREACHABLE, simulated: $simulated);
+		}
+
+		if ($features === []) {
+			return $this->answered(type: $type, simulated: $simulated, object: null);
+		}
+
+		$object = $this->matchingObject(features: $features, wanted: ['type' => $type, 'identificatie' => $identificatie]);
+		if ($object === null) {
+			return $this->notAvailable(type: $type, reason: self::REASON_UNCLEAR, simulated: $simulated);
+		}
+
+		return $this->answered(type: $type, simulated: $simulated, object: $object);
+	}//end readFeature()
+
+	/**
+	 * Ask the BAG WFS for at most two features with this identificatie.
+	 *
+	 * @param string $type `pand` or `verblijfsobject`.
+	 * @param string $identificatie The BAG identificatie.
+	 *
+	 * @return array<mixed>|null The features, or null when the WFS gave no usable answer.
+	 */
+	private function fetchFeatures(string $type, string $identificatie): ?array {
 		try {
 			$collection = $this->wfs->getFeature(
 				dataset: self::DATASET,
@@ -141,35 +174,39 @@ class BagObjectReader {
 				filterFields: ['identificatie' => $identificatie]
 			);
 		} catch (Throwable) {
-			return $this->notAvailable(type: $type, reason: self::REASON_UNREACHABLE, simulated: $simulated);
+			return null;
 		}
 
 		$features = ($collection['features'] ?? null);
 		if (($collection['unanswered'] ?? false) === true || is_array($features) === false) {
-			return $this->notAvailable(type: $type, reason: self::REASON_UNREACHABLE, simulated: $simulated);
+			return null;
 		}
 
-		if ($features === []) {
-			return $this->answered(type: $type, simulated: $simulated, object: null);
-		}
+		return $features;
+	}//end fetchFeatures()
 
+	/**
+	 * The object for the first feature that carries the wanted identificatie.
+	 *
+	 * @param array<mixed>                               $features The features the WFS answered.
+	 * @param array{type:string,identificatie:string} $wanted   The object being read.
+	 *
+	 * @return array<string,mixed>|null The object with the feature's properties as attributes, or null when none matches.
+	 */
+	private function matchingObject(array $features, array $wanted): ?array {
 		foreach ($features as $feature) {
 			$properties = [];
 			if (is_array($feature) === true) {
 				$properties = (array)($feature['properties'] ?? []);
 			}
 
-			if ((string)($properties['identificatie'] ?? '') === $identificatie) {
-				return $this->answered(
-					type: $type,
-					simulated: $simulated,
-					object: ['type' => $type, 'identificatie' => $identificatie, 'attributes' => $properties]
-				);
+			if ((string)($properties['identificatie'] ?? '') === $wanted['identificatie']) {
+				return $wanted + ['attributes' => $properties];
 			}
 		}
 
-		return $this->notAvailable(type: $type, reason: self::REASON_UNCLEAR, simulated: $simulated);
-	}//end readFeature()
+		return null;
+	}//end matchingObject()
 
 	/**
 	 * A nummeraanduiding from the PDOK Locatieserver.
@@ -179,35 +216,57 @@ class BagObjectReader {
 	 * @return array{available:bool,reason:string,found:bool,simulated:bool,object:array<string,mixed>|null}
 	 */
 	private function readAddressDesignation(string $identificatie): array {
-		$type = 'nummeraanduiding';
 		$simulated = $this->geocoding->flavour() === 'mock';
 
-		try {
-			$addresses = $this->geocoding->find('nummeraanduiding_id:' . $identificatie, 2);
-		} catch (Throwable) {
-			$addresses = null;
-		}
-
+		$addresses = $this->findAddresses(identificatie: $identificatie);
 		if ($addresses === null) {
-			return $this->notAvailable(type: $type, reason: self::REASON_UNREACHABLE, simulated: $simulated);
+			return $this->notAvailable(type: self::ADDRESS_DESIGNATION, reason: self::REASON_UNREACHABLE, simulated: $simulated);
 		}
 
 		if ($addresses === []) {
-			return $this->answered(type: $type, simulated: $simulated, object: null);
+			return $this->answered(type: self::ADDRESS_DESIGNATION, simulated: $simulated, object: null);
 		}
 
+		$object = $this->matchingAddress(addresses: $addresses, identificatie: $identificatie);
+		if ($object === null) {
+			return $this->notAvailable(type: self::ADDRESS_DESIGNATION, reason: self::REASON_UNCLEAR, simulated: $simulated);
+		}
+
+		return $this->answered(type: self::ADDRESS_DESIGNATION, simulated: $simulated, object: $object);
+	}//end readAddressDesignation()
+
+	/**
+	 * Ask the Locatieserver for at most two addresses with this nummeraanduiding.
+	 *
+	 * @param string $identificatie The BAG identificatie.
+	 *
+	 * @return array<int,array<string,mixed>>|null The addresses, or null when it gave no answer.
+	 */
+	private function findAddresses(string $identificatie): ?array {
+		try {
+			return $this->geocoding->find('nummeraanduiding_id:' . $identificatie, 2);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end findAddresses()
+
+	/**
+	 * The object for the first address that carries the identificatie.
+	 *
+	 * @param array<int,array<string,mixed>> $addresses     The addresses the Locatieserver answered.
+	 * @param string                         $identificatie The BAG identificatie.
+	 *
+	 * @return array<string,mixed>|null The object with the address as attributes, or null when none matches.
+	 */
+	private function matchingAddress(array $addresses, string $identificatie): ?array {
 		foreach ($addresses as $address) {
 			if ((string)($address['bagAddressId'] ?? '') === $identificatie) {
-				return $this->answered(
-					type: $type,
-					simulated: $simulated,
-					object: ['type' => $type, 'identificatie' => $identificatie, 'attributes' => $address]
-				);
+				return ['type' => self::ADDRESS_DESIGNATION, 'identificatie' => $identificatie, 'attributes' => $address];
 			}
 		}
 
-		return $this->notAvailable(type: $type, reason: self::REASON_UNCLEAR, simulated: $simulated);
-	}//end readAddressDesignation()
+		return null;
+	}//end matchingAddress()
 
 	/**
 	 * The answer for a question PDOK answered.

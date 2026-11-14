@@ -3,6 +3,9 @@
 /**
  * Resolving who receives one message, and refusing the requests that should not send.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Pure. No database, no transport, no clock of its own. That is not only for
  * testability: REQ-MRS-002 requires that an addition touch nothing outside the
  * message, and a resolver that cannot write is the strongest available proof of
@@ -26,9 +29,6 @@
  * marked required, with the caller's own stated reason, is protected. A rule
  * invented here would be integriq overriding a municipality's own legal advice
  * about its own letters, on the strength of a guess in a connector.
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\Integriq\Service\Recipients

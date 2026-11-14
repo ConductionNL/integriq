@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Controller;
@@ -117,7 +120,7 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.run');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}
@@ -186,7 +189,7 @@ class JobsController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: 'job.test');
 
 		try {
-			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false, _multitenancy: false);
+			$job = $this->orObjectService->find(id: $id, register: 'integriq', schema: 'job', _rbac: false);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
 		}

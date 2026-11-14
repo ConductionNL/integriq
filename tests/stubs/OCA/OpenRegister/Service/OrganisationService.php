@@ -6,6 +6,9 @@
  * @category Test
  * @package  OCA\Integriq\Tests\Stubs
  * @license  EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -41,5 +44,36 @@ class OrganisationService {
 	 */
 	public function getActiveOrganisation(?array $preloadedOrgs = null): ?object {
 		return null;
+	}
+
+	/**
+	 * The caller's organisation statistics (real signature).
+	 *
+	 * @return array
+	 */
+	public function getUserOrganisationStats(): array {
+		return [];
+	}
+
+	/**
+	 * Set the caller's active organisation (real signature).
+	 *
+	 * @param string $organisationUuid The organisation uuid.
+	 *
+	 * @return bool
+	 */
+	public function setActiveOrganisation(string $organisationUuid): bool {
+		return true;
+	}
+
+	/**
+	 * The caller's organisations (real signature).
+	 *
+	 * @param bool $_useCache Whether to use the cache.
+	 *
+	 * @return array
+	 */
+	public function getUserOrganisations(bool $_useCache = true): array {
+		return [];
 	}
 }

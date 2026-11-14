@@ -1,3 +1,7 @@
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
 // @ts-check
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)

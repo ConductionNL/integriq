@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -2650,4 +2653,108 @@ class CallServiceTest extends TestCase {
 		$this->assertSame(['GET', 'https://hydrated.example.invalid/v1/items', 'yes'], $sent);
 
 	}//end testInjectedCredentialsRefuseOrReachTheDispatch()
+
+	/**
+	 * The logged request and response of a finished call, and the trace step it adds:
+	 * a non-UTF-8 body is logged base64, the remote IP falls back from X-Real-IP to
+	 * X-Forwarded-For, and an error status is a failed step with the logged exchange.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+	 */
+	public function testAFinishedCallLogsItsExchangeAndTracesIt(): void {
+		$brokered = $this->createMock(BrokeredCallService::class);
+		$brokered->method('hasCredentialRef')->willReturn(false);
+		$service = $this->buildBrokeredCallService($brokered);
+		$this->mockGuzzleSequence(
+			$service,
+			[
+				new Response(500, ['X-Forwarded-For' => '10.0.0.2', 'X-Thing' => 'y'], "\xff\xfe raw"),
+				new Response(201, ['X-Real-IP' => '10.0.0.1', 'X-Forwarded-For' => '10.0.0.2'], '{"ok":true}'),
+				new Response(204, [], ''),
+			]
+		);
+
+		$steps = [];
+		$trace = $this->createMock(\OCA\Integriq\Service\Helper\ExecutionTraceContext::class);
+		$trace->method('addStep')->willReturnCallback(
+			static function (...$arguments) use (&$steps): void {
+				$steps[] = $arguments;
+			}
+		);
+
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', config: ['logBody' => true], trace: $trace);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', method: 'POST', config: ['logBody' => true]);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/empty');
+
+		$logs = $this->savedCallLogs();
+		$failed = $logs[0]['object'];
+		$this->assertSame(['url' => 'https://api.example.invalid/v1/items', 'method' => 'GET'], array_slice($failed['request'], 0, 2, true));
+		$response = $failed['response'];
+		$this->assertSame([500, 'Internal Server Error', '10.0.0.2', base64_encode("\xff\xfe raw"), 'base64'], [$response['statusCode'], $response['statusMessage'], $response['remoteIp'], $response['body'], $response['encoding']]);
+		$this->assertSame(['statusCode', 'statusMessage', 'responseTime', 'size', 'remoteIp', 'headers', 'body', 'encoding'], array_keys($response));
+		$this->assertGreaterThanOrEqual(0, $response['responseTime']);
+		$this->assertSame(['y'], $response['headers']['X-Thing']);
+
+		$this->assertSame(['10.0.0.1', '{"ok":true}', 'UTF-8', 'POST'], [$logs[1]['object']['response']['remoteIp'], $logs[1]['object']['response']['body'], $logs[1]['object']['response']['encoding'], $logs[1]['object']['request']['method']]);
+		$this->assertNull($logs[2]['object']['response']['remoteIp']);
+
+		$this->assertCount(1, $steps);
+		[$type, $name, $timing, $status, $input, $output, $startedAt, $finishedAt, $spanId] = $steps[0];
+		$this->assertSame(['call', 'retry-source', null, 'error'], [$type, $name, $timing, $status]);
+		$this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', (string)$spanId);
+		$this->assertSame('https://api.example.invalid/v1/items', $input['url']);
+		$this->assertSame(500, $output['statusCode']);
+		$this->assertLessThanOrEqual($finishedAt, $startedAt);
+
+	}//end testAFinishedCallLogsItsExchangeAndTracesIt()
+
+	/**
+	 * An asynchronous call classifies its outcome for the breaker as the retry loop does:
+	 * a retryable status counts a failure, a success below 400 resets the count, and a
+	 * non-retryable error (404) records neither.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+	 */
+	public function testCallAsyncRecordsTheBreakerOutcomeLikeTheRetryLoop(): void {
+		$outcomes = [];
+		foreach (['retryable' => 503, 'not-retryable' => 404, 'success' => 200] as $name => $status) {
+			$this->saved = [];
+			$brokered = $this->createMock(BrokeredCallService::class);
+			$brokered->method('hasCredentialRef')->willReturn(false);
+			$service = $this->buildBrokeredCallService($brokered);
+
+			$mockClient = $this->createMock(\GuzzleHttp\Client::class);
+			$mockClient->method('requestAsync')->willReturn(\GuzzleHttp\Promise\Create::promiseFor(new Response($status, [], '{}')));
+			$clientProperty = new \ReflectionProperty(CallService::class, 'client');
+			$clientProperty->setAccessible(true);
+			$clientProperty->setValue($service, $mockClient);
+
+			$source = new ObjectEntity();
+			$source->setUuid('source-uuid-async-breaker');
+			$source->setObject(
+				[
+					'name' => 'async-source',
+					'isEnabled' => true,
+					'location' => 'https://api.example.invalid',
+					'configuration' => [],
+					'circuitBreakerFailureCount' => 2,
+				]
+			);
+
+			$service->callAsync(source: $source, endpoint: '/things')->wait();
+
+			$sourceSaves = array_values(array_filter($this->saved, static fn ($row) => $row['schema'] === 'source'));
+			$outcomes[$name] = array_map(
+				static fn (array $row): array => [($row['object']['circuitBreakerFailureCount'] ?? null), ($row['object']['circuitBreakerState'] ?? null)],
+				$sourceSaves
+			);
+		}
+
+		$this->assertSame(['retryable' => [[3, null]], 'not-retryable' => [], 'success' => [[0, 'closed']]], $outcomes);
+
+	}//end testCallAsyncRecordsTheBreakerOutcomeLikeTheRetryLoop()
 }//end class

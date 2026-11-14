@@ -3,6 +3,9 @@
 /**
  * Runs a node's per-item work concurrently, within a bound.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * A node that performs one outbound call per item loops, so N items cost N
  * sequential round-trips. integriq's synchronisation reader — the code a
  * flow-based integriq replaces — instead settles promises through
@@ -28,9 +31,6 @@
  *   ISOLATION  One item's failure yields that item's failure, not the loss of
  *              the other results — so the caller can apply its `onError` policy
  *              exactly as it does from a loop.
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Flow

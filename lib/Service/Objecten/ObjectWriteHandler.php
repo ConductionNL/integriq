@@ -3,6 +3,9 @@
 /**
  * The Objecten API write path: create, update, replace, delete — and announce.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * 🔴 A WRITE THAT CANNOT ANNOUNCE IS REFUSED, NOT PERFORMED. The requirement
  * pairs the two in one sentence: a write lands in OpenRegister AND announces on
  * the `objecten` kanaal. Those are not two features, they are one contract —
@@ -31,9 +34,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.conduction.nl
  *

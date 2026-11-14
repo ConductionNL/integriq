@@ -3,6 +3,9 @@
 /**
  * Integriq Contract Commit flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.contract-commit` — the "[Commit contracts]" step of the
  * decomposed synchronization flow: AFTER the page's objects are written, the
  * decisions the `openconnector.contract` step stamped are upserted as
@@ -59,9 +62,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -241,14 +241,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					. 'hash changes on every pass and nothing is ever skipped.'
 				),
 			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('On error'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What a failed item does to the run: stop, continue or dead_letter.'
-				),
-			],
+			FlowNodeSupport::onErrorField(l10n: $this->l10n),
 		];
 	}//end configForm()
 

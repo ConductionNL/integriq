@@ -3,6 +3,9 @@
 /**
  * Consolidated migration: import the register, drain the legacy tables, drop them.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Replaces the twenty incremental migrations this app used to ship. Eighteen of
  * them built and altered the fifteen `oc_openconnector_*` tables; those tables
  * are legacy storage under the ADR-012 strangler-fig and this migration removes

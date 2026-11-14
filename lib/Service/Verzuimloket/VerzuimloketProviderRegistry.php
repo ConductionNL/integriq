@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Verzuimloket;
 
+use OCA\Integriq\Service\Helper\ProviderIndex;
 use OCA\Integriq\Service\Helper\ProviderIds;
 use RuntimeException;
 
@@ -34,9 +35,9 @@ class VerzuimloketProviderRegistry {
 	/**
 	 * Bindings keyed by provider id.
 	 *
-	 * @var array<string,VerzuimloketProviderInterface>
+	 * @var ProviderIndex<VerzuimloketProviderInterface>
 	 */
-	private array $providers = [];
+	private readonly ProviderIndex $index;
 
 	/**
 	 * Constructor.
@@ -44,13 +45,7 @@ class VerzuimloketProviderRegistry {
 	 * @param iterable<VerzuimloketProviderInterface> $providers The bindings.
 	 */
 	public function __construct(iterable $providers = []) {
-		foreach ($providers as $provider) {
-			if (isset($this->providers[$provider->getProviderId()]) === true) {
-				continue;
-			}
-
-			$this->providers[$provider->getProviderId()] = $provider;
-		}
+		$this->index = new ProviderIndex(kind: 'Verzuimloket', providers: $providers);
 	}//end __construct()
 
 	/**
@@ -63,7 +58,7 @@ class VerzuimloketProviderRegistry {
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function has(string $providerId): bool {
-		return isset($this->providers[$providerId]);
+		return $this->index->has(providerId: $providerId);
 	}//end has()
 
 	/**
@@ -78,18 +73,7 @@ class VerzuimloketProviderRegistry {
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function get(string $providerId): VerzuimloketProviderInterface {
-		$resolved = ProviderIds::orLog(providerId: $providerId);
-		if (isset($this->providers[$resolved]) === false) {
-			throw new RuntimeException(
-				sprintf(
-					'No Verzuimloket provider is registered under "%s". Registered providers: %s. Nothing was sent.',
-					$resolved,
-					ProviderIds::listed(ids: $this->ids())
-				)
-			);
-		}
-
-		return $this->providers[$resolved];
+		return $this->index->get(providerId: ProviderIds::orLog(providerId: $providerId));
 	}//end get()
 
 	/**
@@ -100,6 +84,6 @@ class VerzuimloketProviderRegistry {
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-001-verzuimloket-provider-abstraction-with-log-and-edukoppeling-bindings
 	 */
 	public function ids(): array {
-		return array_keys($this->providers);
+		return $this->index->ids();
 	}//end ids()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * Integriq Inline Secret Migration Planner.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Phase C of ocon#151 / ADR-064: plans the migration of a `source` object's
  * INLINE credential fields (`apikey`, `secret`, `password`, `jwt`,
  * `authenticationConfig`) into the OpenRegister credential broker, so the
@@ -33,9 +36,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -560,33 +560,9 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 	 * @spec openspec/changes/enrol-sender-identity-in-credential-broker/specs/outbound-sender-identity/spec.md#requirement-req-osi-010-a-signing-key-is-held-in-the-broker-not-in-the-register
 	 */
 	public function listUuids(string $schema, int $limit): array {
-		try {
-			$result = $this->objectService->findAll(
-				config: [
-					'limit' => $limit,
-					'filters' => ['register' => self::REGISTER, 'schema' => $schema],
-				]
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'[integriq] inline-secret planner: source listing failed',
-				['errorClass' => get_class($e)]
-			);
-			return [];
-		}
-
-		$items = ($result['results'] ?? $result);
-		if (is_array($items) === false) {
-			return [];
-		}
-
 		$uuids = [];
-		foreach ($items as $item) {
-			if ($item instanceof ObjectEntity === false) {
-				continue;
-			}
-
-			$uuid = (string)$item->getUuid();
+		foreach ($this->listedItems(schema: $schema, limit: $limit) as $item) {
+			$uuid = $this->uuidOf(item: $item);
 			if ($uuid === '') {
 				continue;
 			}
@@ -597,4 +573,75 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 
 		return $uuids;
 	}//end listSourceUuids()
+
+	/**
+	 * The rows of one rendered listing; none when it fails (logged, secret-free)
+	 * or answers no list.
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int    $limit  Maximum number of objects to list.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function listedItems(string $schema, int $limit): array {
+		try {
+			$result = $this->renderedListing(schema: $schema, limit: $limit);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'[integriq] inline-secret planner: source listing failed',
+				['errorClass' => get_class($e)]
+			);
+			return [];
+		}
+
+		return $this->listOf(result: $result);
+	}//end listedItems()
+
+	/**
+	 * The rendered findAll() of one schema's objects (identity only, see listUuids()).
+	 *
+	 * @param string $schema The schema slug.
+	 * @param int    $limit  Maximum number of objects to list.
+	 *
+	 * @return mixed What findAll() answers.
+	 */
+	private function renderedListing(string $schema, int $limit): mixed {
+		return $this->objectService->findAll(
+			config: [
+				'limit' => $limit,
+				'filters' => ['register' => self::REGISTER, 'schema' => $schema],
+			]
+		);
+	}//end renderedListing()
+
+	/**
+	 * The uuid of a listed object; '' for a row that is no object.
+	 *
+	 * @param mixed $item The listed row.
+	 *
+	 * @return string
+	 */
+	private function uuidOf(mixed $item): string {
+		if ($item instanceof ObjectEntity === false) {
+			return '';
+		}
+
+		return (string)$item->getUuid();
+	}//end uuidOf()
+
+	/**
+	 * The items of a findAll() answer, enveloped or bare; none when it is no list.
+	 *
+	 * @param mixed $result What findAll() answered.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function listOf(mixed $result): array {
+		$items = ($result['results'] ?? $result);
+		if (is_array($items) === false) {
+			return [];
+		}
+
+		return $items;
+	}//end listOf()
 }//end class

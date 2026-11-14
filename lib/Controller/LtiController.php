@@ -20,6 +20,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -124,17 +127,7 @@ class LtiController extends Controller {
 	 * @return string|null The token value, or null when absent/malformed.
 	 */
 	private function extractBearerToken(): ?string {
-		$header = $this->request->getHeader('Authorization');
-		if (str_starts_with($header, 'Bearer ') === false) {
-			return null;
-		}
-
-		$token = trim(substr($header, strlen('Bearer ')));
-		if ($token === '') {
-			return null;
-		}
-
-		return $token;
+		return BearerToken::fromRequest(request: $this->request);
 	}//end extractBearerToken()
 
 	// =========================================================================

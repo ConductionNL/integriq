@@ -264,6 +264,32 @@ function splitTopLevel(body) {
 }
 
 /**
+ * The named arguments of the `new LeafDescriptor(` call whose `(` is at
+ * `open`, with its value objects read through: `identity: new LeafIdentity(…)`,
+ * `availability: new LeafAvailability(…)` and `rendering: new LeafRendering(…)`
+ * contribute their own named arguments, so the grouped form and the flat
+ * eleven-argument form yield the same fields.
+ *
+ * @param {string} src The file text.
+ * @param {number} open Index of the call's opening parenthesis.
+ *
+ * @return {string[]} The top-level arguments, value objects expanded.
+ */
+function leafDescriptorArgs(src, open) {
+	const out = []
+	for (const arg of splitTopLevel(balanced(src, open))) {
+		const group = /^\s*(?:identity|availability|rendering)\s*:\s*new\s+Leaf(?:Identity|Availability|Rendering)\s*\(/.exec(arg)
+		if (group === null) {
+			out.push(arg)
+			continue
+		}
+		const inner = arg.indexOf('(', group.index + group[0].length - 1)
+		out.push(...splitTopLevel(balanced(arg, inner)).map((a) => a.trim()))
+	}
+	return out
+}
+
+/**
  * Resolve a PHP expression to a string or array of strings, or null when it is
  * not statically knowable (which is never a failure — unknown values are simply
  * not compared).
@@ -289,9 +315,7 @@ function resolvePhp(expr, localConsts, globalConsts) {
 	}
 	m = /^(?:self|static)::([A-Z0-9_]+)$/.exec(e)
 	if (m !== null) {
-		return Object.hasOwn(localConsts, m[1])
-			? localConsts[m[1]]
-			: null
+		return Object.hasOwn(localConsts, m[1]) ? localConsts[m[1]] : null
 	}
 	m = /^([A-Za-z_][A-Za-z0-9_]*)::([A-Z0-9_]+)$/.exec(e)
 	if (m !== null) {
@@ -299,9 +323,7 @@ function resolvePhp(expr, localConsts, globalConsts) {
 		if (Object.hasOwn(FOREIGN_CONSTANTS, key) === true) {
 			return FOREIGN_CONSTANTS[key]
 		}
-		return Object.hasOwn(globalConsts, key)
-			? globalConsts[key]
-			: null
+		return Object.hasOwn(globalConsts, key) ? globalConsts[key] : null
 	}
 	if (e.startsWith('[') === true) {
 		const members = splitTopLevel(balanced(e, 0))
@@ -394,7 +416,7 @@ function collectServerFaces() {
 		let idx = 0
 		while ((idx = src.indexOf('new LeafDescriptor(', idx)) !== -1) {
 			const open = src.indexOf('(', idx)
-			const args = splitTopLevel(balanced(src, open))
+			const args = leafDescriptorArgs(src, open)
 			const face = { kind: 'LeafDescriptor', file: rel, fields: {} }
 			for (const arg of args) {
 				const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([\s\S]+)$/.exec(arg)
@@ -780,30 +802,30 @@ function sameValue(a, b) {
 }
 
 /**
- * Run every rule and report.
+ * Map each item with a statically-read id by that id.
+ *
+ * @param {Array<{id: string|null}>} items The faces or registrations.
+ * @return {Map<string, object>} The items by id.
+ */
+function indexById(items) {
+	const byId = new Map()
+	for (const item of items) {
+		if (item.id !== null) {
+			byId.set(item.id, item)
+		}
+	}
+	return byId
+}
+
+/**
+ * R1: every registration declares the complete render pair for its renderMode.
+ *
+ * @param {object} ctx The collected faces, registrations, schemas and the shared failures and counts.
  *
  * @return {void}
  */
-function main() {
-	const failures = []
-	const counts = {}
-	const faces = collectServerFaces()
-	const regs = collectJsRegistrations()
-	const { schemas, files: schemaFiles } = collectOrSchemas()
-
-	const jsById = new Map()
-	for (const r of regs) {
-		if (r.id !== null) {
-			jsById.set(r.id, r)
-		}
-	}
-	const faceById = new Map()
-	for (const f of faces) {
-		if (f.id !== null) {
-			faceById.set(f.id, f)
-		}
-	}
-
+function checkRenderPairs(ctx) {
+	const { regs, failures, counts } = ctx
 	// --- R1: complete render pair for the declared renderMode ---------------
 	counts.R1 = 0
 	for (const r of regs) {
@@ -824,7 +846,17 @@ function main() {
 			}
 		}
 	}
+}
 
+/**
+ * R2: every server face has a JS registration and every registration a server face.
+ *
+ * @param {object} ctx The collected faces, registrations, schemas and the shared failures and counts.
+ *
+ * @return {void}
+ */
+function checkIdCorrelation(ctx) {
+	const { faces, regs, jsById, faceById, failures, counts } = ctx
 	// --- R2: server↔JS id correlation ---------------------------------------
 	counts.R2 = 0
 	for (const f of faces) {
@@ -859,7 +891,17 @@ function main() {
 			)
 		}
 	}
+}
 
+/**
+ * R3: server and JS agree on renderMode.
+ *
+ * @param {object} ctx The collected faces, registrations, schemas and the shared failures and counts.
+ *
+ * @return {void}
+ */
+function checkRenderModes(ctx) {
+	const { jsById, faceById, failures, counts } = ctx
 	// --- R3: renderMode agreement across layers -----------------------------
 	counts.R3 = 0
 	for (const [id, f] of faceById) {
@@ -876,7 +918,17 @@ function main() {
 			)
 		}
 	}
+}
 
+/**
+ * R4: server and JS agree on the compared metadata fields.
+ *
+ * @param {object} ctx The collected faces, registrations, schemas and the shared failures and counts.
+ *
+ * @return {void}
+ */
+function checkMetadata(ctx) {
+	const { jsById, faceById, failures, counts } = ctx
 	// --- R4: cross-layer metadata agreement ---------------------------------
 	const COMPARED = [
 		'label',
@@ -908,7 +960,17 @@ function main() {
 			}
 		}
 	}
+}
 
+/**
+ * R5: a spread registration spreads the owning package's descriptor.
+ *
+ * @param {object} ctx The collected faces, registrations, schemas and the shared failures and counts.
+ *
+ * @return {void}
+ */
+function checkSpreadSources(ctx) {
+	const { regs, failures, counts } = ctx
 	// --- R5: a spread registration must spread the OWNING package's descriptor
 	counts.R5 = 0
 	for (const r of regs) {
@@ -937,7 +999,17 @@ function main() {
 			)
 		}
 	}
+}
 
+/**
+ * R6: offlineConfig names schemas and properties this repo declares.
+ *
+ * @param {object} ctx The collected faces, registrations, schemas and the shared failures and counts.
+ *
+ * @return {void}
+ */
+function checkOfflineConfig(ctx) {
+	const { regs, schemas, schemaFiles, failures, counts } = ctx
 	// --- R6: offlineConfig names schemas/properties this repo declares -------
 	counts.R6 = 0
 	for (const r of regs) {
@@ -987,7 +1059,17 @@ function main() {
 			}
 		}
 	}
+}
 
+/**
+ * Print the outcome and exit: 0 when every rule passed over real subject matter, 1 otherwise.
+ *
+ * @param {object} ctx The collected faces, registrations, schemas and the shared failures and counts.
+ *
+ * @return {void}
+ */
+function report(ctx) {
+	const { faces, regs, schemaFiles, failures, counts } = ctx
 	// --- report --------------------------------------------------------------
 	const scope =
 		`${faces.length} server leaf face(s), ${regs.length} JS registration(s), `
@@ -996,12 +1078,10 @@ function main() {
 		.map(([rule, n]) => `${rule}:${n}`)
 		.join(' ')
 	if (failures.length === 0) {
-		 
 		console.log(
 			`✓ integration parity: ${scope} — all rules pass (assertions run per rule: ${perRule})`,
 		)
 		if (Object.values(counts).every((n) => n === 0) === true) {
-			 
 			console.error(
 				'✗ integration parity: every rule had ZERO subject matter, yet gate-24 selected this '
 					+ 'repo as one that registers leaves. That contradiction means this checker failed to '
@@ -1014,17 +1094,41 @@ function main() {
 	// The header carries no `✗` on purpose: gate-24 counts violations by
 	// grepping `^✗` in this log, so every violation — and only a violation —
 	// starts a line with it.
-	 
+
 	console.error(
 		`integration parity gate FAILED — ${failures.length} violation(s) over ${scope}:`,
 	)
 	for (const f of failures) {
-		 
 		console.error(f)
 	}
-	 
+
 	console.error(`\nAssertions run per rule: ${perRule}`)
 	process.exit(1)
+}
+
+/**
+ * Run every rule and report.
+ *
+ * @return {void}
+ */
+function main() {
+	const faces = collectServerFaces()
+	const regs = collectJsRegistrations()
+	const { schemas, files: schemaFiles } = collectOrSchemas()
+	const ctx = {
+		faces,
+		regs,
+		schemas,
+		schemaFiles,
+		jsById: indexById(regs),
+		faceById: indexById(faces),
+		failures: [],
+		counts: {},
+	}
+	for (const rule of [checkRenderPairs, checkIdCorrelation, checkRenderModes, checkMetadata, checkSpreadSources, checkOfflineConfig]) {
+		rule(ctx)
+	}
+	report(ctx)
 }
 
 if (require.main === module) {

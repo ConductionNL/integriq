@@ -3,6 +3,9 @@
 /**
  * Integriq Raw Source Resolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Re-resolves a `source` ObjectEntity RAW (`_render: false`) so the direct-Guzzle
  * clients that bypass {@see \OCA\Integriq\Service\CallService} keep seeing the
  * credential material an operator authored under `configuration.authentication.*`.
@@ -40,9 +43,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V. <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

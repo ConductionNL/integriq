@@ -1,3 +1,5 @@
+<!-- SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl> -->
+<!-- SPDX-License-Identifier: EUPL-1.2 -->
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { Rule } from '../../entities/index.js'
@@ -10,7 +12,11 @@ import {
 	synchronizationStore,
 } from '../../store/store.js'
 import { fetchOpenRegisterCollection } from '../openRegisterGet.js'
-import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
+import {
+	editableRuleConfiguration,
+	initialiseExtendInputs,
+	saveRuleConfiguration,
+} from './ruleConfiguration.js'
 defineOptions({
 	name: 'EditRule',
 	components: {
@@ -320,111 +326,7 @@ defineOptions({
 			this.ruleItem = {
 				...ruleStore.ruleItem,
 
-				configuration: {
-					...originalConfig,
-					error: {
-						code: originalConfig.error?.code ?? 500,
-						name: originalConfig.error?.name ?? 'Something went wrong',
-						message:
-							originalConfig.error?.message
-							?? 'We encountered an unexpected problem',
-
-						includeJsonLogicResult:
-							originalConfig.error?.includeJsonLogicResult ?? false,
-					},
-
-					synchronization: {
-						synchronization:
-							originalConfig.synchronization?.synchronization ?? null,
-
-						retainResponse:
-							originalConfig.synchronization?.retainResponse ?? false,
-					},
-
-					authentication: {
-						type: originalConfig.authentication?.type ?? {
-							label: 'Basic Authentication',
-							value: 'basic',
-						},
-
-						users: originalConfig.authentication?.users ?? [],
-						groups: originalConfig.authentication?.groups ?? [],
-						keys: originalConfig.authentication?.keys ?? [],
-					},
-
-					download: {
-						fileIdPosition: originalConfig.download?.fileIdPosition ?? 0,
-					},
-
-					upload: {
-						path: originalConfig.upload?.path ?? '',
-						allowedTypes: originalConfig.upload?.allowedTypes ?? '',
-						maxSize: originalConfig.upload?.maxSize ?? 10,
-					},
-
-					locking: {
-						action: originalConfig.locking?.action ?? 'lock',
-						timeout: originalConfig.locking?.timeout ?? 30,
-					},
-
-					fetch_file: {
-						source: originalConfig.fetch_file?.source ?? '',
-						filePath: originalConfig.fetch_file?.filePath ?? '',
-						subObjectFilepath:
-							originalConfig.fetch_file?.subObjectFilepath ?? '',
-
-						objectIdPath: originalConfig.fetch_file?.objectIdPath ?? '',
-						method: originalConfig.fetch_file?.method ?? '',
-						tags: originalConfig.fetch_file?.tags ?? [],
-						sourceConfiguration: originalConfig.fetch_file
-							?.sourceConfiguration
-							? JSON.stringify(
-									originalConfig.fetch_file.sourceConfiguration,
-									null,
-									2,
-								)
-							: '[]',
-
-						autoShare: originalConfig.fetch_file?.autoShare ?? false,
-						endpoint: originalConfig.fetch_file?.endpoint ?? '',
-						contentPath: originalConfig.fetch_file?.contentPath ?? '',
-						originIdPath: originalConfig.fetch_file?.originIdPath ?? '',
-						filenamePath: originalConfig.fetch_file?.filenamePath ?? '',
-						fileExtension:
-							originalConfig.fetch_file?.fileExtension ?? '',
-					},
-
-					write_file: {
-						filePath: originalConfig.write_file?.filePath ?? '',
-						fileNamePath: originalConfig.write_file?.fileNamePath ?? '',
-						tags: originalConfig.write_file?.tags ?? [],
-						autoShare: originalConfig.write_file?.autoShare ?? false,
-					},
-
-					fileparts_create: {
-						sizeLocation:
-							originalConfig.fileparts_create?.sizeLocation ?? '',
-
-						schemaId: originalConfig.fileparts_create?.schemaId ?? '',
-						filenameLocation:
-							originalConfig.fileparts_create?.filenameLocation ?? '',
-
-						filePartLocation:
-							originalConfig.fileparts_create?.filePartLocation ?? '',
-
-						mappingId: originalConfig.fileparts_create?.mappingId ?? '',
-					},
-
-					filepart_upload: {
-						mappingId: originalConfig.filepart_upload?.mappingId ?? '',
-					},
-
-					save_object: {
-						register: originalConfig.save_object?.register ?? '',
-						schema: originalConfig.save_object?.schema ?? '',
-						mapping: originalConfig.save_object?.mapping ?? '',
-					},
-				},
+				configuration: editableRuleConfiguration(originalConfig),
 
 				conditions: JSON.stringify(ruleStore.ruleItem.conditions, null, 2),
 				actionConfig: JSON.stringify(ruleStore.ruleItem.actionConfig),
@@ -472,51 +374,7 @@ defineOptions({
 		this.getGroups()
 		this.getApiKeysUsers()
 
-		// Initialize extend_input/extend_external_input structures for new items
-		if (!this.ruleItem.configuration.extend_external_input) {
-			this.ruleItem.configuration.extend_external_input = {
-				validate: true,
-				properties: [{ property: '', schema: '' }],
-			}
-		} else if (
-			!this.ruleItem.configuration.extend_external_input.properties
-			|| this.ruleItem.configuration.extend_external_input.properties.length
-				=== 0
-		) {
-			this.ruleItem.configuration.extend_external_input.properties = [
-				{ property: '', schema: '' },
-			]
-		}
-
-		if (this.ruleItem.configuration?.extend_input?.properties) {
-			const props = this.ruleItem.configuration.extend_input.properties || []
-			const ext = this.ruleItem.configuration.extend_input.extends || {}
-			this.ruleItem.configuration.extend_input = {
-				items: props.map((p) => ({ property: p, extends: ext[p] || [] })),
-			}
-			if (
-				this.ruleItem.configuration.extend_input.items.length === 0
-				|| this.ruleItem.configuration.extend_input.items[
-					this.ruleItem.configuration.extend_input.items.length - 1
-				].property
-			) {
-				this.ruleItem.configuration.extend_input.items.push({
-					property: '',
-					extends: [],
-				})
-			}
-		} else if (!this.ruleItem.configuration.extend_input) {
-			this.ruleItem.configuration.extend_input = {
-				items: [{ property: '', extends: [] }],
-			}
-		} else if (
-			!this.ruleItem.configuration.extend_input.items
-			|| this.ruleItem.configuration.extend_input.items.length === 0
-		) {
-			this.ruleItem.configuration.extend_input.items = [
-				{ property: '', extends: [] },
-			]
-		}
+		initialiseExtendInputs(this.ruleItem.configuration)
 	},
 
 	methods: {
@@ -1054,198 +912,9 @@ defineOptions({
 		editRule() {
 			this.loading = true
 
-			// Create clean configuration for the current type only
-			const configuration = {}
 			const type = this.typeOptions.value?.id
-
-			// Build configuration based on type
-			switch (type) {
-				case 'error':
-					configuration.error = {
-						code: this.ruleItem.configuration.error.code,
-						name: this.ruleItem.configuration.error.name,
-						message: this.ruleItem.configuration.error.message,
-						includeJsonLogicResult:
-							this.ruleItem.configuration.error.includeJsonLogicResult,
-					}
-					break
-				case 'mapping':
-					configuration.mapping = this.mappingOptions.value?.value
-					break
-				case 'synchronization':
-					configuration.synchronization = {}
-					configuration.synchronization.synchronization =
-						this.syncOptions.value?.value
-					configuration.synchronization.retainResponse =
-						this.ruleItem.configuration.synchronization.retainResponse
-					break
-				case 'javascript':
-					configuration.javascript = this.ruleItem.configuration.javascript
-					break
-				case 'authentication':
-					// SECURITY (ocon#147 / openregister#463): the inbound apiKey => userId map is
-					// write-only, so this editor never sees the stored keys and `apiKeys` seeds empty.
-					// buildAuthenticationConfiguration() OMITS `keys` when no complete new key was
-					// entered, so openregister#463 preserves the stored keys instead of the PUT-null-fill
-					// destroying them. Only a non-empty `keys` REPLACES the stored keys. See that module.
-					configuration.authentication = buildAuthenticationConfiguration({
-						type: this.authenticationTypeOptions.value.value,
-						users: this.ruleItem.configuration.authentication.users.map(
-							(user) => user.id,
-						),
-						groups: this.ruleItem.configuration.authentication.groups.map(
-							(group) => group.value,
-						),
-						apiKeys: this.apiKeys,
-					})
-					break
-				case 'download':
-					configuration.download = {
-						fileIdPosition:
-							this.ruleItem.configuration.download.fileIdPosition,
-					}
-					break
-				case 'upload':
-					configuration.upload = {
-						path: this.ruleItem.configuration.upload.path,
-						allowedTypes:
-							this.ruleItem.configuration.upload.allowedTypes,
-
-						maxSize: this.ruleItem.configuration.upload.maxSize,
-					}
-					break
-				case 'locking':
-					configuration.locking = {
-						action:
-							this.ruleItem.configuration.locking.action.value
-							|| this.ruleItem.configuration.locking.action,
-
-						timeout: this.ruleItem.configuration.locking.timeout,
-					}
-					break
-				case 'extend_input':
-					configuration.extend_input = {
-						properties: (
-							this.ruleItem.configuration.extend_input?.items ?? []
-						)
-							.filter((i) => i.property && i.property.trim())
-							.map((i) => i.property),
-
-						extends: (
-							this.ruleItem.configuration.extend_input?.items ?? []
-						)
-							.filter((i) => i.property && i.property.trim())
-							.reduce((acc, i) => {
-								acc[i.property] = i.extends || []
-								return acc
-							}, {}),
-					}
-					break
-				case 'extend_external_input':
-					configuration.extend_external_input = {
-						validate:
-							this.ruleItem.configuration.extend_external_input
-								?.validate ?? true,
-
-						properties: (
-							this.ruleItem.configuration.extend_external_input
-								?.properties ?? []
-						)
-							.filter(
-								(p) =>
-									p.property
-									&& p.property.trim()
-									&& p.schema
-									&& p.schema.trim(),
-							)
-							.map((p) => ({
-								property: p.property,
-								schema: p.schema,
-							})),
-					}
-					break
-				case 'fetch_file':
-					configuration.fetch_file = {
-						source: this.sourceOptions.sourceValue?.id,
-						filePath: this.ruleItem.configuration.fetch_file.filePath,
-						subObjectFilepath:
-							this.ruleItem.configuration.fetch_file.subObjectFilepath,
-
-						objectIdPath:
-							this.ruleItem.configuration.fetch_file.objectIdPath,
-
-						method: this.methodOptions.value?.label,
-						tags: this.ruleItem.configuration.fetch_file.tags,
-						sourceConfiguration: this.ruleItem.configuration.fetch_file
-							.sourceConfiguration
-							? JSON.parse(
-									this.ruleItem.configuration.fetch_file
-										.sourceConfiguration,
-								)
-							: [],
-
-						autoShare: this.ruleItem.configuration.fetch_file.autoShare,
-						endpoint:
-							this.ruleItem.configuration?.fetch_file?.endpoint ?? '',
-
-						contentPath:
-							this.ruleItem.configuration?.fetch_file?.contentPath
-							?? '',
-
-						originIdPath:
-							this.ruleItem.configuration?.fetch_file?.originIdPath
-							?? '',
-
-						filenamePath:
-							this.ruleItem.configuration?.fetch_file?.filenamePath
-							?? '',
-
-						fileExtension:
-							this.ruleItem.configuration?.fetch_file?.fileExtension
-							?? '',
-					}
-					break
-				case 'write_file':
-					configuration.write_file = {
-						filePath: this.ruleItem.configuration.write_file.filePath,
-						fileNamePath:
-							this.ruleItem.configuration.write_file.fileNamePath,
-
-						tags: this.ruleItem.configuration.write_file.tags,
-						autoShare: this.ruleItem.configuration.write_file.autoShare,
-					}
-					break
-				case 'fileparts_create':
-					configuration.fileparts_create = {
-						sizeLocation:
-							this.ruleItem.configuration.fileparts_create
-								.sizeLocation,
-
-						schemaId: this.schemaOptions.value?.id,
-						filenameLocation:
-							this.ruleItem.configuration.fileparts_create
-								.filenameLocation,
-
-						filePartLocation:
-							this.ruleItem.configuration.fileparts_create
-								.filePartLocation,
-
-						mappingId: this.filepartsCreateMappingOptions.value?.value,
-					}
-					break
-				case 'filepart_upload':
-					configuration.filepart_upload = {
-						mappingId: this.filepartUploadMappingOptions.value?.value,
-					}
-					break
-				case 'save_object':
-					configuration.save_object = {
-						register: this.ruleItem.configuration.save_object.register,
-						schema: this.ruleItem.configuration.save_object.schema,
-						mapping: this.mappingOptions.value?.value,
-					}
-					break
-			}
+			// Only the current type's section is saved.
+			const configuration = saveRuleConfiguration(type, this)
 
 			const newRuleItem = new Rule({
 				...this.ruleItem,

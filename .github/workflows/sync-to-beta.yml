@@ -4,6 +4,9 @@ on:
   push:
     branches: [development]
 
+permissions:
+  contents: read
+
 jobs:
   sync:
     # Permission CEILING for the called workflow, not a grant. The callee's

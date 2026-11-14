@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-sibling-app-starts-a-platform-launch-with-a-typed-event-req-ltil-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -24,6 +27,7 @@ namespace OCA\Integriq\Service\Lti;
 
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Exception\LtiValidationException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 
@@ -216,11 +220,35 @@ class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 	 * @return array{code: string, reason: string}|null The refusal.
 	 */
 	private function refusalFor(LtiLaunchRequestedEvent $event): ?array {
+		return $this->userRefusal(event: $event)
+			?? $this->messageTypeRefusal(event: $event)
+			?? $this->roleRefusal(event: $event);
+	}//end refusalFor()
+
+	/**
+	 * The refusal of a launch that is not for the signed-in user, or null.
+	 *
+	 * @param LtiLaunchRequestedEvent $event The request.
+	 *
+	 * @return array{code: string, reason: string}|null
+	 */
+	private function userRefusal(LtiLaunchRequestedEvent $event): ?array {
 		$sessionUid = $this->userSession->getUser()?->getUID();
 		if ($sessionUid === null || $sessionUid !== $event->getUserId()) {
 			return ['code' => 'user-mismatch', 'reason' => 'The launch is not for the signed-in user'];
 		}
 
+		return null;
+	}//end userRefusal()
+
+	/**
+	 * The refusal of a message type other than a resource link launch, or null.
+	 *
+	 * @param LtiLaunchRequestedEvent $event The request.
+	 *
+	 * @return array{code: string, reason: string}|null
+	 */
+	private function messageTypeRefusal(LtiLaunchRequestedEvent $event): ?array {
 		if ($event->getMessageType() !== self::MESSAGE_TYPE_RESOURCE_LINK) {
 			return [
 				'code' => 'message-type-unsupported',
@@ -228,12 +256,23 @@ class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 			];
 		}
 
+		return null;
+	}//end messageTypeRefusal()
+
+	/**
+	 * The refusal of a role other than Learner or Instructor, or null.
+	 *
+	 * @param LtiLaunchRequestedEvent $event The request.
+	 *
+	 * @return array{code: string, reason: string}|null
+	 */
+	private function roleRefusal(LtiLaunchRequestedEvent $event): ?array {
 		if (isset(self::LIS_ROLES[$event->getRole()]) === false) {
 			return ['code' => 'role-unknown', 'reason' => 'The role must be Learner or Instructor; got ' . $event->getRole()];
 		}
 
 		return null;
-	}//end refusalFor()
+	}//end roleRefusal()
 
 	/**
 	 * Resolve the deployment and its approved tool, refusing on the event when either fails.
@@ -244,6 +283,29 @@ class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 	 * @return array{0: array, 1: array}|null The deployment and tool data, or null when refused.
 	 */
 	private function resolveApprovedTool(string $deploymentUuid, LtiLaunchRequestedEvent $event): ?array {
+		$deployment = $this->deploymentNamingATool(deploymentUuid: $deploymentUuid, event: $event);
+		if ($deployment === null) {
+			return null;
+		}
+
+		$tool = $this->approvedTool(deployment: $deployment, event: $event);
+		if ($tool === null) {
+			return null;
+		}
+
+		return [$deployment->getObject(), $tool->getObject()];
+	}//end resolveApprovedTool()
+
+	/**
+	 * The deployment, when it exists and names a tool; refused on the event
+	 * (invalid or unknown deployment) otherwise.
+	 *
+	 * @param string                  $deploymentUuid The `lti_deployment` uuid.
+	 * @param LtiLaunchRequestedEvent $event          The request, refused in place on failure.
+	 *
+	 * @return ObjectEntity|null The deployment, or null when refused.
+	 */
+	private function deploymentNamingATool(string $deploymentUuid, LtiLaunchRequestedEvent $event): ?ObjectEntity {
 		try {
 			$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
 		} catch (LtiValidationException $exception) {
@@ -251,26 +313,39 @@ class LtiPlatformLoginService implements LtiPlatformLoginServiceInterface {
 			return null;
 		}
 
-		$toolUuid = (string)($deployment?->getObject()['ltiToolId'] ?? '');
-		if ($deployment === null || $toolUuid === '') {
+		if ($deployment === null || (string)($deployment->getObject()['ltiToolId'] ?? '') === '') {
 			$event->refuse(code: 'deployment-unknown', reason: 'No LTI tool deployment ' . $deploymentUuid . ' exists');
 			return null;
 		}
 
-		$tool = $this->resolver->findRegistrationByUuid(registrationType: 'lti_tool', registrationUuid: $toolUuid);
-		if ($tool === null) {
-			$status = $this->resolver->findRegistrationStatus(registrationType: 'lti_tool', registrationUuid: $toolUuid);
-			if ($status === null) {
-				$event->refuse(code: 'tool-unknown', reason: 'The deployment names a tool that is not registered');
-				return null;
-			}
+		return $deployment;
+	}//end deploymentNamingATool()
 
-			$event->refuse(code: 'tool-not-approved', reason: 'The tool registration is ' . $status . ', not approved');
+	/**
+	 * The approved tool a deployment names; refused on the event (unknown or
+	 * not approved) otherwise.
+	 *
+	 * @param ObjectEntity            $deployment The deployment.
+	 * @param LtiLaunchRequestedEvent $event      The request, refused in place on failure.
+	 *
+	 * @return ObjectEntity|null The tool, or null when refused.
+	 */
+	private function approvedTool(ObjectEntity $deployment, LtiLaunchRequestedEvent $event): ?ObjectEntity {
+		$toolUuid = (string)($deployment->getObject()['ltiToolId'] ?? '');
+		$tool = $this->resolver->findRegistrationByUuid(registrationType: 'lti_tool', registrationUuid: $toolUuid);
+		if ($tool !== null) {
+			return $tool;
+		}
+
+		$status = $this->resolver->findRegistrationStatus(registrationType: 'lti_tool', registrationUuid: $toolUuid);
+		if ($status === null) {
+			$event->refuse(code: 'tool-unknown', reason: 'The deployment names a tool that is not registered');
 			return null;
 		}
 
-		return [$deployment->getObject(), $tool->getObject()];
-	}//end resolveApprovedTool()
+		$event->refuse(code: 'tool-not-approved', reason: 'The tool registration is ' . $status . ', not approved');
+		return null;
+	}//end approvedTool()
 
 	/**
 	 * Authorize the tool's login redirect and sign the launch id_token.

@@ -3,6 +3,9 @@
 /**
  * Integriq mTLS Configuration Resolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Decrypts and validates a source's `configuration.authentication.mtls`
  * block into an in-memory {@see MtlsCertificateBundle}, entirely BEFORE any
  * network call is attempted. Certificate material is `OCP\Security\ICrypto`-
@@ -27,9 +30,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
@@ -41,6 +41,7 @@ namespace OCA\Integriq\Service\Mtls;
 
 use OCA\Integriq\Exception\MtlsConfigurationException;
 use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\BrokeredCallServiceInterface;
 use OCP\Security\ICrypto;
 use Throwable;
 
@@ -78,12 +79,27 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	public const MODE_TOKEN = 'token';
 
 	/**
+	 * The parts of `authentication.mtls`: label => [reference key, inline encrypted key].
+	 *
+	 * @var array<string, array{0: string, 1: string}>
+	 */
+	private const PARTS = [
+		'certificate' => ['certificate', 'encryptedCertificate'],
+		'private key' => ['privateKey', 'encryptedPrivateKey'],
+		'passphrase' => ['passphrase', 'encryptedPassphrase'],
+		'CA bundle' => ['caBundle', 'encryptedCaBundle'],
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ICrypto $crypto Encrypts/decrypts the stored certificate material at rest.
+	 * @param ICrypto                           $crypto        Encrypts/decrypts the stored certificate material at rest.
+	 * @param BrokeredCallServiceInterface|null $brokeredCalls Resolves a part given as a keepiq reference; without it
+	 *                                                         a reference fails closed.
 	 */
 	public function __construct(
 		private readonly ICrypto $crypto,
+		private readonly ?BrokeredCallServiceInterface $brokeredCalls = null,
 	) {
 
 	}//end __construct()
@@ -108,18 +124,23 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	 *
 	 * @return MtlsCertificateBundle The validated, decrypted material.
 	 *
+	 * Each part may instead be a `{credentialRef: {credentialId}}` to a keepiq
+	 * secret, resolved through the credential broker; the same validation
+	 * then applies, and a reference that does not resolve fails closed.
+	 *
 	 * @throws MtlsConfigurationException Fail-closed on any missing/invalid/expired/undecryptable material.
 	 *
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#requirement-shared-mtls-transport-builds-guzzle-tls-options-from-encrypted-at-rest-certificate-material-req-001
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
 	 */
 	public function resolve(array $authConfig): MtlsCertificateBundle {
 		$mtls = self::mtlsSection(authConfig: $authConfig);
 		self::assertMaterialPresent(mtls: $mtls);
 
-		$certificatePem = $this->decrypt(label: 'certificate', encrypted: (string)$mtls['encryptedCertificate']);
-		$privateKeyPem = $this->decrypt(label: 'private key', encrypted: (string)$mtls['encryptedPrivateKey']);
-		$passphrase = $this->decryptOptional(label: 'passphrase', encrypted: (string)($mtls['encryptedPassphrase'] ?? ''));
-		$caBundlePem = $this->decryptOptional(label: 'CA bundle', encrypted: (string)($mtls['encryptedCaBundle'] ?? ''));
+		$certificatePem = (string)$this->part(mtls: $mtls, label: 'certificate');
+		$privateKeyPem = (string)$this->part(mtls: $mtls, label: 'private key');
+		$passphrase = $this->part(mtls: $mtls, label: 'passphrase');
+		$caBundlePem = $this->part(mtls: $mtls, label: 'CA bundle');
 
 		$this->assertCertificateShape(certificatePem: $certificatePem);
 		$this->assertPrivateKeyShape(privateKeyPem: $privateKeyPem);
@@ -162,7 +183,7 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 	 * @throws MtlsConfigurationException When either is missing.
 	 */
 	private static function assertMaterialPresent(array $mtls): void {
-		if ((string)($mtls['encryptedCertificate'] ?? '') === '' || (string)($mtls['encryptedPrivateKey'] ?? '') === '') {
+		if (self::isGiven(mtls: $mtls, label: 'certificate') === false || self::isGiven(mtls: $mtls, label: 'private key') === false) {
 			throw new MtlsConfigurationException(
 				message: 'mTLS is configured (`authentication.mode=mtls`) but '
 					. '`authentication.mtls.encryptedCertificate`/`encryptedPrivateKey` are missing. '
@@ -172,6 +193,104 @@ class MtlsConfigResolver implements MtlsConfigResolverInterface {
 		}
 
 	}//end assertMaterialPresent()
+
+	/**
+	 * Whether a part is given, inline or as a reference.
+	 *
+	 * @param array<string, mixed> $mtls  The `mtls` section.
+	 * @param string               $label The part's label, a key of PARTS.
+	 *
+	 * @return bool
+	 */
+	private static function isGiven(array $mtls, string $label): bool {
+		[$referenceKey, $inlineKey] = self::PARTS[$label];
+
+		return self::referenceOf(value: ($mtls[$referenceKey] ?? null)) !== null || (string)($mtls[$inlineKey] ?? '') !== '';
+
+	}//end isGiven()
+
+	/**
+	 * The inner reference of a `{credentialRef: {...}}` value, or null when the value is not one.
+	 *
+	 * @param mixed $value The part's value.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private static function referenceOf(mixed $value): ?array {
+		if (is_array($value) === false || is_array(($value['credentialRef'] ?? null)) === false || $value['credentialRef'] === []) {
+			return null;
+		}
+
+		return $value['credentialRef'];
+
+	}//end referenceOf()
+
+	/**
+	 * One part's plaintext: resolved through the broker when it is a reference, else decrypted.
+	 *
+	 * A reference wins over inline material of the same part.
+	 *
+	 * @param array<string, mixed> $mtls  The `mtls` section.
+	 * @param string               $label The part's label, a key of PARTS.
+	 *
+	 * @return string|null The plaintext, or null when an optional part is not set.
+	 *
+	 * @throws MtlsConfigurationException When the part does not resolve or decrypt.
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
+	 */
+	private function part(array $mtls, string $label): ?string {
+		[$referenceKey, $inlineKey] = self::PARTS[$label];
+
+		$reference = self::referenceOf(value: ($mtls[$referenceKey] ?? null));
+		if ($reference !== null) {
+			return $this->resolveReference(label: $label, reference: $reference);
+		}
+
+		return $this->decryptOptional(label: $label, encrypted: (string)($mtls[$inlineKey] ?? ''));
+
+	}//end part()
+
+	/**
+	 * Resolve a keepiq reference through the credential broker, failing closed.
+	 *
+	 * @param string               $label     A secret-free label used only in the failure message.
+	 * @param array<string, mixed> $reference The inner reference, `{credentialId}` or `{credentialName}`.
+	 *
+	 * @return string The secret.
+	 *
+	 * @throws MtlsConfigurationException When the broker is absent, refuses, or answers nothing.
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005
+	 */
+	private function resolveReference(string $label, array $reference): string {
+		if ($this->brokeredCalls === null) {
+			throw new MtlsConfigurationException(
+				message: 'The mTLS ' . $label . ' is a keepiq reference, but no credential broker is available to resolve it.',
+				errorCode: MtlsTransportException::ERROR_REFERENCE_UNRESOLVED
+			);
+		}
+
+		try {
+			$secret = $this->brokeredCalls->resolveCredentialRef(ref: $reference);
+		} catch (Throwable $exception) {
+			throw new MtlsConfigurationException(
+				message: 'The mTLS ' . $label . ' reference could not be resolved through the credential broker.',
+				errorCode: MtlsTransportException::ERROR_REFERENCE_UNRESOLVED,
+				previous: $exception
+			);
+		}
+
+		if ($secret === '') {
+			throw new MtlsConfigurationException(
+				message: 'The mTLS ' . $label . ' reference resolved to an empty value.',
+				errorCode: MtlsTransportException::ERROR_REFERENCE_UNRESOLVED
+			);
+		}
+
+		return $secret;
+
+	}//end resolveReference()
 
 	/**
 	 * Decrypt an optional value, or null when it is not set.

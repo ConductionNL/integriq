@@ -3,6 +3,9 @@
 /**
  * Integriq iWMO/iJW Outbound Bericht Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates an OpenRegister social-domain case object (a `toewijzing`/
  * assignment or `declaratie`/invoice) into the corresponding Wmo303/Jw303
  * (Toewijzing) or Wmo321/Jw321 (Declaratie) StUF-style XML envelope. See
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

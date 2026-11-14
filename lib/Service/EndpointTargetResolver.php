@@ -84,6 +84,7 @@ class EndpointTargetResolver {
 			throw new DoesNotExistException('Endpoint target "' . $targetId . '" does not name a register and a schema.');
 		}
 
+		// Unscoped: an inbound gateway call carries no organisation, and this resolves only the definition the endpoint names.
 		try {
 			$registerEntity = $this->registerMapper->find(id: $register, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
@@ -116,6 +117,7 @@ class EndpointTargetResolver {
 				return (int)$schemaId;
 			}
 
+			// Unscoped for the same reason as the register lookup in resolve().
 			try {
 				$entity = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
 			} catch (Throwable $e) {

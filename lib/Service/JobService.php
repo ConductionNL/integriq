@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -344,9 +347,8 @@ class JobService implements JobServiceInterface {
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
 	 */
 	public function executeJob(ObjectEntity $job, bool $forceRun = false, ?ExecutionTraceContext $trace = null): ?ObjectEntity {
-		$jobData = $job->getObject();
-
-		$gate = $this->checkJobMayRun(job: $job, jobData: $jobData, forceRun: $forceRun);
+		$run  = new JobRun(job: $job, forceRun: $forceRun);
+		$gate = $this->checkJobMayRun(run: $run);
 		if ($gate['run'] === false) {
 			return $gate['log'];
 		}
@@ -356,13 +358,13 @@ class JobService implements JobServiceInterface {
 		// supplied by `ExecutionTraceService::replay()` is reused instead and
 		// persisted by its owner.
 		$ownsJobTrace = ($trace === null);
-		$trace = ($trace ?? $this->mintJobTrace(job: $job, forceRun: $forceRun));
+		$run->trace   = ($trace ?? $this->mintJobTrace(job: $job, forceRun: $forceRun));
 
-		$outcome = $this->runJobAction(job: $job, jobData: $jobData, trace: $trace, user: $gate['user']);
-		$logEntry = $this->recordJobRun(job: $job, jobData: $jobData, forceRun: $forceRun, outcome: $outcome);
+		$outcome  = $this->runJobAction(run: $run);
+		$logEntry = $this->recordJobRun(job: $job, jobData: $run->jobData, forceRun: $forceRun, outcome: $outcome);
 
 		if ($ownsJobTrace === true) {
-			$this->persistJobTrace(trace: $trace, exception: $outcome['exception']);
+			$this->persistJobTrace(trace: $run->trace, exception: $outcome['exception']);
 		}
 
 		return $logEntry;
@@ -375,29 +377,36 @@ class JobService implements JobServiceInterface {
 	 * WARNING log; a job that is not yet due is skipped silently. A force run
 	 * ignores the enabled flag and the schedule.
 	 *
-	 * @param ObjectEntity $job The job.
-	 * @param array $jobData The job's data as loaded.
-	 * @param bool $forceRun Whether this is a force run.
+	 * @param JobRun $run The run.
 	 *
 	 * @return array{run: bool, log: ObjectEntity|null, user: IUser|null}
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
-	private function checkJobMayRun(ObjectEntity $job, array $jobData, bool $forceRun): array {
-		if ($forceRun === false && ($jobData['isEnabled'] ?? true) === false) {
-			$log = $this->saveJobLog(
-				job: $job,
-				jobData: $jobData,
-				logData: ['level' => 'WARNING', 'message' => 'This job is disabled']
-			);
-			return ['run' => false, 'log' => $log, 'user' => null];
+	private function checkJobMayRun(JobRun $run): array {
+		if ($run->forceRun === false && ($run->jobData['isEnabled'] ?? true) === false) {
+			return $this->skipJob(run: $run, message: 'This job is disabled');
 		}
 
-		if ($this->isJobDue(jobData: $jobData, forceRun: $forceRun) === false) {
+		if ($this->isJobDue(jobData: $run->jobData, forceRun: $run->forceRun) === false) {
 			return ['run' => false, 'log' => null, 'user' => null];
 		}
 
-		$userId = ($jobData['userId'] ?? null);
+		return $this->resolveJobUser(run: $run);
+	}//end checkJobMayRun()
+
+	/**
+	 * Resolves the user a due job runs as and keeps it on the run; a
+	 * configured user that no longer exists skips the job.
+	 *
+	 * @param JobRun $run The run.
+	 *
+	 * @return array{run: bool, log: ObjectEntity|null, user: IUser|null}
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function resolveJobUser(JobRun $run): array {
+		$userId = ($run->jobData['userId'] ?? null);
 		if (empty($userId) === true) {
 			return ['run' => true, 'log' => null, 'user' => null];
 		}
@@ -405,13 +414,27 @@ class JobService implements JobServiceInterface {
 		$user = $this->userManager->get($userId);
 		if ($user === null) {
 			// A deleted user is skipped rather than crashing the identity swap.
-			$message = sprintf('Configured userId "%s" does not exist; skipping job.', $userId);
-			$log = $this->saveJobLog(job: $job, jobData: $jobData, logData: ['level' => 'WARNING', 'message' => $message]);
-			return ['run' => false, 'log' => $log, 'user' => null];
+			return $this->skipJob(run: $run, message: sprintf('Configured userId "%s" does not exist; skipping job.', $userId));
 		}
 
+		$run->user = $user;
 		return ['run' => true, 'log' => null, 'user' => $user];
-	}//end checkJobMayRun()
+	}//end resolveJobUser()
+
+	/**
+	 * Skips a job with a WARNING log.
+	 *
+	 * @param JobRun $run     The run.
+	 * @param string $message Why the job is skipped.
+	 *
+	 * @return array{run: bool, log: ObjectEntity|null, user: IUser|null}
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function skipJob(JobRun $run, string $message): array {
+		$log = $this->saveJobLog(job: $run->job, jobData: $run->jobData, logData: ['level' => 'WARNING', 'message' => $message]);
+		return ['run' => false, 'log' => $log, 'user' => null];
+	}//end skipJob()
 
 	/**
 	 * Checks whether a job's next run has arrived.
@@ -462,26 +485,43 @@ class JobService implements JobServiceInterface {
 	 * jobs in the same cron pass (#1006). A thrown exception is captured, not
 	 * rethrown, so the caller can log it.
 	 *
-	 * @param ObjectEntity $job The job.
-	 * @param array $jobData The job's data.
-	 * @param ExecutionTraceContext $trace The active trace context.
-	 * @param IUser|null $user The user to run as, or null for the current session.
+	 * @param JobRun $run The run, with its trace and user.
 	 *
 	 * @return array{result: mixed, exception: \Throwable|null, executionTime: int}
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
-	private function runJobAction(ObjectEntity $job, array $jobData, ExecutionTraceContext $trace, ?IUser $user): array {
-		$priorSessionUser = $this->userSession->getUser();
-		if ($user !== null) {
+	private function runJobAction(JobRun $run): array {
+		$run->priorSessionUser = $this->userSession->getUser();
+		if ($run->user !== null) {
 			// Volatile: setUser() would also write the session, and a fatal skips
 			// the restore below. See ADR-099.
-			$this->userSession->setVolatileActiveUser($user);
+			$this->userSession->setVolatileActiveUser($run->user);
 		}
 
 		$timeStart = microtime(true);
-		$action = $this->containerInterface->get($jobData['jobClass']);
-		$arguments = $this->buildJobArguments(job: $job, jobData: $jobData, trace: $trace);
+		$action    = $this->containerInterface->get($run->jobData['jobClass']);
+		$outcome   = $this->invokeJobAction(run: $run, action: $action);
+
+		// The job_log schema requires an integer number of milliseconds.
+		$outcome['executionTime'] = (int)round((microtime(true) - $timeStart) * 1000);
+
+		return $outcome;
+	}//end runJobAction()
+
+	/**
+	 * Calls the job's action, capturing what it throws, and restores the prior
+	 * session user afterwards.
+	 *
+	 * @param JobRun $run    The run.
+	 * @param mixed  $action The job's action, from the container.
+	 *
+	 * @return array{result: mixed, exception: \Throwable|null} The action's result or exception.
+	 *
+	 * @spec openspec/specs/job-scheduling/spec.md
+	 */
+	private function invokeJobAction(JobRun $run, mixed $action): array {
+		$arguments = $this->buildJobArguments(run: $run);
 
 		$result = null;
 		$exception = null;
@@ -490,16 +530,13 @@ class JobService implements JobServiceInterface {
 		} catch (\Throwable $e) {
 			$exception = $e;
 		} finally {
-			if ($user !== null) {
-				$this->userSession->setVolatileActiveUser($priorSessionUser);
+			if ($run->user !== null) {
+				$this->userSession->setVolatileActiveUser($run->priorSessionUser);
 			}
 		}
 
-		// The job_log schema requires an integer number of milliseconds.
-		$executionTime = (int)round((microtime(true) - $timeStart) * 1000);
-
-		return ['result' => $result, 'exception' => $exception, 'executionTime' => $executionTime];
-	}//end runJobAction()
+		return ['result' => $result, 'exception' => $exception];
+	}//end invokeJobAction()
 
 	/**
 	 * Builds the arguments passed to a job's action.
@@ -507,22 +544,20 @@ class JobService implements JobServiceInterface {
 	 * Adds the active trace context and the job's own uuid; neither is persisted
 	 * as part of the job's `arguments` field.
 	 *
-	 * @param ObjectEntity $job The job.
-	 * @param array $jobData The job's data.
-	 * @param ExecutionTraceContext $trace The active trace context.
+	 * @param JobRun $run The run.
 	 *
 	 * @return array The action arguments.
 	 *
 	 * @spec openspec/specs/job-scheduling/spec.md
 	 */
-	private function buildJobArguments(ObjectEntity $job, array $jobData, ExecutionTraceContext $trace): array {
-		$arguments = ($jobData['arguments'] ?? []);
+	private function buildJobArguments(JobRun $run): array {
+		$arguments = ($run->jobData['arguments'] ?? []);
 		if (is_array($arguments) === false) {
 			$arguments = [];
 		}
 
-		$arguments['_executionTrace'] = $trace;
-		$arguments['_jobId'] = $job->getUuid();
+		$arguments['_executionTrace'] = $run->trace;
+		$arguments['_jobId'] = $run->job->getUuid();
 
 		return $arguments;
 	}//end buildJobArguments()

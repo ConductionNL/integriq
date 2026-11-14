@@ -43,3 +43,13 @@ object, portaliq, wave 2. The channel half waits on nothing.
 - [ ] Ask the portaliq lane, cluster 51, for the form definition a submission mapping names, and agree what happens when it is missing
 - [x] Record C-intake-4 as belonging to the Nextcloud platform programme under D9, and C-intake-12 and C-tasks-and-phases-31 as a product decision with documented passers only under D21
 - [x] Test (`tests/e2e/intake-channels.spec.ts`, `openspec validate intake-channels-beyond-mail --type change --strict`)
+
+### Task 7: Assign and reply from the shared inbox
+- **spec_ref**: `openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021`
+- **files**: `src/manifest.d/intake-channels.json` (row actions on IntakeMessages), `lib/Controller/IntakeChannelsController.php` (assign route next to `reply()`), `lib/Intake/IntakeRoutingService.php`, `appinfo/routes.php`, `l10n/nl.json`, `l10n/en.json`
+- **acceptance_criteria**:
+  - GIVEN a held message WHEN a handler assigns it to a case THEN it is linked with its attachments and the assigner is recorded
+  - GIVEN a message from a channel that can reply WHEN a handler replies from the inbox THEN `IntakeReplyService::reply()` sends it on that channel
+- [ ] Implement (rows `msg-shared-inbox`, `msg-reply-channel`)
+- [ ] Test (PHPUnit for the assign route; Playwright for the two row actions)
+

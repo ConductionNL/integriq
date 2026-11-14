@@ -1,11 +1,17 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 // Resource block intentionally omitted: chain-C deleted every
 // index/show/create/update/destroy from the per-schema controllers. CRUD now
 // lives at OR's `/api/objects/integriq/{schema}/*`. Re-adding a
 // `resources` entry here without restoring the controller methods produces
 // auto-routes that 500 on hit — `composer check:routes` enforces this.
-return [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 	'routes' => [
 		// SPA shell entry (root) — UiController serves the Vue app for all section paths.
 		// The Dashboard data routes (/api/dashboard/{callstats,jobstats,syncstats}) were
@@ -20,6 +26,8 @@ return [
 		['name' => 'setup#saveConfig', 'url' => '/api/setup/config',           'verb' => 'POST'],
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+		// The OpenAPI document, public (spec api-contract).
+		['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
 
 		// DSO / Omgevingsloket STAM koppelvlak.
 		//
@@ -590,6 +598,7 @@ return [
 		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
@@ -795,4 +804,4 @@ return [
 		// catch-all is the one that actually serves `/` at runtime.
 		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(/|$)).*'], 'defaults' => ['path' => '']],
 	],
-];
+]);

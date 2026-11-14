@@ -4,6 +4,9 @@
  * Integration test for the tables-bridge feature against a REAL Nextcloud
  * Tables app.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * proposal.md Risk 3: the CI/dev image may not have the Tables app
  * installed, and this standalone PHPUnit container never has a live
  * Nextcloud instance to call at all. This test therefore self-SKIPS (never
@@ -33,9 +36,6 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/archive/2026-07-15-tables-bridge/tasks.md#task-12-integration-coverage-against-a-real-tables-app-with-ci-image-fallback
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

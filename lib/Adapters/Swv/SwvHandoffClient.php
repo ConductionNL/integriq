@@ -3,6 +3,9 @@
 /**
  * Integriq SWV hand-off client (abstract base).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Low-level abstract base for handing off a support-request/TLV
  * dossier to a samenwerkingsverband (SWV) receiver, shaped after
  * Kindkans and LDOS — both receive their referral dossiers via the
@@ -27,9 +30,6 @@
  * @link https://www.integriq.nl
  *
  * @spec openspec/specs/swv-handoff/spec.md#requirement-dormant-swv-hand-off-client-with-deterministic-mock-default-req-001
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

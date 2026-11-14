@@ -3,6 +3,9 @@
 /**
  * Integriq Mapping Twig Runtime.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Runtime class invoked by the MappingExtension Twig filters/functions to
  * perform encoding, mapping execution and source/file lookups.
  *

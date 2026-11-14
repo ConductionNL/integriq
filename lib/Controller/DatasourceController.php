@@ -19,6 +19,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

@@ -33,6 +33,19 @@ use PHPUnit\Framework\TestCase;
  */
 class OutboundNotificationTranslatorTest extends TestCase {
 
+	private const GOLDEN_FIRST_ENVELOPE = '<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:StUF="http://www.egem.nl/StUF/StUF0301" xmlns:zkn="http://www.egem.nl/StUF/sector/zkn/0310" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soap:Body><zkn:zakLk01><zkn:stuurgegevens><StUF:berichtcode>Lk01</StUF:berichtcode><StUF:zender><StUF:organisatie>GEM-0363</StUF:organisatie></StUF:zender><StUF:ontvanger><StUF:organisatie>ZKN-APP</StUF:organisatie></StUF:ontvanger><StUF:referentienummer>ZKN-REF</StUF:referentienummer><StUF:tijdstipBericht>TIME</StUF:tijdstipBericht><StUF:entiteittype>ZAK</StUF:entiteittype></zkn:stuurgegevens><zkn:parameters><StUF:mutatiesoort>T</StUF:mutatiesoort><StUF:indicatorOvername>V</StUF:indicatorOvername></zkn:parameters><zkn:object StUF:entiteittype="ZAK" StUF:verwerkingssoort="T"><zkn:identificatie>ZAAK-2026-001</zkn:identificatie><zkn:omschrijving>Kapvergunning</zkn:omschrijving><zkn:toelichting StUF:noValue="geenWaarde" xsi:nil="true"/><zkn:zaaktype><zkn:code>B0337</zkn:code><zkn:omschrijving>Kapvergunning</zkn:omschrijving></zkn:zaaktype><zkn:registratiedatum>20260716</zkn:registratiedatum><zkn:startdatum>20260716</zkn:startdatum></zkn:object></zkn:zakLk01></soap:Body></soap:Envelope>
+';
+
+	private const GOLDEN_ENVELOPES_SHA1 = '873b19ba72f28138c34ad5cce5ba0c847971234f';
+
+	private const GOLDEN_REFUSALS = [
+		'Unsupported outbound verwerkingssoort "X" (expected T, W, or V).',
+		'Required field "startdatum" is missing or empty for an outbound zaak kennisgeving — refusing to build an envelope with unresolved data.',
+		'Required field "omschrijving" is missing or empty for an outbound zaak kennisgeving — refusing to build an envelope with unresolved data.',
+		'Rendered kennisgeving still contains an unresolved template marker — refusing to send.',
+	];
+
 	/**
 	 * @var OutboundNotificationTranslator
 	 */
@@ -188,4 +201,45 @@ class OutboundNotificationTranslatorTest extends TestCase {
 		$this->assertStringNotContainsString('<zkn:toelichting></zkn:toelichting>', $result['xml']);
 
 	}//end testMissingOptionalFieldRendersAsNilNotEmptyTag()
+
+	/**
+	 * GOLDEN: the rendered envelope for every combination of the optional
+	 * fields and every verwerkingssoort, with the random reference and the
+	 * message time normalised, plus every refusal message. Pinned on the
+	 * translator before its builders were reshaped.
+	 *
+	 * @return void
+	 */
+	public function testGoldenEnvelopesAndRefusals(): void {
+		$rendered = [];
+		$optional = [
+			[],
+			['toelichting' => 'Boom & <tuin> "achter"', 'einddatum' => '20261231', 'status' => 'afgerond'],
+			['zaaktypeOmschrijving' => '', 'toelichting' => '0', 'status' => ''],
+		];
+		foreach ($optional as $overrides) {
+			foreach (['T', 'W', 'V'] as $kind) {
+				$result = $this->translator->translate($this->case($overrides), $kind, 'GEM-0363', 'ZKN-APP');
+				$this->assertMatchesRegularExpression('/^ZKN-[0-9a-f]{16}$/', $result['referentienummer']);
+				$xml = str_replace($result['referentienummer'], 'ZKN-REF', $result['xml']);
+				$rendered[] = (string)preg_replace('/<StUF:tijdstipBericht>\d{14}</', '<StUF:tijdstipBericht>TIME<', $xml);
+			}
+		}
+
+		$refusals = [];
+		foreach ([['X', []], ['T', ['startdatum' => '  ']], ['T', ['omschrijving' => null]], ['T', ['toelichting' => '{{ zaak.toelichting }}']]] as [$kind, $overrides]) {
+			try {
+				$this->translator->translate($this->case($overrides), $kind, 'GEM-0363', 'ZKN-APP');
+				$refusals[] = 'none';
+			} catch (StufZknTranslationException $exception) {
+				$refusals[] = $exception->getMessage();
+			}
+		}
+
+		$this->assertSame(self::GOLDEN_FIRST_ENVELOPE, $rendered[0]);
+		$this->assertSame(self::GOLDEN_ENVELOPES_SHA1, sha1(implode("\n", $rendered)));
+		$this->assertSame(self::GOLDEN_REFUSALS, $refusals);
+
+	}//end testGoldenEnvelopesAndRefusals()
+
 }//end class

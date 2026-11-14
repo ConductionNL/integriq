@@ -3,6 +3,9 @@
 /**
  * Integriq Forms v3-REST Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Concrete {@see FormsClientInterface} implementation. Targets the
  * `index.php/apps/forms/api/v3/*` surface (unwrapped JSON, no OCS response
  * envelope) — the same `index.php` convention `TablesOcsClient::BASE_PATH`
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

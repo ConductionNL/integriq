@@ -10,6 +10,7 @@ Exposes the log, statistics, and retention-management APIs for Integriq. It list
 @e2e exclude backend logs/statistics API (LogsController + StatisticsService aggregation + CSV export, no browser UI) — covered by Newman/PHPUnit; the log sub-pages render is covered by manifest-pages e2e
 
 ## Requirements
+
 ### Requirement: Synchronization log listing, retrieval and deletion (REQ-001)
 
 The system MUST provide listing, retrieval and deletion of synchronization logs as follows.
@@ -355,3 +356,22 @@ operation', message: <e->getMessage()> }`. Carries `@NoAdminRequired`
   (REQ-003) uses MySQL-specific `JSON_EXTRACT(response,
   '$.responseTime')` — would fail under Postgres.
 
+### Requirement: The dashboard shows traffic over a chosen period (REQ-SCB-010)
+
+Integriq's start page MUST be a dashboard with a date range. It MUST show lead counts of synchronization runs, dead letters, event deliveries and source circuit breakers by status. It MUST show volume charts over time for the chosen range.
+
+#### Scenario: an administrator looks at last week
+- GIVEN an administrator on the dashboard
+- WHEN they set the date range to the last seven days
+- THEN the counts and the volume charts cover those seven days
+- @e2e exclude retroactive requirement for a built page; a Playwright test is a follow-up
+
+### Requirement: One page shows operational health (REQ-SCB-011)
+
+Integriq MUST offer an operational health page under Reports. It MUST bring together the status of synchronization runs, execution traces, event deliveries and dead letters in one view, so an administrator sees how all integrations are doing without opening each log.
+
+#### Scenario: an administrator checks how things are going
+- GIVEN failed runs and pending deliveries in the logs
+- WHEN an administrator opens the operational health page
+- THEN the page shows the failed runs and the pending deliveries next to the other statuses
+- @e2e exclude retroactive requirement for a built page; a Playwright test is a follow-up

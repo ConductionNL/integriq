@@ -18,6 +18,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -140,21 +143,69 @@ class LtiAgsService implements LtiAgsServiceInterface {
 	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
 	 */
 	public function issueAccessToken(string $clientAssertion, string $requestedScope, ?string $deploymentUuid = null): array {
-		[$payload, $tool] = $this->launchService->verifyIdTokenSignature(idToken: $clientAssertion, registrationType: 'lti_tool');
+		$request = new AgsTokenRequest(clientAssertion: $clientAssertion, requestedScope: $requestedScope);
+		$request->deploymentUuid = $deploymentUuid;
 
-		// RFC 7523: the assertion's iss and sub MUST both be the client's own
-		// identifier — anything else is a forged/mismatched assertion.
-		if (empty($payload['iss']) === true || $payload['iss'] !== ($payload['sub'] ?? null)) {
-			throw new LtiValidationException(message: 'client_assertion iss/sub mismatch', details: [], httpStatus: 400);
-		}
+		return $this->issueToken(request: $request);
+
+	}//end issueAccessToken()
+
+	/**
+	 * Verify the client assertion, scope the token to one deployment and grant only allowed scopes.
+	 *
+	 * @param AgsTokenRequest $request The token request.
+	 *
+	 * @return array{access_token: string, token_type: string, expires_in: int, scope: string}
+	 *
+	 * @throws LtiValidationException When the assertion, the deployment or a scope is refused.
+	 */
+	private function issueToken(AgsTokenRequest $request): array {
+		[$payload, $tool] = $this->launchService->verifyIdTokenSignature(idToken: $request->clientAssertion, registrationType: 'lti_tool');
+		$this->assertSelfIssued(payload: $payload);
 
 		// Reused from LtiLaunchService — converts AuthorizationService's
 		// generic AuthenticationException into an LtiValidationException
 		// (HTTP 401) rather than letting it escape uncaught.
 		$this->launchService->validateTiming(payload: $payload);
 
-		$scopedDeployment = $this->tokenDeployment(toolUuid: $tool->getUuid(), deploymentUuid: $deploymentUuid);
+		$grant = [
+			'deploymentUuid' => $this->tokenDeployment(toolUuid: $tool->getUuid(), deploymentUuid: $request->deploymentUuid),
+			'toolUuid' => $tool->getUuid(),
+			'scopes' => $this->grantedScopes(requestedScope: $request->requestedScope),
+		];
 
+		return $this->tokenResponse(accessToken: $this->cacheToken(grant: $grant), scopes: $grant['scopes']);
+
+	}//end issueToken()
+
+	/**
+	 * Refuse an assertion that is not the client's own: RFC 7523 wants iss and sub both to be its identifier.
+	 *
+	 * @param array<string, mixed> $payload The verified assertion's claims.
+	 *
+	 * @return void
+	 *
+	 * @throws LtiValidationException When iss is missing or differs from sub.
+	 */
+	private function assertSelfIssued(array $payload): void {
+		// RFC 7523: the assertion's iss and sub MUST both be the client's own
+		// identifier — anything else is a forged/mismatched assertion.
+		if (empty($payload['iss']) === true || $payload['iss'] !== ($payload['sub'] ?? null)) {
+			throw new LtiValidationException(message: 'client_assertion iss/sub mismatch', details: [], httpStatus: 400);
+		}
+
+	}//end assertSelfIssued()
+
+	/**
+	 * The scopes granted: every requested one, which must all be allowed.
+	 *
+	 * @param string $requestedScope The space-separated scopes asked for.
+	 *
+	 * @return list<string> The granted scopes, in the order asked.
+	 *
+	 * @throws LtiValidationException When no scope is asked, or one is not allowed.
+	 */
+	private function grantedScopes(string $requestedScope): array {
 		$requestedScopes = array_values(array_filter(explode(' ', trim($requestedScope))));
 		if ($requestedScopes === []) {
 			throw new LtiValidationException(message: 'No scope requested', details: [], httpStatus: 400);
@@ -165,32 +216,47 @@ class LtiAgsService implements LtiAgsServiceInterface {
 			throw new LtiValidationException(message: 'Requested scope not permitted', details: ['scope' => $requestedScope], httpStatus: 400);
 		}
 
+		return $grantedScopes;
+
+	}//end grantedScopes()
+
+	/**
+	 * Mint an opaque access token and cache its grant for the token's lifetime.
+	 *
+	 * @param array{deploymentUuid: string, toolUuid: string, scopes: list<string>} $grant What the token allows.
+	 *
+	 * @return string The access token.
+	 */
+	private function cacheToken(array $grant): string {
 		$accessToken = bin2hex(random_bytes(32));
-		$this->tokenCache->set(
-			'token:' . $accessToken,
-			json_encode(
-				[
-					'deploymentUuid' => $scopedDeployment,
-					'toolUuid' => $tool->getUuid(),
-					'scopes' => $grantedScopes,
-				]
-			),
-			self::ACCESS_TOKEN_TTL_SECONDS
-		);
+		$this->tokenCache->set('token:' . $accessToken, json_encode($grant), self::ACCESS_TOKEN_TTL_SECONDS);
 
 		$this->logger->info(
 			'LtiAgsService: issued access token',
-			['deploymentUuid' => $scopedDeployment, 'scopes' => $grantedScopes]
+			['deploymentUuid' => $grant['deploymentUuid'], 'scopes' => $grant['scopes']]
 		);
 
+		return $accessToken;
+
+	}//end cacheToken()
+
+	/**
+	 * The token endpoint's answer.
+	 *
+	 * @param string $accessToken The access token.
+	 * @param list<string> $scopes The granted scopes.
+	 *
+	 * @return array{access_token: string, token_type: string, expires_in: int, scope: string}
+	 */
+	private function tokenResponse(string $accessToken, array $scopes): array {
 		return [
 			'access_token' => $accessToken,
 			'token_type' => 'Bearer',
 			'expires_in' => self::ACCESS_TOKEN_TTL_SECONDS,
-			'scope' => implode(' ', $grantedScopes),
+			'scope' => implode(' ', $scopes),
 		];
 
-	}//end issueAccessToken()
+	}//end tokenResponse()
 
 	/**
 	 * The one deployment a token for this tool is scoped to.
@@ -321,38 +387,68 @@ class LtiAgsService implements LtiAgsServiceInterface {
 	 * @spec openspec/specs/lti-platform/spec.md
 	 */
 	public function receiveScore(string $accessToken, string $deploymentUuid, string $lineItemId, array $scorePayload): array {
-		$this->assertScopedToDeployment(accessToken: $accessToken, deploymentUuid: $deploymentUuid, requiredScope: self::SCOPE_SCORE);
+		$score = new AgsScoreSubmission(accessToken: $accessToken, deploymentUuid: $deploymentUuid);
+		$score->lineItemId = $lineItemId;
+		$score->payload = $scorePayload;
 
-		$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
+		return $this->receiveSubmittedScore(score: $score);
+	}//end receiveScore()
+
+	/**
+	 * Check the token's scope and deployment, then publish the score as a CloudEvent.
+	 *
+	 * @param AgsScoreSubmission $score The posted score.
+	 *
+	 * @return array{messagesCreated: int}
+	 *
+	 * @throws LtiValidationException When the token is refused, or the deployment is unknown.
+	 */
+	private function receiveSubmittedScore(AgsScoreSubmission $score): array {
+		$this->assertScopedToDeployment(accessToken: $score->accessToken, deploymentUuid: $score->deploymentUuid, requiredScope: self::SCOPE_SCORE);
+
+		$deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $score->deploymentUuid);
 		if ($deployment === null) {
 			throw new LtiValidationException(message: 'Unknown lti_deployment', details: [], httpStatus: 400);
 		}
 
-		$deploymentData = $deployment->getObject();
-
-		// Never write directly to gradeSink — publish the CloudEvent and let
-		// the consuming app's own event_subscription (with its own
-		// mapping/authorization) do the write (design.md D7).
-		$messages = $this->eventService->emitCloudEvent(
-			type: self::AGS_SCORE_RECEIVED_EVENT_TYPE,
-			source: 'lti_deployment/' . $deployment->getUuid(),
-			subject: $lineItemId,
-			data: [
-				'deploymentUuid' => $deployment->getUuid(),
-				'deploymentId' => ($deploymentData['deploymentId'] ?? null),
-				'lineItemId' => $lineItemId,
-				'gradeSink' => ($deploymentData['gradeSink'] ?? null),
-				'score' => $scorePayload,
-			]
-		);
+		$messages = $this->publishScoreReceived(deployment: $deployment, score: $score);
 
 		$this->logger->info(
 			'LtiAgsService: score received, CloudEvent published',
-			['deploymentUuid' => $deployment->getUuid(), 'lineItemId' => $lineItemId, 'messagesCreated' => count($messages)]
+			['deploymentUuid' => $deployment->getUuid(), 'lineItemId' => $score->lineItemId, 'messagesCreated' => count($messages)]
 		);
 
 		return ['messagesCreated' => count($messages)];
-	}//end receiveScore()
+	}//end receiveSubmittedScore()
+
+	/**
+	 * Publish the score-received CloudEvent.
+	 *
+	 * Never write directly to gradeSink — publish the CloudEvent and let the
+	 * consuming app's own event_subscription (with its own
+	 * mapping/authorization) do the write (design.md D7).
+	 *
+	 * @param ObjectEntity $deployment The deployment.
+	 * @param AgsScoreSubmission $score The posted score.
+	 *
+	 * @return array The event messages created.
+	 */
+	private function publishScoreReceived(ObjectEntity $deployment, AgsScoreSubmission $score): array {
+		$deploymentData = $deployment->getObject();
+
+		return $this->eventService->emitCloudEvent(
+			type: self::AGS_SCORE_RECEIVED_EVENT_TYPE,
+			source: 'lti_deployment/' . $deployment->getUuid(),
+			subject: $score->lineItemId,
+			data: [
+				'deploymentUuid' => $deployment->getUuid(),
+				'deploymentId' => ($deploymentData['deploymentId'] ?? null),
+				'lineItemId' => $score->lineItemId,
+				'gradeSink' => ($deploymentData['gradeSink'] ?? null),
+				'score' => $score->payload,
+			]
+		);
+	}//end publishScoreReceived()
 
 	// =========================================================================
 	// REQ-LTI-008 — Tool-role outbound score publish / result read

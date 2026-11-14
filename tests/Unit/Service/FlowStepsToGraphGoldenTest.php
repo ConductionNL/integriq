@@ -15,6 +15,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/retire-integriq-flow-schema/tasks.md#2-the-step-to-graph-migration
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

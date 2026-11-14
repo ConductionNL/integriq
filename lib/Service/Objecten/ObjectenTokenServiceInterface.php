@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -33,14 +36,32 @@ interface ObjectenTokenServiceInterface {
 	 *
 	 * @var string
 	 */
-	public const NO_TOKEN = 'no-token';
+	public const NO_CREDENTIAL = 'no-token';
+
+	/**
+	 * The former name of NO_CREDENTIAL.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use NO_CREDENTIAL.
+	 */
+	public const NO_TOKEN = self::NO_CREDENTIAL;
 
 	/**
 	 * A token nobody issued.
 	 *
 	 * @var string
 	 */
-	public const UNKNOWN_TOKEN = 'unknown-token';
+	public const UNKNOWN_CREDENTIAL = 'unknown-token';
+
+	/**
+	 * The former name of UNKNOWN_CREDENTIAL.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use UNKNOWN_CREDENTIAL.
+	 */
+	public const UNKNOWN_TOKEN = self::UNKNOWN_CREDENTIAL;
 
 	/**
 	 * An objecttype this instance does not publish.

@@ -39,6 +39,7 @@ use OCA\Integriq\Service\IwmoIjw\IStandardsClient;
 use OCA\Integriq\Service\IwmoIjw\IwmoIjwProviderInterface;
 use OCA\Integriq\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\Integriq\Service\IwmoIjw\OutboundMessageTranslator;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -426,27 +427,16 @@ class IwmoIjwSyncService implements IwmoIjwSyncServiceInterface {
 	 * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new IwmoIjwProviderException(
 				message: 'No active iWMO/iJW source is configured (register "openconnector", schema "source", '
 					. 'type "iwmo-ijw", isEnabled=true). Configure one before using the iWMO/iJW bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**

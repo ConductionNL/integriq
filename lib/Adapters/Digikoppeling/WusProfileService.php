@@ -3,6 +3,9 @@
 /**
  * Integriq — Digikoppeling WUS synchronous profile.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The WUS profile carries a StUF/ZGW *bevraging* body over a synchronous
  * request/response, signing the outgoing SOAP envelope with WS-Security X.509
  * and verifying the responder's signature (REQ-DK-002). It COMPOSES with the

@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://openconnector.app
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -332,6 +335,11 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/File/FileUpload.php';
 		}
 
+		// The event apps contribute mapping Twig functions on.
+		if (class_exists('OCA\\OpenRegister\\Service\\RegisterMappingFunctionsEvent') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterMappingFunctionsEvent.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\FileService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/FileService.php';
 		}
@@ -490,11 +498,39 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/RecipientResolverInterface.php';
 		}
 
-		// OpenRegister's scheduled-notification grammar, copied verbatim from
-		// openregister development (a5832f2498) so the register's scheduled
-		// rules are parsed and matched by the code that runs them live.
-		foreach (['ScheduledFilterGrammar', 'ScheduledFilterParser', 'ScheduledFilterTarget', 'ScheduledFilterEvaluator', 'ForcedChannelPolicy', 'NotificationAnnotationValidator'] as $notificationClass) {
-			if (class_exists('OCA\\OpenRegister\\Service\\Notification\\'.$notificationClass) === false) {
+		// OpenRegister's scheduled-notification grammar and its annotation
+		// validator with the rule validators it delegates to, copied verbatim
+		// from openregister main (0f8e856049) so the register's scheduled
+		// rules are validated, parsed and matched by the code that runs them
+		// live. Interfaces first: the validator implements one.
+		if (interface_exists('OCA\\OpenRegister\\Service\\Notification\\ReferencedAddressNotifierInterface') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Service/Notification/ReferencedAddressNotifierInterface.php';
+		}
+
+		$notificationClasses = [
+			'NotificationAnnotationValidatorInterface',
+			'ScheduledFilterGrammar',
+			'ScheduledFilterPosition',
+			'ScheduledFilterClause',
+			'ScheduledFilterDates',
+			'ScheduledFilterParser',
+			'ScheduledFilterTarget',
+			'ScheduledFilterEvaluator',
+			'ForcedChannelPolicy',
+			'DeclaredTrigger',
+			'RecipientEntry',
+			'NotificationRuleContext',
+			'NotificationSchemaFacts',
+			'NotificationTriggerValidator',
+			'NotificationRecipientValidator',
+			'NotificationContentValidator',
+			'NotificationDigestValidator',
+			'NotificationTransportValidator',
+			'NotificationAnnotationValidator',
+		];
+		foreach ($notificationClasses as $notificationClass) {
+			$notificationFqcn = 'OCA\\OpenRegister\\Notifications\\Service\\Notification\\'.$notificationClass;
+			if (class_exists($notificationFqcn) === false && interface_exists($notificationFqcn) === false) {
 				require_once $stubsDir . '/OCA/OpenRegister/Notifications/Service/Notification/'.$notificationClass.'.php';
 			}
 		}

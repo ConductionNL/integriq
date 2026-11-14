@@ -17,6 +17,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
@@ -89,10 +92,7 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 
 		unset($syncArray['id'], $syncArray['uuid']);
 
-		// Ensure slug is set.
-		if (empty($syncArray['slug']) === true && $entity instanceof ObjectEntity) {
-			$syncArray['slug'] = $entity->getUuid();
-		}
+		$syncArray = $this->withSlug(syncArray: $syncArray, entity: $entity);
 
 		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
 		// Redact every field, not one block: the schema may hold secrets outside `configuration`.
@@ -103,6 +103,34 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 
 		$syncArray = $this->exportMappingIds(syncArray: $syncArray, idToSlug: $lookup['mapping']);
 
+		return $this->exportIdLists(syncArray: $syncArray, lookup: $lookup);
+	}//end export()
+
+	/**
+	 * Ensure the slug is set: an object entity without one takes its uuid.
+	 *
+	 * @param array  $syncArray The serialised synchronization.
+	 * @param Entity $entity    The synchronization entity.
+	 *
+	 * @return array
+	 */
+	private function withSlug(array $syncArray, Entity $entity): array {
+		if (empty($syncArray['slug']) === true && $entity instanceof ObjectEntity) {
+			$syncArray['slug'] = $entity->getUuid();
+		}
+
+		return $syncArray;
+	}//end withSlug()
+
+	/**
+	 * The rule and synchronization id lists exported as their slugs.
+	 *
+	 * @param array               $syncArray The synchronization configuration.
+	 * @param array<string,mixed> $lookup    The id-to-slug lookup, per type.
+	 *
+	 * @return array
+	 */
+	private function exportIdLists(array $syncArray, array $lookup): array {
 		foreach (self::ID_LIST_TYPES as $arrayKey => $type) {
 			if (isset($syncArray[$arrayKey]) === true && is_array($syncArray[$arrayKey]) === true) {
 				$syncArray[$arrayKey] = $this->exportIdList(ids: $syncArray[$arrayKey], idToSlug: $lookup[$type]);
@@ -110,7 +138,7 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 		}
 
 		return $syncArray;
-	}//end export()
+	}//end exportIdLists()
 
 	/**
 	 * Import a synchronization configuration into a synchronization entity.
@@ -187,28 +215,12 @@ class SynchronizationHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md
 	 */
 	private function translateEndpoints(array $data, array $lookup): array {
+		$translator = EndpointReferenceTranslator::withLookup(lookup: $lookup);
 		foreach (['sourceId' => 'sourceType', 'targetId' => 'targetType'] as $idField => $typeField) {
-			if (isset($data[$idField]) === false || isset($data[$typeField]) === false) {
-				continue;
+			if (isset($data[$idField]) === true && isset($data[$typeField]) === true) {
+				$data[$idField] = $translator->translate(type: $data[$typeField], reference: $data[$idField]);
 			}
-
-			$reference = $data[$idField];
-			switch ($data[$typeField]) {
-				case 'api':
-				case 'database':
-					if (isset($lookup['source'][$reference]) === true) {
-						$data[$idField] = $lookup['source'][$reference];
-					}
-					break;
-
-				case 'register/schema':
-					if (str_contains($reference, '/') === true) {
-						[$register, $schema] = explode('/', $reference);
-						$data[$idField]      = ($lookup['register'][$register] ?? $register) . '/' . ($lookup['schema'][$schema] ?? $schema);
-					}
-					break;
-			}//end switch
-		}//end foreach
+		}
 
 		return $data;
 	}//end translateEndpoints()

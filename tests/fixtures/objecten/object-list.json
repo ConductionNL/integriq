@@ -1,0 +1,1393 @@
+[
+    {
+        "index no type": {
+            "status": 400,
+            "body": {
+                "type": "about:blank",
+                "title": "Bad request",
+                "status": 400,
+                "detail": "A list needs a \"type\": a token carries a permission per objecttype, so a list across types would silently answer with only the ones this token may see."
+            }
+        }
+    },
+    {
+        "index blank type": {
+            "status": 400,
+            "body": {
+                "type": "about:blank",
+                "title": "Bad request",
+                "status": 400,
+                "detail": "A list needs a \"type\": a token carries a permission per objecttype, so a list across types would silently answer with only the ones this token may see."
+            }
+        }
+    },
+    {
+        "index unknown type": {
+            "status": 404,
+            "body": {
+                "type": "about:blank",
+                "title": "Not found",
+                "status": 404,
+                "detail": "No objecttype \"zzz\" is published here."
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index all": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "bob"
+        ]
+    },
+    {
+        "index nothing readable": {
+            "status": 200,
+            "body": {
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index exact": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index icontains": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index gt and lte": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index gte": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index lt on null": {
+            "status": 200,
+            "body": {
+                "count": 3,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index unknown operator": {
+            "status": 200,
+            "body": {
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index malformed": {
+            "status": 200,
+            "body": {
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index blank data_attrs": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index date": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index registration date": {
+            "status": 200,
+            "body": {
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index ordered": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index ordered descending": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index page two of one each": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": 3,
+                "previous": 1,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index last page": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": 1,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index page size zero and page zero": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": 2,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index page size too large": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index past the end": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": 6,
+                "results": []
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index ends at the total": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": null,
+                "previous": 1,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-4",
+                        "uuid": "m-4",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Bank",
+                                "prio": null,
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-04",
+                            "endAt": null,
+                            "registrationAt": "2026-01-04",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "index one short of the total": {
+            "status": 200,
+            "body": {
+                "count": 4,
+                "next": 2,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/m-1",
+                        "uuid": "m-1",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Kuil",
+                                "prio": "2",
+                                "wijk": "Noord"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-2",
+                        "uuid": "m-2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "kuil groot",
+                                "prio": "5",
+                                "wijk": "Zuid"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-03",
+                            "endAt": null,
+                            "registrationAt": "2026-01-03",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/m-3",
+                        "uuid": "m-3",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Lamp",
+                                "prio": "3"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "groen",
+            "boom",
+            "alice"
+        ]
+    },
+    {
+        "index by url": {
+            "status": 200,
+            "body": {
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/tree-1",
+                        "uuid": "tree-1",
+                        "type": "https://example.test/api/v2/objecttypes/bbb",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 2,
+                            "data": {
+                                "naam": "Eik"
+                            },
+                            "geometry": null,
+                            "startAt": "2026-03-01",
+                            "endAt": null,
+                            "registrationAt": "2026-03-01",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "show found": {
+            "status": 200,
+            "body": {
+                "url": "https://example.test/objects/m-2",
+                "uuid": "m-2",
+                "type": "aaa",
+                "record": {
+                    "index": 1,
+                    "typeVersion": 2,
+                    "data": {
+                        "naam": "kuil groot",
+                        "prio": "5",
+                        "wijk": "Zuid"
+                    },
+                    "geometry": null,
+                    "startAt": "2026-01-03",
+                    "endAt": null,
+                    "registrationAt": "2026-01-03",
+                    "correctionFor": null,
+                    "correctedBy": null
+                }
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "show absent": {
+            "status": 404,
+            "body": {
+                "type": "about:blank",
+                "title": "Not found",
+                "status": 404,
+                "detail": "No object \"m-9\" of this objecttype."
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "show other type": {
+            "status": 404,
+            "body": {
+                "type": "about:blank",
+                "title": "Not found",
+                "status": 404,
+                "detail": "No object \"tree-1\" of this objecttype."
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "bob"
+        ]
+    },
+    {
+        "show not readable": {
+            "status": 404,
+            "body": {
+                "type": "about:blank",
+                "title": "Not found",
+                "status": 404,
+                "detail": "No object \"m-2\" of this objecttype."
+            }
+        }
+    },
+    {
+        "show unknown type": {
+            "status": 404,
+            "body": {
+                "type": "about:blank",
+                "title": "Not found",
+                "status": 404,
+                "detail": "No objecttype \"zzz\" is published here."
+            }
+        }
+    }
+]

@@ -3,6 +3,9 @@
 /**
  * Renames this app's OpenRegister register SLUGS in place, before the import.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY A REPAIR STEP AT ALL. OpenRegister's ImportHandler resolves a register by
  * SLUG and by nothing else — `registerMapper->find(id: strtolower($data['slug']))`
  * — and the `DoesNotExistException` branch is not an error path, it is the
@@ -47,9 +50,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://conduction.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

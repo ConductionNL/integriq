@@ -1,4 +1,5 @@
 [
+	"context.registerMiddleware(OCA\\Integriq\\Middleware\\ApiContractMiddleware, bool)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\CallServiceInterface, OCA\\Integriq\\Service\\CallService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\EndpointServiceInterface, OCA\\Integriq\\Service\\EndpointService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\EventServiceInterface, OCA\\Integriq\\Service\\EventService)",
@@ -214,7 +215,8 @@
 	"context.registerService(OCA\\Integriq\\Adapters\\Pdok\\PdokGeocodingClient, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Adapters\\Slo\\SloCurriculumClient, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Adapters\\Roster\\RosterImportClient, closure, bool)",
-	"context.registerServiceAlias(OCA\\Integriq\\Adapters\\Swv\\SwvHandoffClient, OCA\\Integriq\\Adapters\\Swv\\SwvHandoffClientMock)",
+	"context.registerService(OCA\\Integriq\\Adapters\\Lvs\\UwlrResultImportClient, closure, bool)",
+	"context.registerService(OCA\\Integriq\\Adapters\\Swv\\SwvHandoffClient, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Adapters\\Pdok\\PdokGeocodingClientHttp, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Adapters\\Pdok\\PdokWmsClientHttp, closure, bool)",
 	"context.registerService(OCA\\Integriq\\Adapters\\Pdok\\PdokWfsClientHttp, closure, bool)",

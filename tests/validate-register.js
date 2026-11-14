@@ -116,16 +116,132 @@ function lifecycleStates(lc) {
 	return states
 }
 
-function validateRegister(file, errors, warnings) {
-	const label = path.relative(REPO_ROOT, file)
+// A schema carries a unique string slug.
+function checkSlug(c) {
+	const { at, name, s, errors, slugSeen } = c
+	// slug
+	if (typeof s.slug !== 'string' || s.slug.length === 0)
+		errors.push(`${at}: missing string "slug"`)
+	else {
+		if (slugSeen.has(s.slug))
+			errors.push(
+				`${at}: slug "${s.slug}" duplicates ${slugSeen.get(s.slug)}`,
+			)
+		slugSeen.set(s.slug, name)
+	}
+}
+
+// The property names a schema declares.
+function propertyNames(s) {
+	return s.properties && typeof s.properties === 'object'
+		? Object.keys(s.properties)
+		: []
+}
+
+// A schema is an object type with a required array and properties.
+function checkShape(c) {
+	const { at, s, errors, warnings } = c
+	// shape
+	if (s.type !== 'object')
+		warnings.push(
+			`${at}: "type" is not "object" (got ${JSON.stringify(s.type)})`,
+		)
+	if (!Array.isArray(s.required))
+		warnings.push(`${at}: "required" is not an array`)
+	const props = propertyNames(s)
+	if (props.length === 0)
+		errors.push(
+			`${at}: "properties" is empty — schema looks clobbered (a merge may have replaced it with a stub)`,
+		)
+}
+
+// A schema with three or fewer properties declares something else.
+function checkNotAStub(c) {
+	const { at, s, warnings } = c
+	const props = propertyNames(s)
+	// "too thin to be real" heuristic: a schema that declares a lifecycle/calc/notif/agg
+	// elsewhere but here has ≤3 properties and no x-openregister-* at all is suspect.
+	const xKeys = Object.keys(s).filter((k) => k.startsWith('x-openregister'))
+	if (
+		props.length > 0
+		&& props.length <= 3
+		&& xKeys.filter((k) => k !== 'x-openregister-seed').length === 0
+	) {
+		warnings.push(
+			`${at}: only ${props.length} properties and no x-openregister-* declarations — verify this isn't a stub left by a bad merge`,
+		)
+	}
+}
+
+// appendOnly sits at the schema root.
+function checkAppendOnlyPlacement(c) {
+	const { at, s, errors } = c
+	// appendOnly placement
+	if (
+		s['x-openregister']
+		&& typeof s['x-openregister'] === 'object'
+		&& s['x-openregister'].appendOnly !== undefined
+	) {
+		errors.push(
+			`${at}: appendOnly is nested inside x-openregister — OpenRegister only reads a TOP-LEVEL appendOnly; move it to the schema root`,
+		)
+	}
+}
+
+// Every lifecycle `requires` class exists under lib/.
+function checkLifecycleRequires(c) {
+	const { at, s, errors, phpIndex } = c
+	// lifecycle requires → PHP class must exist
+	const requires = []
+	collectRequires(s['x-openregister-lifecycle'] || {}, requires)
+	for (const cls of requires) {
+		const short = cls.split('\\').pop()
+		if (!phpIndex.has(cls) && !phpIndex.has(short)) {
+			errors.push(
+				`${at}: lifecycle requires "${cls}" but no matching PHP class found under lib/ (looked for "${cls}" and shortname "${short}")`,
+			)
+		}
+	}
+}
+
+// Every lifecycle transition target is a declared state.
+function checkLifecycleTargets(c) {
+	const { at, s, warnings } = c
+	// lifecycle transition target states should be declared
+	const lc = s['x-openregister-lifecycle']
+	if (lc && lc.transitions && lc.states) {
+		const declared = new Set(Object.keys(lc.states))
+		for (const [tn, t] of Object.entries(lc.transitions)) {
+			if (t && typeof t.to === 'string' && !declared.has(t.to)) {
+				warnings.push(
+					`${at}: transition "${tn}" → "${t.to}" but "${t.to}" is not in states{}`,
+				)
+			}
+		}
+	}
+}
+
+const SCHEMA_CHECKS = [
+	checkSlug,
+	checkShape,
+	checkNotAStub,
+	checkAppendOnlyPlacement,
+	checkLifecycleRequires,
+	checkLifecycleTargets,
+]
+
+// Parse a register file and return its schemas, or null when there is
+// nothing (more) to check in it.
+function registerSchemas(file, label, errors) {
 	let reg
 	try {
 		reg = JSON.parse(fs.readFileSync(file, 'utf8'))
 	} catch (e) {
 		errors.push(`${label}: invalid JSON — ${e.message}`)
-		return
+		return null
 	}
 	const xo = reg['x-openregister']
+
 	if (!xo || typeof xo !== 'object' || !xo.type || !xo.app) {
 		errors.push(
 			`${label}: missing or incomplete top-level x-openregister block (needs at least { type, app })`,
@@ -138,8 +254,16 @@ function validateRegister(file, errors, warnings) {
 		|| Object.keys(schemas).length === 0
 	) {
 		errors.push(`${label}: components.schemas is empty`)
-		return
+		return null
 	}
+
+	return schemas
+}
+
+function validateRegister(file, errors, warnings) {
+	const label = path.relative(REPO_ROOT, file)
+	const schemas = registerSchemas(file, label, errors)
+	if (schemas === null) return
 
 	const ns = appNamespace()
 	const phpIndex = phpClassIndex(ns || '')
@@ -151,76 +275,8 @@ function validateRegister(file, errors, warnings) {
 			errors.push(`${at}: not an object`)
 			continue
 		}
-		// slug
-		if (typeof s.slug !== 'string' || s.slug.length === 0)
-			errors.push(`${at}: missing string "slug"`)
-		else {
-			if (slugSeen.has(s.slug))
-				errors.push(
-					`${at}: slug "${s.slug}" duplicates ${slugSeen.get(s.slug)}`,
-				)
-			slugSeen.set(s.slug, name)
-		}
-		// shape
-		if (s.type !== 'object')
-			warnings.push(
-				`${at}: "type" is not "object" (got ${JSON.stringify(s.type)})`,
-			)
-		if (!Array.isArray(s.required))
-			warnings.push(`${at}: "required" is not an array`)
-		const props =
-			s.properties && typeof s.properties === 'object'
-				? Object.keys(s.properties)
-				: []
-		if (props.length === 0)
-			errors.push(
-				`${at}: "properties" is empty — schema looks clobbered (a merge may have replaced it with a stub)`,
-			)
-		// "too thin to be real" heuristic: a schema that declares a lifecycle/calc/notif/agg
-		// elsewhere but here has ≤3 properties and no x-openregister-* at all is suspect.
-		const xKeys = Object.keys(s).filter((k) => k.startsWith('x-openregister'))
-		if (
-			props.length > 0
-			&& props.length <= 3
-			&& xKeys.filter((k) => k !== 'x-openregister-seed').length === 0
-		) {
-			warnings.push(
-				`${at}: only ${props.length} properties and no x-openregister-* declarations — verify this isn't a stub left by a bad merge`,
-			)
-		}
-		// appendOnly placement
-		if (
-			s['x-openregister']
-			&& typeof s['x-openregister'] === 'object'
-			&& s['x-openregister'].appendOnly !== undefined
-		) {
-			errors.push(
-				`${at}: appendOnly is nested inside x-openregister — OpenRegister only reads a TOP-LEVEL appendOnly; move it to the schema root`,
-			)
-		}
-		// lifecycle requires → PHP class must exist
-		const requires = []
-		collectRequires(s['x-openregister-lifecycle'] || {}, requires)
-		for (const cls of requires) {
-			const short = cls.split('\\').pop()
-			if (!phpIndex.has(cls) && !phpIndex.has(short)) {
-				errors.push(
-					`${at}: lifecycle requires "${cls}" but no matching PHP class found under lib/ (looked for "${cls}" and shortname "${short}")`,
-				)
-			}
-		}
-		// lifecycle transition target states should be declared
-		const lc = s['x-openregister-lifecycle']
-		if (lc && lc.transitions && lc.states) {
-			const declared = new Set(Object.keys(lc.states))
-			for (const [tn, t] of Object.entries(lc.transitions)) {
-				if (t && typeof t.to === 'string' && !declared.has(t.to)) {
-					warnings.push(
-						`${at}: transition "${tn}" → "${t.to}" but "${t.to}" is not in states{}`,
-					)
-				}
-			}
-		}
+		const c = { at, name, s, errors, warnings, phpIndex, slugSeen }
+		for (const check of SCHEMA_CHECKS) check(c)
 		void lifecycleStates // (helper retained for future deeper checks)
 	}
 }

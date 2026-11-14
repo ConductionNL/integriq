@@ -45,7 +45,6 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Push (register toewijzing/declaratie) + signed inbound retour receiver for iWMO/iJW.
@@ -167,29 +166,17 @@ class IwmoIjwController extends Controller {
 	#[PublicPage]
 	#[AnonRateLimit(limit: 300, period: 60)]
 	public function inbound(): JSONResponse {
-		$rawBody = $this->getRawContent();
-
-		$identity = $this->gate->identify(profile: WebhookProfilesInterface::IWMO_IJW, rawBody: $rawBody, request: $this->request);
-		if ($identity instanceof JSONResponse) {
-			return $identity;
-		}
+		$receipt = new SignedWebhookReceipt(gate: $this->gate, request: $this->request, profile: WebhookProfilesInterface::IWMO_IJW);
 
 		// Signature verification runs over the exact raw bytes; the retour
 		// is XML (not JSON), so the body is passed to the sync service
 		// verbatim — never a second decode pass.
-		try {
-			$this->gate->deliver(
-				identity: $identity,
-				operation: function () use ($rawBody): void {
-					$this->syncService->receiveReturn(rawXml: $rawBody);
-				}
-			);
-		} catch (Throwable $exception) {
-			// The account's write was refused: answer 503 so the iWMO/iJW partner delivers again.
-			return $this->gate->notStored(profile: WebhookProfilesInterface::IWMO_IJW, reason: $exception->getMessage());
-		}//end try
-
-		return new JSONResponse(['received' => true]);
+		return $receipt->receive(
+			rawBody: $this->getRawContent(),
+			handler: function (string $rawBody): void {
+				$this->syncService->receiveReturn(rawXml: $rawBody);
+			}
+		);
 	}//end inbound()
 
 	/**

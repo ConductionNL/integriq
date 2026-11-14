@@ -19,6 +19,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,6 +39,7 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OCA\Integriq\Exception\EudiIssuanceException;
+use OCA\Integriq\Service\Helper\RandomUuid;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -166,11 +170,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 	 * @return string
 	 */
 	private static function generateUuid(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+		return RandomUuid::version4();
 	}//end generateUuid()
 
 	/**

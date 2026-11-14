@@ -3,6 +3,9 @@
 /**
  * Integriq Mollie Payment Provider.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Generic REST binding for {@see PaymentProviderInterface} against the
  * Mollie Payments API v2, driven by `configuration.baseUrl` (defaults to
  * `https://api.mollie.com/v2`) and `authentication.credentialRef`. Every
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  * @link https://docs.mollie.com/reference/v2/payments-api/create-payment

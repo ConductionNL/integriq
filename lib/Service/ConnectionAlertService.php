@@ -66,6 +66,28 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 	];
 
 	/**
+	 * Per rule: the records it counts, the subject field (a SUBJECTS key) they
+	 * name the subject in, their timestamp field and the further filters.
+	 *
+	 * @var array<string, array{schema: string, subjectField: string, timeField: string, filters: array<string, string>}>
+	 */
+	private const RULE_COUNTS = [
+		'failedCalls' => ['schema' => 'call_log', 'subjectField' => 'calls', 'timeField' => 'created', 'filters' => []],
+		'failedRuns' => [
+			'schema' => SynchronizationRunProgressService::SCHEMA,
+			'subjectField' => 'runs',
+			'timeField' => 'startedAt',
+			'filters' => ['status' => 'failed'],
+		],
+		'invalidObjects' => [
+			'schema' => SynchronizationRunProgressService::SCHEMA,
+			'subjectField' => 'runs',
+			'timeField' => 'startedAt',
+			'filters' => [],
+		],
+	];
+
+	/**
 	 * The rules a threshold may set.
 	 *
 	 * @var array<int, string>
@@ -110,87 +132,75 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 	public function evaluate(DateTimeImmutable $now): array {
 		$outcome = ['opened' => 0, 'cleared' => 0];
 
-		foreach (array_keys(self::SUBJECTS) as $subjectType) {
-			foreach ($this->read(schema: $subjectType, filters: []) as $entity) {
-				$subject = $entity->getObject();
-				$thresholds = ($subject['alertThresholds'] ?? null);
-				if (is_array($thresholds) === false || $thresholds === []) {
-					continue;
-				}
-
-				foreach (self::RULES as $rule) {
-					$threshold = $this->threshold(value: ($thresholds[$rule] ?? null));
-					if ($threshold === null) {
-						continue;
-					}
-
-					$result = $this->check(
-						subjectType: $subjectType,
-						subjectId: (string)$entity->getUuid(),
-						subjectName: (string)($subject['name'] ?? ''),
-						rule: $rule,
-						threshold: $threshold,
-						now: $now
-					);
-					if ($result !== null) {
-						$outcome[$result]++;
-					}
-				}
-			}//end foreach
-		}//end foreach
+		foreach ($this->checks(now: $now) as $check) {
+			$result = $this->check(check: $check);
+			if ($result !== null) {
+				$outcome[$result]++;
+			}
+		}
 
 		return $outcome;
 	}//end evaluate()
 
 	/**
-	 * Count one rule for one subject and open or clear its alert.
+	 * Every rule with a usable threshold on every subject, read subject type by subject type.
 	 *
-	 * @param string $subjectType `source` or `synchronization`.
-	 * @param string $subjectId The subject's id.
-	 * @param string $subjectName The subject's name.
-	 * @param string $rule The rule.
-	 * @param array{count: int, windowMinutes: int} $threshold The threshold.
 	 * @param DateTimeImmutable $now The moment to count back from.
 	 *
-	 * @return string|null `opened`, `cleared`, or null when nothing changed.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Six facts of one check, all needed to write the alert.
+	 * @return iterable<AlertCheck> The checks, each one built when the previous one is done.
 	 */
-	private function check(
-		string $subjectType,
-		string $subjectId,
-		string $subjectName,
-		string $rule,
-		array $threshold,
-		DateTimeImmutable $now,
-	): ?string {
-		$since = $now->modify('-' . $threshold['windowMinutes'] . ' minutes')->getTimestamp();
-		$count = $this->count(subjectType: $subjectType, subjectId: $subjectId, rule: $rule, since: $since);
-		$open = $this->openAlert(subjectId: $subjectId, rule: $rule);
+	private function checks(DateTimeImmutable $now): iterable {
+		foreach (array_keys(self::SUBJECTS) as $subjectType) {
+			foreach ($this->read(schema: $subjectType, filters: []) as $entity) {
+				$subject = $entity->getObject();
+				$check = new AlertCheck(subjectType: $subjectType, now: $now);
+				$check->subjectName = (string)($subject['name'] ?? '');
+				$check->subjectId = (string)$entity->getUuid();
+				yield from $this->ruleChecks(subject: $check, thresholds: ($subject['alertThresholds'] ?? null));
+			}
+		}
+	}//end checks()
 
-		if ($count > $threshold['count'] && $open === null) {
-			$this->save(
-				alert: [
-					'subjectType' => $subjectType,
-					'subject' => $subjectId,
-					'subjectName' => $subjectName,
-					'rule' => $rule,
-					'count' => $count,
-					'threshold' => $threshold['count'],
-					'windowMinutes' => $threshold['windowMinutes'],
-					'state' => 'open',
-					'openedAt' => $now->format('c'),
-				],
-				uuid: null
-			);
-			return 'opened';
+	/**
+	 * One check per rule the subject sets a usable threshold for.
+	 *
+	 * @param AlertCheck $subject    The subject, its rule not yet set.
+	 * @param mixed      $thresholds The subject's `alertThresholds`.
+	 *
+	 * @return iterable<AlertCheck> The checks.
+	 */
+	private function ruleChecks(AlertCheck $subject, mixed $thresholds): iterable {
+		if (is_array($thresholds) === false || $thresholds === []) {
+			return;
 		}
 
-		if ($count <= $threshold['count'] && $open !== null) {
-			$alert = $open->getObject();
-			$alert['state'] = 'cleared';
-			$alert['clearedAt'] = $now->format('c');
-			$this->save(alert: $alert, uuid: (string)$open->getUuid());
+		foreach (self::RULES as $rule) {
+			$threshold = $this->threshold(value: ($thresholds[$rule] ?? null));
+			if ($threshold !== null) {
+				$check = clone $subject;
+				$check->rule = $rule;
+				$check->threshold = $threshold;
+				yield $check;
+			}
+		}
+	}//end ruleChecks()
+
+	/**
+	 * Count one rule for one subject and open or clear its alert.
+	 *
+	 * @param AlertCheck $check The subject, the rule, its threshold and the moment.
+	 *
+	 * @return string|null `opened`, `cleared`, or null when nothing changed.
+	 */
+	private function check(AlertCheck $check): ?string {
+		$count = $this->count(check: $check);
+		$open = $this->openAlert(subjectId: $check->subjectId, rule: $check->rule);
+		if ($open === null) {
+			return $this->openWhenAbove(check: $check, count: $count);
+		}
+
+		if ($count <= $check->threshold['count']) {
+			$this->clear(open: $open, now: $check->now);
 			return 'cleared';
 		}
 
@@ -198,73 +208,99 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 	}//end check()
 
 	/**
-	 * Count one rule for one subject since a moment.
+	 * Open an alert when the count is above the threshold and none is open yet.
 	 *
-	 * @param string $subjectType `source` or `synchronization`.
-	 * @param string $subjectId The subject's id.
-	 * @param string $rule The rule.
-	 * @param int $since Unix time to count from.
+	 * @param AlertCheck $check The check, with no open alert.
+	 * @param int        $count What it counted.
+	 *
+	 * @return string|null `opened`, or null when the count stays within the threshold.
+	 */
+	private function openWhenAbove(AlertCheck $check, int $count): ?string {
+		if ($count <= $check->threshold['count']) {
+			return null;
+		}
+
+		$this->save(alert: $this->openedAlert(check: $check, count: $count), uuid: null);
+		return 'opened';
+	}//end openWhenAbove()
+
+	/**
+	 * The alert a check opens.
+	 *
+	 * @param AlertCheck $check The check.
+	 * @param int        $count What it counted, above the threshold.
+	 *
+	 * @return array<string, mixed> The alert.
+	 */
+	private function openedAlert(AlertCheck $check, int $count): array {
+		return [
+			'subjectType' => $check->subjectType,
+			'subject' => $check->subjectId,
+			'subjectName' => $check->subjectName,
+			'rule' => $check->rule,
+			'count' => $count,
+			'threshold' => $check->threshold['count'],
+			'windowMinutes' => $check->threshold['windowMinutes'],
+			'state' => 'open',
+			'openedAt' => $check->now->format('c'),
+		];
+	}//end openedAlert()
+
+	/**
+	 * Clear an open alert.
+	 *
+	 * @param object            $open The open alert entity.
+	 * @param DateTimeImmutable $now  The moment it clears.
+	 *
+	 * @return void
+	 */
+	private function clear(object $open, DateTimeImmutable $now): void {
+		$alert = $open->getObject();
+		$alert['state'] = 'cleared';
+		$alert['clearedAt'] = $now->format('c');
+		$this->save(alert: $alert, uuid: (string)$open->getUuid());
+	}//end clear()
+
+	/**
+	 * What a check's rule counts; an unknown rule counts invalid objects.
+	 *
+	 * @param AlertCheck $check The check.
+	 *
+	 * @return array{schema: string, subjectField: string, timeField: string, filters: array<string, string>} The counted records.
+	 */
+	private function countedRecords(AlertCheck $check): array {
+		return (self::RULE_COUNTS[$check->rule] ?? self::RULE_COUNTS['invalidObjects']);
+	}//end countedRecords()
+
+	/**
+	 * Count one rule for one subject since the start of its window.
+	 *
+	 * @param AlertCheck $check The check.
 	 *
 	 * @return int The count.
 	 */
-	private function count(string $subjectType, string $subjectId, string $rule, int $since): int {
-		$fields = self::SUBJECTS[$subjectType];
-		if ($rule === 'failedCalls') {
-			return $this->sumSince(
-				schema: 'call_log',
-				filters: [$fields['calls'] => $subjectId],
-				timeField: 'created',
-				since: $since,
-				value: static fn (array $call): int => (int)(((int)($call['statusCode'] ?? 0)) >= 400)
-			);
-		}
+	private function count(AlertCheck $check): int {
+		$counted = $this->countedRecords(check: $check);
+		$subjectField = self::SUBJECTS[$check->subjectType][$counted['subjectField']];
 
-		if ($rule === 'failedRuns') {
-			return $this->sumSince(
-				schema: SynchronizationRunProgressService::SCHEMA,
-				filters: [$fields['runs'] => $subjectId, 'status' => 'failed'],
-				timeField: 'startedAt',
-				since: $since,
-				value: static fn (array $run): int => 1
-			);
-		}
-
-		return $this->sumSince(
-			schema: SynchronizationRunProgressService::SCHEMA,
-			filters: [$fields['runs'] => $subjectId],
-			timeField: 'startedAt',
-			since: $since,
-			value: static fn (array $run): int => (int)($run['invalid'] ?? 0)
-		);
+		return $this->sumSince(check: $check, filters: ([$subjectField => $check->subjectId] + $counted['filters']));
 	}//end count()
 
 	/**
-	 * Sum a value over the records newer than a moment, newest first, in bounded pages.
+	 * Sum the rule's value over the records newer than its window start, newest first, in bounded pages.
 	 *
-	 * @param string $schema The schema.
-	 * @param array<string, mixed> $filters The filters.
-	 * @param string $timeField The record's timestamp field.
-	 * @param int $since Unix time to sum from.
-	 * @param callable(array<string, mixed>): int $value What one record adds.
+	 * @param AlertCheck           $check   The check.
+	 * @param array<string, mixed> $filters The filters naming the subject.
 	 *
 	 * @return int The sum.
 	 */
-	private function sumSince(string $schema, array $filters, string $timeField, int $since, callable $value): int {
+	private function sumSince(AlertCheck $check, array $filters): int {
+		$counted = $this->countedRecords(check: $check);
 		$sum = 0;
 		for ($page = 0; $page < self::MAX_PAGES; $page++) {
-			$entities = $this->read(schema: $schema, filters: $filters, sort: $timeField, page: $page);
-			$older = false;
-			foreach ($entities as $entity) {
-				$record = $entity->getObject();
-				$time = strtotime((string)($record[$timeField] ?? ''));
-				if ($time === false || $time < $since) {
-					$older = true;
-					continue;
-				}
-
-				$sum += $value($record);
-			}
-
+			$entities = $this->read(schema: $counted['schema'], filters: $filters, sort: $counted['timeField'], page: $page);
+			[$pageSum, $older] = $this->sumPage(check: $check, entities: $entities);
+			$sum += $pageSum;
 			if ($older === true || count($entities) < self::PAGE_SIZE) {
 				break;
 			}
@@ -272,6 +308,47 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 
 		return $sum;
 	}//end sumSince()
+
+	/**
+	 * Sum one page of records, newest first, and say whether it reached past the window.
+	 *
+	 * @param AlertCheck        $check    The check.
+	 * @param array<int, mixed> $entities The page.
+	 *
+	 * @return array{0: int, 1: bool} The page's sum, and whether it held an older record.
+	 */
+	private function sumPage(AlertCheck $check, array $entities): array {
+		$sum = 0;
+		$older = false;
+		foreach ($entities as $entity) {
+			$value = $this->recordValue(check: $check, record: $entity->getObject());
+			if ($value === null) {
+				$older = true;
+				continue;
+			}
+
+			$sum += $value;
+		}
+
+		return [$sum, $older];
+	}//end sumPage()
+
+	/**
+	 * What one record adds, or null when it is older than the window or carries no usable time.
+	 *
+	 * @param AlertCheck           $check  The check.
+	 * @param array<string, mixed> $record The record.
+	 *
+	 * @return int|null The value, null for a record outside the window.
+	 */
+	private function recordValue(AlertCheck $check, array $record): ?int {
+		$time = strtotime((string)($record[$this->countedRecords(check: $check)['timeField']] ?? ''));
+		if ($time === false || $time < $check->since()) {
+			return null;
+		}
+
+		return $check->valueOf(record: $record);
+	}//end recordValue()
 
 	/**
 	 * The open alert for a subject and rule, if any.

@@ -71,6 +71,22 @@ final class CompoundFileReader {
 	public const TYPE_ROOT = 5;
 
 	/**
+	 * The entry recorded for a directory slot that is not a storage,
+	 * stream or root.
+	 *
+	 * @var array<string,mixed>
+	 */
+	private const UNUSED_ENTRY = [
+		'name' => '',
+		'type' => 0,
+		'size' => 0,
+		'start' => self::END_OF_CHAIN,
+		'child' => -1,
+		'left' => -1,
+		'right' => -1,
+	];
+
+	/**
 	 * Bytes per sector.
 	 *
 	 * @var int
@@ -387,41 +403,7 @@ final class CompoundFileReader {
 		$raw = $this->readChain(start: $this->uint32(offset: 48), size: PHP_INT_MAX, table: $this->fat, sectorSize: $this->sectorSize, container: null);
 		$count = (int)floor(strlen($raw) / 128);
 		for ($index = 0; $index < $count; $index++) {
-			$base = ($index * 128);
-			$nameLength = (int)(unpack('v', substr($raw, ($base + 64), 2))[1] ?? 0);
-			$name = '';
-			if ($nameLength > 2) {
-				$utf16 = substr($raw, $base, ($nameLength - 2));
-				$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', $utf16);
-				$name = $converted;
-				if ($converted === false) {
-					$name = '';
-				}
-			}
-
-			$type = ord(substr($raw, ($base + 66), 1));
-			if ($type !== self::TYPE_STORAGE && $type !== self::TYPE_STREAM && $type !== self::TYPE_ROOT) {
-				$this->entries[$index] = [
-					'name' => '',
-					'type' => 0,
-					'size' => 0,
-					'start' => self::END_OF_CHAIN,
-					'child' => -1,
-					'left' => -1,
-					'right' => -1,
-				];
-				continue;
-			}
-
-			$this->entries[$index] = [
-				'name' => $name,
-				'type' => $type,
-				'size' => (int)(unpack('V', substr($raw, ($base + 120), 4))[1] ?? 0),
-				'start' => (int)(unpack('V', substr($raw, ($base + 116), 4))[1] ?? self::END_OF_CHAIN),
-				'left' => $this->directoryId(raw: $raw, offset: ($base + 68)),
-				'right' => $this->directoryId(raw: $raw, offset: ($base + 72)),
-				'child' => $this->directoryId(raw: $raw, offset: ($base + 76)),
-			];
+			$this->entries[$index] = $this->directoryEntry(raw: $raw, base: ($index * 128));
 		}
 
 		if (isset($this->entries[0]) === false || $this->entries[0]['type'] !== self::TYPE_ROOT) {
@@ -429,6 +411,56 @@ final class CompoundFileReader {
 		}
 
 	}//end readDirectory()
+
+	/**
+	 * Read one 128-byte directory entry; a slot that is not a storage,
+	 * stream or root reads as the unused entry.
+	 *
+	 * @param string $raw  The directory bytes.
+	 * @param int    $base Where the entry starts.
+	 *
+	 * @return array<string,mixed> The entry.
+	 */
+	private function directoryEntry(string $raw, int $base): array {
+		$type = ord(substr($raw, ($base + 66), 1));
+		if (in_array($type, [self::TYPE_STORAGE, self::TYPE_STREAM, self::TYPE_ROOT], true) === false) {
+			return self::UNUSED_ENTRY;
+		}
+
+		return [
+			'name' => $this->entryName(raw: $raw, base: $base),
+			'type' => $type,
+			'size' => (int)(unpack('V', substr($raw, ($base + 120), 4))[1] ?? 0),
+			'start' => (int)(unpack('V', substr($raw, ($base + 116), 4))[1] ?? self::END_OF_CHAIN),
+			'left' => $this->directoryId(raw: $raw, offset: ($base + 68)),
+			'right' => $this->directoryId(raw: $raw, offset: ($base + 72)),
+			'child' => $this->directoryId(raw: $raw, offset: ($base + 76)),
+		];
+
+	}//end directoryEntry()
+
+	/**
+	 * Read a directory entry's UTF-16 name, without its terminator.
+	 *
+	 * @param string $raw  The directory bytes.
+	 * @param int    $base Where the entry starts.
+	 *
+	 * @return string The name, or '' when it is empty or does not convert.
+	 */
+	private function entryName(string $raw, int $base): string {
+		$nameLength = (int)(unpack('v', substr($raw, ($base + 64), 2))[1] ?? 0);
+		if ($nameLength <= 2) {
+			return '';
+		}
+
+		$converted = @iconv('UTF-16LE', 'UTF-8//IGNORE', substr($raw, $base, ($nameLength - 2)));
+		if ($converted === false) {
+			return '';
+		}
+
+		return $converted;
+
+	}//end entryName()
 
 	/**
 	 * Read a directory id, mapping the "none" marker to -1.

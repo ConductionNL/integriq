@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,7 +39,16 @@ interface SignedPayloadVerifierInterface {
 	 *
 	 * @var string
 	 */
-	public const CONFIG_HMAC_SECRET = 'dso_pki_hmac_secret';
+	public const CONFIG_HMAC_NAME = 'dso_pki_hmac_secret';
+
+	/**
+	 * The former name of CONFIG_HMAC_NAME.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use CONFIG_HMAC_NAME.
+	 */
+	public const CONFIG_HMAC_SECRET = self::CONFIG_HMAC_NAME;
 
 	/**
 	 * App-config key for the PEM-encoded signing (leaf) certificate.

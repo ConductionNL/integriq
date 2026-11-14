@@ -3,6 +3,9 @@
 /**
  * The rules half of the synchronization → flow migration.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY THIS IS ITS OWN CLASS. `SynchronizationFlowGenerator` had reached its
  * phpmd class-complexity budget once already — the `payloadFrom` support tipped
  * it from 49 to 54 against a threshold of 50, and moving the semantic refusals
@@ -28,9 +31,6 @@
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

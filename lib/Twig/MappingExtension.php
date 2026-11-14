@@ -3,6 +3,9 @@
 /**
  * Integriq Mapping Twig Extension.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Registers Twig filters and functions for executing mappings, encoding
  * helpers and source/file lookups exposed to template authors.
  *

@@ -13,6 +13,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#requirement-the-intake-acts-as-the-open-formulieren-connections-account-req-006
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -153,4 +156,187 @@ class DsoConnectionNotifierTest extends TestCase {
 		);
 
 	}//end testADigitalPostAlertSaysLettersAreNotSent()
+
+	/**
+	 * The notifier and the calls it makes on a notification.
+	 *
+	 * @param string                $app        The notification's app.
+	 * @param string                $subject    The notification's subject.
+	 * @param array<string, string> $parameters The subject parameters.
+	 *
+	 * @return array{subject: ?string, link: ?string, icon: ?string, language: ?string}
+	 */
+	private function prepareAs(string $app, string $subject, array $parameters = []): array {
+		$calls = ['subject' => null, 'link' => null, 'icon' => null, 'language' => null];
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text, array $parameters = []): string => vsprintf($text, $parameters));
+		$factory = $this->createMock(IFactory::class);
+		$factory->method('get')->willReturnCallback(
+			function (string $appId, ?string $language = null) use (&$calls, $l10n): IL10N {
+				$calls['language'] = $appId.':'.($language ?? '-');
+				return $l10n;
+			}
+		);
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('linkToRouteAbsolute')->willReturnCallback(
+			static fn (string $route, array $arguments): string => $route.'?'.http_build_query($arguments)
+		);
+		$urls->method('imagePath')->willReturnCallback(static fn (string $appName, string $file): string => '/apps/'.$appName.'/img/'.$file);
+		$urls->method('getAbsoluteURL')->willReturnCallback(static fn (string $url): string => 'https://nc.example'.$url);
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn($app);
+		$notification->method('getSubject')->willReturn($subject);
+		$notification->method('getSubjectParameters')->willReturn($parameters);
+		foreach (['setParsedSubject' => 'subject', 'setLink' => 'link', 'setIcon' => 'icon'] as $method => $key) {
+			$notification->method($method)->willReturnCallback(
+				function (string $value) use (&$calls, $key, $notification): INotification {
+					$calls[$key] = $value;
+					return $notification;
+				}
+			);
+		}
+
+		(new DsoConnectionNotifier(l10nFactory: $factory, urlGenerator: $urls, webhookProfiles: new WebhookProfiles()))->prepare($notification, 'de');
+
+		return $calls;
+
+	}//end prepareAs()
+
+	/**
+	 * Every DSO reason has its own text; an unknown reason a general one.
+	 *
+	 * @return void
+	 */
+	public function testEveryDsoReasonHasItsText(): void {
+		$expected = [
+			'no_connection'           => 'DSO-LV pushes are refused: no DSO connection is configured.',
+			'ambiguous_connection'    => 'DSO-LV pushes are refused: no DSO connection is configured.',
+			'account_unknown'         => 'DSO-LV pushes are refused: the DSO connection has no usable account.',
+			'account_disabled'        => 'DSO-LV pushes are refused: the DSO connection has no usable account.',
+			'account_lacks_rights'    => 'DSO-LV pushes are refused: the DSO connection account cannot store verzoeken.',
+			'rights_unverifiable'     => 'DSO-LV pushes are refused: the DSO connection account cannot store verzoeken.',
+			'verzoek_not_stored'      => 'A DSO verzoek could not be stored. DSO-LV will deliver it again.',
+			'job_account_unavailable' => 'DSO bijlagen were not downloaded: the account that stored the verzoek is no longer usable.',
+			'choose_account'          => 'Choose the account the DSO intake acts as.',
+			'something_new'           => 'The DSO connection needs attention.',
+			''                        => 'The DSO connection needs attention.',
+		];
+		foreach ($expected as $reason => $text) {
+			$this->assertSame($text, $this->render(['reason' => $reason, 'channel' => 'dso']), 'reason '.$reason);
+		}
+
+	}//end testEveryDsoReasonHasItsText()
+
+	/**
+	 * The Open Formulieren reasons not covered above, and its fallback.
+	 *
+	 * @return void
+	 */
+	public function testTheOtherOpenFormulierenReasons(): void {
+		$this->assertSame(
+			'Open Formulieren submissions are refused: no Open Formulieren connection is configured.',
+			$this->render(['reason' => 'ambiguous_connection', 'channel' => 'openformulieren'])
+		);
+		$this->assertSame(
+			'Open Formulieren submissions are refused: the Open Formulieren connection account cannot store submissions.',
+			$this->render(['reason' => 'rights_unverifiable', 'channel' => 'openformulieren'])
+		);
+		$this->assertSame(
+			'The Open Formulieren connection needs attention.',
+			$this->render(['reason' => 'verzoek_not_stored', 'channel' => 'openformulieren'])
+		);
+
+	}//end testTheOtherOpenFormulierenReasons()
+
+	/**
+	 * The webhook reasons not covered above, and its fallback.
+	 *
+	 * @return void
+	 */
+	public function testTheOtherWebhookReasons(): void {
+		$this->assertSame(
+			'Peppol deliveries are refused: no Peppol connection is configured.',
+			$this->render(['reason' => 'no_connection', 'channel' => 'peppol'])
+		);
+		$this->assertSame(
+			'Peppol deliveries are refused: the Peppol connection account cannot store them.',
+			$this->render(['reason' => 'account_lacks_rights', 'channel' => 'peppol'])
+		);
+		$this->assertSame(
+			'The Peppol connection needs attention.',
+			$this->render(['reason' => 'job_account_unavailable', 'channel' => 'peppol'])
+		);
+
+	}//end testTheOtherWebhookReasons()
+
+	/**
+	 * An unknown digital post reason gets the general digital post text.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownDigitalPostReasonNeedsAttention(): void {
+		$this->assertSame(
+			'The digital post account needs attention.',
+			$this->render(['reason' => 'choose_account', 'channel' => 'digitalpost'])
+		);
+
+	}//end testAnUnknownDigitalPostReasonNeedsAttention()
+
+	/**
+	 * A prepared alert links to the app's admin settings, carries the app icon
+	 * and is rendered in the recipient's language.
+	 *
+	 * @return void
+	 */
+	public function testAPreparedAlertLinksToTheAdminSettings(): void {
+		$calls = $this->prepareAs('integriq', DsoConnectionAlerts::SUBJECT, ['reason' => 'no_account']);
+
+		$this->assertSame('DSO-LV pushes are refused: the DSO connection has no usable account.', $calls['subject']);
+		$this->assertSame('settings.AdminSettings.index?section=integriq', $calls['link']);
+		$this->assertSame('https://nc.example/apps/integriq/img/app-dark.svg', $calls['icon']);
+		$this->assertSame('integriq:de', $calls['language']);
+
+	}//end testAPreparedAlertLinksToTheAdminSettings()
+
+	/**
+	 * A notification of another app or another subject is refused untouched.
+	 *
+	 * @return void
+	 */
+	public function testAForeignNotificationIsRefused(): void {
+		foreach ([['files', DsoConnectionAlerts::SUBJECT], ['integriq', 'approval_pending']] as [$app, $subject]) {
+			try {
+				$this->prepareAs($app, $subject, ['reason' => 'no_account']);
+				$this->fail('a foreign notification was prepared: '.$app.' '.$subject);
+			} catch (\InvalidArgumentException $exception) {
+				$this->assertContains(
+					get_class($exception),
+					['OCP\\Notification\\UnknownNotificationException', \InvalidArgumentException::class]
+				);
+			}
+		}
+
+	}//end testAForeignNotificationIsRefused()
+
+	/**
+	 * The notifier's id and its translated name.
+	 *
+	 * @return void
+	 */
+	public function testIdAndName(): void {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text): string => 'nl:'.$text);
+		$factory = $this->createMock(IFactory::class);
+		$factory->expects($this->once())->method('get')->with('integriq')->willReturn($l10n);
+		$notifier = new DsoConnectionNotifier(
+			l10nFactory: $factory,
+			urlGenerator: $this->createMock(IURLGenerator::class),
+			webhookProfiles: new WebhookProfiles()
+		);
+
+		$this->assertSame('integriq_dso_connection', $notifier->getID());
+		$this->assertSame('nl:DSO connection', $notifier->getName());
+
+	}//end testIdAndName()
 }//end class

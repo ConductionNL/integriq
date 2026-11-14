@@ -85,10 +85,25 @@ class ExchangeJobRunner implements ExchangeJobRunnerInterface {
 			return ['level' => 'ERROR', 'message' => sprintf('Exchange job "%s" was not found.', $jobId)];
 		}
 
-		$data = $job->getObject();
-		$target = (string)($data['exchangeTarget'] ?? '');
-		$direction = (string)($data['exchangeDirection'] ?? '');
-		if ($target === '') {
+		$run = new ExchangeJobRun(job: $job, data: $job->getObject());
+		$stopped = $this->notRunnable(data: $run->data) ?? $this->handlerFailure(run: $run) ?? $this->mappingFailure(run: $run);
+		if ($stopped !== null) {
+			return $stopped;
+		}
+
+		return $this->askAndDispatch(run: $run, jobId: $jobId);
+
+	}//end run()
+
+	/**
+	 * The log entry for a job that is not an exchange job or not queued; nothing is saved.
+	 *
+	 * @param array<string,mixed> $data The job data.
+	 *
+	 * @return array{level: string, message: string}|null The job_log entry, or null when the job may run.
+	 */
+	private function notRunnable(array $data): ?array {
+		if ((string)($data['exchangeTarget'] ?? '') === '') {
 			return ['level' => 'WARNING', 'message' => 'This job is not an exchange job; nothing to do.'];
 		}
 
@@ -100,122 +115,236 @@ class ExchangeJobRunner implements ExchangeJobRunnerInterface {
 			];
 		}
 
-		if ($this->dispatcher->supports(target: $target, direction: $direction) === false) {
-			return $this->fail(job: $job, data: $data, code: 'no-handler', detail: sprintf('No handler for %s %s.', $target, $direction));
+		return null;
+
+	}//end notRunnable()
+
+	/**
+	 * Fail the job when no handler serves its target and direction.
+	 *
+	 * @param ExchangeJobRun $run The run.
+	 *
+	 * @return array{level: string, message: string}|null The job_log entry, or null when a handler exists.
+	 */
+	private function handlerFailure(ExchangeJobRun $run): ?array {
+		$target = (string)($run->data['exchangeTarget'] ?? '');
+		$direction = (string)($run->data['exchangeDirection'] ?? '');
+		if ($this->dispatcher->supports(target: $target, direction: $direction) === true) {
+			return null;
 		}
 
-		$mapping = null;
-		$mappingSlug = (string)($data['exchangeMapping'] ?? '');
-		if ($mappingSlug !== '') {
-			$mapping = $this->jobs->findMapping(slug: $mappingSlug);
-			if ($mapping === null) {
-				return $this->fail(job: $job, data: $data, code: 'mapping-missing', detail: sprintf('No mapping "%s".', $mappingSlug));
-			}
+		return $this->fail(run: $run, outcome: $this->failure(code: 'no-handler', detail: sprintf('No handler for %s %s.', $target, $direction)));
+
+	}//end handlerFailure()
+
+	/**
+	 * Load the job's mapping onto the run, or fail the job when it names one that does not exist.
+	 *
+	 * @param ExchangeJobRun $run The run.
+	 *
+	 * @return array{level: string, message: string}|null The job_log entry, or null when the run may go on.
+	 */
+	private function mappingFailure(ExchangeJobRun $run): ?array {
+		$mappingSlug = (string)($run->data['exchangeMapping'] ?? '');
+		if ($mappingSlug === '') {
+			return null;
 		}
 
-		$data['exchangeStatus'] = ExchangeJobService::STATUS_RUNNING;
-		$data['startedAt'] = (new DateTime())->format('c');
-		$this->jobs->saveJob(data: $data, uuid: $jobId);
+		$run->mapping = $this->jobs->findMapping(slug: $mappingSlug);
+		if ($run->mapping !== null) {
+			return null;
+		}
 
-		$decision = $this->gate->ask(jobId: $jobId, job: $data);
+		return $this->fail(run: $run, outcome: $this->failure(code: 'mapping-missing', detail: sprintf('No mapping "%s".', $mappingSlug)));
+
+	}//end mappingFailure()
+
+	/**
+	 * Mark the job running, ask the owning app, and dispatch what it allows.
+	 *
+	 * @param ExchangeJobRun $run   The run.
+	 * @param string         $jobId The job's uuid as asked for.
+	 *
+	 * @return array{level: string, message: string} The job_log entry.
+	 */
+	private function askAndDispatch(ExchangeJobRun $run, string $jobId): array {
+		$run->data['exchangeStatus'] = ExchangeJobService::STATUS_RUNNING;
+		$run->data['startedAt'] = (new DateTime())->format('c');
+		$this->jobs->saveJob(data: $run->data, uuid: $jobId);
+
+		$decision = $this->gate->ask(jobId: $jobId, job: $run->data);
 		$records = $decision['records'];
 		unset($decision['records']);
-		$data['gateDecision'] = $decision;
+		$run->data['gateDecision'] = $decision;
 
 		if ($decision['decision'] !== ExchangeGateClient::DECISION_ALLOW) {
-			return $this->finish(
-				job: $job,
-				data: $data,
-				status: ExchangeJobService::STATUS_REFUSED,
-				result: $this->result(processed: 0, accepted: 0),
-				message: sprintf('Refused by %s: %s %s', (string)($data['ownerApp'] ?? ''), $decision['code'], $decision['reason'])
-			);
+			return $this->finish(run: $run, outcome: $this->refusal(data: $run->data, decision: $decision));
 		}
 
-		return $this->dispatchRecords(job: $job, data: $data, records: $records, mapping: $mapping);
+		return $this->dispatchRecords(run: $run, records: $records);
 
-	}//end run()
+	}//end askAndDispatch()
+
+	/**
+	 * The outcome of a job the owning app refused.
+	 *
+	 * @param array<string,mixed> $data     The job data.
+	 * @param array<string,mixed> $decision The gate decision.
+	 *
+	 * @return ExchangeJobOutcome The refused outcome.
+	 */
+	private function refusal(array $data, array $decision): ExchangeJobOutcome {
+		return new ExchangeJobOutcome(
+			status: ExchangeJobService::STATUS_REFUSED,
+			message: sprintf('Refused by %s: %s %s', (string)($data['ownerApp'] ?? ''), $decision['code'], $decision['reason'])
+		);
+
+	}//end refusal()
 
 	/**
 	 * Map and dispatch the allowed records, record rejections, and finish.
 	 *
-	 * @param ObjectEntity                     $job     The job.
-	 * @param array<string,mixed>              $data    The job data.
+	 * @param ExchangeJobRun                   $run     The run.
 	 * @param array<int, array<string, mixed>> $records The allowed records.
-	 * @param ObjectEntity|null                $mapping The mapping row, when the job names one.
 	 *
 	 * @return array{level: string, message: string} The job_log entry.
 	 */
-	private function dispatchRecords(ObjectEntity $job, array $data, array $records, ?ObjectEntity $mapping): array {
-		$jobId = $job->getUuid();
-		$target = (string)$data['exchangeTarget'];
-		$scope = $data['exchangeScope'] ?? [];
-		if (is_array($scope) === false) {
-			$scope = [];
+	private function dispatchRecords(ExchangeJobRun $run, array $records): array {
+		$records = $this->onlyRequested(records: $records, scope: $this->scopeOf(data: $run->data));
+		$mapping = $this->mapRecords(run: $run, records: $records);
+
+		$outcome = $this->dispatcher->dispatch(handOff: $this->handOff(run: $run, mapped: $mapping['mapped']));
+		if ($outcome['refusal'] !== null) {
+			return $this->fail(run: $run, outcome: $this->failure(code: $outcome['refusal'], detail: $this->refusalDetail(code: $outcome['refusal'])));
 		}
 
-		$records = $this->onlyRequested(records: $records, scope: $scope);
-		$rejected = [];
-		$mapped = [];
-		foreach ($records as $record) {
-			$recordData = $record['data'] ?? [];
-			if (is_array($recordData) === false) {
-				$recordData = [];
-			}
+		$this->storeRejections(run: $run, rejected: array_merge($mapping['rejected'], $outcome['rejected']));
 
-			if ($mapping !== null) {
-				try {
-					$recordData = $this->mappings->executeMapping(mapping: $mapping, input: $recordData);
-				} catch (Throwable $exception) {
-					// The exception class only: a mapping error can quote its input,
-					// which may hold a persoonsgebonden nummer.
-					$this->logger->info('[ExchangeJobRunner] mapping failed for a record of job '.$jobId.': '.get_class($exception));
-					$rejected[] = $this->rejectionFor(record: $record, code: 'mapping-failed');
-					continue;
-				}
+		// A landed import answers with a count; an export lists the accepted ids.
+		$counts = new ExchangeRecordCounts(processed: count($records), accepted: ($outcome['acceptedCount'] ?? count($outcome['accepted'])));
+
+		return $this->finish(run: $run, outcome: $this->delivered(run: $run, counts: $counts));
+
+	}//end dispatchRecords()
+
+	/**
+	 * The job's scope, or an empty scope when it is not a list.
+	 *
+	 * @param array<string,mixed> $data The job data.
+	 *
+	 * @return array<string,mixed> The scope.
+	 */
+	private function scopeOf(array $data): array {
+		$scope = $data['exchangeScope'] ?? [];
+		if (is_array($scope) === false) {
+			return [];
+		}
+
+		return $scope;
+
+	}//end scopeOf()
+
+	/**
+	 * Apply the job's mapping to each record; a record that fails mapping becomes a rejection.
+	 *
+	 * @param ExchangeJobRun                   $run     The run.
+	 * @param array<int, array<string, mixed>> $records The records to send.
+	 *
+	 * @return array{mapped: array<int, array<string, mixed>>, rejected: array<int, array<string, mixed>>}
+	 */
+	private function mapRecords(ExchangeJobRun $run, array $records): array {
+		$mapped = [];
+		$rejected = [];
+		foreach ($records as $record) {
+			$recordData = $this->mapRecord(run: $run, record: $record);
+			if ($recordData === null) {
+				$rejected[] = $this->rejectionFor(record: $record, code: 'mapping-failed');
+				continue;
 			}
 
 			$record['data'] = $recordData;
 			$mapped[] = $record;
-		}//end foreach
-
-		$outcome = $this->dispatcher->dispatch(
-			handOff: new ExchangeHandOff(
-				jobId: $jobId,
-				target: $target,
-				direction: (string)$data['exchangeDirection'],
-				scope: $scope,
-				records: $mapped,
-				ownerApp: (string)($data['ownerApp'] ?? ''),
-				ownerRef: (string)($data['ownerRef'] ?? '')
-			)
-		);
-		if ($outcome['refusal'] !== null) {
-			return $this->fail(job: $job, data: $data, code: $outcome['refusal'], detail: $this->refusalDetail(code: $outcome['refusal']));
 		}
 
-		$rejected = array_merge($rejected, $outcome['rejected']);
-		$this->storeRejections(jobId: $jobId, target: $target, data: $data, rejected: $rejected);
+		return ['mapped' => $mapped, 'rejected' => $rejected];
 
-		$processed = count($records);
-		// A landed import answers with a count; an export lists the accepted ids.
-		$accepted = ($outcome['acceptedCount'] ?? count($outcome['accepted']));
+	}//end mapRecords()
+
+	/**
+	 * One record's data, mapped when the job names a mapping.
+	 *
+	 * @param ExchangeJobRun       $run    The run.
+	 * @param array<string, mixed> $record The record.
+	 *
+	 * @return array<string, mixed>|null The record data, or null when the mapping failed.
+	 */
+	private function mapRecord(ExchangeJobRun $run, array $record): ?array {
+		$recordData = $record['data'] ?? [];
+		if (is_array($recordData) === false) {
+			$recordData = [];
+		}
+
+		if ($run->mapping === null) {
+			return $recordData;
+		}
+
+		try {
+			return $this->mappings->executeMapping(mapping: $run->mapping, input: $recordData);
+		} catch (Throwable $exception) {
+			// The exception class only: a mapping error can quote its input,
+			// which may hold a persoonsgebonden nummer.
+			$this->logger->info('[ExchangeJobRunner] mapping failed for a record of job '.$run->job->getUuid().': '.get_class($exception));
+			return null;
+		}
+
+	}//end mapRecord()
+
+	/**
+	 * The hand-off of the mapped records to the target's adapter.
+	 *
+	 * @param ExchangeJobRun                   $run    The run.
+	 * @param array<int, array<string, mixed>> $mapped The mapped records.
+	 *
+	 * @return ExchangeHandOff The hand-off.
+	 */
+	private function handOff(ExchangeJobRun $run, array $mapped): ExchangeHandOff {
+		return new ExchangeHandOff(
+			jobId: $run->job->getUuid(),
+			target: (string)$run->data['exchangeTarget'],
+			direction: (string)$run->data['exchangeDirection'],
+			scope: $this->scopeOf(data: $run->data),
+			records: $mapped,
+			ownerApp: (string)($run->data['ownerApp'] ?? ''),
+			ownerRef: (string)($run->data['ownerRef'] ?? '')
+		);
+
+	}//end handOff()
+
+	/**
+	 * The outcome of a dispatch the target answered: succeeded, partial or failed by the accepted count.
+	 *
+	 * @param ExchangeJobRun       $run    The run.
+	 * @param ExchangeRecordCounts $counts Processed and accepted records.
+	 *
+	 * @return ExchangeJobOutcome The outcome.
+	 */
+	private function delivered(ExchangeJobRun $run, ExchangeRecordCounts $counts): ExchangeJobOutcome {
 		$status = ExchangeJobService::STATUS_PARTIAL;
-		if ($accepted === $processed) {
+		if ($counts->accepted === $counts->processed) {
 			$status = ExchangeJobService::STATUS_SUCCEEDED;
-		} elseif ($accepted === 0) {
+		} elseif ($counts->accepted === 0) {
 			$status = ExchangeJobService::STATUS_FAILED;
 		}
 
-		return $this->finish(
-			job: $job,
-			data: $data,
+		$outcome = new ExchangeJobOutcome(
 			status: $status,
-			result: $this->result(processed: $processed, accepted: $accepted),
-			message: sprintf('%d of %d records accepted by %s.', $accepted, $processed, $target)
+			message: sprintf('%d of %d records accepted by %s.', $counts->accepted, $counts->processed, (string)$run->data['exchangeTarget'])
 		);
+		$outcome->counts = $counts;
 
-	}//end dispatchRecords()
+		return $outcome;
+
+	}//end delivered()
 
 	/**
 	 * The job error detail for a job-wide refusal.
@@ -262,31 +391,18 @@ class ExchangeJobRunner implements ExchangeJobRunnerInterface {
 	/**
 	 * Store this run's rejections. A resubmission reopens its own rejection.
 	 *
-	 * @param string                           $jobId    The job's uuid.
-	 * @param string                           $target   The target.
-	 * @param array<string,mixed>              $data     The job data.
+	 * @param ExchangeJobRun                   $run      The run.
 	 * @param array<int, array<string, mixed>> $rejected The rejections.
 	 *
 	 * @return void
 	 */
-	private function storeRejections(string $jobId, string $target, array $data, array $rejected): void {
-		$resubmissionOf = (string)($data['resubmissionOf'] ?? '');
+	private function storeRejections(ExchangeJobRun $run, array $rejected): void {
 		foreach ($rejected as $rejection) {
 			try {
-				if ($resubmissionOf !== '') {
-					$this->rejections->reopen(rejectionId: $resubmissionOf, rejection: $rejection);
-					continue;
-				}
-
-				$this->rejections->record(
-					jobId: $jobId,
-					target: $target,
-					rejection: $rejection,
-					ownerApp: (string)($data['ownerApp'] ?? '')
-				);
+				$this->storeRejection(run: $run, rejection: $rejection);
 			} catch (Throwable $exception) {
 				$this->logger->warning(
-					'[ExchangeJobRunner] a rejection of job ' . $jobId . ' was not stored: ' . $exception->getMessage()
+					'[ExchangeJobRunner] a rejection of job ' . $run->job->getUuid() . ' was not stored: ' . $exception->getMessage()
 				);
 			}
 		}
@@ -294,103 +410,158 @@ class ExchangeJobRunner implements ExchangeJobRunnerInterface {
 	}//end storeRejections()
 
 	/**
-	 * Fail the job as a whole.
+	 * Store one rejection, or reopen the rejection a resubmission answers.
 	 *
-	 * @param ObjectEntity        $job    The job.
-	 * @param array<string,mixed> $data   The job data.
-	 * @param string              $code   The error code.
-	 * @param string              $detail A short explanation.
+	 * @param ExchangeJobRun       $run       The run.
+	 * @param array<string, mixed> $rejection The rejection.
+	 *
+	 * @return void
+	 */
+	private function storeRejection(ExchangeJobRun $run, array $rejection): void {
+		$resubmissionOf = (string)($run->data['resubmissionOf'] ?? '');
+		if ($resubmissionOf !== '') {
+			$this->rejections->reopen(rejectionId: $resubmissionOf, rejection: $rejection);
+			return;
+		}
+
+		$this->rejections->record(
+			jobId: $run->job->getUuid(),
+			target: (string)$run->data['exchangeTarget'],
+			rejection: $rejection,
+			ownerApp: (string)($run->data['ownerApp'] ?? '')
+		);
+
+	}//end storeRejection()
+
+	/**
+	 * A job-wide failure: the error code and a short explanation.
+	 *
+	 * @param string $code   The error code.
+	 * @param string $detail A short explanation.
+	 *
+	 * @return ExchangeJobOutcome The failed outcome, its message `code: detail`.
+	 */
+	private function failure(string $code, string $detail): ExchangeJobOutcome {
+		return new ExchangeJobOutcome(status: ExchangeJobService::STATUS_FAILED, message: $code . ': ' . $detail);
+
+	}//end failure()
+
+	/**
+	 * Fail the job as a whole: the failure's message is also the job's error.
+	 *
+	 * @param ExchangeJobRun     $run     The run.
+	 * @param ExchangeJobOutcome $outcome The failed outcome.
 	 *
 	 * @return array{level: string, message: string} The job_log entry.
 	 */
-	private function fail(ObjectEntity $job, array $data, string $code, string $detail): array {
-		$data['exchangeError'] = $code . ': ' . $detail;
+	private function fail(ExchangeJobRun $run, ExchangeJobOutcome $outcome): array {
+		$run->data['exchangeError'] = $outcome->message;
 
-		return $this->finish(
-			job: $job,
-			data: $data,
-			status: ExchangeJobService::STATUS_FAILED,
-			result: $this->result(processed: 0, accepted: 0),
-			message: $data['exchangeError']
-		);
+		return $this->finish(run: $run, outcome: $outcome);
 
 	}//end fail()
 
 	/**
 	 * Save the terminal state and raise the concluded event.
 	 *
-	 * @param ObjectEntity        $job     The job.
-	 * @param array<string,mixed> $data    The job data.
-	 * @param string              $status  The terminal status.
-	 * @param array<string,mixed> $result  The counts.
-	 * @param string              $message The log line.
+	 * @param ExchangeJobRun     $run     The run.
+	 * @param ExchangeJobOutcome $outcome The terminal status, message and counts.
 	 *
 	 * @return array{level: string, message: string} The job_log entry.
 	 */
-	private function finish(ObjectEntity $job, array $data, string $status, array $result, string $message): array {
-		$data['exchangeStatus'] = $status;
-		$data['exchangeResult'] = $result;
-		$data['finishedAt'] = (new DateTime())->format('c');
-		$this->jobs->saveJob(data: $data, uuid: $job->getUuid());
-
-		$gateDecision = $data['gateDecision'] ?? null;
-		if (is_array($gateDecision) === false) {
-			$gateDecision = null;
-		}
-
-		$errorMessage = null;
-		if (empty($data['exchangeError']) === false) {
-			$errorMessage = (string)$data['exchangeError'];
-		}
+	private function finish(ExchangeJobRun $run, ExchangeJobOutcome $outcome): array {
+		$run->data['exchangeStatus'] = $outcome->status;
+		$run->data['exchangeResult'] = $outcome->counts->result();
+		$run->data['finishedAt'] = (new DateTime())->format('c');
+		$this->jobs->saveJob(data: $run->data, uuid: $run->job->getUuid());
 
 		try {
-			$this->events->dispatchTyped(
-				new ExchangeJobConcludedEvent(
-					ownerApp: (string)($data['ownerApp'] ?? ''),
-					jobId: $job->getUuid(),
-					target: (string)($data['exchangeTarget'] ?? ''),
-					direction: (string)($data['exchangeDirection'] ?? ''),
-					ownerRef: (string)($data['ownerRef'] ?? ''),
-					status: $status,
-					result: $result,
-					gateDecision: $gateDecision,
-					errorMessage: $errorMessage
-				)
-			);
+			$this->events->dispatchTyped($this->concludedEvent(run: $run));
 		} catch (Throwable $exception) {
 			// A consumer's listener failing must not undo the run it observes.
 			$this->logger->warning('[ExchangeJobRunner] a concluded listener failed: ' . $exception->getMessage());
 		}
 
-		$level = 'SUCCESS';
-		if ($status === ExchangeJobService::STATUS_FAILED) {
-			$level = 'ERROR';
-		} elseif ($status !== ExchangeJobService::STATUS_SUCCEEDED) {
-			$level = 'WARNING';
-		}
-
-		return ['level' => $level, 'message' => $message];
+		return ['level' => $this->logLevel(status: $outcome->status), 'message' => $outcome->message];
 
 	}//end finish()
 
 	/**
-	 * Build a result block.
+	 * The concluded event for the run's saved terminal state.
 	 *
-	 * @param int $processed Records processed.
-	 * @param int $accepted  Records accepted.
+	 * @param ExchangeJobRun $run The run.
 	 *
-	 * @return array{recordsProcessed: int, recordsAccepted: int, recordsRejected: int, runId: string, artefactRef: null}
+	 * @return ExchangeJobConcludedEvent The event.
 	 */
-	private function result(int $processed, int $accepted): array {
-		return [
-			'recordsProcessed' => $processed,
-			'recordsAccepted' => $accepted,
-			'recordsRejected' => ($processed - $accepted),
-			'runId' => '',
-			'artefactRef' => null,
-		];
+	private function concludedEvent(ExchangeJobRun $run): ExchangeJobConcludedEvent {
+		$data = $run->data;
 
-	}//end result()
+		return new ExchangeJobConcludedEvent(
+			ownerApp: (string)($data['ownerApp'] ?? ''),
+			jobId: $run->job->getUuid(),
+			target: (string)($data['exchangeTarget'] ?? ''),
+			direction: (string)($data['exchangeDirection'] ?? ''),
+			ownerRef: (string)($data['ownerRef'] ?? ''),
+			status: $data['exchangeStatus'],
+			result: $data['exchangeResult'],
+			gateDecision: $this->gateDecisionOf(data: $data),
+			errorMessage: $this->errorMessageOf(data: $data)
+		);
+
+	}//end concludedEvent()
+
+	/**
+	 * The stored gate decision, or null when the job has none.
+	 *
+	 * @param array<string,mixed> $data The job data.
+	 *
+	 * @return array<string,mixed>|null The gate decision.
+	 */
+	private function gateDecisionOf(array $data): ?array {
+		$gateDecision = $data['gateDecision'] ?? null;
+		if (is_array($gateDecision) === false) {
+			return null;
+		}
+
+		return $gateDecision;
+
+	}//end gateDecisionOf()
+
+	/**
+	 * The job error, or null when the job has none.
+	 *
+	 * @param array<string,mixed> $data The job data.
+	 *
+	 * @return string|null The error message.
+	 */
+	private function errorMessageOf(array $data): ?string {
+		if (empty($data['exchangeError']) === false) {
+			return (string)$data['exchangeError'];
+		}
+
+		return null;
+
+	}//end errorMessageOf()
+
+	/**
+	 * The job_log level of a terminal status.
+	 *
+	 * @param string $status The terminal status.
+	 *
+	 * @return string SUCCESS, WARNING or ERROR.
+	 */
+	private function logLevel(string $status): string {
+		if ($status === ExchangeJobService::STATUS_FAILED) {
+			return 'ERROR';
+		}
+
+		if ($status !== ExchangeJobService::STATUS_SUCCEEDED) {
+			return 'WARNING';
+		}
+
+		return 'SUCCESS';
+
+	}//end logLevel()
 
 	/**
 	 * A rejection for a record that never reached the adapter.

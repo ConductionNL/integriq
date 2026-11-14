@@ -34,6 +34,7 @@ use DateTime;
 use OCA\Integriq\Event\VerzuimloketAcknowledgementReceivedEvent;
 use OCA\Integriq\Exception\VerzuimloketProviderException;
 use OCA\Integriq\Exception\VerzuimloketTranslationException;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketAcknowledgementTranslator;
 use OCA\Integriq\Service\Verzuimloket\VerzuimloketEnvelopeTranslator;
@@ -357,27 +358,16 @@ class VerzuimloketService implements VerzuimloketServiceInterface {
 	 * @spec openspec/specs/verzuimloket-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new VerzuimloketProviderException(
 				message: 'No active Verzuimloket source is configured (register "integriq", schema "source", '
 					. 'type "verzuimloket", isEnabled=true). Configure one before using the Verzuimloket bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**

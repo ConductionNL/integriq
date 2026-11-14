@@ -20,6 +20,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -1489,4 +1492,41 @@ class BrokeredCallServiceTest extends TestCase {
 		$this->assertSame($plain, $this->service->hydrateInjectableTlsIdentity($plain));
 		$this->assertCount(1, $broker->resolveCalls);
 	}//end testHydrateTlsIdentityOnTheCallConfiguration()
+
+	/**
+	 * The scope guards refuse in their order (authentication shape, credentialRef, SOAP,
+	 * asynchronous, certificate), each before anything is resolved, with its whole message.
+	 *
+	 * @return void
+	 */
+	public function testPrepareRefusesInGuardOrder(): void {
+		$cases = [
+			'authentication-not-object' => [['authentication' => 'token'], ['type' => 'soap'], true],
+			'soap-before-async' => [$this->brokeredConfig(['cert' => '/tmp/c.pem']), ['type' => 'soap'], true],
+			'async-before-cert' => [$this->brokeredConfig(['cert' => '/tmp/c.pem']), [], true],
+			'cert' => [$this->brokeredConfig(['cert' => '/tmp/c.pem']), [], false],
+		];
+		$messages = [];
+		foreach ($cases as $name => [$config, $sourceData, $asynchronous]) {
+			try {
+				$this->service->prepare(config: $config, sourceData: $sourceData, asynchronous: $asynchronous);
+				$messages[$name] = 'prepared';
+			} catch (BrokeredCallConfigurationException $exception) {
+				$messages[$name] = $exception->getMessage();
+			}
+		}
+
+		$this->assertSame(
+			[
+				'authentication-not-object' => 'credentialRef requires `authentication` to be an object in the source configuration.',
+				'soap-before-async' => 'credentialRef is not supported on SOAP sources (v1 scope) — the SOAP transport bypasses the brokered HTTP path.',
+				'async-before-cert' => 'credentialRef does not support asynchronous dispatch (v1 scope) — the brokered call is synchronous in-process.',
+				'cert' => 'A TLS client certificate (cert / ssl_key) cannot be used with a top-level authentication.credentialRef: '
+					. 'the broker makes that call and cannot present the certificate. Use app-injected credentials instead: '
+					. 'put a {"credentialRef": {...}} placeholder at the secret\'s own position under authentication, and at cert and ssl_key.',
+			],
+			$messages
+		);
+
+	}//end testPrepareRefusesInGuardOrder()
 }//end class

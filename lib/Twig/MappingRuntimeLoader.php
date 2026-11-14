@@ -3,6 +3,9 @@
 /**
  * Integriq Mapping Twig Runtime Loader.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Loads the MappingRuntime for Twig when one of the mapping helper filters
  * or functions is invoked from a template.
  *

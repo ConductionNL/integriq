@@ -3,6 +3,9 @@
 /**
  * Integriq DUO ROD Outbound Envelope Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates a `berichtsoort` (`inschrijving`|`uitschrijving`|
  * `verblijfsgegevens`|`schooladvies`) plus its field payload, handed over by
  * the owning app's exchange gate (`bron-rod` target), into an
@@ -35,9 +38,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

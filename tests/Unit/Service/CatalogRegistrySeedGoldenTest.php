@@ -12,6 +12,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/connector-catalog/spec.md#requirement-the-store-lists-templates-it-does-not-install-req-ccx-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -63,7 +66,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 
 		$entries = $this->service(logger: $logger)->collect();
 
-		$this->assertSame('93bd0f2283091037ccd181ca32470f75bea3ce2d8fba41d141ad3e4056800070', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
+		$this->assertSame('048b186a7fb997da8ec571cd2ad6ab66310ba425e0c2f99eda428a769bf85a72', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
 
 	}//end testCollectIsUnchanged()
 
@@ -86,7 +89,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 		$payloads[''] = $service->findSeedSourcePayload('');
 
 		$this->assertNull($payloads['no-such-seed']);
-		$this->assertSame('67bd1fac082856e20136f1205cb2c231737ff71e3dc68f4f1a062c9442b123b8', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
+		$this->assertSame('76042804f792d87eab0ed06867b75799dab01960588f1ec9860abfb4345f98db', hash('sha256', json_encode($payloads, JSON_THROW_ON_ERROR)));
 
 	}//end testSeedPayloadsAreUnchanged()
 

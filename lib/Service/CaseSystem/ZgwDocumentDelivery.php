@@ -86,38 +86,78 @@ class ZgwDocumentDelivery {
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
 	public function deliver(array $document, string $content, array $settings): array {
-		$documenten = (string)($settings['documentenSource'] ?? '');
+		$run = new DocumentDeliveryRun(document: $document, settings: $settings);
+		$run->content = $content;
+
+		$created = $this->createDocument(run: $run);
+		$relation = $this->completeDocument(run: $run, created: $created);
+
+		return ['url' => (string)$created['url'], 'zaakinformatieobject' => $relation, 'document' => $created];
+	}//end deliver()
+
+	/**
+	 * Create the document in the Documenten API.
+	 *
+	 * @param DocumentDeliveryRun $run The delivery.
+	 *
+	 * @return array<string,mixed> The create answer, which carries the new document's `url`.
+	 *
+	 * @throws CaseSystemRefusal When no Documenten source is named, the API refuses, or the answer has no address.
+	 */
+	private function createDocument(DocumentDeliveryRun $run): array {
+		$documenten = $run->setting(name: 'documentenSource');
 		if ($documenten === '') {
 			throw new CaseSystemRefusal(status: 409, message: 'The delivery names no Documenten API source (documentenSource).');
 		}
 
-		$created = (array)self::accepted(
-			answer: $this->transport->send(
-				sourceId: $documenten,
-				method: 'POST',
-				address: '/enkelvoudiginformatieobjecten',
-				options: ['json' => $this->createPayload(document: $document, content: $content, inline: (($settings['inline'] ?? false) === true))]
-			),
-			api: 'Documenten API'
-		);
-		$url = (string)($created['url'] ?? '');
-		if ($url === '') {
+		$created = (array)self::accepted(answer: $this->sendCreate(run: $run, documenten: $documenten), api: 'Documenten API');
+		if ((string)($created['url'] ?? '') === '') {
 			throw new CaseSystemRefusal(status: 502, message: 'The Documenten API created the document without an address.');
 		}
 
+		return $created;
+	}//end createDocument()
+
+	/**
+	 * POST the new document, with its metadata and size, and its content when inline.
+	 *
+	 * @param DocumentDeliveryRun $run The delivery.
+	 * @param string $documenten The Documenten API source.
+	 *
+	 * @return array{status:int,data:mixed,raw:string} The answer.
+	 */
+	private function sendCreate(DocumentDeliveryRun $run, string $documenten): array {
+		return $this->transport->send(
+			sourceId: $documenten,
+			method: 'POST',
+			address: '/enkelvoudiginformatieobjecten',
+			options: ['json' => $this->createPayload(document: $run->document, content: $run->content, inline: $run->inline())]
+		);
+	}//end sendCreate()
+
+	/**
+	 * Upload the parts and relate the document to its case; any refusal removes the new document again.
+	 *
+	 * @param DocumentDeliveryRun $run The delivery.
+	 * @param array<string,mixed> $created The create answer.
+	 *
+	 * @return string|null The ZaakInformatieObject's address, null without a case.
+	 *
+	 * @throws CaseSystemRefusal When a part upload or the case relation is refused.
+	 */
+	private function completeDocument(DocumentDeliveryRun $run, array $created): ?string {
+		$documenten = $run->setting(name: 'documentenSource');
 		try {
 			$this->uploadParts(
 				created: $created,
-				file: new DocumentFile(sourceId: $documenten, content: $content, filename: (string)($document['bestandsnaam'] ?? 'document'))
+				file: new DocumentFile(sourceId: $documenten, content: $run->content, filename: (string)($run->document['bestandsnaam'] ?? 'document'))
 			);
-			$relation = $this->relateToCase(url: $url, settings: $settings, titel: (string)($document['titel'] ?? ''));
+			return $this->relateToCase(run: $run, url: (string)$created['url']);
 		} catch (CaseSystemRefusal $refusal) {
-			$this->removeOrphan(documenten: $documenten, url: $url);
+			$this->removeOrphan(documenten: $documenten, url: (string)$created['url']);
 			throw $refusal;
 		}
-
-		return ['url' => $url, 'zaakinformatieobject' => $relation, 'document' => $created];
-	}//end deliver()
+	}//end completeDocument()
 
 	/**
 	 * The create body: the delivery's metadata, and either the content inline
@@ -272,9 +312,8 @@ class ZgwDocumentDelivery {
 	/**
 	 * Relate the document to its case, when the delivery names one.
 	 *
-	 * @param string              $url      The document's address.
-	 * @param array<string,mixed> $settings zakenSource and zaakUrl.
-	 * @param string              $titel    The document's title, for the relation.
+	 * @param DocumentDeliveryRun $run The delivery: zakenSource and zaakUrl, and the title for the relation.
+	 * @param string              $url The document's address.
 	 *
 	 * @return string|null The ZaakInformatieObject's address, null without a case.
 	 *
@@ -282,29 +321,56 @@ class ZgwDocumentDelivery {
 	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
-	private function relateToCase(string $url, array $settings, string $titel): ?string {
-		$case = (string)($settings['zaakUrl'] ?? '');
+	private function relateToCase(DocumentDeliveryRun $run, string $url): ?string {
+		$case = $run->setting(name: 'zaakUrl');
 		if ($case === '') {
 			return null;
 		}
 
-		$zaken = (string)($settings['zakenSource'] ?? '');
+		$zaken = $run->setting(name: 'zakenSource');
 		if ($zaken === '') {
 			throw new CaseSystemRefusal(status: 409, message: 'The delivery names a case but no Zaken API source (zakenSource).');
 		}
 
-		$body = ['informatieobject' => $url, 'zaak' => $case];
+		$link = (array)self::accepted(answer: $this->sendRelation(run: $run, url: $url), api: 'Zaken API');
+
+		return (string)($link['url'] ?? '');
+	}//end relateToCase()
+
+	/**
+	 * POST the ZaakInformatieObject to the Zaken API source.
+	 *
+	 * @param DocumentDeliveryRun $run The delivery.
+	 * @param string              $url The document's address.
+	 *
+	 * @return array{status:int,data:mixed,raw:string} The answer.
+	 */
+	private function sendRelation(DocumentDeliveryRun $run, string $url): array {
+		return $this->transport->send(
+			sourceId: $run->setting(name: 'zakenSource'),
+			method: 'POST',
+			address: '/zaakinformatieobjecten',
+			options: ['json' => $this->relationBody(run: $run, url: $url)]
+		);
+	}//end sendRelation()
+
+	/**
+	 * The ZaakInformatieObject to create: the document, the case and, when the document has one, its title.
+	 *
+	 * @param DocumentDeliveryRun $run The delivery.
+	 * @param string              $url The document's address.
+	 *
+	 * @return array<string,string> The relation body.
+	 */
+	private function relationBody(DocumentDeliveryRun $run, string $url): array {
+		$body = ['informatieobject' => $url, 'zaak' => $run->setting(name: 'zaakUrl')];
+		$titel = (string)($run->document['titel'] ?? '');
 		if ($titel !== '') {
 			$body['titel'] = mb_substr($titel, 0, 200);
 		}
 
-		$link = (array)self::accepted(
-			answer: $this->transport->send(sourceId: $zaken, method: 'POST', address: '/zaakinformatieobjecten', options: ['json' => $body]),
-			api: 'Zaken API'
-		);
-
-		return (string)($link['url'] ?? '');
-	}//end relateToCase()
+		return $body;
+	}//end relationBody()
 
 	/**
 	 * Delete a document whose upload or case relation failed.

@@ -3,6 +3,9 @@
 /**
  * Integriq Synchronization Run flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.synchronization-run` — runs an ALREADY-CONFIGURED
  * Synchronization as one flow step, and emits ONE ITEM PER SYNCHRONISED OBJECT.
  *
@@ -49,9 +52,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *
@@ -127,6 +127,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 */
 	public const WARNING_THRESHOLD = 250;
 
+
 	/**
 	 * Constructor.
 	 *
@@ -199,50 +200,7 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public function configForm(): array {
-		return [
-			[
-				'key' => 'synchronization',
-				'label' => $this->l10n->t('Synchronization'),
-				'type' => 'select',
-				'help' => $this->l10n->t('The configured synchronization this step runs, with its own source, mapping and target.'),
-				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/integriq/synchronization',
-			],
-			[
-				'key' => 'force',
-				'label' => $this->l10n->t('Force a full pass'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t(
-					'Ignores the unchanged-object skip and re-processes everything the source '
-					. 'returns. Slower; use it after changing a mapping.'
-				),
-			],
-			[
-				'key' => 'output',
-				'label' => $this->l10n->t('Field to store the summary in'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'With a field name, the incoming item is preserved and the run summary is '
-					. 'added under it. Empty means the summary replaces the item.'
-				),
-			],
-			[
-				'key' => 'maxItems',
-				'label' => $this->l10n->t('Item ceiling'),
-				'type' => 'number',
-				'help' => $this->l10n->t('The most synchronised objects this step may emit as items. The summary always reports the full run.'),
-			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('When the run fails'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'"stop" (default) fails the step; "continue" records the error on the item '
-					. 'and carries on; "dead_letter" routes the item to the flow\'s dead-letter '
-					. 'handling.'
-				),
-			],
-		];
+		return (new SynchronizationRunConfigForm(l10n: $this->l10n))->fields();
 	}//end configForm()
 
 	/**
@@ -259,6 +217,28 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	public function validateConfig(array $config): void {
 		FlowConfigGuard::assertNoForbiddenFields(config: $config, l10n: $this->l10n);
 
+		$this->assertSynchronizationReference(config: $config);
+		$this->assertForceIsBoolean(config: $config);
+
+		if (array_key_exists('output', $config) === true) {
+			FlowConfigGuard::assertOutputKeyAllowed(outputKey: (string)$config['output'], l10n: $this->l10n);
+		}
+
+		$this->assertMaxItemsIsWholeNumber(config: $config);
+		FlowNodeSupport::assertOnError(config: $config, l10n: $this->l10n);
+
+	}//end validateConfig()
+
+	/**
+	 * Reject an inline or empty "synchronization" reference.
+	 *
+	 * @param array $config The step's authored configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the reference is inline or empty.
+	 */
+	private function assertSynchronizationReference(array $config): void {
 		$synchronization = ($config['synchronization'] ?? null);
 		if (is_array($synchronization) === true) {
 			throw new UnexpectedValueException(
@@ -275,38 +255,48 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 			);
 		}
 
+	}//end assertSynchronizationReference()
+
+	/**
+	 * Reject a "force" value that is not a boolean.
+	 *
+	 * @param array $config The step's authored configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When "force" is present and not a boolean.
+	 */
+	private function assertForceIsBoolean(array $config): void {
 		if (array_key_exists('force', $config) === true && is_bool($config['force']) === false) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('The "force" field must be true or false.')
 			);
 		}
 
-		if (array_key_exists('output', $config) === true) {
-			FlowConfigGuard::assertOutputKeyAllowed(outputKey: (string)$config['output'], l10n: $this->l10n);
+	}//end assertForceIsBoolean()
+
+	/**
+	 * Reject a "maxItems" value that is not a whole number of at least one.
+	 *
+	 * @param array $config The step's authored configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When "maxItems" is present and malformed.
+	 */
+	private function assertMaxItemsIsWholeNumber(array $config): void {
+		if (array_key_exists('maxItems', $config) === false) {
+			return;
 		}
 
-		if (array_key_exists('maxItems', $config) === true) {
-			$maxItems = $config['maxItems'];
-			if (is_int($maxItems) === false || $maxItems < 1) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('The "maxItems" field must be a whole number of at least 1.')
-				);
-			}
+		$maxItems = $config['maxItems'];
+		if (is_int($maxItems) === false || $maxItems < 1) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The "maxItems" field must be a whole number of at least 1.')
+			);
 		}
 
-		if (array_key_exists('onError', $config) === true) {
-			$policy = strtolower(trim((string)$config['onError']));
-			if (in_array($policy, FlowNodeSupport::ON_ERROR_POLICIES, true) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'The "onError" field must be one of %1$s.',
-						[implode(', ', FlowNodeSupport::ON_ERROR_POLICIES)]
-					)
-				);
-			}
-		}
-
-	}//end validateConfig()
+	}//end assertMaxItemsIsWholeNumber()
 
 	/**
 	 * Run the synchronization once per item and fan out its objects.
@@ -355,71 +345,94 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function runForEachItem(array $items, array $config, array $context): array {
-		$reference = trim((string)$config['synchronization']);
-		$outputKey = (string)($config['output'] ?? self::DEFAULT_OUTPUT_KEY);
-		$force = (bool)($config['force'] ?? false);
-		$maxItems = (int)($config['maxItems'] ?? self::DEFAULT_MAX_ITEMS);
-		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
-		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
+		$run = $this->startRun(config: $config, context: $context);
 
-		$synchronization = $this->resolveSynchronization(reference: $reference);
-
-		$emitted = [];
 		foreach ($items as $index => $item) {
+			$run->item  = $item;
+			$run->index = $index;
 			try {
-				$log = $this->runSynchronization(synchronization: $synchronization, force: $force, reference: $reference);
-				$objects = $this->objectsFrom(log: $log);
-				$summary = $this->summaryFrom(log: $log, reference: $reference);
-
-				$this->assertWithinCeiling(
-					count: (count($emitted) + max(count($objects), 1)),
-					objectCount: count($objects),
-					maxItems: $maxItems,
-					stepId: $stepId,
-					reference: $reference
-				);
-
-				$emitted = array_merge(
-					$emitted,
-					$this->itemsFor(
-						objects: $objects,
-						summary: $summary,
-						item: $item,
-						index: $index,
-						outputKey: $outputKey,
-						reference: $reference
-					)
-				);
+				$this->emitSynchronisedObjects(run: $run);
 			} catch (FlowNodeException $exception) {
-				$this->logger->error(
-					'[openconnector.synchronization-run] ' . $exception->getMessage(),
-					[
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'step' => $stepId,
-						'synchronization' => $reference,
-					]
-				);
+				$this->recordFailure(run: $run, exception: $exception);
+			}
+		}
 
-				if ($onError !== 'continue') {
-					throw $exception;
-				}
+		$this->warnOnLargeFanOut(run: $run);
 
-				$emitted[] = $this->errorItem(
-					item: $item,
-					index: $index,
-					stepId: $stepId,
-					reference: $reference,
-					exception: $exception
-				);
-			}//end try
-		}//end foreach
-
-		$this->warnOnLargeFanOut(count: count($emitted), maxItems: $maxItems, stepId: $stepId, reference: $reference);
-
-		return $emitted;
+		return $run->emitted;
 	}//end runForEachItem()
 
+	/**
+	 * Read the step's settings once and resolve the synchronization it names.
+	 *
+	 * @param array $config The step's authored configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return SynchronizationStepRun The run, ready for its first item.
+	 *
+	 * @throws FlowNodeException When the reference resolves to nothing.
+	 */
+	private function startRun(array $config, array $context): SynchronizationStepRun {
+		$run = new SynchronizationStepRun();
+		$run->reference = trim((string)$config['synchronization']);
+		$run->outputKey = (string)($config['output'] ?? self::DEFAULT_OUTPUT_KEY);
+		$run->force = (bool)($config['force'] ?? false);
+		$run->maxItems = (int)($config['maxItems'] ?? self::DEFAULT_MAX_ITEMS);
+		$run->onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
+		$run->stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
+
+		$run->synchronization = $this->resolveSynchronization(reference: $run->reference);
+
+		return $run;
+	}//end startRun()
+
+	/**
+	 * Run the synchronization for the item in hand and append its output items.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowNodeException On a failed synchronisation or a ceiling breach.
+	 */
+	private function emitSynchronisedObjects(SynchronizationStepRun $run): void {
+		$log = $this->runSynchronization(run: $run);
+		$reader = new SynchronizationLogReader();
+		$objects = $reader->objectsFrom(log: $log);
+		$run->summary = $reader->summaryFrom(log: $log, reference: $run->reference);
+
+		$this->assertWithinCeiling(run: $run, objectCount: count($objects));
+
+		$run->emitted = array_merge($run->emitted, $this->itemsFor(run: $run, objects: $objects));
+	}//end emitSynchronisedObjects()
+
+	/**
+	 * Log a failed item, then rethrow it or record it on the item under `onError: continue`.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
+	 * @param FlowNodeException $exception The failure.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowNodeException Unless the policy is `continue`.
+	 */
+	private function recordFailure(SynchronizationStepRun $run, FlowNodeException $exception): void {
+		$this->logger->error(
+			'[openconnector.synchronization-run] ' . $exception->getMessage(),
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'step' => $run->stepId,
+				'synchronization' => $run->reference,
+			]
+		);
+
+		if ($run->onError !== 'continue') {
+			throw $exception;
+		}
+
+		$run->emitted[] = $this->errorItem(run: $run, exception: $exception);
+	}//end recordFailure()
 	/**
 	 * Resolve the Synchronization named by the step, or refuse.
 	 *
@@ -513,24 +526,23 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	}//end suspendUntilTheLimitLifts()
 
 	/**
-	 * Run the synchronisation, turning any failure into a raised node failure.
+	 * Run the synchronisation once and return its log.
 	 *
-	 * @param ObjectEntity $synchronization The resolved synchronization object.
-	 * @param bool $force Whether to force an update of every object.
-	 * @param string $reference The authored synchronization reference.
+	 * @param SynchronizationStepRun $run The step run.
 	 *
-	 * @return array The synchronisation run log.
+	 * @return array The synchronisation log.
 	 *
+	 * @throws FlowSuspension When the source rate-limits the run.
 	 * @throws FlowNodeException When the synchronisation fails.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function runSynchronization(ObjectEntity $synchronization, bool $force, string $reference): array {
+	private function runSynchronization(SynchronizationStepRun $run): array {
 		try {
 			$log = $this->synchronizationService->synchronize(
-				synchronization: $synchronization,
+				synchronization: $run->synchronization,
 				isTest: false,
-				force: $force
+				force: $run->force
 			);
 		} catch (TooManyRequestsHttpException $rateLimited) {
 			// Not a failure, and not something to retry immediately. Caught
@@ -538,170 +550,109 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 			// an `onError: continue` policy would otherwise skip past a rate
 			// limit, which reads as "this shard found nothing" rather than
 			// "this shard was not allowed to look".
-			throw $this->suspendUntilTheLimitLifts(exception: $rateLimited, reference: $reference);
+			throw $this->suspendUntilTheLimitLifts(exception: $rateLimited, reference: $run->reference);
 		} catch (Throwable $exception) {
-			throw new FlowNodeException(
-				message: $this->l10n->t(
-					'The synchronization "%1$s" failed: %2$s',
-					[$reference, $exception->getMessage()]
-				),
-				details: ['kind' => 'synchronization', 'synchronization' => $reference],
-				previous: $exception
-			);
+			throw $this->synchronizationFailure(reference: $run->reference, exception: $exception);
 		}
 
 		return (array)($log ?? []);
 	}//end runSynchronization()
 
 	/**
-	 * The per-object results a run produced.
+	 * The node failure for a synchronisation that threw.
 	 *
-	 * Prefers the resolved contract payloads the engine embeds
-	 * (`result._embed.contracts`); falls back to the bare contract identifiers
-	 * when a payload could not be resolved, so a synchronised object is never
-	 * dropped from the fan-out just because its contract read failed.
-	 *
-	 * @param array $log The synchronisation run log.
-	 *
-	 * @return array<int, array<string, mixed>> One entry per synchronised object.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	private function objectsFrom(array $log): array {
-		$result = (array)($log['result'] ?? []);
-		$embedded = ($result['_embed']['contracts'] ?? null);
-		$contracts = (array)($result['contracts'] ?? []);
-
-		$objects = [];
-		foreach (array_values($contracts) as $position => $contractId) {
-			$payload = null;
-			if (is_array($embedded) === true && array_key_exists($position, $embedded) === true) {
-				$payload = $embedded[$position];
-			}
-
-			if (is_array($payload) === false) {
-				$payload = [];
-			}
-
-			$objectId = ($payload['targetId'] ?? null);
-			if ($objectId === null || $objectId === '') {
-				$objectId = ($payload['originId'] ?? $contractId);
-			}
-
-			$objects[] = [
-				'objectId' => $objectId,
-				'originId' => ($payload['originId'] ?? null),
-				'targetId' => ($payload['targetId'] ?? null),
-				'outcome' => (string)($payload['targetLastAction'] ?? 'unchanged'),
-				'contract' => $contractId,
-				'object' => $payload,
-			];
-		}//end foreach
-
-		return $objects;
-	}//end objectsFrom()
-
-	/**
-	 * The run counts every emitted item carries.
-	 *
-	 * @param array $log The synchronisation run log.
 	 * @param string $reference The authored synchronization reference.
+	 * @param Throwable $exception What the synchronisation threw.
 	 *
-	 * @return array<string, mixed> The summary.
-	 *
-	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
+	 * @return FlowNodeException
 	 */
-	private function summaryFrom(array $log, string $reference): array {
-		$result = (array)($log['result'] ?? []);
-		$counts = (array)($result['objects'] ?? []);
-
-		return [
-			'synchronization' => $reference,
-			'runId' => ($log['uuid'] ?? ($log['id'] ?? null)),
-			'message' => ($log['message'] ?? null),
-			'found' => (int)($counts['found'] ?? 0),
-			'created' => (int)($counts['created'] ?? 0),
-			'updated' => (int)($counts['updated'] ?? 0),
-			'deleted' => (int)($counts['deleted'] ?? 0),
-			'skipped' => (int)($counts['skipped'] ?? 0),
-			'invalid' => (int)($counts['invalid'] ?? 0),
-		];
-
-	}//end summaryFrom()
+	private function synchronizationFailure(string $reference, Throwable $exception): FlowNodeException {
+		return new FlowNodeException(
+			message: $this->l10n->t(
+				'The synchronization "%1$s" failed: %2$s',
+				[$reference, $exception->getMessage()]
+			),
+			details: ['kind' => 'synchronization', 'synchronization' => $reference],
+			previous: $exception
+		);
+	}//end synchronizationFailure()
 
 	/**
 	 * Build the output items for one synchronisation run.
 	 *
+	 * A run that touched nothing still emits exactly one item, marked as a
+	 * summary. Emitting nothing would make "ran and found nothing"
+	 * indistinguishable from "never ran".
+	 *
+	 * @param SynchronizationStepRun $run The step run, holding the item in hand and its summary.
 	 * @param array $objects The per-object results.
-	 * @param array $summary The run counts.
-	 * @param array $item The input item that triggered the run.
-	 * @param int $index The input item's index.
-	 * @param string $outputKey The author-named output key.
-	 * @param string $reference The authored synchronization reference.
 	 *
 	 * @return array<int, array<string, mixed>> The output items.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function itemsFor(
-		array $objects,
-		array $summary,
-		array $item,
-		int $index,
-		string $outputKey,
-		string $reference,
-	): array {
-		$binary = (array)($item['binary'] ?? []);
-		$json = (array)($item['json'] ?? []);
-
-		// A run that touched nothing still emits exactly one item, marked as a
-		// summary. Emitting nothing would make "ran and found nothing"
-		// indistinguishable from "never ran".
+	private function itemsFor(SynchronizationStepRun $run, array $objects): array {
 		if ($objects === []) {
 			$payload = [
 				'summaryOnly' => true,
-				'synchronization' => $reference,
-				'summary' => $summary,
+				'synchronization' => $run->reference,
+				'summary' => $run->summary,
 			];
 
-			return [
-				[
-					'json' => FlowTemplate::write(json: $json, path: $outputKey, value: $payload),
-					'binary' => $binary,
-					'pairedItem' => ['item' => $index],
-				],
-			];
+			return [$this->outputItem(run: $run, payload: $payload)];
 		}
 
 		$items = [];
 		foreach ($objects as $object) {
-			$payload = array_merge(
-				$object,
-				[
-					'summaryOnly' => false,
-					'synchronization' => $reference,
-					'summary' => $summary,
-				]
-			);
-
-			$items[] = [
-				'json' => FlowTemplate::write(json: $json, path: $outputKey, value: $payload),
-				'binary' => $binary,
-				'pairedItem' => ['item' => $index],
-			];
+			$items[] = $this->outputItem(run: $run, payload: $this->objectPayload(run: $run, object: $object));
 		}
 
 		return $items;
 	}//end itemsFor()
 
 	/**
+	 * The payload of one synchronised object: its result plus the run summary.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
+	 * @param array $object The per-object result.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function objectPayload(SynchronizationStepRun $run, array $object): array {
+		return array_merge(
+			$object,
+			[
+				'summaryOnly' => false,
+				'synchronization' => $run->reference,
+				'summary' => $run->summary,
+			]
+		);
+	}//end objectPayload()
+
+	/**
+	 * One output item: the payload written under the output key of the item in hand.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
+	 * @param array $payload The payload to write.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function outputItem(SynchronizationStepRun $run, array $payload): array {
+		return [
+			'json' => FlowTemplate::write(json: (array)($run->item['json'] ?? []), path: $run->outputKey, value: $payload),
+			'binary' => (array)($run->item['binary'] ?? []),
+			'pairedItem' => ['item' => $run->index],
+		];
+	}//end outputItem()
+
+	/**
 	 * Refuse a fan-out above the ceiling — loudly, and without truncating.
 	 *
-	 * @param int $count The number of items the step would emit.
+	 * The count checked is what would have been emitted after this item: the
+	 * items so far plus this run's objects, or one summary item for none.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
 	 * @param int $objectCount The number of objects this run synchronised.
-	 * @param int $maxItems The configured ceiling.
-	 * @param string $stepId The step id.
-	 * @param string $reference The authored synchronization reference.
 	 *
 	 * @return void
 	 *
@@ -709,31 +660,19 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function assertWithinCeiling(
-		int $count,
-		int $objectCount,
-		int $maxItems,
-		string $stepId,
-		string $reference,
-	): void {
-		if ($count <= $maxItems) {
+	private function assertWithinCeiling(SynchronizationStepRun $run, int $objectCount): void {
+		if ((count($run->emitted) + max($objectCount, 1)) <= $run->maxItems) {
 			return;
 		}
 
 		throw new FlowNodeException(
-			message: $this->l10n->t(
-				'Step "%1$s" synchronised %2$s objects through synchronization "%3$s", which is more than its '
-				. 'fan-out ceiling of %4$s items. The objects WERE synchronised and are stored; only their '
-				. 'emission as flow items was refused. No truncated or sampled list is returned — raise '
-				. '"maxItems" on the step if a larger fan-out is intended.',
-				[$stepId, (string)$objectCount, $reference, (string)$maxItems]
-			),
+			message: $this->ceilingMessage(run: $run, objectCount: $objectCount),
 			details: [
 				'kind' => 'ceiling',
-				'step' => $stepId,
-				'synchronization' => $reference,
+				'step' => $run->stepId,
+				'synchronization' => $run->reference,
 				'objectCount' => $objectCount,
-				'maxItems' => $maxItems,
+				'maxItems' => $run->maxItems,
 				'synchronised' => true,
 			]
 		);
@@ -741,18 +680,34 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 	}//end assertWithinCeiling()
 
 	/**
-	 * Log a warning when a fan-out approaches its ceiling.
+	 * The ceiling refusal, saying the objects were synchronised.
 	 *
-	 * @param int $count The number of emitted items.
-	 * @param int $maxItems The configured ceiling.
-	 * @param string $stepId The step id.
-	 * @param string $reference The authored synchronization reference.
+	 * @param SynchronizationStepRun $run The step run.
+	 * @param int $objectCount The number of objects this run synchronised.
+	 *
+	 * @return string
+	 */
+	private function ceilingMessage(SynchronizationStepRun $run, int $objectCount): string {
+		return $this->l10n->t(
+			'Step "%1$s" synchronised %2$s objects through synchronization "%3$s", which is more than its '
+			. 'fan-out ceiling of %4$s items. The objects WERE synchronised and are stored; only their '
+			. 'emission as flow items was refused. No truncated or sampled list is returned — raise '
+			. '"maxItems" on the step if a larger fan-out is intended.',
+			[$run->stepId, (string)$objectCount, $run->reference, (string)$run->maxItems]
+		);
+	}//end ceilingMessage()
+
+	/**
+	 * Log a warning when a fan-out is large enough to be heading for its ceiling.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function warnOnLargeFanOut(int $count, int $maxItems, string $stepId, string $reference): void {
+	private function warnOnLargeFanOut(SynchronizationStepRun $run): void {
+		$count = count($run->emitted);
 		if ($count < self::WARNING_THRESHOLD) {
 			return;
 		}
@@ -760,59 +715,61 @@ class SynchronizationRunNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNod
 		$this->logger->warning(
 			sprintf(
 				'[openconnector.synchronization-run] Step "%s" emitted %d items from synchronization "%s" (ceiling %d).',
-				$stepId,
+				$run->stepId,
 				$count,
-				$reference,
-				$maxItems
+				$run->reference,
+				$run->maxItems
 			),
-			[
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'step' => $stepId,
-				'synchronization' => $reference,
-				'items' => $count,
-				'maxItems' => $maxItems,
-				'threshold' => self::WARNING_THRESHOLD,
-			]
+			$this->fanOutLogContext(run: $run)
 		);
 
 	}//end warnOnLargeFanOut()
 
 	/**
+	 * The log context of the large fan-out warning.
+	 *
+	 * @param SynchronizationStepRun $run The step run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function fanOutLogContext(SynchronizationStepRun $run): array {
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'step' => $run->stepId,
+			'synchronization' => $run->reference,
+			'items' => count($run->emitted),
+			'maxItems' => $run->maxItems,
+			'threshold' => self::WARNING_THRESHOLD,
+		];
+	}//end fanOutLogContext()
+
+	/**
 	 * Build the output item for a failed run under `onError: continue`.
 	 *
-	 * @param array $item The input item.
-	 * @param int $index The input item's index.
-	 * @param string $stepId The step id.
-	 * @param string $reference The authored synchronization reference.
+	 * @param SynchronizationStepRun $run The step run, holding the failed item.
 	 * @param FlowNodeException $exception The failure.
 	 *
 	 * @return array The output item carrying explicit error state.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function errorItem(
-		array $item,
-		int $index,
-		string $stepId,
-		string $reference,
-		FlowNodeException $exception,
-	): array {
-		$json = (array)($item['json'] ?? []);
+	private function errorItem(SynchronizationStepRun $run, FlowNodeException $exception): array {
+		$json = (array)($run->item['json'] ?? []);
 		$json[FlowNodeSupport::ERROR_KEY] = array_merge(
 			$exception->getDetails(),
 			[
-				'step' => $stepId,
+				'step' => $run->stepId,
 				'node' => self::NODE_ID,
 				'message' => $exception->getMessage(),
-				'synchronization' => $reference,
+				'synchronization' => $run->reference,
 			]
 		);
 
 		return [
 			'json' => $json,
-			'binary' => (array)($item['binary'] ?? []),
-			'pairedItem' => ['item' => $index],
+			'binary' => (array)($run->item['binary'] ?? []),
+			'pairedItem' => ['item' => $run->index],
 		];
 
 	}//end errorItem()

@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Controller.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * REST/SOAP controller for the stuf-zkn-bridge: the inbound SOAP endpoint
  * accepts a `zakLk01`/`edcLk01` kennisgeving from a municipality's legacy
  * StUF-ZKN estate and replies with a `Bv03`/`Fo03` StUF reply body (mirrors
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

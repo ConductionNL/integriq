@@ -19,6 +19,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

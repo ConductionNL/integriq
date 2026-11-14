@@ -3,6 +3,9 @@
 /**
  * Integriq ProvisionIntakeGroups repair step.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `dso_verzoek` and `openformulieren_submission` carry BSNs. Since
  * bsn-intake-records-access-rules their authorization blocks grant them to
  * four groups only (plus administrators): the intake groups `dso-intake` and
@@ -28,9 +31,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://conduction.nl
  *

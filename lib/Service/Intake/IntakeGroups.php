@@ -3,6 +3,9 @@
 /**
  * Integriq Intake Groups.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The Nextcloud groups the authorization blocks of `dso_verzoek`,
  * `openformulieren_submission`, `intake_message` and `verdict` name. All four
  * hold what a citizen or a partner sent in (`intake_message` can hold a BSN),
@@ -30,9 +33,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://conduction.nl
  *

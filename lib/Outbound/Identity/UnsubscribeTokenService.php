@@ -3,6 +3,9 @@
 /**
  * Integriq UnsubscribeTokenService.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The link binds to a recipient and a case through a signed token, not to an
  * account: the person who wants the updates to stop usually has neither an
  * account nor a reason to make one. A message in a protected category carries
@@ -31,9 +34,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @link https://www.integriq.nl
  *
@@ -64,7 +64,16 @@ class UnsubscribeTokenService implements UnsubscribeTokenServiceInterface {
 	 *
 	 * @var string
 	 */
-	public const CONFIG_SECRET = 'outbound.unsubscribe_secret';
+	public const SIGNING_CONFIG_NAME = 'outbound.unsubscribe_secret';
+
+	/**
+	 * The former name of SIGNING_CONFIG_NAME.
+	 *
+	 * @var string
+	 *
+	 * @deprecated Use SIGNING_CONFIG_NAME.
+	 */
+	public const CONFIG_SECRET = self::SIGNING_CONFIG_NAME;
 
 	/**
 	 * The app-config key holding how many days a new link stays valid.
@@ -110,13 +119,11 @@ class UnsubscribeTokenService implements UnsubscribeTokenServiceInterface {
 	public const SMS_TEXT_MAX = 50;
 
 	/**
-	 * The secret, once read. A sensitive app-config value is decrypted on
-	 * every read, which made a batch of 500 cost 300 ms; one read per request
-	 * is enough.
+	 * The signing secret, read once per instance.
 	 *
-	 * @var string|null
+	 * @var AppSecret
 	 */
-	private ?string $secretCache = null;
+	private readonly AppSecret $secret;
 
 	/**
 	 * The token does not verify, so nothing in it is read.
@@ -145,6 +152,7 @@ class UnsubscribeTokenService implements UnsubscribeTokenServiceInterface {
 		private readonly IURLGenerator $urls,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->secret = new AppSecret(appConfig: $appConfig, random: $random, configKey: self::SIGNING_CONFIG_NAME);
 
 	}//end __construct()
 
@@ -599,21 +607,7 @@ class UnsubscribeTokenService implements UnsubscribeTokenServiceInterface {
 	 * @return string The secret.
 	 */
 	private function secret(): string {
-		if ($this->secretCache !== null) {
-			return $this->secretCache;
-		}
-
-		$secret = $this->appConfig->getValueString('integriq', self::CONFIG_SECRET, '');
-		if (trim($secret) !== '') {
-			$this->secretCache = $secret;
-			return $secret;
-		}
-
-		$secret = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
-		$this->appConfig->setValueString('integriq', self::CONFIG_SECRET, $secret, false, true);
-		$this->secretCache = $secret;
-
-		return $secret;
+		return $this->secret->value();
 
 	}//end secret()
 

@@ -3,6 +3,9 @@
 /**
  * OCC command: integriq:migrate-storage.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Operator entrypoint for the chain-B legacy → OpenRegister storage migration.
  * Wraps {@see LegacyToRegisterMigrator::migrateAll()} so admins can run, dry-run,
  * retry per-entity, or verify the migration from the CLI — outside the

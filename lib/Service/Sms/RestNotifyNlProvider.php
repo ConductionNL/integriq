@@ -3,6 +3,9 @@
 /**
  * Integriq REST NotifyNL SMS Provider.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin REST binding for {@see SmsProviderInterface} against NotifyNL — the NL
  * government notification service, a GOV.UK Notify fork exposing the same
  * `POST /v2/notifications/sms` + `GET /v2/notifications/{id}` REST contract
@@ -39,9 +42,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

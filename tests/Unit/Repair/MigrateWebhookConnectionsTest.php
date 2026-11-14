@@ -17,6 +17,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/public-webhooks-on-the-consumer-model/specs/consumer-management/spec.md#scenario-an-upgrade-moves-the-source-trust-into-the-consumer
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -25,7 +28,10 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\MigrateWebhookConnections;
 use OCA\Integriq\Service\Dso\DsoConnectionAlerts;
+use OCA\Integriq\Service\Intake\WebhookProfile;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
+use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
 use OCA\Integriq\Tests\Helpers\DsoConnectionWorld;
 use OCP\Migration\IOutput;
@@ -179,4 +185,79 @@ class MigrateWebhookConnectionsTest extends TestCase {
 		return new MigrateWebhookConnections(container: $container, webhookProfiles: new WebhookProfiles());
 
 	}//end step()
+	/**
+	 * The step names what it does.
+	 *
+	 * @return void
+	 */
+	public function testItIsNamed(): void {
+		$step = new MigrateWebhookConnections(container: $this->createMock(ContainerInterface::class), webhookProfiles: new WebhookProfiles());
+
+		$this->assertSame('Move the trust of the signed public webhooks into their consumers', $step->getName());
+
+	}//end testItIsNamed()
+
+	/**
+	 * Without OpenRegister the step warns and migrates nothing.
+	 *
+	 * @return void
+	 */
+	public function testWithoutOpenRegisterTheStepIsSkipped(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no migrator'));
+		$profiles = $this->createMock(WebhookProfilesInterface::class);
+		$profiles->expects($this->never())->method('profiles');
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('warning')
+			->with('Webhook connection migration skipped: OpenRegister is not available (no migrator).');
+		$output->expects($this->never())->method('info');
+
+		(new MigrateWebhookConnections(container: $container, webhookProfiles: $profiles))->run($output);
+
+	}//end testWithoutOpenRegisterTheStepIsSkipped()
+
+	/**
+	 * A webhook whose migration fails is reported and the next one is still
+	 * migrated; only a created consumer asks for an account.
+	 *
+	 * @return void
+	 */
+	public function testAFailedMigrationIsReportedAndTheRestContinue(): void {
+		$broken = new WebhookProfile(authorizationType: 'peppol-webhook', channel: 'peppol', label: 'Peppol', schema: 'peppol_message');
+		$created = new WebhookProfile(authorizationType: 'rod-webhook', channel: 'rod', label: 'ROD', schema: 'rod_message');
+		$existing = new WebhookProfile(authorizationType: 'sms-webhook', channel: 'sms', label: 'SMS', schema: 'sms_message');
+		$profiles = $this->createMock(WebhookProfilesInterface::class);
+		$profiles->method('profiles')->willReturn([$broken, $created, $existing]);
+		$migrator = $this->createMock(WebhookTrustMigratorInterface::class);
+		$migrator->expects($this->exactly(3))->method('migrate')->willReturnCallback(
+			static function (WebhookProfile $profile): bool {
+				if ($profile->label === 'Peppol') {
+					throw new \RuntimeException('source unreadable');
+				}
+
+				return $profile->label === 'ROD';
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->with(WebhookTrustMigratorInterface::class)->willReturn($migrator);
+		$lines = [];
+		$output = $this->createMock(IOutput::class);
+		$output->method('warning')->willReturnCallback(static function (string $m) use (&$lines): void {
+			$lines[] = 'warning: ' . $m;
+		});
+		$output->method('info')->willReturnCallback(static function (string $m) use (&$lines): void {
+			$lines[] = 'info: ' . $m;
+		});
+
+		(new MigrateWebhookConnections(container: $container, webhookProfiles: $profiles))->run($output);
+
+		$this->assertSame(
+			[
+				'warning: The Peppol connection was not migrated: source unreadable',
+				'info: Created the rod-webhook consumer from the source webhook trust. Choose the account the ROD webhook acts as.',
+			],
+			$lines
+		);
+
+	}//end testAFailedMigrationIsReportedAndTheRestContinue()
 }//end class

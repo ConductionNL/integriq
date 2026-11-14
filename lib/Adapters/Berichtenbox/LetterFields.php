@@ -98,16 +98,9 @@ final class LetterFields {
 	 *
 	 * @param string $senderOin   The sender's OIN.
 	 * @param string $berichtType The BerichtType code.
-	 *
-	 * @return self The fields, identity and content still to fill.
-	 *
-	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-letter-is-built-to-the-official-schema-and-its-limits-req-dpa-010
 	 */
-	public static function forSender(string $senderOin, string $berichtType): self {
-		$fields = new self();
-		$fields->senderOin = $senderOin;
-		$fields->berichtType = $berichtType;
-
-		return $fields;
-	}//end forSender()
+	public function __construct(string $senderOin, string $berichtType) {
+		$this->senderOin = $senderOin;
+		$this->berichtType = $berichtType;
+	}//end __construct()
 }//end class

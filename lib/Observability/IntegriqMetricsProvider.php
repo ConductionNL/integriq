@@ -3,6 +3,9 @@
 /**
  * Integriq AppHost Metrics Provider.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Escape-hatch metrics provider for the OpenRegister AppHost observability
  * engine (ADR-040 / ADR-006). The per-Source circuit breaker state
  * (`circuit_breaker_state{source="<name>"}`, REQ-PROM-011) cannot be
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

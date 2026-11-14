@@ -3,6 +3,9 @@
 /**
  * Integriq OSO Export Envelope Translator.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Translates an export payload (`learnerEckId`, `targetSchoolBrin`,
  * `categories[]`, `attachmentRefs[]`) — supplied by learniq's
  * `DataExchangeRunHandler` for the `oso` job type, already cleared by
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *

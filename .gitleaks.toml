@@ -1,0 +1,56 @@
+# gitleaks configuration: the default rules, plus allowlists for findings
+# that are not secrets. Each allowlist names the exact files and only the
+# rules that fire there, so anything else in those files is still reported.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documentation examples: the default admin:admin login of the local development and demo containers."
+targetRules = ["curl-auth-user"]
+paths = [
+  '''(^|/)docs/Installation/demo\-environment\.md$''',
+  '''(^|/)docs/user\-api\.md$''',
+]
+
+[[allowlists]]
+description = "Design example: curl with a YOUR-... placeholder login."
+targetRules = ["curl-auth-user"]
+paths = [
+  '''(^|/)openspec/changes/archive/2026\-09\-29\-slo\-kerndoelen\-import/design\.md$''',
+]
+
+[[allowlists]]
+description = "Unit test fixtures: made-up passwords, API keys and signing secrets, truncated PEM placeholders, and two throwaway RSA keys generated for these tests only (no system trusts them)."
+targetRules = ["generic-api-key", "private-key"]
+paths = [
+  '''(^|/)tests/Unit/Auth/Idp/EnvelopeLifecycleTest\.php$''',
+  '''(^|/)tests/Unit/Auth/Idp/IdpBrowserLoginTest\.php$''',
+  '''(^|/)tests/Unit/Controller/EventsControllerBrokerSecretRedactionTest\.php$''',
+  '''(^|/)tests/Unit/Controller/EventsControllerTest\.php$''',
+  '''(^|/)tests/Unit/Outbound/CallReplayServiceTest\.php$''',
+  '''(^|/)tests/Unit/Outbound/MessageRecorderTest\.php$''',
+  '''(^|/)tests/Unit/Service/AuthenticationServiceTest\.php$''',
+  '''(^|/)tests/Unit/Service/CallServiceTest\.php$''',
+  '''(^|/)tests/Unit/Service/DocumentGeneration/VendorDocumentGenerationProviderTest\.php$''',
+  '''(^|/)tests/Unit/Service/EudiIssuerKeyServiceTest\.php$''',
+  '''(^|/)tests/Unit/Service/Mtls/MtlsCertificateFixture\.php$''',
+  '''(^|/)tests/Unit/Service/Security/InlineSecretMigrationExecutorTest\.php$''',
+  '''(^|/)tests/Unit/Service/Security/InlineSecretMigrationPlannerTest\.php$''',
+  '''(^|/)tests/Unit/Service/WebhookSignatureVerdictGoldenTest\.php$''',
+  '''(^|/)tests/Unit/Settings/SenderIdentityRefPatternTest\.php$''',
+]
+
+[[allowlists]]
+description = "CI seed script: curl reads the admin login from environment variables; no value is in the file."
+targetRules = ["curl-auth-user"]
+paths = [
+  '''(^|/)tests/e2e/ci\-seed\.sh$''',
+]
+
+[[allowlists]]
+description = "Golden test output: the matched fields are deduplication hashes computed by the code under test, not credentials."
+targetRules = ["generic-api-key"]
+paths = [
+  '''(^|/)tests/fixtures/golden/opt\-out\-row\-builder\.json$''',
+]

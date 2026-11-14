@@ -123,7 +123,7 @@ class UnsubscribeLinkTest extends TestCase {
 		parent::setUp();
 
 		$this->table = new InMemoryOptOutMapper($this->createMock(IDBConnection::class));
-		$this->config = [UnsubscribeTokenService::CONFIG_SECRET => self::SECRET];
+		$this->config = [UnsubscribeTokenService::SIGNING_CONFIG_NAME => self::SECRET];
 		$this->legacy = [];
 		$this->readRbac = [];
 

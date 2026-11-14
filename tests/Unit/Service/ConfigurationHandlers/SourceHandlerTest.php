@@ -9,6 +9,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -113,7 +116,7 @@ class SourceHandlerTest extends TestCase {
 	 * environments-and-promotion REQ-010 regression — a Source's
 	 * `configuration.authentication.credentialRef` placeholder passes
 	 * through export byte-for-byte unchanged: neither `credentialId` nor
-	 * `credentialName` matches `SensitiveFieldRegistry::SECRET_NAME_PATTERN`/
+	 * `credentialName` matches `SensitiveFieldRegistry::SENSITIVE_NAME_PATTERN`/
 	 * `EXACT_MATCH_NAMES`, so `redactArray()` never touches it. Pins this
 	 * previously-undocumented behaviour, which `environments-and-promotion`'s
 	 * promotion-specific `credentialRefsNeedingRebind` classification relies on.

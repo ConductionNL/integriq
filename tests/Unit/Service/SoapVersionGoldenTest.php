@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use GuzzleHttp\Cookie\CookieJar;
 use OCA\Integriq\Service\SOAPService;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -50,28 +51,29 @@ class SoapVersionGoldenTest extends TestCase {
 	}//end resolve()
 
 	/**
-	 * Each configured value and the version it resolves to.
+	 * Each configured value and the version it resolves to: an integer, or the
+	 * name of the ext-soap constant, read only when the extension is loaded.
 	 *
-	 * @return array<string,array{0:string|int|null,1:int}>
+	 * @return array<string,array{0:string|int|null,1:int|string}>
 	 */
 	public static function versions(): array {
 		return [
 			'int 1' => [1, 1],
 			'int 2' => [2, 2],
-			'1.1' => ['1.1', SOAP_1_1],
-			'1_1' => ['1_1', SOAP_1_1],
-			'soap1.1' => ['soap1.1', SOAP_1_1],
-			'soap1_1' => ['soap1_1', SOAP_1_1],
-			'soap_1_1' => ['soap_1_1', SOAP_1_1],
-			'SOAP_1_1' => ['SOAP_1_1', SOAP_1_1],
-			'numeric equal 1.10' => ['1.10', SOAP_1_1],
-			'numeric equal 01.1' => ['01.1', SOAP_1_1],
-			'1.2' => ['1.2', SOAP_1_2],
-			'SOAP_1_2' => ['SOAP_1_2', SOAP_1_2],
-			'case differs' => ['Soap1.1', SOAP_1_2],
-			'unknown' => ['x', SOAP_1_2],
-			'empty' => ['', SOAP_1_2],
-			'null' => [null, SOAP_1_2],
+			'1.1' => ['1.1', 'SOAP_1_1'],
+			'1_1' => ['1_1', 'SOAP_1_1'],
+			'soap1.1' => ['soap1.1', 'SOAP_1_1'],
+			'soap1_1' => ['soap1_1', 'SOAP_1_1'],
+			'soap_1_1' => ['soap_1_1', 'SOAP_1_1'],
+			'SOAP_1_1' => ['SOAP_1_1', 'SOAP_1_1'],
+			'numeric equal 1.10' => ['1.10', 'SOAP_1_1'],
+			'numeric equal 01.1' => ['01.1', 'SOAP_1_1'],
+			'1.2' => ['1.2', 'SOAP_1_2'],
+			'SOAP_1_2' => ['SOAP_1_2', 'SOAP_1_2'],
+			'case differs' => ['Soap1.1', 'SOAP_1_2'],
+			'unknown' => ['x', 'SOAP_1_2'],
+			'empty' => ['', 'SOAP_1_2'],
+			'null' => [null, 'SOAP_1_2'],
 		];
 
 	}//end versions()
@@ -80,12 +82,17 @@ class SoapVersionGoldenTest extends TestCase {
 	 * A configured value resolves as before.
 	 *
 	 * @param string|int|null $configured The configured version.
-	 * @param int             $expected   The resolved version.
+	 * @param int|string      $expected   The resolved version, or the name of its SOAP_* constant.
 	 *
 	 * @return void
 	 */
 	#[DataProvider('versions')]
-	public function testVersionResolves(string|int|null $configured, int $expected): void {
+	#[RequiresPhpExtension('soap')]
+	public function testVersionResolves(string|int|null $configured, int|string $expected): void {
+		if (is_string($expected) === true) {
+			$expected = constant($expected);
+		}
+
 		$this->assertSame($expected, $this->resolve($configured));
 
 	}//end testVersionResolves()

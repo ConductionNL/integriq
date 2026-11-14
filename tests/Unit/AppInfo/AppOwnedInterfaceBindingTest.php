@@ -3,6 +3,9 @@
 /**
  * Every app-owned interface injected bare must be bound in the container.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `DnsResolverInterface` and `CallDispatcherInterface` each shipped as a
  * required, non-nullable constructor parameter of a class only Nextcloud's DI
  * ever builds, with exactly one implementation and nothing binding them. So
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  */

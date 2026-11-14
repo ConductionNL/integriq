@@ -13,6 +13,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-5
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -160,4 +163,36 @@ class MigrateDsoStamConnectionTest extends TestCase {
 		$this->assertSame([], $this->alerted);
 
 	}//end testNoKeysCreateNothing()
+
+	/**
+	 * Old keys but no OpenRegister: the step warns, writes nothing and
+	 * notifies nobody, so the keys stay where they are for the next upgrade.
+	 *
+	 * @return void
+	 */
+	public function testWithoutOpenRegisterTheMigrationIsSkipped(): void {
+		$this->config = ['dso_pki_hmac_secret' => 'old-secret'];
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = ''): string => ($this->config[$key] ?? $default)
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('openregister is disabled'));
+		$logger = new \Psr\Log\NullLogger();
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('warning')
+			->with('DSO connection migration skipped: OpenRegister is not available (openregister is disabled).');
+
+		(new MigrateDsoStamConnection(
+			appConfig: $appConfig,
+			signatureVerifier: new \OCA\Integriq\Service\DSOSignatureVerifierService(new \OCA\Integriq\Service\WebhookSignatureService($logger), $logger),
+			container: $container
+		))->run($output);
+
+		$this->assertSame([], $this->worldConsumers);
+		$this->assertSame([], $this->worldWrites);
+		$this->assertSame([], $this->alerted);
+	}//end testWithoutOpenRegisterTheMigrationIsSkipped()
 }//end class

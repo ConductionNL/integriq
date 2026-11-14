@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZDS Message Log.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * One `stuf_message` row per ZDS case message: opened when the envelope is
  * built, moved to `retrying` while a transient failure waits for its next
  * attempt, and concluded `sent` or `failed`. The envelope is kept only while
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *
@@ -280,30 +280,7 @@ class StufZdsMessageLog {
 			return null;
 		}
 
-		try {
-			$matches = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => self::REGISTER,
-						'schema' => self::SCHEMA_MESSAGE,
-						'direction' => 'outbound',
-						'referentienummer' => $referentienummer,
-					],
-					'limit' => 1,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $exception) {
-			return null;
-		}
-
-		$results = ($matches['results'] ?? $matches);
-		$found   = null;
-		if (is_array($results) === true) {
-			$found = ($results[0] ?? null);
-		}
-
+		$found = $this->firstOutbound(referentienummer: $referentienummer);
 		if ($found === null) {
 			return null;
 		}
@@ -312,6 +289,53 @@ class StufZdsMessageLog {
 		$row['id'] = (string)$found->getUuid();
 		return $row;
 	}//end findOutbound()
+
+	/**
+	 * The first outbound message with the referentienummer, or null when there
+	 * is none or the read fails.
+	 *
+	 * @param string $referentienummer The outbound message's referentienummer.
+	 *
+	 * @return mixed The message object, or null.
+	 */
+	private function firstOutbound(string $referentienummer): mixed {
+		try {
+			$matches = $this->outboundMatches(referentienummer: $referentienummer);
+		} catch (Throwable $exception) {
+			return null;
+		}
+
+		$results = ($matches['results'] ?? $matches);
+		if (is_array($results) === false) {
+			return null;
+		}
+
+		return ($results[0] ?? null);
+	}//end firstOutbound()
+
+	/**
+	 * The outbound messages with the referentienummer, at most one, read as
+	 * the engine.
+	 *
+	 * @param string $referentienummer The outbound message's referentienummer.
+	 *
+	 * @return mixed What findAll() answers.
+	 */
+	private function outboundMatches(string $referentienummer): mixed {
+		return $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_MESSAGE,
+					'direction' => 'outbound',
+					'referentienummer' => $referentienummer,
+				],
+				'limit' => 1,
+			],
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end outboundMatches()
 
 	/**
 	 * Read one row.

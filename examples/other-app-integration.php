@@ -5,6 +5,9 @@
  * 
  * This example shows how other apps can read and write the custom name fields
  * (firstName, lastName, middleName) that are stored by the Integriq UserService.
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 // In any other NextCloud app, you can access the custom name fields like this:

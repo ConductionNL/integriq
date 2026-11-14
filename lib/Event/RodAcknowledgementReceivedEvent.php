@@ -30,14 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * A DUO ROD acknowledgement, translated and ready for a listener to act on.
  *
+ * The kenmerk, signaalcode, description and acceptance live in {@see AcknowledgementReceivedEvent}.
+ *
  * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
  */
-class RodAcknowledgementReceivedEvent extends Event {
+class RodAcknowledgementReceivedEvent extends AcknowledgementReceivedEvent {
 	/**
 	 * Constructor.
 	 *
@@ -48,58 +48,14 @@ class RodAcknowledgementReceivedEvent extends Event {
 	 * @param string $berichtsoort The berichtsoort the acknowledgement responds to, when known.
 	 */
 	public function __construct(
-		private readonly string $kenmerk,
-		private readonly string $signaalcode,
-		private readonly ?string $signaalOmschrijving,
-		private readonly bool $accepted,
+		string $kenmerk,
+		string $signaalcode,
+		?string $signaalOmschrijving,
+		bool $accepted,
 		private readonly string $berichtsoort = '',
 	) {
-		parent::__construct();
+		parent::__construct(kenmerk: $kenmerk, signaalcode: $signaalcode, signaalOmschrijving: $signaalOmschrijving, accepted: $accepted);
 	}//end __construct()
-
-	/**
-	 * The correlation id echoed back from the original outbound send.
-	 *
-	 * @return string Kenmerk.
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
-	 */
-	public function getKenmerk(): string {
-		return $this->kenmerk;
-	}//end getKenmerk()
-
-	/**
-	 * The DUO signaalcode (`0` means accepted).
-	 *
-	 * @return string Signaalcode.
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
-	 */
-	public function getSignaalcode(): string {
-		return $this->signaalcode;
-	}//end getSignaalcode()
-
-	/**
-	 * The DUO signal description, when supplied.
-	 *
-	 * @return string|null Description, or null when absent.
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
-	 */
-	public function getSignaalOmschrijving(): ?string {
-		return $this->signaalOmschrijving;
-	}//end getSignaalOmschrijving()
-
-	/**
-	 * Whether the signaalcode indicates acceptance.
-	 *
-	 * @return bool True when accepted.
-	 *
-	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-003-duo-acknowledgement-and-signaalcode-translation-to-a-typed-event
-	 */
-	public function isAccepted(): bool {
-		return $this->accepted;
-	}//end isAccepted()
 
 	/**
 	 * The berichtsoort the acknowledgement responds to, when known.

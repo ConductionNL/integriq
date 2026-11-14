@@ -23,7 +23,7 @@ integriq-local concept with no OpenRegister equivalent.
 
 ## Requirements
 
-### REQ-RULE-UI-001: Rule Management UI
+### Requirement: Rule Management UI (REQ-RULE-UI-001)
 
 Integriq MUST provide a Rules section in its SPA where administrators can
 browse, create, edit, and configure rule objects that are referenced by endpoints.

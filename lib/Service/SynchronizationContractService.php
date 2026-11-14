@@ -23,6 +23,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -215,18 +218,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	/**
 	 * The OpenRegister identifier to upsert a contract on.
 	 *
-	 * WHY THIS EXISTS. `persist()` used to read `$object['uuid']` alone and then
-	 * drop `$object['id']`, on the reasoning that `id` was a legacy *integer* and
-	 * not an OpenRegister identifier. A contract payload carries no `uuid`
-	 * property at all — its identity comes back from OpenRegister AS `id`, and
-	 * that `id` is a uuid string. So the upsert key was always null and every
-	 * save CREATED: four distinct contract objects for one
-	 * (synchronizationId, originId), one per run, each carrying an identical
-	 * `originHash`. `synchronization_contract` grew without bound — 528,656 rows
-	 * on the dev instance.
-	 *
-	 * A numeric `id` is still refused, which is what the original comment was
-	 * actually protecting against.
+	 * The `uuid`, else a non-numeric `id`; see {@see ContractIdentity} for why.
 	 *
 	 * @param array $object The contract payload.
 	 *
@@ -235,22 +227,7 @@ class SynchronizationContractService implements SynchronizationContractServiceIn
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-a-contract-is-upserted-on-its-own-identity-req-025
 	 */
 	public function contractIdentity(array $object): ?string {
-		$uuid = ($object['uuid'] ?? null);
-		if ($uuid !== null && (string)$uuid !== '') {
-			return (string)$uuid;
-		}
-
-		$id = ($object['id'] ?? null);
-		if ($id === null || is_numeric($id) === true) {
-			return null;
-		}
-
-		$id = (string)$id;
-		if ($id === '') {
-			return null;
-		}
-
-		return $id;
+		return ContractIdentity::forUpsert(object: $object);
 	}//end contractIdentity()
 
 	/**

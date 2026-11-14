@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+# SPDX-License-Identifier: EUPL-1.2
+
+# Licensing for files that cannot carry a header of their own.
+# See https://reuse.software/spec-3.3/#reusetoml
+version = 1
+SPDX-PackageName = "integriq"
+SPDX-PackageSupplier = "Conduction B.V. <info@conduction.nl>"
+SPDX-PackageDownloadLocation = "https://github.com/ConductionNL/integriq"
+
+# Translation catalogues, written by the translation tooling in a fixed format.
+[[annotations]]
+path = ["l10n/**.js", "l10n/**.json"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Conduction B.V. <info@conduction.nl>"
+SPDX-License-Identifier = "EUPL-1.2"

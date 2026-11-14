@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -37,6 +40,9 @@ use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceHttp;
 use OCA\Integriq\Adapters\LearningMaterial\EdurepSourceMock;
 use OCA\Integriq\Adapters\LearningMaterial\LearningMaterialSource;
 use OCA\Integriq\Adapters\LearningMaterial\SruTransport;
+use OCA\Integriq\Adapters\Lvs\UwlrResultImportClient;
+use OCA\Integriq\Adapters\Lvs\UwlrResultImportClientHttp;
+use OCA\Integriq\Adapters\Lvs\UwlrResultImportClientMock;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokGeocodingClientMock;
@@ -48,6 +54,7 @@ use OCA\Integriq\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\Integriq\Adapters\Pdok\PdokWmsClientMock;
 use OCA\Integriq\Adapters\Roster\RosterImportClient;
 use OCA\Integriq\Adapters\Roster\RosterImportClientMock;
+use OCA\Integriq\Adapters\Roster\RosterImportClientZermelo;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClient;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Adapters\Slo\SloCurriculumClientMock;
@@ -58,8 +65,13 @@ use OCA\Integriq\Adapters\Slo\SloCurriculumPresetRegistryInterface;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalker;
 use OCA\Integriq\Adapters\Slo\SloCurriculumTreeWalkerInterface;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClient;
+use OCA\Integriq\Adapters\Swv\SwvHandoffClientHttp;
 use OCA\Integriq\Adapters\Swv\SwvHandoffClientMock;
+use OCA\Integriq\Sources\Lvs\UwlrResultImportSourceAdapter;
+use OCA\Integriq\Sources\Roster\RosterImportSourceAdapter;
+use OCA\Integriq\Sources\Swv\SwvHandoffSourceAdapter;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\IAppConfig;
 
 /**
  * Binds each Adapters contract to the class that implements it, so callers
@@ -160,17 +172,35 @@ final class AdaptersBindings {
 			}
 		);
 
-		// Dormant rostering adapter (rostering-adapter-targets-planninq). The
-		// abstract `RosterImportClient` had no binding, so the adapter could
-		// not be constructed on an instance at all. No live client exists
-		// yet (each rostering system needs its own institution onboarding,
-		// D9), so the binding is the mock whatever the feature flag says; a
-		// live binding adds the flag branch the way SloCurriculumClient does.
+		// Rostering adapter (rostering-adapter-targets-planninq). The abstract
+		// `RosterImportClient` resolves to the mock until
+		// `roster.import.feature_flag` is on, then to the live Zermelo client
+		// (connectors-education-live-clients REQ-007). The live client refuses
+		// any other system rather than answering from the mock.
 		$context->registerService(
 			RosterImportClient::class,
-			static function ($c) {
-				return $c->get(RosterImportClientMock::class);
-			}
+			static fn ($c) => $c->get(
+				self::liveOrMock(
+					appConfig: $c->get('OCP\IAppConfig'),
+					flagKey: RosterImportSourceAdapter::FLAG_KEY,
+					live: RosterImportClientZermelo::class,
+					mock: RosterImportClientMock::class
+				)
+			)
+		);
+
+		// UWLR result import (connectors-education-live-clients REQ-004):
+		// the mock until `lvs.import.feature_flag` is on, the live client after.
+		$context->registerService(
+			UwlrResultImportClient::class,
+			static fn ($c) => $c->get(
+				self::liveOrMock(
+					appConfig: $c->get('OCP\IAppConfig'),
+					flagKey: UwlrResultImportSourceAdapter::FLAG_KEY,
+					live: UwlrResultImportClientHttp::class,
+					mock: UwlrResultImportClientMock::class
+				)
+			)
 		);
 	}//end registerDormantSourceClients()
 
@@ -182,7 +212,19 @@ final class AdaptersBindings {
 	 * @return void
 	 */
 	private function registerSwvHandoffClient(IRegistrationContext $context): void {
-		$context->registerServiceAlias(SwvHandoffClient::class, SwvHandoffClientMock::class);
+		// The mock until `swv.handoff.feature_flag` is on, the live client after
+		// (connectors-education-live-clients REQ-005).
+		$context->registerService(
+			SwvHandoffClient::class,
+			static fn ($c) => $c->get(
+				self::liveOrMock(
+					appConfig: $c->get('OCP\IAppConfig'),
+					flagKey: SwvHandoffSourceAdapter::FLAG_KEY,
+					live: SwvHandoffClientHttp::class,
+					mock: SwvHandoffClientMock::class
+				)
+			)
+		);
 	}//end registerSwvHandoffClient()
 
 	/**
@@ -280,4 +322,25 @@ final class AdaptersBindings {
 			}
 		);
 	}//end registerLearningMaterialSource()
+
+	/**
+	 * The live class when a feature flag is `1` or `true`, the mock otherwise.
+	 *
+	 * @param IAppConfig $appConfig Reads the flag.
+	 * @param string     $flagKey   The integriq app-config key of the flag.
+	 * @param string     $live      The live client class.
+	 * @param string     $mock      The mock client class.
+	 *
+	 * @return string The class to resolve.
+	 *
+	 * @spec openspec/changes/connectors-education-live-clients/specs/rostering-planninq-target/spec.md#requirement-a-live-rostering-client-reads-lessons-from-the-schools-scheduling-package-req-007
+	 */
+	public static function liveOrMock(IAppConfig $appConfig, string $flagKey, string $live, string $mock): string {
+		$raw = strtolower($appConfig->getValueString('integriq', $flagKey, '0'));
+		if ($raw === '1' || $raw === 'true') {
+			return $live;
+		}
+
+		return $mock;
+	}//end liveOrMock()
 }

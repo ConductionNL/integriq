@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+/**
  * Integriq Legacy → OR Storage Migrator.
  *
  * Chain B (openconnector-register-storage) — legacy → OR row migrator.

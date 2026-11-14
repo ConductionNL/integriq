@@ -13,6 +13,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#scenario-an-upgraded-instance-keeps-its-intake-account
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,8 +24,9 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\ProvisionIntakeGroups;
 use OCA\Integriq\Service\Dso\DsoConnection;
-use OCA\Integriq\Service\Portal\PortalConnectionInterface;
+use OCA\Integriq\Service\Intake\IntakeGroupsInterface;
 use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Portal\PortalConnectionInterface;
 use OCA\Integriq\Tests\Helpers\WebhookWorld;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
@@ -162,4 +166,36 @@ class ProvisionIntakeGroupsTest extends TestCase {
 		$this->assertSame(['digitalepost'], $this->worldGroupMembers['digitale-post-verzenders']);
 
 	}//end testTheDigitalPostAccountJoinsItsGroup()
+
+	/**
+	 * A group that cannot be created is named in a warning, and without
+	 * OpenRegister no account is enrolled.
+	 *
+	 * @return void
+	 */
+	public function testFailedGroupsAreWarnedAndNoOpenRegisterEnrolsNobody(): void {
+		$groups = $this->createMock(IntakeGroupsInterface::class);
+		$groups->method('ensure')->willReturn(null);
+		$groups->expects($this->never())->method('enrol');
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('openregister is disabled'));
+
+		$warnings = [];
+		$output = $this->createMock(IOutput::class);
+		$output->method('warning')->willReturnCallback(
+			static function (string $message) use (&$warnings): void {
+				$warnings[] = $message;
+			}
+		);
+
+		(new ProvisionIntakeGroups(groups: $groups, container: $container, webhookProfiles: new WebhookProfiles()))->run($output);
+
+		$expected = array_map(
+			static fn (string $groupId): string => 'Could not create group ' . $groupId . '.',
+			IntakeGroupsInterface::ALL
+		);
+		$expected[] = 'Intake accounts not enrolled: OpenRegister is not available (openregister is disabled).';
+		$this->assertSame($expected, $warnings);
+	}//end testFailedGroupsAreWarnedAndNoOpenRegisterEnrolsNobody()
 }//end class

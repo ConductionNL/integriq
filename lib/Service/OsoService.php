@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Oso\OsoAcknowledgementTranslator;
 use OCA\Integriq\Service\Oso\OsoExportEnvelopeTranslator;
 use OCA\Integriq\Service\Oso\OsoImportTranslator;
 use OCA\Integriq\Service\Oso\OsoProviderRegistry;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -353,26 +354,15 @@ class OsoService implements OsoServiceInterface {
 	 * @spec openspec/specs/oso-adapter/spec.md#requirement-req-004-push-export-signed-inbound-import-and-signed-export-retour
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new OsoProviderException(
 				message: 'No active OSO source is configured (register "integriq", schema "source", type "oso", '
 					. 'isEnabled=true). Configure one before using the OSO bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 }//end class

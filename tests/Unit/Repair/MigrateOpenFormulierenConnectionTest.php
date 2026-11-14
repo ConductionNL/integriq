@@ -13,6 +13,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/specs/open-formulieren-intake/spec.md#scenario-existing-configuration-migrates-without-an-account
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -174,4 +177,25 @@ class MigrateOpenFormulierenConnectionTest extends TestCase {
 		);
 
 	}//end worldMigrator()
+
+	/**
+	 * Without OpenRegister the step warns and creates nothing.
+	 *
+	 * @return void
+	 */
+	public function testWithoutOpenRegisterTheMigrationIsSkipped(): void {
+		$this->addSource(secret: 'shared-secret');
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('openregister is disabled'));
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('warning')
+			->with('Open Formulieren connection migration skipped: OpenRegister is not available (openregister is disabled).');
+		$output->expects($this->never())->method('info');
+
+		(new MigrateOpenFormulierenConnection(container: $container))->run($output);
+
+		$this->assertSame([], $this->worldConsumers);
+		$this->assertSame([], $this->worldWrites);
+	}//end testWithoutOpenRegisterTheMigrationIsSkipped()
 }//end class
