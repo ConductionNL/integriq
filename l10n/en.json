@@ -1,5 +1,9 @@
 {
     "translations": {
+        "The configured source this step calls. The call inherits its base URL, authentication and rate limits. A template such as jobboard-{{ json.channel }} picks the source per item.": "The configured source this step calls. The call inherits its base URL, authentication and rate limits. A template such as jobboard-{{ json.channel }} picks the source per item.",
+        "The configured mapping applied to every item in the page. A template such as jobboard-{{ json.channel }} picks the mapping per item.": "The configured mapping applied to every item in the page. A template such as jobboard-{{ json.channel }} picks the mapping per item.",
+        "No source configured: \"%1$s\". This item makes no request.": "No source configured: \"%1$s\". This item makes no request.",
+        "No mapping configured: \"%1$s\". This item is not mapped.": "No mapping configured: \"%1$s\". This item is not mapped.",
         "FSC services": "FSC services",
         "Bank feeds": "Bank feeds",
         "Card feeds": "Card feeds",

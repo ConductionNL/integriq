@@ -11,8 +11,9 @@ Kind: code. Size M. Half for humaniq `hiring-multiposting` (row humaniq `hir-mul
   - GIVEN items for `werk-nl` and `linkedin` WHEN the step uses `jobboard-{{ json.channel }}` THEN each item is sent through its own source
   - GIVEN an item whose board has no source WHEN the step runs with `onError: continue` THEN that item is an error item naming the source and the others succeed
   - GIVEN a plain reference WHEN an existing flow runs THEN its output is unchanged
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+  - `FlowTemplate::renderReference()` renders a reference per item and reads both `{{ channel }}` and `{{ json.channel }}`. `SourceCallNode` resolves a plain reference once before any call, as before; a templated one is resolved per distinct name in the call pass. An unresolved item is an error item ("No source configured") under `continue` and refuses the step before any request otherwise. `ApplyMappingNode` does the same through `findMapping()`, once per distinct name.
+- [x] Test (PHPUnit: `SourceCallNodeTest`, `ApplyMappingNodeTest`, `FlowTemplateTest`)
 
 ### Task 2: Board templates and mappings
 - **spec_ref**: `openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002`
