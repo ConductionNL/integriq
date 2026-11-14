@@ -99,6 +99,7 @@ class DsoActivityTable implements ActivityMappingTableInterface {
 	public function allRows(): array {
 		$rows = [];
 		for ($page = 0; $page < self::MAX_PAGES; $page++) {
+			// Unscoped: the DSO activity mapping table is read by inbound DSO intake, as the system.
 			$result = $this->objectService->findAll(
 				config: [
 					'filters' => ['register' => self::REGISTER, 'schema' => self::SCHEMA],

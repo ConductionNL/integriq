@@ -137,6 +137,7 @@ class PlaceholderSecretRepair implements PlaceholderSecretRepairInterface {
 	 */
 	private function save(array $row, array $data): bool {
 		try {
+			// Unscoped: a repair step rewriting stored secrets, run as the system.
 			$this->objectService->saveObject(
 				object: $data,
 				register: InlineSecretMigrationPlannerInterface::REGISTER,
