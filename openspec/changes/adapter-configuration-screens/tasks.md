@@ -15,13 +15,14 @@
 ### Task 2: LTI platform and tool, index and detail
 - **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
 - **files**: `src/manifest.json`, `src/icons.js`, `l10n/nl.json`
+- **note**: `signingKeys` is write-only and written only by the key actions, so the forms leave it out (`includeFields`) and never read or send a stored key; the key fields are set through "Generate signing key" and "Rotate signing key". Checked by `tests/Unit/Settings/AdapterConfigurationScreensTest.php`.
 - **acceptance_criteria**:
   - GIVEN `lti_platform` and `lti_tool` WHEN the manifest is read THEN each has an index and a detail page, both `type` index/detail rather than custom, and every column names a declared property of its schema
   - GIVEN the write-only secret fields declared in `register.d/99-lti-*-secrets-writeonly.json` WHEN the detail form renders THEN those fields accept a value and never display one
   - GIVEN every new page WHEN the manifest is read THEN each widget it declares has a matching entry in that page's `config.layout`, because a widget with no layout entry renders nothing and reports nothing
   - GIVEN every icon named WHEN `src/icons.js` is read THEN the name is registered there and resolves in `vue-material-design-icons`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: The four LTI lifecycle actions, on the rows they act on
 - **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-an-administrative-action-with-a-route-has-a-control-req-acs-002`
@@ -30,8 +31,8 @@
   - GIVEN `lti#approve`, `lti#suspend`, `lti#generateKey` and `lti#rotateKey` WHEN the LTI platform and tool surfaces render THEN each action is reachable as a row or header action on the record it applies to
   - GIVEN the answer to open question 1 WHEN `suspend` or `rotateKey` is invoked THEN the confirmation behaviour matches what that answer decided, and the dialog names the consequence rather than asking "are you sure"
   - GIVEN an action fails server-side WHEN the response returns THEN the surface reports what failed; a silent no-op is a defect
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: The four single-record configurations
 - **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
