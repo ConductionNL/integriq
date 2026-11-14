@@ -89,8 +89,8 @@ the flag is `1`.
   - GIVEN assertions at DigiD Basis, DigiD Midden, EH2, EH2+ and eIDAS low WHEN the callback runs THEN each is refused with no code; GIVEN DigiD Substantieel and Hoog, EH3, EH4, eIDAS substantial and high THEN each is accepted when it satisfies the requested trust
   - GIVEN a refusal below the floor WHEN the page renders THEN it names the level used, the level needed and how to get it for that provider, in Dutch and English, and its one action goes to the return address with `error=assurance_below_floor` and the relay state
   - GIVEN the page copy WHEN written THEN it follows the `writing` skill (no em-dashes, sentence case) and is reviewed in REVIEW mode before merge
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 9: The metadata endpoint
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-every-sp-is-published-at-its-own-metadata-url-req-idpc-003`

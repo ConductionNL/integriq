@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Exception\IdpAssertionException;
+use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,6 +52,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @var string
 	 */
 	public const ERROR_LOGIN_FAILED = 'login_failed';
+
+	/**
+	 * The error a consumer is told about when the login was below the floor.
+	 *
+	 * The one refusal that is not generic: the person has already been told
+	 * why on integriq's own page, and the consumer may resume from it.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public const ERROR_ASSURANCE_BELOW_FLOOR = 'assurance_below_floor';
 
 	/**
 	 * The longest relay state a consumer may hand in.
@@ -206,9 +219,12 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 *
 	 * @return string The consumer's return address with `code` and `relayState`, or with `error` and `relayState`.
 	 *
+	 * @throws IdpAssuranceBelowFloorException When the assertion is below the floor; it carries the consumer's
+	 *                                         return address with `error=assurance_below_floor` and the relay state.
 	 * @throws IdpAssertionException When the response answers no stored state (an IdP-initiated flow included).
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	public function callback(string $provider, array $callback, ?int $now = null): string {
 		$adapter = $this->adapters->forProvider(provider: $provider);
@@ -227,6 +243,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 
 		try {
 			$code = $this->finish(login: $login);
+		} catch (IdpAssuranceBelowFloorException $exception) {
+			$this->logger->warning(
+				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
+				['provider' => $provider, 'consumer' => $state['consumer'], 'level' => $exception->getLevelUsed()]
+			);
+
+			throw $exception->withReturnUrl(
+				returnUrl: $this->withQuery(
+					url: $state['returnUrl'],
+					query: ['error' => self::ERROR_ASSURANCE_BELOW_FLOOR, 'relayState' => $state['relayState']]
+				)
+			);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
@@ -317,14 +345,22 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 *
 	 * @return string The mapped trust.
 	 *
+	 * @throws IdpAssuranceBelowFloorException When the assurance level is below the floor, whatever the start asked.
 	 * @throws IdpAssertionException When the assurance level is below the trust asked for.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	private function sufficientTrust(IdpLoginCallback $login): string {
-		$trust = $this->trustMapper->map(
-			provider: $login->provider,
-			level: (string)($login->assertion['assuranceLevel'] ?? ''),
-			aliases: $this->config->trustAliases(provider: $login->provider)
-		);
+		$level = (string)($login->assertion['assuranceLevel'] ?? '');
+		$aliases = $this->config->trustAliases(provider: $login->provider);
+		$trust = $this->trustMapper->map(provider: $login->provider, level: $level, aliases: $aliases);
+		if ($this->trustMapper->meetsFloor(trust: $trust) === false) {
+			throw new IdpAssuranceBelowFloorException(
+				provider: $login->provider,
+				levelUsed: $this->trustMapper->canonicalLevel(level: $level, aliases: $aliases)
+			);
+		}
+
 		if ($this->trustMapper->satisfies(have: $trust, need: $login->state['trust']) === false) {
 			throw new IdpAssertionException(message: 'The assurance level is below the trust the login asked for.');
 		}
@@ -448,18 +484,25 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	}//end startableConsumer()
 
 	/**
-	 * Refuse a start without an organisation, with an unknown trust level or an oversized relay state.
+	 * Refuse a start without an organisation, with an unknown trust level, one below the floor, or an
+	 * oversized relay state.
 	 *
 	 * @param IdpLoginStart $login The login being started.
 	 *
 	 * @return void
 	 *
 	 * @throws IdpAssertionException When a parameter is unusable.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	private function assertStartParameters(IdpLoginStart $login): void {
 		$knownTrust = [TrustLevelMapper::TRUST_LOW, TrustLevelMapper::TRUST_SUBSTANTIAL, TrustLevelMapper::TRUST_HIGH];
 		if ($login->organisation === '' || in_array($login->trust, $knownTrust, true) === false) {
 			throw new IdpAssertionException(message: 'The login names no organisation or no known trust level.');
+		}
+
+		if ($this->trustMapper->meetsFloor(trust: $login->trust) === false) {
+			throw new IdpAssertionException(message: 'The login asks for a trust level below the floor of substantial, so no login starts.');
 		}
 
 		if (strlen($login->relayState) > self::MAX_RELAY_STATE) {

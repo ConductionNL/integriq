@@ -38,6 +38,7 @@ use OCA\Integriq\Auth\Idp\SubjectEnvelopeService;
 use OCA\Integriq\Auth\Idp\SubjectPseudonymService;
 use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
+use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\TestCase;
@@ -463,7 +464,6 @@ class IdpBrowserLoginTest extends TestCase {
 	public function testAFailedCallbackReturnsOneGenericError(): void {
 		$cases = [
 			'wrong audience' => ['audience' => 'https://other.example/sp'],
-			'trust below the request' => ['assuranceLevel' => 'Basis'],
 			'unknown level' => ['assuranceLevel' => 'urn:unknown'],
 			'expired assertion' => ['notOnOrAfter' => (time() - 1)],
 			'wrong subject type' => ['subType' => 'kvk'],
@@ -485,6 +485,14 @@ class IdpBrowserLoginTest extends TestCase {
 				$name
 			);
 		}
+
+		// Above the floor but below what the login asked for stays generic.
+		$this->setUp();
+		$adapter = $this->digid(['assuranceLevel' => 'Substantieel']);
+		$service = $this->service($adapter);
+		$service->start(provider: 'digid', params: $this->startParams(['trust' => 'high']));
+		$redirect = $service->callback(provider: 'digid', callback: ['inResponseTo' => $adapter->lastRequestId]);
+		$this->assertSame(['error' => 'login_failed', 'relayState' => 'portal-relay-42'], $this->queryOf($redirect));
 	}//end testAFailedCallbackReturnsOneGenericError()
 
 	/**
@@ -711,22 +719,24 @@ class IdpBrowserLoginTest extends TestCase {
 	 */
 	public function testEachCallbackRefusalLogsItsReason(): void {
 		$cases = [
-			'trust below the request' => [['assuranceLevel' => 'Basis'], 'The assurance level is below the trust the login asked for.'],
+			'trust below the request' => [['assuranceLevel' => 'Substantieel'], 'The assurance level is below the trust the login asked for.', ' High '],
 			'wrong subject type' => [['subType' => 'kvk'], 'The assertion carries no subject this provider may deliver.'],
 			'empty subject' => [['subject' => '  '], 'The assertion carries no subject this provider may deliver.'],
 			'another organisation' => [['organisation' => 'Gemeente-Y'], 'The assertion names another organisation than the login started for.'],
 		];
 
-		foreach ($cases as $name => [$overrides, $reason]) {
+		foreach ($cases as $name => $case) {
+			[$overrides, $reason] = $case;
+			$trust = ($case[2] ?? ' Substantial ');
 			$this->setUp();
 			$warnings = new \ArrayObject();
 			$adapter = $this->digid($overrides);
 			$service = $this->recordingService($adapter, $warnings);
-			$service->start(provider: 'digid', params: $this->startParams(['organisation' => ' Gemeente-X ', 'trust' => ' Substantial ']));
+			$service->start(provider: 'digid', params: $this->startParams(['organisation' => ' Gemeente-X ', 'trust' => $trust]));
 
 			$this->assertCount(1, $adapter->begun, $name);
 			$begun = $adapter->begun[0];
-			$this->assertSame(['gemeente-x', 'portaliq', 'substantial'], [$begun['organisation'], $begun['consumer'], $begun['trust']], $name);
+			$this->assertSame(['gemeente-x', 'portaliq', strtolower(trim($trust))], [$begun['organisation'], $begun['consumer'], $begun['trust']], $name);
 			$this->assertNotSame('portal-relay-42', $begun['relayState'], $name);
 
 			$redirect = $service->callback(provider: 'digid', callback: ['inResponseTo' => $adapter->lastRequestId]);
@@ -748,4 +758,168 @@ class IdpBrowserLoginTest extends TestCase {
 		$this->assertSame(['code', 'relayState'], array_keys($this->queryOf($redirect)));
 		$this->assertSame([], $warnings->getArrayCopy());
 	}//end testEachCallbackRefusalLogsItsReason()
+
+	/**
+	 * An adapter for any provider answering one assurance level.
+	 *
+	 * @param string $provider The provider.
+	 * @param string $level    The assurance level the assertion carries.
+	 *
+	 * @return ScriptedGovernmentIdpAdapter The adapter.
+	 */
+	private function adapterAt(string $provider, string $level): ScriptedGovernmentIdpAdapter {
+		$subjects = [
+			'digid' => ['999993653', 'bsn'],
+			'eherkenning' => ['12345678', 'kvk'],
+			'eidas' => ['NL/DE/1234', 'eidas-person-identifier'],
+		];
+		return new ScriptedGovernmentIdpAdapter(
+			providerId: $provider,
+			assertion: [
+				'id' => '_a' . bin2hex(random_bytes(8)),
+				'audience' => self::ENTITY_ID,
+				'notBefore' => (time() - 10),
+				'notOnOrAfter' => (time() + 300),
+				'subject' => $subjects[$provider][0],
+				'subType' => $subjects[$provider][1],
+				'assuranceLevel' => $level,
+				'organisation' => '',
+			]
+		);
+	}//end adapterAt()
+
+	/**
+	 * A start that asks for less than substantial is refused before anything
+	 * reaches the identity provider.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function testAStartBelowTheFloorIsRefused(): void {
+		$this->assertSame('substantial', TrustLevelMapper::FLOOR);
+
+		$adapter = $this->digid();
+		try {
+			$this->service($adapter)->start(provider: 'digid', params: $this->startParams(['trust' => ' LOW ']));
+			$this->fail('A start asking for low was not refused.');
+		} catch (IdpAssertionException $exception) {
+			$this->assertSame('The login asks for a trust level below the floor of substantial, so no login starts.', $exception->getMessage());
+		}
+
+		$this->assertSame([], $adapter->begun);
+		$this->assertSame([], $this->cache->entries);
+
+		$this->service($this->digid())->start(provider: 'digid', params: $this->startParams(['trust' => 'high']));
+		$this->assertNotSame([], $this->cache->entries, 'A start asking for high must be allowed.');
+	}//end testAStartBelowTheFloorIsRefused()
+
+	/**
+	 * Every level below the floor is refused at the callback, with no code,
+	 * and the refusal carries the level used and the way back.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function testEveryLevelBelowTheFloorIsRefusedWithTheWayBack(): void {
+		$cases = [
+			['digid', 'Basis', 'basis'],
+			['digid', 'Midden', 'midden'],
+			['eherkenning', 'EH2', 'eh2'],
+			['eherkenning', 'EH2+', 'eh2+'],
+			['eherkenning', 'urn:etoegang:core:assurance-class:loa2plus', 'urn:etoegang:core:assurance-class:loa2plus'],
+			['eidas', 'low', 'low'],
+		];
+
+		foreach ($cases as [$provider, $level, $canonical]) {
+			$this->setUp();
+			$this->settings[IdpBrokerConfig::KEY_ENTITY_IDS] = (string)json_encode(
+				['digid' => self::ENTITY_ID, 'eherkenning' => self::ENTITY_ID, 'eidas' => self::ENTITY_ID]
+			);
+			$adapter = $this->adapterAt(provider: $provider, level: $level);
+			$service = $this->service($adapter);
+			$service->start(provider: $provider, params: $this->startParams());
+			$codesBefore = $this->cache->entries;
+
+			try {
+				$service->callback(provider: $provider, callback: ['inResponseTo' => $adapter->lastRequestId]);
+				$this->fail($provider . ' ' . $level . ' was not refused.');
+			} catch (IdpAssuranceBelowFloorException $refusal) {
+				$this->assertSame($provider, $refusal->getProvider(), $level);
+				$this->assertSame($canonical, $refusal->getLevelUsed(), $level);
+				$this->assertStringStartsWith(self::RETURN_URL . '?', $refusal->getReturnUrl(), $level);
+				$this->assertSame(
+					['error' => 'assurance_below_floor', 'relayState' => 'portal-relay-42'],
+					$this->queryOf($refusal->getReturnUrl()),
+					$level
+				);
+			}
+
+			// The state is consumed and the assertion id burnt; no code is stored on top.
+			$this->assertCount(count($codesBefore), $this->cache->entries, $level . ': a code was issued.');
+		}
+	}//end testEveryLevelBelowTheFloorIsRefusedWithTheWayBack()
+
+	/**
+	 * Every level at or above the floor logs in when it meets the trust asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function testEveryLevelAtOrAboveTheFloorIsAccepted(): void {
+		$cases = [
+			['digid', 'Substantieel', 'substantial'],
+			['digid', 'Hoog', 'high'],
+			['eherkenning', 'EH3', 'substantial'],
+			['eherkenning', 'EH4', 'high'],
+			['eidas', 'substantial', 'substantial'],
+			['eidas', 'http://eidas.europa.eu/LoA/high', 'high'],
+		];
+
+		foreach ($cases as [$provider, $level, $trust]) {
+			$this->setUp();
+			$this->settings[IdpBrokerConfig::KEY_ENTITY_IDS] = (string)json_encode(
+				['digid' => self::ENTITY_ID, 'eherkenning' => self::ENTITY_ID, 'eidas' => self::ENTITY_ID]
+			);
+			$adapter = $this->adapterAt(provider: $provider, level: $level);
+			$service = $this->service($adapter);
+			$service->start(provider: $provider, params: $this->startParams(['trust' => $trust]));
+
+			$redirect = $service->callback(provider: $provider, callback: ['inResponseTo' => $adapter->lastRequestId]);
+
+			$this->assertSame(['code', 'relayState'], array_keys($this->queryOf($redirect)), $provider . ' ' . $level);
+		}
+	}//end testEveryLevelAtOrAboveTheFloorIsAccepted()
+
+	/**
+	 * A refusal below the floor is logged with the level and without the subject.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public function testARefusalBelowTheFloorIsLoggedWithoutTheSubject(): void {
+		$warnings = new \ArrayObject();
+		$adapter = $this->digid(['assuranceLevel' => 'Midden']);
+		$service = $this->recordingService($adapter, $warnings);
+		$service->start(provider: 'digid', params: $this->startParams());
+
+		try {
+			$service->callback(provider: 'digid', callback: ['inResponseTo' => $adapter->lastRequestId]);
+			$this->fail('Midden was not refused.');
+		} catch (IdpAssuranceBelowFloorException $refusal) {
+			$this->assertSame('midden', $refusal->getLevelUsed());
+		}
+
+		$this->assertSame(
+			[[
+				'Integriq idp-broker: a login was refused at the callback: The assurance level is below the floor of substantial.',
+				['provider' => 'digid', 'consumer' => 'portaliq', 'level' => 'midden'],
+			]],
+			$warnings->getArrayCopy()
+		);
+		$this->assertStringNotContainsString('999993653', serialize($warnings->getArrayCopy()));
+	}//end testARefusalBelowTheFloorIsLoggedWithoutTheSubject()
 }//end class
