@@ -2110,6 +2110,61 @@ class CallService implements CallServiceInterface {
 	}//end guardCallPreconditions()
 
 	/**
+	 * Phase 6a then 6b: the EU-only egress guard, then the circuit breaker.
+	 *
+	 * @param ObjectEntity   $source       The source ObjectEntity.
+	 * @param array          $sourceData   The mutable source data array (the breaker's probe timestamp mutates it).
+	 * @param \DateTime|null $errorExpires Expiry for the synthetic error log entry.
+	 *
+	 * @return ObjectEntity|null The synthetic 451 or 503 CallLog, or null to proceed.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md
+	 */
+	private function guardEgressAndCircuitBreaker(
+		ObjectEntity $source,
+		array &$sourceData,
+		?\DateTime $errorExpires,
+	): ?ObjectEntity {
+		$refused = $this->guardEgressResidency(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
+		if ($refused !== null) {
+			return $refused;
+		}
+
+		return $this->guardCircuitBreaker(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
+	}//end guardEgressAndCircuitBreaker()
+
+	/**
+	 * EU-only egress (REQ-RES-003): with the mode on, a source whose residency
+	 * is not in the EU is refused before any request is built or sent, and the
+	 * refusal is recorded in the call log.
+	 *
+	 * @param ObjectEntity   $source       The source ObjectEntity.
+	 * @param array          $sourceData   The source data.
+	 * @param \DateTime|null $errorExpires Expiry for the synthetic error log entry.
+	 *
+	 * @return ObjectEntity|null The synthetic 451 CallLog, or null to proceed.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md
+	 */
+	private function guardEgressResidency(ObjectEntity $source, array $sourceData, ?\DateTime $errorExpires): ?ObjectEntity {
+		$refusedCountry = (new EgressResidencyPolicy(appConfig: $this->appConfig))->refusedCountry(sourceData: $sourceData);
+		if ($refusedCountry === null) {
+			return null;
+		}
+
+		return $this->saveEarlyErrorLog(
+			source: $source,
+			statusCode: 451,
+			statusMessage: EgressResidencyPolicy::REFUSED . ': ' . $refusedCountry,
+			expires: $errorExpires,
+		);
+	}//end guardEgressResidency()
+
+	/**
 	 * Circuit breaker precondition guard (REQ-008): evaluated after the
 	 * enabled/location/rate-limit guards, before any dispatch attempt (sync
 	 * or async). When the breaker is fully open (within its cooldown
@@ -2921,25 +2976,11 @@ class CallService implements CallServiceInterface {
 			return $prepared;
 		}
 
-		// Phase 6a: EU-only egress (REQ-RES-003). With the mode on, a source
-		// whose residency is not in the EU is refused here, before any request
-		// is built or sent, and the refusal is recorded in the call log.
-		$refusedCountry = (new EgressResidencyPolicy(appConfig: $this->appConfig))->refusedCountry(sourceData: $sourceData);
-		if ($refusedCountry !== null) {
-			$prepared['shortCircuit'] = $this->saveEarlyErrorLog(
-				source: $source,
-				statusCode: 451,
-				statusMessage: EgressResidencyPolicy::REFUSED . ': ' . $refusedCountry,
-				expires: $errorExpires,
-			);
-
-			return $prepared;
-		}
-
-		// Phase 6b: circuit breaker precondition guard (REQ-008) — evaluated
-		// after the enabled/location/rate-limit guards, before any dispatch
-		// attempt (sync or async).
-		$breakerShortCircuit = $this->guardCircuitBreaker(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
+		// Phase 6a: EU-only egress (REQ-RES-003), then Phase 6b: the circuit
+		// breaker precondition guard (REQ-008) — evaluated after the
+		// enabled/location/rate-limit guards, before any request is built or
+		// any dispatch attempt (sync or async).
+		$breakerShortCircuit = $this->guardEgressAndCircuitBreaker(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
 		if ($breakerShortCircuit !== null) {
 			$prepared['shortCircuit'] = $breakerShortCircuit;
 

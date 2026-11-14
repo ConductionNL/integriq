@@ -315,16 +315,9 @@ class ConnectionDeclarationValidator {
 	 * @return bool
 	 */
 	private function matchesPattern(string $type, mixed $value): bool {
-		if ($type === 'anyStringList') {
-			return $this->isStringList(value: $value);
-		}
-
-		if ($type === 'requiredList') {
-			return $this->isRequiredList(value: $value);
-		}
-
-		if ($type === 'country') {
-			return ResidencyZones::isCountry(country: $value);
+		$structured = $this->matchesStructuredPattern(type: $type, value: $value);
+		if ($structured !== null) {
+			return $structured;
 		}
 
 		if (is_string($value) === false) {
@@ -339,6 +332,24 @@ class ConnectionDeclarationValidator {
 			default => false,
 		};
 	}//end matchesPattern()
+
+	/**
+	 * Check a value against a type that is not a plain string pattern: a list
+	 * or a country code. Null when the type is a string pattern.
+	 *
+	 * @param string $type  The type name.
+	 * @param mixed  $value The value.
+	 *
+	 * @return bool|null Whether it matches, or null for a string pattern.
+	 */
+	private function matchesStructuredPattern(string $type, mixed $value): ?bool {
+		return match ($type) {
+			'anyStringList' => $this->isStringList(value: $value),
+			'requiredList' => $this->isRequiredList(value: $value),
+			'country' => ResidencyZones::isCountry(country: $value),
+			default => null,
+		};
+	}//end matchesStructuredPattern()
 
 	/**
 	 * Whether a value is a list of strings, empty strings included.

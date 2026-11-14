@@ -221,37 +221,65 @@ class EgressDestinationService {
 
 		$destinations = [];
 		foreach (($result['results'] ?? $result) as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
+			$data = $this->enabledSourceData(entity: $entity);
+			if ($data === null) {
 				continue;
 			}
 
-			$data = $entity->getObject();
-			if (is_array($data) === false || ($data['isEnabled'] ?? false) !== true) {
-				continue;
-			}
-
-			$host = $this->hostOf(url: (string)($data['location'] ?? ''));
-			$residency = $data['residency'] ?? [];
-			if (is_array($residency) === false) {
-				$residency = [];
-			}
-
-			$country = ResidencyZones::countryOf(residency: $residency);
 			$key = (string)$entity->getUuid();
-			$destinations[$key] = [
-				'host' => $host,
-				'name' => (string)($data['name'] ?? ''),
-				'sourceId' => $key,
-				'country' => $country,
-				'basis' => (string)($residency['basis'] ?? ''),
-				'evidence' => (string)($residency['evidence'] ?? ''),
-				'zone' => ResidencyZones::zoneOf(country: $country),
-				'lastCallAt' => $this->stringOrNull(value: $data['lastCall'] ?? null),
-			];
-		}//end foreach
+			$destinations[$key] = $this->sourceDestination(sourceId: $key, data: $data);
+		}
 
 		return $destinations;
 	}//end sourceDestinations()
+
+	/**
+	 * The data of an enabled source, or null for anything else.
+	 *
+	 * @param mixed $entity A search result.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function enabledSourceData(mixed $entity): ?array {
+		if ($entity instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		$data = $entity->getObject();
+		if (is_array($data) === false || ($data['isEnabled'] ?? false) !== true) {
+			return null;
+		}
+
+		return $data;
+	}//end enabledSourceData()
+
+	/**
+	 * The destination row of one source.
+	 *
+	 * @param string              $sourceId The source's uuid.
+	 * @param array<string,mixed> $data     The source's data.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function sourceDestination(string $sourceId, array $data): array {
+		$residency = $data['residency'] ?? [];
+		if (is_array($residency) === false) {
+			$residency = [];
+		}
+
+		$country = ResidencyZones::countryOf(residency: $residency);
+
+		return [
+			'host' => $this->hostOf(url: (string)($data['location'] ?? '')),
+			'name' => (string)($data['name'] ?? ''),
+			'sourceId' => $sourceId,
+			'country' => $country,
+			'basis' => (string)($residency['basis'] ?? ''),
+			'evidence' => (string)($residency['evidence'] ?? ''),
+			'zone' => ResidencyZones::zoneOf(country: $country),
+			'lastCallAt' => $this->stringOrNull(value: $data['lastCall'] ?? null),
+		];
+	}//end sourceDestination()
 
 	/**
 	 * Add the call log hosts of the last 30 days that no source covers.
@@ -311,22 +339,8 @@ class EgressDestinationService {
 			);
 			$records = array_values(($result['results'] ?? $result));
 
-			foreach ($records as $entity) {
-				if ($entity instanceof ObjectEntity === false || is_array($entity->getObject()) === false) {
-					continue;
-				}
-
-				$data = $entity->getObject();
-
-				$created = (string)($data['created'] ?? '');
-				if ($created === '' || strtotime($created) < $since) {
-					return $hosts;
-				}
-
-				$host = $this->hostOf(url: $this->callUrl(data: $data));
-				if ($host !== '' && isset($hosts[$host]) === false) {
-					$hosts[$host] = $created;
-				}
+			if ($this->collectCallHosts(records: $records, since: $since, hosts: $hosts) === false) {
+				return $hosts;
 			}
 
 			if (count($records) < self::PAGE_SIZE) {
@@ -336,6 +350,65 @@ class EgressDestinationService {
 
 		return $hosts;
 	}//end recentCallHosts()
+
+	/**
+	 * Add the hosts of one page of call log records, newest first.
+	 *
+	 * @param array<int,mixed>     $records The page.
+	 * @param int                  $since   The window's start (unix time).
+	 * @param array<string,string> $hosts   Latest call time per host, added to.
+	 *
+	 * @return bool False when a record older than the window was reached.
+	 */
+	private function collectCallHosts(array $records, int $since, array &$hosts): bool {
+		foreach ($records as $entity) {
+			if ($entity instanceof ObjectEntity === false || is_array($entity->getObject()) === false) {
+				continue;
+			}
+
+			$data = $entity->getObject();
+			$created = $this->createdWithin(data: $data, since: $since);
+			if ($created === null) {
+				return false;
+			}
+
+			$this->rememberHost(hosts: $hosts, host: $this->hostOf(url: $this->callUrl(data: $data)), created: $created);
+		}
+
+		return true;
+	}//end collectCallHosts()
+
+	/**
+	 * A record's creation time when it falls in the window, else null.
+	 *
+	 * @param array<string,mixed> $data  The call log record.
+	 * @param int                 $since The window's start (unix time).
+	 *
+	 * @return string|null
+	 */
+	private function createdWithin(array $data, int $since): ?string {
+		$created = (string)($data['created'] ?? '');
+		if ($created === '' || strtotime($created) < $since) {
+			return null;
+		}
+
+		return $created;
+	}//end createdWithin()
+
+	/**
+	 * Record a host's latest call once; the first (newest) one seen wins.
+	 *
+	 * @param array<string,string> $hosts   Latest call time per host, added to.
+	 * @param string               $host    The host, '' when the URL has none.
+	 * @param string               $created The call's creation time.
+	 *
+	 * @return void
+	 */
+	private function rememberHost(array &$hosts, string $host, string $created): void {
+		if ($host !== '' && isset($hosts[$host]) === false) {
+			$hosts[$host] = $created;
+		}
+	}//end rememberHost()
 
 	/**
 	 * The URL a call log record went to.

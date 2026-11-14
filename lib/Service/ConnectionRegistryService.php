@@ -421,34 +421,17 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
 	 */
 	private function copyDeclaredResidency(ConnectionSyncRun $run, array $entry, string $sourceUuid): void {
-		$declared = ($entry['residency'] ?? null);
-		if ($sourceUuid === '' || is_array($declared) === false) {
+		$next = $this->declaredResidency(run: $run, entry: $entry, sourceUuid: $sourceUuid);
+		if ($next === null) {
 			return;
 		}
 
 		try {
 			$source = $this->store->findSourceRaw(uuid: $sourceUuid);
-			if ($source === null) {
-				return;
+			if ($source !== null && $this->keepsResidency(current: ($source->getObject()['residency'] ?? []), next: $next) === false) {
+				$next['recordedAt'] = (new \DateTimeImmutable())->format('c');
+				$this->store->saveSourceResidency(source: $source, residency: $next);
 			}
-
-			$current = ($source->getObject()['residency'] ?? []);
-			if (is_array($current) === false) {
-				$current = [];
-			}
-
-			$next = [
-				'country' => (string)$declared['country'],
-				'basis' => self::RESIDENCY_DECLARED,
-				'evidence' => (string)($declared['evidence'] ?? ''),
-				'recordedBy' => $run->app,
-			];
-			if (($current['basis'] ?? null) === self::RESIDENCY_ADMIN || $this->sameResidency(current: $current, next: $next) === true) {
-				return;
-			}
-
-			$next['recordedAt'] = (new \DateTimeImmutable())->format('c');
-			$this->store->saveSourceResidency(source: $source, residency: $next);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'Integriq could not copy the declared residency of {declaringApp} connection {key}: {reason}',
@@ -456,6 +439,51 @@ class ConnectionRegistryService implements ConnectionRegistryServiceInterface {
 			);
 		}//end try
 	}//end copyDeclaredResidency()
+
+	/**
+	 * The residency a connection entry declares for its source, or null when
+	 * there is no source or no declared residency.
+	 *
+	 * @param ConnectionSyncRun    $run        The sync run (names the declaring app).
+	 * @param array<string, mixed> $entry      The connection entry.
+	 * @param string               $sourceUuid The source's uuid, '' when there is none.
+	 *
+	 * @return array{country: string, basis: string, evidence: string, recordedBy: string}|null
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private function declaredResidency(ConnectionSyncRun $run, array $entry, string $sourceUuid): ?array {
+		$declared = ($entry['residency'] ?? null);
+		if ($sourceUuid === '' || is_array($declared) === false) {
+			return null;
+		}
+
+		return [
+			'country' => (string)$declared['country'],
+			'basis' => self::RESIDENCY_DECLARED,
+			'evidence' => (string)($declared['evidence'] ?? ''),
+			'recordedBy' => $run->app,
+		];
+	}//end declaredResidency()
+
+	/**
+	 * Whether the source keeps its current residency: an administrator's
+	 * record is never overwritten, and an unchanged one is not rewritten.
+	 *
+	 * @param mixed                $current The source's current residency.
+	 * @param array<string, mixed> $next    The declared residency.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private function keepsResidency(mixed $current, array $next): bool {
+		if (is_array($current) === false) {
+			$current = [];
+		}
+
+		return ($current['basis'] ?? null) === self::RESIDENCY_ADMIN || $this->sameResidency(current: $current, next: $next) === true;
+	}//end keepsResidency()
 
 	/**
 	 * Whether a stored residency already says what the declaration says.
