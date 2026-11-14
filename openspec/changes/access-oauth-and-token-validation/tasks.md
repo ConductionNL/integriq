@@ -60,8 +60,9 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 - **files**: `lib/Settings/integriq_seed_data.json`, `docs/`
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the consumers page opens THEN the two example consumers are listed and disabled
-- [ ] Implement
-- [ ] Test (docs page walked once against the seeded consumers)
+- **status**: built. `integriq_seed_data.json` gains `example-oidc-consumer` (key source `oidc`, issuer `https://login.example.nl/realms/gemeente`, audience `integriq`) and `example-client-credentials` (scope `zaken:read`, no secret). The consumer schema has no on/off switch, so "disabled" here means neither can authenticate until an administrator sets a real issuer or a secret. The new docs page `docs/features/consumer-tokens.md` covers key sources, client credentials, metadata and scopes.
+- [x] Implement
+- [ ] Test (docs page walked once against the seeded consumers): needs a live instance.
 
 ## Verification
 - [ ] `openspec validate access-oauth-and-token-validation --type change --strict` passes
