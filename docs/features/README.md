@@ -30,6 +30,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Case system for meeting apps](case-system.md) | A `case-system` source answers a meeting app's five case operations through the ZGW Zaken and Documenten APIs, or from test data | Implemented |
 | [Web shop orders](webshop-orders.md) | WooCommerce and Shopify orders arrive in shillinq as web shop orders, refunds included | Partial |
 | [Documents to the case system](case-system-document-delivery.md) | Two seeded synchronizations send a filinq document, or its anonymised copy, to the case system as a new document, and write the outcome back | Partial |
+| [Registering form submissions](submission-registration.md) | A sibling app registers a form submission at an outside system (JSON endpoint, Objects API) with one typed command, once per submission | Partial |
 
 ## Architecture Overview
 

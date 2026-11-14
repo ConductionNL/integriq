@@ -148,6 +148,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// A source's 24-hour performance and certificate expiry. Administrators only.
 		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
+		// The registration targets an app may use, by slug, title and kind only (form-submission-registration-targets).
+		['name' => 'registrationTarget#index', 'url' => '/api/registration-targets', 'verb' => 'GET'],
 		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
 		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 
