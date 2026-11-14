@@ -26,6 +26,7 @@
     "OCA\\Integriq\\Service\\CardfeedSyncService::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\EndpointService::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\EventService::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
+    "OCA\\Integriq\\Service\\Event\\CloudEventReceiver::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\FlowRunnerService::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\Job\\EventAction::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\Job\\SynchronizationAction::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
