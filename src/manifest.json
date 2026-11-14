@@ -1348,6 +1348,15 @@
             "component": "SourceRunSummaryWidget",
             "placement": "after-data",
             "colSpan": 12
+          },
+          {
+            "id": "src-cloudevent-receiver",
+            "component": "CloudEventReceiverUrl",
+            "placement": "after-data",
+            "colSpan": 12,
+            "props": {
+              "sourceId": "@objectId"
+            }
           }
         ],
         "sidebar": {
@@ -1679,6 +1688,14 @@
             "gridY": 0,
             "gridWidth": 4,
             "gridHeight": 7
+          }
+        ],
+        "bodyWidgets": [
+          {
+            "id": "ep-cloudevent-receiver",
+            "component": "CloudEventReceiverUrl",
+            "placement": "after-data",
+            "colSpan": 12
           }
         ],
         "sidebar": {

@@ -37,6 +37,7 @@ import CallLogActions from './components/callLog/CallLogActions.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import CloudEventReceiverUrl from './components/CloudEventReceiverUrl.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
@@ -158,6 +159,11 @@ export default {
 	// at the vendor, each with a copy action. Reads ltiPlatformDetails#show.
 	// connectors-lti-platform-launch REQ-LTIL-004.
 	LtiPlatformDetails,
+
+	// SourceDetail and EndpointDetail body widget: the CloudEvents receiver URL
+	// of the source (or its pattern on an endpoint), with a copy action.
+	// cloudevents-receiver task 1.4, REQ-017.
+	CloudEventReceiverUrl,
 
 	// The outbound call log (SourceLogs) acts on its calls: a per-row replay
 	// through `slots["row-actions"]`, and bulk replay plus firing by hand
