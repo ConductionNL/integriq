@@ -80,7 +80,7 @@ class ProductDeliveryGate {
 		}
 
 		$subscription = $this->read(id: $riddenOn, schema: 'api_product_subscription');
-		if ($subscription === null || ($subscription->getObject()['status'] ?? '') !== 'active') {
+		if ($this->isActive(subscription: $subscription) === false) {
 			return ['reason' => 'The product subscription this delivery rides on is not active', 'abandon' => true, 'retryAfter' => null];
 		}
 
@@ -89,6 +89,31 @@ class ProductDeliveryGate {
 			return ['reason' => 'The API product of this delivery no longer exists', 'abandon' => true, 'retryAfter' => null];
 		}
 
+		return $this->spend(product: $product, subscription: $subscription);
+	}//end hold()
+
+	/**
+	 * Whether the product subscription exists and is active.
+	 *
+	 * @param ObjectEntity|null $subscription The product subscription, or null.
+	 *
+	 * @return bool True when it is active.
+	 */
+	private function isActive(?ObjectEntity $subscription): bool {
+		return $subscription !== null && ($subscription->getObject()['status'] ?? '') === 'active';
+	}//end isActive()
+
+	/**
+	 * Spend one unit of the tier budget, or say how long the delivery waits.
+	 *
+	 * @param ObjectEntity $product      The API product.
+	 * @param ObjectEntity $subscription Its active product subscription.
+	 *
+	 * @return array{reason: string, abandon: bool, retryAfter: ?int}|null Null when the delivery may go.
+	 *
+	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
+	 */
+	private function spend(ObjectEntity $product, ObjectEntity $subscription): ?array {
 		$tier = $this->policy->resolveTierPolicy(product: $product, subscription: $subscription);
 		if ($tier === null || ($tier['rateLimit'] === null && $tier['quota'] === null)) {
 			return null;
@@ -108,7 +133,7 @@ class ProductDeliveryGate {
 			'abandon' => false,
 			'retryAfter' => max(1, (int)($decision->retryAfter ?? $decision->resetSeconds ?? 60)),
 		];
-	}//end hold()
+	}//end spend()
 
 	/**
 	 * One integriq object by id, or null.

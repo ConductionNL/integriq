@@ -128,11 +128,7 @@ class ProductChannelSlugGuardListener implements IEventListener {
 
 		$seen = [];
 		foreach ($channels as $channel) {
-			$slug = '';
-			if (is_array($channel) === true) {
-				$slug = trim((string)($channel['slug'] ?? ''));
-			}
-
+			$slug = $this->slugOf(channel: $channel);
 			if ($slug === '') {
 				continue;
 			}
@@ -146,6 +142,21 @@ class ProductChannelSlugGuardListener implements IEventListener {
 
 		return null;
 	}//end duplicateSlug()
+
+	/**
+	 * The trimmed slug of one channel, or '' when it has none.
+	 *
+	 * @param mixed $channel One declared channel.
+	 *
+	 * @return string The slug.
+	 */
+	private function slugOf(mixed $channel): string {
+		if (is_array($channel) === false) {
+			return '';
+		}
+
+		return trim((string)($channel['slug'] ?? ''));
+	}//end slugOf()
 
 	/**
 	 * Whether the object is an integriq `api_product`.

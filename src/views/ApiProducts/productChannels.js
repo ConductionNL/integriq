@@ -38,6 +38,29 @@ export function parseTypes(text) {
 }
 
 /**
+ * Why a channel draft is refused, or '' when it may be saved.
+ *
+ * @param {string} slug The trimmed slug.
+ * @param {string} title The trimmed title.
+ * @param {Array<string>} types The parsed types.
+ * @param {Array<object>} others The other channels of the product.
+ * @return {string} 'slug', 'title', 'types', 'duplicate' or ''.
+ * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+ */
+function channelError(slug, title, types, others) {
+	if (!SLUG.test(slug)) {
+		return 'slug'
+	}
+	if (title === '') {
+		return 'title'
+	}
+	if (types.length === 0) {
+		return 'types'
+	}
+	return others.some((channel) => channel?.slug === slug) ? 'duplicate' : ''
+}
+
+/**
  * The channel list with a draft added, or replacing the channel it edits.
  *
  * @param {Array<object>} channels The current channels.
@@ -50,18 +73,10 @@ export function withChannel(channels, draft, editing = '') {
 	const slug = String(draft?.slug || '').trim()
 	const title = String(draft?.title || '').trim()
 	const types = parseTypes(draft?.types)
-	if (!SLUG.test(slug)) {
-		return { error: 'slug' }
-	}
-	if (title === '') {
-		return { error: 'title' }
-	}
-	if (types.length === 0) {
-		return { error: 'types' }
-	}
 	const others = (Array.isArray(channels) ? channels : []).filter((channel) => channel?.slug !== editing)
-	if (others.some((channel) => channel?.slug === slug)) {
-		return { error: 'duplicate' }
+	const error = channelError(slug, title, types, others)
+	if (error !== '') {
+		return { error }
 	}
 	const channel = { slug, title, types }
 	const description = String(draft?.description || '').trim()

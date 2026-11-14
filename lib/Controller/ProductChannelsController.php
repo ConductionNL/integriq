@@ -163,6 +163,21 @@ class ProductChannelsController extends Controller {
 		}
 
 		$page = $this->events->pullEvents(subscription: $subscription, limit: max(1, min(100, $limit)), cursor: $cursor);
+		return new JSONResponse(
+			['messages' => $this->pageMessages(page: $page), 'cursor' => ($page['cursor'] ?? null)],
+			Http::STATUS_OK,
+			$access['headers']
+		);
+	}//end pull()
+
+	/**
+	 * The messages of one pulled page, each as an array.
+	 *
+	 * @param array<string, mixed> $page The page `pullEvents` answered.
+	 *
+	 * @return array<int, array<string, mixed>> The messages.
+	 */
+	private function pageMessages(array $page): array {
 		$messages = [];
 		foreach ((array)($page['messages'] ?? []) as $message) {
 			if ($message instanceof ObjectEntity) {
@@ -172,12 +187,8 @@ class ProductChannelsController extends Controller {
 			$messages[] = (array)$message;
 		}
 
-		return new JSONResponse(
-			['messages' => $messages, 'cursor' => ($page['cursor'] ?? null)],
-			Http::STATUS_OK,
-			$access['headers']
-		);
-	}//end pull()
+		return $messages;
+	}//end pageMessages()
 
 	/**
 	 * POST /api/products/{productSlug}/channels/{channel}/subscriptions: register a push subscription.
@@ -282,13 +293,7 @@ class ProductChannelsController extends Controller {
 	 */
 	private function channelAccess(string $productSlug, string $channel): array|JSONResponse {
 		$product = $this->documents->latestVersion(versions: $this->versionsOf(productSlug: $productSlug));
-		$declared = null;
-		foreach ((array)($product?->getObject()['channels'] ?? []) as $candidate) {
-			if (is_array($candidate) === true && ($candidate['slug'] ?? null) === $channel) {
-				$declared = $candidate;
-			}
-		}
-
+		$declared = $this->declaredChannel(product: $product, channel: $channel);
 		if ($product === null || $declared === null) {
 			return new JSONResponse(['error' => 'not_found', 'message' => 'No such channel on this API product'], Http::STATUS_NOT_FOUND);
 		}
@@ -312,6 +317,25 @@ class ProductChannelsController extends Controller {
 			'headers' => array_merge($headers, $limited),
 		];
 	}//end channelAccess()
+
+	/**
+	 * The channel the product declares under a slug, the last one when repeated.
+	 *
+	 * @param ObjectEntity|null $product The product, or null.
+	 * @param string            $channel The channel slug.
+	 *
+	 * @return array<string, mixed>|null The declared channel, or null.
+	 */
+	private function declaredChannel(?ObjectEntity $product, string $channel): ?array {
+		$declared = null;
+		foreach ((array)($product?->getObject()['channels'] ?? []) as $candidate) {
+			if (is_array($candidate) === true && ($candidate['slug'] ?? null) === $channel) {
+				$declared = $candidate;
+			}
+		}
+
+		return $declared;
+	}//end declaredChannel()
 
 	/**
 	 * Spend one request of the subscription tier's budget, under the counter key
@@ -355,7 +379,7 @@ class ProductChannelsController extends Controller {
 	 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-push-deliveries-follow-the-product-subscription-req-aapi-003
 	 */
 	private function refuseSink(string $sink): ?JSONResponse {
-		if ($sink === '' || strtolower((string)parse_url($sink, PHP_URL_SCHEME)) !== 'https' || filter_var($sink, FILTER_VALIDATE_URL) === false) {
+		if ($this->isHttpsUrl(sink: $sink) === false) {
 			return new JSONResponse(['error' => 'invalid_sink', 'message' => 'The sink must be an https URL'], Http::STATUS_BAD_REQUEST);
 		}
 
@@ -374,6 +398,17 @@ class ProductChannelsController extends Controller {
 
 		return null;
 	}//end refuseSink()
+
+	/**
+	 * Whether the sink is a well-formed https URL.
+	 *
+	 * @param string $sink The sink the consumer named.
+	 *
+	 * @return bool True for an https URL.
+	 */
+	private function isHttpsUrl(string $sink): bool {
+		return $sink !== '' && strtolower((string)parse_url($sink, PHP_URL_SCHEME)) === 'https' && filter_var($sink, FILTER_VALIDATE_URL) !== false;
+	}//end isHttpsUrl()
 
 	/**
 	 * The consumer's pull subscription on the channel, opened on first use.
