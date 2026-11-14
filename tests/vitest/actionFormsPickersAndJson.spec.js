@@ -29,7 +29,7 @@ vi.mock('@nextcloud/vue', async () => {
 			return h('div', { class: name }, [this.$slots.default?.()])
 		},
 	})
-	return { NcCheckboxRadioSwitch: field('NcCheckboxRadioSwitch'), NcSelect: field('NcSelect'), NcTextField: field('NcTextField') }
+	return { NcCheckboxRadioSwitch: field('NcCheckboxRadioSwitch'), NcSelect: field('NcSelect'), NcTextField: field('NcTextField'), NcButton: field('NcButton') }
 })
 
 vi.mock('../../src/views/Rule/actionForms/shared.js', async (importOriginal) => ({
@@ -241,10 +241,10 @@ describe('FilepartUploadForm', () => {
 })
 
 describe('AuthenticationForm', () => {
-	it('offers the six types and shows the stored one', async () => {
+	it('offers the eight types and shows the stored one', async () => {
 		const wrapper = await mountForm('AuthenticationForm', { type: 'jwt' })
 
-		expect(field(wrapper, 'Authentication type').props('options').map((o) => o.id)).toEqual(['apikey', 'jwt', 'jwt-zgw', 'basic', 'oauth', 'nc-session'])
+		expect(field(wrapper, 'Authentication type').props('options').map((o) => o.id)).toEqual(['apikey', 'jwt', 'jwt-zgw', 'basic', 'oauth', 'nc-session', 'mtls', 'anyOf'])
 		expect(field(wrapper, 'Authentication type').props('modelValue').id).toBe('jwt')
 		expect(field(await mountForm('AuthenticationForm', {}), 'Authentication type').props('modelValue')).toBeNull()
 	})

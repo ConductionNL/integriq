@@ -56,7 +56,8 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **files**: `lib/Service/EndpointService.php`, the endpoint rule editor
 - **acceptance_criteria**:
   - GIVEN an endpoint with anyOf apikey and jwt WHEN a caller presents either THEN it passes, and with neither the 401 lists both reasons
-- [ ] Implement
+- [x] Implement
+  - Backend: `EndpointService` passes a rule when any one of its `anyOf` methods passes and answers 401 with every reason. Rule editor (2026-11-14): `AuthenticationForm` offers "Any one of several methods" at the top level (a list of method forms, none of them an anyOf, which the service refuses) and "Client certificate (mTLS)" with its allowed consumers; picking another type drops the list, because the service reads `anyOf` before `type`. Vitest: `tests/vitest/authenticationFormAnyOf.spec.js` (6).
 - [ ] Test (PHPUnit; Newman with each method and with none)
 
 ## Verification

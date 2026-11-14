@@ -22,7 +22,7 @@
 			:clearable="false"
 			@update:modelValue="onTypePick" />
 		<NcTextField
-			v-if="value.type !== 'nc-session'"
+			v-if="readsHeader"
 			:label="t('integriq', 'Header (default: Authorization)')"
 			:modelValue="value.header || ''"
 			placeholder="Authorization"
@@ -46,11 +46,55 @@
 				placeholder="admin,users"
 				@update:modelValue="(next) => patch('groups', toArray(next))" />
 		</template>
+		<template v-else-if="value.type === 'mtls'">
+			<NcTextField
+				:label="t('integriq', 'Allowed consumers (comma-separated ids, empty for any)')"
+				:modelValue="csv(value.consumers)"
+				data-testid="auth-mtls-consumers"
+				@update:modelValue="(next) => patch('consumers', toArray(next))" />
+		</template>
+		<template v-else-if="value.type === 'anyOf'">
+			<div
+				v-for="(method, index) in methods"
+				:key="index"
+				class="action-form__nested"
+				:data-testid="`auth-anyof-method-${index}`">
+				<AuthenticationForm
+					nested
+					:value="method"
+					@update:value="(next) => setMethod(index, next)" />
+				<NcButton
+					variant="tertiary"
+					:data-testid="`auth-anyof-remove-${index}`"
+					@click="removeMethod(index)">
+					{{ t('integriq', 'Remove method') }}
+				</NcButton>
+			</div>
+			<NcButton data-testid="auth-anyof-add" @click="addMethod">
+				{{ t('integriq', 'Add method') }}
+			</NcButton>
+		</template>
 		<span v-if="value.type === 'nc-session'" class="action-form__helper">
 			{{
 				t(
 					'integriq',
 					'Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.',
+				)
+			}}
+		</span>
+		<span v-else-if="value.type === 'mtls'" class="action-form__helper">
+			{{
+				t(
+					'integriq',
+					'The caller must present a client certificate the web server verified and that is pinned on a consumer. Leave the list empty to accept any consumer with a pinned certificate.',
+				)
+			}}
+		</span>
+		<span v-else-if="value.type === 'anyOf'" class="action-form__helper">
+			{{
+				t(
+					'integriq',
+					'A call passes when one of these methods passes. With none, the refusal lists why each one failed.',
 				)
 			}}
 		</span>
@@ -66,7 +110,7 @@
 </template>
 
 <script>
-import { NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 import { patchMethod, valueProp } from './shared.js'
 
 const AUTH_TYPES = [
@@ -76,18 +120,31 @@ const AUTH_TYPES = [
 	{ id: 'basic', label: 'Basic (users/groups)' },
 	{ id: 'oauth', label: 'OAuth (users/groups)' },
 	{ id: 'nc-session', label: 'Nextcloud session (users/groups)' },
+	{ id: 'mtls', label: 'Client certificate (mTLS)' },
 ]
+
+/** Offered at the top level only: EndpointService refuses an anyOf inside an anyOf. */
+const ANY_OF = { id: 'anyOf', label: 'Any one of several methods' }
+
+/** The types that read no header: the session, a client certificate, and a list of methods. */
+const NO_HEADER_TYPES = ['nc-session', 'mtls', 'anyOf']
 
 const ALLOW_LIST_TYPES = ['basic', 'oauth', 'nc-session']
 
 export default {
 	name: 'AuthenticationForm',
-	components: { NcSelect, NcTextField },
-	props: { ...valueProp },
+	components: { NcButton, NcSelect, NcTextField },
+	props: {
+		...valueProp,
+		/** A method inside an anyOf list, which cannot itself be an anyOf. */
+		nested: { type: Boolean, default: false },
+	},
+
+	emits: ['update:value'],
 	computed: {
 		/** @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		typeOptions() {
-			return AUTH_TYPES.map((row) => ({
+			return (this.nested ? AUTH_TYPES : [...AUTH_TYPES, ANY_OF]).map((row) => ({
 				id: row.id,
 				label: this.t('integriq', row.label),
 			}))
@@ -102,6 +159,26 @@ export default {
 		usesAllowLists() {
 			return ALLOW_LIST_TYPES.includes(this.value.type)
 		},
+
+		/**
+		 * Whether the picked type reads the header field.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+		 */
+		readsHeader() {
+			return !NO_HEADER_TYPES.includes(this.value.type)
+		},
+
+		/**
+		 * The methods of an anyOf rule.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+		 */
+		methods() {
+			return Array.isArray(this.value.anyOf) ? this.value.anyOf : []
+		},
 	},
 
 	methods: {
@@ -115,7 +192,52 @@ export default {
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
 		 */
 		onTypePick(option) {
-			this.patch('type', option?.id || '')
+			const type = option?.id || ''
+			if (type === 'anyOf') {
+				// Keep what was configured as the first method of the list.
+				const first = this.value.type && this.value.type !== 'anyOf' ? { ...this.value } : { type: 'apikey' }
+				this.$emit('update:value', { type: 'anyOf', anyOf: this.methods.length > 0 ? this.methods : [first] })
+				return
+			}
+
+			// EndpointService reads `anyOf` before `type`, so leaving the list
+			// behind would keep the old methods in force under a new type.
+			const next = { ...this.value, type }
+			delete next.anyOf
+			this.$emit('update:value', next)
+		},
+
+		/**
+		 * Replace one method of the anyOf list.
+		 *
+		 * @param {number} index The method's position
+		 * @param {object} method The method as its form changed it
+		 * @return {void}
+		 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+		 */
+		setMethod(index, method) {
+			this.patch('anyOf', this.methods.map((current, at) => (at === index ? method : current)))
+		},
+
+		/**
+		 * Add a method to the anyOf list.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+		 */
+		addMethod() {
+			this.patch('anyOf', [...this.methods, { type: 'apikey' }])
+		},
+
+		/**
+		 * Remove a method from the anyOf list.
+		 *
+		 * @param {number} index The method's position
+		 * @return {void}
+		 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-accepts-any-one-of-several-login-methods-req-cred-005
+		 */
+		removeMethod(index) {
+			this.patch('anyOf', this.methods.filter((method, at) => at !== index))
 		},
 
 		/**
