@@ -112,6 +112,10 @@
             "description": "Admin-only controller for the DSO connection (`dso-stam` consumer)"
         },
         {
+            "name": "endpoint-workspace",
+            "description": "Lists the sessions or devices a workspace manager behind a source reports"
+        },
+        {
             "name": "endpoints",
             "description": "Controller for handling endpoint related operations"
         },
