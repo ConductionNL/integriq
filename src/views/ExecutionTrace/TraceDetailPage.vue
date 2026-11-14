@@ -73,6 +73,7 @@
 				{{ t('integriq', 'Save as test case') }}
 			</NcButton>
 			<SaveTestCaseModal
+				v-if="savingCase"
 				:open="savingCase"
 				:traceId="String(traceId)"
 				:steps="trace.steps || []"
@@ -168,8 +169,8 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { defineAsyncComponent } from 'vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import SaveTestCaseModal from '../../modals/SaveTestCaseModal.vue'
 import TraceTimelineWidget from './TraceTimelineWidget.vue'
 import { recordableSteps } from '../../components/regression/regressionCases.js'
 
@@ -182,7 +183,8 @@ export default {
 		NcLoadingIcon,
 		AlertCircleOutline,
 		TraceTimelineWidget,
-		SaveTestCaseModal,
+		// Loaded when "Save as test case" is chosen, not with the page.
+		SaveTestCaseModal: defineAsyncComponent(() => import('../../modals/SaveTestCaseModal.vue')),
 	},
 
 	data() {
