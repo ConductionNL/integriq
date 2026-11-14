@@ -2271,7 +2271,13 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "The API product cannot be made active: its description could not be checked.": "Het API-product kan niet actief worden gemaakt: de beschrijving kon niet worden gecontroleerd.",
+        "The API product could not be checked: %s": "Het API-product kon niet worden gecontroleerd: %s",
+        "A waiver needs a reason.": "Voor een uitzondering is een reden nodig.",
+        "Only an open finding can be waived.": "Alleen voor een openstaande bevinding kan een uitzondering worden gemaakt.",
+        "There is no such finding.": "Deze bevinding bestaat niet.",
+        "_The API product cannot be made active: %n design rule error is open. Fix it or waive it with a reason._::_The API product cannot be made active: %n design rule errors are open. Fix them or waive them with a reason._": ["Het API-product kan niet actief worden gemaakt: %n fout tegen de ontwerpregels staat open. Los de fout op of maak een uitzondering met een reden.","Het API-product kan niet actief worden gemaakt: %n fouten tegen de ontwerpregels staan open. Los ze op of maak een uitzondering met een reden."]
     },
     "nplurals=2; plural=(n != 1);"
 )
