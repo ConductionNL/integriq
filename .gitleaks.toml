@@ -26,6 +26,9 @@ targetRules = ["generic-api-key", "private-key"]
 paths = [
   '''(^|/)tests/Unit/Auth/Idp/EnvelopeLifecycleTest\.php$''',
   '''(^|/)tests/Unit/Auth/Idp/IdpBrowserLoginTest\.php$''',
+  '''(^|/)tests/Unit/Auth/Idp/IdpLoginServiceEdgesTest\.php$''',
+  '''(^|/)tests/Unit/Auth/Idp/SubjectEnvelopeServiceEdgesTest\.php$''',
+  '''(^|/)tests/Unit/Auth/Idp/SubjectEnvelopeServiceTest\.php$''',
   '''(^|/)tests/Unit/Controller/EventsControllerBrokerSecretRedactionTest\.php$''',
   '''(^|/)tests/Unit/Controller/EventsControllerTest\.php$''',
   '''(^|/)tests/Unit/Outbound/CallReplayServiceTest\.php$''',
