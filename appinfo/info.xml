@@ -584,6 +584,10 @@
 		<command>OCA\Integriq\Command\Integration\SynchronizationRun</command>
 		<command>OCA\Integriq\Command\Integration\JobList</command>
 		<command>OCA\Integriq\Command\Integration\JobRun</command>
+		<!-- platform-integrations-as-code: a configuration as a directory of files
+		     for git; import previews and writes only when confirmed. -->
+		<command>OCA\Integriq\Command\Integration\ConfigExport</command>
+		<command>OCA\Integriq\Command\Integration\ConfigImport</command>
 	</commands>
 
 	<settings>
