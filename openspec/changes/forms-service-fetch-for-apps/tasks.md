@@ -48,6 +48,5 @@ Kind: code. Size M. Row: portaliq `int-service-fetch`. Builds on `sources-route-
 - **acceptance_criteria**:
   - GIVEN an administrator WHEN they create a fetch and press "Testen" THEN the raw answer and the mapped outputs show side by side
   - GIVEN the modal WHEN gate `modal-isolation` runs THEN it passes
-- [ ] Implement
-  - Not in this pass: the page, the modal and the admin-only test endpoint behind "Testen" are still to build.
+- [x] Implement (manifest index page `ServiceFetches` over `serviceFetch` in the Connections menu, row action "Test" opening `src/modals/v2/TestServiceFetchModal.vue` through ModalHost, admin-only `POST /api/service-fetches/{slug}/test` on `ServiceFetchController::test()` over `ServiceFetchService::test()`; built as manifest configuration rather than the hand-built `src/views/admin/ServiceFetchesPage.vue` the files line names)
 - [ ] Test

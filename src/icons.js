@@ -40,6 +40,7 @@ import CheckDecagramOutline from 'vue-material-design-icons/CheckDecagramOutline
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 import ClockTimeFour from 'vue-material-design-icons/ClockTimeFour.vue'
 import Cloud from 'vue-material-design-icons/Cloud.vue'
+import CloudSearchOutline from 'vue-material-design-icons/CloudSearchOutline.vue'
 import CloudSyncOutline from 'vue-material-design-icons/CloudSyncOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
@@ -149,6 +150,7 @@ export default {
 	ClockOutline,
 	ClockTimeFour,
 	Cloud,
+	CloudSearchOutline,
 	CloudSyncOutline,
 	CloudUploadOutline,
 	Cog,

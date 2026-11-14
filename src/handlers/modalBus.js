@@ -35,6 +35,8 @@ export const modalBus = mitt()
  * the codebase surfaces every producer and consumer.
  */
 export const EVENT_OPEN_TEST_MAPPING = 'open-test-mapping'
+// Service fetch "Testen" modal — run one fetch with sample inputs, raw answer next to the outputs.
+export const EVENT_OPEN_TEST_SERVICE_FETCH = 'open-test-service-fetch'
 // Source "Test connection" modal — run a live request against a source and show the response.
 export const EVENT_OPEN_TEST_SOURCE = 'open-test-source'
 export const EVENT_OPEN_ADD_ENDPOINT_RULE = 'open-add-endpoint-rule'

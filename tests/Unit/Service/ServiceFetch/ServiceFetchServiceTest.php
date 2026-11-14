@@ -442,4 +442,59 @@ class ServiceFetchServiceTest extends TestCase {
 		$this->assertNull($event->getResult());
 		$this->assertSame([], $event->getInputs());
 	}//end testAnUnansweredEventHasNoResult()
+	/**
+	 * "Testen": a disabled fetch, called by no allowed app, still runs for its
+	 * administrator, without the cache, and shows the raw answer next to the
+	 * declared outputs (REQ-SF-001).
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorsTestRunShowsTheRawAnswerNextToTheOutputs(): void {
+		$fetch = (['enabled' => false, 'allowedApps' => [], 'cacheSeconds' => 600] + self::FETCH);
+		$this->calls->expects($this->exactly(2))->method('call')
+			->with($this->anything(), '/eigendom/999993653', 'GET', ['timeout' => 2.5, 'query' => ['object' => '0363200000123456']])
+			->willReturn($this->answer(status: 200, body: '{"eigenaar":"999993653","sinds":"2019-04-01"}'));
+		$this->mappings->method('executeMapping')
+			->with('mapping-eigenaar', ['status' => 200, 'body' => ['eigenaar' => '999993653', 'sinds' => '2019-04-01']])
+			->willReturn(['isEigenaar' => true, 'raw' => 'kept from apps']);
+		$service = $this->service(fetches: [$fetch]);
+
+		$result = $service->test(slug: 'kadaster-eigenaar', inputs: self::INPUTS);
+		$service->test(slug: 'kadaster-eigenaar', inputs: self::INPUTS);
+
+		$this->assertSame(
+			[
+				'found' => true,
+				'raw' => ['status' => 200, 'body' => ['eigenaar' => '999993653', 'sinds' => '2019-04-01']],
+				'outputs' => ['isEigenaar' => true],
+				'refusal' => null,
+				'detail' => null,
+			],
+			$result
+		);
+		$this->assertSame([], $this->cached);
+	}//end testAnAdministratorsTestRunShowsTheRawAnswerNextToTheOutputs()
+
+	/**
+	 * An unknown fetch is not found; a missing input or a failing mapping is
+	 * named, the latter with the raw answer the source gave.
+	 *
+	 * @return void
+	 */
+	public function testATestRunNamesItsRefusal(): void {
+		$this->assertFalse($this->service()->test(slug: 'nope', inputs: self::INPUTS)['found']);
+
+		$this->calls->expects($this->once())->method('call')->willReturn($this->answer(status: 200, body: '{"eigenaar":null}'));
+		$this->mappings->method('executeMapping')->willReturn(['sinds' => '2019-04-01']);
+
+		$missing = $this->service()->test(slug: 'kadaster-eigenaar', inputs: ['bsn' => '999993653']);
+		$this->assertSame(ServiceFetchRequestedEvent::INVALID_INPUT, $missing['refusal']);
+		$this->assertNull($missing['raw']);
+
+		$unmapped = $this->service()->test(slug: 'kadaster-eigenaar', inputs: self::INPUTS);
+		$this->assertSame(ServiceFetchRequestedEvent::MAPPING_FAILED, $unmapped['refusal']);
+		$this->assertSame('isEigenaar', $unmapped['detail']);
+		$this->assertSame(['status' => 200, 'body' => ['eigenaar' => null]], $unmapped['raw']);
+		$this->assertNull($unmapped['outputs']);
+	}//end testATestRunNamesItsRefusal()
 }//end class
