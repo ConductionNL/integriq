@@ -23,6 +23,8 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
+use OCA\Integriq\Adapters\Support\SupplierSourceCall;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\AuthenticationService;
@@ -371,12 +373,62 @@ class CallServiceBodyCaptureTest extends TestCase {
 	public function testLogBodyKeepsTheBodies(): void {
 		$service = $this->service(new Response(200, [], '{"public":"curriculum"}'));
 
-		$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => true]);
+		$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => SloCurriculumClientHttp::class]);
 
 		$log = $this->callLogs()[0];
 		$this->assertTrue($log['bodyCaptured']);
 		$this->assertSame('{"public":"curriculum"}', $log['response']['body']);
 	}//end testLogBodyKeepsTheBodies()
+
+	/**
+	 * A bare true, an unlisted class or any other value keeps no body: only a listed caller does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public function testOnlyAListedCallerKeepsTheBodies(): void {
+		foreach ([true, 1, 'yes', SupplierSourceCall::class, ['x']] as $logBody) {
+			$this->saved = [];
+			$service = $this->service(new Response(200, [], '{"leerling":"999993653"}'));
+
+			$service->call(source: $this->source(null), endpoint: '/zaken', config: ['logBody' => $logBody]);
+
+			$this->assertNoBody($this->callLogs()[0]);
+		}
+	}//end testOnlyAListedCallerKeepsTheBodies()
+
+	/**
+	 * No class under lib/ passes logBody unless it is on the allowlist.
+	 *
+	 * CallService reads the option and is the one file allowed to name it
+	 * without being listed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public function testOnlyListedCallersPassLogBody(): void {
+		$lib     = dirname(__DIR__, 3) . '/lib';
+		$readers = [CallService::class];
+		$callers = [];
+		$files   = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($lib, \FilesystemIterator::SKIP_DOTS));
+		foreach ($files as $file) {
+			if ($file->getExtension() !== 'php' || str_contains((string)file_get_contents($file->getPathname()), "'logBody'") === false) {
+				continue;
+			}
+
+			$relative  = substr($file->getPathname(), strlen($lib) + 1, -4);
+			$callers[] = 'OCA\\Integriq\\' . str_replace('/', '\\', $relative);
+		}
+
+		$unlisted = array_values(array_diff($callers, BodyCapturePolicy::LOG_BODY_ALLOWLIST, $readers));
+		sort($unlisted);
+
+		$this->assertSame([], $unlisted, 'These classes pass logBody but are not on BodyCapturePolicy::LOG_BODY_ALLOWLIST: ' . implode(', ', $unlisted));
+		$this->assertContains(SloCurriculumClientHttp::class, $callers);
+		$this->assertSame([SloCurriculumClientHttp::class], BodyCapturePolicy::LOG_BODY_ALLOWLIST);
+	}//end testOnlyListedCallersPassLogBody()
 	/**
 	 * A traced call outside an investigation window leaves no body in the trace step either (iq-f6).
 	 *
@@ -423,7 +475,7 @@ class CallServiceBodyCaptureTest extends TestCase {
 		$this->service(new Response(200, [], '{"public":"curriculum"}'))->call(
 			source: $this->source(null),
 			endpoint: '/zaken',
-			config: ['logBody' => true],
+			config: ['logBody' => SloCurriculumClientHttp::class],
 			trace: $logBodyTrace
 		);
 		$this->assertSame('{"public":"curriculum"}', $logBodyTrace->getSteps()[0]['output']['body']);
