@@ -136,15 +136,15 @@ export default {
 	// Sources page header action (statutory-gateways-and-frameworks): the
 	// gateway catalogue and where data goes.
 	openGatewayCatalogueHandler,
-	// App connections page header action (connection-registry D9): open the
-	// link-a-source dialog via the modal bus.
-	openLinkSourceHandler,
 	// Intake routing page row actions (messaging-intake-routing-rules REQ-IRE-001):
 	// reorder and enable/disable a rule, each written through saveRule() so
 	// its validation runs on every write.
 	moveIntakeRuleUpHandler,
 	moveIntakeRuleDownHandler,
 	toggleIntakeRuleHandler,
+	// App connections page header action (connection-registry D9): open the
+	// link-a-source dialog via the modal bus.
+	openLinkSourceHandler,
 
 	// Card component for the Catalog index page (connector-catalog-ui):
 	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.
