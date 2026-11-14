@@ -37,6 +37,7 @@ import CallLogActions from './components/callLog/CallLogActions.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import ConsumerCredentialsPanel from './components/ConsumerCredentialsPanel.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
@@ -147,6 +148,7 @@ export default {
 	// vendor's templates and activates the source (documentGeneration#templates
 	// and #activate). Renders nothing for any other kind of source.
 	// document-generation-vendor-adapter REQ-DGV-004.
+	ConsumerCredentialsPanel,
 	DocumentGenerationSourcePanel,
 
 	// SourceDetail body widget: the source's pulls per day and its latest

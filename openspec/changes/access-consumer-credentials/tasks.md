@@ -17,7 +17,8 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **files**: `lib/Controller/ConsumerCredentialsController.php`, `appinfo/routes.php`, the consumer detail page, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an administrator on a consumer WHEN they generate a key THEN it is shown once with a copy button, and reloading the page shows only its prefix
-- [ ] Implement
+- [x] Implement
+  - Consumer page (2026-11-14): `src/components/ConsumerCredentialsPanel.vue`, a body widget on `ConsumerDetail`, lists the credentials (label, type, a key's prefix or a certificate's subject, created, expires, last used) and revokes one through `src/dialogs/RevokeConsumerCredentialDialog.vue`. `src/dialogs/AddConsumerCredentialDialog.vue` generates a key and shows it once with a copy button; closing it forgets the key, so the page afterwards shows only the prefix. Strings in `l10n/en.js` and `l10n/nl.js`. Vitest: `tests/vitest/consumerCredentialsPanel.spec.js` (13).
 - [ ] Test (Playwright for generate, copy and revoke; PHPUnit that no route returns a key)
 
 ### Task 3: Two keys at once and last used
@@ -25,7 +26,8 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **files**: `lib/Service/AuthorizationService.php`, the consumer detail page
 - **acceptance_criteria**:
   - GIVEN a consumer with two keys WHEN the partner switches to the new key THEN both pass until the old is revoked, and the list shows when each was last used
-- [ ] Implement
+- [x] Implement
+  - The consumer page lists every active key with when it was last used (ConsumerCredentialsPanel).
 - [x] Test (PHPUnit on lookup and throttled lastUsedAt writes)
 
 ### Task 4: Client certificate credentials and the mtls type
@@ -34,7 +36,8 @@ Kind: code. Size M. Rows `integriq:acc-multi-auth`, `acc-mtls-in`, `acc-secret-r
 - **acceptance_criteria**:
   - GIVEN a pinned certificate WHEN a call arrives with it verified by the web server THEN it passes as that consumer
   - GIVEN the certificate header WHEN it arrives from an address that is not a trusted proxy THEN it is ignored
-- [ ] Implement
+- [x] Implement
+  - Consumer page (2026-11-14): "Add client certificate" in AddConsumerCredentialDialog pins a PEM certificate, or an issuing CA certificate with a subject pattern.
   - Backend done: `ClientCertificateReader` (server `SSL_CLIENT_VERIFY`/`SSL_CLIENT_CERT`, else the
     `mtls_certificate_header` header only from a `trusted_proxies` address; OIN from the subject
     serialNumber), `clientCertificate` credentials pinned by fingerprint or by issuing CA plus subject
