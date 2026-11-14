@@ -7,7 +7,8 @@
 
   Wired through `pages[].actionsComponent` on IntakeMessages. The dialog lists
   the waiting messages, routes the chosen ones in one request and answers each
-  one; then the inbox is read again.
+  one; then the inbox is read again. Beside it sits the import of a saved
+  .eml or .msg file, for a user with the mail import right.
 
   @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
 -->
@@ -19,6 +20,7 @@
 			</template>
 			{{ t('integriq', 'Route held messages again') }}
 		</NcButton>
+		<MailImportAction />
 		<IntakeRouteAgainModal
 			:open="open"
 			@routed="refresh"
@@ -31,12 +33,13 @@ import { translate as t } from '@nextcloud/l10n'
 import { NcButton } from '@nextcloud/vue'
 import SignDirectionIcon from 'vue-material-design-icons/SignDirection.vue'
 import IntakeRouteAgainModal from '../../modals/Intake/IntakeRouteAgainModal.vue'
+import MailImportAction from './MailImportAction.vue'
 import { refreshLogPage } from '../callLog/refreshLogPage.js'
 
 export default {
 	name: 'IntakeMessageActions',
 
-	components: { IntakeRouteAgainModal, NcButton, SignDirectionIcon },
+	components: { IntakeRouteAgainModal, MailImportAction, NcButton, SignDirectionIcon },
 
 	data() {
 		return {

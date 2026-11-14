@@ -63,6 +63,7 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN a signed-in pane and a mail open in Outlook WHEN the user chooses "Send to intake" THEN the EML is posted to `/api/mail-intake/import` under the configured source and the pane shows linked, new case or unassigned
   - GIVEN a user who may not import mail WHEN they send THEN the pane explains that an administrator must grant mail import
 - [ ] Implement
+  - Not built: the proposal's open question leaves the Outlook pane to a product decision that has not been taken. Items 1, 2, 3, 5 and 8 do not depend on it.
 - [ ] Test (PHPUnit on the controller and the CSP it sets; a manual check in Outlook on the web recorded in the PR body)
 
 ### Task 7: Seed rules that work
@@ -80,8 +81,9 @@ Kind: code. Size M. Rows `dossiq:1.9`, `integriq:msg-routing`,
   - GIVEN a handler with the mail import right on the inbox page WHEN they choose "Import file (.eml or .msg)" and pick a saved Outlook message THEN it is posted to `/api/mail-intake/import` under the chosen mailbox source and the new message appears in the list
   - GIVEN a file that does not parse WHEN it is imported THEN the dialog names the reason and the stored failure is listed
   - GIVEN a user without the right WHEN they open the inbox THEN the import action is not offered
-- [ ] Implement
-- [ ] Test (`tests/e2e/mail-intake-import.spec.ts`)
+- [x] Implement
+  - `ImportMailFileModal` posts the file to `/api/mail-intake/import` under a picked mailbox. `MailImportAction` offers it on the mail inbox (`actionsComponent`) and inside the intake inbox's actions, only after `GET /api/mail-intake/import/options` (new, on `MailIntakeController::importOptions()`) says the user holds `mail.import`.
+- [ ] Test (Vitest in `tests/vitest/mailImportFile.spec.js` and PHPUnit in `tests/Unit/Controller/MailImportOptionsTest.php` done; e2e left. `tests/e2e/mail-intake-import.spec.ts`)
 
 ## Verification
 

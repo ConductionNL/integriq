@@ -40,6 +40,7 @@ import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'
 import IntakeMessageActions from './components/intake/IntakeMessageActions.vue'
 import IntakeMessageRowActions from './components/intake/IntakeMessageRowActions.vue'
+import MailImportAction from './components/intake/MailImportAction.vue'
 import LtiPlatformDetails from './components/LtiPlatformDetails.vue'
 import MigrationTestRunPanel from './components/MigrationTestRunPanel.vue'
 import SourceRunSummaryWidget from './components/SourceRunSummaryWidget.vue'
@@ -185,6 +186,10 @@ export default {
 	// `actionsComponent`. messaging-intake-routing-rules REQ-IRE-003.
 	IntakeMessageRowActions,
 	IntakeMessageActions,
+	// The mail inbox (MailMessages) imports a saved .eml or .msg file, offered
+	// only to a holder of the mail import right. The intake inbox shows the
+	// same action inside IntakeMessageActions. mail-intake REQ-MAIL-002.
+	MailImportAction,
 
 	// The Intake routing page wires `form-dialog` to IntakeRuleEditorModal,
 	// which owns its submit: it saves through saveRule() so validateRule()

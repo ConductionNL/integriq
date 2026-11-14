@@ -172,3 +172,33 @@ export function refusalOf(error, fallback) {
 function objectsUrl(schema) {
 	return generateUrl('/apps/openregister/api/objects/' + INTAKE_REGISTER + '/' + schema)
 }
+
+/**
+ * Whether the signed-in user may import a mail file, and the mailboxes to import under.
+ *
+ * @return {Promise<{allowed: boolean, mailboxes: Array<{id: string, name: string}>}>} The options.
+ * @spec openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
+ */
+export async function fetchMailImportOptions() {
+	const { data } = await axios.get(generateUrl('/apps/integriq/api/mail-intake/import/options'))
+	return {
+		allowed: data?.allowed === true,
+		mailboxes: Array.isArray(data?.mailboxes) ? data.mailboxes : [],
+	}
+}
+
+/**
+ * Import a saved .eml or .msg file under a mailbox source.
+ *
+ * @param {string} sourceId The mailbox source.
+ * @param {File} file The file.
+ * @return {Promise<{id: string, message: object, warning: string|null}>} The imported message.
+ * @spec openspec/specs/mail-intake/spec.md#requirement-eml-and-msg-files-import-into-the-same-message-shape-req-mail-002
+ */
+export async function importMailFile(sourceId, file) {
+	const form = new FormData()
+	form.append('sourceId', sourceId)
+	form.append('file', file)
+	const { data } = await axios.post(generateUrl('/apps/integriq/api/mail-intake/import'), form)
+	return data
+}
