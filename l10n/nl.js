@@ -2275,7 +2275,19 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Test service fetch": "Service fetch testen",
+        "Testing service fetch: {name}": "Service fetch testen: {name}",
+        "Sample inputs": "Voorbeeldinvoer",
+        "This fetch declares no inputs.": "Deze fetch declareert geen invoer.",
+        "{name} (required)": "{name} (verplicht)",
+        "Answer from the source": "Antwoord van de bron",
+        "Mapped outputs": "Gemapte uitvoer",
+        "The source was not called.": "De bron is niet aangeroepen.",
+        "No outputs.": "Geen uitvoer.",
+        "Refused: {refusal} ({detail})": "Geweigerd: {refusal} ({detail})",
+        "Refused: {refusal}": "Geweigerd: {refusal}",
+        "The service fetch could not be tested.": "De service fetch kon niet worden getest."
     },
     "nplurals=2; plural=(n != 1);"
 )

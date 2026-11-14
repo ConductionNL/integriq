@@ -3537,7 +3537,20 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Test service fetch": "Test service fetch",
+        "Testing service fetch: {name}": "Testing service fetch: {name}",
+        "Sample inputs": "Sample inputs",
+        "This fetch declares no inputs.": "This fetch declares no inputs.",
+        "{name} (required)": "{name} (required)",
+        "Answer from the source": "Answer from the source",
+        "Mapped outputs": "Mapped outputs",
+        "The source was not called.": "The source was not called.",
+        "No outputs.": "No outputs.",
+        "Refused: {refusal} ({detail})": "Refused: {refusal} ({detail})",
+        "Refused: {refusal}": "Refused: {refusal}",
+        "The service fetch could not be tested.": "The service fetch could not be tested.",
+        "Service fetches": "Service fetches"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -34,6 +34,7 @@ import {
 	EVENT_OPEN_RUN_ACTION,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SERVICE_FETCH,
 	EVENT_OPEN_TEST_SOURCE,
 	modalBus,
 } from './modalBus.js'
@@ -164,6 +165,16 @@ export function testJobHandler({ item }) {
  */
 export function testMappingModalHandler({ item }) {
 	modalBus.emit(EVENT_OPEN_TEST_MAPPING, { mapping: item })
+}
+
+/**
+ * Open the service fetch test modal ("Testen") for the clicked serviceFetch row.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+ */
+export function testServiceFetchHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_TEST_SERVICE_FETCH, { fetch: item })
 }
 
 /**

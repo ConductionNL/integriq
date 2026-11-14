@@ -284,6 +284,13 @@
           "icon": "BellRingOutline",
           "route": "NotificatiesAbonnementen",
           "order": 30
+        },
+        {
+          "id": "ServiceFetches",
+          "label": "Service fetches",
+          "icon": "CloudSearchOutline",
+          "route": "ServiceFetches",
+          "order": 35
         }
       ]
     },
@@ -2476,6 +2483,39 @@
             }
           }
         ]
+      }
+    },
+    {
+      "id": "ServiceFetches",
+      "route": "/service-fetches",
+      "type": "index",
+      "title": "Service fetches",
+      "_note": "Beheer > Service fetches (forms-service-fetch-for-apps Task 5, REQ-SF-001, design D5). The serviceFetch schema is readable by administrators only, so the list is empty for everyone else. Create, edit, enable and disable are the index page's built-in form over the schema; Testen is a row action opening TestServiceFetchModal, which posts sample inputs to the admin-only POST /api/service-fetches/{slug}/test and shows the raw answer next to the mapped outputs.",
+      "config": {
+        "register": "integriq",
+        "schema": "serviceFetch",
+        "columns": [
+          "slug",
+          "title",
+          "source",
+          "allowedApps",
+          "enabled"
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "actions": [
+          {
+            "id": "test",
+            "label": "Test",
+            "icon": "PlayOutline",
+            "handler": "testServiceFetchHandler"
+          }
+        ],
+        "documentationUrl": "https://integriq.conduction.nl"
       }
     },
     {

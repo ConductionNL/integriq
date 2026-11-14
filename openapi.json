@@ -7673,6 +7673,70 @@
                 ]
             }
         },
+        "/service-fetches/{slug}/test": {
+            "post": {
+                "operationId": "service-fetch-test",
+                "summary": "Test one service fetch with sample inputs (administrators only)",
+                "description": "Runs one service fetch with sample inputs for its administrator and returns the source's raw answer next to the mapped outputs, or the refusal of the first step that refused. Skips the allowed-apps check and the output cache (forms-service-fetch-for-apps, REQ-SF-001).",
+                "tags": [
+                    "service-fetch"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The service fetch.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "inputs": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
         "/settings/rebase": {
             "post": {
                 "operationId": "settings-rebase",
