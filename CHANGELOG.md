@@ -11,6 +11,13 @@
   it too from the release that carries the same check.
 
 ### Changed
+- Every error a gateway endpoint answers itself is now an RFC 9457 problem
+  document with content type `application/problem+json`: `type` a URI under
+  `https://integriq.nl/problems/` (documented in `docs/problems/`), `title`,
+  `status`, `detail`, `instance` (the request id), and `invalid-params` for
+  validation errors. The old `error` and `details` members stay for one
+  release and are deprecated; read `detail` instead. An error the proxied
+  source answered is passed through unchanged.
 - Integriq's inbound authentication (endpoints, SCIM, Notificaties callbacks,
   EUDI, LTI) is delegated to OpenRegister and needs OpenRegister 2.1.35 or
   newer (the release with the public credential checks, OR#4361). On an older

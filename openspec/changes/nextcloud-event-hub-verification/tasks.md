@@ -48,6 +48,7 @@
 - **files**: `docs/`, `docs/images/`
 - **acceptance_criteria**:
   - GIVEN `docs/` THEN a page covers the four event families, filtering, the three action kinds, retry policy and self-service gating, with a screenshot of the matrix editor's event-family rows
+  - Page written: `docs/features/nextcloud-event-triggers.md` (the four families with their types, sources and data, filtering with the five dialects, the action kinds including flow, the retry defaults and `retryPolicy`, dead letters, and the two-layer per-family gate with a worked example), plus a row in `docs/features/README.md`. Facts checked against `EventService::doesEventMatchSubscription()`, `evaluateFilters()`, `resolveRetryPolicy()`, `lib/actions.seed.json` and `appinfo/routes.php`. Still owed: the screenshot of the matrix editor's event-family rows, which needs a running instance, so the task stays open.
 - [ ] Implement
 - [ ] Test
 

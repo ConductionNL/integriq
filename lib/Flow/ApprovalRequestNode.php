@@ -499,7 +499,8 @@ class ApprovalRequestNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCo
 	 */
 	private function recordData(string $requestId): array {
 		try {
-			$record = $this->approvalService->find(id: $requestId);
+			// System read: the flow polls the request it opened itself, with no user session.
+			$record = $this->approvalService->find(id: $requestId, asSystem: true);
 			return $record->getObject();
 		} catch (Throwable $e) {
 			// A vanished record can never resolve; waiting longer cannot fix it.

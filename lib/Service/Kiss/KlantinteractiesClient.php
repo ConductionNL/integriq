@@ -94,7 +94,7 @@ use Throwable;
  *
  * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
-class KlantinteractiesClient implements KlantinteractiesProviderInterface {
+class KlantinteractiesClient implements KlantinteractiesProviderInterface, CallerSearchInterface {
 
 	/**
 	 * Default `Authorization` header scheme (VNG/Common Ground convention).
@@ -123,6 +123,23 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 	 * @var string
 	 */
 	public const DEFAULT_CASE_OBJECT_TYPE = 'zaak';
+
+	/**
+	 * Most parties read for one number. Two already make the caller
+	 * ambiguous, so a few more only prove the point; the cap keeps a number
+	 * shared by a switchboard from fanning out into a request per party.
+	 */
+	public const MAX_CALLER_CANDIDATES = 5;
+
+	/**
+	 * Klantcontacten read for a party's case references.
+	 */
+	public const CASE_CONTACTS_PAGE_SIZE = 50;
+
+	/**
+	 * A uuid, the only party id a request path is built from.
+	 */
+	private const UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 
 	/**
 	 * Constructor.
@@ -537,6 +554,187 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface {
 		return $body;
 
 	}//end successfulBody()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Reads `GET /digitaleadressen?adres=<e164>` and then each party that
+	 * provided one of those addresses, with the addresses attached as its
+	 * `digitaleAdressen`. ASSUMED API SHAPE, like the rest of this client:
+	 * the `adres` filter and `verstrektDoorPartij.uuid` are the Klantinteracties
+	 * names. Whether a party really carries the number is decided by
+	 * {@see CallerLookup}, exactly, so a backend that ignores the filter and
+	 * returns more addresses than asked still matches nobody wrongly.
+	 *
+	 * @param array  $sourceConfiguration The KISS source's `configuration` object.
+	 * @param string $e164                The caller's number in E.164.
+	 *
+	 * @return array<int, array<string, mixed>> The candidate parties.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 */
+	public function findPartiesByPhoneNumber(array $sourceConfiguration, string $e164): array {
+		$addresses = $this->listResults(
+			response: $this->dispatch(
+				sourceConfiguration: $sourceConfiguration,
+				request: new KissRequest(method: 'GET', path: '/digitaleadressen', query: ['adres' => $e164])
+			)
+		);
+
+		$parties = [];
+		foreach ($this->addressesByParty(addresses: $addresses) as $partyId => $partyAddresses) {
+			$party = json_decode(
+				$this->dispatch(
+					sourceConfiguration: $sourceConfiguration,
+					request: new KissRequest(method: 'GET', path: '/partijen/'.$partyId)
+				),
+				true
+			);
+			if (is_array($party) === false) {
+				continue;
+			}
+
+			$party['digitaleAdressen'] = $partyAddresses;
+			$parties[] = $party;
+		}
+
+		return $parties;
+
+	}//end findPartiesByPhoneNumber()
+
+	/**
+	 * The listed addresses grouped by the party that provided them.
+	 *
+	 * An address no party provided, or whose party id is not a uuid, is left
+	 * out: it names nobody, and a party id goes into a request path.
+	 *
+	 * @param array<int, mixed> $addresses The listed digitale adressen.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>> The addresses by party uuid, at most MAX_CALLER_CANDIDATES parties.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 */
+	private function addressesByParty(array $addresses): array {
+		$byParty = [];
+		foreach ($addresses as $address) {
+			if (is_array($address) === false) {
+				continue;
+			}
+
+			$partyId = (string) (($address['verstrektDoorPartij'] ?? [])['uuid'] ?? '');
+			if (preg_match(self::UUID_PATTERN, $partyId) !== 1) {
+				continue;
+			}
+
+			if (isset($byParty[$partyId]) === false && count($byParty) >= self::MAX_CALLER_CANDIDATES) {
+				continue;
+			}
+
+			$byParty[$partyId][] = $address;
+		}
+
+		return $byParty;
+
+	}//end addressesByParty()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * Reads the party's klantcontacten, newest first, with their
+	 * onderwerpobjecten, and returns each distinct case reference in the
+	 * order first met. A case reference is the first onderwerpobject whose
+	 * `codeObjecttype` contains `zaak`, the REQ-003 rule. Klantinteracties
+	 * holds no case status, so a reference is a case this party contacted
+	 * about; whether it is still open is the case system's to say.
+	 *
+	 * @param array $sourceConfiguration The KISS source's `configuration` object.
+	 * @param array $party               The matched party.
+	 *
+	 * @return array<int, string> The case references, newest first.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
+	 */
+	public function findOpenCasesForParty(array $sourceConfiguration, array $party): array {
+		$partyId = (string) ($party['uuid'] ?? '');
+		if (preg_match(self::UUID_PATTERN, $partyId) !== 1) {
+			return [];
+		}
+
+		$contacts = $this->listResults(
+			response: $this->dispatch(
+				sourceConfiguration: $sourceConfiguration,
+				request: new KissRequest(
+					method: 'GET',
+					path: '/klantcontacten',
+					query: [
+						'hadBetrokkene__wasPartij__uuid' => $partyId,
+						'expand'                         => 'onderwerpobjecten',
+						'sorteer'                        => '-plaatsgevondenOp',
+						'pageSize'                       => self::CASE_CONTACTS_PAGE_SIZE,
+					]
+				)
+			)
+		);
+
+		$references = [];
+		foreach ($this->newestFirst(contacts: $contacts) as $contact) {
+			$reference = $this->caseReferenceOf(contact: $contact);
+			if ($reference !== null && in_array($reference, $references, true) === false) {
+				$references[] = $reference;
+			}
+		}
+
+		return $references;
+
+	}//end findOpenCasesForParty()
+
+	/**
+	 * The klantcontacten sorted by `plaatsgevondenOp`, newest first.
+	 *
+	 * Sorted here as well as asked of the server, so a backend that ignores
+	 * `sorteer` still yields newest first.
+	 *
+	 * @param array<int, mixed> $contacts The listed klantcontacten.
+	 *
+	 * @return array<int, array<string, mixed>> The array items, newest first.
+	 */
+	private function newestFirst(array $contacts): array {
+		$items = array_values(array_filter($contacts, 'is_array'));
+		usort(
+			$items,
+			static fn (array $a, array $b): int => strcmp(
+				(string) ($b['plaatsgevondenOp'] ?? ''),
+				(string) ($a['plaatsgevondenOp'] ?? '')
+			)
+		);
+
+		return $items;
+
+	}//end newestFirst()
+
+	/**
+	 * A klantcontact's case reference: the first onderwerpobject whose
+	 * `codeObjecttype` contains `zaak` (REQ-003), or null.
+	 *
+	 * @param array<string, mixed> $contact The klantcontact.
+	 *
+	 * @return string|null The case reference.
+	 *
+	 * @spec openspec/specs/kiss-kcc-bridge/spec.md#requirement-mapping-onderwerpobjecten-to-a-case-reference-req-003
+	 */
+	private function caseReferenceOf(array $contact): ?string {
+		foreach ((array) ($contact['onderwerpobjecten'] ?? []) as $subject) {
+			$identificator = (array) (((array) $subject)['onderwerpobjectidentificator'] ?? []);
+			$objectId      = (string) ($identificator['objectId'] ?? '');
+			$type          = strtolower((string) ($identificator['codeObjecttype'] ?? ''));
+			if ($objectId !== '' && str_contains($type, self::DEFAULT_CASE_OBJECT_TYPE) === true) {
+				return $objectId;
+			}
+		}
+
+		return null;
+
+	}//end caseReferenceOf()
 
 	/**
 	 * Build the per-request `Authorization: <scheme> <token>` header value.

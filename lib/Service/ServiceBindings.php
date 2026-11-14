@@ -93,6 +93,8 @@ use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\Integriq\Service\Intake\WebhookTrustMigrator;
 use OCA\Integriq\Service\Intake\WebhookTrustMigratorInterface;
 use OCA\Integriq\Service\Integration\SynchronizationContractProvider;
+use OCA\Integriq\Service\Kiss\CallerSearchInterface;
+use OCA\Integriq\Service\Kiss\ConfiguredCallerSearch;
 use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
@@ -335,6 +337,7 @@ final class ServiceBindings {
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
+		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,

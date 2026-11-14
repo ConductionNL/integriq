@@ -360,7 +360,8 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 			);
 			// The engine marked the request consumed or superseded; read it
 			// back so the answer shows what is stored.
-			$approvalRequest = $this->approvalService->find(id: (string)$approvalRequest->getUuid());
+			// System read: re-reads the request the caller already reached in scope.
+			$approvalRequest = $this->approvalService->find(id: (string)$approvalRequest->getUuid(), asSystem: true);
 		} catch (Throwable $e) {
 			$this->logger->error('ApprovalDecisionService: resumed synchronization failed: ' . $e->getMessage(), ['exception' => $e]);
 			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;

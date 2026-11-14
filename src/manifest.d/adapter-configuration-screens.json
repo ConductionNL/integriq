@@ -1,0 +1,121 @@
+{
+  "$comment": "ADR-037 manifest fragment (adapter-configuration-screens, task 4). Manifest-driven index pages over the four single-record configurations an administrator owns. Placement follows the proposal's answer to open question 3: by data direction (src/menu-layout.json), so the outbound FSC services, bank feeds and card feeds sit under Connections and the inbound Open Formulieren forms under Gateway. Every column is a property its schema declares.",
+  "pages": [
+    {
+      "id": "FscServices",
+      "route": "/fsc-services",
+      "type": "index",
+      "title": "FSC services",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "fsc_service",
+        "columns": ["organisation", "service", "endpoint", "grantRequired", "resolvedAt"],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "BankfeedConnections",
+      "route": "/bank-feeds",
+      "type": "index",
+      "title": "Bank feeds",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "bankfeed_connection",
+        "columns": ["connectionId", "aggregator", "lifecycleState", "consentExpiresAt", "lastSyncAt"],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "CardfeedAccounts",
+      "route": "/card-feeds",
+      "type": "index",
+      "title": "Card feeds",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "cardfeed_account",
+        "columns": ["accountId", "provider", "lifecycleState", "lastSyncAt"],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "OpenFormulierenForms",
+      "route": "/open-formulieren-forms",
+      "type": "index",
+      "title": "Open Formulieren forms",
+      "permission": "admin",
+      "config": {
+        "register": "integriq",
+        "schema": "openformulieren_form_mapping",
+        "columns": ["formSlug", "formUuid", "description", "isEnabled"],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showViewAction": false,
+        "showEditAction": true,
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "ConnectionsGroup",
+      "children": [
+        {
+          "id": "FscServices",
+          "label": "FSC services",
+          "icon": "ServerNetwork",
+          "route": "FscServices",
+          "order": 60
+        },
+        {
+          "id": "BankfeedConnections",
+          "label": "Bank feeds",
+          "icon": "Bank",
+          "route": "BankfeedConnections",
+          "order": 70
+        },
+        {
+          "id": "CardfeedAccounts",
+          "label": "Card feeds",
+          "icon": "CreditCardOutline",
+          "route": "CardfeedAccounts",
+          "order": 80
+        }
+      ]
+    },
+    {
+      "id": "GatewayGroup",
+      "children": [
+        {
+          "id": "OpenFormulierenForms",
+          "label": "Open Formulieren forms",
+          "icon": "FormSelect",
+          "route": "OpenFormulierenForms",
+          "order": 50
+        }
+      ]
+    }
+  ]
+}
