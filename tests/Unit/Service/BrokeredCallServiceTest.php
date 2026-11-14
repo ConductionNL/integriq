@@ -32,6 +32,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use GuzzleHttp\Psr7\Response;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\PerUserAccountNotConnectedException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
@@ -492,6 +493,161 @@ class BrokeredCallServiceTest extends TestCase {
 		$this->assertSame(self::NIL_UUID, $result['credentialId']);
 		$this->assertNull($result['actingUserId']);
 	}//end testPrepareHappyPathWithCredentialIdAndSession()
+
+	// -------------------------------------------------------------------
+	// prepare(): per-user references (sources-per-user-oauth REQ-PUOA-001).
+	// -------------------------------------------------------------------
+
+	/**
+	 * A config whose credentialRef names a provider per user.
+	 *
+	 * @param array $ref The credentialRef.
+	 *
+	 * @return array The config.
+	 */
+	private static function perUserConfig(array $ref = ['provider' => 'microsoft-entra', 'perUser' => true]): array {
+		return ['authentication' => ['credentialRef' => $ref]];
+	}//end perUserConfig()
+
+	/**
+	 * A broker credential row at a provider.
+	 *
+	 * @param string $uuid  The credential UUID.
+	 * @param string $owner The owner uid.
+	 * @param array  $data  Extra credential data.
+	 *
+	 * @return ObjectEntity The row.
+	 */
+	private static function connectedAccount(string $uuid, string $owner, array $data = []): ObjectEntity {
+		$credential = new ObjectEntity();
+		$credential->setUuid($uuid);
+		$credential->setOwner($owner);
+		$credential->setObject($data + ['provider' => 'microsoft-entra', 'scope' => 'personal']);
+
+		return $credential;
+	}//end connectedAccount()
+
+	/**
+	 * A service whose session user is the given uid, or no user for null.
+	 *
+	 * @param string|null $uid The session user.
+	 *
+	 * @return TestableBrokeredCallService The service.
+	 */
+	private function serviceAs(?string $uid): TestableBrokeredCallService {
+		$this->userSession = $this->createMock(IUserSession::class);
+		$user = null;
+		if ($uid !== null) {
+			$user = $this->makeUser(uid: $uid, enabled: true);
+		}
+
+		$this->userSession->method('getUser')->willReturn($user);
+
+		return $this->buildService();
+	}//end serviceAs()
+
+	/**
+	 * Two users calling the same per-user source each get their own credential, filtered by provider.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#scenario-two-colleagues-each-see-their-own-calendar
+	 */
+	public function testPerUserRefResolvesEachUsersOwnCredential(): void {
+		$rows = [
+			self::connectedAccount(uuid: 'cred-alice', owner: 'alice'),
+			self::connectedAccount(uuid: 'cred-bob', owner: 'bob'),
+		];
+		$this->objectService->expects($this->exactly(2))->method('findAll')
+			->with(['filters' => ['register' => 'credential-broker', 'schema' => 'brokeredcredential', 'provider' => 'microsoft-entra']])
+			->willReturn(['results' => $rows]);
+
+		$alice = $this->serviceAs(uid: 'alice')->prepare(config: self::perUserConfig(), sourceData: [], asynchronous: false);
+		$bob = $this->serviceAs(uid: 'bob')->prepare(config: self::perUserConfig(), sourceData: [], asynchronous: false);
+
+		$this->assertSame(['credentialId' => 'cred-alice', 'actingUserId' => null], $alice);
+		$this->assertSame(['credentialId' => 'cred-bob', 'actingUserId' => null], $bob);
+	}//end testPerUserRefResolvesEachUsersOwnCredential()
+
+	/**
+	 * A user without their own credential is told to connect, and nobody else's credential or an organisation one is used.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-without-a-connected-account-is-sent-to-connect-it-req-puoa-002
+	 */
+	public function testPerUserRefNeverFallsBackToAnotherCredential(): void {
+		$this->objectService->method('findAll')->willReturn(
+			[
+				'results' => [
+					self::connectedAccount(uuid: 'cred-bob', owner: 'bob'),
+					self::connectedAccount(uuid: 'cred-org', owner: 'carol', data: ['scope' => 'organisation']),
+					self::connectedAccount(uuid: 'cred-off', owner: 'carol', data: ['status' => 'disabled']),
+				],
+			]
+		);
+
+		try {
+			$this->serviceAs(uid: 'carol')->prepare(config: self::perUserConfig(), sourceData: [], asynchronous: false);
+			$this->fail('a user without their own account must not borrow one');
+		} catch (PerUserAccountNotConnectedException $exception) {
+			$this->assertSame('microsoft-entra', $exception->getProvider());
+			$this->assertStringContainsString('not connected', $exception->getMessage());
+		}
+	}//end testPerUserRefNeverFallsBackToAnotherCredential()
+
+	/**
+	 * A sessionless call on a per-user source is refused with the reason, before any lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-source-can-call-with-the-signed-in-users-own-account-req-puoa-001
+	 */
+	public function testPerUserRefRefusesASessionlessCall(): void {
+		$this->objectService->expects($this->never())->method('findAll');
+		$service = $this->serviceAs(uid: null);
+
+		$this->expectException(BrokeredCallConfigurationException::class);
+		$this->expectExceptionMessage('without a signed-in user');
+
+		$service->prepare(config: self::perUserConfig(), sourceData: [], asynchronous: false);
+	}//end testPerUserRefRefusesASessionlessCall()
+
+	/**
+	 * Two connected accounts at one provider are refused rather than guessed between.
+	 *
+	 * @return void
+	 */
+	public function testPerUserRefRefusesTwoAccounts(): void {
+		$this->objectService->method('findAll')->willReturn(
+			[self::connectedAccount(uuid: 'one', owner: 'alice'), self::connectedAccount(uuid: 'two', owner: 'alice')]
+		);
+
+		$this->expectException(BrokeredCallConfigurationException::class);
+		$this->expectExceptionMessage('You have 2 connected accounts at "microsoft-entra"');
+
+		$this->serviceAs(uid: 'alice')->prepare(config: self::perUserConfig(), sourceData: [], asynchronous: false);
+	}//end testPerUserRefRefusesTwoAccounts()
+
+	/**
+	 * A per-user reference of any other shape is a config error.
+	 *
+	 * @return void
+	 */
+	public function testPerUserRefOfAnotherShapeIsRefused(): void {
+		foreach ([
+			['provider' => 'microsoft-entra', 'perUser' => 'yes'],
+			['provider' => '', 'perUser' => true],
+			['provider' => 'microsoft-entra', 'perUser' => true, 'credentialId' => self::NIL_UUID],
+		] as $ref) {
+			try {
+				$this->service->prepare(config: self::perUserConfig(ref: $ref), sourceData: [], asynchronous: false);
+				$this->fail('refused shape accepted: ' . json_encode($ref));
+			} catch (BrokeredCallConfigurationException $exception) {
+				$this->assertStringContainsString('"perUser": true', $exception->getMessage());
+			}
+		}
+	}//end testPerUserRefOfAnotherShapeIsRefused()
 
 	/**
 	 * Sibling embedded secret fields are a hard config error naming only KEYS.

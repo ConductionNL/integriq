@@ -204,7 +204,17 @@ class EndpointServicePacingTest extends TestCase {
 
 		$this->assertSame(429, $response->getStatus());
 		$this->assertSame('5', $this->header($response, 'Retry-After'));
-		$this->assertSame(['error' => 'The source behind this endpoint is busy. Try again later.'], $response->getData());
+		// The gateway answers every refusal as a problem document and keeps `error` beside it.
+		$this->assertSame(
+			[
+				'type' => 'https://integriq.nl/problems/rate-limited',
+				'title' => 'Too many requests',
+				'status' => 429,
+				'detail' => 'The source behind this endpoint is busy. Try again later.',
+				'error' => 'The source behind this endpoint is busy. Try again later.',
+			],
+			$response->getData()
+		);
 	}//end testABusyPacedSourceIsAnswered429WithRetryAfter()
 
 	/**

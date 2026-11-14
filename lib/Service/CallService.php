@@ -55,9 +55,11 @@ use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\EndpointContainment;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Call\CallPreparation;
 use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Call\SourcePacer;
@@ -130,6 +132,28 @@ class CallService implements CallServiceInterface {
 	 * @var integer
 	 */
 	private const BREAKER_DEFAULT_COOLDOWN_SECONDS = 30;
+
+	/**
+	 * The shape of a prepared call, in the order every consumer reads it.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const PREPARED_CALL = [
+		'shortCircuit' => null,
+		'source' => null,
+		'sourceData' => [],
+		'config' => [],
+		'method' => '',
+		'url' => '',
+		'endpoint' => '',
+		'logBody' => false,
+		'brokeredCredential' => null,
+		'postRequest' => null,
+		'retryPolicyOverride' => null,
+		'successExpires' => null,
+		'errorExpires' => null,
+		'request' => null,
+	];
 
 	/**
 	 * Guzzle HTTP client used to dispatch outbound requests.
@@ -783,6 +807,7 @@ class CallService implements CallServiceInterface {
 
 		// The call_log schema is admin-only (REQ-OCD-012): the engine records the call
 		// for whoever triggered it, so the write runs past RBAC.
+		// System write, unscoped: the log carries the source's organisation (stamped above), not the caller's.
 		return $this->objectService->saveObject(
 			object: $object,
 			register: 'integriq',
@@ -1137,7 +1162,11 @@ class CallService implements CallServiceInterface {
 			ARRAY_FILTER_USE_KEY
 		);
 
-		$logBody = (isset($config['logBody']) === true && (bool)$config['logBody']);
+		// Only a caller on the allowlist keeps its bodies, and it says so by
+		// passing its own class name: a bare true, or one set on a source's
+		// configuration, stores nothing (outbound-call-log REQ-OCD-010).
+		$caller  = ($config['logBody'] ?? null);
+		$logBody = (is_string($caller) === true && in_array($caller, BodyCapturePolicy::LOG_BODY_ALLOWLIST, true) === true);
 		unset($config['logBody']);
 
 		// We want to surpress guzzle exceptions and return the response instead.
@@ -1917,6 +1946,7 @@ class CallService implements CallServiceInterface {
 			return $this->buildTransientCallLog(source: $source, data: $data, trace: $trace);
 		}
 
+		// System write, unscoped: the log carries the source's organisation, not the caller's, and a run may have no user.
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
 			register: 'integriq',
@@ -2003,6 +2033,7 @@ class CallService implements CallServiceInterface {
 		$this->callLogBuffer = [];
 
 		try {
+			// System write, unscoped: buffered logs carry their source's organisation, not the caller's.
 			$this->objectService->saveObjects(
 				objects: $batch,
 				register: 'integriq',
@@ -2498,6 +2529,7 @@ class CallService implements CallServiceInterface {
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 */
 	private function persistSourceState(ObjectEntity $source, array $sourceData): ObjectEntity {
+		// System write, unscoped: bookkeeping on a source the caller already reached in scope.
 		return $this->objectService->saveObject(
 			object: $sourceData,
 			register: 'integriq',
@@ -2609,11 +2641,7 @@ class CallService implements CallServiceInterface {
 	 * return that entity immediately (no outbound request, no fallback to
 	 * embedded secrets, REQ-SBC-004).
 	 *
-	 * @param ObjectEntity $source The source ObjectEntity.
-	 * @param array $config The merged call configuration (Phase 7 output).
-	 * @param array $sourceData The raw source data array.
-	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
-	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 * @param CallPreparation $run The call being prepared.
 	 *
 	 * @return ObjectEntity|array{credentialId: string, actingUserId: string|null}|null
 	 *
@@ -2621,33 +2649,44 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
-	private function resolveBrokeredDispatch(
-		ObjectEntity $source,
-		array $config,
-		array $sourceData,
-		bool $asynchronous,
-		?\DateTime $errorExpires,
-	): ObjectEntity|array|null {
-		if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
+	private function resolveBrokeredDispatch(CallPreparation $run): ObjectEntity|array|null {
+		if ($this->brokeredCallService->hasCredentialRef(config: $run->config) === false) {
 			return null;
 		}
 
 		try {
 			return $this->brokeredCallService->prepare(
-				config: $config,
-				sourceData: $sourceData,
-				asynchronous: $asynchronous,
+				config: $run->config,
+				sourceData: $run->sourceData,
+				asynchronous: $run->request->asynchronous,
 			);
 		} catch (BrokeredCallConfigurationException $exception) {
-			return $this->saveEarlyErrorLog(
-				source: $source,
-				statusCode: 409,
-				statusMessage: $exception->getMessage(),
-				expires: $errorExpires,
-			);
+			return $this->configErrorLog(run: $run, exception: $exception);
 		}
 
 	}//end resolveBrokeredDispatch()
+
+	/**
+	 * Persist the synthetic 409 config-error CallLog of a brokered credential failure.
+	 *
+	 * @param CallPreparation                    $run       The call being prepared.
+	 * @param BrokeredCallConfigurationException $exception The failure.
+	 *
+	 * @return ObjectEntity The CallLog.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	private function configErrorLog(CallPreparation $run, BrokeredCallConfigurationException $exception): ObjectEntity {
+		return $this->saveEarlyErrorLog(
+			source: $run->source,
+			statusCode: 409,
+			statusMessage: $exception->getMessage(),
+			expires: $run->errorExpires,
+		);
+
+	}//end configErrorLog()
 
 	/**
 	 * Resolves app-injected credential placeholders in the source authentication config.
@@ -2660,9 +2699,7 @@ class CallService implements CallServiceInterface {
 	 * synthetic 409 config-error CallLog (returned as an ObjectEntity for the caller to
 	 * short-circuit on), exactly like the proxy path — there is NO embedded-secret fallback.
 	 *
-	 * @param ObjectEntity $source The source ObjectEntity.
-	 * @param array $sourceData The raw source data array.
-	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 * @param CallPreparation $run The call being prepared.
 	 *
 	 * @return ObjectEntity|array The hydrated source data, or an ObjectEntity CallLog on a hard config error.
 	 *
@@ -2670,24 +2707,15 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
-	private function hydrateInjectedCredentials(
-		ObjectEntity $source,
-		array $sourceData,
-		?\DateTime $errorExpires,
-	): ObjectEntity|array {
-		if ($this->brokeredCallService->hasInjectableCredentials(sourceData: $sourceData) === false) {
-			return $sourceData;
+	private function hydrateInjectedCredentials(CallPreparation $run): ObjectEntity|array {
+		if ($this->brokeredCallService->hasInjectableCredentials(sourceData: $run->sourceData) === false) {
+			return $run->sourceData;
 		}
 
 		try {
-			return $this->brokeredCallService->hydrateInjectableCredentials(sourceData: $sourceData);
+			return $this->brokeredCallService->hydrateInjectableCredentials(sourceData: $run->sourceData);
 		} catch (BrokeredCallConfigurationException $exception) {
-			return $this->saveEarlyErrorLog(
-				source: $source,
-				statusCode: 409,
-				statusMessage: $exception->getMessage(),
-				expires: $errorExpires,
-			);
+			return $this->configErrorLog(run: $run, exception: $exception);
 		}
 
 	}//end hydrateInjectedCredentials()
@@ -2699,9 +2727,7 @@ class CallService implements CallServiceInterface {
 	 * before Phase 9 writes the certificate files for Guzzle. A resolution failure is a
 	 * synthetic 409 config-error CallLog, like every other brokered credential failure.
 	 *
-	 * @param ObjectEntity $source The source ObjectEntity.
-	 * @param array $config The merged call configuration (Phase 7 output).
-	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 * @param CallPreparation $run The call being prepared.
 	 *
 	 * @return ObjectEntity|array The hydrated configuration, or an ObjectEntity CallLog on a hard config error.
 	 *
@@ -2709,114 +2735,106 @@ class CallService implements CallServiceInterface {
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
-	private function hydrateInjectedTlsIdentity(
-		ObjectEntity $source,
-		array $config,
-		?\DateTime $errorExpires,
-	): ObjectEntity|array {
-		if ($this->brokeredCallService->hasInjectableTlsIdentity(config: $config) === false) {
-			return $config;
+	private function hydrateInjectedTlsIdentity(CallPreparation $run): ObjectEntity|array {
+		if ($this->brokeredCallService->hasInjectableTlsIdentity(config: $run->config) === false) {
+			return $run->config;
 		}
 
 		try {
-			return $this->brokeredCallService->hydrateInjectableTlsIdentity(config: $config);
+			return $this->brokeredCallService->hydrateInjectableTlsIdentity(config: $run->config);
 		} catch (BrokeredCallConfigurationException $exception) {
-			return $this->saveEarlyErrorLog(
-				source: $source,
-				statusCode: 409,
-				statusMessage: $exception->getMessage(),
-				expires: $errorExpires,
-			);
+			return $this->configErrorLog(run: $run, exception: $exception);
 		}
 
 	}//end hydrateInjectedTlsIdentity()
 
 	/**
-	 * Phase 7b+7c combined: resolves brokered/injected credentials for one
-	 * call, or produces the synthetic config-error CallLog the caller must
-	 * return immediately.
+	 * Phase 7b+7c combined: resolve the brokered or injected credentials of the
+	 * call, or short-circuit it with the synthetic config-error CallLog.
 	 *
-	 * Consolidates {@see resolveBrokeredDispatch()} (proxy `credentialRef`)
-	 * and {@see hydrateInjectedCredentials()} (app-side placeholder
-	 * injection) behind a single call so `call()` carries only ONE
-	 * short-circuit check for both phases instead of three nested branches —
-	 * keeps `call()`'s cyclomatic/NPath complexity within budget without
-	 * changing any behaviour (REQ-SBC-001/002/003/004).
+	 * Selection happens on the merged configuration, because Phase 9 strips
+	 * every `authentication` key before dispatch. Any config error is a hard
+	 * synthetic 409 CallLog: embedded secrets are never merged, rendered, or
+	 * dispatched for a credentialRef source, and there is NO fallback path
+	 * (REQ-SBC-001/002/003/004).
 	 *
-	 * @param ObjectEntity $source The source ObjectEntity.
-	 * @param array $config The merged call configuration (Phase 7 output).
-	 * @param array $sourceData The raw source data array.
-	 * @param boolean $asynchronous Whether asynchronous dispatch was requested.
-	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 * @param CallPreparation $run The call being prepared.
 	 *
-	 * @return array{shortCircuit: ObjectEntity|null, brokeredCredential: array|null, sourceData: array, config: array}
+	 * @return bool True when the call is short-circuited.
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
-	private function resolveCallCredentials(
-		ObjectEntity $source,
-		array $config,
-		array $sourceData,
-		bool $asynchronous,
-		?\DateTime $errorExpires,
-	): array {
-		$brokeredCredential = $this->resolveBrokeredDispatch(
-			source: $source,
-			config: $config,
-			sourceData: $sourceData,
-			asynchronous: $asynchronous,
-			errorExpires: $errorExpires,
-		);
+	private function resolveCredentials(CallPreparation $run): bool {
+		$brokeredCredential = $this->resolveBrokeredDispatch(run: $run);
 		if ($brokeredCredential instanceof ObjectEntity) {
 			// A synthetic 409 config-error CallLog was persisted — hard stop.
-			return [
-				'shortCircuit' => $brokeredCredential,
-				'brokeredCredential' => null,
-				'sourceData' => $sourceData,
-				'config' => $config,
-			];
+			return $this->shortCircuit(run: $run, callLog: $brokeredCredential);
 		}
 
-		if ($brokeredCredential === null) {
-			$injected = $this->hydrateInjectedCredentials(
-				source: $source,
-				sourceData: $sourceData,
-				errorExpires: $errorExpires,
-			);
-			if ($injected instanceof ObjectEntity) {
-				return [
-					'shortCircuit' => $injected,
-					'brokeredCredential' => null,
-					'sourceData' => $sourceData,
-					'config' => $config,
-				];
-			}
+		if ($brokeredCredential === null && $this->hydrateInjected(run: $run) === true) {
+			return true;
+		}
 
-			$sourceData = $injected;
+		$run->prepared['brokeredCredential'] = $brokeredCredential;
 
-			// The TLS identity was merged into the call configuration at Phase 7, before
-			// hydration, so its placeholders are resolved there too (integriq#2102).
-			$config = $this->hydrateInjectedTlsIdentity(source: $source, config: $config, errorExpires: $errorExpires);
-			if ($config instanceof ObjectEntity) {
-				return [
-					'shortCircuit' => $config,
-					'brokeredCredential' => null,
-					'sourceData' => $sourceData,
-					'config' => [],
-				];
-			}
-		}//end if
+		return false;
 
-		return [
-			'shortCircuit' => null,
-			'brokeredCredential' => $brokeredCredential,
-			'sourceData' => $sourceData,
-			'config' => $config,
-		];
+	}//end resolveCredentials()
 
-	}//end resolveCallCredentials()
+	/**
+	 * Resolve the app-injected secret placeholders, then the TLS identity ones.
+	 *
+	 * @param CallPreparation $run The call being prepared, with no credentialRef.
+	 *
+	 * @return bool True when the call is short-circuited.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	private function hydrateInjected(CallPreparation $run): bool {
+		$injected = $this->hydrateInjectedCredentials(run: $run);
+		if ($injected instanceof ObjectEntity) {
+			return $this->shortCircuit(run: $run, callLog: $injected);
+		}
+
+		$run->sourceData = $injected;
+
+		// The TLS identity was merged into the call configuration at Phase 7, before
+		// hydration, so its placeholders are resolved there too (integriq#2102).
+		$config = $this->hydrateInjectedTlsIdentity(run: $run);
+		if ($config instanceof ObjectEntity) {
+			return $this->shortCircuit(run: $run, callLog: $config);
+		}
+
+		$run->config = $config;
+
+		return false;
+
+	}//end hydrateInjected()
+
+	/**
+	 * Short-circuit the call with a CallLog a guard persisted, if there is one.
+	 *
+	 * @param CallPreparation   $run     The call being prepared.
+	 * @param ObjectEntity|null $callLog The guard's CallLog, null when it let the call through.
+	 *
+	 * @return bool True when the call is short-circuited.
+	 *
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 */
+	private function shortCircuit(CallPreparation $run, ?ObjectEntity $callLog): bool {
+		if ($callLog === null) {
+			return false;
+		}
+
+		$run->prepared['shortCircuit'] = $callLog;
+
+		return true;
+
+	}//end shortCircuit()
 
 	/**
 	 * Re-resolve the dispatch source RAW from storage so the engine's
@@ -2879,6 +2897,7 @@ class CallService implements CallServiceInterface {
 		}
 
 		try {
+			// System read, unscoped: re-reads the source already in hand, so a run without a user still dispatches.
 			$raw = $this->objectService->find(
 				id: $uuid,
 				register: 'integriq',
@@ -2943,165 +2962,209 @@ class CallService implements CallServiceInterface {
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	private function prepareCall(ObjectEntity $source, CallRequest $request): array {
-		$endpoint = $request->endpoint;
-		$config = $request->config;
-		// Ocon#215: re-resolve the Source RAW from storage BEFORE any auth is
-		// read, so the engine's credentials are its OWN property and can never
-		// be silenced by a rendered (writeOnly-stripped) read upstream. This
-		// reassigns $source to the raw entity so EVERY downstream use — the
-		// sourceData below, the SOAP path in dispatchRequest(), persisted
-		// source-state writes and the CallLog — operates on secrets-intact
-		// data. See {@see resolveSourceForDispatch()} for the full rationale
-		// and the `_render: false` / overruleAuth / unpersisted fallbacks.
-		$source = $this->resolveSourceForDispatch(source: $source, overruleAuth: $request->overruleAuth);
-		$sourceData = $source->getObject();
+		$run = $this->startPreparation(source: $source, request: $request);
+
+		// Phases 3-6b: source-precondition and circuit breaker guards.
+		if ($this->guardSource(run: $run) === true) {
+			return $run->prepared;
+		}
+
+		// Phases 7-7a: merge the configuration and resolve the HTTP method.
+		$this->mergeConfiguration(run: $run);
+
+		// Phases 7b-7c: brokered or injected credentials.
+		if ($this->resolveCredentials(run: $run) === true) {
+			return $run->prepared;
+		}
+
+		// Phases 8-9: the preRequest hook, normalisation and the URL.
+		$this->finishPreparation(run: $run);
+
+		return $run->prepared;
+	}//end prepareCall()
+
+	/**
+	 * Phases 0-1b: re-read the source raw, compute the log expiries, shape the
+	 * prepared call and take the caller's retry policy override.
+	 *
+	 * Ocon#215: the source is re-resolved RAW from storage BEFORE any auth is
+	 * read, so the engine's credentials are its OWN property and can never be
+	 * silenced by a rendered (writeOnly-stripped) read upstream. EVERY
+	 * downstream use — the source data, the SOAP path in dispatchRequest(),
+	 * persisted source-state writes and the CallLog — operates on
+	 * secrets-intact data. See {@see resolveSourceForDispatch()} for the full
+	 * rationale and the `_render: false` / overruleAuth / unpersisted fallbacks.
+	 *
+	 * @param ObjectEntity $source  The source ObjectEntity.
+	 * @param CallRequest  $request What the call asks for.
+	 *
+	 * @return CallPreparation The call being prepared.
+	 */
+	private function startPreparation(ObjectEntity $source, CallRequest $request): CallPreparation {
+		$run = new CallPreparation(
+			source: $this->resolveSourceForDispatch(source: $source, overruleAuth: $request->overruleAuth),
+			request: $request
+		);
+		$run->sourceData = $run->source->getObject();
+		$run->config = $request->config;
 
 		// Phase 1: Compute expiry values for log retention.
-		$expiries = $this->buildExpiryValues(sourceData: $sourceData);
-		$errorExpires = $expiries['errorExpires'];
-		$successExpires = $expiries['successExpires'];
+		$expiries = $this->buildExpiryValues(sourceData: $run->sourceData);
+		$run->errorExpires = $expiries['errorExpires'];
+		$run->prepared = $this->preparedCall(run: $run, successExpires: $expiries['successExpires']);
 
-		$prepared = [
-			'shortCircuit' => null,
-			'source' => $source,
-			'sourceData' => $sourceData,
-			'config' => $config,
-			'method' => $request->method,
-			'url' => '',
-			'endpoint' => $endpoint,
-			'logBody' => false,
-			'brokeredCredential' => null,
-			'postRequest' => null,
-			'retryPolicyOverride' => null,
-			'successExpires' => $successExpires,
-			'errorExpires' => $errorExpires,
-			'request' => $request,
-		];
+		$this->takeRetryPolicyOverride(run: $run);
 
-		// Phase 1b: extract the caller-supplied RetryPolicy override (REQ-007)
-		// before it can leak into the persisted request config — mirrors the
-		// same pull-out-then-unset treatment preRequest/postRequest/pagination
-		// already get further down.
-		$retryPolicyOverride = ($config['retryPolicy'] ?? null);
+		return $run;
+	}//end startPreparation()
+
+	/**
+	 * The prepared call before any phase ran.
+	 *
+	 * @param CallPreparation $run            The call being prepared.
+	 * @param \DateTime|null  $successExpires Expiry for success log entries.
+	 *
+	 * @return array<string, mixed> The prepared call.
+	 */
+	private function preparedCall(CallPreparation $run, ?\DateTime $successExpires): array {
+		return array_replace(
+			self::PREPARED_CALL,
+			[
+				'source' => $run->source,
+				'sourceData' => $run->sourceData,
+				'config' => $run->config,
+				'method' => $run->request->method,
+				'endpoint' => $run->request->endpoint,
+				'successExpires' => $successExpires,
+				'errorExpires' => $run->errorExpires,
+				'request' => $run->request,
+			]
+		);
+	}//end preparedCall()
+
+	/**
+	 * Phase 1b: extract the caller-supplied RetryPolicy override (REQ-007)
+	 * before it can leak into the persisted request config — mirrors the
+	 * same pull-out-then-unset treatment preRequest/postRequest/pagination
+	 * get further down.
+	 *
+	 * @param CallPreparation $run The call being prepared.
+	 *
+	 * @return void
+	 */
+	private function takeRetryPolicyOverride(CallPreparation $run): void {
+		$retryPolicyOverride = ($run->config['retryPolicy'] ?? null);
 		if (is_array($retryPolicyOverride) === false) {
 			$retryPolicyOverride = null;
 		}
 
-		$prepared['retryPolicyOverride'] = $retryPolicyOverride;
+		$run->prepared['retryPolicyOverride'] = $retryPolicyOverride;
 
-		unset($config['retryPolicy']);
+		unset($run->config['retryPolicy']);
+	}//end takeRetryPolicyOverride()
 
-		// Phase 1c: whether the caller is live (a gateway request, or the
-		// interactive test) or background work. It decides how long a paced
-		// call may wait for its turn (REQ-RLPC-002). Pulled out of the config
-		// like the retry policy so it never reaches the request.
-		$live = (($config['pacing'] ?? null) === 'live' || $request->persistLog === false);
-		unset($config['pacing']);
-		$prepared['config'] = $config;
-
-		// Phases 3-6: source-precondition guards (enabled, location, pacing, rate limit).
+	/**
+	 * Phases 3-6b: the source-precondition guards (enabled, location, pacing,
+	 * rate limit), then the circuit breaker (REQ-008), before any dispatch attempt
+	 * (sync or async).
+	 *
+	 * @param CallPreparation $run The call being prepared.
+	 *
+	 * @return bool True when a guard short-circuited the call.
+	 */
+	private function guardSource(CallPreparation $run): bool {
+		$live = $this->takePacingMode(run: $run);
 		$pacedMs = 0;
 		$earlyError = $this->guardCallPreconditions(
-			source: $source,
-			sourceData: $sourceData,
-			errorExpires: $errorExpires,
+			source: $run->source,
+			sourceData: $run->sourceData,
+			errorExpires: $run->errorExpires,
 			live: $live,
 			pacedMs: $pacedMs,
 		);
-		$prepared['pacedMs'] = $pacedMs;
-		if ($earlyError !== null) {
-			$prepared['shortCircuit'] = $earlyError;
-
-			return $prepared;
+		$run->prepared['pacedMs'] = $pacedMs;
+		if ($earlyError === null) {
+			$earlyError = $this->guardCircuitBreaker(source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires);
 		}
 
-		// Phase 6b: circuit breaker precondition guard (REQ-008) — evaluated
-		// after the enabled/location/rate-limit guards, before any dispatch
-		// attempt (sync or async).
-		$breakerShortCircuit = $this->guardCircuitBreaker(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
-		if ($breakerShortCircuit !== null) {
-			$prepared['shortCircuit'] = $breakerShortCircuit;
+		return $this->shortCircuit(run: $run, callLog: $earlyError);
+	}//end guardSource()
 
-			return $prepared;
-		}
+	/**
+	 * Phase 1c: whether the caller is live (a gateway request, or the
+	 * interactive test) or background work. It decides how long a paced call
+	 * may wait for its turn (REQ-RLPC-002). Pulled out of the config like the
+	 * retry policy, so it never reaches the request.
+	 *
+	 * @param CallPreparation $run The call being prepared.
+	 *
+	 * @return bool True for a live caller.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	private function takePacingMode(CallPreparation $run): bool {
+		$live = (($run->config['pacing'] ?? null) === 'live' || $run->request->persistLog === false);
+		unset($run->config['pacing']);
+		$run->prepared['config'] = $run->config;
 
-		// Phase 7: Merge source-level configuration.
-		$config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
+		return $live;
+	}//end takePacingMode()
 
-		// Phase 7-auth: the login the source declares on its own fields
-		// (auth basic or apikey). What configuration says still wins, and a
-		// broker source is left to the broker (sources-declared-basic-and-apikey-auth).
-		$config = (new SourceAuthApplier())->apply(sourceData: $sourceData, config: $config);
+	/**
+	 * Phases 7-7a: merge the source-level configuration and the login the
+	 * source declares on its own fields, then resolve the HTTP method and strip
+	 * the method-override keys.
+	 *
+	 * The source's auth basic or apikey fields apply where configuration says
+	 * nothing, and a broker source is left to the broker
+	 * (sources-declared-basic-and-apikey-auth). oc#94: the method is decided on
+	 * the MERGED configuration, so a Source's own `createMethod`/`updateMethod`/
+	 * `destroyMethod`/`listMethod`/`readMethod` override takes effect exactly as
+	 * documented while a call-time override keeps working, and an override key
+	 * declared only in source configuration never leaks into the persisted
+	 * `call_log.request` payload.
+	 *
+	 * @param CallPreparation $run The call being prepared.
+	 *
+	 * @return void
+	 */
+	private function mergeConfiguration(CallPreparation $run): void {
+		$config = $this->mergeSourceConfiguration(config: $run->config, sourceData: $run->sourceData);
+		$config = (new SourceAuthApplier())->apply(sourceData: $run->sourceData, config: $config);
 
-		// Phase 7a: Resolve HTTP method; strip method-override keys from config.
-		//
-		// oc#94 fix: this used to run as "Phase 2", BEFORE Phase 7's source
-		// merge — so a Source's OWN `configuration.listMethod` (the documented
-		// way to make a normally-GET list/fetch call dispatch as POST, e.g. a
-		// POST-body search endpoint) was invisible to decideMethod() and never
-		// took effect; only an explicit call-time `config['listMethod']`
-		// override worked. Running this on the MERGED config makes a
-		// Source-level `createMethod`/`updateMethod`/`destroyMethod`/
-		// `listMethod`/`readMethod` override take effect exactly as documented,
-		// while a call-time override keeps working identically (it is merged
-		// in ahead of this point either way). The unset must also run on the
-		// merged config now, for the same reason — previously an override key
-		// declared only in source configuration was never stripped and could
-		// leak into the persisted `call_log.request` payload.
-		$method = $this->decideMethod(default: $request->method, configuration: $config, read: $request->read);
+		$method = $this->decideMethod(default: $run->request->method, configuration: $config, read: $run->request->read);
 		unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
 
-		$prepared['method'] = $method;
+		$run->prepared['method'] = $method;
+		$run->config = $config;
+	}//end mergeConfiguration()
 
-		// Phase 7b+7c: Brokered-credential guards/resolution (REQ-SBC-001/002/003)
-		// and app-side credential injection (generic/self-hosted sources),
-		// consolidated into one helper so this method keeps a single
-		// short-circuit check for both phases. Selection happens HERE, on the
-		// merged configuration, because Phase 9 strips every `authentication`
-		// key before dispatch. Any config error is a hard synthetic 409
-		// CallLog — embedded secrets are never merged, rendered, or
-		// dispatched for a credentialRef source, and there is NO fallback
-		// path (REQ-SBC-004).
-		$credentials = $this->resolveCallCredentials(
-			source: $source,
-			config: $config,
-			sourceData: $sourceData,
-			asynchronous: $request->asynchronous,
-			errorExpires: $errorExpires,
-		);
-		if ($credentials['shortCircuit'] !== null) {
-			// A synthetic 409 config-error CallLog was persisted — hard stop.
-			$prepared['shortCircuit'] = $credentials['shortCircuit'];
-
-			return $prepared;
-		}
-
-		$prepared['brokeredCredential'] = $credentials['brokeredCredential'];
-		$sourceData = $credentials['sourceData'];
-		$config = $credentials['config'];
-
-		// Phase 8: Handle preRequest hook; capture postRequest descriptor.
-		$prepared['postRequest'] = $this->extractAndFirePreRequest(
-			source: $source,
-			config: $config,
-			runningSupportRequest: $request->runningSupportRequest,
+	/**
+	 * Phases 8-9: fire the preRequest hook and capture the postRequest descriptor,
+	 * normalise the configuration, set the URL and stamp the source's last call.
+	 *
+	 * @param CallPreparation $run The call being prepared, its credentials resolved.
+	 *
+	 * @return void
+	 */
+	private function finishPreparation(CallPreparation $run): void {
+		$run->prepared['postRequest'] = $this->extractAndFirePreRequest(
+			source: $run->source,
+			config: $run->config,
+			runningSupportRequest: $run->request->runningSupportRequest,
 		);
 
 		// Phase 9: Normalise headers, pagination, render Twig, filter auth keys, write certs, extract logBody.
-		$normalised = $this->normaliseRequestConfig(config: $config, sourceData: $sourceData);
-		$prepared['config'] = $normalised['config'];
-		$prepared['logBody'] = $normalised['logBody'];
+		$normalised = $this->normaliseRequestConfig(config: $run->config, sourceData: $run->sourceData);
+		$run->prepared['config'] = $normalised['config'];
+		$run->prepared['logBody'] = $normalised['logBody'];
 
-		// Set the URL to call and add an endpoint if needed.
-		$prepared['url'] = (($sourceData['location'] ?? '') . $endpoint);
+		$run->prepared['url'] = (($run->sourceData['location'] ?? '') . $run->request->endpoint);
 
-		// Let's log the call.
-		$sourceData['lastCall'] = (new DateTime())->format('c');
 		// @todo: save the source.
-		$prepared['sourceData'] = $sourceData;
-
-		return $prepared;
-	}//end prepareCall()
+		$run->sourceData['lastCall'] = (new DateTime())->format('c');
+		$run->prepared['sourceData'] = $run->sourceData;
+	}//end finishPreparation()
 
 	/**
 	 * Phases 11-13: everything {@see call()} does AFTER a response has been

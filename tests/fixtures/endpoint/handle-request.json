@@ -2,9 +2,13 @@
     "conditions-refuse": {
         "trace": [],
         "outcome": {
-            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "class": "OCA\\Integriq\\Http\\ProblemResponse",
             "status": 400,
             "data": {
+                "type": "https://integriq.nl/problems/validation-failed",
+                "title": "The request is not valid",
+                "status": 400,
+                "detail": "The following parameters are not correctly set",
                 "error": "The following parameters are not correctly set",
                 "fields": [
                     "q may not be zoek"
@@ -72,12 +76,19 @@
             }
         ],
         "outcome": {
-            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "class": "OCA\\Integriq\\Http\\ProblemResponse",
             "status": 400,
             "data": {
-                "type": "about:blank",
-                "title": "The request does not match its message schema",
+                "type": "https://integriq.nl/problems/validation-failed",
+                "title": "The request is not valid",
                 "status": 400,
+                "detail": "The request does not match its message schema",
+                "invalid-params": [
+                    {
+                        "name": "/bsn",
+                        "reason": "The required property \"bsn\" is missing"
+                    }
+                ],
                 "errors": [
                     {
                         "path": "/bsn",
@@ -1731,9 +1742,13 @@
             }
         ],
         "outcome": {
-            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "class": "OCA\\Integriq\\Http\\ProblemResponse",
             "status": 400,
             "data": {
+                "type": "https://integriq.nl/problems/validation-failed",
+                "title": "The request is not valid",
+                "status": 400,
+                "detail": "Internal server error",
                 "error": "Internal server error"
             }
         }

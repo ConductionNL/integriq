@@ -9,23 +9,25 @@ Kind: config. Size S. Half for shillinq `platform-integration-catalogue` (row sh
 - **files**: `lib/Settings/register.d/peppol-access-point-source.json`, `psd2-bank-aggregator-source.json`, `corporate-card-feed-source.json`, `mollie-payments-source.json`
 - **acceptance_criteria**:
   - GIVEN an upgrade WHEN the catalogue is materialised THEN the four templates are `catalog_item` objects, dormant
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit on `CatalogRegistryService::collect()`; `occ upgrade` on a dev instance shows them on the Catalog page)
+  > PHPUnit done: `testTheBookkeepingConnectorsAreDormantTemplatesInTheirCategories`. The live `occ upgrade` is not run here.
 
 ### Task 2: Bookkeeping categories and their test
 - **spec_ref**: `openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001`
 - **files**: `lib/Service/CatalogRegistryService.php`, `tests/Unit/Service/CatalogRegistryServiceTest.php`
 - **acceptance_criteria**:
   - GIVEN the bookkeeping slug list WHEN the test resolves each category THEN each is one of `Bank`, `Payments`, `E-invoicing`, `Tax filing`, `Commerce`, `Payroll`
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+- [x] Test (PHPUnit)
+  > `testEveryBookkeepingTemplateHasABookkeepingCategory` lists the six names and fails naming the slug (checked by removing an override). The ECB template ships as `ecb-eurofxref-daily`, so that slug is the one mapped to `Bank`.
 
 ### Task 3: Docs
 - **spec_ref**: `openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001`
 - **files**: `docs/features/connector-catalog.md`
 - **acceptance_criteria**:
   - GIVEN the catalogue docs WHEN a developer adds a bookkeeping connector THEN the page names the six categories and says the sandbox seed records are for demos only
-- [ ] Implement
+- [x] Implement
 - [ ] Test (docs build)
 
 ## Verification

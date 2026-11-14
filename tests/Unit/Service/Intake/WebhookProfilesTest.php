@@ -68,4 +68,23 @@ class WebhookProfilesTest extends TestCase {
 		$this->assertNull($profiles->forChannel(channel: 'no-such-channel'));
 
 	}//end testLookupsMatchTheStaticLookups()
+
+	/**
+	 * Each CloudEvents source has its own profile, found by its authorization type in any case.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 */
+	public function testEachCloudEventsSourceHasItsOwnProfile(): void {
+		$profile = WebhookProfiles::byAuthorizationType(authorizationType: 'CloudEvents-Source-WebShop');
+
+		$this->assertNotNull($profile);
+		$this->assertSame('cloudevents-source-webshop', $profile->authorizationType);
+		$this->assertSame('event', $profile->schema);
+		$this->assertSame(['create'], $profile->requiredActions);
+		$this->assertNotEquals($profile, WebhookProfiles::byAuthorizationType(authorizationType: 'cloudevents-source-crm'));
+		$this->assertNull(WebhookProfiles::byAuthorizationType(authorizationType: WebhookProfiles::CLOUDEVENTS_SOURCE_PREFIX));
+
+	}//end testEachCloudEventsSourceHasItsOwnProfile()
 }//end class
