@@ -133,6 +133,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		// GitHub for the publiccode harvest (sources-github-publiccode).
 		'github-api' => 'Code hosting',
 		'github-raw' => 'Code hosting',
+		// Web shops whose orders go to shillinq (connectors-webshop-orders D4).
+		'woocommerce-shop' => 'Commerce',
+		'shopify-shop' => 'Commerce',
+		'lightspeed-shop' => 'Commerce',
 	];
 
 	/**
