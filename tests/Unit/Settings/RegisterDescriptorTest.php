@@ -152,6 +152,8 @@ class RegisterDescriptorTest extends TestCase {
 		'SmsMessage' => 'sms_message',
 		// Live payment providers connector — added by live-payment-providers spec.
 		'PaymentIntent' => 'payment_intent',
+		// Provider payouts — added by messaging-payment-command-settlements-and-point-of-sale.
+		'PaymentSettlement' => 'payment_settlement',
 		// KISS (Klantinteractie Servicesysteem) KCC bridge — added by kiss-kcc-bridge spec.
 		'KissKlantcontact' => 'kiss_klantcontact',
 		// Open Formulieren intake bridge — added by open-formulieren-intake spec.
