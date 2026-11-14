@@ -137,7 +137,26 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'woocommerce-shop' => 'Commerce',
 		'shopify-shop' => 'Commerce',
 		'lightspeed-shop' => 'Commerce',
+		// Bookkeeping connectors in the categories shillinq's integrations page filters on
+		// (platform-bookkeeping-catalogue-items D2). These names are a contract: see BOOKKEEPING_CATEGORIES.
+		'peppol-access-point' => 'E-invoicing',
+		'psd2-bank-aggregator' => 'Bank',
+		'corporate-card-feed' => 'Bank',
+		'mollie-payments' => 'Payments',
+		'digipoort-sbr' => 'Tax filing',
+		'ecb-eurofxref-daily' => 'Bank',
 	];
+
+	/**
+	 * The categories shillinq's integrations page filters integriq's catalogue on
+	 * (shillinq platform-integration-catalogue D1). Every bookkeeping connector
+	 * template carries one of them.
+	 *
+	 * @var list<string>
+	 *
+	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 */
+	public const BOOKKEEPING_CATEGORIES = ['Bank', 'Payments', 'E-invoicing', 'Tax filing', 'Commerce', 'Payroll'];
 
 	/**
 	 * The Objecten API and Objecttypen API facade as one adapter card

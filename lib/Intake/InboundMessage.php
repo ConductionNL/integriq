@@ -234,6 +234,35 @@ final class InboundMessage {
 	}//end fromObject()
 
 	/**
+	 * The same message with its attachments and media replaced.
+	 *
+	 * A message rebuilt from its stored object has metadata only; a held
+	 * message routed again gets its kept bytes back through this.
+	 *
+	 * @param array<int,array<string,mixed>> $attachments The attachments, with content.
+	 * @param array<int,array<string,mixed>> $media       The media, with content.
+	 *
+	 * @return self The message with those files.
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/tasks.md#task-5-route-a-held-message-again
+	 */
+	public function withFiles(array $attachments, array $media): self {
+		return new self(
+			$this->channelId,
+			$this->externalId,
+			$this->correspondent,
+			$this->text,
+			array_values($attachments),
+			$this->location,
+			array_values($media),
+			$this->rawPayload,
+			$this->receivedAt,
+			$this->fields,
+		);
+
+	}//end withFiles()
+
+	/**
 	 * The value when it is a list of records, an empty list otherwise.
 	 *
 	 * Separate from {@see self::mapOrEmpty()} because the constructor's

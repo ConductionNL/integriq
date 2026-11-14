@@ -425,6 +425,7 @@ class EventService implements EventServiceInterface {
 					register: 'integriq',
 					schema: 'event',
 					_rbac: false,
+					// Unscoped: the event queue worker runs without a user session.
 					_multitenancy: false
 				);
 			} catch (Exception $e) {
@@ -1399,6 +1400,7 @@ class EventService implements EventServiceInterface {
 			register: 'integriq',
 			schema: 'event_subscription',
 			_rbac: false,
+			// Unscoped: event dispatch resolves the subscription of a queued message as the system.
 			_multitenancy: false,
 			_render: false
 		);
@@ -2614,6 +2616,7 @@ class EventService implements EventServiceInterface {
 				register: 'integriq',
 				schema: 'event_subscription',
 				_rbac: false,
+				// Unscoped: event dispatch reads the retry policy of a queued message as the system.
 				_multitenancy: false,
 				_render: false
 			);
