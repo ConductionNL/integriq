@@ -51,7 +51,7 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the seeded product page opens THEN one error and one waived warning are shown
 - [ ] Implement
-  - The custom rule set `gemeente-voorbeeld` is seeded. Left: the `besluiten-api` product and its two findings (no seeded product of that name exists yet), and the docs.
+  - The custom rule set `gemeente-voorbeeld` is seeded. Docs written (2026-11-14): `docs/administrators/api-design-rules.md`, linked from `docs/SUMMARY.md` (check, publish refusal, waiver, rule sets). Left: the `besluiten-api` product and its two findings. `api_product.status` only knows `active` and `deprecated`, so a seeded product carrying an open error would either sit published against REQ-ADRC-003 or read as deprecated. The seed needs an unpublished product state, or a decision that the seeded product may start active, before it can be written.
 - [ ] Test (docs walked once)
 
 ## Verification
