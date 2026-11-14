@@ -31,14 +31,17 @@ namespace OCA\Integriq\Service\Registration;
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClientInterface;
+use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
+use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
 
 /**
  * The stuf-zds leg (design D4).
  *
- * Files (the PDF and attachments, genereerDocumentidentificatie_Di02 and
- * voegZaakdocumentToe_Lk01) come with reading the hand-over's files as the
- * calling app; until then a hand-over with files is refused rather than
- * registered without them.
+ * After the zaak, the PDF and each attachment are read as the calling app and
+ * sent with genereerDocumentidentificatie_Di02 and voegZaakdocumentToe_Lk01,
+ * each its own step, so a resumed hand-over sends only the documents still
+ * missing. A hand-over with files the leg cannot send is refused before any
+ * message rather than registered without them.
  *
  * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
  */
@@ -54,12 +57,18 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 	/**
 	 * Constructor.
 	 *
-	 * @param StufZdsCaseClientInterface $cases The StUF-ZDS case operations.
+	 * @param StufZdsCaseClientInterface   $cases     The StUF-ZDS case operations.
+	 * @param StufZdsDocumentDelivery|null $documents Sends each document to the zaak.
+	 * @param StufZdsMessageLog|null       $sources   Reads the StUF-ZKN source raw for the documents.
+	 * @param RegistrationFiles|null       $files     Reads the hand-over's files as the calling app.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
 	 */
 	public function __construct(
 		private readonly StufZdsCaseClientInterface $cases,
+		private readonly ?StufZdsDocumentDelivery $documents = null,
+		private readonly ?StufZdsMessageLog $sources = null,
+		private readonly ?RegistrationFiles $files = null,
 	) {
 	}//end __construct()
 
@@ -75,7 +84,7 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 	}//end kind()
 
 	/**
-	 * Create the zaak once.
+	 * Create the zaak once, then send each document not sent yet.
 	 *
 	 * @param array<string,mixed>            $target   The registration target.
 	 * @param array<string,mixed>            $mapped   The mapped case: omschrijving, startdatum and any other case fields.
@@ -84,18 +93,58 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 	 *
 	 * @return array{externalReference:string,externalUrl:string,steps:array<int,array<string,mixed>>}
 	 *
-	 * @throws RegistrationRefusal When the zaak is not created.
+	 * @throws RegistrationRefusal When the zaak or a document is not created.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
 	 */
 	public function register(array $target, array $mapped, array $handover, array $steps): array {
+		[$source, $zaaktype] = self::settingsOf(target: $target);
+		$files = self::filesOf(handover: $handover);
+		if ($files !== []) {
+			$this->checkDocuments(target: $target);
+		}
+
+		$reference = self::doneReference(steps: $steps);
+		if ($reference === null) {
+			[$reference, $steps] = $this->createZaak(source: $source, zaaktype: $zaaktype, mapped: $mapped, handover: $handover, steps: $steps);
+		}
+
+		$steps = $this->addDocuments(source: $source, target: $target, zaak: $reference, files: $files, handover: $handover, steps: $steps);
+
+		return ['externalReference' => $reference, 'externalUrl' => '', 'steps' => $steps];
+	}//end register()
+
+	/**
+	 * The zaak identificatie an earlier hand-over created, or null.
+	 *
+	 * @param array<int,array<string,mixed>> $steps What an earlier hand-over already did.
+	 *
+	 * @return string|null
+	 */
+	private static function doneReference(array $steps): ?string {
 		foreach ($steps as $step) {
 			if (($step['step'] ?? null) === self::STEP) {
-				return ['externalReference' => (string)($step['reference'] ?? ''), 'externalUrl' => '', 'steps' => $steps];
+				return (string)($step['reference'] ?? '');
 			}
 		}
 
-		[$source, $zaaktype] = self::settingsOf(target: $target, handover: $handover);
+		return null;
+	}//end doneReference()
+
+	/**
+	 * Create the zaak and record it as a step.
+	 *
+	 * @param string                         $source   The StUF-ZKN source.
+	 * @param string                         $zaaktype The zaaktype.
+	 * @param array<string,mixed>            $mapped   The mapped case.
+	 * @param array<string,mixed>            $handover The hand-over.
+	 * @param array<int,array<string,mixed>> $steps    The steps so far.
+	 *
+	 * @return array{0:string,1:array<int,array<string,mixed>>} The zaak identificatie and the steps.
+	 *
+	 * @throws RegistrationRefusal When the zaak is not created.
+	 */
+	private function createZaak(string $source, string $zaaktype, array $mapped, array $handover, array $steps): array {
 
 		$case = $mapped + ['omschrijving' => (string)($handover['form']['title'] ?? '')];
 		$initiator = self::initiator(applicant: (array)($handover['applicant'] ?? []));
@@ -113,20 +162,113 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 		$reference = (string)($result['caseIdentification'] ?? '');
 		$steps[]   = ['step' => self::STEP, 'reference' => $reference, 'referentienummer' => (string)($result['referentienummer'] ?? '')];
 
-		return ['externalReference' => $reference, 'externalUrl' => '', 'steps' => $steps];
-	}//end register()
+		return [$reference, $steps];
+	}//end createZaak()
+
+	/**
+	 * The hand-over's files in document order: the PDF first, then each attachment.
+	 *
+	 * @param array<string,mixed> $handover The hand-over.
+	 *
+	 * @return list<array{file:array<string,mixed>,pdf:bool}>
+	 */
+	private static function filesOf(array $handover): array {
+		$files = [];
+		if (is_array($handover['pdf'] ?? null) === true) {
+			$files[] = ['file' => $handover['pdf'], 'pdf' => true];
+		}
+
+		foreach ((array)($handover['attachments'] ?? []) as $attachment) {
+			if (is_array($attachment) === true) {
+				$files[] = ['file' => $attachment, 'pdf' => false];
+			}
+		}
+
+		return $files;
+	}//end filesOf()
+
+	/**
+	 * Refuse, before any message, a hand-over with files the leg cannot send.
+	 *
+	 * @param array<string,mixed> $target The target.
+	 *
+	 * @return void
+	 *
+	 * @throws RegistrationRefusal source-unavailable.
+	 */
+	private function checkDocuments(array $target): void {
+		$message = null;
+		if ($this->documents === null || $this->sources === null || $this->files === null) {
+			$message = 'Sending files to a StUF-ZDS target is not available on this instance.';
+		} else if (trim((string)($target['stufZds']['documenttypeCode'] ?? '')) === '') {
+			$message = 'The target lacks the documenttype code for the files.';
+		}
+
+		if ($message !== null) {
+			throw new RegistrationRefusal(reason: RegistrationRefusal::SOURCE_UNAVAILABLE, retryable: false, message: $message);
+		}
+	}//end checkDocuments()
+
+	/**
+	 * Send each file not sent yet to the zaak, each as its own step.
+	 *
+	 * @param string                                         $source   The StUF-ZKN source.
+	 * @param array<string,mixed>                            $target   The target.
+	 * @param string                                         $zaak     The zaak identificatie.
+	 * @param list<array{file:array<string,mixed>,pdf:bool}> $files    The files, in document order.
+	 * @param array<string,mixed>                            $handover The hand-over.
+	 * @param array<int,array<string,mixed>>                 $steps    The steps so far.
+	 *
+	 * @return array<int,array<string,mixed>> The steps.
+	 *
+	 * @throws RegistrationRefusal When a file cannot be read or a document is not added.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-a-submission-is-registered-once-req-sreg-003
+	 */
+	private function addDocuments(string $source, array $target, string $zaak, array $files, array $handover, array $steps): array {
+		$done = array_column($steps, 'step');
+		foreach ($files as $entry) {
+			$step = 'document:' . (int)($entry['file']['fileId'] ?? 0);
+			if (in_array($step, $done, true) === true || $this->documents === null || $this->sources === null || $this->files === null) {
+				continue;
+			}
+
+			$read  = $this->files->read(app: (string)($handover['app'] ?? ''), file: $entry['file']);
+			$titel = $read['name'];
+			if ($entry['pdf'] === true) {
+				$titel = (string)($handover['form']['title'] ?? $read['name']);
+			}
+
+			try {
+				$sent = $this->documents->deliver(
+					source: $this->sources->source(sourceId: $source),
+					document: ['titel' => $titel, 'formaat' => $read['mimeType'], 'auteur' => (string)($handover['app'] ?? 'integriq')],
+					file: ['content' => $read['content'], 'filename' => $read['name'], 'mimeType' => $read['mimeType']],
+					zaakIdentificatie: $zaak,
+					documenttype: trim((string)$target['stufZds']['documenttypeCode'])
+				);
+			} catch (StufZknTranslationException $e) {
+				throw new RegistrationRefusal(reason: RegistrationRefusal::MAPPING_FAILED, retryable: false, message: $e->getMessage());
+			} catch (StufZknProviderException $e) {
+				throw new RegistrationRefusal(reason: RegistrationRefusal::OUTSIDE_REFUSED, retryable: false, message: $e->getMessage());
+			}
+
+			$steps[] = ['step' => $step, 'identificatie' => $sent['identificatie'], 'referentienummer' => $sent['referentienummer']];
+		}//end foreach
+
+		return $steps;
+	}//end addDocuments()
 
 	/**
 	 * The StUF-ZKN source and zaaktype of the target, refused when this leg cannot serve them.
 	 *
-	 * @param array<string,mixed> $target   The target.
-	 * @param array<string,mixed> $handover The hand-over.
+	 * @param array<string,mixed> $target The target.
 	 *
 	 * @return array{0:string,1:string}
 	 *
 	 * @throws RegistrationRefusal source-unavailable.
 	 */
-	private static function settingsOf(array $target, array $handover): array {
+	private static function settingsOf(array $target): array {
 		$source   = (string)($target['sources']['zkn'] ?? '');
 		$zaaktype = (string)($target['stufZds']['zaaktypeCode'] ?? '');
 		if ($source === '' || $zaaktype === '') {
@@ -134,14 +276,6 @@ class StufZdsRegistrationLeg implements RegistrationLeg {
 				reason: RegistrationRefusal::SOURCE_UNAVAILABLE,
 				retryable: false,
 				message: 'The target lacks its StUF-ZKN source or zaaktype code.'
-			);
-		}
-
-		if (isset($handover['pdf']) === true || ((array)($handover['attachments'] ?? [])) !== []) {
-			throw new RegistrationRefusal(
-				reason: RegistrationRefusal::SOURCE_UNAVAILABLE,
-				retryable: false,
-				message: 'Sending files to a StUF-ZDS target is not available yet.'
 			);
 		}
 

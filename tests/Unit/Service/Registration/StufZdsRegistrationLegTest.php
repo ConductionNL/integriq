@@ -27,6 +27,9 @@ use OCA\Integriq\Exception\StufZknTranslationException;
 use OCA\Integriq\Service\Registration\RegistrationRefusal;
 use OCA\Integriq\Service\Registration\StufZdsRegistrationLeg;
 use OCA\Integriq\Service\StufZkn\StufZdsCaseClientInterface;
+use OCA\Integriq\Service\Registration\RegistrationFiles;
+use OCA\Integriq\Service\StufZkn\StufZdsDocumentDelivery;
+use OCA\Integriq\Service\StufZkn\StufZdsMessageLog;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -195,4 +198,121 @@ class StufZdsRegistrationLegTest extends TestCase {
 			$this->assertSame([RegistrationRefusal::SOURCE_UNAVAILABLE, false], [$refusal->getReason(), $refusal->isRetryable()]);
 		}
 	}//end testFilesAndAKvkApplicantAreRefusedRatherThanSentIncomplete()
+
+	/**
+	 * The leg with document delivery, over doubles that record every read and delivery.
+	 *
+	 * @param list<array<string, mixed>> $delivered Filled with the arguments of every delivery.
+	 * @param list<array{0: string, 1: int}> $reads Filled with the app and file id of every read.
+	 * @param \Throwable|null $failure Thrown by the delivery instead of answering.
+	 *
+	 * @return StufZdsRegistrationLeg
+	 */
+	private function documentLeg(array &$delivered, array &$reads, ?\Throwable $failure = null): StufZdsRegistrationLeg {
+		$this->cases = $this->createMock(StufZdsCaseClientInterface::class);
+		$documents   = $this->createMock(StufZdsDocumentDelivery::class);
+		$documents->method('deliver')->willReturnCallback(
+			static function (array $source, array $document, array $file, string $zaakIdentificatie, string $documenttype) use (&$delivered, $failure): array {
+				if ($failure !== null) {
+					throw $failure;
+				}
+
+				$delivered[] = ['source' => $source['id'], 'document' => $document, 'file' => $file, 'zaak' => $zaakIdentificatie, 'documenttype' => $documenttype];
+				return ['identificatie' => 'DOC-' . count($delivered), 'referentienummer' => 'REF-D' . count($delivered), 'zaakIdentificatie' => $zaakIdentificatie];
+			}
+		);
+		$sources = $this->createMock(StufZdsMessageLog::class);
+		$sources->method('source')->willReturnCallback(static fn (string $sourceId): array => ['id' => $sourceId, 'type' => 'stuf-zkn']);
+		$files = $this->createMock(RegistrationFiles::class);
+		$files->method('read')->willReturnCallback(
+			static function (string $app, array $file) use (&$reads): array {
+				$reads[] = [$app, (int)$file['fileId']];
+				return ['content' => 'bytes', 'name' => (string)($file['name'] ?? 'inzending.pdf'), 'mimeType' => 'application/pdf'];
+			}
+		);
+
+		return new StufZdsRegistrationLeg($this->cases, $documents, $sources, $files);
+	}//end documentLeg()
+
+	/**
+	 * The target with a documenttype code.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function documentTarget(): array {
+		$target = self::TARGET;
+		$target['stufZds']['documenttypeCode'] = 'Aanvraag';
+
+		return $target;
+	}//end documentTarget()
+
+	public function testThePdfAndEachAttachmentAreAddedToTheZaakAfterItIsCreated(): void {
+		$delivered = [];
+		$reads     = [];
+		$leg       = $this->documentLeg($delivered, $reads);
+		$this->cases->expects($this->once())->method('creeerZaak')->willReturn(self::caseResult(true, '0363-Z-1'));
+		$handover = self::HANDOVER + ['pdf' => ['fileId' => 7], 'attachments' => [['fileId' => 8, 'name' => 'kaart.pdf']]];
+
+		$result = $leg->register(self::documentTarget(), ['omschrijving' => 'Losse tegel'], $handover, []);
+
+		$this->assertSame([['portaliq', 7], ['portaliq', 8]], $reads);
+		$this->assertSame(
+			[
+				'source' => 'src-zkn',
+				'document' => ['titel' => 'Melding', 'formaat' => 'application/pdf', 'auteur' => 'portaliq'],
+				'file' => ['content' => 'bytes', 'filename' => 'inzending.pdf', 'mimeType' => 'application/pdf'],
+				'zaak' => '0363-Z-1',
+				'documenttype' => 'Aanvraag',
+			],
+			$delivered[0]
+		);
+		$this->assertSame('kaart.pdf', $delivered[1]['document']['titel']);
+		$this->assertSame('0363-Z-1', $result['externalReference']);
+		$this->assertSame(['zaak', 'document:7', 'document:8'], array_column($result['steps'], 'step'));
+		$this->assertSame('DOC-2', $result['steps'][2]['identificatie']);
+	}//end testThePdfAndEachAttachmentAreAddedToTheZaakAfterItIsCreated()
+
+	public function testAResumedHandOverSendsOnlyTheMissingDocuments(): void {
+		$delivered = [];
+		$reads     = [];
+		$leg       = $this->documentLeg($delivered, $reads);
+		$this->cases->expects($this->never())->method('creeerZaak');
+		$steps = [['step' => 'zaak', 'reference' => '0363-Z-1', 'referentienummer' => 'REF-1'], ['step' => 'document:7', 'identificatie' => 'DOC-1']];
+
+		$result = $leg->register(self::documentTarget(), [], self::HANDOVER + ['pdf' => ['fileId' => 7], 'attachments' => [['fileId' => 8]]], $steps);
+
+		$this->assertSame([['portaliq', 8]], $reads);
+		$this->assertCount(1, $delivered);
+		$this->assertSame('0363-Z-1', $delivered[0]['zaak']);
+		$this->assertSame(['zaak', 'document:7', 'document:8'], array_column($result['steps'], 'step'));
+	}//end testAResumedHandOverSendsOnlyTheMissingDocuments()
+
+	public function testFilesWithoutADocumenttypeCodeAreRefusedBeforeTheZaak(): void {
+		$delivered = [];
+		$reads     = [];
+		$leg       = $this->documentLeg($delivered, $reads);
+		$this->cases->expects($this->never())->method('creeerZaak');
+
+		$refusal = self::refusal($leg, self::TARGET, self::HANDOVER + ['pdf' => ['fileId' => 7]]);
+
+		$this->assertSame([RegistrationRefusal::SOURCE_UNAVAILABLE, false], [$refusal->getReason(), $refusal->isRetryable()]);
+		$this->assertSame('The target lacks the documenttype code for the files.', $refusal->getMessage());
+		$this->assertSame([], $reads);
+	}//end testFilesWithoutADocumenttypeCodeAreRefusedBeforeTheZaak()
+
+	public function testARefusedDocumentIsOutsideRefusedAndKeepsTheZaakForTheRetry(): void {
+		$delivered = [];
+		$reads     = [];
+		$leg       = $this->documentLeg($delivered, $reads, new StufZknProviderException(message: 'Fo03: document geweigerd'));
+		$this->cases->expects($this->never())->method('creeerZaak');
+		$steps = [['step' => 'zaak', 'reference' => '0363-Z-1']];
+
+		try {
+			$leg->register(self::documentTarget(), [], self::HANDOVER + ['pdf' => ['fileId' => 7]], $steps);
+			$this->fail('A refused document was taken for an added one.');
+		} catch (RegistrationRefusal $refusal) {
+			$this->assertSame([RegistrationRefusal::OUTSIDE_REFUSED, false], [$refusal->getReason(), $refusal->isRetryable()]);
+			$this->assertSame('Fo03: document geweigerd', $refusal->getMessage());
+		}
+	}//end testARefusedDocumentIsOutsideRefusedAndKeepsTheZaakForTheRetry()
 }//end class
