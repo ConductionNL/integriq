@@ -576,6 +576,14 @@
 		     not written with their leading dashes here.) -->
 		<command>OCA\Integriq\Command\FlowStepsToGraph</command>
 		<command>OCA\Integriq\Command\IdpConsumerCommand</command>
+		<!-- platform-integrations-as-code: list, run and test sources,
+		     synchronizations and jobs from the shell; exit 0, 1 failed, 2 not found. -->
+		<command>OCA\Integriq\Command\Integration\SourceList</command>
+		<command>OCA\Integriq\Command\Integration\SourceTest</command>
+		<command>OCA\Integriq\Command\Integration\SynchronizationList</command>
+		<command>OCA\Integriq\Command\Integration\SynchronizationRun</command>
+		<command>OCA\Integriq\Command\Integration\JobList</command>
+		<command>OCA\Integriq\Command\Integration\JobRun</command>
 	</commands>
 
 	<settings>

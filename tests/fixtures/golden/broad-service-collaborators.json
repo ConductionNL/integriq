@@ -2,6 +2,7 @@
     "OCA\\Integriq\\BackgroundJob\\EventRetryJob::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\BackgroundJob\\ExchangeRate\\ExchangeRateImportService::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\BackgroundJob\\ProcessEventJob::$eventService": "OCA\\Integriq\\Service\\EventService",
+    "OCA\\Integriq\\Command\\Integration\\SynchronizationRun::$synchronization": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Controller\\EventsController::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Controller\\SynchronizationsController::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\EventListener\\CloudEventListener::$eventService": "OCA\\Integriq\\Service\\EventService",
