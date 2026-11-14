@@ -186,4 +186,37 @@ final class RemoteFileSessionFactoryTest extends TestCase {
 		$this->assertTrue($factory->isAvailable(protocol: 'ftps'));
 		$this->assertFalse($factory->isAvailable(protocol: 'ftp'));
 	}//end testAvailabilityFollowsTheInstalledLibraries()
+
+	/**
+	 * The presented fingerprint is read without a login, and the connection is closed after.
+	 *
+	 * @return void
+	 */
+	public function testTheFingerprintOfAConnectionIsReadWithoutALogin(): void {
+		$sftp = $this->sftp();
+
+		$fingerprint = (new RemoteFileSessionFactory())->fingerprintOfConnection(sftp: $sftp, server: $this->server(pin: ''));
+
+		$this->assertSame(HostKeyPin::fingerprintOf(publicKey: self::KEY), $fingerprint);
+		$this->assertSame(['hostkey', 'disconnect'], $sftp->calls);
+	}//end testTheFingerprintOfAConnectionIsReadWithoutALogin()
+
+	/**
+	 * An FTPS server has no host key to pin, and SFTP without its library is refused.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAnAvailableSftpServerHasAPresentedKey(): void {
+		$ftps = new RemoteServer(protocol: 'ftps', host: 'ftp.example.nl', port: 21, username: 'gemeente', rootPath: '/', hostKeyFingerprint: '', authMode: 'password', credentialId: 'cred-1');
+		try {
+			(new RemoteFileSessionFactory())->presentedFingerprint(server: $ftps);
+			$this->fail('an FTPS server gave a host key');
+		} catch (RemoteFileException $exception) {
+			$this->assertSame('Only an SFTP server has a host key to pin; FTPS checks the server certificate instead.', $exception->getMessage());
+		}
+
+		$this->expectException(RemoteFileException::class);
+		$this->expectExceptionMessage('SFTP is not available on this instance: phpseclib 3 is not installed.');
+		(new RemoteFileSessionFactory(sftpClass: 'No\\Such\\Sftp'))->presentedFingerprint(server: $this->server(pin: ''));
+	}//end testOnlyAnAvailableSftpServerHasAPresentedKey()
 }//end class

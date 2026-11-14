@@ -114,6 +114,74 @@ class RemoteFileSessionFactory {
 	}//end open()
 
 	/**
+	 * The host key fingerprint an SFTP server presents, read without logging in.
+	 *
+	 * No credential is sent: the connection ends after the key exchange. This
+	 * is what an administrator checks with the partner before pinning it.
+	 *
+	 * @param RemoteServer $server The server.
+	 *
+	 * @return string The SHA-256 fingerprint, `SHA256:...`.
+	 *
+	 * @throws RemoteFileException When the server is not SFTP, SFTP is unavailable, or no key is presented.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	public function presentedFingerprint(RemoteServer $server): string {
+		if ($server->protocol !== 'sftp') {
+			throw new RemoteFileException(
+				'Only an SFTP server has a host key to pin; ' . strtoupper($server->protocol) . ' checks the server certificate instead.'
+			);
+		}
+
+		if ($this->isAvailable(protocol: 'sftp') === false) {
+			throw new RemoteFileException(sprintf('SFTP is not available on this instance: %s.', self::MISSING['sftp']));
+		}
+
+		$class = $this->sftpClass;
+		return $this->fingerprintOfConnection(sftp: new $class($server->host, $server->port, 15), server: $server);
+	}//end presentedFingerprint()
+
+	/**
+	 * The fingerprint a connected SFTP object presents; the connection is closed after.
+	 *
+	 * @param object       $sftp   A phpseclib3\Net\SFTP (or an object with its methods).
+	 * @param RemoteServer $server The server, for messages.
+	 *
+	 * @return string The SHA-256 fingerprint.
+	 *
+	 * @throws RemoteFileException When no key is presented.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	public function fingerprintOfConnection(object $sftp, RemoteServer $server): string {
+		try {
+			return $this->fingerprintPresentedBy(sftp: $sftp, server: $server);
+		} finally {
+			$sftp->disconnect();
+		}
+	}//end fingerprintOfConnection()
+
+	/**
+	 * The fingerprint of the host key a connected SFTP object presents.
+	 *
+	 * @param object       $sftp   A phpseclib3\Net\SFTP (or an object with its methods).
+	 * @param RemoteServer $server The server, for messages.
+	 *
+	 * @return string The SHA-256 fingerprint.
+	 *
+	 * @throws RemoteFileException When no key is presented.
+	 */
+	private function fingerprintPresentedBy(object $sftp, RemoteServer $server): string {
+		$hostKey = $sftp->getServerPublicHostKey();
+		if (is_string($hostKey) === false || $hostKey === '') {
+			throw new RemoteFileException('The SFTP server ' . $server->host . ' presented no host key.');
+		}
+
+		return HostKeyPin::fingerprintOf(publicKey: $hostKey);
+	}//end fingerprintPresentedBy()
+
+	/**
 	 * Check the host key of a connected SFTP object, then log in.
 	 *
 	 * @param object       $sftp   A phpseclib3\Net\SFTP (or an object with its methods).
@@ -127,14 +195,9 @@ class RemoteFileSessionFactory {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function loggedIn(object $sftp, RemoteServer $server, #[\SensitiveParameter] string $secret): SftpSession {
-		$hostKey = $sftp->getServerPublicHostKey();
-		if (is_string($hostKey) === false || $hostKey === '') {
-			throw new RemoteFileException('The SFTP server ' . $server->host . ' presented no host key.');
-		}
-
 		HostKeyPin::assertMatches(
 			pinned: $server->hostKeyFingerprint,
-			presented: HostKeyPin::fingerprintOf(publicKey: $hostKey),
+			presented: $this->fingerprintPresentedBy(sftp: $sftp, server: $server),
 			host: $server->host
 		);
 

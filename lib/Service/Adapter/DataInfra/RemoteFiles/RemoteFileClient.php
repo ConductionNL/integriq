@@ -182,6 +182,43 @@ class RemoteFileClient {
 	}//end delete()
 
 	/**
+	 * The host key fingerprint the source's SFTP server presents, read without logging in.
+	 *
+	 * The host passes the egress guard first, as every connection does.
+	 *
+	 * @param array<string, mixed> $source The source object.
+	 *
+	 * @return string The SHA-256 fingerprint, `SHA256:...`.
+	 *
+	 * @throws RemoteFileException When the source is not reachable SFTP or presents no key.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	public function presentedHostKey(array $source): string {
+		$server = RemoteServer::fromSource(source: $source);
+		$this->assertEgress(server: $server);
+
+		return $this->sessionFactory->presentedFingerprint(server: $server);
+	}//end presentedHostKey()
+
+	/**
+	 * Refuse a host the egress guard does not allow.
+	 *
+	 * @param RemoteServer $server The server.
+	 *
+	 * @return void
+	 *
+	 * @throws RemoteFileException When the egress guard refuses the host.
+	 */
+	private function assertEgress(RemoteServer $server): void {
+		try {
+			$this->egressGuard->assertAllowed(url: 'https://' . $server->host . ':' . $server->port . '/');
+		} catch (EgressRefusedException $refusal) {
+			throw new RemoteFileException($refusal->getMessage(), 0, $refusal);
+		}
+	}//end assertEgress()
+
+	/**
 	 * Run one operation on a fresh session, closing it afterwards.
 	 *
 	 * @param RemoteServer $server    The server.
@@ -194,11 +231,7 @@ class RemoteFileClient {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	private function withSession(RemoteServer $server, callable $operation): mixed {
-		try {
-			$this->egressGuard->assertAllowed(url: 'https://' . $server->host . ':' . $server->port . '/');
-		} catch (EgressRefusedException $refusal) {
-			throw new RemoteFileException($refusal->getMessage(), 0, $refusal);
-		}
+		$this->assertEgress(server: $server);
 
 		$session = $this->sessionFactory->open(server: $server, secret: $this->secret(server: $server));
 		try {

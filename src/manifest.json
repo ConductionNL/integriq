@@ -1345,6 +1345,12 @@
             "colSpan": 12
           },
           {
+            "id": "src-host-key",
+            "component": "SourceHostKeyPanel",
+            "placement": "after-data",
+            "colSpan": 12
+          },
+          {
             "id": "src-document-generation",
             "component": "DocumentGenerationSourcePanel",
             "placement": "after-data",

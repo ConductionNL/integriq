@@ -54,14 +54,18 @@ Kind: code. Size M. Row `integriq:src-sftp`.
 - **files**: the source detail page (fingerprint confirmation on first test), `lib/Settings/integriq_seed_data.json`, `docs/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN a new SFTP source WHEN the administrator tests it the first time THEN the server's fingerprint is shown for confirmation
-- [ ] Implement (seed and docs done; the confirmation step on the source page is left)
+- [x] Implement
 - [ ] Test (Playwright)
 - **note**: the seed has a dormant `example-sftp-partner` source and a
   `status: disabled` pickup `example-sftp-pickup` for `*.csv`, archiving to
   `processed`. The docs are `docs/features/sftp-ftps-file-pickup.md`. A first
   test of an unpinned source is refused with the server's fingerprint in the
-  message, so it can already be checked and filled in; a dedicated confirm
-  button on the source page is not built.
+  message. The source page has a "Host key" panel (`SourceHostKeyPanel`):
+  "Check the host key" reads the presented fingerprint without logging in
+  (`GET /api/sources/{id}/host-key`), and after the administrator ticks that
+  they checked it with the partner, "Pin this host key" saves it (`POST`),
+  refused with 409 when the server presents another key by then. Both
+  endpoints are admin-only.
 
 ## Verification
 - [ ] `openspec validate sources-sftp-adapter --type change --strict` passes

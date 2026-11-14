@@ -445,6 +445,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Circuit breaker manual trip/reset (admin-only, CSRF intact — REQ-009).
 		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
 		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
+		// sources-sftp-adapter: show the host key an SFTP source's server presents, and pin it once confirmed.
+		['name' => 'sourceHostKey#show', 'url' => '/api/sources/{id}/host-key', 'verb' => 'GET'],
+		['name' => 'sourceHostKey#pin', 'url' => '/api/sources/{id}/host-key', 'verb' => 'POST'],
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],

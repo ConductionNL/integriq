@@ -301,4 +301,37 @@ final class RemoteFileClientTest extends TestCase {
 		$this->expectExceptionMessage('The root path itself cannot be deleted.');
 		$this->client()->delete(source: $this->source(), path: '/');
 	}//end testTheRootItselfIsNeverDeleted()
+
+	/**
+	 * Reading the presented host key passes the egress guard and never reads the credential.
+	 *
+	 * @return void
+	 */
+	public function testThePresentedHostKeyIsReadWithoutTheCredential(): void {
+		$this->egress->expects($this->once())->method('assertAllowed')->with('https://sftp.example.nl:22/');
+		$this->broker->expects($this->never())->method('resolveInjectable');
+		$this->factory->expects($this->never())->method('open');
+		$this->factory->expects($this->once())->method('presentedFingerprint')->willReturnCallback(
+			function (RemoteServer $server): string {
+				$this->assertSame(['sftp', 'sftp.example.nl', 22], [$server->protocol, $server->host, $server->port]);
+				return 'SHA256:abc';
+			}
+		);
+
+		$this->assertSame('SHA256:abc', $this->client()->presentedHostKey(source: $this->source()));
+	}//end testThePresentedHostKeyIsReadWithoutTheCredential()
+
+	/**
+	 * A refused host is not asked for its key.
+	 *
+	 * @return void
+	 */
+	public function testARefusedHostIsNotAskedForItsKey(): void {
+		$this->egress->method('assertAllowed')->willThrowException(new EgressRefusedException(message: 'The host "sftp.example.nl" is not allowed.'));
+		$this->factory->expects($this->never())->method('presentedFingerprint');
+
+		$this->expectException(RemoteFileException::class);
+		$this->expectExceptionMessage('The host "sftp.example.nl" is not allowed.');
+		$this->client()->presentedHostKey(source: $this->source());
+	}//end testARefusedHostIsNotAskedForItsKey()
 }//end class

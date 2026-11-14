@@ -25,7 +25,9 @@ Plain FTP is not offered: it sends the password in the clear. An FTPS connection
 
 ### The host key
 
-The first time you test a new SFTP source, it has no host key yet, so the test is refused and the message shows the fingerprint the server presented. Check that fingerprint with the partner, then fill it in. From then on a server that presents another key is refused before any password is sent, and the message names both fingerprints.
+A new SFTP source has no host key yet, so it does not connect. On the source page, the "Host key" panel has a "Check the host key" button: it asks the server for the fingerprint it presents, without logging in or sending a password. Compare that fingerprint with the one the partner gave you, tick "I checked this fingerprint with the partner" and choose "Pin this host key". The key is saved only if the server still presents that same key at that moment.
+
+From then on a server that presents another key is refused before any password is sent, and the message names both fingerprints. The panel shows it too, and lets you pin the new key once the partner confirms they changed it. Pinning is for administrators only. A connection attempt to an unpinned source is also refused with the fingerprint in the message, so the key can be checked from the run log as well.
 
 ## Pick files up
 

@@ -3629,7 +3629,11 @@
         "FTPS server (FTP over TLS, certificate checked)": "FTPS server (FTP over TLS, certificate checked)",
         "Each source carries its own credential, root path and server check.": "Each source carries its own credential, root path and server check.",
         "SFTP needs the phpseclib 3 library, which is not installed on this instance.": "SFTP needs the phpseclib 3 library, which is not installed on this instance.",
-        "FTPS needs PHP curl with TLS support, which is missing on this instance.": "FTPS needs PHP curl with TLS support, which is missing on this instance."
+        "FTPS needs PHP curl with TLS support, which is missing on this instance.": "FTPS needs PHP curl with TLS support, which is missing on this instance.",
+        "Give the fingerprint you checked with the partner.": "Give the fingerprint you checked with the partner.",
+        "Only an SFTP source has a host key to pin.": "Only an SFTP source has a host key to pin.",
+        "The server now presents %1$s, not the fingerprint you confirmed (%2$s). Nothing was saved; check it again.": "The server now presents %1$s, not the fingerprint you confirmed (%2$s). Nothing was saved; check it again.",
+        "The host key was not saved: %s": "The host key was not saved: %s"
     },
     "plurals": {}
 }
