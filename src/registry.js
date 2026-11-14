@@ -33,7 +33,9 @@
 //   3. customComponents (this file) — escape hatch for handlers + future widgets
 
 import AutomationDeprecationNotice from './components/AutomationDeprecationNotice.vue'
+import BodyCaptureWindow from './components/BodyCaptureWindow.vue'
 import CallLogActions from './components/callLog/CallLogActions.vue'
+import CallLogDetail from './components/callLog/CallLogDetail.vue'
 import CallLogRowActions from './components/callLog/CallLogRowActions.vue'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
@@ -167,6 +169,9 @@ export default {
 	// through `actionsComponent`. The API behind them is CallLogController.
 	// outbound-call-delivery-and-replay REQ-OCD-002 and REQ-OCD-003.
 	CallLogRowActions,
+	// Source logs row detail: says when a record has no body because no
+	// investigation window was open (outbound-call-log-investigation-window-page-and-allowlist).
+	CallLogDetail,
 	CallLogActions,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
@@ -289,6 +294,9 @@ export default {
 	// count + cooldown countdown with a Reset action. See
 	// retry-and-circuit-breaker-policies (REQ-009).
 	CircuitBreakerBadge,
+	// Source detail investigation window (body section): open a window,
+	// see until when bodies are stored, stop early (REQ-OCD-011).
+	BodyCaptureWindow,
 
 	// ZGW Notificaties API Abonnementen (custom page): abonnement CRUD
 	// backed by the dedicated NotificatiesSubscriberController endpoints
