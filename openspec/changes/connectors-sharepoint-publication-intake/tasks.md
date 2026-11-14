@@ -23,12 +23,12 @@ Kind: code. Size M. Rows `opencatalogi:int-sharepoint` and
 
 ### Task 3: The Graph lookup route
 - **spec_ref**: openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
-- **files**: `lib/Controller/SharePointSetupController.php`, `appinfo/routes.php`, `lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php` (site search, drives, folder children)
+- **files**: `lib/Controller/SharePointSetupController.php`, `appinfo/routes.php`, `lib/Service/Adapter/DocumentCms/SharePointOnlineAdapter.php` (site search, drives, folder children) (verified: `GET /api/sharepoint/lookup`, integriq administrators only; `SharePointOnlineAdapter::lookup()` with the credential the dialog picked; `openapi.json` documents the route; tests/Unit/Controller/SharePointSetupControllerTest.php)
 - **acceptance_criteria**:
   - GIVEN a brokered credential WHEN the route is asked for sites matching "Woo" THEN it returns the Graph matches with id and name
   - GIVEN a Graph 403 WHEN the route is called THEN it answers with the permission Graph named
-- [ ] Implement
-- [ ] Test (PHPUnit with a stubbed broker)
+- [x] Implement
+- [x] Test (PHPUnit with a stubbed broker)
 
 ### Task 4: The setup dialog
 - **spec_ref**: openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001

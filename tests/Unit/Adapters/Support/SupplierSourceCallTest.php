@@ -46,7 +46,7 @@ class SupplierSourceCallTest extends TestCase {
 		$this->assertSame(expected: '/uwlr/results', actual: $this->calls[0][1]);
 		$this->assertSame(expected: 'GET', actual: $this->calls[0][2]);
 		$this->assertSame(
-			expected: ['query' => ['groep' => '6'], 'headers' => ['Accept' => 'application/json'], 'logBody' => true],
+			expected: ['query' => ['groep' => '6'], 'headers' => ['Accept' => 'application/json']],
 			actual: $this->calls[0][3]
 		);
 		$this->assertFalse($this->calls[0][4]);
@@ -61,7 +61,7 @@ class SupplierSourceCallTest extends TestCase {
 		$call = $this->supplierCall(slugs: ['swv-ldos'], status: 201, body: ['referenceId' => 'x']);
 
 		$this->assertSame(expected: ['referenceId' => 'x'], actual: $call->json(slug: 'swv-ldos', endpoint: '/handoff', method: 'POST', withholdBodies: true));
-		$this->assertFalse($this->calls[0][3]['logBody']);
+		$this->assertArrayNotHasKey('logBody', $this->calls[0][3]);
 		$this->assertTrue($this->calls[0][4]);
 	}//end testWithheldBodiesAreNotLogged()
 

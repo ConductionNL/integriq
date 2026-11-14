@@ -8,7 +8,7 @@ Kind: code. Matrix row `integriq:auto-regression-tests`.
 - **acceptance_criteria**:
   - GIVEN the app is installed WHEN the register is imported THEN `integration_test_case` and `integration_test_run` exist in the `integriq` register
   - GIVEN the seed runs WHEN an administrator opens the test cases page THEN two cases for `lowercase-keys` are listed
-- [ ] Implement
+- [x] Implement
 - [ ] Test (`node tests/validate-register.js`, `node tests/validate-manifest.js`, and a Playwright check that the page lists the seeded cases)
 
 ### Task 2: Suite runner for mapping and synchronization cases
@@ -18,8 +18,8 @@ Kind: code. Matrix row `integriq:auto-regression-tests`.
   - GIVEN a mapping with a passing and a failing case WHEN the suite runs THEN one run record holds total 2, passed 1, failed 1 and a diff for the failure
   - GIVEN a synchronization case WHEN the suite runs THEN CallService is never called and no target object is saved
   - GIVEN an ignored path WHEN only that path differs THEN the case passes
-- [ ] Implement
-- [ ] Test (PHPUnit with a mocked CallService and ObjectService asserting zero calls and zero saves)
+- [x] Implement
+- [x] Test (PHPUnit with a mocked CallService and ObjectService asserting zero calls and zero saves)
 
 ### Task 3: Controller, routes and actions
 - **spec_ref**: openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-running-and-recording-suites-are-named-actions-req-irt-004
@@ -27,8 +27,8 @@ Kind: code. Matrix row `integriq:auto-regression-tests`.
 - **acceptance_criteria**:
   - GIVEN a user without `regression-suite.run` WHEN they post to the run route THEN the answer is 403 and no run record exists
   - GIVEN an administrator WHEN they post to the run route THEN the answer is 200 with the run record
-- [ ] Implement
-- [ ] Test (PHPUnit on the controller for the 403 and the 200)
+- [x] Implement
+- [x] Test (PHPUnit on the controller for the 403 and the 200)
 
 ### Task 4: Save a trace step as a test case
 - **spec_ref**: openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
