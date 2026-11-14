@@ -2318,7 +2318,59 @@
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
         "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
         "Upstream path": "Upstreampad",
-        "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself.": "Voor targetType api: het pad op de bron waar dit endpoint naar doorstuurt, met optionele {{param}}-plaatshouders die uit de gatewayroute worden gevuld. Laat leeg om naar het endpointpad zelf door te sturen."
+        "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself.": "Voor targetType api: het pad op de bron waar dit endpoint naar doorstuurt, met optionele {{param}}-plaatshouders die uit de gatewayroute worden gevuld. Laat leeg om naar het endpointpad zelf door te sturen.",
+        "Already served by {endpoint}": "Al bediend door {endpoint}",
+        "Document address": "Adres van het document",
+        "Every imported endpoint is served under this path.": "Elk geïmporteerd endpoint wordt onder dit pad aangeboden.",
+        "Gateway prefix": "Gatewayvoorvoegsel",
+        "Gateway route": "Gatewayroute",
+        "Give the vendor's OpenAPI or Swagger document by its address or paste it. The preview changes nothing.": "Geef het OpenAPI- of Swagger-document van de leverancier op via het adres of plak het. De voorvertoning verandert niets.",
+        "Import": "Importeren",
+        "Import an OpenAPI description": "OpenAPI-beschrijving importeren",
+        "Import {operation}": "{operation} importeren",
+        "Nothing was created: every chosen operation is already served or unknown.": "Er is niets aangemaakt: elke gekozen operatie wordt al bediend of is onbekend.",
+        "Or paste the document": "Of plak het document",
+        "Server": "Server",
+        "Source address: {location}": "Adres van de bron: {location}",
+        "Source name": "Naam van de bron",
+        "Source {name} created.": "Bron {name} aangemaakt.",
+        "The document could not be read.": "Het document kon niet worden gelezen.",
+        "The import failed. Nothing was created.": "Het importeren is mislukt. Er is niets aangemaakt.",
+        "The source calls nothing until you add its credential ({schemes}) on the source.": "De bron roept niets aan totdat je de inloggegevens ({schemes}) bij de bron toevoegt.",
+        "another endpoint": "een ander endpoint",
+        "none given": "niet opgegeven",
+        "Import {count} operation": [
+            "{count} operatie importeren",
+            "{count} operaties importeren"
+        ],
+        "_Import {count} operation_::_Import {count} operations_": [
+            "{count} operatie importeren",
+            "{count} operaties importeren"
+        ],
+        "{count} endpoint could not be created.": [
+            "{count} endpoint kon niet worden aangemaakt.",
+            "{count} endpoints konden niet worden aangemaakt."
+        ],
+        "_{count} endpoint could not be created._::_{count} endpoints could not be created._": [
+            "{count} endpoint kon niet worden aangemaakt.",
+            "{count} endpoints konden niet worden aangemaakt."
+        ],
+        "{count} endpoint created.": [
+            "{count} endpoint aangemaakt.",
+            "{count} endpoints aangemaakt."
+        ],
+        "_{count} endpoint created._::_{count} endpoints created._": [
+            "{count} endpoint aangemaakt.",
+            "{count} endpoints aangemaakt."
+        ],
+        "{count} operation skipped because its route is already served.": [
+            "{count} operatie overgeslagen omdat de route al wordt bediend.",
+            "{count} operaties overgeslagen omdat de routes al worden bediend."
+        ],
+        "_{count} operation skipped because its route is already served._::_{count} operations skipped because their routes are already served._": [
+            "{count} operatie overgeslagen omdat de route al wordt bediend.",
+            "{count} operaties overgeslagen omdat de routes al worden bediend."
+        ]
     },
     "plurals": {}
 }

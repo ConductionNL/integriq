@@ -50,6 +50,7 @@ stubModal('../../src/dialogs/ExportConfigurationDialog.vue', 'ExportConfiguratio
 stubModal('../../src/modals/PromotePreviewModal.vue', 'PromotePreviewModal', [])
 stubModal('../../src/dialogs/RegistryLookupDialog.vue', 'RegistryLookupDialog', [])
 stubModal('../../src/dialogs/GatewayCatalogueDialog.vue', 'GatewayCatalogueDialog', [])
+stubModal('../../src/dialogs/OpenApiImportDialog.vue', 'OpenApiImportDialog', [])
 stubModal('../../src/dialogs/LinkSourceDialog.vue', 'LinkSourceDialog', ['app'])
 
 const bus = await import('../../src/handlers/modalBus.js')
@@ -95,6 +96,7 @@ const cases = [
 	[bus.EVENT_OPEN_PROMOTION, 'PromotePreviewModal', {}, {}],
 	[bus.EVENT_OPEN_REGISTRY_LOOKUP, 'RegistryLookupDialog', {}, {}],
 	[bus.EVENT_OPEN_GATEWAY_CATALOGUE, 'GatewayCatalogueDialog', {}, {}],
+	[bus.EVENT_OPEN_OPENAPI_IMPORT, 'OpenApiImportDialog', {}, {}],
 	[bus.EVENT_OPEN_LINK_SOURCE, 'LinkSourceDialog', { app: 'dossiq' }, { app: '' }],
 ]
 

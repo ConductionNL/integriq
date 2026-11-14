@@ -25,7 +25,7 @@ Kind: code. Size M. Rows `integriq:gw-openapi-import`, `integriq:gw-openapi-publ
 - **files**: `src/dialogs/OpenApiImportDialog.vue`, `src/manifest.json` (header action on the sources index), `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an administrator on the sources page WHEN they import from a URL and pick two operations THEN the new source and its two endpoints are listed
-- [ ] Implement
+- [x] Implement
 - [ ] Test (Playwright)
 
 ### Task 4: Publish the gateway and product documents

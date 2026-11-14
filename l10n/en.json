@@ -3580,7 +3580,59 @@
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
         "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
         "Upstream path": "Upstream path",
-        "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself.": "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself."
+        "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself.": "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself.",
+        "Already served by {endpoint}": "Already served by {endpoint}",
+        "Document address": "Document address",
+        "Every imported endpoint is served under this path.": "Every imported endpoint is served under this path.",
+        "Gateway prefix": "Gateway prefix",
+        "Gateway route": "Gateway route",
+        "Give the vendor's OpenAPI or Swagger document by its address or paste it. The preview changes nothing.": "Give the vendor's OpenAPI or Swagger document by its address or paste it. The preview changes nothing.",
+        "Import": "Import",
+        "Import an OpenAPI description": "Import an OpenAPI description",
+        "Import {operation}": "Import {operation}",
+        "Nothing was created: every chosen operation is already served or unknown.": "Nothing was created: every chosen operation is already served or unknown.",
+        "Or paste the document": "Or paste the document",
+        "Server": "Server",
+        "Source address: {location}": "Source address: {location}",
+        "Source name": "Source name",
+        "Source {name} created.": "Source {name} created.",
+        "The document could not be read.": "The document could not be read.",
+        "The import failed. Nothing was created.": "The import failed. Nothing was created.",
+        "The source calls nothing until you add its credential ({schemes}) on the source.": "The source calls nothing until you add its credential ({schemes}) on the source.",
+        "another endpoint": "another endpoint",
+        "none given": "none given",
+        "Import {count} operation": [
+            "Import {count} operation",
+            "Import {count} operations"
+        ],
+        "_Import {count} operation_::_Import {count} operations_": [
+            "Import {count} operation",
+            "Import {count} operations"
+        ],
+        "{count} endpoint could not be created.": [
+            "{count} endpoint could not be created.",
+            "{count} endpoints could not be created."
+        ],
+        "_{count} endpoint could not be created._::_{count} endpoints could not be created._": [
+            "{count} endpoint could not be created.",
+            "{count} endpoints could not be created."
+        ],
+        "{count} endpoint created.": [
+            "{count} endpoint created.",
+            "{count} endpoints created."
+        ],
+        "_{count} endpoint created._::_{count} endpoints created._": [
+            "{count} endpoint created.",
+            "{count} endpoints created."
+        ],
+        "{count} operation skipped because its route is already served.": [
+            "{count} operation skipped because its route is already served.",
+            "{count} operations skipped because their routes are already served."
+        ],
+        "_{count} operation skipped because its route is already served._::_{count} operations skipped because their routes are already served._": [
+            "{count} operation skipped because its route is already served.",
+            "{count} operations skipped because their routes are already served."
+        ]
     },
     "plurals": {}
 }

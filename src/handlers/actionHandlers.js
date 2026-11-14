@@ -29,6 +29,7 @@ import {
 	EVENT_OPEN_DIRECTORY_RUN,
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
+	EVENT_OPEN_OPENAPI_IMPORT,
 	EVENT_OPEN_PROMOTION,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
@@ -242,6 +243,18 @@ export function openRegistryLookupHandler() {
  */
 export function openGatewayCatalogueHandler() {
 	modalBus.emit(EVENT_OPEN_GATEWAY_CATALOGUE, {})
+}
+
+/**
+ * Open the OpenAPI import (gateway-openapi-import-and-publish): give a vendor's
+ * document by address or paste it, preview the operations without writing,
+ * and create one source and the picked endpoints. Wired to the Sources page's
+ * "Import an OpenAPI description" header action.
+ *
+ * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+ */
+export function openOpenApiImportHandler() {
+	modalBus.emit(EVENT_OPEN_OPENAPI_IMPORT, {})
 }
 
 /**

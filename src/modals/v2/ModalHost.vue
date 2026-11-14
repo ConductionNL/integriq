@@ -66,6 +66,9 @@
 		<GatewayCatalogueDialog
 			:open="gatewayCatalogue.open"
 			@close="closeGatewayCatalogue" />
+		<OpenApiImportDialog
+			:open="openApiImport.open"
+			@close="closeOpenApiImport" />
 		<LinkSourceDialog
 			:open="linkSource.open"
 			:app="linkSource.app"
@@ -80,6 +83,7 @@ import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.v
 import GatewayCatalogueDialog from '../../dialogs/GatewayCatalogueDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
+import OpenApiImportDialog from '../../dialogs/OpenApiImportDialog.vue'
 import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
 import DirectoryRunModal from '../Directory/DirectoryRunModal.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
@@ -96,6 +100,7 @@ import {
 	EVENT_OPEN_DIRECTORY_RUN,
 	EVENT_OPEN_GATEWAY_CATALOGUE,
 	EVENT_OPEN_LINK_SOURCE,
+	EVENT_OPEN_OPENAPI_IMPORT,
 	EVENT_OPEN_PROMOTION,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
@@ -122,6 +127,7 @@ export default {
 		LinkSourceDialog,
 		RegistryLookupDialog,
 		GatewayCatalogueDialog,
+		OpenApiImportDialog,
 	},
 
 	data() {
@@ -138,6 +144,7 @@ export default {
 			promotion: { open: false },
 			registryLookup: { open: false },
 			gatewayCatalogue: { open: false },
+			openApiImport: { open: false },
 			linkSource: { open: false, app: '' },
 		}
 	},
@@ -187,6 +194,7 @@ export default {
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.on(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -204,6 +212,7 @@ export default {
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
+		modalBus.off(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
 	},
 
@@ -364,6 +373,16 @@ export default {
 		/** @spec openspec/changes/statutory-gateways-and-frameworks/specs/statutory-gateways/spec.md#requirement-a-gateway-declares-where-its-endpoint-sits-req-sg-008 */
 		closeGatewayCatalogue() {
 			this.gatewayCatalogue = { open: false }
+		},
+
+		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
+		openOpenApiImport() {
+			this.openApiImport = { open: true }
+		},
+
+		/** @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
+		closeOpenApiImport() {
+			this.openApiImport = { open: false }
 		},
 
 		/**

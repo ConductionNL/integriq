@@ -965,6 +965,13 @@
             "label": "Statutory gateways",
             "icon": "ScaleBalance",
             "handler": "openGatewayCatalogueHandler"
+          },
+          {
+            "id": "openapi-import",
+            "label": "Import an OpenAPI description",
+            "icon": "Api",
+            "handler": "openOpenApiImportHandler",
+            "adminOnly": true
           }
         ],
         "showViewAction": false,
