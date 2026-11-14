@@ -78,7 +78,42 @@ Incoming requests to endpoints can be authenticated using an **Authentication Ru
 | `zgw-jwt` | VNG ZGW JWT (Dutch government standard) |
 | `oauth` | OAuth 2.0 Bearer token introspection |
 | `apikey` | API key in header or query parameter |
+| `mtls` | A client certificate the web server verified, pinned on a consumer |
 | `none` | No authentication (public endpoint) |
+
+A rule may also carry `anyOf`, a list of these method blocks: the call passes on the first one that accepts it, and otherwise the 401 lists each method's reason.
+
+### Client certificates (`mtls`)
+
+Integriq does not terminate TLS. The web server verifies the client certificate and hands it on; integriq then looks for a consumer with a `clientCertificate` credential that pins it, either by its SHA-256 fingerprint or by the issuing CA plus a subject pattern (so a renewed PKIoverheid certificate keeps working). For a PKIoverheid certificate the OIN is read from the subject `serialNumber` and stored on the credential. The rule's optional `consumers` list (names or ids) limits which consumers may call the endpoint.
+
+Integriq reads the certificate from `SSL_CLIENT_VERIFY` (must be `SUCCESS`) and `SSL_CLIENT_CERT` in the server environment. Behind a reverse proxy it reads one forwarding header instead (app setting `mtls_certificate_header`, default `X-SSL-Client-Cert`), and only when the request comes straight from an address in Nextcloud's `trusted_proxies`. From any other address the header is ignored.
+
+Apache, terminating TLS itself:
+
+```apache
+SSLVerifyClient optional
+SSLVerifyDepth 3
+SSLCACertificateFile /etc/ssl/certs/pkioverheid-chain.pem
+SSLOptions +ExportCertData +StdEnvVars
+```
+
+nginx in front of Nextcloud, with the nginx address in `trusted_proxies`:
+
+```nginx
+# http block: forward a certificate only when nginx verified it
+map $ssl_client_verify $integriq_client_cert {
+    SUCCESS $ssl_client_escaped_cert;
+    default "";
+}
+
+# server block
+ssl_verify_client optional;
+ssl_client_certificate /etc/ssl/certs/pkioverheid-chain.pem;
+proxy_set_header X-SSL-Client-Cert $integriq_client_cert;
+```
+
+`proxy_set_header` replaces any header of that name the client sent, so a client cannot pass its own.
 
 ## Implementation
 
