@@ -263,6 +263,20 @@
       "description": "Placeholder job that pings configured sources and records health metrics.",
       "jobClass": "OCA\\Integriq\\BackgroundJob\\ExampleHealthCheckJob",
       "isEnabled": false
+    },
+    {
+      "@self": { "register": "integriq", "schema": "job", "slug": "example-weekday-morning" },
+      "name": "Example Weekday Morning",
+      "description": "Placeholder job on a calendar: Monday to Friday at 07:00 Amsterdam time. Replace jobClass before enabling.",
+      "jobClass": "OCA\\Integriq\\BackgroundJob\\ExampleSyncJob",
+      "isEnabled": false,
+      "schedule": {
+        "type": "calendar",
+        "weekdays": [1, 2, 3, 4, 5],
+        "times": ["07:00"],
+        "timeZone": "Europe/Amsterdam",
+        "skipDates": []
+      }
     }
   ],
   "mapping": [

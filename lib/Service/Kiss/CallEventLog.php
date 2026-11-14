@@ -93,6 +93,7 @@ class CallEventLog {
 			register: self::REGISTER,
 			schema: self::SCHEMA,
 			_rbac: false,
+			// Unscoped: system write of a telephony event delivered by the CTI webhook, no user session.
 			_multitenancy: false,
 		);
 

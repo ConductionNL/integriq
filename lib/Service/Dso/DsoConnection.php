@@ -351,6 +351,7 @@ class DsoConnection implements PortalConnectionInterface {
 				register: self::REGISTER,
 				schema: self::SCHEMA_CONSUMER,
 				_rbac: false,
+				// Unscoped: reads the raw stored consumer, with its secret, to sign a DSO call as the system.
 				_multitenancy: false,
 				_render: false
 			);

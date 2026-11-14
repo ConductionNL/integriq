@@ -66,6 +66,7 @@ class RegistrationService {
 	 * @param JsonRegistrationLeg       $json       The json leg.
 	 * @param ObjectsApiRegistrationLeg $objectsApi The objects-api leg.
 	 * @param LoggerInterface           $logger     Records refusals by target and reference, never the answers.
+	 * @param StufZdsRegistrationLeg|null $stufZds  The stuf-zds leg.
 	 *
 	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
 	 */
@@ -75,8 +76,9 @@ class RegistrationService {
 		JsonRegistrationLeg $json,
 		ObjectsApiRegistrationLeg $objectsApi,
 		private readonly LoggerInterface $logger,
+		?StufZdsRegistrationLeg $stufZds = null,
 	) {
-		foreach ([$json, $objectsApi] as $leg) {
+		foreach (array_filter([$json, $objectsApi, $stufZds]) as $leg) {
 			$this->legs[$leg->kind()] = $leg;
 		}
 	}//end __construct()

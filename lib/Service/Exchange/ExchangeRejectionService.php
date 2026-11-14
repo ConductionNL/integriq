@@ -221,6 +221,7 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 				register: ExchangeJobService::REGISTER,
 				schema: self::SCHEMA,
 				_rbac: false,
+				// Unscoped: rejections are captured by the runner without a session; the caller reached the job first.
 				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
@@ -396,6 +397,7 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 					'limit' => 1,
 				],
 				_rbac: false,
+				// Unscoped: reads the seeded status mapping, configuration shared by every organisation.
 				_multitenancy: false
 			);
 			foreach (($matches['results'] ?? $matches) as $row) {
@@ -564,6 +566,7 @@ class ExchangeRejectionService implements ExchangeRejectionServiceInterface {
 			schema: self::SCHEMA,
 			uuid: $uuid,
 			_rbac: false,
+			// Unscoped: system write of a rejection captured by the runner, no user session.
 			_multitenancy: false
 		);
 
