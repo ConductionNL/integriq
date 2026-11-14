@@ -131,62 +131,124 @@ class SchemaCheck implements RuleCheckInterface {
 	 * @return string|null
 	 */
 	private static function validate(mixed $value, array $schema, string $path): ?string {
-		$at = '';
+		$where = '';
 		if ($path !== '') {
-			$at = ' at '.$path;
+			$where = ' at '.$path;
 		}
 
+		return self::shapeFailure(value: $value, schema: $schema, where: $where)
+			?? self::stringFailure(value: $value, schema: $schema, where: $where)
+			?? self::memberFailure(value: $value, schema: $schema, path: $path, where: $where)
+			?? self::anyOfFailure(value: $value, schema: $schema, path: $path);
+	}//end validate()
+
+	/**
+	 * Why a value fails the schema's `type` or `enum`, or null.
+	 *
+	 * @param mixed                $value  The value.
+	 * @param array<string, mixed> $schema The schema.
+	 * @param string               $where  The location suffix of a message.
+	 *
+	 * @return string|null
+	 */
+	private static function shapeFailure(mixed $value, array $schema, string $where): ?string {
 		if (isset($schema['type']) === true && self::isType(value: $value, type: (string) $schema['type']) === false) {
-			return sprintf('is not of type %s%s', $schema['type'], $at);
+			return sprintf('is not of type %s%s', $schema['type'], $where);
 		}
 
 		if (isset($schema['enum']) === true && in_array($value, (array) $schema['enum'], true) === false) {
-			return sprintf('is not an allowed value%s', $at);
-		}
-
-		if (is_string($value) === true) {
-			if (isset($schema['minLength']) === true && mb_strlen($value) < (int) $schema['minLength']) {
-				return sprintf('is too short%s', $at);
-			}
-
-			if (isset($schema['pattern']) === true && preg_match(PatternCheck::regex(pattern: (string) $schema['pattern']), $value) !== 1) {
-				return sprintf('does not match %s%s', $schema['pattern'], $at);
-			}
-		}
-
-		if (is_array($value) === true) {
-			foreach ((array) ($schema['required'] ?? []) as $member) {
-				if (array_key_exists($member, $value) === false) {
-					return sprintf('lacks %s%s', $member, $at);
-				}
-			}
-
-			foreach ((array) ($schema['properties'] ?? []) as $member => $memberSchema) {
-				if (array_key_exists($member, $value) === true) {
-					$failure = self::validate(value: $value[$member], schema: (array) $memberSchema, path: $path.'/'.$member);
-					if ($failure !== null) {
-						return $failure;
-					}
-				}
-			}
-		}
-
-		if (isset($schema['anyOf']) === true) {
-			$failures = [];
-			foreach ((array) $schema['anyOf'] as $option) {
-				$failure = self::validate(value: $value, schema: (array) $option, path: $path);
-				if ($failure === null) {
-					return null;
-				}
-
-				$failures[] = $failure;
-			}
-
-			return implode(' and ', $failures);
+			return sprintf('is not an allowed value%s', $where);
 		}
 
 		return null;
-	}//end validate()
+	}//end shapeFailure()
+
+	/**
+	 * Why a string fails the schema's `minLength` or `pattern`, or null; null for a non-string.
+	 *
+	 * @param mixed                $value  The value.
+	 * @param array<string, mixed> $schema The schema.
+	 * @param string               $where  The location suffix of a message.
+	 *
+	 * @return string|null
+	 */
+	private static function stringFailure(mixed $value, array $schema, string $where): ?string {
+		if (is_string($value) === false) {
+			return null;
+		}
+
+		if (isset($schema['minLength']) === true && mb_strlen($value) < (int) $schema['minLength']) {
+			return sprintf('is too short%s', $where);
+		}
+
+		if (isset($schema['pattern']) === true && preg_match(PatternCheck::regex(pattern: (string) $schema['pattern']), $value) !== 1) {
+			return sprintf('does not match %s%s', $schema['pattern'], $where);
+		}
+
+		return null;
+	}//end stringFailure()
+
+	/**
+	 * Why an object fails the schema's `required` or `properties`, or null; null for a non-array.
+	 *
+	 * @param mixed                $value  The value.
+	 * @param array<string, mixed> $schema The schema.
+	 * @param string               $path   Where the value sits under the checked node.
+	 * @param string               $where  The location suffix of a message.
+	 *
+	 * @return string|null
+	 */
+	private static function memberFailure(mixed $value, array $schema, string $path, string $where): ?string {
+		if (is_array($value) === false) {
+			return null;
+		}
+
+		foreach ((array) ($schema['required'] ?? []) as $member) {
+			if (array_key_exists($member, $value) === false) {
+				return sprintf('lacks %s%s', $member, $where);
+			}
+		}
+
+		foreach ((array) ($schema['properties'] ?? []) as $member => $memberSchema) {
+			$failure = null;
+			if (array_key_exists($member, $value) === true) {
+				$failure = self::validate(value: $value[$member], schema: (array) $memberSchema, path: $path.'/'.$member);
+			}
+
+			if ($failure !== null) {
+				return $failure;
+			}
+		}
+
+		return null;
+	}//end memberFailure()
+
+	/**
+	 * Why a value matches none of the schema's `anyOf` options, or null.
+	 *
+	 * @param mixed                $value  The value.
+	 * @param array<string, mixed> $schema The schema.
+	 * @param string               $path   Where the value sits under the checked node.
+	 *
+	 * @return string|null
+	 */
+	private static function anyOfFailure(mixed $value, array $schema, string $path): ?string {
+		if (isset($schema['anyOf']) === false) {
+			return null;
+		}
+
+		$failures = [];
+		foreach ((array) $schema['anyOf'] as $option) {
+			$failure = self::validate(value: $value, schema: (array) $option, path: $path);
+			if ($failure === null) {
+				return null;
+			}
+
+			$failures[] = $failure;
+		}
+
+		return implode(' and ', $failures);
+	}//end anyOfFailure()
 
 	/**
 	 * Whether a decoded JSON value has a JSON Schema type.

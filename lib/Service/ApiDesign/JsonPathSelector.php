@@ -138,18 +138,34 @@ class JsonPathSelector {
 			}
 
 			foreach ($node['value'] as $key => $value) {
-				$child = ['pointer' => $node['pointer'].'/'.self::escape(key: $key), 'key' => $key, 'value' => $value];
-				if ($token['type'] === 'wildcard'
-					|| ($token['type'] === 'child' && (string) $key === $token['name'])
-					|| ($token['type'] === 'filter' && self::matches(filter: (string) $token['filter'], key: $key, value: $value) === true)
-				) {
-					$next[] = $child;
+				if (self::selects(token: $token, key: $key, value: $value) === true) {
+					$next[] = ['pointer' => $node['pointer'].'/'.self::escape(key: $key), 'key' => $key, 'value' => $value];
 				}
 			}
 		}//end foreach
 
 		return $next;
 	}//end apply()
+
+	/**
+	 * Whether a wildcard, child or filter step selects a child.
+	 *
+	 * @param array{type: string, name?: string, filter?: string} $token The step.
+	 * @param string|int                                          $key   The child's key.
+	 * @param mixed                                               $value The child.
+	 *
+	 * @return bool
+	 *
+	 * @throws InvalidArgumentException On an unsupported filter term.
+	 */
+	private static function selects(array $token, string|int $key, mixed $value): bool {
+		return match ($token['type']) {
+			'wildcard' => true,
+			'child' => (string) $key === $token['name'],
+			'filter' => self::matches(filter: (string) $token['filter'], key: $key, value: $value),
+			default => false,
+		};
+	}//end selects()
 
 	/**
 	 * Every descendant of a node (the node included) held under a key.
@@ -190,37 +206,41 @@ class JsonPathSelector {
 	 */
 	private static function matches(string $filter, string|int $key, mixed $value): bool {
 		foreach (explode('&&', $filter) as $term) {
-			$term = trim($term);
-			if (preg_match('#^(!?)@property\.match\(/(.*)/([a-z]*)\)$#', $term, $match) === 1) {
-				$hit = preg_match('/'.$match[2].'/'.$match[3], (string) $key) === 1;
-				if ($hit === ($match[1] === '!')) {
-					return false;
-				}
-
-				continue;
+			if (self::termHolds(term: trim($term), key: $key, value: $value) === false) {
+				return false;
 			}
-
-			if (preg_match('/^@\.([A-Za-z0-9_\-]+)\s*==\s*([\'"])(.*)\2$/', $term, $match) === 1) {
-				if (is_array($value) === false || ($value[$match[1]] ?? null) !== $match[3]) {
-					return false;
-				}
-
-				continue;
-			}
-
-			if (preg_match('/^@\.([A-Za-z0-9_\-]+)$/', $term, $match) === 1) {
-				if (is_array($value) === false || empty($value[$match[1]]) === true) {
-					return false;
-				}
-
-				continue;
-			}
-
-			throw new InvalidArgumentException(sprintf('Unsupported filter term "%s"', $term));
-		}//end foreach
+		}
 
 		return true;
 	}//end matches()
+
+	/**
+	 * Whether one filter term holds for a child.
+	 *
+	 * @param string     $term  The term, trimmed.
+	 * @param string|int $key   The child's key.
+	 * @param mixed      $value The child.
+	 *
+	 * @return bool
+	 *
+	 * @throws InvalidArgumentException On an unsupported term.
+	 */
+	private static function termHolds(string $term, string|int $key, mixed $value): bool {
+		if (preg_match('#^(!?)@property\.match\(/(.*)/([a-z]*)\)$#', $term, $match) === 1) {
+			$hit = preg_match('/'.$match[2].'/'.$match[3], (string) $key) === 1;
+			return $hit !== ($match[1] === '!');
+		}
+
+		if (preg_match('/^@\.([A-Za-z0-9_\-]+)\s*==\s*([\'"])(.*)\2$/', $term, $match) === 1) {
+			return is_array($value) === true && ($value[$match[1]] ?? null) === $match[3];
+		}
+
+		if (preg_match('/^@\.([A-Za-z0-9_\-]+)$/', $term, $match) === 1) {
+			return is_array($value) === true && empty($value[$match[1]]) === false;
+		}
+
+		throw new InvalidArgumentException(sprintf('Unsupported filter term "%s"', $term));
+	}//end termHolds()
 
 	/**
 	 * Escape a key for a JSON pointer (RFC 6901).

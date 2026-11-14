@@ -65,7 +65,18 @@ class PatternCheck implements RuleCheckInterface {
 			return 'is not a text value';
 		}
 
-		$text = (string) $value;
+		return self::patternFailure(text: (string) $value, options: $options);
+	}//end check()
+
+	/**
+	 * Why a text fails the `match` or `notMatch` pattern, or null.
+	 *
+	 * @param string               $text    The text.
+	 * @param array<string, mixed> $options The rule's `functionOptions`.
+	 *
+	 * @return string|null
+	 */
+	private static function patternFailure(string $text, array $options): ?string {
 		if (isset($options['match']) === true && preg_match(self::regex(pattern: (string) $options['match']), $text) !== 1) {
 			return sprintf('"%s" does not match %s', $text, $options['match']);
 		}
@@ -75,7 +86,7 @@ class PatternCheck implements RuleCheckInterface {
 		}
 
 		return null;
-	}//end check()
+	}//end patternFailure()
 
 	/**
 	 * Why a rule's options are unusable, or null when they are fine.

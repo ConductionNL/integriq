@@ -122,12 +122,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function problemsOf(array $ruleSet): array {
-		$problems = [];
-		foreach (['name', 'version'] as $member) {
-			if (is_string($ruleSet[$member] ?? null) === false || trim($ruleSet[$member]) === '') {
-				$problems[] = sprintf('The rule set has no %s.', $member);
-			}
-		}
+		$problems = self::headerProblems(ruleSet: $ruleSet);
 
 		$rules = $ruleSet['rules'] ?? null;
 		if (is_array($rules) === false || $rules === [] || array_is_list($rules) === false) {
@@ -141,11 +136,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 				$rule = [];
 			}
 
-			$label = '#'.$index;
-			if (is_string($rule['id'] ?? null) === true) {
-				$label = $rule['id'];
-			}
-
+			$label = self::ruleLabel(index: $index, rule: $rule);
 			if (isset($seen[$label]) === true) {
 				$problems[] = sprintf('Rule %s appears twice.', $label);
 			}
@@ -158,6 +149,40 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 
 		return $problems;
 	}//end problemsOf()
+
+	/**
+	 * What is missing from a rule set's name and version.
+	 *
+	 * @param array<string, mixed> $ruleSet The rule set.
+	 *
+	 * @return list<string>
+	 */
+	private static function headerProblems(array $ruleSet): array {
+		$problems = [];
+		foreach (['name', 'version'] as $member) {
+			if (is_string($ruleSet[$member] ?? null) === false || trim($ruleSet[$member]) === '') {
+				$problems[] = sprintf('The rule set has no %s.', $member);
+			}
+		}
+
+		return $problems;
+	}//end headerProblems()
+
+	/**
+	 * How a rule is named in a problem: its id, else its position.
+	 *
+	 * @param int                  $index The rule's position.
+	 * @param array<string, mixed> $rule  The rule.
+	 *
+	 * @return string
+	 */
+	private static function ruleLabel(int $index, array $rule): string {
+		if (is_string($rule['id'] ?? null) === true) {
+			return $rule['id'];
+		}
+
+		return '#'.$index;
+	}//end ruleLabel()
 
 	/**
 	 * Check a document against every enabled rule set.
@@ -185,31 +210,56 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 				}
 
 				if (($rule['manual'] ?? false) === true) {
-					$manual[] = [
-						'ruleset' => $name,
-						'ruleId' => (string) ($rule['id'] ?? ''),
-						'title' => (string) ($rule['title'] ?? ''),
-						'url' => (string) ($rule['url'] ?? ''),
-					];
+					$manual[] = self::manualEntry(ruleSetName: $name, rule: $rule);
 					continue;
 				}
 
 				foreach ($this->evaluate(document: $document, rule: $rule) as $failure) {
-					$findings[] = [
-						'ruleset' => $name,
-						'ruleId' => (string) ($rule['id'] ?? ''),
-						'severity' => (string) ($rule['severity'] ?? 'error'),
-						'path' => $failure['path'],
-						'message' => $failure['message'],
-						'url' => (string) ($rule['url'] ?? ''),
-						'status' => 'open',
-					];
+					$findings[] = self::finding(ruleSetName: $name, rule: $rule, failure: $failure);
 				}
 			}//end foreach
 		}//end foreach
 
 		return ['findings' => $findings, 'manual' => $manual];
 	}//end check()
+
+	/**
+	 * A manual rule as an entry of the manual checklist.
+	 *
+	 * @param string               $ruleSetName The rule set's name.
+	 * @param array<string, mixed> $rule        The rule.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function manualEntry(string $ruleSetName, array $rule): array {
+		return [
+			'ruleset' => $ruleSetName,
+			'ruleId' => (string) ($rule['id'] ?? ''),
+			'title' => (string) ($rule['title'] ?? ''),
+			'url' => (string) ($rule['url'] ?? ''),
+		];
+	}//end manualEntry()
+
+	/**
+	 * One failure of a rule as an open finding.
+	 *
+	 * @param string                               $ruleSetName The rule set's name.
+	 * @param array<string, mixed>                 $rule        The rule.
+	 * @param array{path: string, message: string} $failure     The failure.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function finding(string $ruleSetName, array $rule, array $failure): array {
+		return [
+			'ruleset' => $ruleSetName,
+			'ruleId' => (string) ($rule['id'] ?? ''),
+			'severity' => (string) ($rule['severity'] ?? 'error'),
+			'path' => $failure['path'],
+			'message' => $failure['message'],
+			'url' => (string) ($rule['url'] ?? ''),
+			'status' => 'open',
+		];
+	}//end finding()
 
 	/**
 	 * The findings that hold back publication: open and error-level.
@@ -237,6 +287,22 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 * @return list<string>
 	 */
 	private function ruleProblems(array $rule): array {
+		$problems = self::metadataProblems(rule: $rule);
+		if (($rule['manual'] ?? false) === true) {
+			return $problems;
+		}
+
+		return array_merge($problems, $this->givenProblems(rule: $rule), $this->thenProblems(rule: $rule));
+	}//end ruleProblems()
+
+	/**
+	 * What is wrong with a rule's id, severity and link.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return list<string>
+	 */
+	private static function metadataProblems(array $rule): array {
 		$problems = [];
 		if (is_string($rule['id'] ?? null) === false || $rule['id'] === '') {
 			$problems[] = 'it has no id';
@@ -250,10 +316,18 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 			$problems[] = 'it has no https link to the rule text';
 		}
 
-		if (($rule['manual'] ?? false) === true) {
-			return $problems;
-		}
+		return $problems;
+	}//end metadataProblems()
 
+	/**
+	 * What is wrong with a rule's `given` selectors.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return list<string>
+	 */
+	private function givenProblems(array $rule): array {
+		$problems = [];
 		$givens = (array) ($rule['given'] ?? []);
 		if ($givens === []) {
 			$problems[] = 'it selects nothing (given)';
@@ -267,6 +341,18 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 			}
 		}
 
+		return $problems;
+	}//end givenProblems()
+
+	/**
+	 * What is wrong with a rule's `then` checks.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return list<string>
+	 */
+	private function thenProblems(array $rule): array {
+		$problems = [];
 		$thens = self::thens(rule: $rule);
 		if ($thens === []) {
 			$problems[] = 'it checks nothing (then)';
@@ -286,7 +372,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 		}
 
 		return $problems;
-	}//end ruleProblems()
+	}//end thenProblems()
 
 	/**
 	 * Run one rule over a document.
@@ -451,14 +537,9 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 				return $node;
 			}
 
-			$target = $root;
-			foreach (explode('/', substr($ref, 2)) as $part) {
-				$part = str_replace(['~1', '~0'], ['/', '~'], $part);
-				if (is_array($target) === false || array_key_exists($part, $target) === false) {
-					return $node;
-				}
-
-				$target = $target[$part];
+			[$found, $target] = self::resolvePointer(root: $root, ref: $ref);
+			if ($found === false) {
+				return $node;
 			}
 
 			return self::inline(node: $target, root: $root, depth: $depth + 1, chain: [...$chain, $ref]);
@@ -470,4 +551,26 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 
 		return $node;
 	}//end inline()
+
+	/**
+	 * The value a local `#/...` reference points at.
+	 *
+	 * @param array<string, mixed> $root The whole document.
+	 * @param string               $ref  The reference, starting with `#/`.
+	 *
+	 * @return array{0: bool, 1: mixed} Whether it resolves, and the value it points at.
+	 */
+	private static function resolvePointer(array $root, string $ref): array {
+		$target = $root;
+		foreach (explode('/', substr($ref, 2)) as $part) {
+			$part = str_replace(['~1', '~0'], ['/', '~'], $part);
+			if (is_array($target) === false || array_key_exists($part, $target) === false) {
+				return [false, null];
+			}
+
+			$target = $target[$part];
+		}
+
+		return [true, $target];
+	}//end resolvePointer()
 }//end class
