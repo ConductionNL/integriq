@@ -13,9 +13,9 @@ here fails on today's code, because none of these classes exists.
   - GIVEN the sink enabled and `openregister` listed WHEN a real `BeforeMessageLoggedEvent('openregister', 3, [...])` is dispatched THEN one event is queued and no HTTP call is made
   - GIVEN `dossiq` unlisted, or a level below the minimum, WHEN the event fires THEN nothing is queued
   - GIVEN the listener itself throws WHEN the event fires THEN it swallows the error without calling the logger
-- [ ] Implement
-- [ ] Test: PHPUnit `tests/Unit/Observability/Errors/ErrorSinkListenerTest.php` (`testAnOpenRegisterErrorIsQueuedForTheSink`, `testUnlistedAppsAndLowLevelsAreNotQueued`, `testTheListenerMakesNoHttpCall`). Construct the real `OCP\Log\BeforeMessageLoggedEvent`; its constructor is `(string $app, int $level, array $message)` since Nextcloud 28. Do not hand-roll a fake event.
-- [ ] Wiring: a test that boots `Application::register()` with a registration context double and asserts the listener is registered for `BeforeMessageLoggedEvent::class`. A listener with a green suite and no registration is the defect this task exists to prevent.
+- [x] Implement
+- [x] Test: PHPUnit `tests/Unit/Observability/Errors/ErrorSinkListenerTest.php` (`testAnOpenRegisterErrorIsQueuedForTheSink`, `testUnlistedAppsAndLowLevelsAreNotQueued`, `testTheListenerMakesNoHttpCall`). Construct the real `OCP\Log\BeforeMessageLoggedEvent`; its constructor is `(string $app, int $level, array $message)` since Nextcloud 28. Do not hand-roll a fake event.
+- [x] Wiring: a test that boots `Application::register()` with a registration context double and asserts the listener is registered for `BeforeMessageLoggedEvent::class`. A listener with a green suite and no registration is the defect this task exists to prevent.
 
 ### Task 7: Error sink exporters
 - **spec_ref**: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-errors-from-the-apps-an-administrator-selects-go-to-an-error-sink-req-otel-006
@@ -25,8 +25,8 @@ here fails on today's code, because none of these classes exists.
   - GIVEN kind `otlp-logs` WHEN an event is exported THEN one POST goes to `{endpoint}/v1/logs` with an OTLP JSON `resourceLogs` body
   - GIVEN a message containing a BSN WHEN it is queued THEN `BodyRedactor` has already removed it
   - GIVEN a refused post WHEN the job runs four times THEN it stops retrying and drops the event without logging an error
-- [ ] Implement
-- [ ] Test: PHPUnit `tests/Unit/Observability/Errors/ErrorSinkExporterTest.php` (`testASentryEnvelopeIsPostedToTheDsnEndpoint`, `testAnOtlpLogRecordIsPostedToV1Logs`, `testTheRedactorRunsBeforeTheEventIsQueued`) with a mocked `IClientService` and stored payload fixtures
+- [x] Implement
+- [x] Test: PHPUnit `tests/Unit/Observability/Errors/ErrorSinkExporterTest.php` (`testASentryEnvelopeIsPostedToTheDsnEndpoint`, `testAnOtlpLogRecordIsPostedToV1Logs`, `testTheRedactorRunsBeforeTheEventIsQueued`) with a mocked `IClientService` and stored payload fixtures
 
 ### Task 8: Span command for other apps
 - **spec_ref**: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
@@ -36,10 +36,10 @@ here fails on today's code, because none of these classes exists.
   - GIVEN a 30-character `traceId` WHEN dispatched THEN `rejected: 1` with a reason naming `traceId`
   - GIVEN an attribute `http.request.body` WHEN dispatched THEN that attribute is dropped and the span is queued
   - GIVEN export disabled WHEN dispatched THEN `queued: 0` with the reason `export-disabled`
-- [ ] Implement
-- [ ] Test: PHPUnit `tests/Unit/Listener/SpanExportRequestedListenerTest.php` dispatching the real event class through a real `IEventDispatcher` wired by `Application::register()`, so the test proves the caller reaches the listener
-- [ ] Initialise the result to `['queued' => 0, 'rejected' => 0, 'reasons' => ['no-listener']]` in the event constructor, so a dispatch nobody handles answers "not exported" instead of an empty array. Test: `SpanExportRequestedEventTest::testAnUnhandledEventAnswersNotExported`.
-- [ ] Cross-app contract: the docs page states the constructor, every span key and every result key, and the `class_exists()` guard a sibling app needs when integriq is absent. Opening the openregister and opencatalogi dispatches is not part of this task; record in the PR body that each app needs its own change to send spans.
+- [x] Implement
+- [x] Test: PHPUnit `tests/Unit/Listener/SpanExportRequestedListenerTest.php` dispatching the real event class through a real `IEventDispatcher` wired by `Application::register()`, so the test proves the caller reaches the listener
+- [x] Initialise the result to `['queued' => 0, 'rejected' => 0, 'reasons' => ['no-listener']]` in the event constructor, so a dispatch nobody handles answers "not exported" instead of an empty array. Test: `SpanExportRequestedEventTest::testAnUnhandledEventAnswersNotExported`.
+- [x] Cross-app contract: the docs page states the constructor, every span key and every result key, and the `class_exists()` guard a sibling app needs when integriq is absent. Opening the openregister and opencatalogi dispatches is not part of this task; record in the PR body that each app needs its own change to send spans.
 
 ### Task 9: Admin settings for the error sink
 - **spec_ref**: openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
@@ -48,7 +48,7 @@ here fails on today's code, because none of these classes exists.
   - GIVEN the admin page WHEN an administrator enables the sink with kind, DSN and apps and saves THEN the values persist under `errorsink_*` keys in `IAppConfig`
   - GIVEN the sink enabled with no endpoint WHEN saved THEN the save is refused
   - GIVEN an `http` endpoint not marked internal WHEN saved THEN the save is refused
-- [ ] Implement
+- [x] Implement
 - [ ] Test: PHPUnit `SettingsServiceTest::testAnEnabledErrorSinkNeedsAnEndpoint`; Playwright `tests/e2e/opentelemetry-export.spec.ts` extended with the error sink section
 
 ### Verification for tasks 6 to 9

@@ -37,4 +37,16 @@ interface TraceExportSchedulerInterface {
 	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-never-delays-the-traced-work-req-otel-002
 	 */
 	public function scheduleExport(string $traceId): void;
+
+	/**
+	 * Queue the first export attempt of one span another app handed in.
+	 *
+	 * @param string $appId The app that sent the span; its `service.name`.
+	 * @param array<string, mixed> $span The span, cleaned by the span mapper.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 */
+	public function scheduleForeignSpan(string $appId, array $span): void;
 }

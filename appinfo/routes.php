@@ -737,6 +737,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// OpenTelemetry trace export settings (observability-opentelemetry-export REQ-OTEL-005).
 		['name' => 'otelSettings#getConfig', 'url' => '/api/admin/otel', 'verb' => 'GET'],
 		['name' => 'otelSettings#setConfig', 'url' => '/api/admin/otel', 'verb' => 'PUT'],
+		// Error sink settings (observability-opentelemetry-export-errors-and-app-spans REQ-OTEL-008).
+		['name' => 'errorSinkSettings#getConfig', 'url' => '/api/admin/errorsink', 'verb' => 'GET'],
+		['name' => 'errorSinkSettings#setConfig', 'url' => '/api/admin/errorsink', 'verb' => 'PUT'],
 		// DSO activities that no dso_activity_mapping row maps (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'dsoActivityMapping#unmapped', 'url' => '/api/admin/dso-activities/unmapped', 'verb' => 'GET'],
 		// Every DSO activity row with its last arrival, then the unmapped ones (admin only)

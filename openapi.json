@@ -224,6 +224,10 @@
             "description": "Reads and stores the OpenTelemetry export settings"
         },
         {
+            "name": "error-sink-settings",
+            "description": "Reads and stores the error sink settings"
+        },
+        {
             "name": "outbound-log",
             "description": "Body, retry, forward and last-contact endpoints for the outbound log"
         },
@@ -1005,6 +1009,63 @@
                 "description": "Store the settings; 400 with the reason when a value is refused.",
                 "tags": [
                     "otel-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The stored settings, or `{error}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    }
+                }
+            }
+        },
+        "/admin/errorsink": {
+            "get": {
+                "operationId": "error-sink-settings-get-config",
+                "summary": "The stored settings",
+                "description": "The stored settings.",
+                "tags": [
+                    "error-sink-settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The settings.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "error-sink-settings-set-config",
+                "summary": "Store the settings; 400 with the reason when a value is refused",
+                "description": "Store the settings; 400 with the reason when a value is refused.",
+                "tags": [
+                    "error-sink-settings"
                 ],
                 "responses": {
                     "200": {

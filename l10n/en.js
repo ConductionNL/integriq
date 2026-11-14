@@ -3536,7 +3536,27 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Send errors to an error service": "Send errors to an error service",
+        "Integriq forwards the errors of the apps you select to a Sentry compatible service or to an OpenTelemetry collector. Credentials and citizen service numbers are removed first.": "Integriq forwards the errors of the apps you select to a Sentry compatible service or to an OpenTelemetry collector. Credentials and citizen service numbers are removed first.",
+        "Send errors": "Send errors",
+        "Kind of error service": "Kind of error service",
+        "The error service runs in our own network": "The error service runs in our own network",
+        "Lowest level to send": "Lowest level to send",
+        "Apps whose errors are sent, separated by commas": "Apps whose errors are sent, separated by commas",
+        "Sentry compatible service": "Sentry compatible service",
+        "OpenTelemetry collector (OTLP logs)": "OpenTelemetry collector (OTLP logs)",
+        "Fatal": "Fatal",
+        "DSN of the error service": "DSN of the error service",
+        "The error service kind must be Sentry or OTLP logs.": "The error service kind must be Sentry or OTLP logs.",
+        "The minimum level must be between 0 and 4.": "The minimum level must be between 0 and 4.",
+        "The error service needs an endpoint or DSN.": "The error service needs an endpoint or DSN.",
+        "Each app in the list must be an app id, such as openregister.": "Each app in the list must be an app id, such as openregister.",
+        "The error service endpoint must be a full http or https address.": "The error service endpoint must be a full http or https address.",
+        "The error service endpoint must use https, unless you mark it as an internal service.": "The error service endpoint must use https, unless you mark it as an internal service.",
+        "The error service endpoint may not carry a query or a password; give the login as a credential.": "The error service endpoint may not carry a query or a password; give the login as a credential.",
+        "The error service endpoint may not carry a login; give the login as a credential.": "The error service endpoint may not carry a login; give the login as a credential.",
+        "A Sentry DSN looks like https://key@sentry.example.org/42.": "A Sentry DSN looks like https://key@sentry.example.org/42."
     },
     "nplurals=2; plural=(n != 1);"
 )
