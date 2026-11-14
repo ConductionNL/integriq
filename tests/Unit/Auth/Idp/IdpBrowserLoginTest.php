@@ -34,6 +34,9 @@ use OCA\Integriq\Auth\Idp\IdpBrokerConfig;
 use OCA\Integriq\Auth\Idp\IdpConsumerSecretResolver;
 use OCA\Integriq\Auth\Idp\IdpLoginService;
 use OCA\Integriq\Auth\Idp\IdpLoginStateStore;
+use OCA\Integriq\Auth\Idp\IdpRegistration;
+use OCA\Integriq\Auth\Idp\IdpRegistrationService;
+use OCA\Integriq\Auth\Idp\IdpSecretSeam;
 use OCA\Integriq\Auth\Idp\SubjectEnvelopeService;
 use OCA\Integriq\Auth\Idp\SubjectPseudonymService;
 use OCA\Integriq\Auth\Idp\TrustLevelMapper;
@@ -107,10 +110,6 @@ class IdpBrowserLoginTest extends TestCase {
 					'legacyapp' => 'legacy-exchange-secret-0123456789abc',
 					'dossiq' => ['enabled' => false, 'returnUrls' => ['https://dossiq.example.nl/cb'], 'secretRef' => ''],
 				]
-			),
-			IdpBrokerConfig::KEY_SALTS => (string)json_encode(['gemeente-x' => str_repeat('s', 40)]),
-			IdpBrokerConfig::KEY_ENTITY_IDS => (string)json_encode(
-				['digid' => self::ENTITY_ID, 'eherkenning' => self::ENTITY_ID]
 			),
 		];
 	}//end setUp()
@@ -209,7 +208,9 @@ class IdpBrowserLoginTest extends TestCase {
 			trustMapper: new TrustLevelMapper(),
 			pseudonyms: new SubjectPseudonymService(),
 			exchange: $this->exchange(),
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			registrations: $this->registrations(),
+			secrets: $this->secrets()
 		);
 	}//end service()
 
@@ -699,7 +700,9 @@ class IdpBrowserLoginTest extends TestCase {
 			trustMapper: new TrustLevelMapper(),
 			pseudonyms: new SubjectPseudonymService(),
 			exchange: $this->exchange(),
-			logger: $logger
+			logger: $logger,
+			registrations: $this->registrations(),
+			secrets: $this->secrets()
 		);
 	}//end recordingService()
 
@@ -748,4 +751,51 @@ class IdpBrowserLoginTest extends TestCase {
 		$this->assertSame(['code', 'relayState'], array_keys($this->queryOf($redirect)));
 		$this->assertSame([], $warnings->getArrayCopy());
 	}//end testEachCallbackRefusalLogsItsReason()
+
+	/**
+	 * The registrations: gemeente-x has an enabled `hmac` registration for DigiD
+	 * and eHerkenning, with our EntityID and a salt credential.
+	 *
+	 * @return IdpRegistrationService
+	 */
+	private function registrations(): IdpRegistrationService {
+		$registrations = $this->createMock(IdpRegistrationService::class);
+		$registrations->method('find')->willReturnCallback(
+			static function (string $organisation, string $provider): ?IdpRegistration {
+				if ($organisation !== 'gemeente-x' || in_array($provider, ['digid', 'eherkenning'], true) === false) {
+					return null;
+				}
+
+				return new IdpRegistration(
+					id: 'reg-' . $provider,
+					data: [
+						'organisation' => $organisation,
+						'provider' => $provider,
+						'enabled' => true,
+						'spEntityId' => self::ENTITY_ID,
+						'pseudonymisation' => 'hmac',
+						'credentials' => ['salt' => 'cred-salt'],
+					]
+				);
+			}
+		);
+
+		return $registrations;
+
+	}//end registrations()
+
+	/**
+	 * The secret seam, answering the salt credential.
+	 *
+	 * @return IdpSecretSeam
+	 */
+	private function secrets(): IdpSecretSeam {
+		$secrets = $this->createMock(IdpSecretSeam::class);
+		$secrets->method('read')->willReturnCallback(
+			static fn (string $registration, string $organisation, string $role, string $reference): string => str_repeat('s', 40)
+		);
+
+		return $secrets;
+
+	}//end secrets()
 }//end class

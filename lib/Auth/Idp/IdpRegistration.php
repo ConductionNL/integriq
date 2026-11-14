@@ -84,6 +84,46 @@ final class IdpRegistration {
 	}//end text()
 
 	/**
+	 * An object property as a string-to-string map; empty when absent or not an object.
+	 *
+	 * @param string $key The property.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-pseudonymisation-mode-is-chosen-per-registration-req-idpc-005
+	 */
+	public function stringMap(string $key): array {
+		$value = ($this->data[$key] ?? []);
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$map = [];
+		foreach ($value as $from => $to) {
+			if (is_scalar($to) === true) {
+				$map[(string)$from] = (string)$to;
+			}
+		}
+
+		return $map;
+
+	}//end stringMap()
+
+	/**
+	 * Whether the identity provider delivers polymorphic pseudonyms rather than a BSN.
+	 *
+	 * Anything but `polymorphic` is the default, `hmac`.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-pseudonymisation-mode-is-chosen-per-registration-req-idpc-005
+	 */
+	public function isPolymorphic(): bool {
+		return $this->text(key: 'pseudonymisation') === 'polymorphic';
+
+	}//end isPolymorphic()
+
+	/**
 	 * The organisation the logins are for.
 	 *
 	 * @return string
