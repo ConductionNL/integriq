@@ -322,6 +322,10 @@
         {
             "name": "zgw-version-translate",
             "description": "Translate one ZGW resource payload between `1.0` and `1.6`"
+        },
+        {
+            "name": "registration-targets",
+            "description": "Where a sibling app may register form submissions."
         }
     ],
     "paths": {
@@ -1794,6 +1798,69 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/registration-targets": {
+            "get": {
+                "operationId": "registration-targets-index",
+                "summary": "The registration targets an app may use",
+                "description": "The enabled registration targets the app named in `?app=` may hand submissions to, by slug, title and kind only. Sources, mapping and settings stay admin-only (form-submission-registration-targets).",
+                "tags": [
+                    "registration-targets"
+                ],
+                "parameters": [
+                    {
+                        "name": "app",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The app that will hand submissions over, e.g. portaliq."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The targets; empty without an app.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "results": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "slug": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "kind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "zgw",
+                                                            "objects-api",
+                                                            "stuf-zds",
+                                                            "json"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

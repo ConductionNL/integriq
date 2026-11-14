@@ -49,6 +49,7 @@ use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
+use OCA\Integriq\Event\SubmissionRegistrationRequestedEvent;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -369,6 +370,8 @@ final class EventListenerBindings {
 		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
 		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
+		// Form-submission-registration-targets D2: portaliq registers a form submission at an outside system.
+		$dispatcher->addServiceListener(eventName: SubmissionRegistrationRequestedEvent::class, className: SubmissionRegistrationListener::class);
 	}//end registerSiblingRequestListeners()
 
 	/**
