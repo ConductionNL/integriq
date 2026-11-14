@@ -32,8 +32,12 @@ exports[`ConsumerEditorModal > renders an invalid name while saving as recorded 
         <h3>Authentication</h3>
       </header>
       <div class="cn-consumer-editor__field cn-consumer-editor__field--narrow"><label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">Authorization type</label>
-        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" data-disabled="yes">
-        </div><span class="cn-consumer-editor__helper">Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.</span>
+        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" data-disabled="yes">
+        </div><span class="cn-consumer-editor__helper">Inbound callers present a JWT. With key source static, its issuer matches this consumer's name and it is verified with the public key below; with key source jwks or oidc, the key comes from the published key set or the OpenID Connect provider named below.</span>
+      </div>
+      <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-scopes" class="cn-consumer-editor__label">Scopes</label>
+        <div class="NcSelect" data-attrs="aria-label-combobox=Scopes clearable=true data-testid=consumer-editor-scopes inputId=cn-consumer-editor-scopes keepOpen=true multiple=true options= taggable=true" data-disabled="yes">
+        </div><span class="cn-consumer-editor__helper">Press Enter after each scope, for example zaken:read. An endpoint that requires a scope refuses this consumer without it.</span>
       </div>
       <div class="cn-consumer-editor__field"><span class="cn-consumer-editor__label">Authorization configuration</span>
         <div class="CnJsonViewer">
@@ -111,8 +115,12 @@ exports[`ConsumerEditorModal > renders create as recorded 1`] = `
         <h3>Authentication</h3>
       </header>
       <div class="cn-consumer-editor__field cn-consumer-editor__field--narrow"><label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">Authorization type</label>
-        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
+        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
         </div><span class="cn-consumer-editor__helper">No credential is checked. Restrict access with the allowed sources above instead.</span>
+      </div>
+      <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-scopes" class="cn-consumer-editor__label">Scopes</label>
+        <div class="NcSelect" data-attrs="aria-label-combobox=Scopes clearable=true data-testid=consumer-editor-scopes inputId=cn-consumer-editor-scopes keepOpen=true multiple=true options= taggable=true">
+        </div><span class="cn-consumer-editor__helper">Press Enter after each scope, for example zaken:read. An endpoint that requires a scope refuses this consumer without it.</span>
       </div>
     </section>
     <section class="cn-consumer-editor__section">
@@ -185,8 +193,12 @@ exports[`ConsumerEditorModal > renders edit as recorded 1`] = `
         <h3>Authentication</h3>
       </header>
       <div class="cn-consumer-editor__field cn-consumer-editor__field--narrow"><label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">Authorization type</label>
-        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
-        </div><span class="cn-consumer-editor__helper">Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.</span>
+        <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
+        </div><span class="cn-consumer-editor__helper">Inbound callers present a JWT. With key source static, its issuer matches this consumer's name and it is verified with the public key below; with key source jwks or oidc, the key comes from the published key set or the OpenID Connect provider named below.</span>
+      </div>
+      <div class="cn-consumer-editor__field"><label for="cn-consumer-editor-scopes" class="cn-consumer-editor__label">Scopes</label>
+        <div class="NcSelect" data-attrs="aria-label-combobox=Scopes clearable=true data-testid=consumer-editor-scopes inputId=cn-consumer-editor-scopes keepOpen=true multiple=true options= taggable=true">
+        </div><span class="cn-consumer-editor__helper">Press Enter after each scope, for example zaken:read. An endpoint that requires a scope refuses this consumer without it.</span>
       </div>
       <div class="cn-consumer-editor__field"><span class="cn-consumer-editor__label">Authorization configuration</span>
         <div class="CnJsonViewer">
@@ -255,6 +267,7 @@ exports[`ConsumerEditorModal > saves on a failed save as recorded 1`] = `
       "rateLimit": null,
       "rateLimitRequestsPerWindow": 10,
       "rateLimitWindowSeconds": 60,
+      "scopes": [],
     },
   ],
   "closed": 0,
@@ -283,6 +296,7 @@ exports[`ConsumerEditorModal > saves on a failed save without message as recorde
       "rateLimit": null,
       "rateLimitRequestsPerWindow": 10,
       "rateLimitWindowSeconds": 60,
+      "scopes": [],
     },
   ],
   "closed": 0,
@@ -303,6 +317,7 @@ exports[`ConsumerEditorModal > saves on create as recorded 1`] = `
       "name": "Named",
       "quota": null,
       "rateLimit": null,
+      "scopes": [],
     },
   ],
   "closed": 1,
@@ -336,6 +351,7 @@ exports[`ConsumerEditorModal > saves on edit as recorded 1`] = `
       "rateLimit": null,
       "rateLimitRequestsPerWindow": 10,
       "rateLimitWindowSeconds": 60,
+      "scopes": [],
     },
   ],
   "closed": 1,
@@ -420,6 +436,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -439,6 +456,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -458,6 +476,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -477,6 +496,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -494,6 +514,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -511,6 +532,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -526,6 +548,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -541,6 +564,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -556,6 +580,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
     },
   ],
   [
@@ -571,6 +596,39 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": null,
       "rateLimitWindowSeconds": null,
+      "scopes": [],
+    },
+  ],
+  [
+    "NcSelect",
+    "onUpdate:modelValue",
+    {
+      "authorizationType": "none",
+      "description": "42",
+      "domains": "42",
+      "ips": "42",
+      "name": "42",
+      "quotaLimit": null,
+      "quotaPeriod": null,
+      "rateLimitRequestsPerWindow": null,
+      "rateLimitWindowSeconds": null,
+      "scopes": "picked",
+    },
+  ],
+  [
+    "NcSelect",
+    "onUpdate:modelValue",
+    {
+      "authorizationType": "none",
+      "description": "42",
+      "domains": "42",
+      "ips": "42",
+      "name": "42",
+      "quotaLimit": null,
+      "quotaPeriod": null,
+      "rateLimitRequestsPerWindow": null,
+      "rateLimitWindowSeconds": null,
+      "scopes": "42",
     },
   ],
   [
@@ -601,6 +659,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": 42,
       "rateLimitWindowSeconds": null,
+      "scopes": "42",
     },
   ],
   [
@@ -621,6 +680,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": 42,
       "rateLimitWindowSeconds": 42,
+      "scopes": "42",
     },
   ],
   [
@@ -641,6 +701,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": 42,
       "rateLimitWindowSeconds": 42,
+      "scopes": "42",
     },
   ],
   [
@@ -656,6 +717,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": "picked-id",
       "rateLimitRequestsPerWindow": 42,
       "rateLimitWindowSeconds": 42,
+      "scopes": "42",
     },
   ],
   [
@@ -671,6 +733,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "quotaPeriod": null,
       "rateLimitRequestsPerWindow": 42,
       "rateLimitWindowSeconds": 42,
+      "scopes": "42",
     },
   ],
 ]
@@ -739,7 +802,7 @@ exports[`ConsumerEditorModal credential > checks the credential config as record
 
 exports[`ConsumerEditorModal credential > explains authorization type apiKey 1`] = `"Inbound callers present a key, matched against the key below under a constant-time comparison."`;
 
-exports[`ConsumerEditorModal credential > explains authorization type jwt 1`] = `"Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below."`;
+exports[`ConsumerEditorModal credential > explains authorization type jwt 1`] = `"Inbound callers present a JWT. With key source static, its issuer matches this consumer's name and it is verified with the public key below; with key source jwks or oidc, the key comes from the published key set or the OpenID Connect provider named below."`;
 
 exports[`ConsumerEditorModal credential > explains authorization type none 1`] = `"No credential is checked. Restrict access with the allowed sources above instead."`;
 

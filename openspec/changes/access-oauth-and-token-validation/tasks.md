@@ -18,7 +18,7 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 - **acceptance_criteria**:
   - GIVEN a consumer with keySource jwks WHEN a token signed by a key in that set arrives THEN the call passes
   - GIVEN a token with alg HS256 WHEN the consumer uses jwks THEN it is refused
-- [ ] Implement (backend done: `ConsumerKeySourceResolver`, issuer lookup in `IntegriqConsumerSource`, schema description; the consumer editor fields in `consumerDraft.js` are not built yet)
+- [x] Implement. The backend is `ConsumerKeySourceResolver`, the issuer lookup in `IntegriqConsumerSource` and the schema description. The consumer editor's JWT example now carries `keySource`, and its help text names the static, jwks and oidc key sources and the fields they read. The key source is set in the editor's configuration field rather than in separate inputs, which matches how the editor handles every other credential.
 - [x] Test (PHPUnit with a local JWKS fixture, an unknown kid, an alg mismatch and a discovery document)
 
 ### Task 3: Client credentials token endpoint with a brokered key
@@ -52,7 +52,7 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 - **files**: `lib/Settings/integriq_register.json` (consumer `scopes`), `lib/Service/EndpointService.php`, the endpoint rule editor, the consumer editor, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an endpoint requiring zaken:write on POST WHEN a consumer with only zaken:read posts THEN it gets 403 naming zaken:write
-- [ ] Implement (backend done: consumer `scopes`, `requiredScopes` check in `EndpointService`; the endpoint rule editor, the consumer editor and l10n are not built yet)
+- [ ] Implement. Done: the backend (consumer `scopes`, the `requiredScopes` check in `EndpointService`), a Scopes chip field in the consumer editor (`consumerDraft.js` carries `scopes`, and an emptied list is sent as `[]`), the `client_credentials` type, and the en and nl strings. Left: `requiredScopes` in the endpoint rule editor.
 - [ ] Test (PHPUnit for the check done; Playwright for editing scopes on a consumer left)
 
 ### Task 6: Seed data and documentation

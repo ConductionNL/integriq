@@ -231,6 +231,34 @@
 					</span>
 				</div>
 
+				<div class="cn-consumer-editor__field">
+					<label
+						for="cn-consumer-editor-scopes"
+						class="cn-consumer-editor__label">
+						{{ t('integriq', 'Scopes') }}
+					</label>
+					<NcSelect
+						inputId="cn-consumer-editor-scopes"
+						:modelValue="draft.scopes"
+						:options="[]"
+						:multiple="true"
+						:taggable="true"
+						:keepOpen="true"
+						:clearable="true"
+						:disabled="saving"
+						:aria-label-combobox="t('integriq', 'Scopes')"
+						data-testid="consumer-editor-scopes"
+						@update:modelValue="updateDraft('scopes', $event)" />
+					<span class="cn-consumer-editor__helper">
+						{{
+							t(
+								'integriq',
+								'Press Enter after each scope, for example zaken:read. An endpoint that requires a scope refuses this consumer without it.',
+							)
+						}}
+					</span>
+				</div>
+
 				<div v-if="carriesCredential" class="cn-consumer-editor__field">
 					<!-- A span, not a <label for>: CnJsonViewer wraps CodeMirror, whose
 					     focusable element is generated internally and has no stable id
@@ -409,8 +437,9 @@ import {
  */
 const AUTH_CONFIG_TEMPLATES = {
 	apiKey: '{\n\t"apiKey": ""\n}',
-	jwt: '{\n\t"publicKey": "",\n\t"algorithm": "RS256"\n}',
+	jwt: '{\n\t"keySource": "static",\n\t"publicKey": "",\n\t"algorithm": "RS256"\n}',
 }
+
 
 /**
  * Chip-input placeholders. Literal address/hostname examples, deliberately not
@@ -438,7 +467,13 @@ function authorizationTypeHelp(type) {
 	if (type === 'jwt') {
 		return t(
 			'integriq',
-			"Inbound callers present a JWT whose issuer matches this consumer's name, verified with the public key below.",
+			"Inbound callers present a JWT. With key source static, its issuer matches this consumer's name and it is verified with the public key below; with key source jwks or oidc, the key comes from the published key set or the OpenID Connect provider named below.",
+		)
+	}
+	if (type === 'client_credentials') {
+		return t(
+			'integriq',
+			'Integriq issues this consumer its tokens at /api/oauth/token. An administrator sets its client secret, which is shown once.',
 		)
 	}
 	return otherAuthorizationTypeHelp(type)
@@ -619,6 +654,7 @@ export default {
 				apiKey: t('integriq', 'API key'),
 				oauth2: t('integriq', 'OAuth 2.0'),
 				jwt: t('integriq', 'JWT'),
+				client_credentials: t('integriq', 'Client credentials (tokens from integriq)'),
 			}
 			return AUTHORIZATION_TYPES.map((id) => ({ id, label: labels[id] || id }))
 		},

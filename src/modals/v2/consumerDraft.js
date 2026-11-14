@@ -76,6 +76,9 @@ export const AUTHORIZATION_TYPES = [
 	'apiKey',
 	'oauth2',
 	'jwt',
+	// access-oauth-and-token-validation (REQ-TOKV-003): integriq issues this
+	// consumer its tokens at /api/oauth/token; its secret is set apart.
+	'client_credentials',
 ]
 
 /**
@@ -106,8 +109,13 @@ export const AUTHORIZATION_TYPES = [
  * create dialog still keeps the editor hidden rather than showing it before a
  * type is even chosen — the one property the allow-list had that was worth
  * keeping. Compared lower-cased, so `None` reads as `none`.
+ *
+ * `client_credentials` keeps no authorizationConfiguration either: its secret
+ * is set through POST /api/consumers/{id}/client-secret and only its hash is
+ * stored, as the top-level `clientSecretHash`, which the item spread in
+ * `buildConsumerPayload()` carries through untouched.
  */
-export const CREDENTIALLESS_AUTHORIZATION_TYPES = ['', 'none']
+export const CREDENTIALLESS_AUTHORIZATION_TYPES = ['', 'none', 'client_credentials']
 
 /**
  * Whether an authorization type carries a credential.
@@ -152,6 +160,7 @@ export function emptyConsumerDraft() {
 		domains: [],
 		ips: [],
 		authorizationType: 'none',
+		scopes: [],
 		rateLimitRequestsPerWindow: null,
 		rateLimitWindowSeconds: null,
 		quotaLimit: null,
@@ -238,6 +247,7 @@ export function consumerDraftFromItem(item) {
 		// rather than leaving the picker blank. An off-list stored value is
 		// kept verbatim so saving an unrelated field cannot silently rewrite it.
 		authorizationType: textOf(item.authorizationType) || 'none',
+		scopes: normaliseList(item.scopes),
 		...draftLimitsFromItem(item),
 	}
 }
@@ -376,6 +386,10 @@ export function buildConsumerPayload(item, draft, authConfig) {
 		domains: normaliseList(draft.domains),
 		ips: normaliseList(draft.ips),
 	})
+
+	// Scopes (access-oauth-and-token-validation, REQ-TOKV-005): an empty list is
+	// sent as `[]` rather than omitted, so removing the last scope sticks.
+	payload.scopes = normaliseList(draft.scopes)
 
 	applyCredential(payload, authConfig)
 	return payload
