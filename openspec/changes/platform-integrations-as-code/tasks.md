@@ -16,18 +16,18 @@ Kind: code. Matrix rows `integriq:plt-cli` and `integriq:plt-git`.
 
 ### Task 2: Directory codec and export command
 - **spec_ref**: openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-configuration-exports-to-a-directory-of-stable-files-req-iac-002
-- **files**: `lib/Service/ConfigurationDirectoryCodec.php`, `lib/Command/ConfigExport.php`, `appinfo/info.xml`
+- **files**: `lib/Command/Integration/ConfigurationDirectoryCodec.php`, `lib/Command/ConfigExport.php`, `appinfo/info.xml`
 - **acceptance_criteria**:
   - GIVEN an unchanged configuration WHEN exported twice THEN the files are identical
   - GIVEN an edited mapping WHEN exported THEN only its file differs
   - GIVEN an inline password WHEN exported THEN it is redacted
 - [x] Implement
 - [x] Test (PHPUnit on the codec; integration test exporting into a temporary directory under the test's own work dir)
-      `lib/Service/ConfigurationDirectoryCodec.php` (split, join, writeDirectory, readDirectory) and `lib/Command/Integration/ConfigExport.php` (exit 0 written, 1 failed, 2 nothing to export; warns per entity without a slug). The codec takes both shapes of the export (grouped lists and slug-keyed maps), redacts through `SensitiveFieldRegistry::redactConfiguration()` on top of the handlers' own redaction, keeps `credentialRef`, and refuses two entities on one file. Tests: `tests/Unit/Service/ConfigurationDirectoryCodecTest.php` (10, writes into a temporary directory) and the export half of `tests/Unit/Command/Integration/ConfigCommandsTest.php`.
+      `lib/Command/Integration/ConfigurationDirectoryCodec.php` (split, join, writeDirectory, readDirectory) and `lib/Command/Integration/ConfigExport.php` (exit 0 written, 1 failed, 2 nothing to export; warns per entity without a slug). The codec takes both shapes of the export (grouped lists and slug-keyed maps), redacts through `SecretRedactorInterface::redactConfiguration()` (bound to `SensitiveFieldRegistry`) on top of the handlers' own redaction, keeps `credentialRef`, and refuses two entities on one file. Tests: `tests/Unit/Command/Integration/ConfigurationDirectoryCodecTest.php` (10, writes into a temporary directory) and the export half of `tests/Unit/Command/Integration/ConfigCommandsTest.php`.
 
 ### Task 3: Import command with preview and confirmation
 - **spec_ref**: openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-directory-imports-with-a-preview-and-only-when-confirmed-req-iac-003
-- **files**: `lib/Command/ConfigImport.php`, `lib/Service/ConfigurationDirectoryCodec.php`
+- **files**: `lib/Command/ConfigImport.php`, `lib/Command/Integration/ConfigurationDirectoryCodec.php`
 - **acceptance_criteria**:
   - GIVEN a directory WHEN imported without `--confirm` THEN the preview prints and nothing is written
   - GIVEN `--confirm` WHEN imported THEN `importConfiguration()` runs and the result prints

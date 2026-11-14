@@ -14,8 +14,8 @@
  * placeholders are kept. join() reads a directory back into the document
  * importConfiguration() and the import preview take.
  *
- * @category Service
- * @package  OCA\Integriq\Service
+ * @category Command
+ * @package  OCA\Integriq\Command\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,14 +31,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service;
+namespace OCA\Integriq\Command\Integration;
 
 use InvalidArgumentException;
-use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Security\SecretRedactorInterface;
 use RuntimeException;
 
 /**
  * Splits a configuration document into stable files and joins them back.
+ *
+ * @spec openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-configuration-exports-to-a-directory-of-stable-files-req-iac-002
  */
 class ConfigurationDirectoryCodec {
 
@@ -69,12 +71,12 @@ class ConfigurationDirectoryCodec {
 	/**
 	 * Constructor.
 	 *
-	 * @param SensitiveFieldRegistry $sensitiveFields Redacts secret-shaped values.
+	 * @param SecretRedactorInterface $sensitiveFields Redacts secret-shaped values.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SensitiveFieldRegistry $sensitiveFields,
+		private readonly SecretRedactorInterface $sensitiveFields,
 	) {
 	}//end __construct()
 
@@ -179,38 +181,70 @@ class ConfigurationDirectoryCodec {
 	 */
 	public function writeDirectory(string $directory, array $files): array {
 		$directory = rtrim($directory, '/');
-		$changed   = [];
-		foreach (self::COMPONENTS as $component) {
-			foreach ($this->jsonFiles(directory: $directory.'/'.$component) as $existing) {
-				$path = $component.'/'.basename($existing);
-				if (isset($files[$path]) === false) {
-					unlink($existing);
-					$changed[] = $path;
-				}
-			}
-		}
-
+		$changed   = $this->removeStale(directory: $directory, files: $files);
 		foreach ($files as $path => $content) {
-			$target = $directory.'/'.$path;
-			if (is_dir(dirname($target)) === false && mkdir(dirname($target), 0775, true) === false) {
-				throw new RuntimeException(sprintf('Cannot create directory %s.', dirname($target)));
+			if ($this->writeFile(target: $directory.'/'.$path, content: $content) === true) {
+				$changed[] = $path;
 			}
-
-			if (is_file($target) === true && file_get_contents($target) === $content) {
-				continue;
-			}
-
-			if (file_put_contents($target, $content) === false) {
-				throw new RuntimeException(sprintf('Cannot write %s.', $target));
-			}
-
-			$changed[] = $path;
 		}
 
 		sort($changed, SORT_STRING);
 
 		return $changed;
 	}//end writeDirectory()
+
+	/**
+	 * Remove the entity files a previous export left that are not among the new files.
+	 *
+	 * @param string                $directory The directory, without a trailing slash.
+	 * @param array<string, string> $files     The new file contents by relative path.
+	 *
+	 * @return list<string> The relative paths removed.
+	 *
+	 * @spec openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-configuration-exports-to-a-directory-of-stable-files-req-iac-002
+	 */
+	private function removeStale(string $directory, array $files): array {
+		$removed = [];
+		foreach (self::COMPONENTS as $component) {
+			foreach ($this->jsonFiles(directory: $directory.'/'.$component) as $existing) {
+				$path = $component.'/'.basename($existing);
+				if (isset($files[$path]) === false) {
+					unlink($existing);
+					$removed[] = $path;
+				}
+			}
+		}
+
+		return $removed;
+	}//end removeStale()
+
+	/**
+	 * Write one file unless it already holds this content, creating its directory when missing.
+	 *
+	 * @param string $target  The absolute file path.
+	 * @param string $content The file content.
+	 *
+	 * @return boolean Whether the file was written.
+	 *
+	 * @throws RuntimeException When the directory or the file cannot be written.
+	 *
+	 * @spec openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-configuration-exports-to-a-directory-of-stable-files-req-iac-002
+	 */
+	private function writeFile(string $target, string $content): bool {
+		if (is_dir(dirname($target)) === false && mkdir(dirname($target), 0775, true) === false) {
+			throw new RuntimeException(sprintf('Cannot create directory %s.', dirname($target)));
+		}
+
+		if (is_file($target) === true && file_get_contents($target) === $content) {
+			return false;
+		}
+
+		if (file_put_contents($target, $content) === false) {
+			throw new RuntimeException(sprintf('Cannot write %s.', $target));
+		}
+
+		return true;
+	}//end writeFile()
 
 	/**
 	 * Read the index and the entity files of a directory.

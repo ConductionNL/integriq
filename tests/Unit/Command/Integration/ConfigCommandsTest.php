@@ -22,7 +22,7 @@ namespace OCA\Integriq\Tests\Unit\Command\Integration;
 
 use OCA\Integriq\Command\Integration\ConfigExport;
 use OCA\Integriq\Command\Integration\ConfigImport;
-use OCA\Integriq\Service\ConfigurationDirectoryCodec;
+use OCA\Integriq\Command\Integration\ConfigurationDirectoryCodec;
 use OCA\Integriq\Service\ConfigurationImportPreviewServiceInterface;
 use OCA\Integriq\Service\ConfigurationServiceInterface;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;

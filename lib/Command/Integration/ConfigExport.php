@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command\Integration;
 
-use OCA\Integriq\Service\ConfigurationDirectoryCodec;
 use OCA\Integriq\Service\ConfigurationServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -36,6 +35,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Exports one configuration into a directory.
+ *
+ * @spec openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-configuration-exports-to-a-directory-of-stable-files-req-iac-002
  */
 class ConfigExport extends Command {
 

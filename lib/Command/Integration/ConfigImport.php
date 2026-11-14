@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Command\Integration;
 
-use OCA\Integriq\Service\ConfigurationDirectoryCodec;
 use OCA\Integriq\Service\ConfigurationImportPreviewServiceInterface;
 use OCA\Integriq\Service\ConfigurationServiceInterface;
 use Symfony\Component\Console\Command\Command;
@@ -40,6 +39,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Previews, and on confirmation imports, a configuration directory.
+ *
+ * @spec openspec/changes/platform-integrations-as-code/specs/integrations-as-code/spec.md#requirement-a-directory-imports-with-a-preview-and-only-when-confirmed-req-iac-003
  */
 class ConfigImport extends Command {
 

@@ -18,10 +18,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\Command\Integration;
 
 use InvalidArgumentException;
-use OCA\Integriq\Service\ConfigurationDirectoryCodec;
+use OCA\Integriq\Command\Integration\ConfigurationDirectoryCodec;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use PHPUnit\Framework\TestCase;
 
