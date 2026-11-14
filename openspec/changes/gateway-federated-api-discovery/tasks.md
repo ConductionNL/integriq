@@ -17,15 +17,15 @@ Kind: code. Size M. Row `integriq:gw-federated`.
 - **files**: `lib/Settings/register.d/aws-apigateway-discovery.json`, `lib/Service/SynchronizationService.php` (the refusal before a call), the inventory page status
 - **acceptance_criteria**:
   - GIVEN a broker without aws-sigv4 WHEN the Amazon synchronization runs THEN it makes no call, logs that the broker cannot sign yet, and the inventory shows the connector as waiting on OpenRegister
-- [ ] Implement
-- [ ] Test (PHPUnit on the refusal; the OpenRegister follow-up for authScheme aws-sigv4 named in the PR)
+- [x] Implement
+- [x] Test (PHPUnit on the refusal; the OpenRegister follow-up for authScheme aws-sigv4 named in the PR)
 
 ### Task 3: Kong, Azure and AWS discovery fragments
 - **spec_ref**: `openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-each-vendor-is-read-on-a-schedule-req-fedg-002`
 - **files**: `lib/Settings/register.d/kong-gateway-discovery.json`, `azure-apim-discovery.json`, `aws-apigateway-discovery.json`
 - **acceptance_criteria**:
   - GIVEN a recorded fixture per vendor WHEN its synchronization runs in test mode THEN the expected external_api objects result, and an API missing on the next run is marked no longer seen
-- [ ] Implement
+- [x] Implement
 - [ ] Test (synchronization test runs against fixtures; one live run against a Kong container in the dev compose)
 
 ### Task 4: OpenAPI export and bring behind integriq
@@ -39,3 +39,9 @@ Kind: code. Size M. Row `integriq:gw-federated`.
 ## Verification
 - [ ] `openspec validate gateway-federated-api-discovery --type change --strict` passes
 - [ ] PHPUnit and Playwright run, exit codes read
+
+## Build notes (continuation)
+
+- Seed data: three demo `external_api` objects (two Kong, one Azure API Management, matching the recorded fixtures) in `lib/Settings/integriq_mock_register.json`, so the inventory is not empty on a demo install.
+- Task 1 stays open: the `ApiInventory` index lists and filters `external_api`; listing integriq's own `api_product` rows in the same filterable list needs an index page over two schemas, which the shared `@conduction/nextcloud-vue` index page does not offer yet.
+- Task 4 stays open: "Bring behind integriq" opens the import dialog of `gateway-openapi-import-and-publish`, which is not built yet.

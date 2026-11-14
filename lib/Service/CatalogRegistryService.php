@@ -145,6 +145,10 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'mollie-payments' => 'Payments',
 		'digipoort-sbr' => 'Tax filing',
 		'ecb-eurofxref-daily' => 'Bank',
+		// Other vendors' gateways whose APIs integriq lists (gateway-federated-api-discovery).
+		'kong-gateway-discovery' => 'API gateways',
+		'azure-apim-discovery' => 'API gateways',
+		'aws-apigateway-discovery' => 'API gateways',
 	];
 
 	/**

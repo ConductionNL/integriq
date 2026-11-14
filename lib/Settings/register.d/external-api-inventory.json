@@ -1,0 +1,143 @@
+{
+  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Task 1, REQ-FEDG-001). The external_api schema the three discovery fragments (kong-gateway-discovery.json, azure-apim-discovery.json, aws-apigateway-discovery.json) write into, and two example APIs from the Kong fixture so the inventory page is not empty on a demo install. Admin-only: an inventory of another gateway's APIs is operator information.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "external_api"
+        ]
+      }
+    },
+    "schemas": {
+      "external_api": {
+        "slug": "external_api",
+        "title": "External API",
+        "icon": "ApiOff",
+        "version": "1.0.0",
+        "summary": "An API found on another vendor's gateway, listed next to integriq's own API products",
+        "description": "One row per API a discovery synchronization found on a Kong, Azure API Management or Amazon API Gateway instance (gateway-federated-api-discovery REQ-FEDG-001). Written by the synchronization engine, never by hand: `gatewayApiId` is the vendor's own id and the synchronization's origin id. An API the vendor no longer returns is not deleted: the synchronization's `markEnded` disappearance policy writes `sourceEndedAt`, so the inventory shows it as no longer seen (REQ-FEDG-002).",
+        "required": [
+          "gateway",
+          "vendor",
+          "name",
+          "gatewayApiId"
+        ],
+        "type": "object",
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "properties": {
+          "gateway": {
+            "type": "string",
+            "title": "Gateway",
+            "description": "The discovery source the API was found on (its source slug), so two Kong instances stay apart",
+            "facetable": true
+          },
+          "vendor": {
+            "type": "string",
+            "title": "Vendor",
+            "enum": [
+              "kong",
+              "azure-apim",
+              "aws-apigateway"
+            ],
+            "description": "The gateway product",
+            "facetable": true
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The API's name on its gateway"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "The API version the gateway reports; empty when it reports none"
+          },
+          "baseUrl": {
+            "type": "string",
+            "title": "Base URL",
+            "description": "Where the gateway serves the API"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "description": "The stage or environment on the gateway (an Amazon stage, an Azure revision); empty when the gateway has none"
+          },
+          "gatewayApiId": {
+            "type": "string",
+            "title": "Gateway API id",
+            "description": "The vendor's own id for the API"
+          },
+          "gatewayUrl": {
+            "type": "string",
+            "title": "On the gateway",
+            "description": "A link to the API in the vendor's own console or Admin API"
+          },
+          "openApiDocument": {
+            "type": "object",
+            "title": "OpenAPI description",
+            "description": "The OpenAPI document the gateway exports for this API, when it exposes one"
+          },
+          "lastSeen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last seen",
+            "description": "When a discovery run last found the API"
+          },
+          "sourceEndedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "No longer seen since",
+            "description": "Written by the markEnded disappearance policy: the first run that no longer found the API"
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "external_api",
+              "slug": "external-api-example-kong-orders"
+            },
+            "gateway": "kong-gateway-discovery",
+            "vendor": "kong",
+            "name": "orders",
+            "version": "",
+            "baseUrl": "http://orders.internal:8080/v1",
+            "environment": "",
+            "gatewayApiId": "a3ad71a8-7d4a-4c2b-9a83-3f1e0f6b7c11",
+            "gatewayUrl": "",
+            "lastSeen": "2026-11-14T02:00:00+00:00"
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "external_api",
+              "slug": "external-api-example-kong-invoices"
+            },
+            "gateway": "kong-gateway-discovery",
+            "vendor": "kong",
+            "name": "invoices",
+            "version": "",
+            "baseUrl": "https://invoices.internal/api",
+            "environment": "",
+            "gatewayApiId": "5b8e2f04-1c6d-4e7a-b2f9-0d4c6a1e9b37",
+            "gatewayUrl": "",
+            "lastSeen": "2026-11-14T02:00:00+00:00"
+          }
+        ]
+      }
+    }
+  }
+}

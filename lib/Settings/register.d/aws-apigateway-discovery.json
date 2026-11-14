@@ -1,0 +1,105 @@
+{
+  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Tasks 2-3, REQ-FEDG-002, design D3). Dormant discovery of the REST APIs of Amazon API Gateway. Amazon only answers requests signed with AWS Signature Version 4, and the secret key stays in OpenRegister's credential broker (ADR-064), so the broker has to sign. The synchronization declares that with `sourceConfig.brokerSigning`; until the broker offers the aws-sigv4 scheme, BrokerSigningGuard stops every run before a request is sent.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "aws-apigateway-discovery"
+        },
+        "name": "Amazon API Gateway (API discovery)",
+        "description": "Amazon API Gateway in one region (https://docs.aws.amazon.com/apigateway/latest/api/API_GetRestApis.html). List call: GET /restapis, the APIs in `item`. Every request must be signed with AWS Signature Version 4 by the credential broker (authScheme aws-sigv4, service apigateway). Set the region in the location (https://apigateway.<region>.amazonaws.com) and in the authentication block, add the access key pair to the credential broker, then enable. The synchronization does not run while the broker cannot sign.",
+        "type": "api",
+        "location": "https://apigateway.eu-west-1.amazonaws.com",
+        "auth": "aws-sigv4",
+        "documentation": "https://docs.aws.amazon.com/apigateway/latest/api/API_GetRestApis.html",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "authentication": {
+            "authScheme": "aws-sigv4",
+            "region": "eu-west-1",
+            "service": "apigateway",
+            "credentialRef": {
+              "credentialName": "aws-apigateway-discovery-access-key"
+            }
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "aws-apigateway-discovery-to-external-api"
+        },
+        "name": "Amazon REST API to external_api",
+        "description": "One REST API of Amazon API Gateway as an external_api. Amazon serves a REST API at https://<id>.execute-api.<region>.amazonaws.com/<stage>: change eu-west-1 here when the source reads another region. The stage is read per API by the export step, so the base URL stops at the host.",
+        "mapping": {
+          "gateway": "aws-apigateway-discovery",
+          "vendor": "aws-apigateway",
+          "name": "{{ name|default(id) }}",
+          "version": "{{ version|default('') }}",
+          "baseUrl": "https://{{ id }}.execute-api.eu-west-1.amazonaws.com",
+          "environment": "",
+          "gatewayApiId": "{{ id }}",
+          "gatewayUrl": "",
+          "lastSeen": "{{ 'now'|date('Y-m-d\\\\TH:i:sP', 'UTC') }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "aws-apigateway-discovery"
+        },
+        "name": "Amazon REST APIs to the API inventory",
+        "description": "Reads every REST API of Amazon API Gateway in the region into the API inventory. Waits on OpenRegister: the credential broker must sign with AWS Signature Version 4, and until it can, a run stops before any request. An API Amazon stops returning is marked no longer seen (`markEnded`), never deleted.",
+        "sourceId": "aws-apigateway-discovery",
+        "sourceType": "api",
+        "sourceTargetMapping": "aws-apigateway-discovery-to-external-api",
+        "sourceConfig": {
+          "endpoint": "/restapis",
+          "query": {
+            "limit": 500
+          },
+          "idPosition": "id",
+          "resultsPosition": "item",
+          "maxPages": 1,
+          "brokerSigning": "aws-sigv4",
+          "disappearancePolicy": "markEnded"
+        },
+        "conditions": [],
+        "targetId": "integriq/external_api",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "job",
+          "slug": "aws-apigateway-discovery-daily"
+        },
+        "name": "Amazon API Gateway discovery, daily",
+        "description": "Runs the Amazon API Gateway discovery synchronization once a day. Off, and refused before any request while the credential broker cannot sign AWS Signature Version 4.",
+        "jobClass": "OCA\\Integriq\\Service\\Job\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "aws-apigateway-discovery"
+        },
+        "interval": 86400,
+        "isEnabled": false,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
