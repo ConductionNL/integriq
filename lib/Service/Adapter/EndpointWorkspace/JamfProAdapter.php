@@ -38,6 +38,11 @@ class JamfProAdapter extends AbstractWorkspaceAdapter {
 	private const PAGE_SIZE = 200;
 
 	/**
+	 * Jamf puts the rows under `results`.
+	 */
+	protected const ROWS_KEY = 'results';
+
+	/**
 	 * The provider id.
 	 *
 	 * @return string
@@ -60,28 +65,6 @@ class JamfProAdapter extends AbstractWorkspaceAdapter {
 	}//end getLabel()
 
 	/**
-	 * The provider icon.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function getIcon(): string {
-		return 'Laptop';
-	}//end getIcon()
-
-	/**
-	 * No app is required.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Device inventory and user mapping (REQ-EWC-002).
 	 *
 	 * @return array<int, string>
@@ -93,17 +76,6 @@ class JamfProAdapter extends AbstractWorkspaceAdapter {
 	}//end getCapabilities()
 
 	/**
-	 * Jamf Pro lists devices.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function entryKind(): string {
-		return self::KIND_DEVICE;
-	}//end entryKind()
-
-	/**
 	 * The computers-inventory request, general and user sections only.
 	 *
 	 * @param array<string, mixed> $settings Unused: the instance is the credential's.
@@ -113,27 +85,8 @@ class JamfProAdapter extends AbstractWorkspaceAdapter {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- the base class's signature
 	 */
 	protected function listRequest(array $settings): ?array {
-		return [
-			'path' => '/api/v1/computers-inventory?section=GENERAL&section=USER_AND_LOCATION&page=0&page-size=' . self::PAGE_SIZE,
-			'headers' => ['Accept' => 'application/json'],
-		];
+		return self::jsonRequest(path: '/api/v1/computers-inventory?section=GENERAL&section=USER_AND_LOCATION&page=0&page-size=' . self::PAGE_SIZE);
 	}//end listRequest()
-
-	/**
-	 * Jamf puts the rows under `results`.
-	 *
-	 * @param array<string, mixed> $decoded The decoded answer.
-	 *
-	 * @return array<int, mixed>
-	 */
-	protected function rowsOf(array $decoded): array {
-		$rows = ($decoded['results'] ?? []);
-		if (is_array($rows) === false) {
-			return [];
-		}
-
-		return array_values($rows);
-	}//end rowsOf()
 
 	/**
 	 * One computer as an entry.
@@ -143,15 +96,8 @@ class JamfProAdapter extends AbstractWorkspaceAdapter {
 	 * @return array<string, mixed>
 	 */
 	protected function entryOf(array $row): array {
-		$general = ($row['general'] ?? []);
-		$user = ($row['userAndLocation'] ?? []);
-		if (is_array($general) === false) {
-			$general = [];
-		}
-
-		if (is_array($user) === false) {
-			$user = [];
-		}
+		$general = self::arrayOf(value: ($row['general'] ?? null));
+		$user = self::arrayOf(value: ($row['userAndLocation'] ?? null));
 
 		$id = ($row['id'] ?? null);
 		if (is_int($id) === true) {

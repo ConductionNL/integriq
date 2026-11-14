@@ -38,6 +38,11 @@ class IntuneAdapter extends AbstractWorkspaceAdapter {
 	private const SELECT = 'id,deviceName,userPrincipalName,emailAddress,lastSyncDateTime,complianceState,operatingSystem';
 
 	/**
+	 * Graph puts the rows under `value`.
+	 */
+	protected const ROWS_KEY = 'value';
+
+	/**
 	 * The provider id.
 	 *
 	 * @return string
@@ -60,28 +65,6 @@ class IntuneAdapter extends AbstractWorkspaceAdapter {
 	}//end getLabel()
 
 	/**
-	 * The provider icon.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function getIcon(): string {
-		return 'Laptop';
-	}//end getIcon()
-
-	/**
-	 * No app is required.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Device-side capabilities only (REQ-EWC-002).
 	 *
 	 * @return array<int, string>
@@ -93,17 +76,6 @@ class IntuneAdapter extends AbstractWorkspaceAdapter {
 	}//end getCapabilities()
 
 	/**
-	 * Intune lists devices.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function entryKind(): string {
-		return self::KIND_DEVICE;
-	}//end entryKind()
-
-	/**
 	 * The Graph managed-devices request.
 	 *
 	 * @param array<string, mixed> $settings Unused: the tenant is the credential's.
@@ -113,27 +85,8 @@ class IntuneAdapter extends AbstractWorkspaceAdapter {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) -- the base class's signature
 	 */
 	protected function listRequest(array $settings): ?array {
-		return [
-			'path' => '/v1.0/deviceManagement/managedDevices?$select=' . self::SELECT,
-			'headers' => ['Accept' => 'application/json'],
-		];
+		return self::jsonRequest(path: '/v1.0/deviceManagement/managedDevices?$select=' . self::SELECT);
 	}//end listRequest()
-
-	/**
-	 * Graph puts the rows under `value`.
-	 *
-	 * @param array<string, mixed> $decoded The decoded answer.
-	 *
-	 * @return array<int, mixed>
-	 */
-	protected function rowsOf(array $decoded): array {
-		$rows = ($decoded['value'] ?? []);
-		if (is_array($rows) === false) {
-			return [];
-		}
-
-		return array_values($rows);
-	}//end rowsOf()
 
 	/**
 	 * One managed device as an entry.

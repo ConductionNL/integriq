@@ -34,6 +34,21 @@ namespace OCA\Integriq\Service\Adapter\EndpointWorkspace;
 class CitrixDaasAdapter extends AbstractWorkspaceAdapter {
 
 	/**
+	 * Citrix DaaS lists sessions.
+	 */
+	protected const ENTRY_KIND = self::KIND_SESSION;
+
+	/**
+	 * Citrix puts the rows under `Items`.
+	 */
+	protected const ROWS_KEY = 'Items';
+
+	/**
+	 * The provider icon.
+	 */
+	protected const ICON = 'Monitor';
+
+	/**
 	 * The provider id.
 	 *
 	 * @return string
@@ -56,28 +71,6 @@ class CitrixDaasAdapter extends AbstractWorkspaceAdapter {
 	}//end getLabel()
 
 	/**
-	 * The provider icon.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function getIcon(): string {
-		return 'Monitor';
-	}//end getIcon()
-
-	/**
-	 * No app is required.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Session enumeration and user mapping (REQ-EWC-002).
 	 *
 	 * @return array<int, string>
@@ -87,17 +80,6 @@ class CitrixDaasAdapter extends AbstractWorkspaceAdapter {
 	public function getCapabilities(): array {
 		return ['session-enumerate', 'user-mapping'];
 	}//end getCapabilities()
-
-	/**
-	 * Citrix DaaS lists sessions.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
-	 */
-	public function entryKind(): string {
-		return self::KIND_SESSION;
-	}//end entryKind()
 
 	/**
 	 * The sessions request, or null without a customer and site.
@@ -113,31 +95,11 @@ class CitrixDaasAdapter extends AbstractWorkspaceAdapter {
 			return null;
 		}
 
-		return [
-			'path' => '/cvad/manage/Sessions',
-			'headers' => [
-				'Accept' => 'application/json',
-				'Citrix-CustomerId' => $customerId,
-				'Citrix-InstanceId' => $siteId,
-			],
-		];
+		return self::jsonRequest(
+			path: '/cvad/manage/Sessions',
+			headers: ['Citrix-CustomerId' => $customerId, 'Citrix-InstanceId' => $siteId]
+		);
 	}//end listRequest()
-
-	/**
-	 * Citrix puts the rows under `Items`.
-	 *
-	 * @param array<string, mixed> $decoded The decoded answer.
-	 *
-	 * @return array<int, mixed>
-	 */
-	protected function rowsOf(array $decoded): array {
-		$rows = ($decoded['Items'] ?? []);
-		if (is_array($rows) === false) {
-			return [];
-		}
-
-		return array_values($rows);
-	}//end rowsOf()
 
 	/**
 	 * One session as an entry.
@@ -147,15 +109,8 @@ class CitrixDaasAdapter extends AbstractWorkspaceAdapter {
 	 * @return array<string, mixed>
 	 */
 	protected function entryOf(array $row): array {
-		$user = ($row['User'] ?? []);
-		$machine = ($row['Machine'] ?? []);
-		if (is_array($user) === false) {
-			$user = [];
-		}
-
-		if (is_array($machine) === false) {
-			$machine = [];
-		}
+		$user = self::arrayOf(value: ($row['User'] ?? null));
+		$machine = self::arrayOf(value: ($row['Machine'] ?? null));
 
 		return [
 			'id' => self::stringOrNull(value: ($row['Id'] ?? null)),

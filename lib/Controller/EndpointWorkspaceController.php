@@ -224,11 +224,11 @@ class EndpointWorkspaceController extends Controller {
 			return null;
 		}
 
-		$configuration = ($source->getObject()['configuration'] ?? []);
-		if (is_array($configuration) === false) {
-			return [];
+		$configuration = ($source->getObject()['configuration'] ?? null);
+		if (is_array($configuration) === true) {
+			return $configuration;
 		}
 
-		return $configuration;
+		return [];
 	}//end configurationOf()
 }//end class

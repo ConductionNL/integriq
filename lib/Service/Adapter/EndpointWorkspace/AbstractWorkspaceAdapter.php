@@ -51,6 +51,21 @@ abstract class AbstractWorkspaceAdapter extends AbstractCategoryAdapterProvider 
 	public const KIND_SESSION = 'session';
 
 	/**
+	 * The kind of entry this adapter lists; a subclass sets its own.
+	 */
+	protected const ENTRY_KIND = self::KIND_DEVICE;
+
+	/**
+	 * The key of the decoded answer that holds the vendor rows.
+	 */
+	protected const ROWS_KEY = 'value';
+
+	/**
+	 * The provider icon.
+	 */
+	protected const ICON = 'Laptop';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CredentialBrokerService $credentialBroker The credential broker every call goes through.
@@ -74,7 +89,31 @@ abstract class AbstractWorkspaceAdapter extends AbstractCategoryAdapterProvider 
 	 *
 	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
 	 */
-	abstract public function entryKind(): string;
+	public function entryKind(): string {
+		return static::ENTRY_KIND;
+	}//end entryKind()
+
+	/**
+	 * The provider icon.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+	 */
+	public function getIcon(): string {
+		return static::ICON;
+	}//end getIcon()
+
+	/**
+	 * No app is required.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/connectors-endpoint-workspace-adapters/specs/endpoint-workspace-connectors/spec.md#requirement-an-administrator-sees-the-sessions-or-devices-of-a-connected-workspace-manager-req-ewc-008
+	 */
+	public function getRequiredApp(): ?string {
+		return null;
+	}//end getRequiredApp()
 
 	/**
 	 * The broker request that lists the entries.
@@ -86,13 +125,15 @@ abstract class AbstractWorkspaceAdapter extends AbstractCategoryAdapterProvider 
 	abstract protected function listRequest(array $settings): ?array;
 
 	/**
-	 * The vendor rows in a decoded answer.
+	 * The vendor rows in a decoded answer: the list under {@see self::ROWS_KEY}.
 	 *
 	 * @param array<string, mixed> $decoded The decoded answer.
 	 *
 	 * @return array<int, mixed>
 	 */
-	abstract protected function rowsOf(array $decoded): array;
+	protected function rowsOf(array $decoded): array {
+		return array_values(self::arrayOf(value: ($decoded[static::ROWS_KEY] ?? [])));
+	}//end rowsOf()
 
 	/**
 	 * One vendor row as an entry.
@@ -162,6 +203,33 @@ abstract class AbstractWorkspaceAdapter extends AbstractCategoryAdapterProvider 
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		return ($this->listEntries(settings: $filters) ?? []);
 	}//end list()
+
+	/**
+	 * A JSON GET request for the path, with any extra headers.
+	 *
+	 * @param string                $path    The path, relative to the credential's base URL.
+	 * @param array<string, string> $headers Extra headers.
+	 *
+	 * @return array{path: string, headers: array<string, string>}
+	 */
+	protected static function jsonRequest(string $path, array $headers = []): array {
+		return ['path' => $path, 'headers' => ['Accept' => 'application/json'] + $headers];
+	}//end jsonRequest()
+
+	/**
+	 * A nested object of a vendor row, [] when it is not one.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed>
+	 */
+	protected static function arrayOf(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOf()
 
 	/**
 	 * A string field, or null.
