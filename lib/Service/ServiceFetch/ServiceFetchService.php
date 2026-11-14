@@ -64,6 +64,13 @@ class ServiceFetchService {
 	private const MAX_TIMEOUT_MS = 15000;
 
 	/**
+	 * The caller an administrator's test run is logged under on the call log.
+	 *
+	 * @var string
+	 */
+	public const TEST_CALLER = 'integriq-admin-test';
+
+	/**
 	 * Cached outputs per fetch and input values.
 	 *
 	 * @var ICache
@@ -121,6 +128,52 @@ class ServiceFetchService {
 			$event->refuse(refusal: ServiceFetchRequestedEvent::SOURCE_UNAVAILABLE);
 		}
 	}//end handle()
+
+	/**
+	 * Run one fetch for its administrator with sample inputs ("Testen", design D5).
+	 *
+	 * Unlike an app's call it skips the allowed-apps check and the output cache,
+	 * and runs a disabled fetch too, so a fetch can be tried before it is
+	 * switched on. The answer holds the source's raw answer next to the mapped
+	 * outputs; it is for the administrator only and never reaches an app.
+	 *
+	 * @param string               $slug   The fetch.
+	 * @param array<string, mixed> $inputs The sample inputs.
+	 *
+	 * @return array{found: bool, raw: array{status: int, body: mixed}|null,
+	 *     outputs: array<string, mixed>|null, refusal: string|null, detail: string|null}
+	 *         `found` is false for an unknown slug; `refusal` names the first
+	 *         step that refused, with `raw` set once the source answered.
+	 *
+	 * @spec openspec/changes/forms-service-fetch-for-apps/specs/service-fetch/spec.md#requirement-an-administrator-defines-a-service-fetch-with-inputs-and-mapped-outputs-req-sf-001
+	 */
+	public function test(string $slug, array $inputs): array {
+		$result = ['found' => false, 'raw' => null, 'outputs' => null, 'refusal' => null, 'detail' => null];
+		$fetch = $this->catalogue->fetchBySlug(slug: $slug);
+		if ($fetch === null) {
+			return $result;
+		}
+
+		$result['found'] = true;
+		try {
+			try {
+				$accepted = $this->inputs->accepted(declared: $this->catalogue->listOf(value: ($fetch['inputs'] ?? [])), given: $inputs);
+				$path = $this->inputs->path(path: (string)($fetch['path'] ?? ''), inputs: $accepted);
+				$query = $this->inputs->query(query: (array)($fetch['query'] ?? []), inputs: $accepted);
+			} catch (InvalidArgumentException $invalid) {
+				throw new ServiceFetchRefusal(ServiceFetchRequestedEvent::INVALID_INPUT, $invalid->getMessage());
+			}
+
+			$request = ['path' => $path, 'query' => $query, 'inputs' => $accepted, 'app' => self::TEST_CALLER];
+			$result['raw'] = $this->callSource(fetch: $fetch, request: $request);
+			$result['outputs'] = $this->outputs(fetch: $fetch, answer: $result['raw']);
+		} catch (ServiceFetchRefusal $refusal) {
+			$result['refusal'] = $refusal->getMessage();
+			$result['detail'] = $refusal->detail;
+		}
+
+		return $result;
+	}//end test()
 
 	/**
 	 * The steps of design D3, throwing a ServiceFetchRefusal at the first refusal.
