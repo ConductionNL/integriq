@@ -1237,6 +1237,88 @@
             "icon": "ForumOutline",
             "title": "Incident war-room",
             "_note": "Deck and Talk are runtime-optional: OpenRegister's providers report isEnabled() false when the Nextcloud app is absent and the widget does not render. That is why the e2e spec tolerates their absence rather than asserting three widgets unconditionally."
+          },
+          {
+            "id": "src-workspace-devices",
+            "type": "record-list",
+            "icon": "Laptop",
+            "title": "Devices",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "intune",
+                "jamf-pro"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No devices listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
+          },
+          {
+            "id": "src-workspace-sessions",
+            "type": "record-list",
+            "icon": "MonitorAccount",
+            "title": "Sessions",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "azure-virtual-desktop",
+                "citrix-daas"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No sessions listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
           }
         ],
         "layout": [
@@ -1326,6 +1408,22 @@
             "gridX": 6,
             "gridY": 25,
             "gridWidth": 6,
+            "gridHeight": 6
+          },
+          {
+            "id": "9",
+            "widgetId": "src-workspace-devices",
+            "gridX": 0,
+            "gridY": 31,
+            "gridWidth": 12,
+            "gridHeight": 6
+          },
+          {
+            "id": "10",
+            "widgetId": "src-workspace-sessions",
+            "gridX": 0,
+            "gridY": 37,
+            "gridWidth": 12,
             "gridHeight": 6
           }
         ],

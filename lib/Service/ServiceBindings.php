@@ -28,6 +28,9 @@ namespace OCA\Integriq\Service;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
@@ -427,6 +430,8 @@ final class ServiceBindings {
 	 *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
 	 *     proving the `AbstractCategoryAdapterProvider` registration pattern
 	 *     (openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding).
+	 *   - IntuneAdapter, JamfProAdapter, CitrixDaasAdapter — the endpoint-workspace
+	 *     adapters of connectors-endpoint-workspace-adapters (REQ-EWC-008).
 	 *
 	 * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
 	 * integriq is loaded but openregister isn't enabled yet) so boot
@@ -449,6 +454,9 @@ final class ServiceBindings {
 			$registry = $container->get(IntegrationRegistry::class);
 			$registry->addProvider($container->get(SynchronizationContractProvider::class));
 			$registry->addProvider($container->get(AzureVirtualDesktopAdapter::class));
+			$registry->addProvider($container->get(IntuneAdapter::class));
+			$registry->addProvider($container->get(JamfProAdapter::class));
+			$registry->addProvider($container->get(CitrixDaasAdapter::class));
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));

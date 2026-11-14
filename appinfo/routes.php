@@ -438,6 +438,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
+		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
+		// manager behind a source reports, each with the Nextcloud user it maps to. Admin only.
+		['name' => 'endpointWorkspace#index', 'url' => '/api/sources/{id}/workspace-entries', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
