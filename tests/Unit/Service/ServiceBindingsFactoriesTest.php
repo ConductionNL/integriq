@@ -29,6 +29,9 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxProvider;
 use OCA\Integriq\Service\DigitalPost\DigitalPostProviderRegistry;
@@ -128,7 +131,7 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		}
 	}//end testTheSettingsServiceIsBuiltFromTheDatabaseConfigAndLogger()
 
-	public function testBootHandsTheFiveIntegrationProvidersToOpenRegisterInOrder(): void {
+	public function testBootHandsTheEightIntegrationProvidersToOpenRegisterInOrder(): void {
 		$registry = new class extends IntegrationRegistry {
 			/** @var array<int, object> */
 			public array $added = [];
@@ -149,10 +152,10 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		(new ServiceBindings())->boot(context: $context);
 
 		$this->assertSame(
-			[SynchronizationContractProvider::class, AzureVirtualDesktopAdapter::class, SharePointOnlineAdapter::class, Microsoft365Adapter::class, S3Adapter::class],
+			[SynchronizationContractProvider::class, AzureVirtualDesktopAdapter::class, IntuneAdapter::class, JamfProAdapter::class, CitrixDaasAdapter::class, SharePointOnlineAdapter::class, Microsoft365Adapter::class, S3Adapter::class],
 			array_map(fn (object $provider): string => $this->classOf($provider), $registry->added)
 		);
-	}//end testBootHandsTheFiveIntegrationProvidersToOpenRegisterInOrder()
+	}//end testBootHandsTheEightIntegrationProvidersToOpenRegisterInOrder()
 
 	public function testABootFailureIsLoggedNotThrown(): void {
 		$logger = $this->createMock(LoggerInterface::class);

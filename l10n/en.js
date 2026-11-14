@@ -3597,7 +3597,19 @@ OC.L10N.register(
         "First working day of the month": "First working day of the month",
         "Last working day of the month": "Last working day of the month",
         "Day {day}": "Day {day}",
-        "The run times could not be computed.": "The run times could not be computed."
+        "The run times could not be computed.": "The run times could not be computed.",
+        "Only an administrator can see the sessions and devices of a source.": "Only an administrator can see the sessions and devices of a source.",
+        "This source is not connected to a workspace manager.": "This source is not connected to a workspace manager.",
+        "This source has no credential yet, so nothing was called. Add a credential to see what it reports.": "This source has no credential yet, so nothing was called. Add a credential to see what it reports.",
+        "Microsoft Intune": "Microsoft Intune",
+        "Jamf Pro": "Jamf Pro",
+        "Citrix DaaS": "Citrix DaaS",
+        "Devices": "Devices",
+        "Sessions": "Sessions",
+        "No user found": "No user found",
+        "No devices listed. A source without a credential calls nothing: add a credential to see what it reports.": "No devices listed. A source without a credential calls nothing: add a credential to see what it reports.",
+        "No sessions listed. A source without a credential calls nothing: add a credential to see what it reports.": "No sessions listed. A source without a credential calls nothing: add a credential to see what it reports.",
+        "The workspace manager could not be read.": "The workspace manager could not be read."
     },
     "nplurals=2; plural=(n != 1);"
 )
