@@ -3,6 +3,7 @@
 
 import { NEXTCLOUD_FORM_KIND } from '../views/Synchronization/formsBridge.js'
 import {
+	FILE_PICKUP_OPTIONS,
 	NEXTCLOUD_FORM_OPTION,
 	NEXTCLOUD_TABLE_OPTION,
 	SYNC_MODE_OPTIONS,
@@ -48,10 +49,12 @@ export default {
 		 */
 		sourceTypeOptions() {
 			const usesForm = this.draft?.sourceType === NEXTCLOUD_FORM_KIND
+			const options = [...this.typeOptions]
 			if (this.formsEnabled || usesForm) {
-				return [...this.typeOptions, NEXTCLOUD_FORM_OPTION]
+				options.push(NEXTCLOUD_FORM_OPTION)
 			}
-			return this.typeOptions
+			// A file pickup only reads, so like the Forms kind it is source-only.
+			return [...options, ...FILE_PICKUP_OPTIONS]
 		},
 
 		/**

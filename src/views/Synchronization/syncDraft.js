@@ -72,6 +72,16 @@ export const NEXTCLOUD_FORM_OPTION = {
 }
 
 /**
+ * Source-only kinds of a file pickup (sources-sftp-adapter Task 3): the run
+ * picks the files of an SFTP or FTPS source up into Nextcloud Files. Keep in
+ * sync with FilePickupSynchronization::SOURCE_TYPES.
+ */
+export const FILE_PICKUP_OPTIONS = [
+	{ id: 'sftp', label: 'SFTP (file pickup)' },
+	{ id: 'ftps', label: 'FTPS (file pickup)' },
+]
+
+/**
  * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync with
  * the `syncMode` enum in `lib/Settings/integriq_register.json`.
  */

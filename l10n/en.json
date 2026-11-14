@@ -3624,7 +3624,12 @@
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "SFTP server with a pinned host key": "SFTP server with a pinned host key",
+        "FTPS server (FTP over TLS, certificate checked)": "FTPS server (FTP over TLS, certificate checked)",
+        "Each source carries its own credential, root path and server check.": "Each source carries its own credential, root path and server check.",
+        "SFTP needs the phpseclib 3 library, which is not installed on this instance.": "SFTP needs the phpseclib 3 library, which is not installed on this instance.",
+        "FTPS needs PHP curl with TLS support, which is missing on this instance.": "FTPS needs PHP curl with TLS support, which is missing on this instance."
     },
     "plurals": {}
 }

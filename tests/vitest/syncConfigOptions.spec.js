@@ -14,20 +14,23 @@ vi.mock('@nextcloud/axios', () => ({ default: { get } }))
 
 const builderCalls = []
 const picker = { pick: vi.fn() }
-const builder = new Proxy({}, {
-	get(_target, method) {
-		if (method === 'build') {
-			return () => {
-				builderCalls.push(['build'])
-				return picker
+const builder = new Proxy(
+	{},
+	{
+		get(_target, method) {
+			if (method === 'build') {
+				return () => {
+					builderCalls.push(['build'])
+					return picker
+				}
 			}
-		}
-		return (...args) => {
-			builderCalls.push([method, ...args])
-			return builder
-		}
+			return (...args) => {
+				builderCalls.push([method, ...args])
+				return builder
+			}
+		},
 	},
-})
+)
 const getFilePickerBuilder = vi.fn(() => builder)
 vi.mock('@nextcloud/dialogs', () => ({
 	FilePickerType: { Choose: 1 },
@@ -54,7 +57,9 @@ describe('state factories', () => {
 			formsLoading: false,
 			formsError: '',
 		})
-		expect(options.lookupState().sourceOptions).not.toBe(options.lookupState().sourceOptions)
+		expect(options.lookupState().sourceOptions).not.toBe(
+			options.lookupState().sourceOptions,
+		)
 	})
 
 	it('names a loader for every source and target kind', () => {
@@ -63,6 +68,8 @@ describe('state factories', () => {
 			'register/schema': 'loadRegisterLists',
 			'nextcloud-table': 'loadTableLists',
 			'nextcloud-form': 'loadFormLists',
+			sftp: 'loadSourcesOnce',
+			ftps: 'loadSourcesOnce',
 		})
 	})
 })
@@ -82,34 +89,61 @@ describe('listOf', () => {
 
 describe('option labels', () => {
 	it('labels a source by name, then title, then id, with a string id', () => {
-		expect(options.sourceOption({ id: 4, name: 'CRM', title: 'ignored' })).toEqual({ id: '4', label: 'CRM' })
-		expect(options.sourceOption({ uuid: 'u-1', title: 'Zaken' })).toEqual({ id: 'u-1', label: 'Zaken' })
+		expect(
+			options.sourceOption({ id: 4, name: 'CRM', title: 'ignored' }),
+		).toEqual({ id: '4', label: 'CRM' })
+		expect(options.sourceOption({ uuid: 'u-1', title: 'Zaken' })).toEqual({
+			id: 'u-1',
+			label: 'Zaken',
+		})
 		expect(options.sourceOption({ id: 9 })).toEqual({ id: '9', label: 9 })
 	})
 
 	it('labels a register by title, name, slug or id and keeps its schemas', () => {
-		expect(options.registerOption({ id: 1, title: 'Main', schemas: [5] })).toEqual({ id: '1', label: 'Main', schemas: [5] })
-		expect(options.registerOption({ id: 2, slug: 'docs', schemas: 'x' })).toEqual({ id: '2', label: 'docs', schemas: [] })
-		expect(options.registerOption({ id: 3 })).toEqual({ id: '3', label: '3', schemas: [] })
+		expect(
+			options.registerOption({ id: 1, title: 'Main', schemas: [5] }),
+		).toEqual({ id: '1', label: 'Main', schemas: [5] })
+		expect(
+			options.registerOption({ id: 2, slug: 'docs', schemas: 'x' }),
+		).toEqual({ id: '2', label: 'docs', schemas: [] })
+		expect(options.registerOption({ id: 3 })).toEqual({
+			id: '3',
+			label: '3',
+			schemas: [],
+		})
 	})
 
 	it('maps schema ids to their best label, skipping rows without an id', () => {
-		expect(options.schemaLabelMap([
-			{ id: 1, title: 'Case', name: 'case' },
-			{ uuid: 'u-2', name: 'person' },
-			{ id: 3, slug: 'doc' },
-			{ id: 4 },
-			{ title: 'no id' },
-			null,
-		])).toEqual({ 1: 'Case', 'u-2': 'person', 3: 'doc', 4: '4' })
+		expect(
+			options.schemaLabelMap([
+				{ id: 1, title: 'Case', name: 'case' },
+				{ uuid: 'u-2', name: 'person' },
+				{ id: 3, slug: 'doc' },
+				{ id: 4 },
+				{ title: 'no id' },
+				null,
+			]),
+		).toEqual({ 1: 'Case', 'u-2': 'person', 3: 'doc', 4: '4' })
 	})
 
 	it('labels a schema from its own record first, then the lookup, then its id', () => {
 		const labels = { 7: 'From lookup' }
-		expect(options.schemaOption({ id: 7, title: 'Inline' }, labels)).toEqual({ id: '7', label: 'Inline' })
-		expect(options.schemaOption({ id: 7 }, labels)).toEqual({ id: '7', label: 'From lookup' })
-		expect(options.schemaOption({ slug: 'case' }, {})).toEqual({ id: 'case', label: 'case' })
-		expect(options.schemaOption(7, labels)).toEqual({ id: '7', label: 'From lookup' })
+		expect(options.schemaOption({ id: 7, title: 'Inline' }, labels)).toEqual({
+			id: '7',
+			label: 'Inline',
+		})
+		expect(options.schemaOption({ id: 7 }, labels)).toEqual({
+			id: '7',
+			label: 'From lookup',
+		})
+		expect(options.schemaOption({ slug: 'case' }, {})).toEqual({
+			id: 'case',
+			label: 'case',
+		})
+		expect(options.schemaOption(7, labels)).toEqual({
+			id: '7',
+			label: 'From lookup',
+		})
 		expect(options.schemaOption('8', labels)).toEqual({ id: '8', label: '8' })
 		expect(options.schemaOption(null, {})).toEqual({ id: 'null', label: 'null' })
 	})
@@ -137,7 +171,11 @@ describe('bridge lists', () => {
 	})
 
 	it('fetches the tables of a source and maps them to numeric options', async () => {
-		get.mockResolvedValueOnce({ data: { results: [{ id: '3', title: 'Leads' }, { id: null }, { id: 4 }] } })
+		get.mockResolvedValueOnce({
+			data: {
+				results: [{ id: '3', title: 'Leads' }, { id: null }, { id: 4 }],
+			},
+		})
 
 		await expect(options.tableOptionsFor('src-1')).resolves.toEqual([
 			{ id: 3, label: 'Leads' },
@@ -152,7 +190,9 @@ describe('bridge lists', () => {
 	it('fetches the forms of a source from a bare list', async () => {
 		get.mockResolvedValueOnce({ data: [{ id: 8, title: 'Intake' }] })
 
-		await expect(options.formOptionsFor('src-2')).resolves.toEqual([{ id: 8, label: 'Intake' }])
+		await expect(options.formOptionsFor('src-2')).resolves.toEqual([
+			{ id: 8, label: 'Intake' },
+		])
 		expect(get).toHaveBeenCalledWith(
 			'/index.php/apps/integriq/api/synchronizations/forms-bridge/forms',
 			{ params: { sourceId: 'src-2' } },
@@ -166,9 +206,18 @@ describe('bridge lists', () => {
 	})
 
 	it('shows the server error when there is one, else the fallback', () => {
-		expect(options.bridgeError({ response: { data: { error: 'Tables app disabled' } } }, 'Could not load')).toBe('Tables app disabled')
-		expect(options.bridgeError({ response: { data: {} } }, 'Could not load')).toBe('Could not load')
-		expect(options.bridgeError(undefined, 'Could not load')).toBe('Could not load')
+		expect(
+			options.bridgeError(
+				{ response: { data: { error: 'Tables app disabled' } } },
+				'Could not load',
+			),
+		).toBe('Tables app disabled')
+		expect(
+			options.bridgeError({ response: { data: {} } }, 'Could not load'),
+		).toBe('Could not load')
+		expect(options.bridgeError(undefined, 'Could not load')).toBe(
+			'Could not load',
+		)
 	})
 })
 

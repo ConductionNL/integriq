@@ -25,7 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
 use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
@@ -452,6 +454,9 @@ final class ServiceBindings {
 			$registry->addProvider($container->get(SharePointOnlineAdapter::class));
 			$registry->addProvider($container->get(Microsoft365Adapter::class));
 			$registry->addProvider($container->get(S3Adapter::class));
+			// Sources-sftp-adapter: a partner's SFTP or FTPS server (REQ-SFTP-001).
+			$registry->addProvider($container->get(SftpAdapter::class));
+			$registry->addProvider($container->get(FtpsAdapter::class));
 		} catch (\Throwable $e) {
 			// Don't crash boot — log and continue. The provider just won't appear
 			// in object sidebars on this instance until the registry resolves.

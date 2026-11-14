@@ -353,6 +353,35 @@
 				:formId="configValue('formId')" />
 		</template>
 
+		<!-- File pickup mode (source only, sources-sftp-adapter Task 3) -->
+		<template v-else-if="type === 'sftp' || type === 'ftps'">
+			<div class="sync-config__field">
+				<label :for="pickupSourceId" class="sync-config__label">
+					{{ kindLabel }} {{ t('integriq', 'source (file server)') }}
+				</label>
+				<NcSelect
+					:inputId="pickupSourceId"
+					:aria-label-combobox="t('integriq', 'Source (file server)')"
+					:modelValue="selectedSource"
+					:options="sourceOptions"
+					:loading="sourcesLoading"
+					:placeholder="t('integriq', 'Pick a configured source')"
+					@update:modelValue="onSourcePick" />
+				<span class="sync-config__helper">
+					{{
+						t(
+							'integriq',
+							'An SFTP or FTPS source: it holds the server, its root path, its host key and its credential.',
+						)
+					}}
+				</span>
+			</div>
+
+			<FilePickupConfigFields
+				:config="config || {}"
+				@update:config="$emit('update:config', $event)" />
+		</template>
+
 		<!-- Unknown / not set -->
 		<div v-else class="sync-config__placeholder">
 			{{
@@ -369,6 +398,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
+import FilePickupConfigFields from './FilePickupConfigFields.vue'
 import FormsFieldMapping from './FormsFieldMapping.vue'
 import TablesColumnMapping from './TablesColumnMapping.vue'
 import messageSchemaOptions from '../../mixins/messageSchemaOptions.js'
@@ -407,6 +437,7 @@ export default {
 		FolderOpenOutline,
 		TablesColumnMapping,
 		FormsFieldMapping,
+		FilePickupConfigFields,
 	},
 
 	mixins: [messageSchemaOptions],
@@ -617,6 +648,10 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
 		formSourceId() {
 			return `sync-config-${this.widgetUid}-form-source`
+		},
+
+		pickupSourceId() {
+			return `sync-config-${this.widgetUid}-pickup-source`
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */

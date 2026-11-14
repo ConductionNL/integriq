@@ -2125,7 +2125,7 @@ exports[`SynchronizationEditorModal > renders an invalid name while saving as re
           <h3>Source</h3>
         </header>
         <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Source type</label>
-          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object]" data-disabled="yes">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object],[object Object],[object Object]" data-disabled="yes">
           </div>
           <sync-config-widget-stub kind="source" type="api" sourceid="" config="[object Object]"></sync-config-widget-stub><label class="cn-sync-editor__label">Sync mode</label>
           <div class="NcSelect" data-attrs="aria-label-combobox=Sync mode clearable=false options=[object Object],[object Object]" data-disabled="yes">
@@ -2208,7 +2208,7 @@ exports[`SynchronizationEditorModal > renders create as recorded 1`] = `
           <h3>Source</h3>
         </header>
         <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Source type</label>
-          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object]">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object],[object Object],[object Object]">
           </div>
           <sync-config-widget-stub kind="source" type="api" sourceid="" config="[object Object]"></sync-config-widget-stub><label class="cn-sync-editor__label">Sync mode</label>
           <div class="NcSelect" data-attrs="aria-label-combobox=Sync mode clearable=false options=[object Object],[object Object]">
@@ -2294,7 +2294,7 @@ exports[`SynchronizationEditorModal > renders edit as recorded 1`] = `
           <h3>Source</h3>
         </header>
         <div class="cn-sync-editor__column-body"><label class="cn-sync-editor__label">Source type</label>
-          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object]">
+          <div class="NcSelect" data-attrs="aria-label-combobox=Source type clearable=false options=[object Object],[object Object],[object Object],[object Object],[object Object]">
           </div>
           <sync-config-widget-stub kind="source" type="api" sourceid="" config="[object Object]"></sync-config-widget-stub><label class="cn-sync-editor__label">Sync mode</label>
           <div class="NcSelect" data-attrs="aria-label-combobox=Sync mode clearable=false options=[object Object],[object Object]">

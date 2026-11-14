@@ -15,6 +15,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -35,6 +37,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -55,6 +59,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -76,6 +82,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -97,6 +105,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -117,6 +127,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -137,6 +149,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -157,6 +171,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -177,6 +193,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -198,6 +216,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -219,6 +239,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -239,6 +261,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -259,6 +283,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -279,6 +305,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -299,6 +327,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -320,6 +350,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -341,6 +373,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -361,6 +395,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -382,6 +418,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -404,6 +442,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -426,6 +466,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -448,6 +490,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -470,6 +514,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -492,6 +538,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -514,6 +562,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -535,6 +585,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -556,6 +608,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -578,6 +632,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -600,6 +656,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -621,6 +679,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -641,6 +701,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -661,6 +723,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -681,6 +745,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -702,6 +768,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -723,6 +791,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -743,6 +813,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -764,6 +836,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -785,6 +859,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -806,6 +882,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -828,6 +906,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -850,6 +930,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -871,6 +953,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -892,6 +976,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -913,6 +999,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -934,6 +1022,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -956,6 +1046,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -978,6 +1070,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -999,6 +1093,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1020,6 +1116,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1041,6 +1139,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1062,6 +1162,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1084,6 +1186,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1106,6 +1210,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1127,6 +1233,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1149,6 +1257,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1172,6 +1282,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1195,6 +1307,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1218,6 +1332,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1241,6 +1357,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1264,6 +1382,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1286,6 +1406,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1307,6 +1429,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1328,6 +1452,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1350,6 +1476,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1372,6 +1500,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1393,6 +1523,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1414,6 +1546,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1435,6 +1569,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1456,6 +1592,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1478,6 +1616,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1500,6 +1640,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1521,6 +1663,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1542,6 +1686,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1564,6 +1710,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1586,6 +1734,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1608,6 +1758,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1630,6 +1782,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1652,6 +1806,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1674,6 +1830,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1696,6 +1854,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1718,6 +1878,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1740,6 +1902,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1762,6 +1926,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1784,6 +1950,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1806,6 +1974,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1828,6 +1998,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1850,6 +2022,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1872,6 +2046,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1894,6 +2070,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1916,6 +2094,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1938,6 +2118,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1960,6 +2142,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -1982,6 +2166,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2004,6 +2190,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2026,6 +2214,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2048,6 +2238,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2071,6 +2263,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2094,6 +2288,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2117,6 +2313,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2140,6 +2338,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2163,6 +2363,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2186,6 +2388,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2208,6 +2412,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2230,6 +2436,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2252,6 +2460,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2274,6 +2484,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2296,6 +2508,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2318,6 +2532,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2341,6 +2557,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2364,6 +2582,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2387,6 +2607,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2410,6 +2632,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2433,6 +2657,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2456,6 +2682,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2479,6 +2707,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2502,6 +2732,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2525,6 +2757,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2548,6 +2782,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2571,6 +2807,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2594,6 +2832,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2617,6 +2857,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2640,6 +2882,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2663,6 +2907,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2686,6 +2932,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2709,6 +2957,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2732,6 +2982,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2755,6 +3007,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2778,6 +3032,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2801,6 +3057,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2824,6 +3082,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2847,6 +3107,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2870,6 +3132,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2893,6 +3157,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2916,6 +3182,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2939,6 +3207,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2962,6 +3232,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -2985,6 +3257,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3008,6 +3282,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3031,6 +3307,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3054,6 +3332,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3077,6 +3357,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3100,6 +3382,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3123,6 +3407,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3146,6 +3432,8 @@ exports[`SynchronizationDetailPage > lists and selects the kinds as recorded 1`]
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3185,6 +3473,14 @@ exports[`SynchronizationDetailPage > reads no draft at all 1`] = `
     {
       "id": "file",
       "label": "File",
+    },
+    {
+      "id": "sftp",
+      "label": "SFTP (file pickup)",
+    },
+    {
+      "id": "ftps",
+      "label": "FTPS (file pickup)",
     },
   ],
   {
@@ -3322,6 +3618,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3342,6 +3640,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3362,6 +3662,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3383,6 +3685,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3404,6 +3708,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3424,6 +3730,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3444,6 +3752,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3464,6 +3774,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3484,6 +3796,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3505,6 +3819,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3526,6 +3842,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3546,6 +3864,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3566,6 +3886,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3586,6 +3908,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3606,6 +3930,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3627,6 +3953,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3648,6 +3976,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3668,6 +3998,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3689,6 +4021,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3711,6 +4045,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3733,6 +4069,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3755,6 +4093,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3777,6 +4117,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3799,6 +4141,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3821,6 +4165,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3842,6 +4188,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3863,6 +4211,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3885,6 +4235,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3907,6 +4259,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3928,6 +4282,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3948,6 +4304,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3968,6 +4326,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -3988,6 +4348,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4009,6 +4371,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4030,6 +4394,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4050,6 +4416,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "api",
       "register/schema",
       "file",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4071,6 +4439,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4092,6 +4462,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4113,6 +4485,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4135,6 +4509,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4157,6 +4533,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4178,6 +4556,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4199,6 +4579,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4220,6 +4602,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4241,6 +4625,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4263,6 +4649,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4285,6 +4673,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4306,6 +4696,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4327,6 +4719,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4348,6 +4742,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4369,6 +4765,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4391,6 +4789,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4413,6 +4813,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4434,6 +4836,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4456,6 +4860,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4479,6 +4885,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4502,6 +4910,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4525,6 +4935,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4548,6 +4960,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4571,6 +4985,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4593,6 +5009,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4614,6 +5032,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4635,6 +5055,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4657,6 +5079,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4679,6 +5103,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4700,6 +5126,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4721,6 +5149,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4742,6 +5172,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4763,6 +5195,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4785,6 +5219,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4807,6 +5243,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4828,6 +5266,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4849,6 +5289,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4871,6 +5313,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4893,6 +5337,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4915,6 +5361,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4937,6 +5385,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4959,6 +5409,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -4981,6 +5433,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5003,6 +5457,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5025,6 +5481,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5047,6 +5505,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5069,6 +5529,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5091,6 +5553,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5113,6 +5577,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5135,6 +5601,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5157,6 +5625,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5179,6 +5649,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5201,6 +5673,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5223,6 +5697,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5245,6 +5721,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5267,6 +5745,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5289,6 +5769,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5311,6 +5793,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5333,6 +5817,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5355,6 +5841,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5378,6 +5866,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5401,6 +5891,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5424,6 +5916,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5447,6 +5941,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5470,6 +5966,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5493,6 +5991,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5515,6 +6015,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5537,6 +6039,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5559,6 +6063,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5581,6 +6087,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5603,6 +6111,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5625,6 +6135,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "register/schema",
       "file",
       "nextcloud-table",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5648,6 +6160,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5671,6 +6185,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5694,6 +6210,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5717,6 +6235,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5740,6 +6260,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5763,6 +6285,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5786,6 +6310,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5809,6 +6335,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5832,6 +6360,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5855,6 +6385,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5878,6 +6410,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5901,6 +6435,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5924,6 +6460,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5947,6 +6485,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5970,6 +6510,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -5993,6 +6535,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6016,6 +6560,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6039,6 +6585,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6062,6 +6610,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6085,6 +6635,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6108,6 +6660,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6131,6 +6685,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6154,6 +6710,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6177,6 +6735,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6200,6 +6760,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6223,6 +6785,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6246,6 +6810,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6269,6 +6835,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6292,6 +6860,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6315,6 +6885,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6338,6 +6910,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6361,6 +6935,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6384,6 +6960,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6407,6 +6985,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6430,6 +7010,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6453,6 +7035,8 @@ exports[`SynchronizationEditorModal > lists and selects the kinds as recorded 1`
       "file",
       "nextcloud-table",
       "nextcloud-form",
+      "sftp",
+      "ftps",
     ],
     "type": [
       "api",
@@ -6492,6 +7076,14 @@ exports[`SynchronizationEditorModal > reads no draft at all 1`] = `
     {
       "id": "file",
       "label": "File",
+    },
+    {
+      "id": "sftp",
+      "label": "SFTP (file pickup)",
+    },
+    {
+      "id": "ftps",
+      "label": "FTPS (file pickup)",
     },
   ],
   {

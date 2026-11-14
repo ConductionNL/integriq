@@ -26,7 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Service\Adapter\DataInfra\FtpsAdapter;
 use OCA\Integriq\Service\Adapter\DataInfra\S3Adapter;
+use OCA\Integriq\Service\Adapter\DataInfra\SftpAdapter;
 use OCA\Integriq\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
 use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
@@ -128,7 +130,7 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		}
 	}//end testTheSettingsServiceIsBuiltFromTheDatabaseConfigAndLogger()
 
-	public function testBootHandsTheFiveIntegrationProvidersToOpenRegisterInOrder(): void {
+	public function testBootHandsTheSevenIntegrationProvidersToOpenRegisterInOrder(): void {
 		$registry = new class extends IntegrationRegistry {
 			/** @var array<int, object> */
 			public array $added = [];
@@ -149,10 +151,10 @@ class ServiceBindingsFactoriesTest extends TestCase {
 		(new ServiceBindings())->boot(context: $context);
 
 		$this->assertSame(
-			[SynchronizationContractProvider::class, AzureVirtualDesktopAdapter::class, SharePointOnlineAdapter::class, Microsoft365Adapter::class, S3Adapter::class],
+			[SynchronizationContractProvider::class, AzureVirtualDesktopAdapter::class, SharePointOnlineAdapter::class, Microsoft365Adapter::class, S3Adapter::class, SftpAdapter::class, FtpsAdapter::class],
 			array_map(fn (object $provider): string => $this->classOf($provider), $registry->added)
 		);
-	}//end testBootHandsTheFiveIntegrationProvidersToOpenRegisterInOrder()
+	}//end testBootHandsTheSevenIntegrationProvidersToOpenRegisterInOrder()
 
 	public function testABootFailureIsLoggedNotThrown(): void {
 		$logger = $this->createMock(LoggerInterface::class);

@@ -40,6 +40,8 @@ use OCA\Integriq\Event\SynchronizationDeletionGuardedEvent;
 use OCA\Integriq\Exception\FormsFeatureDisabledException;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Exception\TablesFeatureDisabledException;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\FilePickupSynchronization;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Service\CaseSystem\CaseSystemRefusal;
 use OCA\Integriq\Service\CaseSystem\ZgwDocumentDelivery;
 use OCA\Integriq\Service\MessageValidation\MessageValidationRefusedException;
@@ -611,6 +613,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @var RunPrerequisiteGuard|null
 	 */
 	private ?RunPrerequisiteGuard $prerequisiteGuard = null;
+
+	/**
+	 * Runs a synchronization whose source is an SFTP or FTPS server as a file pickup (sources-sftp-adapter Task 3).
+	 * Resolved from the container on the first pickup run only, so no other run looks it up.
+	 *
+	 * @var FilePickupSynchronization|null
+	 */
+	private ?FilePickupSynchronization $filePickupSynchronization = null;
 
 	/**
 	 * Checks source objects and target bodies against their message schemas
@@ -2760,6 +2770,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		$this->validateExternRun(run: $run, source: $source);
 
+		// An SFTP or FTPS source has files, not objects: the run picks them up.
+		if (FilePickupSynchronization::handles(synchronization: $run->synchronization) === true) {
+			$this->runFilePickup(run: $run);
+			return $this->finishExternRun(run: $run, overallStartTime: $overallStartTime);
+		}
+
 		if ($run->data !== null && $run->mutationType === 'delete') {
 			$this->processExternDelete(run: $run);
 		} elseif ($this->runExternBatch(run: $run) === false) {
@@ -2776,6 +2792,64 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $this->finishExternRun(run: $run, overallStartTime: $overallStartTime);
 	}//end synchronizeExternToIntern()
+
+	/**
+	 * Run a file pickup synchronization and record what it picked up on the run log.
+	 *
+	 * The source is read the way every run reads it, bounded by the
+	 * synchronization's organisation. A pickup that cannot run (no pickup on
+	 * this instance, a bad configuration, an unreachable or unpinned server)
+	 * stops the run with that reason, as any other refused run does.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the pickup cannot run.
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
+	 */
+	private function runFilePickup(ExternSyncRun $run): void {
+		if ($this->filePickupSynchronization === null) {
+			$pickup = $this->containerInterface->get(FilePickupSynchronization::class);
+			if ($pickup instanceof FilePickupSynchronization) {
+				$this->filePickupSynchronization = $pickup;
+			}
+		}
+
+		if ($this->filePickupSynchronization === null) {
+			$this->failExternRun(run: $run, message: 'File pickup is not available on this instance. Canceling synchronization...');
+		}
+
+		$stageStartTime = microtime(true);
+		$source = $run->source;
+		if ($source === null) {
+			$source = $this->findSynchronizationSource(
+				synchronization: $run->synchronization,
+				id: ($run->synchronization['sourceId'] ?? null)
+			)->jsonSerialize();
+		}
+
+		try {
+			$summary = $this->filePickupSynchronization->run(
+				synchronization: $run->synchronization,
+				source: $source,
+				isTest: ($run->isTest === true)
+			);
+		} catch (RemoteFileException $exception) {
+			$this->failExternRun(run: $run, message: $exception->getMessage());
+		}
+
+		foreach (['found', 'created', 'updated', 'skipped', 'invalid'] as $count) {
+			$run->result['objects'][$count] = $summary[$count];
+		}
+
+		$run->result['files'] = $summary['files'];
+		$run->result['timing']['stages']['file_pickup'] = [
+			'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
+			'description' => 'List, fetch, store and archive the remote files',
+		];
+	}//end runFilePickup()
 
 	/**
 	 * Stage 1 of an extern-to-intern run: load the configuration and validate the source.
