@@ -319,6 +319,27 @@
 						:placeholder="smsField.placeholder"
 						@update="onSmsConfigInput(smsField.key, $event)" />
 				</div>
+				<template v-if="smsStatusCallback">
+					<span class="cn-source-form-fields__label">
+						{{ t('integriq', 'Status callback URL') }}
+					</span>
+					<code
+						v-if="smsCallbackUrl"
+						class="cn-source-form-fields__callback-url">{{ smsCallbackUrl }}</code>
+					<span class="cn-source-form-fields__helper">
+						{{
+							smsCallbackUrl
+								? t('integriq', 'Enter this URL at the provider as the delivery report address, so delivery status reaches the SMS page.')
+								: t('integriq', 'Save the source to get its status callback URL.')
+						}}
+					</span>
+					<SchemaTextField
+						v-if="smsStatusCallback.signed"
+						:field="smsSigningKeyField"
+						:value="formData?.configuration?.webhookSigningKey ?? null"
+						type="password"
+						@update="onSmsConfigInput('webhookSigningKey', $event)" />
+				</template>
 			</template>
 		</div>
 	</div>
@@ -601,6 +622,49 @@ export default {
 					required: required.includes(key),
 					placeholder: typeof property.default === 'string' ? property.default : '',
 				}))
+		},
+
+		/**
+		 * The picked SMS binding's status callback, or null when it takes none.
+		 *
+		 * @return {{signed: boolean}|null} Whether the vendor signs its callbacks.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 */
+		smsStatusCallback() {
+			const id = String(this.formData?.configuration?.provider ?? '')
+			const provider = this.smsProviders.find((candidate) => candidate?.providerId === id)
+			const callback = provider?.statusCallback
+			if (!callback || typeof callback !== 'object') return null
+			return { signed: callback.signed === true }
+		},
+
+		/**
+		 * The absolute URL the vendor posts delivery status to, once the source has its token.
+		 *
+		 * @return {string} The URL, or an empty string before the first save.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 */
+		smsCallbackUrl() {
+			const provider = String(this.formData?.configuration?.provider ?? '')
+			const token = String(this.formData?.configuration?.statusCallbackToken ?? '')
+			if (!provider || !/^[A-Za-z0-9]+$/.test(token)) return ''
+			const path = generateUrl('/apps/integriq/api/sms/' + encodeURIComponent(provider) + '/status/' + token)
+			return window.location.origin + path
+		},
+
+		/**
+		 * The signing key field: typed in clear, stored encrypted.
+		 *
+		 * @return {object} The field descriptor.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 */
+		smsSigningKeyField() {
+			return {
+				key: 'webhookSigningKey',
+				label: t('integriq', 'Callback signing key'),
+				description: t('integriq', 'The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.'),
+				required: false,
+			}
 		},
 
 		selectedCredential() {
@@ -935,6 +999,13 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 	margin-top: 4px;
+}
+
+.cn-source-form-fields__callback-url {
+	word-break: break-all;
+	padding: 4px 8px;
+	background: var(--color-background-dark);
+	border-radius: var(--border-radius);
 }
 
 .cn-source-form-fields__note--warn {

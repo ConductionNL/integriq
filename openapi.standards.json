@@ -1388,6 +1388,61 @@
                 "security": []
             }
         },
+        "/sms/{provider}/status/{token}": {
+            "post": {
+                "operationId": "sms-status-status",
+                "summary": "Receive a CM.com, MessageBird or Twilio delivery callback",
+                "description": "Receive one vendor delivery callback for an SMS source. The per-source token in the URL is compared in constant time before the body is read; where the vendor signs (Twilio's X-Twilio-Signature, MessageBird's MessageBird-Signature-JWT) the signature is verified over this exact URL. Every refusal is the same 401.",
+                "tags": [
+                    "sms-status"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{received: true}`; an unknown message id changes nothing.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "cmcom",
+                                "messagebird",
+                                "twilio"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/open-formulieren/submissions": {
             "post": {
                 "operationId": "open-formulieren-inbound",
@@ -3356,6 +3411,10 @@
         {
             "name": "notify-nl",
             "description": "NotifyNL SMS send + status-poll + signed inbound delivery-status webhook"
+        },
+        {
+            "name": "sms-status",
+            "description": "Receives vendor SMS delivery callbacks"
         },
         {
             "name": "objecten-api",

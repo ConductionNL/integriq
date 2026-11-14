@@ -3575,7 +3575,12 @@ OC.L10N.register(
         "Base URL": "Base URL",
         "Sender": "Sender",
         "Account SID": "Account SID",
-        "\"%s\" is not an enabled SMS source.": "\"%s\" is not an enabled SMS source."
+        "\"%s\" is not an enabled SMS source.": "\"%s\" is not an enabled SMS source.",
+        "Status callback URL": "Status callback URL",
+        "Enter this URL at the provider as the delivery report address, so delivery status reaches the SMS page.": "Enter this URL at the provider as the delivery report address, so delivery status reaches the SMS page.",
+        "Save the source to get its status callback URL.": "Save the source to get its status callback URL.",
+        "Callback signing key": "Callback signing key",
+        "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.": "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key."
     },
     "nplurals=2; plural=(n != 1);"
 )

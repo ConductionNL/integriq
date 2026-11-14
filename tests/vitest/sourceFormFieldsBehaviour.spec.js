@@ -302,4 +302,30 @@ describe('SourceFormFields behaviour', () => {
 		await wrapper.vm.fetchSmsProviders()
 		expect(wrapper.vm.smsProviders).toEqual([])
 	})
+
+	it('a provider that posts delivery status shows its callback URL once saved, and a signing key field when it signs', async () => {
+		get.mockResolvedValue({
+			data: {
+				providers: [
+					{ providerId: 'log', name: 'Log', configSchema: {}, statusCallback: null },
+					{ providerId: 'cmcom', name: 'CM.com', configSchema: {}, statusCallback: { signed: false } },
+					{ providerId: 'twilio', name: 'Twilio', configSchema: {}, statusCallback: { signed: true } },
+				],
+			},
+		})
+		const { wrapper } = mountFields({ type: 'sms', configuration: { provider: 'twilio', statusCallbackToken: 'abc123' } })
+		await flushPromises()
+
+		expect(wrapper.vm.smsStatusCallback).toEqual({ signed: true })
+		expect(wrapper.vm.smsCallbackUrl).toBe(window.location.origin + '/index.php/apps/integriq/api/sms/twilio/status/abc123')
+		expect(wrapper.vm.smsSigningKeyField.key).toBe('webhookSigningKey')
+
+		await wrapper.setProps({ formData: { type: 'sms', configuration: { provider: 'cmcom' } } })
+		expect(wrapper.vm.smsStatusCallback).toEqual({ signed: false })
+		expect(wrapper.vm.smsCallbackUrl).toBe('')
+
+		await wrapper.setProps({ formData: { type: 'sms', configuration: { provider: 'log', statusCallbackToken: 'bad token!' } } })
+		expect(wrapper.vm.smsStatusCallback).toBeNull()
+		expect(wrapper.vm.smsCallbackUrl).toBe('')
+	})
 })

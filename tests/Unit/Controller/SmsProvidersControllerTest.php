@@ -61,6 +61,10 @@ class SmsProvidersControllerTest extends TestCase {
 		$binding->method('getProviderId')->willReturn($id);
 		$binding->method('getProviderName')->willReturn($name);
 		$binding->method('getConfigSchema')->willReturn($schema);
+		if (method_exists($binding, 'signsStatusCallbacks') === true) {
+			$binding->method('signsStatusCallbacks')->willReturn($id !== 'cmcom');
+		}
+
 		return $binding;
 
 	}//end binding()
@@ -124,6 +128,7 @@ class SmsProvidersControllerTest extends TestCase {
 			$providers[2]['configSchema']
 		);
 		$this->assertSame([], $providers[0]['configSchema']);
+		$this->assertSame([null, null, ['signed' => false], ['signed' => true], ['signed' => true]], array_column($providers, 'statusCallback'));
 
 	}//end testTheFiveProvidersAreDescribedWithNameAndConfiguration()
 

@@ -53,8 +53,9 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
 - **acceptance_criteria**:
   - GIVEN a Twilio callback with the right token and a valid signature WHEN it arrives THEN the message becomes `delivered`
   - GIVEN a wrong token WHEN a callback arrives THEN it is refused before the body is read
-- [ ] Implement
-- [ ] Test (PHPUnit on the controller; `tests/e2e/sms-providers.spec.ts` posts a signed fixture)
+- [x] Implement
+- [x] Test (PHPUnit on the controller, the callback service, the three bindings' signature checks and the save listener)
+- [ ] Test (`tests/e2e/sms-providers.spec.ts` posts a signed fixture; browser test, needs a live instance)
 
 ### Task 7: NotifyNL e-mail
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005

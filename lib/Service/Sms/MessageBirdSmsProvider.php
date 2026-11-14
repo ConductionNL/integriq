@@ -41,6 +41,13 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 	public const DEFAULT_BASE_URL = 'https://rest.messagebird.com';
 
 	/**
+	 * Seconds of clock difference a signature's validity window allows.
+	 *
+	 * @var int
+	 */
+	private const CLOCK_LEEWAY = 60;
+
+	/**
 	 * MessageBird recipient statuses and the status each maps to.
 	 *
 	 * @var array<string, string>
@@ -169,4 +176,122 @@ class MessageBirdSmsProvider extends BrokeredSmsProvider {
 			detail: 'MessageBird status: ' . $vendorStatus
 		);
 	}//end result()
+
+	/**
+	 * MessageBird signs its status reports with a `MessageBird-Signature-JWT` header.
+	 *
+	 * @return bool True.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function signsStatusCallbacks(): bool {
+		return true;
+	}//end signsStatusCallbacks()
+
+	/**
+	 * Check a MessageBird status report's signature and read its id and status.
+	 *
+	 * The signature is an HS256 JWT over the source's signing key, carrying the
+	 * SHA-256 of the URL (`url_hash`) and, for a non-empty body, of the body
+	 * (`payload_hash`), valid between `nbf` and `exp`.
+	 *
+	 * @param array             $sourceConfiguration The SMS source's configuration (unused).
+	 * @param SmsStatusCallback $callback            The callback as it arrived.
+	 *
+	 * @return DeliveryResult The message id and mapped status.
+	 *
+	 * @throws SmsProviderException When the signature does not verify or the report names no message.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function readStatusCallback(array $sourceConfiguration, SmsStatusCallback $callback): DeliveryResult {
+		$this->verifySignature(callback: $callback);
+
+		$id = self::callbackField(params: $callback->params, names: ['id']);
+		if ($id === '') {
+			throw $this->unreadableCallback();
+		}
+
+		$vendorStatus = strtolower(self::callbackField(params: $callback->params, names: ['status']));
+
+		return new DeliveryResult(
+			providerMessageId: $id,
+			status: (self::STATUS_MAP[$vendorStatus] ?? 'queued'),
+			detail: 'MessageBird status: ' . $vendorStatus
+		);
+	}//end readStatusCallback()
+
+	/**
+	 * Verify the `MessageBird-Signature-JWT` header of a callback.
+	 *
+	 * @param SmsStatusCallback $callback The callback.
+	 *
+	 * @return void
+	 *
+	 * @throws SmsProviderException When the key or token is missing, or the token does not verify.
+	 */
+	private function verifySignature(SmsStatusCallback $callback): void {
+		$key = (string)$callback->signingKey;
+		$parts = explode('.', $callback->header(name: 'MessageBird-Signature-JWT'));
+		if ($key === '' || count($parts) !== 3) {
+			throw $this->badSignature();
+		}
+
+		[$encodedHeader, $encodedClaims, $encodedSignature] = $parts;
+		$header = json_decode((string)self::base64UrlDecode(value: $encodedHeader), true);
+		$claims = json_decode((string)self::base64UrlDecode(value: $encodedClaims), true);
+		$signature = self::base64UrlDecode(value: $encodedSignature);
+		if (is_array($header) === false || ($header['alg'] ?? null) !== 'HS256' || is_array($claims) === false || $signature === null) {
+			throw $this->badSignature();
+		}
+
+		$expected = hash_hmac('sha256', $encodedHeader . '.' . $encodedClaims, $key, true);
+		if (hash_equals($expected, $signature) === false || self::claimsHold(claims: $claims, callback: $callback) === false) {
+			throw $this->badSignature();
+		}
+
+	}//end verifySignature()
+
+	/**
+	 * Whether a verified token's claims fit this callback and this moment.
+	 *
+	 * @param array<string, mixed> $claims   The token's claims.
+	 * @param SmsStatusCallback    $callback The callback.
+	 *
+	 * @return bool True when the URL hash, the body hash and the validity window hold.
+	 */
+	private static function claimsHold(array $claims, SmsStatusCallback $callback): bool {
+		$now = time();
+		if ((int)($claims['nbf'] ?? PHP_INT_MAX) > ($now + self::CLOCK_LEEWAY) || (int)($claims['exp'] ?? 0) < ($now - self::CLOCK_LEEWAY)) {
+			return false;
+		}
+
+		if (hash_equals(hash('sha256', $callback->url), (string)($claims['url_hash'] ?? '')) === false) {
+			return false;
+		}
+
+		if ($callback->rawBody === '') {
+			return true;
+		}
+
+		return hash_equals(hash('sha256', $callback->rawBody), (string)($claims['payload_hash'] ?? ''));
+
+	}//end claimsHold()
+
+	/**
+	 * Decode one base64url segment.
+	 *
+	 * @param string $value The segment.
+	 *
+	 * @return string|null The bytes, or null when the segment is not base64url.
+	 */
+	private static function base64UrlDecode(string $value): ?string {
+		$decoded = base64_decode(strtr($value, '-_', '+/'), true);
+		if ($decoded === false) {
+			return null;
+		}
+
+		return $decoded;
+
+	}//end base64UrlDecode()
 }//end class
