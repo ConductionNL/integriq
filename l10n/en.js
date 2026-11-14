@@ -3580,7 +3580,16 @@ OC.L10N.register(
         "The name of the XML document's root element.": "The name of the XML document's root element.",
         "Whether the first CSV line names the columns.": "Whether the first CSV line names the columns.",
         "XML root element": "XML root element",
-        "Written as {format}": "Written as {format}"
+        "Written as {format}": "Written as {format}",
+        "Register schemas a mapping may look up in": "Register schemas a mapping may look up in",
+        "A mapping can translate a code with lookup() only in a schema on this list. Every change is logged with your name.": "A mapping can translate a code with lookup() only in a schema on this list. Every change is logged with your name.",
+        "No schema is listed, so a mapping can look up in none.": "No schema is listed, so a mapping can look up in none.",
+        "Remove {schema}": "Remove {schema}",
+        "Schema (register/schema)": "Schema (register/schema)",
+        "{schema} added to the allowlist.": "{schema} added to the allowlist.",
+        "The schema was not added.": "The schema was not added.",
+        "{schema} removed from the allowlist.": "{schema} removed from the allowlist.",
+        "The schema was not removed.": "The schema was not removed."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -73,6 +73,7 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 * @param FileService $fileService Service that resolves file metadata.
 	 * @param SourceMappingServiceInterface $objectService Service that resolves OR objects.
 	 * @param SynchronizationContractServiceInterface $synchronizationContractService Service for contract lookups.
+	 * @param MappingLookup|null $lookup The allowlisted register lookup; null refuses every lookup.
 	 */
 	public function __construct(
 		private readonly MappingServiceInterface $mappingService,
@@ -80,9 +81,36 @@ class MappingRuntime implements RuntimeExtensionInterface {
 		private readonly FileService $fileService,
 		private readonly SourceMappingServiceInterface $objectService,
 		private readonly SynchronizationContractServiceInterface $synchronizationContractService,
+		private readonly ?MappingLookup $lookup = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The field of the one object in an allowed register schema matching the filters.
+	 *
+	 * `{{ lookup('codelijsten/gemeenten', {'code': gemeente}, 'naam', '') }}`.
+	 * Without the lookup service (a runtime built without it) every lookup is
+	 * refused, never answered from an unguarded read.
+	 *
+	 * @param string              $schema  The schema, as `register/schema`.
+	 * @param array<string,mixed> $filters Property filters.
+	 * @param string              $field   The field to return.
+	 * @param mixed               $default What none or several matches return.
+	 *
+	 * @return mixed
+	 *
+	 * @throws \RuntimeException When the lookup is refused.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+	 */
+	public function lookup(string $schema, array $filters, string $field, mixed $default = null): mixed {
+		if ($this->lookup === null) {
+			throw new \RuntimeException(message: sprintf('lookup() may not read "%s": lookups are not available here.', $schema));
+		}
+
+		return $this->lookup->lookup(schema: $schema, filters: $filters, field: $field, default: $default);
+	}//end lookup()
 
 	/**
 	 * Encodes a string to base64.
