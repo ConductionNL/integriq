@@ -2282,7 +2282,12 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "SFTP server with a pinned host key": "SFTP-server met een vastgelegde hostsleutel",
+        "FTPS server (FTP over TLS, certificate checked)": "FTPS-server (FTP via TLS, certificaat gecontroleerd)",
+        "Each source carries its own credential, root path and server check.": "Elke bron heeft een eigen inloggegeven, hoofdmap en servercontrole.",
+        "SFTP needs the phpseclib 3 library, which is not installed on this instance.": "SFTP heeft de bibliotheek phpseclib 3 nodig, die op deze installatie niet aanwezig is.",
+        "FTPS needs PHP curl with TLS support, which is missing on this instance.": "FTPS heeft PHP curl met TLS-ondersteuning nodig, die op deze installatie ontbreekt."
     },
     "plurals": {}
 }

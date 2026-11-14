@@ -18,7 +18,7 @@ Kind: code. Size M. Row `integriq:src-sftp`.
 - **acceptance_criteria**:
   - GIVEN a pinned fingerprint WHEN the server presents another key THEN the connection is refused naming both fingerprints
   - GIVEN a path with .. WHEN any operation is called THEN it is refused
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit against an SFTP container and an FTPS container in the dev compose)
 
 ### Task 3: The pickup synchronization
