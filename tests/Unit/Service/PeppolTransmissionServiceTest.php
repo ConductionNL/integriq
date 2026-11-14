@@ -27,6 +27,9 @@ use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCA\Integriq\Service\PeppolTransmissionService;
 use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\FileService as ORFileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -78,6 +81,11 @@ class PeppolTransmissionServiceTest extends TestCase {
 	private $rootFolder;
 
 	/**
+	 * @var ORFileService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $fileService;
+
+	/**
 	 * @var PeppolTransmissionService
 	 */
 	private PeppolTransmissionService $service;
@@ -113,6 +121,7 @@ class PeppolTransmissionServiceTest extends TestCase {
 		$this->l->method('t')->willReturnArgument(0);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->rootFolder = $this->createMock(IRootFolder::class);
+		$this->fileService = $this->createMock(ORFileService::class);
 
 		$this->service = new PeppolTransmissionService(
 			$this->objectService,
@@ -121,7 +130,8 @@ class PeppolTransmissionServiceTest extends TestCase {
 			$this->eventService,
 			$this->l,
 			$this->logger,
-			$this->rootFolder
+			$this->rootFolder,
+			$this->fileService
 		);
 
 	}//end setUp()
@@ -708,26 +718,186 @@ class PeppolTransmissionServiceTest extends TestCase {
 	}//end testHandleDeliveryCallbackUnsupportedStatusIsIgnored()
 
 	/**
-	 * handleInboundDocument republishes a signed inbound-document notification as a CloudEvent.
+	 * The inbound document records saved, in order, as [uuid, data].
+	 *
+	 * @var list<array{0: string|null, 1: array}>
+	 */
+	private array $inboundSaves = [];
+
+	/**
+	 * One active source with the given provider, and the given existing inbound record.
+	 * Every inbound save is recorded and answered with an entity carrying uuid `in-uuid-1`.
+	 *
+	 * @param string            $provider The source's provider.
+	 * @param ObjectEntity|null $existing The inbound record already stored for the reference.
 	 *
 	 * @return void
 	 */
-	public function testHandleInboundDocumentEmitsInboundReceivedEvent(): void {
+	private function givenInbound(string $provider = 'log', ?ObjectEntity $existing = null): void {
+		$source = $this->entity(['type' => 'peppol', 'configuration' => ['provider' => $provider, 'baseUrl' => 'https://ap.example']]);
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config, bool $_rbac = true) use ($source, $existing) {
+				$schema = ($config['filters']['schema'] ?? null);
+				if ($schema === 'source') {
+					// The webhook's account cannot read sources: only an engine read finds one.
+					return ['results' => ($_rbac === false) ? [$source] : [], 'total' => 1];
+				}
+
+				if ($schema === PeppolTransmissionService::SCHEMA_INBOUND_DOCUMENT && $existing !== null) {
+					return ['results' => [$existing], 'total' => 1];
+				}
+
+				return ['results' => [], 'total' => 0];
+			}
+		);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null, bool $_rbac = true): ObjectEntity {
+				$this->assertSame('integriq', $register);
+				$this->assertSame(PeppolTransmissionService::SCHEMA_INBOUND_DOCUMENT, $schema);
+				// No account may write the schema: integriq writes it in system context.
+				$this->assertFalse($_rbac);
+				$this->inboundSaves[] = [$uuid, $object];
+				return $this->entity($object, 'in-uuid-1');
+			}
+		);
+	}//end givenInbound()
+
+	/**
+	 * A stored Nextcloud file with an id and a name.
+	 *
+	 * @return File
+	 */
+	private function storedFile(): File {
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(9001);
+		$file->method('getName')->willReturn('peppol-inbound-in-uuid-1.xml');
+		return $file;
+	}//end storedFile()
+
+	/**
+	 * REQ-009: an inbound document is fetched, stored as a file on a
+	 * peppol_inbound_document, and the event names that object and its file.
+	 *
+	 * @return void
+	 */
+	public function testAnInboundDocumentIsStoredAndAnnouncedWithItsFile(): void {
+		$this->givenInbound();
+		$this->logProvider->expects($this->once())->method('fetchInboundDocument')
+			->with(['provider' => 'log', 'baseUrl' => 'https://ap.example'], 'AP-DOC-9')
+			->willReturn(self::UBL);
+		$this->fileService->expects($this->once())->method('addFile')->willReturnCallback(
+			function (FileTarget $target, FileUpload $upload): File {
+				$this->assertSame('in-uuid-1', $target->object->getUuid());
+				$this->assertSame('peppol-inbound-in-uuid-1.xml', $upload->fileName);
+				$this->assertSame(self::UBL, $upload->content);
+				$this->assertFalse($upload->share);
+				return $this->storedFile();
+			}
+		);
 		$this->eventService->expects($this->once())
 			->method('emitCloudEvent')
 			->with(
 				PeppolTransmissionService::EVENT_TYPE_INBOUND_RECEIVED,
-				$this->anything(),
-				'0192:9999999999',
+				'/peppol/inbound',
+				'0106:12345678',
 				[
-					'senderPeppolId' => '0192:9999999999',
+					'senderPeppolId' => '0106:12345678',
 					'documentType' => 'ubl-invoice-2.1',
-					'payloadReference' => 'https://ap.example/doc/AP-DOC-9',
+					'payloadReference' => 'integriq/peppol_inbound_document/in-uuid-1',
+					'payloadFileId' => 9001,
+					'payloadFileName' => 'peppol-inbound-in-uuid-1.xml',
 				]
 			)
-			->willReturn([]);
+			->willReturn(['event']);
 
-		$this->service->handleInboundDocument('0192:9999999999', 'ubl-invoice-2.1', 'https://ap.example/doc/AP-DOC-9');
+		$result = $this->service->handleInboundDocument('0106:12345678', 'ubl-invoice-2.1', 'AP-DOC-9');
 
-	}//end testHandleInboundDocumentEmitsInboundReceivedEvent()
+		$this->assertSame(['event'], $result);
+		$this->assertCount(2, $this->inboundSaves);
+		$this->assertNull($this->inboundSaves[0][0]);
+		$this->assertSame('AP-DOC-9', $this->inboundSaves[0][1]['accessPointReference']);
+		$this->assertSame('0106:12345678', $this->inboundSaves[0][1]['senderPeppolId']);
+		$this->assertSame('in-uuid-1', $this->inboundSaves[1][0]);
+		$this->assertSame('stored', $this->inboundSaves[1][1]['status']);
+		$this->assertSame(9001, $this->inboundSaves[1][1]['fileId']);
+		$this->assertSame('peppol-inbound-in-uuid-1.xml', $this->inboundSaves[1][1]['fileName']);
+		$this->assertNull($this->inboundSaves[1][1]['detail']);
+	}//end testAnInboundDocumentIsStoredAndAnnouncedWithItsFile()
+
+	/**
+	 * REQ-009: a fetch that fails leaves the record fetch-failed with the reason, and emits nothing.
+	 *
+	 * @return void
+	 */
+	public function testAFailedFetchLeavesTheRecordFetchFailedAndEmitsNothing(): void {
+		$this->givenInbound(provider: 'rest');
+		$this->restProvider->method('fetchInboundDocument')
+			->willThrowException(new PeppolProviderException(message: 'The Peppol Access Point responded with HTTP 500.'));
+		$this->fileService->expects($this->never())->method('addFile');
+		$this->eventService->expects($this->never())->method('emitCloudEvent');
+
+		$result = $this->service->handleInboundDocument('0106:12345678', 'ubl-invoice-2.1', 'AP-DOC-9');
+
+		$this->assertSame([], $result);
+		$last = end($this->inboundSaves);
+		$this->assertSame('in-uuid-1', $last[0]);
+		$this->assertSame('fetch-failed', $last[1]['status']);
+		$this->assertSame('The Peppol Access Point responded with HTTP 500.', $last[1]['detail']);
+	}//end testAFailedFetchLeavesTheRecordFetchFailedAndEmitsNothing()
+
+	/**
+	 * Without an active Peppol source the document cannot be fetched: fetch-failed, nothing emitted.
+	 *
+	 * @return void
+	 */
+	public function testWithoutASourceTheRecordIsFetchFailed(): void {
+		$this->objectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity {
+				$this->inboundSaves[] = [$uuid, $object];
+				return $this->entity($object, 'in-uuid-1');
+			}
+		);
+		$this->eventService->expects($this->never())->method('emitCloudEvent');
+
+		$this->assertSame([], $this->service->handleInboundDocument('0106:12345678', 'ubl-invoice-2.1', 'AP-DOC-9'));
+		$this->assertSame('fetch-failed', end($this->inboundSaves)[1]['status']);
+		$this->assertSame('No active Peppol source is configured; the inbound document cannot be fetched.', end($this->inboundSaves)[1]['detail']);
+	}//end testWithoutASourceTheRecordIsFetchFailed()
+
+	/**
+	 * A redelivered notification retries a fetch-failed record on the same object.
+	 *
+	 * @return void
+	 */
+	public function testARedeliveryRetriesAFetchFailedRecord(): void {
+		$existing = $this->entity(
+			['senderPeppolId' => '0106:12345678', 'documentType' => 'ubl-invoice-2.1', 'accessPointReference' => 'AP-DOC-9', 'status' => 'fetch-failed', 'detail' => 'HTTP 500'],
+			'in-uuid-1'
+		);
+		$this->givenInbound(existing: $existing);
+		$this->logProvider->method('fetchInboundDocument')->willReturn(self::UBL);
+		$this->fileService->expects($this->once())->method('addFile')->willReturn($this->storedFile());
+		$this->eventService->expects($this->once())->method('emitCloudEvent')->willReturn(['event']);
+
+		$this->assertSame(['event'], $this->service->handleInboundDocument('0106:12345678', 'ubl-invoice-2.1', 'AP-DOC-9'));
+		$this->assertSame(['in-uuid-1', 'in-uuid-1'], array_column($this->inboundSaves, 0));
+		$this->assertSame('stored', end($this->inboundSaves)[1]['status']);
+	}//end testARedeliveryRetriesAFetchFailedRecord()
+
+	/**
+	 * A redelivery of a document already stored fetches, saves and emits nothing.
+	 *
+	 * @return void
+	 */
+	public function testARedeliveryOfAStoredDocumentIsANoOp(): void {
+		$existing = $this->entity(['accessPointReference' => 'AP-DOC-9', 'status' => 'stored', 'fileId' => 9001], 'in-uuid-1');
+		$this->givenInbound(existing: $existing);
+		$this->logProvider->expects($this->never())->method('fetchInboundDocument');
+		$this->fileService->expects($this->never())->method('addFile');
+		$this->eventService->expects($this->never())->method('emitCloudEvent');
+
+		$this->assertSame([], $this->service->handleInboundDocument('0106:12345678', 'ubl-invoice-2.1', 'AP-DOC-9'));
+		$this->assertSame([], $this->inboundSaves);
+	}//end testARedeliveryOfAStoredDocumentIsANoOp()
 }//end class
