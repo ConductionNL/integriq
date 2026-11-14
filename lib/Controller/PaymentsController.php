@@ -118,6 +118,48 @@ class PaymentsController extends Controller {
 	}//end create()
 
 	/**
+	 * GET /api/payments/sources/{slug}/terminals — the point-of-sale terminals
+	 * of a payment source, for an administrator registering a device.
+	 *
+	 * Gated by the same `payments.create` action as payment creation (a user
+	 * without it gets 403). An unknown source answers 404, a provider failure
+	 * 502; a binding without point-of-sale terminals answers an empty list.
+	 *
+	 * @param string $slug The payment source slug.
+	 *
+	 * @return JSONResponse `{terminals: [{terminalId, label, status}]}`.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function terminals(string $slug): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: 'payments.create');
+
+		try {
+			$terminals = $this->paymentIntentService->listTerminals(sourceSlug: $slug);
+		} catch (PaymentProviderException $exception) {
+			$this->logger->warning('[PaymentsController] terminal list failed: ' . $exception->getMessage());
+			return new JSONResponse(
+				['error' => 'payment_provider_unavailable', 'message' => $exception->getMessage()],
+				Http::STATUS_BAD_GATEWAY
+			);
+		}
+
+		if ($terminals === null) {
+			return new JSONResponse(['error' => 'not_found', 'message' => $this->l->t('Payment source not found')], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(['terminals' => $terminals]);
+
+	}//end terminals()
+
+	/**
 	 * Receive a provider payment-status webhook.
 	 *
 	 * Gated by the payment source's `configuration.webhookSignature` (HMAC,

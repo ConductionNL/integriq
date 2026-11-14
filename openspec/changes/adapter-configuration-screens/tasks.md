@@ -9,8 +9,8 @@
   - GIVEN the proposal's Open Questions WHEN each is answered THEN the answer is written into the proposal with its reason, not left in a review thread
   - GIVEN question 3 (where six index pages go) WHEN answered THEN the answer names the nav shape and cites the ADR that constrains it, because the shape decides every task below
   - GIVEN question 1 WHEN answered THEN the answer says whether `suspend` and `rotateKey` confirm, and names the fleet convention it follows
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: LTI platform and tool, index and detail
 - **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
@@ -39,17 +39,18 @@
 - **acceptance_criteria**:
   - GIVEN `fsc_service`, `bankfeed_connection`, `cardfeed_account` and `openformulieren_form_mapping` WHEN the manifest is read THEN each has a manifest-driven index over its schema
   - GIVEN each page WHEN a column is declared THEN the key is a property the schema declares; a column over a key the schema does not carry renders blank and is a defect
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: EUDI status list and its issuer key surface
 - **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-every-configuration-record-an-administrator-owns-has-a-screen-req-acs-001`
 - **files**: `src/manifest.json`, `l10n/nl.json`
+- **closed**: open question 2 judged `eudi_status_list` machinery (proposal, Answers 2), so no page is built.
 - **acceptance_criteria**:
   - GIVEN the answer to open question 2 WHEN `eudi_status_list` is judged administrator-owned THEN it gets a configuration surface; WHEN it is judged machinery THEN this task is closed with that reason recorded and no page is built
   - GIVEN `eudi_issuance_session` and `eudi_credential_offer` WHEN surfaced THEN they are read-only, because neither is a record an administrator authors
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 6: Prove the screens render, not merely that they are declared
 - **spec_ref**: `openspec/changes/adapter-configuration-screens/specs/adapter-configuration/spec.md#requirement-a-declared-screen-is-proven-to-render-req-acs-003`
