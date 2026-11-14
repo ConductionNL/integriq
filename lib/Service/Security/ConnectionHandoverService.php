@@ -165,28 +165,14 @@ class ConnectionHandoverService {
 
 		$data = $source->getObject();
 		$answer = [];
-		$pending = [];
 
 		foreach ($given as $part => $value) {
-			if (isset(self::PLAIN_PARTS[$part]) === true) {
-				$answer[$part] = $this->plainOutcome(data: $data, part: $part, value: $value);
-				if ($answer[$part] === self::TAKEN) {
-					$data = $this->paths->set(data: $data, path: self::PLAIN_PARTS[$part], value: $value);
-					$pending[] = $part;
-				}
-
-				continue;
-			}
-
-			$answer[$part] = $this->takeSecret(source: $source, data: $data, part: $part, secret: $value);
-			if ($answer[$part] === self::TAKEN) {
-				$data = $this->paths->set(data: $data, path: self::SECRET_PARTS[$part][0], value: $this->pendingRefs[$part]);
-				$pending[] = $part;
-			}
-		}//end foreach
+			[$answer[$part], $data] = $this->takePart(source: $source, data: $data, part: $part, value: $value);
+		}
 
 		$this->pendingRefs = [];
 
+		$pending = array_keys($answer, self::TAKEN, true);
 		if ($pending === []) {
 			return $answer;
 		}
@@ -194,6 +180,37 @@ class ConnectionHandoverService {
 		return $this->save(source: $source, data: $data, answer: $answer, pending: $pending);
 
 	}//end takeOver()
+
+	/**
+	 * Answer one given part and, when it is taken, write it into the source data.
+	 *
+	 * @param ObjectEntity         $source The source entity.
+	 * @param array<string, mixed> $data   The source data so far.
+	 * @param string               $part   The part name.
+	 * @param string               $value  The handed-over value.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>} The outcome and the (filled) data.
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private function takePart(ObjectEntity $source, array $data, string $part, string $value): array {
+		if (isset(self::PLAIN_PARTS[$part]) === true) {
+			$outcome = $this->plainOutcome(data: $data, part: $part, value: $value);
+			$path    = self::PLAIN_PARTS[$part];
+			$stored  = $value;
+		} else {
+			$outcome = $this->takeSecret(source: $source, data: $data, part: $part, secret: $value);
+			$path    = self::SECRET_PARTS[$part][0];
+			$stored  = ($this->pendingRefs[$part] ?? null);
+		}
+
+		if ($outcome !== self::TAKEN) {
+			return [$outcome, $data];
+		}
+
+		return [$outcome, $this->paths->set(data: $data, path: $path, value: $stored)];
+
+	}//end takePart()
 
 	/**
 	 * The non-empty string parts of a handover that this service knows.
@@ -325,11 +342,7 @@ class ConnectionHandoverService {
 				InlineSecretMigrationExecutor::SCOPE_ORGANISATION,
 				$organisation
 			);
-			$credentialId = '';
-			if ($credential instanceof ObjectEntity === true) {
-				$credentialId = (string)$credential->getUuid();
-			}
-
+			$credentialId = self::credentialIdOf(credential: $credential);
 			if ($credentialId === '') {
 				$this->logFailure(step: 'mint-no-uuid', part: $part, e: null);
 				return null;
@@ -341,7 +354,7 @@ class ConnectionHandoverService {
 			return null;
 		}
 
-		if (is_string($verified) === false || hash_equals($secret, $verified) === false) {
+		if (self::isSameSecret(secret: $secret, verified: $verified) === false) {
 			$this->logFailure(step: 'verify-mismatch', part: $part, e: null);
 			return null;
 		}
@@ -349,6 +362,39 @@ class ConnectionHandoverService {
 		return $credentialId;
 
 	}//end mintAndVerify()
+
+	/**
+	 * The uuid of a minted credential, or '' when the broker returned no entity.
+	 *
+	 * @param mixed $credential What the broker's mint returned.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private static function credentialIdOf(mixed $credential): string {
+		if ($credential instanceof ObjectEntity === true) {
+			return (string)$credential->getUuid();
+		}
+
+		return '';
+
+	}//end credentialIdOf()
+
+	/**
+	 * Whether the broker resolved exactly the secret that was minted.
+	 *
+	 * @param string $secret   The handed-over secret.
+	 * @param mixed  $verified What the broker resolved.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private static function isSameSecret(string $secret, mixed $verified): bool {
+		return is_string($verified) === true && hash_equals($secret, $verified) === true;
+
+	}//end isSameSecret()
 
 	/**
 	 * Save the filled source; on failure every pending part fails.
@@ -408,17 +454,45 @@ class ConnectionHandoverService {
 			return null;
 		}
 
-		foreach (($result['results'] ?? $result) as $item) {
-			if ($item instanceof ObjectEntity === false || ($item->getObject()['slug'] ?? '') !== $slug) {
-				continue;
-			}
+		return $this->firstWithSlug(items: ($result['results'] ?? $result), slug: $slug);
 
-			return $this->readRaw(uuid: (string)$item->getUuid()) ?? $item;
+	}//end findSource()
+
+	/**
+	 * The first found item that is the source with this slug, read raw when possible.
+	 *
+	 * @param iterable<mixed> $items The found items.
+	 * @param string          $slug  The slug.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private function firstWithSlug(iterable $items, string $slug): ?ObjectEntity {
+		foreach ($items as $item) {
+			if (self::isSourceWithSlug(item: $item, slug: $slug) === true) {
+				return $this->readRaw(uuid: (string)$item->getUuid()) ?? $item;
+			}
 		}
 
 		return null;
 
-	}//end findSource()
+	}//end firstWithSlug()
+
+	/**
+	 * Whether a found item is a source entity carrying exactly this slug.
+	 *
+	 * @param mixed  $item The found item.
+	 * @param string $slug The slug.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private static function isSourceWithSlug(mixed $item, string $slug): bool {
+		return $item instanceof ObjectEntity === true && ($item->getObject()['slug'] ?? '') === $slug;
+
+	}//end isSourceWithSlug()
 
 	/**
 	 * Read a source unrendered, so write-only fields keep their stored value.
@@ -466,16 +540,29 @@ class ConnectionHandoverService {
 			return null;
 		}
 
-		if (is_object($broker) === false
-			|| method_exists($broker, 'mint') === false
-			|| method_exists($broker, 'resolveInjectable') === false
-		) {
+		if (self::canMintAndVerify(broker: $broker) === false) {
 			return null;
 		}
 
 		return $broker;
 
 	}//end broker()
+
+	/**
+	 * Whether a container entry is an object offering mint and resolveInjectable.
+	 *
+	 * @param mixed $broker The container entry.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private static function canMintAndVerify(mixed $broker): bool {
+		return is_object($broker) === true
+			&& method_exists($broker, 'mint') === true
+			&& method_exists($broker, 'resolveInjectable') === true;
+
+	}//end canMintAndVerify()
 
 	/**
 	 * Log a failure without any secret.

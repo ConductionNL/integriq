@@ -87,13 +87,10 @@ class ConnectionHandoverListener implements IEventListener {
 			return;
 		}
 
-		$slug = self::read(event: $event, getter: 'getSourceSlug', property: 'sourceSlug');
-		if (is_string($slug) === false || trim($slug) === '') {
-			$slug = $defaultSlug;
-		}
+		$slug = self::sourceSlug(event: $event, defaultSlug: $defaultSlug);
 
 		try {
-			$answer = $this->container->get(ConnectionHandoverService::class)->takeOver(sourceSlug: trim($slug), settings: $settings);
+			$answer = $this->container->get(ConnectionHandoverService::class)->takeOver(sourceSlug: $slug, settings: $settings);
 		} catch (Throwable $e) {
 			// Only the class: a message could carry a handed-over value.
 			$this->logger->error(
@@ -109,6 +106,26 @@ class ConnectionHandoverListener implements IEventListener {
 		self::answer(event: $event, answer: $answer);
 
 	}//end handle()
+
+	/**
+	 * The trimmed source slug the event names, else the default slug for its class.
+	 *
+	 * @param Event  $event       The event.
+	 * @param string $defaultSlug The slug used when the event names none.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/source-credential-custody/spec.md#requirement-a-connection-handed-over-by-another-app-keeps-its-secrets-in-keepiq
+	 */
+	private static function sourceSlug(Event $event, string $defaultSlug): string {
+		$slug = self::read(event: $event, getter: 'getSourceSlug', property: 'sourceSlug');
+		if (is_string($slug) === false || trim($slug) === '') {
+			$slug = $defaultSlug;
+		}
+
+		return trim($slug);
+
+	}//end sourceSlug()
 
 	/**
 	 * Read a value from an event through its getter, else its public property.
