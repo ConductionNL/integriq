@@ -114,4 +114,21 @@ class LogPeppolAccessPointProviderTest extends TestCase {
 		$this->assertNotSame($first, $second);
 
 	}//end testSubmitDocumentReturnsIncrementingMockId()
+
+	/**
+	 * The sandbox answers every fetch with the fixture invoice: supplier 0106:12345678, EUR 1,210.00.
+	 *
+	 * @return void
+	 */
+	public function testFetchInboundDocumentAnswersTheFixtureInvoice(): void {
+		$document = $this->provider->fetchInboundDocument([], 'AP-DOC-9');
+
+		$this->assertSame(LogPeppolAccessPointProvider::FIXTURE_INVOICE, $document);
+		$xml = simplexml_load_string($document);
+		$this->assertNotFalse($xml);
+		$xml->registerXPathNamespace('cbc', 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2');
+		$this->assertSame('12345678', (string)$xml->xpath('//cbc:EndpointID[@schemeID="0106"]')[0]);
+		$this->assertSame('1210.00', (string)$xml->xpath('//cbc:PayableAmount')[0]);
+		$this->assertSame('Leverancier Voorbeeld B.V.', (string)$xml->xpath('//cbc:RegistrationName')[0]);
+	}//end testFetchInboundDocumentAnswersTheFixtureInvoice()
 }//end class

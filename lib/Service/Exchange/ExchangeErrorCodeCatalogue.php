@@ -151,6 +151,7 @@ class ExchangeErrorCodeCatalogue {
 					'limit' => 1,
 				],
 				_rbac: false,
+				// Unscoped: reads a seeded error code catalogue, configuration shared by every organisation.
 				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
