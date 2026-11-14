@@ -39,26 +39,7 @@ use OCP\EventDispatcher\Event;
  */
 class RouteDistanceRequestedEvent extends Event {
 
-	/**
-	 * Whether an integriq listener handled the request.
-	 *
-	 * @var bool
-	 */
-	private bool $handled = false;
-
-	/**
-	 * The distance, once answered.
-	 *
-	 * @var array<string,mixed>|null
-	 */
-	private ?array $result = null;
-
-	/**
-	 * The structured refusal, when the request was refused.
-	 *
-	 * @var array<string,string>|null
-	 */
-	private ?array $refusal = null;
+	use CommandAnswer;
 
 	/**
 	 * Constructor.
@@ -146,57 +127,6 @@ class RouteDistanceRequestedEvent extends Event {
 	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
 	 */
 	public function setResult(array $result): void {
-		$this->handled = true;
-		$this->refusal = null;
-		$this->result  = $result;
+		$this->answer(result: $result);
 	}//end setResult()
-
-	/**
-	 * The distance, when answered.
-	 *
-	 * @return array<string,mixed>|null The result.
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
-	 */
-	public function getResult(): ?array {
-		return $this->result;
-	}//end getResult()
-
-	/**
-	 * Record a refusal and mark the request handled.
-	 *
-	 * @param string $code   A machine-readable code, such as `unknown-postcode`.
-	 * @param string $reason A human-readable reason.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
-	 */
-	public function refuse(string $code, string $reason): void {
-		$this->handled = true;
-		$this->result  = null;
-		$this->refusal = ['code' => $code, 'reason' => $reason];
-	}//end refuse()
-
-	/**
-	 * The structured refusal, when there was one.
-	 *
-	 * @return array<string,string>|null The refusal.
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
-	 */
-	public function getRefusal(): ?array {
-		return $this->refusal;
-	}//end getRefusal()
-
-	/**
-	 * Whether an integriq listener handled the request.
-	 *
-	 * @return bool True when handled.
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-integriq-answers-the-road-distance-between-two-postcodes-req-cc-002
-	 */
-	public function isHandled(): bool {
-		return $this->handled;
-	}//end isHandled()
 }//end class

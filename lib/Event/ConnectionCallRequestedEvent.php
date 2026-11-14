@@ -42,26 +42,7 @@ use OCP\EventDispatcher\Event;
  */
 class ConnectionCallRequestedEvent extends Event {
 
-	/**
-	 * Whether an integriq listener handled the request.
-	 *
-	 * @var bool
-	 */
-	private bool $handled = false;
-
-	/**
-	 * The answer, once the call was made.
-	 *
-	 * @var array{status:int,body:mixed,sourceSlug:string}|null
-	 */
-	private ?array $result = null;
-
-	/**
-	 * The structured refusal, when the call was refused.
-	 *
-	 * @var array{code:string,reason:string}|null
-	 */
-	private ?array $refusal = null;
+	use CommandAnswer;
 
 	/**
 	 * Constructor.
@@ -177,57 +158,6 @@ class ConnectionCallRequestedEvent extends Event {
 	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
 	 */
 	public function setResult(int $status, mixed $body, string $sourceSlug): void {
-		$this->handled = true;
-		$this->refusal = null;
-		$this->result  = ['status' => $status, 'body' => $body, 'sourceSlug' => $sourceSlug];
+		$this->answer(result: ['status' => $status, 'body' => $body, 'sourceSlug' => $sourceSlug]);
 	}//end setResult()
-
-	/**
-	 * The answer, when the call was made.
-	 *
-	 * @return array{status:int,body:mixed,sourceSlug:string}|null The answer.
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
-	 */
-	public function getResult(): ?array {
-		return $this->result;
-	}//end getResult()
-
-	/**
-	 * Record a refusal and mark the request handled.
-	 *
-	 * @param string $code   `not-declared`, `not-linked`, `invalid` or `call-failed`.
-	 * @param string $reason A human-readable reason.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
-	 */
-	public function refuse(string $code, string $reason): void {
-		$this->handled = true;
-		$this->result  = null;
-		$this->refusal = ['code' => $code, 'reason' => $reason];
-	}//end refuse()
-
-	/**
-	 * The structured refusal, when there was one.
-	 *
-	 * @return array{code:string,reason:string}|null The refusal.
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
-	 */
-	public function getRefusal(): ?array {
-		return $this->refusal;
-	}//end getRefusal()
-
-	/**
-	 * Whether an integriq listener handled the request.
-	 *
-	 * @return bool True when handled.
-	 *
-	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
-	 */
-	public function isHandled(): bool {
-		return $this->handled;
-	}//end isHandled()
 }//end class

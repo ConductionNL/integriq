@@ -166,16 +166,7 @@ class ConnectionCallService {
 	 * @spec openspec/changes/sources-route-distance-and-rdw-lookup/specs/connection-calls/spec.md#requirement-an-app-calls-a-connection-it-declared-through-a-typed-command-req-cc-001
 	 */
 	public function linkedSource(string $app, string $connectionKey): array {
-		$row = null;
-		if ($app !== '' && $connectionKey !== '') {
-			foreach ($this->store->findRows(app: $app) as $candidate) {
-				$data = $candidate['data'] ?? [];
-				if (($data['app'] ?? null) === $app && ($data['key'] ?? null) === $connectionKey) {
-					$row = $data;
-					break;
-				}
-			}
-		}
+		$row = $this->declaredRow(app: $app, connectionKey: $connectionKey);
 
 		if ($row === null) {
 			return $this->refused(
@@ -206,6 +197,43 @@ class ConnectionCallService {
 	}//end linkedSource()
 
 	/**
+	 * The app's declared connection row for a key, or null when it declares none.
+	 *
+	 * @param string $app           The app id.
+	 * @param string $connectionKey The connection key.
+	 *
+	 * @return array<string,mixed>|null The row's data.
+	 */
+	private function declaredRow(string $app, string $connectionKey): ?array {
+		if (in_array('', [$app, $connectionKey], true) === true) {
+			return null;
+		}
+
+		foreach ($this->store->findRows(app: $app) as $candidate) {
+			if (self::isConnection(candidate: $candidate, app: $app, connectionKey: $connectionKey) === true) {
+				return $candidate['data'];
+			}
+		}
+
+		return null;
+	}//end declaredRow()
+
+	/**
+	 * Whether a connection row is this app's connection under this key.
+	 *
+	 * @param mixed  $candidate     The row, its fields under `data`.
+	 * @param string $app           The app id.
+	 * @param string $connectionKey The connection key.
+	 *
+	 * @return bool
+	 */
+	private static function isConnection(mixed $candidate, string $app, string $connectionKey): bool {
+		$data = ($candidate['data'] ?? null);
+
+		return is_array($data) === true && ($data['app'] ?? null) === $app && ($data['key'] ?? null) === $connectionKey;
+	}//end isConnection()
+
+	/**
 	 * Why a request is not one this command makes, or null when it is.
 	 *
 	 * The path is appended to the source's location and may not leave it: no
@@ -225,23 +253,51 @@ class ConnectionCallService {
 			return sprintf('The method "%s" is not allowed; use GET or POST.', $method);
 		}
 
-		if ($path !== '' && (
-			str_starts_with($path, '/') === false
-			|| str_starts_with($path, '//') === true
-			|| preg_match('/[\\\\?#@\x00-\x1F\x7F]|:\/\//', $path) === 1
-			|| in_array('..', explode('/', rawurldecode($path)), true) === true
-		)) {
+		if (self::pathLeavesSource(path: $path) === true) {
 			return 'The path must start with "/" and stay below the source\'s location.';
 		}
 
-		foreach ($query as $name => $value) {
-			if (is_string($name) === false || ($value !== null && is_scalar($value) === false)) {
-				return 'Query parameters must be named and hold a single value each.';
-			}
+		if (self::queryIsFlat(query: $query) === false) {
+			return 'Query parameters must be named and hold a single value each.';
 		}
 
 		return null;
 	}//end requestRefusal()
+
+	/**
+	 * Whether a non-empty path could leave the source's location (see requestRefusal()).
+	 *
+	 * @param string $path The path.
+	 *
+	 * @return bool True when the path is refused.
+	 */
+	private static function pathLeavesSource(string $path): bool {
+		if ($path === '') {
+			return false;
+		}
+
+		return str_starts_with($path, '/') === false
+			|| str_starts_with($path, '//') === true
+			|| preg_match('/[\\\\?#@\x00-\x1F\x7F]|:\/\//', $path) === 1
+			|| in_array('..', explode('/', rawurldecode($path)), true) === true;
+	}//end pathLeavesSource()
+
+	/**
+	 * Whether every query parameter is named and holds one scalar (or null).
+	 *
+	 * @param array<string,mixed> $query The query.
+	 *
+	 * @return bool
+	 */
+	private static function queryIsFlat(array $query): bool {
+		foreach ($query as $name => $value) {
+			if (is_string($name) === false || ($value !== null && is_scalar($value) === false)) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end queryIsFlat()
 
 	/**
 	 * The call engine configuration for the request.

@@ -127,6 +127,39 @@ class RouteDistanceService {
 		string $mode = 'car',
 		string $connectionKey = 'route-planner',
 	): array {
+		$planner = $this->planner(app: $app, connectionKey: $connectionKey, mode: $mode);
+		if (isset($planner['refusal']) === true) {
+			return $planner;
+		}
+
+		$places = $this->places(fromPostcode: $fromPostcode, toPostcode: $toPostcode);
+		if (isset($places['refusal']) === true) {
+			return $places;
+		}
+
+		$meters = $this->routeMeters(app: $app, connectionKey: $connectionKey, planner: $planner, places: $places);
+		if (is_array($meters) === true) {
+			return $meters;
+		}
+
+		return [
+			'distanceKmOneWay' => round($meters / 1000, 1),
+			'routeProvider' => $planner['provider'],
+			'fromMunicipality' => $places['from']['municipality'],
+			'toMunicipality' => $places['to']['municipality'],
+		];
+	}//end distance()
+
+	/**
+	 * The planner the connection is linked to and its profile for the mode, or the refusal.
+	 *
+	 * @param string $app           The calling app id.
+	 * @param string $connectionKey The app's route planner connection.
+	 * @param string $mode          The travel mode.
+	 *
+	 * @return array{provider:string,profile:string}|array<string,mixed> The planner, or a refusal.
+	 */
+	private function planner(string $app, string $connectionKey, string $mode): array {
 		$linked = $this->connections->linkedSource(app: $app, connectionKey: $connectionKey);
 		if (isset($linked['refusal']) === true) {
 			return $linked;
@@ -148,6 +181,18 @@ class RouteDistanceService {
 			);
 		}
 
+		return ['provider' => $provider, 'profile' => $profile];
+	}//end planner()
+
+	/**
+	 * Both postcodes placed, or the first refusal.
+	 *
+	 * @param string $fromPostcode Where the route starts.
+	 * @param string $toPostcode   Where the route ends.
+	 *
+	 * @return array<string,mixed> `from` and `to`, or a refusal.
+	 */
+	private function places(string $fromPostcode, string $toPostcode): array {
 		$from = $this->place(postcode: $fromPostcode);
 		if (isset($from['refusal']) === true) {
 			return $from;
@@ -158,7 +203,21 @@ class RouteDistanceService {
 			return $to;
 		}
 
-		$request = self::plannerRequest(provider: $provider, profile: $profile, from: $from, to: $to);
+		return ['from' => $from, 'to' => $to];
+	}//end places()
+
+	/**
+	 * The route's length in metres from the planner, or the refusal.
+	 *
+	 * @param string              $app           The calling app id.
+	 * @param string              $connectionKey The app's route planner connection.
+	 * @param array<string,mixed> $planner       `provider` and `profile`.
+	 * @param array<string,mixed> $places        `from` and `to`.
+	 *
+	 * @return float|array<string,mixed> The metres, or a refusal.
+	 */
+	private function routeMeters(string $app, string $connectionKey, array $planner, array $places): float|array {
+		$request = self::plannerRequest(provider: $planner['provider'], profile: $planner['profile'], from: $places['from'], to: $places['to']);
 		$answer  = $this->connections->call(
 			app: $app,
 			connectionKey: $connectionKey,
@@ -172,7 +231,7 @@ class RouteDistanceService {
 
 		$meters = null;
 		if ($answer['status'] >= 200 && $answer['status'] < 300) {
-			$meters = self::metersOf(provider: $provider, body: $answer['body']);
+			$meters = self::metersOf(provider: $planner['provider'], body: $answer['body']);
 		}
 
 		if ($meters === null) {
@@ -182,13 +241,8 @@ class RouteDistanceService {
 			);
 		}
 
-		return [
-			'distanceKmOneWay' => round($meters / 1000, 1),
-			'routeProvider' => $provider,
-			'fromMunicipality' => $from['municipality'],
-			'toMunicipality' => $to['municipality'],
-		];
-	}//end distance()
+		return $meters;
+	}//end routeMeters()
 
 	/**
 	 * A postcode as `1234 AB`, or null when it is not a Dutch postcode.
@@ -233,25 +287,51 @@ class RouteDistanceService {
 			);
 		}
 
+		return (self::matchingPlace(entries: $entries, normalised: $normalised) ?? $unknown);
+	}//end place()
+
+	/**
+	 * The first geocoder entry for exactly this postcode that has coordinates, as a place.
+	 *
+	 * @param array<int,mixed> $entries    The geocoder's entries.
+	 * @param string           $normalised The postcode, normalised.
+	 *
+	 * @return array{longitude:float,latitude:float,municipality:string}|null The place.
+	 */
+	private static function matchingPlace(array $entries, string $normalised): ?array {
 		foreach ($entries as $entry) {
-			$coordinates = ($entry['location']['coordinates'] ?? null);
-			if (self::normalisePostcode(postcode: (string)($entry['postalCode'] ?? '')) !== $normalised
-				|| is_array($coordinates) === false
-				|| is_numeric($coordinates[0] ?? null) === false
-				|| is_numeric($coordinates[1] ?? null) === false
-			) {
+			if (self::normalisePostcode(postcode: (string)($entry['postalCode'] ?? '')) !== $normalised) {
 				continue;
 			}
 
-			return [
-				'longitude' => (float)$coordinates[0],
-				'latitude' => (float)$coordinates[1],
-				'municipality' => (string)($entry['addressLocality'] ?? ''),
-			];
+			$coordinates = self::coordinatesOf(entry: $entry);
+			if ($coordinates !== null) {
+				return [
+					'longitude' => $coordinates[0],
+					'latitude' => $coordinates[1],
+					'municipality' => (string)($entry['addressLocality'] ?? ''),
+				];
+			}
 		}
 
-		return $unknown;
-	}//end place()
+		return null;
+	}//end matchingPlace()
+
+	/**
+	 * An entry's longitude and latitude, or null when it has none.
+	 *
+	 * @param mixed $entry One geocoder entry.
+	 *
+	 * @return array{0:float,1:float}|null The coordinates.
+	 */
+	private static function coordinatesOf(mixed $entry): ?array {
+		$coordinates = ($entry['location']['coordinates'] ?? null);
+		if (is_array($coordinates) === false || is_numeric($coordinates[0] ?? null) === false || is_numeric($coordinates[1] ?? null) === false) {
+			return null;
+		}
+
+		return [(float)$coordinates[0], (float)$coordinates[1]];
+	}//end coordinatesOf()
 
 	/**
 	 * Which planner a source is: its `configuration.routeProvider`, else its slug.
@@ -323,17 +403,29 @@ class RouteDistanceService {
 			return null;
 		}
 
-		$meters = ($body['routes'][0]['summary']['lengthInMeters'] ?? null);
-		if ($provider === 'openrouteservice') {
-			$meters = ($body['features'][0]['properties']['summary']['distance'] ?? $body['routes'][0]['summary']['distance'] ?? null);
-		}
-
+		$meters = self::rawMeters(provider: $provider, body: $body);
 		if (is_numeric($meters) === false || (float)$meters < 0) {
 			return null;
 		}
 
 		return (float)$meters;
 	}//end metersOf()
+
+	/**
+	 * Where the planner puts the route length in its answer.
+	 *
+	 * @param string       $provider The planner.
+	 * @param array<mixed> $body     The decoded answer.
+	 *
+	 * @return mixed The length as given, null when absent.
+	 */
+	private static function rawMeters(string $provider, array $body): mixed {
+		if ($provider === 'openrouteservice') {
+			return ($body['features'][0]['properties']['summary']['distance'] ?? $body['routes'][0]['summary']['distance'] ?? null);
+		}
+
+		return ($body['routes'][0]['summary']['lengthInMeters'] ?? null);
+	}//end rawMeters()
 
 	/**
 	 * A structured refusal.
