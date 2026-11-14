@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use DateTimeImmutable;
+use OCA\Integriq\Service\Auth\ClientCertificate;
 use OCA\Integriq\Service\Auth\ClientCertificateReader;
 use OCA\Integriq\Service\Consumer\ConsumerCredentials;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -117,20 +118,13 @@ class ConsumerCredentialsController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function create(string $id): JSONResponse {
-		$refused = $this->refusal();
+		$label     = trim((string)$this->request->getParam('label', ''));
+		$expiresAt = $this->expiry(value: $this->request->getParam('expiresAt'));
+		$refused   = $this->createRefusal(label: $label);
 		if ($refused !== null) {
 			return $refused;
 		}
 
-		$label = trim((string)$this->request->getParam('label', ''));
-		if ($label === '' || mb_strlen($label) > self::MAX_LABEL_LENGTH) {
-			return new JSONResponse(
-				['error' => $this->l->t('Give a label of at most %1$s characters.', [(string)self::MAX_LABEL_LENGTH])],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		$expiresAt = $this->expiry(value: $this->request->getParam('expiresAt'));
 		if ($expiresAt === false) {
 			return new JSONResponse(['error' => $this->l->t('Give the expiry as a date and time.')], Http::STATUS_BAD_REQUEST);
 		}
@@ -144,20 +138,64 @@ class ConsumerCredentialsController extends Controller {
 			return $this->pinCertificate(consumer: $consumer, label: $label, expiresAt: $expiresAt);
 		}
 
+		return $this->storeGeneratedKey(consumer: $consumer, label: $label, expiresAt: $expiresAt);
+	}//end create()
+
+	/**
+	 * Why a create request is refused before its expiry is looked at: not an
+	 * administrator, then the label; null when it is not.
+	 *
+	 * @param string $label The trimmed label.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function createRefusal(string $label): ?JSONResponse {
+		$refused = $this->refusal();
+		if ($refused !== null) {
+			return $refused;
+		}
+
+		return $this->labelRefusal(label: $label);
+	}//end createRefusal()
+
+	/**
+	 * A 400 for an empty or too long label, else null.
+	 *
+	 * @param string $label The trimmed label.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function labelRefusal(string $label): ?JSONResponse {
+		if ($label === '' || mb_strlen($label) > self::MAX_LABEL_LENGTH) {
+			return new JSONResponse(
+				['error' => $this->l->t('Give a label of at most %1$s characters.', [(string)self::MAX_LABEL_LENGTH])],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+	}//end labelRefusal()
+
+	/**
+	 * Generate an API key, store its hashed entry, and answer the key once.
+	 *
+	 * @param ObjectEntity $consumer  The consumer.
+	 * @param string       $label     The label.
+	 * @param string|null  $expiresAt ISO-8601 expiry, or null.
+	 *
+	 * @return JSONResponse
+	 */
+	private function storeGeneratedKey(ObjectEntity $consumer, string $label, ?string $expiresAt): JSONResponse {
 		$generated = $this->credentials->generate(label: $label, expiresAt: $expiresAt);
-		$data = $consumer->getObject();
-		$list = $this->listOf(data: $data);
-		$list[] = $generated['credential'];
-		$data[ConsumerCredentials::FIELD] = $list;
-		if ($this->save(consumer: $consumer, data: $data) === false) {
-			return new JSONResponse(['error' => $this->l->t('The consumer could not be saved. Nothing changed.')], Http::STATUS_INTERNAL_SERVER_ERROR);
+		if ($this->storeEntry(consumer: $consumer, entry: $generated['credential']) === false) {
+			return $this->notSaved();
 		}
 
 		return new JSONResponse(
 			['key' => $generated['key'], 'credential' => ConsumerCredentials::shown(credential: $generated['credential'])],
 			Http::STATUS_CREATED
 		);
-	}//end create()
+	}//end storeGeneratedKey()
 
 	/**
 	 * Pin a client certificate on a consumer: the certificate itself, or an
@@ -172,28 +210,17 @@ class ConsumerCredentialsController extends Controller {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	private function pinCertificate(ObjectEntity $consumer, string $label, ?string $expiresAt): JSONResponse {
-		$certificate = null;
-		$issuer = null;
-		$pem = $this->request->getParam('certificate');
-		if (is_string($pem) === true && trim($pem) !== '') {
-			$certificate = ClientCertificateReader::parse(pem: $pem);
-		}
-
-		$issuerPem = $this->request->getParam('issuerCertificate');
-		if ($certificate === null && is_string($issuerPem) === true && trim($issuerPem) !== '') {
-			$issuer = ClientCertificateReader::parse(pem: $issuerPem);
-		}
-
-		$pattern = $this->request->getParam('subjectPattern');
-		if (is_string($pattern) === false) {
-			$pattern = null;
+		$certificate = $this->certificateParam(name: 'certificate');
+		$issuer      = null;
+		if ($certificate === null) {
+			$issuer = $this->certificateParam(name: 'issuerCertificate');
 		}
 
 		$entry = $this->credentials->certificateEntry(
 			label: $label,
 			certificate: $certificate,
 			issuer: $issuer,
-			subjectPattern: $pattern,
+			subjectPattern: $this->stringParam(name: 'subjectPattern'),
 			expiresAt: $expiresAt
 		);
 		if ($entry === null) {
@@ -203,14 +230,68 @@ class ConsumerCredentialsController extends Controller {
 			);
 		}
 
-		$data = $consumer->getObject();
-		$data[ConsumerCredentials::FIELD] = array_merge($this->listOf(data: $data), [$entry]);
-		if ($this->save(consumer: $consumer, data: $data) === false) {
-			return new JSONResponse(['error' => $this->l->t('The consumer could not be saved. Nothing changed.')], Http::STATUS_INTERNAL_SERVER_ERROR);
+		if ($this->storeEntry(consumer: $consumer, entry: $entry) === false) {
+			return $this->notSaved();
 		}
 
 		return new JSONResponse(['credential' => ConsumerCredentials::shown(credential: $entry)], Http::STATUS_CREATED);
 	}//end pinCertificate()
+
+	/**
+	 * A request parameter holding a PEM certificate, parsed; null when absent, blank or unreadable.
+	 *
+	 * @param string $name The parameter.
+	 *
+	 * @return ClientCertificate|null
+	 */
+	private function certificateParam(string $name): ?ClientCertificate {
+		$pem = $this->stringParam(name: $name);
+		if ($pem === null || trim($pem) === '') {
+			return null;
+		}
+
+		return ClientCertificateReader::parse(pem: $pem);
+	}//end certificateParam()
+
+	/**
+	 * A request parameter when it is a string, else null.
+	 *
+	 * @param string $name The parameter.
+	 *
+	 * @return string|null
+	 */
+	private function stringParam(string $name): ?string {
+		$value = $this->request->getParam($name);
+		if (is_string($value) === false) {
+			return null;
+		}
+
+		return $value;
+	}//end stringParam()
+
+	/**
+	 * Append an entry to the consumer's credentials and save.
+	 *
+	 * @param ObjectEntity         $consumer The consumer.
+	 * @param array<string, mixed> $entry    The new credential.
+	 *
+	 * @return bool Whether the save landed.
+	 */
+	private function storeEntry(ObjectEntity $consumer, array $entry): bool {
+		$data = $consumer->getObject();
+		$data[ConsumerCredentials::FIELD] = array_merge($this->listOf(data: $data), [$entry]);
+
+		return $this->save(consumer: $consumer, data: $data);
+	}//end storeEntry()
+
+	/**
+	 * The 500 answered when the consumer could not be saved.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notSaved(): JSONResponse {
+		return new JSONResponse(['error' => $this->l->t('The consumer could not be saved. Nothing changed.')], Http::STATUS_INTERNAL_SERVER_ERROR);
+	}//end notSaved()
 
 	/**
 	 * Revoke one credential, leaving the others as they are.

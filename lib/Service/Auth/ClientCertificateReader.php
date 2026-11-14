@@ -116,11 +116,6 @@ class ClientCertificateReader {
 		}
 
 		$subject = (array)($parsed['subject'] ?? []);
-		$serial  = ($subject['serialNumber'] ?? null);
-		$oin     = null;
-		if (is_string($serial) === true && preg_match(self::OIN_PATTERN, $serial) === 1) {
-			$oin = $serial;
-		}
 
 		return new ClientCertificate(
 			pem: $pem,
@@ -129,9 +124,25 @@ class ClientCertificateReader {
 			issuer: self::oneLine(name: (array)($parsed['issuer'] ?? [])),
 			validFrom: (int)($parsed['validFrom_time_t'] ?? 0),
 			validTo: (int)($parsed['validTo_time_t'] ?? 0),
-			oin: $oin
+			oin: self::oinOf(subject: $subject)
 		);
 	}//end parse()
+
+	/**
+	 * The OIN in a subject's serial number, or null when it holds none.
+	 *
+	 * @param array<mixed> $subject The parsed subject.
+	 *
+	 * @return string|null
+	 */
+	private static function oinOf(array $subject): ?string {
+		$serial = ($subject['serialNumber'] ?? null);
+		if (is_string($serial) === true && preg_match(self::OIN_PATTERN, $serial) === 1) {
+			return $serial;
+		}
+
+		return null;
+	}//end oinOf()
 
 	/**
 	 * Whether an address is one of Nextcloud's trusted proxies (an address or a CIDR range).
@@ -238,22 +249,50 @@ class ClientCertificateReader {
 	 * @return bool
 	 */
 	private static function inRange(string $address, string $range): bool {
-		$bits = null;
-		if (str_contains($range, '/') === true) {
-			[$range, $bitText] = explode('/', $range, 2);
-			if (ctype_digit($bitText) === false) {
-				return false;
-			}
-
-			$bits = (int)$bitText;
+		$parts = self::rangeParts(range: $range);
+		if ($parts === null) {
+			return false;
 		}
 
 		$subject = @inet_pton($address);
-		$network = @inet_pton($range);
+		$network = @inet_pton($parts[0]);
 		if ($subject === false || $network === false || strlen($subject) !== strlen($network)) {
 			return false;
 		}
 
+		return self::prefixMatches(subject: $subject, network: $network, bits: $parts[1]);
+	}//end inRange()
+
+	/**
+	 * A range's address and prefix length (null for an exact address); null when the length is not a number.
+	 *
+	 * @param string $range The address or CIDR range.
+	 *
+	 * @return array{0: string, 1: int|null}|null
+	 */
+	private static function rangeParts(string $range): ?array {
+		if (str_contains($range, '/') === false) {
+			return [$range, null];
+		}
+
+		[$network, $bitText] = explode('/', $range, 2);
+		if (ctype_digit($bitText) === false) {
+			return null;
+		}
+
+		return [$network, (int)$bitText];
+	}//end rangeParts()
+
+	/**
+	 * Whether two packed addresses of one length share a prefix; the whole address when no length is given.
+	 *
+	 * @param string   $subject The packed address.
+	 * @param string   $network The packed network.
+	 * @param int|null $bits    The prefix length, or null for an exact match.
+	 *
+	 * @return bool
+	 */
+	private static function prefixMatches(string $subject, string $network, ?int $bits): bool {
 		if ($bits === null) {
 			return hash_equals($network, $subject);
 		}
@@ -267,12 +306,25 @@ class ClientCertificateReader {
 			return false;
 		}
 
-		$rest = ($bits % 8);
+		return self::partialByteMatches(subject: $subject, network: $network, whole: $whole, rest: ($bits % 8));
+	}//end prefixMatches()
+
+	/**
+	 * Whether the leading bits of the byte after the whole bytes match.
+	 *
+	 * @param string $subject The packed address.
+	 * @param string $network The packed network.
+	 * @param int    $whole   The number of whole bytes already compared.
+	 * @param int    $rest    The bits of the next byte to compare.
+	 *
+	 * @return bool
+	 */
+	private static function partialByteMatches(string $subject, string $network, int $whole, int $rest): bool {
 		if ($rest === 0) {
 			return true;
 		}
 
 		$mask = ((0xFF << (8 - $rest)) & 0xFF);
 		return ((ord($subject[$whole]) & $mask) === (ord($network[$whole]) & $mask));
-	}//end inRange()
+	}//end partialByteMatches()
 }//end class

@@ -113,20 +113,57 @@ class IntegriqConsumerSource implements ConsumerSource {
 	public function findByIssuer(string $issuer): ?ResolvedConsumer {
 		$consumers = $this->consumers(filters: ['name' => $issuer]);
 		if ($this->keySources === null) {
-			if ($consumers === []) {
-				return null;
-			}
-
-			return $this->resolve(consumer: $consumers[0]);
+			return $this->firstResolved(consumers: $consumers);
 		}
 
+		$named = self::firstWithStaticKey(consumers: $consumers);
+		if ($named !== null) {
+			return $this->resolve(consumer: $named);
+		}
+
+		return $this->byConfiguredIssuer(wanted: rtrim($issuer, '/'));
+	}//end findByIssuer()
+
+	/**
+	 * The first consumer resolved, or null when there is none.
+	 *
+	 * @param array<int, ObjectEntity> $consumers The consumers.
+	 *
+	 * @return ResolvedConsumer|null
+	 */
+	private function firstResolved(array $consumers): ?ResolvedConsumer {
+		if ($consumers === []) {
+			return null;
+		}
+
+		return $this->resolve(consumer: $consumers[0]);
+	}//end firstResolved()
+
+	/**
+	 * The first consumer whose key source is a static key, or null.
+	 *
+	 * @param array<int, ObjectEntity> $consumers The consumers.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private static function firstWithStaticKey(array $consumers): ?ObjectEntity {
 		foreach ($consumers as $consumer) {
 			if (ConsumerKeySourceResolver::keySourceOf(configuration: self::configurationOf(consumer: $consumer)) === ConsumerKeySourceResolver::STATIC) {
-				return $this->resolve(consumer: $consumer);
+				return $consumer;
 			}
 		}
 
-		$wanted = rtrim($issuer, '/');
+		return null;
+	}//end firstWithStaticKey()
+
+	/**
+	 * The consumer whose configured issuer is the wanted one, resolved, or null.
+	 *
+	 * @param string $wanted The issuer without a trailing slash.
+	 *
+	 * @return ResolvedConsumer|null
+	 */
+	private function byConfiguredIssuer(string $wanted): ?ResolvedConsumer {
 		foreach ($this->consumers(filters: []) as $consumer) {
 			if (ConsumerKeySourceResolver::configuredIssuerOf(configuration: self::configurationOf(consumer: $consumer)) === $wanted) {
 				return $this->resolve(consumer: $consumer);
@@ -134,7 +171,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 		}
 
 		return null;
-	}//end findByIssuer()
+	}//end byConfiguredIssuer()
 
 	/**
 	 * The API-key consumer whose configured key equals the presented one.
@@ -155,22 +192,56 @@ class IntegriqConsumerSource implements ConsumerSource {
 
 		$now = new DateTimeImmutable();
 		foreach ($this->consumers(filters: []) as $consumer) {
-			$data = $consumer->getObject();
-			if ($this->credentials !== null) {
-				$index = $this->credentials->matchingApiKey(credentials: ($data[ConsumerCredentials::FIELD] ?? null), key: $apiKey, now: $now);
-				if ($index !== null) {
-					$this->recordUse(consumer: $consumer, index: $index, now: $now);
-					return $this->resolve(consumer: $consumer);
-				}
-			}
-
-			if (self::holdsApiKey(data: $data, apiKey: $apiKey) === true) {
+			if ($this->presentsApiKey(consumer: $consumer, apiKey: $apiKey, now: $now) === true) {
 				return $this->resolve(consumer: $consumer);
 			}
 		}
 
 		return null;
 	}//end findByApiKey()
+
+	/**
+	 * Whether a consumer holds the key: a live hashed credential first (its use
+	 * recorded), else the key in its configuration.
+	 *
+	 * @param ObjectEntity      $consumer The consumer.
+	 * @param string            $apiKey   The presented key.
+	 * @param DateTimeImmutable $now      The moment of the call.
+	 *
+	 * @return bool
+	 */
+	private function presentsApiKey(ObjectEntity $consumer, string $apiKey, DateTimeImmutable $now): bool {
+		$data = $consumer->getObject();
+		if ($this->matchesKeyCredential(consumer: $consumer, data: $data, apiKey: $apiKey, now: $now) === true) {
+			return true;
+		}
+
+		return self::holdsApiKey(data: $data, apiKey: $apiKey);
+	}//end presentsApiKey()
+
+	/**
+	 * Whether a live hashed API key credential of the consumer matches, recording its use.
+	 *
+	 * @param ObjectEntity         $consumer The consumer.
+	 * @param array<string, mixed> $data     The consumer's data.
+	 * @param string               $apiKey   The presented key.
+	 * @param DateTimeImmutable    $now      The moment of the call.
+	 *
+	 * @return bool
+	 */
+	private function matchesKeyCredential(ObjectEntity $consumer, array $data, string $apiKey, DateTimeImmutable $now): bool {
+		if ($this->credentials === null) {
+			return false;
+		}
+
+		$index = $this->credentials->matchingApiKey(credentials: ($data[ConsumerCredentials::FIELD] ?? null), key: $apiKey, now: $now);
+		if ($index === null) {
+			return false;
+		}
+
+		$this->recordUse(consumer: $consumer, index: $index, now: $now);
+		return true;
+	}//end matchesKeyCredential()
 
 	/**
 	 * The consumer a client certificate credential of which pins the certificate, or null.
@@ -220,11 +291,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 */
 	private function recordUse(ObjectEntity $consumer, int $index, DateTimeImmutable $now): void {
 		$credential = ($consumer->getObject()[ConsumerCredentials::FIELD][$index] ?? null);
-		if ($this->credentials === null || is_array($credential) === false) {
-			return;
-		}
-
-		$touched = $this->credentials->touched(credential: $credential, now: $now);
+		$touched    = $this->touchedCredential(credential: $credential, now: $now);
 		if ($touched === null) {
 			return;
 		}
@@ -235,28 +302,59 @@ class IntegriqConsumerSource implements ConsumerSource {
 		}
 
 		try {
-			// Write from the raw object: the list is saved whole, so a rendered
-			// read without the hashes would drop every other key.
-			$raw = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'consumer', _rbac: false, _multitenancy: false, _render: false);
-			$data = $raw?->getObject();
-			if (is_array($data) === false || (($data[ConsumerCredentials::FIELD][$index]['id'] ?? null) !== ($credential['id'] ?? null))) {
-				return;
-			}
-
-			$data[ConsumerCredentials::FIELD][$index]['lastUsedAt'] = $touched['lastUsedAt'];
-			$this->objectService->saveObject(
-				object: $data,
-				register: 'integriq',
-				schema: 'consumer',
-				uuid: $uuid,
-				_rbac: false,
-				_multitenancy: false,
-				silent: true
-			);
+			$this->writeLastUsed(uuid: $uuid, index: $index, credentialId: ($credential['id'] ?? null), lastUsedAt: $touched['lastUsedAt']);
 		} catch (Throwable) {
 			return;
 		}
 	}//end recordUse()
+
+	/**
+	 * The credential with `lastUsedAt` moved to now, or null when there is nothing to write.
+	 *
+	 * @param mixed             $credential The stored credential.
+	 * @param DateTimeImmutable $now        The moment of the call.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function touchedCredential(mixed $credential, DateTimeImmutable $now): ?array {
+		if ($this->credentials === null || is_array($credential) === false) {
+			return null;
+		}
+
+		return $this->credentials->touched(credential: $credential, now: $now);
+	}//end touchedCredential()
+
+	/**
+	 * Write `lastUsedAt` on the credential at the index, when it is still the same credential.
+	 *
+	 * Written from the raw object: the list is saved whole, so a rendered read
+	 * without the hashes would drop every other key.
+	 *
+	 * @param string $uuid         The consumer's uuid.
+	 * @param int    $index        The credential's index in the list.
+	 * @param mixed  $credentialId The credential's id as it was matched.
+	 * @param mixed  $lastUsedAt   The new `lastUsedAt`.
+	 *
+	 * @return void
+	 */
+	private function writeLastUsed(string $uuid, int $index, mixed $credentialId, mixed $lastUsedAt): void {
+		$raw  = $this->objectService->find(id: $uuid, register: 'integriq', schema: 'consumer', _rbac: false, _multitenancy: false, _render: false);
+		$data = $raw?->getObject();
+		if (is_array($data) === false || (($data[ConsumerCredentials::FIELD][$index]['id'] ?? null) !== $credentialId)) {
+			return;
+		}
+
+		$data[ConsumerCredentials::FIELD][$index]['lastUsedAt'] = $lastUsedAt;
+		$this->objectService->saveObject(
+			object: $data,
+			register: 'integriq',
+			schema: 'consumer',
+			uuid: $uuid,
+			_rbac: false,
+			_multitenancy: false,
+			silent: true
+		);
+	}//end writeLastUsed()
 
 	/**
 	 * Whether an API-key consumer stores exactly this key (compared in constant time).

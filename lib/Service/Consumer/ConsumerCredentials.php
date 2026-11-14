@@ -182,28 +182,92 @@ class ConsumerCredentials {
 	 * @spec openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-key-can-be-replaced-without-downtime-req-cred-003
 	 */
 	public function matchingApiKey(mixed $credentials, string $key, DateTimeImmutable $now): ?int {
-		if ($key === '' || is_array($credentials) === false || array_is_list($credentials) === false) {
+		$list = self::credentialList(credentials: $credentials);
+		if ($key === '' || $list === null) {
 			return null;
 		}
 
-		$hash = $this->hashKey(key: $key);
-		foreach ($credentials as $index => $credential) {
-			if (is_array($credential) === false || ($credential['type'] ?? '') !== self::TYPE_API_KEY) {
-				continue;
-			}
+		return $this->firstLiveApiKey(list: $list, hash: $this->hashKey(key: $key), now: $now);
+	}//end matchingApiKey()
 
-			$stored = ($credential['keyHash'] ?? '');
-			if (is_string($stored) === false || $stored === '' || hash_equals($stored, $hash) === false) {
-				continue;
-			}
-
-			if ($this->isLive(credential: $credential, now: $now) === true) {
+	/**
+	 * The index of the first live API key credential in the list whose hash is the given one.
+	 *
+	 * @param list<mixed>       $list The credentials.
+	 * @param string            $hash The presented key's hash.
+	 * @param DateTimeImmutable $now  The moment of the call.
+	 *
+	 * @return int|null
+	 */
+	private function firstLiveApiKey(array $list, string $hash, DateTimeImmutable $now): ?int {
+		foreach ($list as $index => $credential) {
+			if ($this->isLiveApiKeyFor(credential: $credential, hash: $hash, now: $now) === true) {
 				return $index;
 			}
 		}
 
 		return null;
-	}//end matchingApiKey()
+	}//end firstLiveApiKey()
+
+	/**
+	 * The credentials as a list, or null when the value is not one.
+	 *
+	 * @param mixed $credentials The consumer's `credentials` value.
+	 *
+	 * @return list<mixed>|null
+	 */
+	private static function credentialList(mixed $credentials): ?array {
+		if (is_array($credentials) === false || array_is_list($credentials) === false) {
+			return null;
+		}
+
+		return $credentials;
+	}//end credentialList()
+
+	/**
+	 * Whether a value is a credential of the given type.
+	 *
+	 * @param mixed  $credential The value.
+	 * @param string $type       The credential type.
+	 *
+	 * @return bool
+	 */
+	private static function isOfType(mixed $credential, string $type): bool {
+		return is_array($credential) === true && ($credential['type'] ?? '') === $type;
+	}//end isOfType()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isFilled(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isFilled()
+
+	/**
+	 * Whether a value is a live API key credential whose stored hash is the given one.
+	 *
+	 * @param mixed             $credential The value.
+	 * @param string            $hash       The presented key's hash.
+	 * @param DateTimeImmutable $now        The moment of the call.
+	 *
+	 * @return bool
+	 */
+	private function isLiveApiKeyFor(mixed $credential, string $hash, DateTimeImmutable $now): bool {
+		if (self::isOfType(credential: $credential, type: self::TYPE_API_KEY) === false) {
+			return false;
+		}
+
+		$stored = ($credential['keyHash'] ?? '');
+		if (self::isFilled(value: $stored) === false || hash_equals((string) $stored, $hash) === false) {
+			return false;
+		}
+
+		return $this->isLive(credential: $credential, now: $now);
+	}//end isLiveApiKeyFor()
 
 	/**
 	 * A client certificate credential.
@@ -249,17 +313,34 @@ class ConsumerCredentials {
 			];
 		}
 
-		if ($issuer === null || $subjectPattern === null || trim($subjectPattern) === '') {
+		$issuerPin = self::issuerPin(issuer: $issuer, subjectPattern: (string) $subjectPattern);
+		if ($issuerPin === null) {
 			return null;
 		}
 
-		return $entry + [
+		return $entry + $issuerPin;
+	}//end certificateEntry()
+
+	/**
+	 * The issuer pin fields of a certificate entry, or null when the pin is incomplete.
+	 *
+	 * @param ClientCertificate|null $issuer         The issuing CA.
+	 * @param string                 $subjectPattern The subject pattern; empty when none was given.
+	 *
+	 * @return array<string, string>|null
+	 */
+	private static function issuerPin(?ClientCertificate $issuer, string $subjectPattern): ?array {
+		if ($issuer === null || trim($subjectPattern) === '') {
+			return null;
+		}
+
+		return [
 			'issuerCertificate' => $issuer->pem,
 			'issuerFingerprint' => $issuer->fingerprint,
 			'issuer'            => $issuer->subject,
 			'subjectPattern'    => trim($subjectPattern),
 		];
-	}//end certificateEntry()
+	}//end issuerPin()
 
 	/**
 	 * The index of the live client certificate credential a certificate matches, or null.
@@ -277,27 +358,50 @@ class ConsumerCredentials {
 	 * @spec openspec/changes/access-consumer-credentials/specs/authorization-jwt/spec.md#requirement-an-endpoint-can-require-a-client-certificate-req-cred-004
 	 */
 	public function matchingCertificate(mixed $credentials, ClientCertificate $certificate, DateTimeImmutable $now): ?int {
-		if (is_array($credentials) === false || array_is_list($credentials) === false) {
+		$list = self::credentialList(credentials: $credentials);
+		if ($list === null || $certificate->isValidAt(now: $now->getTimestamp()) === false) {
 			return null;
 		}
 
-		if ($certificate->isValidAt(now: $now->getTimestamp()) === false) {
-			return null;
-		}
+		return $this->firstLivePin(list: $list, certificate: $certificate, now: $now);
+	}//end matchingCertificate()
 
-		foreach ($credentials as $index => $credential) {
-			if (is_array($credential) === false || ($credential['type'] ?? '') !== self::TYPE_CLIENT_CERTIFICATE) {
-				continue;
-			}
-
-			$pinned = self::pins(credential: $credential, certificate: $certificate);
-			if ($pinned === true && $this->isLive(credential: $credential, now: $now) === true) {
+	/**
+	 * The index of the first live client certificate credential in the list that pins the certificate.
+	 *
+	 * @param list<mixed>       $list        The credentials.
+	 * @param ClientCertificate $certificate The certificate.
+	 * @param DateTimeImmutable $now         The moment of the call.
+	 *
+	 * @return int|null
+	 */
+	private function firstLivePin(array $list, ClientCertificate $certificate, DateTimeImmutable $now): ?int {
+		foreach ($list as $index => $credential) {
+			if ($this->isLivePinFor(credential: $credential, certificate: $certificate, now: $now) === true) {
 				return $index;
 			}
 		}
 
 		return null;
-	}//end matchingCertificate()
+	}//end firstLivePin()
+
+	/**
+	 * Whether a value is a live client certificate credential that pins the certificate.
+	 *
+	 * @param mixed             $credential  The value.
+	 * @param ClientCertificate $certificate The certificate.
+	 * @param DateTimeImmutable $now         The moment of the call.
+	 *
+	 * @return bool
+	 */
+	private function isLivePinFor(mixed $credential, ClientCertificate $certificate, DateTimeImmutable $now): bool {
+		if (self::isOfType(credential: $credential, type: self::TYPE_CLIENT_CERTIFICATE) === false) {
+			return false;
+		}
+
+		return self::pins(credential: $credential, certificate: $certificate) === true
+			&& $this->isLive(credential: $credential, now: $now) === true;
+	}//end isLivePinFor()
 
 	/**
 	 * Whether one client certificate credential pins a certificate.
@@ -309,22 +413,34 @@ class ConsumerCredentials {
 	 */
 	private static function pins(array $credential, ClientCertificate $certificate): bool {
 		$fingerprint = ($credential['fingerprint'] ?? null);
-		if (is_string($fingerprint) === true && $fingerprint !== '') {
-			return hash_equals(strtolower($fingerprint), $certificate->fingerprint);
+		if (self::isFilled(value: $fingerprint) === true) {
+			return hash_equals(strtolower((string) $fingerprint), $certificate->fingerprint);
 		}
 
+		return self::issuerPins(credential: $credential, certificate: $certificate);
+	}//end pins()
+
+	/**
+	 * Whether an issuer pin covers a certificate: the subject fits and the CA verifies it.
+	 *
+	 * @param array<string, mixed> $credential  The credential.
+	 * @param ClientCertificate    $certificate The certificate.
+	 *
+	 * @return bool
+	 */
+	private static function issuerPins(array $credential, ClientCertificate $certificate): bool {
 		$issuer  = ($credential['issuerCertificate'] ?? null);
 		$pattern = ($credential['subjectPattern'] ?? null);
-		if (is_string($issuer) === false || $issuer === '' || is_string($pattern) === false || $pattern === '') {
+		if (self::isFilled(value: $issuer) === false || self::isFilled(value: $pattern) === false) {
 			return false;
 		}
 
-		if (fnmatch($pattern, $certificate->subject, FNM_NOESCAPE) === false) {
+		if (fnmatch((string) $pattern, $certificate->subject, FNM_NOESCAPE) === false) {
 			return false;
 		}
 
-		return @openssl_x509_verify($certificate->pem, $issuer) === 1;
-	}//end pins()
+		return @openssl_x509_verify($certificate->pem, (string) $issuer) === 1;
+	}//end issuerPins()
 
 	/**
 	 * Whether a credential is not expired at a moment.
@@ -368,18 +484,32 @@ class ConsumerCredentials {
 	 * @spec openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-key-can-be-replaced-without-downtime-req-cred-003
 	 */
 	public function touched(array $credential, DateTimeImmutable $now): ?array {
-		$last = ($credential['lastUsedAt'] ?? null);
-		if (is_string($last) === true && $last !== '') {
-			$lastUsed = date_create_immutable($last);
-			if ($lastUsed !== false && ($now->getTimestamp() - $lastUsed->getTimestamp()) < self::LAST_USED_INTERVAL) {
-				return null;
-			}
+		if (self::usedWithinInterval(last: ($credential['lastUsedAt'] ?? null), now: $now) === true) {
+			return null;
 		}
 
 		$credential['lastUsedAt'] = $now->format(DateTimeInterface::ATOM);
 
 		return $credential;
 	}//end touched()
+
+	/**
+	 * Whether a stored `lastUsedAt` is less than the write interval before now.
+	 *
+	 * @param mixed             $last The stored value.
+	 * @param DateTimeImmutable $now  The moment of the call.
+	 *
+	 * @return bool
+	 */
+	private static function usedWithinInterval(mixed $last, DateTimeImmutable $now): bool {
+		if (self::isFilled(value: $last) === false) {
+			return false;
+		}
+
+		$lastUsed = date_create_immutable((string) $last);
+
+		return $lastUsed !== false && ($now->getTimestamp() - $lastUsed->getTimestamp()) < self::LAST_USED_INTERVAL;
+	}//end usedWithinInterval()
 
 	/**
 	 * A credential as it may be shown: everything but the hash.
