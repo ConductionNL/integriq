@@ -330,6 +330,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 				register: 'integriq',
 				schema: 'eudi_credential_offer',
 				_rbac: false,
+				// Unscoped: a wallet (no session) resolves its offer by the uuid in the offer link.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -404,6 +405,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 				],
 			],
 			_rbac: false,
+			// Unscoped: the wallet's token exchange resolves the offer by its pre-authorised code, no session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -703,6 +705,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 				],
 			],
 			_rbac: false,
+			// Unscoped: credential issuance for a wallet authenticated by its bearer token, no session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -737,6 +740,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 				register: 'integriq',
 				schema: 'eudi_credential_offer',
 				_rbac: false,
+				// Unscoped: credential issuance for a wallet authenticated by its bearer token, no session.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -865,6 +869,7 @@ class EudiCredentialOfferService implements EudiCredentialOfferServiceInterface 
 				register: 'integriq',
 				schema: 'eudi_credential_offer',
 				_rbac: false,
+				// Unscoped: a consumer app authenticated by its own credentials revokes its offer; the consumer is checked against the offer here.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {

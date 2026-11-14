@@ -29,7 +29,9 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Auth\Idp\EnvelopeExchangeServiceInterface;
 use OCA\Integriq\Auth\Idp\IdpLoginServiceInterface;
+use OCA\Integriq\Auth\Idp\TrustLevelMapper;
 use OCA\Integriq\Exception\IdpAssertionException;
+use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -50,6 +52,13 @@ use Psr\Log\LoggerInterface;
 class IdpBrokerController extends Controller {
 
 	/**
+	 * Names the level used and the floor on the refusal page.
+	 *
+	 * @var TrustLevelMapper
+	 */
+	private readonly TrustLevelMapper $trustMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
@@ -58,6 +67,7 @@ class IdpBrokerController extends Controller {
 	 * @param IdpLoginServiceInterface $loginService Starts and finishes the browser login.
 	 * @param IL10N $l10n Translates the error page.
 	 * @param LoggerInterface $logger Records why a start or a callback was refused.
+	 * @param TrustLevelMapper|null $trustMapper Names the level used and the floor on the refusal page.
 	 */
 	public function __construct(
 		string $appName,
@@ -66,8 +76,10 @@ class IdpBrokerController extends Controller {
 		private readonly IdpLoginServiceInterface $loginService,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
+		?TrustLevelMapper $trustMapper = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->trustMapper = ($trustMapper ?? new TrustLevelMapper());
 
 	}//end __construct()
 
@@ -182,9 +194,10 @@ class IdpBrokerController extends Controller {
 	 *
 	 * @param string $provider `digid`, `eherkenning` or `eidas`.
 	 *
-	 * @return RedirectResponse|TemplateResponse The redirect to the consumer, or the error page.
+	 * @return RedirectResponse|TemplateResponse The redirect to the consumer, the floor refusal page, or the error page.
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -192,6 +205,9 @@ class IdpBrokerController extends Controller {
 	public function callback(string $provider): RedirectResponse|TemplateResponse {
 		try {
 			$redirectUrl = $this->loginService->callback(provider: $provider, callback: $this->request->getParams());
+		} catch (IdpAssuranceBelowFloorException $exception) {
+			// The one refusal that is explained: the service already logged it.
+			return $this->belowFloorPage(refusal: $exception);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login response was refused: ' . $exception->getMessage(),
@@ -204,6 +220,67 @@ class IdpBrokerController extends Controller {
 		return new RedirectResponse($redirectUrl);
 
 	}//end callback()
+
+	/**
+	 * Integriq's own page for a login below the assurance floor.
+	 *
+	 * It names the level the person used, the level this service needs and
+	 * how to get it for that provider, and has one action: back to the
+	 * consumer with `error=assurance_below_floor` and the relay state.
+	 *
+	 * @param IdpAssuranceBelowFloorException $refusal The refusal, with the address to go back to.
+	 *
+	 * @return TemplateResponse The page, with status 403.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	private function belowFloorPage(IdpAssuranceBelowFloorException $refusal): TemplateResponse {
+		$provider = $refusal->getProvider();
+		$response = new TemplateResponse(
+			appName: $this->appName,
+			templateName: 'idp/refused',
+			params: [
+				'title' => $this->l10n->t('This service needs a stronger login'),
+				'message' => $this->l10n->t(
+					'You logged in with %1$s. This service needs at least %2$s.',
+					[
+						$this->trustMapper->levelLabel(provider: $provider, level: $refusal->getLevelUsed()),
+						$this->trustMapper->floorLabel(provider: $provider),
+					]
+				),
+				'hint' => $this->howToGetTheFloor(provider: $provider),
+				'action' => $this->l10n->t('Go back'),
+				'actionUrl' => $refusal->getReturnUrl(),
+			],
+			renderAs: TemplateResponse::RENDER_AS_GUEST
+		);
+		$response->setStatus(status: Http::STATUS_FORBIDDEN);
+
+		return $response;
+
+	}//end belowFloorPage()
+
+	/**
+	 * How a person gets a means at the floor, for one provider.
+	 *
+	 * @param string $provider The provider id.
+	 *
+	 * @return string The advice.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	private function howToGetTheFloor(string $provider): string {
+		return match ($provider) {
+			TrustLevelMapper::PROVIDER_DIGID => $this->l10n->t(
+				'Log in with the DigiD app with an identity check, or use another DigiD means at level Substantieel.'
+			),
+			TrustLevelMapper::PROVIDER_EHERKENNING => $this->l10n->t(
+				'Log in with an eHerkenning means at level EH3 or higher. Your eHerkenning supplier can tell you how to get one.'
+			),
+			default => $this->l10n->t('Log in with a means at eIDAS level substantial or high.'),
+		};
+
+	}//end howToGetTheFloor()
 
 	/**
 	 * Integriq's own error page for a login that cannot go anywhere safe.

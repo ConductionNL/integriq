@@ -34,6 +34,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Auth\Idp;
 
 use OCA\Integriq\Exception\IdpAssertionException;
+use OCA\Integriq\Exception\IdpAssuranceBelowFloorException;
+use OCA\Integriq\Exception\IdpSecretRefusedException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,6 +53,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @var string
 	 */
 	public const ERROR_LOGIN_FAILED = 'login_failed';
+
+	/**
+	 * The error a consumer is told about when the login was below the floor.
+	 *
+	 * The one refusal that is not generic: the person has already been told
+	 * why on integriq's own page, and the consumer may resume from it.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
+	 */
+	public const ERROR_ASSURANCE_BELOW_FLOOR = 'assurance_below_floor';
 
 	/**
 	 * The longest relay state a consumer may hand in.
@@ -81,6 +95,8 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 * @param SubjectPseudonymService $pseudonyms Turns a BSN into a pseudonym.
 	 * @param EnvelopeExchangeService $exchange Mints the envelope and issues the code.
 	 * @param LoggerInterface $logger Records the real reason for a refusal.
+	 * @param IdpRegistrationService $registrations The organisation's registration per provider.
+	 * @param IdpSecretSeam $secrets Reads the registration's salt from Keepiq.
 	 */
 	public function __construct(
 		private readonly IdpBrokerConfig $config,
@@ -91,6 +107,8 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		private readonly SubjectPseudonymService $pseudonyms,
 		private readonly EnvelopeExchangeService $exchange,
 		private readonly LoggerInterface $logger,
+		private readonly IdpRegistrationService $registrations,
+		private readonly IdpSecretSeam $secrets,
 	) {
 
 	}//end __construct()
@@ -206,9 +224,12 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	 *
 	 * @return string The consumer's return address with `code` and `relayState`, or with `error` and `relayState`.
 	 *
+	 * @throws IdpAssuranceBelowFloorException When the assertion is below the floor; it carries the consumer's
+	 *                                         return address with `error=assurance_below_floor` and the relay state.
 	 * @throws IdpAssertionException When the response answers no stored state (an IdP-initiated flow included).
 	 *
 	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-the-callback-returns-the-browser-with-a-one-time-code-req-idp-002
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	public function callback(string $provider, array $callback, ?int $now = null): string {
 		$adapter = $this->adapters->forProvider(provider: $provider);
@@ -227,6 +248,18 @@ class IdpLoginService implements IdpLoginServiceInterface {
 
 		try {
 			$code = $this->finish(login: $login);
+		} catch (IdpAssuranceBelowFloorException $exception) {
+			$this->logger->warning(
+				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
+				['provider' => $provider, 'consumer' => $state['consumer'], 'level' => $exception->getLevelUsed()]
+			);
+
+			throw $exception->withReturnUrl(
+				returnUrl: $this->withQuery(
+					url: $state['returnUrl'],
+					query: ['error' => self::ERROR_ASSURANCE_BELOW_FLOOR, 'relayState' => $state['relayState']]
+				)
+			);
 		} catch (IdpAssertionException $exception) {
 			$this->logger->warning(
 				'Integriq idp-broker: a login was refused at the callback: ' . $exception->getMessage(),
@@ -257,21 +290,45 @@ class IdpLoginService implements IdpLoginServiceInterface {
 			throw new IdpAssertionException(message: 'The response came back on another provider than it started on.');
 		}
 
-		$consumer = $this->returningConsumer(login: $login);
+		$consumer     = $this->returningConsumer(login: $login);
+		$registration = $this->registrationFor(login: $login);
 
+		// The audience is this organisation's own EntityID: an assertion meant
+		// for another organisation's registration is refused here.
 		$this->assertionGuard->assertAcceptable(
 			assertion: $login->assertion,
 			outstandingRequestId: $login->requestId,
-			expectedAudience: $this->config->entityId(provider: $login->provider),
+			expectedAudience: $registration->text(key: 'spEntityId'),
 			now: $login->now
 		);
 
 		$this->assertSameOrganisation(login: $login);
-		$login->trust = $this->sufficientTrust(login: $login);
+		$login->trust = $this->sufficientTrust(login: $login, registration: $registration);
 
-		return $this->exchange->issueCode(envelope: $this->envelopeFor(login: $login, consumer: $consumer));
+		return $this->exchange->issueCode(envelope: $this->envelopeFor(login: $login, consumer: $consumer, registration: $registration));
 
 	}//end finish()
+
+	/**
+	 * The organisation's enabled registration for the provider the login runs on.
+	 *
+	 * @param IdpLoginCallback $login The login being finished.
+	 *
+	 * @return IdpRegistration The registration.
+	 *
+	 * @throws IdpAssertionException When the organisation has no enabled registration for the provider.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-pseudonymisation-mode-is-chosen-per-registration-req-idpc-005
+	 */
+	private function registrationFor(IdpLoginCallback $login): IdpRegistration {
+		$registration = $this->registrations->find(organisation: $login->state['organisation'], provider: $login->provider);
+		if ($registration === null || $registration->isEnabled() === false) {
+			throw new IdpAssertionException(message: 'The organisation has no enabled registration for this identity provider.');
+		}
+
+		return $registration;
+
+	}//end registrationFor()
 
 	/**
 	 * The consumer, read again: an administrator who disabled it, or removed
@@ -313,18 +370,30 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	/**
 	 * The trust the assertion carries, when it meets the trust the login asked for.
 	 *
-	 * @param IdpLoginCallback $login The login being finished.
+	 * The identity provider's own spellings are read through the registration's
+	 * `assuranceMapping`.
+	 *
+	 * @param IdpLoginCallback $login        The login being finished.
+	 * @param IdpRegistration  $registration The organisation's registration.
 	 *
 	 * @return string The mapped trust.
 	 *
+	 * @throws IdpAssuranceBelowFloorException When the assurance level is below the floor, whatever the start asked.
 	 * @throws IdpAssertionException When the assurance level is below the trust asked for.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
-	private function sufficientTrust(IdpLoginCallback $login): string {
-		$trust = $this->trustMapper->map(
-			provider: $login->provider,
-			level: (string)($login->assertion['assuranceLevel'] ?? ''),
-			aliases: $this->config->trustAliases(provider: $login->provider)
-		);
+	private function sufficientTrust(IdpLoginCallback $login, IdpRegistration $registration): string {
+		$level = (string)($login->assertion['assuranceLevel'] ?? '');
+		$aliases = $registration->stringMap(key: 'assuranceMapping');
+		$trust = $this->trustMapper->map(provider: $login->provider, level: $level, aliases: $aliases);
+		if ($this->trustMapper->meetsFloor(trust: $trust) === false) {
+			throw new IdpAssuranceBelowFloorException(
+				provider: $login->provider,
+				levelUsed: $this->trustMapper->canonicalLevel(level: $level, aliases: $aliases)
+			);
+		}
+
 		if ($this->trustMapper->satisfies(have: $trust, need: $login->state['trust']) === false) {
 			throw new IdpAssertionException(message: 'The assurance level is below the trust the login asked for.');
 		}
@@ -336,15 +405,16 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	/**
 	 * The subject envelope the code is issued for.
 	 *
-	 * @param IdpLoginCallback $login    The login being finished, with its trust mapped.
-	 * @param IdpConsumer      $consumer The consumer the browser returns to.
+	 * @param IdpLoginCallback $login        The login being finished, with its trust mapped.
+	 * @param IdpConsumer      $consumer     The consumer the browser returns to.
+	 * @param IdpRegistration  $registration The organisation's registration.
 	 *
 	 * @return SubjectEnvelope The envelope.
 	 *
 	 * @throws IdpAssertionException When the subject or the branch is unusable.
 	 */
-	private function envelopeFor(IdpLoginCallback $login, IdpConsumer $consumer): SubjectEnvelope {
-		[$subject, $subType] = $this->subjectOf(login: $login);
+	private function envelopeFor(IdpLoginCallback $login, IdpConsumer $consumer, IdpRegistration $registration): SubjectEnvelope {
+		[$subject, $subType] = $this->subjectOf(login: $login, registration: $registration);
 
 		return new SubjectEnvelope(
 			subject: $subject,
@@ -361,13 +431,19 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	/**
 	 * The subject and its type, with a BSN turned into a pseudonym here.
 	 *
-	 * @param IdpLoginCallback $login The login being finished.
+	 * A registration in `polymorphic` mode never takes a plain BSN; one in
+	 * `hmac` mode pseudonymises it with the salt its registration references,
+	 * so the same person gets a different pseudonym per organisation.
+	 *
+	 * @param IdpLoginCallback $login        The login being finished.
+	 * @param IdpRegistration  $registration The organisation's registration.
 	 *
 	 * @return array{0: string, 1: string} The subject and the subject type.
 	 *
-	 * @throws IdpAssertionException When the subject type does not belong to the provider, or the subject is empty.
+	 * @throws IdpAssertionException When the subject type does not belong to the provider, the subject is empty,
+	 *                               or a plain BSN arrives in polymorphic mode.
 	 */
-	private function subjectOf(IdpLoginCallback $login): array {
+	private function subjectOf(IdpLoginCallback $login, IdpRegistration $registration): array {
 		$organisation = $login->state['organisation'];
 		$subType = trim((string)($login->assertion['subType'] ?? ''));
 		$subject = trim((string)($login->assertion['subject'] ?? ''));
@@ -380,7 +456,7 @@ class IdpLoginService implements IdpLoginServiceInterface {
 			$pseudonym = $this->pseudonyms->pseudonymFor(
 				bsn: $subject,
 				organisation: $organisation,
-				salt: $this->config->organisationSalt(organisation: $organisation)
+				salt: $this->saltFor(registration: $registration)
 			);
 			return [$pseudonym, SubjectPseudonymService::SUBTYPE_BSN_PSEUDONYM];
 		}
@@ -392,6 +468,39 @@ class IdpLoginService implements IdpLoginServiceInterface {
 		return [$subject, $subType];
 
 	}//end subjectOf()
+
+	/**
+	 * The registration's HMAC salt, read from Keepiq for this request.
+	 *
+	 * Refused for a registration in `polymorphic` mode: a plain BSN there
+	 * means the identity provider sent what the registration says it will not,
+	 * and the message never carries the BSN.
+	 *
+	 * @param IdpRegistration $registration The organisation's registration.
+	 *
+	 * @return string The salt.
+	 *
+	 * @throws IdpAssertionException When the registration is polymorphic or its salt cannot be read.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-pseudonymisation-mode-is-chosen-per-registration-req-idpc-005
+	 */
+	private function saltFor(IdpRegistration $registration): string {
+		if ($registration->isPolymorphic() === true) {
+			throw new IdpAssertionException(message: 'A plain BSN arrived for a registration that expects polymorphic pseudonyms.');
+		}
+
+		try {
+			return $this->secrets->read(
+				registration: $registration->id,
+				organisation: $registration->organisation(),
+				role: 'salt',
+				reference: $registration->credential(role: 'salt')
+			);
+		} catch (IdpSecretRefusedException $refused) {
+			throw new IdpAssertionException(message: 'The pseudonymisation salt of the registration could not be read.', previous: $refused);
+		}
+
+	}//end saltFor()
 
 	/**
 	 * The branch an eHerkenning login was restricted to.
@@ -448,18 +557,25 @@ class IdpLoginService implements IdpLoginServiceInterface {
 	}//end startableConsumer()
 
 	/**
-	 * Refuse a start without an organisation, with an unknown trust level or an oversized relay state.
+	 * Refuse a start without an organisation, with an unknown trust level, one below the floor, or an
+	 * oversized relay state.
 	 *
 	 * @param IdpLoginStart $login The login being started.
 	 *
 	 * @return void
 	 *
 	 * @throws IdpAssertionException When a parameter is unusable.
+	 *
+	 * @spec openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-substantial-is-the-assurance-floor-req-idpc-006
 	 */
 	private function assertStartParameters(IdpLoginStart $login): void {
 		$knownTrust = [TrustLevelMapper::TRUST_LOW, TrustLevelMapper::TRUST_SUBSTANTIAL, TrustLevelMapper::TRUST_HIGH];
 		if ($login->organisation === '' || in_array($login->trust, $knownTrust, true) === false) {
 			throw new IdpAssertionException(message: 'The login names no organisation or no known trust level.');
+		}
+
+		if ($this->trustMapper->meetsFloor(trust: $login->trust) === false) {
+			throw new IdpAssertionException(message: 'The login asks for a trust level below the floor of substantial, so no login starts.');
 		}
 
 		if (strlen($login->relayState) > self::MAX_RELAY_STATE) {

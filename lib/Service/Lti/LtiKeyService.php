@@ -161,6 +161,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
+				// Unscoped: key material of a registration already resolved by the caller (signing and key rotation run as the system).
 				_multitenancy: false,
 				// `signingKeys` is writeOnly (register.d/99-lti-*-secrets-writeonly.json)
 				// and the rendered read strips writeOnly unconditionally, also under
@@ -633,6 +634,7 @@ class LtiKeyService implements LtiKeyServiceInterface {
 					],
 				],
 				_rbac: false,
+				// Unscoped: background key rotation, no user session.
 				_multitenancy: false
 			);
 			$registrations = ($matches['results'] ?? $matches);

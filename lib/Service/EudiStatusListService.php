@@ -98,6 +98,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the status list is found for the organisation passed in, during issuance without a session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -191,6 +192,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
+			// Unscoped: revocation by an authenticated consumer flips a bit in the status list, no user session.
 			_multitenancy: false
 		);
 		$data = $entity->getObject();
@@ -219,6 +221,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 			register: 'integriq',
 			schema: 'eudi_status_list',
 			_rbac: false,
+			// Unscoped: revocation by an authenticated consumer flips a bit in the status list, no user session.
 			_multitenancy: false
 		);
 		$this->signAndCache(entity: $refreshedEntity);
@@ -363,6 +366,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				register: 'integriq',
 				schema: 'eudi_status_list',
 				_rbac: false,
+				// Unscoped: the published status list is public by design (wallets and verifiers fetch it).
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -394,6 +398,7 @@ class EudiStatusListService implements EudiStatusListServiceInterface {
 				],
 			],
 			_rbac: false,
+			// Unscoped: background refresh of status lists near expiry, no user session.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);

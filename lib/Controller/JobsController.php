@@ -23,8 +23,11 @@
 
 namespace OCA\Integriq\Controller;
 
+use DateTimeImmutable;
 use Exception;
+use InvalidArgumentException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\JobCalendarSchedule;
 use OCA\Integriq\Service\JobServiceInterface;
 use OCA\Integriq\Service\SearchServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
@@ -64,6 +67,7 @@ class JobsController extends Controller {
 	 * @param IL10N $l The localization service.
 	 * @param IUserSession $userSession The user session.
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
+	 * @param JobCalendarSchedule|null $calendar The calendar calculator the schedule preview uses.
 	 *
 	 * @return void
 	 */
@@ -75,6 +79,7 @@ class JobsController extends Controller {
 		private IL10N $l,
 		private readonly IUserSession $userSession,
 		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly ?JobCalendarSchedule $calendar = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -94,6 +99,48 @@ class JobsController extends Controller {
 	public function logs(SearchServiceInterface $searchService): JSONResponse {
 		return $this->logPage(searchService: $searchService, schema: 'job_log');
 	}//end logs()
+
+	/**
+	 * The next five run times of a calendar, for the job form's preview.
+	 *
+	 * Computed by the same calculator the run loop uses, so what the form shows
+	 * is what the job does. Requires the action `job.schedule-preview`, default
+	 * admin, so a preview does not open a read of the job list to everyone.
+	 *
+	 * @return JSONResponse `{"runs": ["<ISO 8601>", ...]}`, 400 naming the
+	 *                      malformed field, 401 or 403.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-job-form-previews-the-next-five-run-times-req-jcal-003
+	 */
+	#[NoAdminRequired]
+	public function schedulePreview(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: 'job.schedule-preview');
+
+		$calendar = $this->request->getParam('schedule', $this->request->getParam('calendar'));
+		if (is_array($calendar) === false) {
+			return new JSONResponse(
+				['error' => $this->l->t('A calendar schedule is required.')],
+				\OCP\AppFramework\Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$runs = ($this->calendar ?? new JobCalendarSchedule())->preview(calendar: $calendar, count: 5);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], \OCP\AppFramework\Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse(
+			['runs' => array_map(static fn (DateTimeImmutable $run): string => $run->format('c'), $runs)]
+		);
+	}//end schedulePreview()
 
 	/**
 	 * Executes a job.
