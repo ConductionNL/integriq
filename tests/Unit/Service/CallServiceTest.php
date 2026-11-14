@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallConfigurationException;
@@ -627,7 +628,7 @@ class CallServiceTest extends TestCase {
 		$service->call(
 			source: $this->makeBrokeredSource(configuration: $configuration),
 			endpoint: '/v1/items',
-			config: ['logBody' => true],
+			config: ['logBody' => SloCurriculumClientHttp::class],
 		);
 
 		$logs = $this->savedCallLogs();
@@ -669,7 +670,7 @@ class CallServiceTest extends TestCase {
 		$callLog = $service->call(
 			source: $this->makeBrokeredSource(configuration: []),
 			endpoint: '/oauth/token',
-			config: ['logBody' => true],
+			config: ['logBody' => SloCurriculumClientHttp::class],
 		);
 
 		$logs = $this->savedCallLogs();
@@ -2617,8 +2618,8 @@ class CallServiceTest extends TestCase {
 			}
 		);
 
-		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', config: ['logBody' => true], trace: $trace);
-		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', method: 'POST', config: ['logBody' => true]);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', config: ['logBody' => SloCurriculumClientHttp::class], trace: $trace);
+		$service->call(source: $this->makePlainSource(), endpoint: '/v1/items', method: 'POST', config: ['logBody' => SloCurriculumClientHttp::class]);
 		$service->call(source: $this->makePlainSource(), endpoint: '/v1/empty');
 
 		$logs = $this->savedCallLogs();
