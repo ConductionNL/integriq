@@ -89,15 +89,17 @@ interface PeppolTransmissionServiceInterface {
 	public function handleDeliveryCallback(string $transmissionId, string $status, ?string $detail): ?ObjectEntity;
 
 	/**
-	 * Republish a verified inbound-document AP notification as a CloudEvent.
+	 * Fetch a verified inbound document from the Access Point, store it as a
+	 * file on a `peppol_inbound_document` object, and announce that object.
 	 *
 	 * @param string $senderPeppolId The sender participant identifier.
 	 * @param string $documentType The UBL document type slug.
-	 * @param string $payloadReference A reference (URI) to the inbound payload.
+	 * @param string $payloadReference The Access Point's reference to the inbound document.
 	 *
-	 * @return array<ObjectEntity> The created CloudEvent messages.
+	 * @return array<ObjectEntity> The created CloudEvent messages; empty when the fetch failed or the document was already stored.
 	 *
 	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-an-inbound-document-is-republished-as-a-cloudevent
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
 	 */
 	public function handleInboundDocument(string $senderPeppolId, string $documentType, string $payloadReference): array;
 
