@@ -2318,7 +2318,10 @@ OC.L10N.register(
         "Enter this URL at the provider as the delivery report address, so delivery status reaches the SMS page.": "Vul deze URL bij de provider in als adres voor afleverrapporten, zodat de afleverstatus op de sms-pagina komt.",
         "Save the source to get its status callback URL.": "Sla de bron op om de statuscallback-URL te krijgen.",
         "Callback signing key": "Ondertekeningssleutel voor callbacks",
-        "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.": "De sleutel waarmee de provider zijn afleverrapporten ondertekent (bij Twilio het auth-token). Hij wordt versleuteld opgeslagen; laat het veld leeg om de opgeslagen sleutel te houden."
+        "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.": "De sleutel waarmee de provider zijn afleverrapporten ondertekent (bij Twilio het auth-token). Hij wordt versleuteld opgeslagen; laat het veld leeg om de opgeslagen sleutel te houden.",
+        "\"%s\" is not an e-mail address.": "\"%s\" is geen e-mailadres.",
+        "A NotifyNL e-mail needs a template.": "Een NotifyNL-e-mail heeft een sjabloon nodig.",
+        "No enabled NotifyNL source answers to \"%s\".": "Er is geen ingeschakelde NotifyNL-bron voor \"%s\"."
     },
     "nplurals=2; plural=(n != 1);"
 )

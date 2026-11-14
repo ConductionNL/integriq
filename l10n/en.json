@@ -3591,7 +3591,10 @@
         "Enter this URL at the provider as the delivery report address, so delivery status reaches the SMS page.": "Enter this URL at the provider as the delivery report address, so delivery status reaches the SMS page.",
         "Save the source to get its status callback URL.": "Save the source to get its status callback URL.",
         "Callback signing key": "Callback signing key",
-        "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.": "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key."
+        "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.": "The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.",
+        "\"%s\" is not an e-mail address.": "\"%s\" is not an e-mail address.",
+        "A NotifyNL e-mail needs a template.": "A NotifyNL e-mail needs a template.",
+        "No enabled NotifyNL source answers to \"%s\".": "No enabled NotifyNL source answers to \"%s\"."
     },
     "plurals": {}
 }

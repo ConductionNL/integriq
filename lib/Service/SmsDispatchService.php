@@ -169,18 +169,12 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		?string $sourceApp = null,
 		?string $objectUri = null,
 	): ObjectEntity {
-		$sourceSlug = ($options['sourceSlug'] ?? null);
+		$sourceSlug = self::requestedSource(options: $options);
 		unset($options['sourceSlug']);
-		if (is_string($sourceSlug) === false || trim($sourceSlug) === '') {
-			$sourceSlug = null;
-		}
 
 		$source = $this->resolveSource(sourceSlug: $sourceSlug);
 		$sourceData = $source->getObject();
-		$configuration = ($sourceData['configuration'] ?? []);
-		if (is_array($configuration) === false) {
-			$configuration = [];
-		}
+		$configuration = self::configurationOf(source: $source);
 
 		$callingCode = (string)($configuration['defaultCallingCode'] ?? PhoneNumberValidator::DEFAULT_CALLING_CODE);
 		$e164 = PhoneNumberValidator::toE164(rawNumber: $to, callingCode: $callingCode);
@@ -365,11 +359,7 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 			$messageSource = null;
 		}
 
-		$source = $this->resolveSource(sourceSlug: $messageSource);
-		$configuration = ($source->getObject()['configuration'] ?? []);
-		if (is_array($configuration) === false) {
-			$configuration = [];
-		}
+		$configuration = self::configurationOf(source: $this->resolveSource(sourceSlug: $messageSource));
 
 		$provider = $this->resolveProvider(configuration: $configuration);
 
@@ -524,20 +514,11 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 		);
 		$results = ($matches['results'] ?? $matches);
 		$source = null;
-		if (is_array($results) === true && isset($results[0]) === true && $results[0] instanceof ObjectEntity) {
+		if (is_array($results) === true && ($results[0] ?? null) instanceof ObjectEntity) {
 			$source = $results[0];
 		}
 
-		$data = [];
-		if ($source !== null) {
-			$data = $source->getObject();
-		}
-
-		if ($source === null
-			|| ($data['slug'] ?? null) !== $sourceSlug
-			|| ($data['type'] ?? null) !== self::SOURCE_TYPE
-			|| ($data['isEnabled'] ?? false) !== true
-		) {
+		if (self::isEnabledSmsSource(source: $source, sourceSlug: $sourceSlug) === false) {
 			throw new SmsProviderException(
 				message: $this->l->t('"%s" is not an enabled SMS source.', [$sourceSlug]),
 				errorCode: self::ERROR_UNKNOWN_SOURCE
@@ -546,6 +527,60 @@ class SmsDispatchService implements SmsDispatchServiceInterface {
 
 		return $this->rawSourceResolver->resolveRaw(source: $source);
 	}//end resolveSource()
+
+	/**
+	 * Whether a located source is the named, enabled SMS source.
+	 *
+	 * @param ObjectEntity|null $source     The located source.
+	 * @param string            $sourceSlug The slug the caller named.
+	 *
+	 * @return bool
+	 */
+	private static function isEnabledSmsSource(?ObjectEntity $source, string $sourceSlug): bool {
+		if ($source === null) {
+			return false;
+		}
+
+		$data = $source->getObject();
+		return ($data['slug'] ?? null) === $sourceSlug
+			&& ($data['type'] ?? null) === self::SOURCE_TYPE
+			&& ($data['isEnabled'] ?? false) === true;
+
+	}//end isEnabledSmsSource()
+
+	/**
+	 * The source a send names in its options, or null.
+	 *
+	 * @param array $options The send options.
+	 *
+	 * @return string|null The trimmed slug, or null when none or a blank one is given.
+	 */
+	private static function requestedSource(array $options): ?string {
+		$sourceSlug = ($options['sourceSlug'] ?? null);
+		if (is_string($sourceSlug) === false || trim($sourceSlug) === '') {
+			return null;
+		}
+
+		return trim($sourceSlug);
+
+	}//end requestedSource()
+
+	/**
+	 * A source's configuration object, or an empty one.
+	 *
+	 * @param ObjectEntity $source The source.
+	 *
+	 * @return array The configuration.
+	 */
+	private static function configurationOf(ObjectEntity $source): array {
+		$configuration = ($source->getObject()['configuration'] ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return $configuration;
+
+	}//end configurationOf()
 
 	/**
 	 * Find an `sms_message` by its provider-assigned message id.

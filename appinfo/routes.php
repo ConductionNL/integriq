@@ -203,6 +203,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'notifyNl#send', 'url' => '/api/notifynl/messages', 'verb' => 'POST'],
 		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
 		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
+		// A NotifyNL e-mail (REQ-SMSP-005), behind the notifynl.email action.
+		['name' => 'notifyNl#sendEmail', 'url' => '/api/notifynl/emails', 'verb' => 'POST'],
 
 		// KISS (Klantinteractie Servicesysteem) KCC bridge (openspec/changes/kiss-kcc-bridge).
 		// Push is an authenticated NC-session call (production binding for sibling

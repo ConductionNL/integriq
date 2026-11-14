@@ -108,20 +108,7 @@ class SmsSourceCallbackListener implements IEventListener {
 			return;
 		}
 
-		$old = null;
-		$entity = null;
-		if ($event instanceof ObjectUpdatingEvent) {
-			$entity = $event->getNewObject();
-			$old = $event->getOldObject();
-		}
-
-		if ($event instanceof ObjectCreatingEvent) {
-			$entity = $event->getObject();
-		}
-
-		if ($entity === null) {
-			return;
-		}
+		[$entity, $old] = self::entities(event: $event);
 
 		$data = (array)$entity->getObject();
 		if (($data['type'] ?? null) !== SmsDispatchService::SOURCE_TYPE || $this->isSource(object: $entity) === false) {
@@ -133,17 +120,14 @@ class SmsSourceCallbackListener implements IEventListener {
 			return;
 		}
 
-		$stored = [];
-		if ($old !== null && is_array($old->getObject()['configuration'] ?? null) === true) {
-			$stored = $old->getObject()['configuration'];
-		}
-
-		$configuration = ($data['configuration'] ?? []);
-		if (is_array($configuration) === false) {
-			$configuration = [];
-		}
-
-		$event->setModifiedData(['configuration' => $this->settled(configuration: $configuration, stored: $stored)]);
+		$event->setModifiedData(
+			[
+				'configuration' => $this->settled(
+					configuration: self::configurationOf(data: $data),
+					stored: self::configurationOf(data: (array)$old?->getObject())
+				),
+			]
+		);
 
 	}//end handle()
 
@@ -158,16 +142,7 @@ class SmsSourceCallbackListener implements IEventListener {
 	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
 	 */
 	public function settled(array $configuration, array $stored): array {
-		$token = ($configuration[SmsStatusCallbackService::TOKEN_KEY] ?? null);
-		if (is_string($token) === false || preg_match('/^[A-Za-z0-9]{32,}$/', $token) !== 1) {
-			$token = ($stored[SmsStatusCallbackService::TOKEN_KEY] ?? null);
-		}
-
-		if (is_string($token) === false || preg_match('/^[A-Za-z0-9]{32,}$/', $token) !== 1) {
-			$token = bin2hex(random_bytes(self::TOKEN_BYTES));
-		}
-
-		$configuration[SmsStatusCallbackService::TOKEN_KEY] = $token;
+		$configuration[SmsStatusCallbackService::TOKEN_KEY] = self::tokenFor(configuration: $configuration, stored: $stored);
 
 		$plain = ($configuration[self::PLAIN_SIGNING_KEY] ?? null);
 		unset($configuration[self::PLAIN_SIGNING_KEY]);
@@ -184,6 +159,59 @@ class SmsSourceCallbackListener implements IEventListener {
 		return $configuration;
 
 	}//end settled()
+
+	/**
+	 * The object a create or an update saves, and the stored one an update replaces.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
+	 *
+	 * @return array{0: ObjectEntity, 1: ObjectEntity|null} The saved and the stored object.
+	 */
+	private static function entities(ObjectCreatingEvent|ObjectUpdatingEvent $event): array {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return [$event->getNewObject(), $event->getOldObject()];
+		}
+
+		return [$event->getObject(), null];
+
+	}//end entities()
+
+	/**
+	 * An object's configuration, or an empty one.
+	 *
+	 * @param array<string, mixed> $data The object data.
+	 *
+	 * @return array<string, mixed> The configuration.
+	 */
+	private static function configurationOf(array $data): array {
+		$configuration = ($data['configuration'] ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return $configuration;
+
+	}//end configurationOf()
+
+	/**
+	 * The token to store: a well-formed one being saved, else the stored one, else a new one.
+	 *
+	 * @param array<string, mixed> $configuration The configuration being saved.
+	 * @param array<string, mixed> $stored        The stored configuration.
+	 *
+	 * @return string The token.
+	 */
+	private static function tokenFor(array $configuration, array $stored): string {
+		foreach ([$configuration, $stored] as $candidate) {
+			$token = ($candidate[SmsStatusCallbackService::TOKEN_KEY] ?? null);
+			if (is_string($token) === true && preg_match('/^[A-Za-z0-9]{32,}$/', $token) === 1) {
+				return $token;
+			}
+		}
+
+		return bin2hex(random_bytes(self::TOKEN_BYTES));
+
+	}//end tokenFor()
 
 	/**
 	 * Whether the object is an integriq source.

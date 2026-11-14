@@ -30,6 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\NotifyNlEmailService;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
@@ -80,6 +81,7 @@ class NotifyNlController extends Controller {
 	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
+	 * @param NotifyNlEmailService $emailService Sends NotifyNL e-mail and applies its mail callbacks.
 	 */
 	public function __construct(
 		string $appName,
@@ -90,6 +92,7 @@ class NotifyNlController extends Controller {
 		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
+		private readonly NotifyNlEmailService $emailService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -130,6 +133,80 @@ class NotifyNlController extends Controller {
 		return $this->dispatchSend(to: $to, params: $params);
 
 	}//end send()
+
+	/**
+	 * Send one e-mail through NotifyNL.
+	 *
+	 * Expected JSON body: `{to, templateId, personalisation, sourceApp, objectUri, category, caseRef,
+	 * sourceSlug}`. The address is checked before anything is sent or recorded; the send is
+	 * recorded in the outbound message log on channel `notifynl` with NotifyNL's id.
+	 *
+	 * @return JSONResponse `{id, reference, status}`, 400 for a missing or invalid address, a missing
+	 *                      template or a source that is no enabled NotifyNL source, 409 with the decision
+	 *                      code when the opt-out list refused, 502 when NotifyNL failed.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function sendEmail(): JSONResponse {
+		$refused = $this->refusedCaller(action: 'notifynl.email');
+		if ($refused !== null) {
+			return $refused;
+		}
+
+		$params = $this->request->getParams();
+		$personalisation = ($params['personalisation'] ?? []);
+		if (is_array($personalisation) === false) {
+			$personalisation = [];
+		}
+
+		$options = $this->sendOptions(params: $params);
+		foreach (['sourceApp', 'objectUri'] as $key) {
+			$value = $this->optionalString(params: $params, key: $key);
+			if ($value !== null) {
+				$options[$key] = $value;
+			}
+		}
+
+		try {
+			$sent = $this->emailService->sendEmail(
+				emailAddress: (string)($params['to'] ?? ''),
+				templateId: (string)($params['templateId'] ?? ''),
+				personalisation: $personalisation,
+				options: $options
+			);
+		} catch (SmsProviderException $exception) {
+			return $this->emailFailure(exception: $exception);
+		}
+
+		return new JSONResponse($sent);
+
+	}//end sendEmail()
+
+	/**
+	 * Answer an e-mail send that did not complete.
+	 *
+	 * @param SmsProviderException $exception The refusal or failure.
+	 *
+	 * @return JSONResponse 400 for a request that cannot be sent, else as {@see sendFailure()}.
+	 */
+	private function emailFailure(SmsProviderException $exception): JSONResponse {
+		$badRequest = [
+			NotifyNlEmailService::ERROR_INVALID_ADDRESS,
+			NotifyNlEmailService::ERROR_MISSING_TEMPLATE,
+			SmsDispatchService::ERROR_UNKNOWN_SOURCE,
+		];
+		if (in_array($exception->getErrorCode(), $badRequest, true) === true) {
+			return new JSONResponse(
+				['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return $this->sendFailure(exception: $exception);
+
+	}//end emailFailure()
 
 	/**
 	 * Hand one checked send request to the dispatch service and answer its outcome.
@@ -399,10 +476,20 @@ class NotifyNlController extends Controller {
 			return;
 		}
 
-		$this->dispatchService->handleStatusCallback(
-			providerMessageId: (string)$body['providerMessageId'],
-			status: (string)($body['status'] ?? ''),
-			detail: $this->optionalString(params: $body, key: 'detail')
+		$providerMessageId = (string)$body['providerMessageId'];
+		$status = (string)($body['status'] ?? '');
+		$detail = $this->optionalString(params: $body, key: 'detail');
+		$message = $this->dispatchService->handleStatusCallback(providerMessageId: $providerMessageId, status: $status, detail: $detail);
+		if ($message !== null) {
+			return;
+		}
+
+		// Not a text message: an e-mail, whose log row NotifyNL names as the reference.
+		$this->emailService->applyCallback(
+			reference: (string)($this->optionalString(params: $body, key: 'reference') ?? ''),
+			providerMessageId: $providerMessageId,
+			status: $status,
+			detail: $detail
 		);
 
 	}//end recordStatusCallback()

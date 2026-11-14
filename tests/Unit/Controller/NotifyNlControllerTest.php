@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\NotifyNlController;
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\NotifyNlEmailService;
 use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\Intake\WebhookGate;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -77,6 +78,11 @@ class NotifyNlControllerTest extends TestCase {
 	private $logger;
 
 	/**
+	 * @var NotifyNlEmailService|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $emailService;
+
+	/**
 	 * @var NotifyNlController
 	 */
 	private NotifyNlController $controller;
@@ -97,6 +103,7 @@ class NotifyNlControllerTest extends TestCase {
 		$this->l = $this->createMock(IL10N::class);
 		$this->l->method('t')->willReturnArgument(0);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->emailService = $this->createMock(NotifyNlEmailService::class);
 
 		$user = $this->createMock(IUser::class);
 		$this->userSession->method('getUser')->willReturn($user);
@@ -119,7 +126,8 @@ class NotifyNlControllerTest extends TestCase {
 			$this->userSession,
 			$this->actionAuth,
 			$this->l,
-			$this->logger
+			$this->logger,
+			$this->emailService
 		);
 
 	}//end buildController()
@@ -537,4 +545,127 @@ class NotifyNlControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn($params);
 
 	}//end identifyAs()
+	/**
+	 * A NotifyNL e-mail runs behind the notifynl.email action and hands the request to the e-mail service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 */
+	public function testSendEmailHandsTheRequestToTheEmailService(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'to' => 'jan@example.nl',
+				'templateId' => 'ontvangstbevestiging',
+				'personalisation' => ['naam' => 'Jan'],
+				'sourceApp' => 'dossiq',
+				'objectUri' => 'obj-1',
+				'category' => 'service',
+				'sourceSlug' => 'notifynl',
+			]
+		);
+		$this->actionAuth->expects($this->once())->method('requireAction')->with($this->anything(), 'notifynl.email');
+		$this->emailService->expects($this->once())->method('sendEmail')
+			->with(
+				'jan@example.nl',
+				'ontvangstbevestiging',
+				['naam' => 'Jan'],
+				$this->callback(
+					static fn (array $options): bool => $options['sourceSlug'] === 'notifynl'
+						&& $options['sourceApp'] === 'dossiq'
+						&& $options['objectUri'] === 'obj-1'
+						&& $options['category'] === 'service'
+				)
+			)
+			->willReturn(['id' => 'row-1', 'reference' => 'notify-1', 'status' => 'sent']);
+
+		$response = $this->controller->sendEmail();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['id' => 'row-1', 'reference' => 'notify-1', 'status' => 'sent'], $response->getData());
+
+	}//end testSendEmailHandsTheRequestToTheEmailService()
+
+	/**
+	 * The codes an e-mail send answers with.
+	 *
+	 * @return array<string, array{0: string, 1: int}>
+	 */
+	public static function emailCodes(): array {
+		return [
+			'an invalid address' => ['invalid-address', Http::STATUS_BAD_REQUEST],
+			'no template' => ['missing-template', Http::STATUS_BAD_REQUEST],
+			'no NotifyNL source' => ['unknown-source', Http::STATUS_BAD_REQUEST],
+			'opted out' => ['opted-out', Http::STATUS_CONFLICT],
+			'NotifyNL failed' => ['', Http::STATUS_BAD_GATEWAY],
+		];
+
+	}//end emailCodes()
+
+	/**
+	 * Each refusal of an e-mail send has its HTTP status.
+	 *
+	 * @param string $code   The service's error code.
+	 * @param int    $status The expected status.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider emailCodes
+	 */
+	public function testSendEmailAnswersEachRefusal(string $code, int $status): void {
+		$this->request->method('getParams')->willReturn(['to' => 'jan@', 'personalisation' => 'not a list']);
+		$this->emailService->expects($this->once())->method('sendEmail')
+			->with('jan@', '', [], $this->anything())
+			->willThrowException(new SmsProviderException(message: 'refused', errorCode: $code));
+
+		$response = $this->controller->sendEmail();
+
+		$this->assertSame($status, $response->getStatus());
+
+	}//end testSendEmailAnswersEachRefusal()
+
+	/**
+	 * Without a session the e-mail endpoint answers 401 and sends nothing.
+	 *
+	 * @return void
+	 */
+	public function testSendEmailRequiresAuthentication(): void {
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->controller = $this->buildController();
+		$this->emailService->expects($this->never())->method('sendEmail');
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $this->controller->sendEmail()->getStatus());
+
+	}//end testSendEmailRequiresAuthentication()
+
+	/**
+	 * A callback whose id is no text message goes to the e-mail log with its reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 */
+	public function testInboundFallsBackToTheEmailLog(): void {
+		$this->identifyAs(params: ['providerMessageId' => 'notify-1', 'status' => 'delivered', 'reference' => 'row-1']);
+		$this->dispatchService->expects($this->once())->method('handleStatusCallback')->willReturn(null);
+		$this->emailService->expects($this->once())->method('applyCallback')->with('row-1', 'notify-1', 'delivered', null)->willReturn(true);
+
+		$this->assertSame(['received' => true], $this->controller->inbound()->getData());
+
+	}//end testInboundFallsBackToTheEmailLog()
+
+	/**
+	 * A callback for a text message never reaches the e-mail log.
+	 *
+	 * @return void
+	 */
+	public function testInboundForATextMessageLeavesTheEmailLogAlone(): void {
+		$this->identifyAs(params: ['providerMessageId' => 'sms-1', 'status' => 'delivered', 'reference' => 'row-1']);
+		$this->dispatchService->method('handleStatusCallback')->willReturn(new ObjectEntity());
+		$this->emailService->expects($this->never())->method('applyCallback');
+
+		$this->controller->inbound();
+
+	}//end testInboundForATextMessageLeavesTheEmailLogAlone()
 }//end class

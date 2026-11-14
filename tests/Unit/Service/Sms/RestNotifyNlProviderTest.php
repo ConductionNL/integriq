@@ -360,4 +360,65 @@ class RestNotifyNlProviderTest extends TestCase {
 		$this->assertSame('NotifyNL', $provider->getProviderName());
 
 	}//end testProviderIdentity()
+	/**
+	 * sendEmail() posts the address, the mapped template, the personalisation,
+	 * the caller's reference and the reply-to id to /v2/notifications/email.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 */
+	public function testSendEmailPostsTheMailPayload(): void {
+		$provider = $this->buildProvider([new Response(201, [], json_encode(['id' => 'notify-mail-1']))]);
+		$configuration = $this->configuration;
+		$configuration['templateMapping'] = ['ontvangstbevestiging' => 'mail-template-uuid'];
+		$configuration['emailReplyToId'] = 'reply-to-uuid';
+
+		$result = $provider->sendEmail(
+			sourceConfiguration: $configuration,
+			emailAddress: 'jan@example.nl',
+			templateId: 'ontvangstbevestiging',
+			personalisation: ['naam' => 'Jan'],
+			reference: 'outbound-uuid-1'
+		);
+
+		$request = $this->history[0]['request'];
+		$this->assertSame('POST', $request->getMethod());
+		$this->assertSame('/v2/notifications/email', $request->getUri()->getPath());
+		$this->assertSame(
+			[
+				'email_address' => 'jan@example.nl',
+				'template_id' => 'mail-template-uuid',
+				'personalisation' => ['naam' => 'Jan'],
+				'reference' => 'outbound-uuid-1',
+				'email_reply_to_id' => 'reply-to-uuid',
+			],
+			json_decode((string)$request->getBody(), true)
+		);
+		$this->assertSame(['notify-mail-1', 'queued'], [$result->providerMessageId, $result->status]);
+
+	}//end testSendEmailPostsTheMailPayload()
+
+	/**
+	 * Without a reference or reply-to id those fields stay out; a refusal is an exception.
+	 *
+	 * @return void
+	 */
+	public function testSendEmailLeavesOutWhatIsNotSetAndSurfacesARefusal(): void {
+		$provider = $this->buildProvider(
+			[new Response(201, [], json_encode(['id' => 'notify-mail-2'])), new Response(400, [], '{"errors":[]}')]
+		);
+
+		$provider->sendEmail(sourceConfiguration: $this->configuration, emailAddress: 'jan@example.nl', templateId: 'tmpl-1', personalisation: []);
+
+		$this->assertSame(
+			['email_address' => 'jan@example.nl', 'template_id' => 'tmpl-1', 'personalisation' => []],
+			json_decode((string)$this->history[0]['request']->getBody(), true)
+		);
+
+		$this->expectException(SmsProviderException::class);
+		$this->expectExceptionMessage('NotifyNL responded with HTTP 400.');
+		$provider->sendEmail(sourceConfiguration: $this->configuration, emailAddress: 'jan@example.nl', templateId: 'tmpl-1', personalisation: []);
+
+	}//end testSendEmailLeavesOutWhatIsNotSetAndSurfacesARefusal()
 }//end class
