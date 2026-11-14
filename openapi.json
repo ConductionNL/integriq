@@ -3128,6 +3128,67 @@
                 ]
             }
         },
+        "/regression-suites/{subjectType}/{subjectId}/run": {
+            "post": {
+                "operationId": "regressionSuite-run",
+                "summary": "Run every test case of a mapping or synchronization",
+                "description": "Feeds each stored case through its subject without calling a source or writing anything but one integration_test_run record, and returns that record: total, passed, failed and the differing paths per failed case. Needs the action regression-suite.run.",
+                "tags": [
+                    "regression-suites"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The run record; an `error` with 400, 401 or 403 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "subjectType",
+                        "in": "path",
+                        "required": true,
+                        "description": "`mapping` or `synchronization`.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "mapping",
+                                "synchronization"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "subjectId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The subject's uuid or slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/events/{id}/messages": {
             "get": {
                 "operationId": "events-messages",

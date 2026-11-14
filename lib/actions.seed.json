@@ -22,6 +22,8 @@
     "synchronization-contract.performance": ["admin"],
     "synchronization-contract.export": ["admin"],
     "mapping.test": ["admin"],
+    "regression-suite.run": ["admin"],
+    "regression-suite.record": ["admin"],
     "mapping.save-object": ["admin"],
     "mapping.get-objects": ["admin"],
     "mail.import": ["admin"],

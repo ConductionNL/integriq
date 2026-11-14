@@ -475,6 +475,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
+		// Regression suites (automation-integration-regression-tests): run every
+		// test case of a mapping or synchronization and record one run.
+		['name' => 'regressionSuite#run', 'url' => '/api/regression-suites/{subjectType}/{subjectId}/run', 'verb' => 'POST'],
 		['name' => 'mappings#saveObject', 'url' => '/api/mappings/objects', 'verb' => 'POST'],
 		['name' => 'mappings#getObjects', 'url' => '/api/mappings/objects', 'verb' => 'GET'],
 
