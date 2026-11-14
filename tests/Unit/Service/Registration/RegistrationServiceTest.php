@@ -26,6 +26,7 @@ use OCA\Integriq\Service\Registration\ObjectsApiRegistrationLeg;
 use OCA\Integriq\Service\Registration\RegistrationRefusal;
 use OCA\Integriq\Service\Registration\RegistrationService;
 use OCA\Integriq\Service\Registration\RegistrationStore;
+use OCA\Integriq\Service\Registration\StufZdsRegistrationLeg;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -144,6 +145,33 @@ class RegistrationServiceTest extends TestCase {
 	}//end testASubmissionIsRegisteredAndRecordedAsDone()
 
 	/**
+	 * A stuf-zds target reaches the stuf-zds leg once it is wired, and its zaak is the reference.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-app-registers-a-submission-through-one-typed-command-req-sreg-002
+	 *
+	 * @return void
+	 */
+	public function testAStufZdsTargetIsRegisteredThroughItsLeg(): void {
+		$target = ['kind' => 'stuf-zds', 'sources' => ['zkn' => 'src-zkn']] + self::TARGET;
+		$this->target($target);
+		$this->store->method('findRecord')->willReturn(null);
+		$this->mappings->method('executeMapping')->willReturn(['omschrijving' => 'Milieu']);
+		$objects = $this->createMock(ObjectsApiRegistrationLeg::class);
+		$objects->method('kind')->willReturn('objects-api');
+		$stuf = $this->createMock(StufZdsRegistrationLeg::class);
+		$stuf->method('kind')->willReturn('stuf-zds');
+		$stuf->expects($this->once())->method('register')
+			->with($target, ['omschrijving' => 'Milieu'], self::HANDOVER, [])
+			->willReturn(['externalReference' => '0363-Z-1', 'externalUrl' => '', 'steps' => [['step' => 'zaak', 'reference' => '0363-Z-1']]]);
+		$this->json->expects($this->never())->method('register');
+
+		$service = new RegistrationService($this->store, $this->mappings, $this->json, $objects, $this->createMock(LoggerInterface::class), $stuf);
+		$answer  = $service->register(app: 'portaliq', target: 'json-milieu', handover: self::HANDOVER);
+
+		$this->assertSame(['ok' => true, 'externalReference' => '0363-Z-1', 'externalUrl' => ''], $answer);
+	}//end testAStufZdsTargetIsRegisteredThroughItsLeg()
+
+	/**
 	 * The refusals that never reach a leg.
 	 *
 	 * @return array<string,array{0:string,1:string,2:array<string,mixed>|null,3:array<string,mixed>,4:string}>
@@ -160,7 +188,7 @@ class RegistrationServiceTest extends TestCase {
 			'pdf as bytes' => ['portaliq', 'json-milieu', self::TARGET, ['pdf' => ['content' => 'JVBERi0=']] + $handover, 'invalid-handover'],
 			'attachment without id' => ['portaliq', 'json-milieu', self::TARGET, ['attachments' => [['fileId' => 0]]] + $handover, 'invalid-handover'],
 			'no mapping' => ['portaliq', 'json-milieu', ['mapping' => ''] + self::TARGET, $handover, 'mapping-failed'],
-			'kind without a leg yet' => ['portaliq', 'json-milieu', ['kind' => 'stuf-zds'] + self::TARGET, $handover, 'source-unavailable'],
+			'kind without a leg yet' => ['portaliq', 'json-milieu', ['kind' => 'zgw'] + self::TARGET, $handover, 'source-unavailable'],
 		];
 	}//end earlyRefusals()
 
