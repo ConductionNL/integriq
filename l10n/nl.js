@@ -2351,7 +2351,21 @@ OC.L10N.register(
         "First working day of the month": "Eerste werkdag van de maand",
         "Last working day of the month": "Laatste werkdag van de maand",
         "Day {day}": "Dag {day}",
-        "The run times could not be computed.": "De runtijden konden niet worden berekend."
+        "The run times could not be computed.": "De runtijden konden niet worden berekend.",
+        "Account name not given by the provider": "De aanbieder gaf geen accountnaam door",
+        "Account provider": "Accountaanbieder",
+        "Connected accounts": "Gekoppelde accounts",
+        "Connected on {date}": "Gekoppeld op {date}",
+        "Disconnect": "Ontkoppelen",
+        "Disconnect {account}": "{account} ontkoppelen",
+        "Each user's own account": "Het eigen account van elke gebruiker",
+        "Every call is made with the signed-in user's own account at this provider. A user who has not connected one is asked to connect it; background jobs cannot call this source.": "Elke aanroep gebruikt het eigen account van de ingelogde gebruiker bij deze aanbieder. Wie er nog geen heeft gekoppeld, wordt gevraagd dat te doen; achtergrondtaken kunnen deze bron niet aanroepen.",
+        "Loading your connected accounts …": "Je gekoppelde accounts worden geladen …",
+        "Select the provider each user connects": "Kies de aanbieder waarmee elke gebruiker koppelt",
+        "Sources that call with your own account use these. Disconnect one and your next call asks you to connect it again.": "Bronnen die met je eigen account bellen gebruiken deze. Ontkoppel er een en bij je volgende aanroep wordt gevraagd hem opnieuw te koppelen.",
+        "The account could not be disconnected. Try again.": "Het account kon niet worden ontkoppeld. Probeer het opnieuw.",
+        "You have not connected an account yet.": "Je hebt nog geen account gekoppeld.",
+        "Your connected accounts could not be loaded.": "Je gekoppelde accounts konden niet worden geladen."
     },
     "nplurals=2; plural=(n != 1);"
 )

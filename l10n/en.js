@@ -3613,7 +3613,21 @@ OC.L10N.register(
         "First working day of the month": "First working day of the month",
         "Last working day of the month": "Last working day of the month",
         "Day {day}": "Day {day}",
-        "The run times could not be computed.": "The run times could not be computed."
+        "The run times could not be computed.": "The run times could not be computed.",
+        "Account name not given by the provider": "Account name not given by the provider",
+        "Account provider": "Account provider",
+        "Connected accounts": "Connected accounts",
+        "Connected on {date}": "Connected on {date}",
+        "Disconnect": "Disconnect",
+        "Disconnect {account}": "Disconnect {account}",
+        "Each user's own account": "Each user's own account",
+        "Every call is made with the signed-in user's own account at this provider. A user who has not connected one is asked to connect it; background jobs cannot call this source.": "Every call is made with the signed-in user's own account at this provider. A user who has not connected one is asked to connect it; background jobs cannot call this source.",
+        "Loading your connected accounts …": "Loading your connected accounts …",
+        "Select the provider each user connects": "Select the provider each user connects",
+        "Sources that call with your own account use these. Disconnect one and your next call asks you to connect it again.": "Sources that call with your own account use these. Disconnect one and your next call asks you to connect it again.",
+        "The account could not be disconnected. Try again.": "The account could not be disconnected. Try again.",
+        "You have not connected an account yet.": "You have not connected an account yet.",
+        "Your connected accounts could not be loaded.": "Your connected accounts could not be loaded."
     },
     "nplurals=2; plural=(n != 1);"
 )

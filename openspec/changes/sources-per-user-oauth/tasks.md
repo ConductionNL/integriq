@@ -18,20 +18,25 @@ Kind: code. Size M. Row `buildiq:int-per-user-oauth`.
 - **files**: `lib/Service/EndpointService.php`, `lib/Http/ProblemResponse.php`
 - **acceptance_criteria**:
   - GIVEN a user without a token set WHEN they call a per-user endpoint THEN the answer is 401 with type connect-account-required and a connectUrl at the broker
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit; Newman)
+  - [x] PHPUnit: `ConnectAccountPromptTest`, `EndpointServiceMessageValidationTest::testAPerUserSourceWithoutAnAccountAnswersTheConnectPrompt` (red with the catch removed), `CallServiceTest::testAMissingPerUserAccountIsNotLoggedAsAConfigError`.
+  - [ ] Newman: needs a running instance with a broker provider.
 
 ### Task 3: Source page option and the personal overview
 - **spec_ref**: `openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-sees-and-disconnects-their-own-accounts-req-puoa-003`
 - **files**: the source detail page, `lib/Settings/PersonalSection.php`, `lib/Settings/PersonalConnectedAccounts.php`, `src/views/PersonalConnectedAccounts.vue`, `appinfo/info.xml`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN a user with one connected account WHEN they disconnect it in personal settings THEN their next call gets the connect prompt again
-- [ ] Implement
+- [x] Implement
+  - As built: the overview is a "Connected accounts" section in the app's settings dialog (`src/components/settings/ConnectedAccountsSection.vue`, in CnAppRoot's `#user-settings-sections`), not a Nextcloud personal settings page: the fleet's build rules keep user settings in the app's settings modal. It lists the caller's personal, not disabled `oauth2-token-set` credentials from OpenRegister's `GET /api/credentials` (provider, the account identity the provider returned, connected on) and disconnects through the broker's `DELETE /api/credentials/oauth2/{id}`. The broker keeps no last-use date, so none is shown. The source form offers "Each user's own account" under the brokered switch, with the catalogue's OAuth 2.0 providers, and writes `credentialRef: {provider, perUser: true}`.
 - [ ] Test (Playwright end to end against the broker's connect flow with a mock provider)
+  - [x] Vitest: `tests/vitest/connectedAccounts.spec.js` (listing filter, identity, disconnect URL, the section's list, disconnect and errors, the per-user reference and provider options).
+  - [ ] Playwright: needs a running instance with a broker provider.
 
 ## Build notes
 
-Task 1 is built: `credentialRef` accepts `{"provider": "<slug>", "perUser": true}`, and `BrokeredCallService::prepare()` resolves it to the signed-in user's own enabled personal credential at that provider, with no fallback. A sessionless call is refused, no account raises `PerUserAccountNotConnectedException` (carrying the provider for task 2), and two accounts are refused rather than guessed. The source schema moves to 1.5.0. Task 2 waits on `lib/Http/ProblemResponse.php` from `gateway-response-cache-and-problem-errors`, which is not on development yet. Task 3 is a personal settings section, which the fleet build rules do not allow (user settings live in the app's settings modal); it needs a design decision before it is built.
+Task 1 is built: `credentialRef` accepts `{"provider": "<slug>", "perUser": true}`, and `BrokeredCallService::prepare()` resolves it to the signed-in user's own enabled personal credential at that provider, with no fallback. A sessionless call is refused, no account raises `PerUserAccountNotConnectedException` (carrying the provider for task 2), and two accounts are refused rather than guessed. The source schema moves to 1.5.0. Task 2 is built (pass 2): `CallService` lets `PerUserAccountNotConnectedException` through instead of logging it as a 409 configuration error, and `EndpointService` answers it with `ConnectAccountPrompt`: 401, type `connect-account-required`, the provider, and `connectUrl` at OpenRegister's `credentialOauth2#start` for a personal account, with the caller's Referer as `returnUrl`. Task 3 is built (pass 3) as a section of the app's settings dialog instead of a personal settings page, with the per-user option on the source form.
 
 ## Verification
 - [ ] `openspec validate sources-per-user-oauth --type change --strict` passes

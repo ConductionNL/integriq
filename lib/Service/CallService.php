@@ -2581,6 +2581,10 @@ class CallService implements CallServiceInterface {
 				sourceData: $run->sourceData,
 				asynchronous: $run->request->asynchronous,
 			);
+		} catch (PerUserAccountNotConnectedException $exception) {
+			// Not a configuration fault but the caller's own missing account: the
+			// endpoint answers it with the connect prompt (sources-per-user-oauth D3).
+			throw $exception;
 		} catch (BrokeredCallConfigurationException $exception) {
 			return $this->configErrorLog(run: $run, exception: $exception);
 		}

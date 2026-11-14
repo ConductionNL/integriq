@@ -37,6 +37,7 @@ use OCA\Integriq\Service\MessageValidation\OpenApiChecker;
 use OCA\Integriq\Service\MessageValidation\XsdChecker;
 use OCA\Integriq\Service\MessageValidationService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\PerUserAccountNotConnectedException;
 use OCA\Integriq\Service\RateLimit\InboundRateLimitService;
 use OCA\Integriq\Service\RuleService;
 use OCA\Integriq\Service\StorageService;
@@ -127,7 +128,7 @@ class EndpointServiceMessageValidationTest extends TestCase {
 					$this->createMock(ObjectService::class),
 					$this->callService,
 					$logger,
-					$this->createMock(IURLGenerator::class),
+					$this->urls(),
 					$this->createMock(MappingService::class),
 					$this->objects,
 					$this->createMock(IConfig::class),
@@ -194,6 +195,20 @@ class EndpointServiceMessageValidationTest extends TestCase {
 			'endpoint-1'
 		);
 	}//end endpoint()
+
+	/**
+	 * A URL generator that spells out the route and its parameters.
+	 *
+	 * @return IURLGenerator
+	 */
+	private function urls(): IURLGenerator {
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('linkToRouteAbsolute')->willReturnCallback(
+			static fn (string $route, array $parameters = []): string => 'https://cloud.example.nl/' . $route . '?' . http_build_query($parameters)
+		);
+
+		return $urls;
+	}//end urls()
 
 	/**
 	 * A POST request.
@@ -438,4 +453,25 @@ class EndpointServiceMessageValidationTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 		$this->assertNotSame('application/problem+json', $this->header($response, 'Content-Type'));
 	}//end testAProxiedSourceErrorIsPassedThrough()
+	/**
+	 * A per-user source whose caller has not connected their account answers 401
+	 * with the connect prompt, naming the provider and the broker's connect start
+	 * (sources-per-user-oauth REQ-PUOA-002).
+	 *
+	 * @return void
+	 */
+	public function testAPerUserSourceWithoutAnAccountAnswersTheConnectPrompt(): void {
+		$service = $this->service(rawBody: '{}');
+		$this->callService->expects($this->once())->method('call')->willThrowException(new PerUserAccountNotConnectedException(provider: 'microsoft'));
+
+		$response = $service->handleRequest($this->endpoint([]), $this->request(), '/personen');
+
+		$this->assertSame(401, $response->getStatus());
+		$this->assertInstanceOf(ProblemResponse::class, $response);
+		$document = $response->getData();
+		$this->assertSame(ProblemResponse::TYPE_BASE . 'connect-account-required', $document['type']);
+		$this->assertSame('microsoft', $document['provider']);
+		$this->assertSame('https://cloud.example.nl/openregister.credentialOauth2.start?provider=microsoft&scope=personal', $document['connectUrl']);
+		$this->assertStringContainsString('"microsoft"', $document['detail']);
+	}//end testAPerUserSourceWithoutAnAccountAnswersTheConnectPrompt()
 }//end class

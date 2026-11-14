@@ -18,6 +18,7 @@ vi.mock('@conduction/nextcloud-vue', () => ({
 	},
 }))
 vi.mock('@/modals/v2/ModalHost.vue', () => ({ default: { name: 'ModalHost', template: '<div class="host" />' } }))
+vi.mock('@/components/settings/ConnectedAccountsSection.vue', () => ({ default: { name: 'ConnectedAccountsSection', template: '<div class="accounts" />' } }))
 
 const App = (await import('@/App.vue')).default
 
