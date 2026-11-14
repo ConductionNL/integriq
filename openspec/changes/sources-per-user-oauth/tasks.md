@@ -18,8 +18,10 @@ Kind: code. Size M. Row `buildiq:int-per-user-oauth`.
 - **files**: `lib/Service/EndpointService.php`, `lib/Http/ProblemResponse.php`
 - **acceptance_criteria**:
   - GIVEN a user without a token set WHEN they call a per-user endpoint THEN the answer is 401 with type connect-account-required and a connectUrl at the broker
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit; Newman)
+  - [x] PHPUnit: `ConnectAccountPromptTest`, `EndpointServiceMessageValidationTest::testAPerUserSourceWithoutAnAccountAnswersTheConnectPrompt` (red with the catch removed), `CallServiceTest::testAMissingPerUserAccountIsNotLoggedAsAConfigError`.
+  - [ ] Newman: needs a running instance with a broker provider.
 
 ### Task 3: Source page option and the personal overview
 - **spec_ref**: `openspec/changes/sources-per-user-oauth/specs/http-call-engine/spec.md#requirement-a-user-sees-and-disconnects-their-own-accounts-req-puoa-003`
@@ -31,7 +33,7 @@ Kind: code. Size M. Row `buildiq:int-per-user-oauth`.
 
 ## Build notes
 
-Task 1 is built: `credentialRef` accepts `{"provider": "<slug>", "perUser": true}`, and `BrokeredCallService::prepare()` resolves it to the signed-in user's own enabled personal credential at that provider, with no fallback. A sessionless call is refused, no account raises `PerUserAccountNotConnectedException` (carrying the provider for task 2), and two accounts are refused rather than guessed. The source schema moves to 1.5.0. Task 2 waits on `lib/Http/ProblemResponse.php` from `gateway-response-cache-and-problem-errors`, which is not on development yet. Task 3 is a personal settings section, which the fleet build rules do not allow (user settings live in the app's settings modal); it needs a design decision before it is built.
+Task 1 is built: `credentialRef` accepts `{"provider": "<slug>", "perUser": true}`, and `BrokeredCallService::prepare()` resolves it to the signed-in user's own enabled personal credential at that provider, with no fallback. A sessionless call is refused, no account raises `PerUserAccountNotConnectedException` (carrying the provider for task 2), and two accounts are refused rather than guessed. The source schema moves to 1.5.0. Task 2 is built (pass 2): `CallService` lets `PerUserAccountNotConnectedException` through instead of logging it as a 409 configuration error, and `EndpointService` answers it with `ConnectAccountPrompt`: 401, type `connect-account-required`, the provider, and `connectUrl` at OpenRegister's `credentialOauth2#start` for a personal account, with the caller's Referer as `returnUrl`. Task 3 is a personal settings section, which the fleet build rules do not allow (user settings live in the app's settings modal); it needs a design decision before it is built.
 
 ## Verification
 - [ ] `openspec validate sources-per-user-oauth --type change --strict` passes
