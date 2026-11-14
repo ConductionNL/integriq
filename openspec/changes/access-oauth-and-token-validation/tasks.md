@@ -52,8 +52,8 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 - **files**: `lib/Settings/integriq_register.json` (consumer `scopes`), `lib/Service/EndpointService.php`, the endpoint rule editor, the consumer editor, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an endpoint requiring zaken:write on POST WHEN a consumer with only zaken:read posts THEN it gets 403 naming zaken:write
-- [ ] Implement. Done: the backend (consumer `scopes`, the `requiredScopes` check in `EndpointService`), a Scopes chip field in the consumer editor (`consumerDraft.js` carries `scopes`, and an emptied list is sent as `[]`), the `client_credentials` type, and the en and nl strings. Left: `requiredScopes` in the endpoint rule editor.
-- [ ] Test (PHPUnit for the check done; Playwright for editing scopes on a consumer left)
+- [x] Implement. The backend is consumer `scopes` and the `requiredScopes` check in `EndpointService`. The consumer editor has a Scopes chip field (`consumerDraft.js` carries `scopes`, and an emptied list is sent as `[]`). The rule editor's authentication form has read and write scope lists (`requiredScopes.js`), which write a per-method map. The new strings are in en and nl.
+- [ ] Test. PHPUnit for the check is done, and vitest covers the draft (`consumerDraft.spec.js`) and the rule editor mapping (`requiredScopes.spec.js`). Playwright for editing scopes on a consumer is left.
 
 ### Task 6: Seed data and documentation
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-consumer-can-accept-tokens-from-an-outside-openid-connect-provider-req-tokv-002`
