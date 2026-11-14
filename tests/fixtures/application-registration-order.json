@@ -135,6 +135,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Mtls\\MtlsTransportServiceInterface, OCA\\Integriq\\Service\\Mtls\\MtlsTransportService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Exchange\\ExchangeTargetCatalogueInterface, OCA\\Integriq\\Service\\Exchange\\ExchangeTargetCatalogue)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\MessageValidationServiceInterface, OCA\\Integriq\\Service\\MessageValidationService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Service\\ApiDesign\\ApiDesignRuleServiceInterface, OCA\\Integriq\\Service\\ApiDesign\\ApiDesignRuleService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistryInterface, OCA\\Integriq\\Service\\DigitalPost\\DigitalPostProviderRegistry)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Adapter\\Saas\\DocumentConnectionGuardInterface, OCA\\Integriq\\Service\\Adapter\\Saas\\DocumentConnectionGuard)",
 	"context.registerServiceAlias(OCA\\Integriq\\Service\\Registry\\SubscriptionRegistryInterface, OCA\\Integriq\\Service\\Registry\\SubscriptionRegistry)",

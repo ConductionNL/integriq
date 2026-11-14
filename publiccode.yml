@@ -5,7 +5,7 @@ url: https://github.com/ConductionNL/integriq
 softwareVersion: '0.2.10'
 releaseDate: '2026-05-26'
 developmentStatus: stable
-softwareType: softwareAddon
+softwareType: addon
 
 platforms:
   - nextcloud
@@ -62,14 +62,8 @@ localisation:
 dependsOn:
   open:
     - name: OpenRegister
-      url: https://github.com/ConductionNL/openregister
-      version-min: '0.2.0'
+      versionMin: '0.2.0'
 
-# Common Ground layer (nl.vng profile). The NL country section is deprecated in
-# publiccode.yml 1.0, so the same layer is also declared as a supports entry.
+# Common Ground layer (nl.vng profile), as a standard supports entry.
 supports:
   - id: https://commonground.nl/cms/view/54476261/5-lagen-model#integration
-NL:
-  vng:
-    commonground:
-      layer: integration
