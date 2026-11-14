@@ -73,6 +73,7 @@ import {
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
+	refreshPaymentHandler,
 	rerunFailedRunHandler,
 	runDirectorySyncHandler,
 	runJobHandler,
@@ -99,6 +100,9 @@ export default {
 	// Run again on a failed run: one POST, no dialog (connection-run-monitoring
 	// REQ-CRUN-003). Shown only on failed rows through the action's visibleWhen.
 	rerunFailedRunHandler,
+	// Refresh a payment's status from its provider (messaging-payments-review
+	// D2): one POST, no dialog, the webhook's own re-derive on the server.
+	refreshPaymentHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	// Directory connections are Sources, so their run and preview actions sit on

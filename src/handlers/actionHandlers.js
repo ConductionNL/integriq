@@ -37,6 +37,7 @@ import {
 	EVENT_OPEN_TEST_SOURCE,
 	modalBus,
 } from './modalBus.js'
+import { refreshPayment } from './refreshPayment.js'
 import { getRouter } from './routerRef.js'
 import { rowId } from './rowId.js'
 import { runAgain } from './runAgain.js'
@@ -114,6 +115,17 @@ export function runSynchronizationHandler({ item }) {
  */
 export function rerunFailedRunHandler({ item }) {
 	return runAgain(item)
+}
+
+/**
+ * Refresh a payment's status from its provider: one POST, no dialog.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ * @return {Promise<object|null>} The refresh result.
+ * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+ */
+export function refreshPaymentHandler({ item }) {
+	return refreshPayment(item)
 }
 
 /**

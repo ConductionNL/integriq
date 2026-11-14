@@ -69,6 +69,7 @@
     "exchange.resubmit": ["admin"],
     "exchange.waive": ["admin"],
     "sync-dead-letter.replay": ["admin"],
-    "sync-dead-letter.discard": ["admin"]
+    "sync-dead-letter.discard": ["admin"],
+    "payments.review": ["admin"]
   }
 }
