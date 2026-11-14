@@ -215,6 +215,9 @@ class Application extends App implements IBootstrap {
 		(new FlowRegistrar())->registerListeners(dispatcher: $dispatcher);
 		$this->registerMappingFunctions(dispatcher: $dispatcher);
 
+		// OpenTelemetry span command for other apps (REQ-OTEL-007).
+		(new ObservabilityRegistrar())->registerListeners(dispatcher: $dispatcher);
+
 		$this->registerIntegrationScript(dispatcher: $dispatcher);
 	}//end registerListeners()
 

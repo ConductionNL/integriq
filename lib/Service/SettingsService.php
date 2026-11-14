@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use LogicException;
+use OCA\Integriq\Observability\Errors\ErrorSinkSettings;
 use OCP\IAppConfig;
 use OCP\DB\IPreparedStatement;
 use OCP\IDBConnection;
@@ -118,14 +120,63 @@ class SettingsService implements SettingsServiceInterface {
 	 * @param IDBConnection $db Database connection for optimized queries.
 	 * @param IAppConfig $config App configuration interface for settings storage.
 	 * @param LoggerInterface $logger Logger interface for error handling.
+	 * @param ErrorSinkSettings|null $errorSink Reads, validates and stores the `errorsink_*` keys; the container always gives it.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
+		private readonly ?ErrorSinkSettings $errorSink = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The error sink settings (`errorsink_*`), for the admin page.
+	 *
+	 * @return array<string, mixed> enabled, kind, endpoint, allowLocal, minLevel, apps, headerName, credentialName.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 */
+	public function getErrorSinkSettings(): array {
+		return $this->errorSink()->all();
+
+	}//end getErrorSinkSettings()
+
+	/**
+	 * Store the error sink settings an administrator saved. An enabled sink
+	 * needs an endpoint or DSN, and a plain-http address is only taken when
+	 * the administrator marked the service as internal, as for the trace
+	 * collector (REQ-OTEL-005). A refused save stores nothing.
+	 *
+	 * @param array<string, mixed> $values The submitted values.
+	 *
+	 * @return array<string, mixed> The stored settings.
+	 *
+	 * @throws \InvalidArgumentException When a value is refused; the message is the translated reason.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 */
+	public function saveErrorSinkSettings(array $values): array {
+		return $this->errorSink()->save(values: $values);
+
+	}//end saveErrorSinkSettings()
+
+	/**
+	 * The error sink settings store.
+	 *
+	 * @return ErrorSinkSettings The store.
+	 *
+	 * @throws LogicException When the service was built without one.
+	 */
+	private function errorSink(): ErrorSinkSettings {
+		if ($this->errorSink === null) {
+			throw new LogicException('SettingsService was built without the error sink settings.');
+		}
+
+		return $this->errorSink;
+
+	}//end errorSink()
 
 	/**
 	 * Build a platform-portable SQL expression that adds a microsecond interval

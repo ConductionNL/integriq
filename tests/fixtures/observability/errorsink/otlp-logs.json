@@ -1,0 +1,65 @@
+{
+    "resourceLogs": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "service.name",
+                        "value": {
+                            "stringValue": "openregister"
+                        }
+                    }
+                ]
+            },
+            "scopeLogs": [
+                {
+                    "scope": {
+                        "name": "integriq.error-sink"
+                    },
+                    "logRecords": [
+                        {
+                            "timeUnixNano": "1760000000000000000",
+                            "severityNumber": 17,
+                            "severityText": "ERROR",
+                            "body": {
+                                "stringValue": "Saving failed: The object does not match its schema"
+                            },
+                            "attributes": [
+                                {
+                                    "key": "exception.type",
+                                    "value": {
+                                        "stringValue": "OCA\\OpenRegister\\Exception\\ValidationException"
+                                    }
+                                },
+                                {
+                                    "key": "code.filepath",
+                                    "value": {
+                                        "stringValue": "/var/www/html/apps/openregister/lib/Service/ObjectService.php"
+                                    }
+                                },
+                                {
+                                    "key": "code.lineno",
+                                    "value": {
+                                        "intValue": "412"
+                                    }
+                                },
+                                {
+                                    "key": "nextcloud.app",
+                                    "value": {
+                                        "stringValue": "openregister"
+                                    }
+                                },
+                                {
+                                    "key": "nextcloud.request_id",
+                                    "value": {
+                                        "stringValue": "req-1"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

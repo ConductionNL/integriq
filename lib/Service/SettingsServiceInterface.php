@@ -49,4 +49,26 @@ interface SettingsServiceInterface {
 	 * @spec openspec/specs/logs-and-statistics/spec.md
 	 */
 	public function rebase(): array;
+
+	/**
+	 * The error sink settings (`errorsink_*`), for the admin page.
+	 *
+	 * @return array<string, mixed> enabled, kind, endpoint, allowLocal, minLevel, apps, headerName, credentialName.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 */
+	public function getErrorSinkSettings(): array;
+
+	/**
+	 * Store the error sink settings an administrator saved.
+	 *
+	 * @param array<string, mixed> $values The submitted values.
+	 *
+	 * @return array<string, mixed> The stored settings.
+	 *
+	 * @throws \InvalidArgumentException When a value is refused; the message is the translated reason.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-the-error-sink-is-configured-on-the-admin-page-req-otel-008
+	 */
+	public function saveErrorSinkSettings(array $values): array;
 }

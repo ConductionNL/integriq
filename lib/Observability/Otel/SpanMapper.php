@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Observability\Otel;
 
+use InvalidArgumentException;
+
 /**
  * Maps an `execution_trace` object to an OTLP JSON `resourceSpans` payload.
  *
@@ -49,6 +51,22 @@ class SpanMapper implements SpanMapperInterface {
 	private const STATUS_UNSET = 0;
 	private const STATUS_OK = 1;
 	private const STATUS_ERROR = 2;
+
+	/**
+	 * The attributes a span another app hands in may carry (REQ-OTEL-003):
+	 * the HTTP method, the HTTP status code and the masked URL. Any other
+	 * attribute is dropped, the span is kept.
+	 *
+	 * @var list<string>
+	 */
+	public const FOREIGN_ATTRIBUTES = ['http.request.method', 'http.response.status_code', 'url.full'];
+
+	/**
+	 * The longest span name kept, in characters.
+	 *
+	 * @var int
+	 */
+	private const MAX_NAME_CHARS = 200;
 
 	/**
 	 * Constructor.
@@ -88,6 +106,216 @@ class SpanMapper implements SpanMapperInterface {
 		];
 
 	}//end map()
+
+	/**
+	 * Check and clean one span another app handed in through
+	 * `SpanExportRequestedEvent` (REQ-OTEL-007). The ids, times and status
+	 * must be well formed; an attribute outside {@see FOREIGN_ATTRIBUTES} is
+	 * dropped, `url.full` loses its query, credentials and identifiers, and
+	 * identifier-like words in the name are masked.
+	 *
+	 * @param array<array-key, mixed> $span The span as the other app sent it.
+	 *
+	 * @return array<string, mixed> The clean span: traceId, spanId, parentSpanId ('' for a root span), name,
+	 *                              startTimeUnixNano, endTimeUnixNano, status and the kept attributes.
+	 *
+	 * @throws InvalidArgumentException When a field is malformed; the message starts with the field name.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 */
+	public function foreignSpan(array $span): array {
+		$traceId = $span['traceId'] ?? null;
+		if (is_string($traceId) === false || preg_match('/^[0-9a-f]{32}$/', $traceId) !== 1 || trim($traceId, '0') === '') {
+			throw new InvalidArgumentException('traceId: must be 32 lowercase hex characters, not all zero');
+		}
+
+		$spanId = $span['spanId'] ?? null;
+		if (is_string($spanId) === false || preg_match('/^[0-9a-f]{16}$/', $spanId) !== 1 || trim($spanId, '0') === '') {
+			throw new InvalidArgumentException('spanId: must be 16 lowercase hex characters, not all zero');
+		}
+
+		$parent = ($span['parentSpanId'] ?? '');
+		if ($parent !== '' && (is_string($parent) === false || preg_match('/^[0-9a-f]{16}$/', $parent) !== 1)) {
+			throw new InvalidArgumentException('parentSpanId: must be 16 lowercase hex characters or absent');
+		}
+
+		$name = $span['name'] ?? null;
+		if (is_string($name) === false || trim($name) === '') {
+			throw new InvalidArgumentException('name: must be a non-empty string');
+		}
+
+		[$start, $end] = $this->foreignTimes(span: $span);
+
+		$status = $span['status'] ?? null;
+		if (in_array($status, ['ok', 'error'], true) === false) {
+			throw new InvalidArgumentException('status: must be ok or error');
+		}
+
+		$attributes = ($span['attributes'] ?? []);
+		if (is_array($attributes) === false) {
+			throw new InvalidArgumentException('attributes: must be a map of string keys to scalar values');
+		}
+
+		return [
+			'traceId' => $traceId,
+			'spanId' => $spanId,
+			'parentSpanId' => (string)$parent,
+			'name' => $this->safeName(name: $name),
+			'startTimeUnixNano' => $start,
+			'endTimeUnixNano' => $end,
+			'status' => (string)$status,
+			'attributes' => $this->foreignAttributes(attributes: $attributes),
+		];
+
+	}//end foreignSpan()
+
+	/**
+	 * Map spans other apps handed in, already cleaned by {@see foreignSpan()},
+	 * to an OTLP JSON payload whose `service.name` is the app that sent them.
+	 *
+	 * @param list<array<string, mixed>> $spans The clean spans.
+	 * @param string $serviceName The dispatching app id.
+	 *
+	 * @return array The OTLP JSON payload.
+	 *
+	 * @spec openspec/changes/observability-opentelemetry-export-errors-and-app-spans/specs/execution-trace/spec.md#requirement-another-app-hands-integriq-its-spans-through-a-typed-command-req-otel-007
+	 */
+	public function mapForeign(array $spans, string $serviceName): array {
+		$mapped = [];
+		foreach ($spans as $span) {
+			$clean = $this->foreignSpan(span: $span);
+			$otlp = [
+				'traceId' => $clean['traceId'],
+				'spanId' => $clean['spanId'],
+				'name' => $clean['name'],
+				'kind' => $this->foreignKind(span: $clean),
+				'startTimeUnixNano' => (string)$clean['startTimeUnixNano'],
+				'endTimeUnixNano' => (string)$clean['endTimeUnixNano'],
+				'attributes' => $this->attributes(values: $clean['attributes']),
+				'status' => ['code' => $this->stepStatusCode(status: $clean['status'])],
+			];
+			if ($clean['parentSpanId'] !== '') {
+				$otlp['parentSpanId'] = $clean['parentSpanId'];
+			}
+
+			$mapped[] = $otlp;
+		}
+
+		return [
+			'resourceSpans' => [
+				[
+					'resource' => [
+						'attributes' => $this->attributes(values: ['service.name' => $serviceName]),
+					],
+					'scopeSpans' => [
+						[
+							'scope' => ['name' => 'integriq.app-spans'],
+							'spans' => $mapped,
+						],
+					],
+				],
+			],
+		];
+
+	}//end mapForeign()
+
+	/**
+	 * The start and end of a foreign span, in nanoseconds.
+	 *
+	 * @param array<array-key, mixed> $span The span as sent.
+	 *
+	 * @return array{0: int, 1: int} The start and the end.
+	 *
+	 * @throws InvalidArgumentException When a time is missing, not positive, or the end is before the start.
+	 */
+	private function foreignTimes(array $span): array {
+		$start = $span['startTimeUnixNano'] ?? null;
+		if (is_int($start) === false || $start <= 0) {
+			throw new InvalidArgumentException('startTimeUnixNano: must be a positive integer');
+		}
+
+		$end = $span['endTimeUnixNano'] ?? null;
+		if (is_int($end) === false || $end < $start) {
+			throw new InvalidArgumentException('endTimeUnixNano: must be an integer not before startTimeUnixNano');
+		}
+
+		return [$start, $end];
+
+	}//end foreignTimes()
+
+	/**
+	 * The allowlisted attributes of a foreign span, with scalar values only.
+	 *
+	 * @param array<array-key, mixed> $attributes The attributes as sent.
+	 *
+	 * @return array<string, int|string> The kept attributes.
+	 */
+	private function foreignAttributes(array $attributes): array {
+		$kept = [];
+		foreach ($attributes as $key => $value) {
+			if (in_array($key, self::FOREIGN_ATTRIBUTES, true) === false || is_scalar($value) === false) {
+				continue;
+			}
+
+			if ($key === 'http.response.status_code') {
+				$kept[$key] = (int)$value;
+				continue;
+			}
+
+			if ($key === 'http.request.method') {
+				$kept[$key] = substr(strtoupper(preg_replace('/[^A-Za-z]/', '', (string)$value) ?? ''), 0, 16);
+				continue;
+			}
+
+			$kept[$key] = $this->safeUrl(url: (string)$value);
+		}
+
+		return $kept;
+
+	}//end foreignAttributes()
+
+	/**
+	 * A span name with every identifier-like word or path segment replaced by
+	 * `{id}`, so `GET /api/objects/999993653` leaves as `GET /api/objects/{id}`.
+	 *
+	 * @param string $name The name as sent.
+	 *
+	 * @return string The safe name.
+	 */
+	private function safeName(string $name): string {
+		$name = substr(trim($name), 0, strcspn(trim($name), '?#'));
+		$safe = (string)preg_replace_callback(
+			'#[^\s/]+#',
+			function (array $match): string {
+				if ($this->looksLikeIdentifier(segment: $match[0]) === true) {
+					return '{id}';
+				}
+
+				return $match[0];
+			},
+			$name
+		);
+
+		return mb_substr($safe, 0, self::MAX_NAME_CHARS);
+
+	}//end safeName()
+
+	/**
+	 * A foreign span's kind: a server span for an incoming HTTP request with
+	 * no parent, else internal.
+	 *
+	 * @param array<string, mixed> $span The clean span.
+	 *
+	 * @return int The OTLP span kind.
+	 */
+	private function foreignKind(array $span): int {
+		if ($span['parentSpanId'] === '' && isset($span['attributes']['http.request.method']) === true) {
+			return self::KIND_SERVER;
+		}
+
+		return self::KIND_INTERNAL;
+
+	}//end foreignKind()
 
 	/**
 	 * The ids and start every span of a trace shares.

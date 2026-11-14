@@ -23,6 +23,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Configuration Management](configuration-management.md) | Import/export, configuration groups, slug-based references | Implemented |
 | [StUF Adapter](stuf-adapter.md) | REST/ZGW to StUF-BG/ZKN SOAP translation | Partial |
 | [Prometheus Metrics](prometheus-metrics.md) | Prometheus exposition format metrics + health endpoint | Implemented |
+| [OpenTelemetry and error sink](opentelemetry.md) | Traces to an OpenTelemetry collector, errors to a Sentry compatible or OTLP logs service, and the span command for other apps | Implemented |
 | [DSO / Omgevingsloket Adapter](dso-omgevingsloket.md) | DSO-LV STAM koppelvlak integration | Implemented |
 | [iBabs & NotuBiz Connector](ibabs-notubiz-connector.md) | RIS integration for bestuurlijke besluitvorming | Implemented |
 | [AI agent tools](ai-agent-tools.md) | A Hermiq agent runs, tests and replays on a person's approval, and never reconfigures | Implemented |
