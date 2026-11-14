@@ -5682,6 +5682,64 @@
                 ]
             }
         },
+        "/outbound/recipients/preview": {
+            "post": {
+                "operationId": "outbound-recipients-preview",
+                "summary": "Resolve a message's recipients without sending",
+                "description": "Resolve the standing, added and suppressed recipients of one message the way the send would, without recording or sending anything.",
+                "tags": [
+                    "outbound-log"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "standing": {
+                                        "type": "array",
+                                        "items": {}
+                                    },
+                                    "added": {
+                                        "type": "array",
+                                        "items": {}
+                                    },
+                                    "suppressed": {
+                                        "type": "array",
+                                        "items": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The standing, added, suppressed and resolved recipients.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
         "/outbound/last-contact": {
             "get": {
                 "operationId": "outbound-log-last-contact",

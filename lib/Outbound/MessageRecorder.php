@@ -127,7 +127,9 @@ class MessageRecorder {
 	 * @param string $subject The subject line.
 	 * @param string $body The rendered body, redacted here before it is stored.
 	 * @param array<int,array<string,mixed>> $recipients `{address, name, accountId}` per recipient.
-	 * @param array<string,mixed> $options `sourceApp`, `attachments`, `context`, `correlationId`.
+	 * @param array<string,mixed> $options `sourceApp`, `attachments`, `context`, `correlationId`, and
+	 *                                     `recipientSelection` (standing, added, suppressed) when the
+	 *                                     message's recipients were a per-message decision.
 	 *
 	 * @return ObjectEntity The opened record.
 	 */
@@ -171,6 +173,11 @@ class MessageRecorder {
 			'forwardedTo' => [],
 		];
 
+		$selection = $this->describeSelection(selection: ($options['recipientSelection'] ?? null));
+		if ($selection !== null) {
+			$record['recipientSelection'] = $selection;
+		}
+
 		return $this->objectService->saveObject(
 			object: $record,
 			register: self::REGISTER,
@@ -178,6 +185,47 @@ class MessageRecorder {
 		);
 
 	}//end start()
+
+	/**
+	 * The recipient decision as the record keeps it: the standing, added and
+	 * suppressed parts each on their own. A suppressed recipient stays on the
+	 * record, reads `suppressed` with its reason, user and time, and carries no
+	 * delivery state, because nothing was attempted for it.
+	 *
+	 * @param mixed $selection The decision, or anything else for none.
+	 *
+	 * @return array{standing: array<int,array<string,mixed>>, added: array<int,array<string,mixed>>, suppressed: array<int,array<string,mixed>>}|null
+	 *
+	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 */
+	private function describeSelection(mixed $selection): ?array {
+		if (is_array($selection) === false) {
+			return null;
+		}
+
+		$suppressed = [];
+		foreach ((array)($selection['suppressed'] ?? []) as $row) {
+			if (is_array($row) === false) {
+				continue;
+			}
+
+			$suppressed[] = [
+				'address' => (string)($row['address'] ?? ''),
+				'name' => (string)($row['name'] ?? ''),
+				'state' => RecipientState::SUPPRESSED,
+				'reason' => (string)($row['reason'] ?? ''),
+				'user' => (string)($row['user'] ?? ''),
+				'at' => (string)($row['at'] ?? ''),
+			];
+		}
+
+		return [
+			'standing' => array_values(array_filter((array)($selection['standing'] ?? []), 'is_array')),
+			'added' => array_values(array_filter((array)($selection['added'] ?? []), 'is_array')),
+			'suppressed' => $suppressed,
+		];
+
+	}//end describeSelection()
 
 	/**
 	 * Record that a step succeeded.

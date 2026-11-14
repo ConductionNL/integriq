@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Event\DeliveryRequestedEvent;
 use OCA\Integriq\EventListener\DeliveryRequestedListener;
+use OCA\Integriq\Outbound\RecipientResolver;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\FlowRunnerService;
@@ -36,6 +37,7 @@ use OCA\Integriq\Tests\Helpers\OptOutFixture;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Http\Client\IClientService;
 use OCP\IDBConnection;
+use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -88,7 +90,7 @@ class EventServiceDeliveryOptOutTest extends TestCase {
 		$this->fx->registry()->add('jan@example.org');
 		$event = $this->request(payload: ['recipient' => ['address' => 'jan@example.org', 'channel' => 'email'], 'category' => 'case-update', 'body' => 'Uw zaak']);
 
-		(new DeliveryRequestedListener($this->service(withGate: true), new NullLogger()))->handle($event);
+		(new DeliveryRequestedListener($this->service(withGate: true), new NullLogger(), new RecipientResolver($this->createMock(IL10N::class))))->handle($event);
 
 		$this->assertTrue($event->isHandled());
 		$this->assertSame('opted-out', $event->getRefusal()['code']);
@@ -108,7 +110,7 @@ class EventServiceDeliveryOptOutTest extends TestCase {
 		$this->fx->registry()->add('jan@example.org');
 		$event = $this->request(payload: ['recipient' => 'jan@example.org', 'recipientChannel' => 'email', 'category' => 'besluit']);
 
-		(new DeliveryRequestedListener($this->service(withGate: true), new NullLogger()))->handle($event);
+		(new DeliveryRequestedListener($this->service(withGate: true), new NullLogger(), new RecipientResolver($this->createMock(IL10N::class))))->handle($event);
 
 		$this->assertNull($event->getRefusal());
 		$this->assertSame(1, $this->subscriptionReads, 'routed');
