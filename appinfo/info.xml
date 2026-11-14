@@ -305,6 +305,10 @@
 			     InitializeRegister, so the app_connection schema exists. Idempotent
 			     and never throws. -->
 			<step>OCA\Integriq\Repair\SyncConnectionDeclarations</step>
+			<!-- gateway-declared-data-feeds: every enabled app's
+			     lib/Settings/feeds.json becomes feed endpoints and an API product.
+			     After InitializeRegister. Idempotent and never throws. -->
+			<step>OCA\Integriq\Repair\SyncFeedDeclarations</step>
 			<!-- WRITTEN BUT NEVER REGISTERED until now, which meant it never
 			     ran anywhere. gate-98 (repair-step-registration) found it.
 
@@ -505,6 +509,10 @@
 			     InitializeRegister, so the app_connection schema exists. Idempotent
 			     and never throws. -->
 			<step>OCA\Integriq\Repair\SyncConnectionDeclarations</step>
+			<!-- gateway-declared-data-feeds: every enabled app's
+			     lib/Settings/feeds.json becomes feed endpoints and an API product.
+			     After InitializeRegister. Idempotent and never throws. -->
+			<step>OCA\Integriq\Repair\SyncFeedDeclarations</step>
 			<!-- The three inline-secret steps are deliberately NOT here. A first
 			     install has no sources, so they would have nothing to migrate,
 			     and RemoveMigratedSourceSecretFields is IRREVERSIBLE: it would

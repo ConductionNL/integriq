@@ -1,0 +1,73 @@
+{
+	"_comment": "ADR-037 register fragment for openspec/changes/gateway-declared-data-feeds. `endpoint.feed` holds the dataset an app declared in its lib/Settings/feeds.json; FeedDeclarationService writes it with targetType `feed`, and EndpointService answers such an endpoint through FeedRequestHandler (GET only, declared fields, paging). `consumer.feedScopes` binds a consumer, per declaring app, to the scope values it may read (for shillinq: administration ids); a consumer without a binding for an app is refused on every feed of that app (REQ-DDF-003). No version bump: other fragments set these schemas' versions later in file order, and the import's content-differs path picks the new properties up.",
+	"components": {
+		"schemas": {
+			"endpoint": {
+				"properties": {
+					"feed": {
+						"type": "object",
+						"title": "Data feed",
+						"description": "Set by the feed declaration sync: the declared dataset this endpoint serves. Edit the declaring app's feeds.json, not this value.",
+						"properties": {
+							"app": {
+								"type": "string"
+							},
+							"key": {
+								"type": "string"
+							},
+							"title": {
+								"type": "string"
+							},
+							"register": {
+								"type": "string"
+							},
+							"schema": {
+								"type": "string"
+							},
+							"fields": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"filter": {
+								"type": "object"
+							},
+							"scope": {
+								"type": "object",
+								"properties": {
+									"parameter": {
+										"type": "string"
+									},
+									"field": {
+										"type": "string"
+									}
+								}
+							},
+							"pageSize": {
+								"type": "integer",
+								"minimum": 1
+							}
+						}
+					}
+				}
+			},
+			"consumer": {
+				"properties": {
+					"feedScopes": {
+						"type": "object",
+						"title": "Feed scopes",
+						"description": "Per declaring app, the scope values this consumer may read through that app's data feeds, e.g. {\"shillinq\": [\"<administration id>\"]}. Without an entry for an app every feed of that app answers 403.",
+						"additionalProperties": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"minLength": 1
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

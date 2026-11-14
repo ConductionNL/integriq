@@ -156,6 +156,7 @@ export function emptyConsumerDraft() {
 		rateLimitWindowSeconds: null,
 		quotaLimit: null,
 		quotaPeriod: null,
+		feedScopesText: '',
 	}
 }
 
@@ -239,6 +240,7 @@ export function consumerDraftFromItem(item) {
 		// kept verbatim so saving an unrelated field cannot silently rewrite it.
 		authorizationType: textOf(item.authorizationType) || 'none',
 		...draftLimitsFromItem(item),
+		feedScopesText: feedScopesText(item.feedScopes),
 	}
 }
 
@@ -377,6 +379,11 @@ export function buildConsumerPayload(item, draft, authConfig) {
 		ips: normaliseList(draft.ips),
 	})
 
+	// Always sent, also empty: clearing the field must remove every binding,
+	// and `...item` would otherwise carry the stored one through. An app with
+	// no entry answers 403 on every feed (gateway-declared-data-feeds D3).
+	payload.feedScopes = parseFeedScopes(draft.feedScopesText).scopes
+
 	applyCredential(payload, authConfig)
 	return payload
 }
@@ -429,4 +436,55 @@ function applyCredential(payload, authConfig) {
 	if (!carriesCredential(payload.authorizationType)) {
 		payload.authorizationConfiguration = null
 	}
+}
+
+/**
+ * App ids as they appear in `consumer.feedScopes`: the declaring app's id.
+ */
+const FEED_APP_PATTERN = /^[a-z0-9_-]+$/i
+
+/**
+ * The text the form edits for `consumer.feedScopes`: one line per declaring
+ * app, `app: value, value`, apps sorted so the text is stable.
+ *
+ * @param {object|null|undefined} scopes The stored `feedScopes`.
+ *
+ * @return {string} The text.
+ * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+ */
+export function feedScopesText(scopes) {
+	if (!scopes || typeof scopes !== 'object' || Array.isArray(scopes)) return ''
+	return Object.keys(scopes)
+		.sort()
+		.map((app) => `${app}: ${normaliseList(scopes[app]).join(', ')}`)
+		.join('\n')
+}
+
+/**
+ * Read the form's feed-scope text back into `consumer.feedScopes`.
+ *
+ * Blank lines are skipped; an app named twice gets the values of both lines,
+ * once each. A line that is not `app: value, ...` is an error naming the line,
+ * so the form refuses to save rather than drop a binding the operator typed.
+ *
+ * @param {string|null|undefined} text The form text.
+ *
+ * @return {{scopes: Object<string, string[]>, error: string}} The scopes, and the first error ('' when none).
+ * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+ */
+export function parseFeedScopes(text) {
+	const scopes = {}
+	const lines = String(text ?? '').split('\n')
+	for (let index = 0; index < lines.length; index++) {
+		const line = lines[index].trim()
+		if (line === '') continue
+		const colon = line.indexOf(':')
+		const app = colon > 0 ? line.slice(0, colon).trim() : ''
+		const values = colon > 0 ? normaliseList(line.slice(colon + 1)) : []
+		if (!FEED_APP_PATTERN.test(app) || values.length === 0) {
+			return { scopes: {}, error: `${index + 1}` }
+		}
+		scopes[app] = [...new Set([...(scopes[app] || []), ...values])]
+	}
+	return { scopes, error: '' }
 }

@@ -1,0 +1,43 @@
+{
+	"app": "shillinq",
+	"feeds": [
+		{
+			"key": "ledger-lines",
+			"title": "Ledger lines",
+			"description": "Posted journal lines per period.",
+			"register": "shillinq",
+			"schema": "ledger-line",
+			"fields": ["id", "period", "account", "amount", "administrationId"],
+			"filter": {"status": "posted"},
+			"scope": {"parameter": "administrationId", "field": "administrationId"},
+			"pageSize": 1000
+		},
+		{
+			"key": "accounts",
+			"title": "Accounts",
+			"register": "shillinq",
+			"schema": "account",
+			"fields": ["id", "code", "name", "administrationId"],
+			"scope": {"parameter": "administrationId", "field": "administrationId"},
+			"pageSize": 1000
+		},
+		{
+			"key": "periods",
+			"title": "Periods",
+			"register": "shillinq",
+			"schema": "period",
+			"fields": ["id", "start", "end", "administrationId"],
+			"scope": {"parameter": "administrationId", "field": "administrationId"},
+			"pageSize": 500
+		},
+		{
+			"key": "relations",
+			"title": "Relations",
+			"register": "shillinq",
+			"schema": "relation",
+			"fields": ["id", "name", "kvkNumber", "administrationId"],
+			"scope": {"parameter": "administrationId", "field": "administrationId"},
+			"pageSize": 1000
+		}
+	]
+}
