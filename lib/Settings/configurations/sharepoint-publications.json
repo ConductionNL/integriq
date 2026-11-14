@@ -130,13 +130,15 @@
             }
           ]
         },
-        "conditions": {
-          "!!": [
-            {
-              "var": "folder"
-            }
-          ]
-        },
+        "conditions": [
+          {
+            "!!": [
+              {
+                "var": "folder"
+              }
+            ]
+          }
+        ],
         "actions": [
           "sharepoint-publication-documents"
         ],

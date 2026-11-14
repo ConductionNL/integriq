@@ -228,6 +228,18 @@ class SharePointPublicationSetTest extends TestCase {
 	}//end testAMissingChoiceIsRefused()
 
 	/**
+	 * A credential that is not a broker uuid is refused before anything is filled.
+	 *
+	 * @return void
+	 */
+	public function testACredentialThatIsNotAUuidIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("The credential must be a brokered credential's uuid.");
+
+		(new SharePointPublicationSet())->build(choices: array_merge($this->choices(), ['credentialId' => 'graph-key']));
+	}//end testACredentialThatIsNotAUuidIsRefused()
+
+	/**
 	 * An unreadable set file is a refusal, not an empty set.
 	 *
 	 * @return void

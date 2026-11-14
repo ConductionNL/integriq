@@ -204,7 +204,7 @@ class SharePointPublicationCronAttachTest extends TestCase {
 	 */
 	public function testACronRunAttachesEveryDocumentToThePublication(): void {
 		$document = (new SharePointPublicationSet())->build(
-			choices: ['credentialId' => 'c-1', 'siteId' => 's', 'driveId' => 'b!woo-dossiers', 'folderId' => 'f', 'catalog' => 'cat', 'register' => 'r', 'schema' => 'p']
+			choices: ['credentialId' => 'c0ffee00-0000-4000-8000-000000000001', 'siteId' => 's', 'driveId' => 'b!woo-dossiers', 'folderId' => 'f', 'catalog' => 'cat', 'register' => 'r', 'schema' => 'p']
 		);
 		$rule = array_values($document['components']['rules'])[0];
 		$rule['id'] = 7;

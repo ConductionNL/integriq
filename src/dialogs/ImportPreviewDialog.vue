@@ -50,6 +50,14 @@
 			<div v-else-if="step === 'preview'" class="oc-import-dialog__step">
 				<h4>{{ t('integriq', 'Import preview') }}</h4>
 
+				<NcNoteCard
+					v-for="entry in preview.deprecations || []"
+					:key="`dep-${entry.type}-${entry.slug}`"
+					type="warning"
+					data-testid="preview-deprecated">
+					{{ deprecationText(entry) }}
+				</NcNoteCard>
+
 				<div class="oc-import-dialog__buckets">
 					<PreviewBucket
 						block="oc-import-dialog"
@@ -279,6 +287,20 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The warning for one deprecated entity: what it is and what replaces it.
+		 *
+		 * @param {object} entry A preview deprecation `{ type, slug, replacedBy, reason }`.
+		 * @return {string} The translated text.
+		 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#scenario-an-administrator-is-steered-to-the-new-set
+		 */
+		deprecationText(entry) {
+			const text = entry.replacedBy
+				? t('integriq', 'The {type} "{slug}" is deprecated. Use "{replacedBy}" instead.', { type: entry.type, slug: entry.slug, replacedBy: entry.replacedBy })
+				: t('integriq', 'The {type} "{slug}" is deprecated.', { type: entry.type, slug: entry.slug })
+			return entry.reason ? `${text} ${entry.reason}` : text
+		},
+
 		/**
 		 * Reset the dialog to the file-pick step.
 		 *

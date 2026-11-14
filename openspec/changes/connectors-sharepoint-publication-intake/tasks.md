@@ -45,7 +45,7 @@ Kind: code. Size M. Rows `opencatalogi:int-sharepoint` and
 - **acceptance_criteria**:
   - GIVEN the import screen WHEN the legacy template is chosen THEN a deprecation warning names the new set
   - GIVEN demo data WHEN the Synchronizations page opens THEN a mock SharePoint to publication synchronization is listed
-- [ ] Implement
+- [x] Implement
 - [ ] Test (`tests/e2e/sharepoint-publications.spec.ts`)
 
 ## Verification

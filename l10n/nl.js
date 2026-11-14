@@ -2296,7 +2296,9 @@ OC.L10N.register(
         "The library root": "De hoofdmap van de bibliotheek",
         "The lookup failed. Try again.": "De opzoeking is mislukt. Probeer het opnieuw.",
         "The run started and waits for approval before it writes.": "De run is gestart en wacht op goedkeuring voordat hij iets schrijft.",
-        "The run started. Draft publications appear in the catalogue as it goes.": "De run is gestart. Conceptpublicaties verschijnen gaandeweg in de catalogus."
+        "The run started. Draft publications appear in the catalogue as it goes.": "De run is gestart. Conceptpublicaties verschijnen gaandeweg in de catalogus.",
+        "The {type} \"{slug}\" is deprecated. Use \"{replacedBy}\" instead.": "De {type} \"{slug}\" is verouderd. Gebruik in plaats daarvan \"{replacedBy}\".",
+        "The {type} \"{slug}\" is deprecated.": "De {type} \"{slug}\" is verouderd."
     },
     "nplurals=2; plural=(n != 1);"
 )

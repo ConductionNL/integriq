@@ -172,6 +172,10 @@ class SharePointPublicationSet {
 			throw new InvalidArgumentException('Choose ' . implode(', ', $missing) . ' before saving.');
 		}
 
+		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $values['credentialId']) !== 1) {
+			throw new InvalidArgumentException('The credential must be a brokered credential\'s uuid.');
+		}
+
 		$template = $this->template();
 		$refusals = $this->refuseTemplate(template: $template);
 		if ($refusals !== []) {

@@ -3558,7 +3558,9 @@ OC.L10N.register(
         "The library root": "The library root",
         "The lookup failed. Try again.": "The lookup failed. Try again.",
         "The run started and waits for approval before it writes.": "The run started and waits for approval before it writes.",
-        "The run started. Draft publications appear in the catalogue as it goes.": "The run started. Draft publications appear in the catalogue as it goes."
+        "The run started. Draft publications appear in the catalogue as it goes.": "The run started. Draft publications appear in the catalogue as it goes.",
+        "The {type} \"{slug}\" is deprecated. Use \"{replacedBy}\" instead.": "The {type} \"{slug}\" is deprecated. Use \"{replacedBy}\" instead.",
+        "The {type} \"{slug}\" is deprecated.": "The {type} \"{slug}\" is deprecated."
     },
     "nplurals=2; plural=(n != 1);"
 )

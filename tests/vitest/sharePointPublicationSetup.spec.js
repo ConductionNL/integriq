@@ -213,3 +213,14 @@ describe('the setup dialog', () => {
 		expect(wrapper.vm.synchronizationId).toBeNull()
 	})
 })
+
+describe('the import preview steers away from a deprecated template', () => {
+	it('names the replacement, and the reason when there is one', async () => {
+		const { default: ImportPreviewDialog } = await import('@/dialogs/ImportPreviewDialog.vue')
+		const text = ImportPreviewDialog.methods.deprecationText
+
+		expect(text({ type: 'source', slug: 'sharepoint', replacedBy: 'sharepoint-publications', reason: 'Use the new set.' }))
+			.toBe('The source "sharepoint" is deprecated. Use "sharepoint-publications" instead. Use the new set.')
+		expect(text({ type: 'rule', slug: 'old', replacedBy: '', reason: '' })).toBe('The rule "old" is deprecated.')
+	})
+})
