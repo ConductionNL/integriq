@@ -25,6 +25,7 @@ namespace OCA\Integriq\Tests\Unit\Service\StufZkn;
 use OCA\Integriq\Service\StufZkn\StufWsseInboundVerifier;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IMemcache;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use SimpleXMLElement;
@@ -144,4 +145,51 @@ class StufWsseInboundVerifierTest extends TestCase {
 			'a source that requires a nonce refuses a plain token'
 		);
 	}//end testTheCredentialsMustMatchTheSources()
+
+	/**
+	 * A Nonce without a Created, a Created without a Nonce, a Created outside the
+	 * window and one that is no date are all refused, whatever the source requires.
+	 *
+	 * @return void
+	 */
+	public function testAHalfTokenAStaleOneAndAnUnreadableCreatedAreRefused(): void {
+		$verifier = $this->verifier(available: true, logger: $this->createMock(LoggerInterface::class));
+		$stale    = gmdate('Y-m-d\TH:i:s\Z', time() - 7200);
+
+		$this->assertFalse($verifier->verify(self::envelope('<wsse:Nonce>n-1</wsse:Nonce>'), self::TOKEN, [], 'zsh'), 'a nonce without a time');
+		$this->assertFalse($verifier->verify(self::envelope('<Created>' . gmdate('Y-m-d\TH:i:s\Z') . '</Created>'), self::TOKEN, [], 'zsh'), 'a time without a nonce');
+		$this->assertFalse($verifier->verify(self::envelope('<wsse:Nonce>n-2</wsse:Nonce><Created>' . $stale . '</Created>'), self::TOKEN, [], 'zsh'), 'two hours old');
+		$this->assertFalse($verifier->verify(self::envelope('<wsse:Nonce>n-3</wsse:Nonce><Created>yesterday-ish</Created>'), self::TOKEN, [], 'zsh'), 'no date');
+	}//end testAHalfTokenAStaleOneAndAnUnreadableCreatedAreRefused()
+
+	/**
+	 * On a memcache the nonce is claimed with one atomic add, keyed per source and
+	 * user: the first use passes, a repeat does not, and nothing is checked-then-set.
+	 *
+	 * @return void
+	 */
+	public function testAMemcacheClaimsANonceWithOneAtomicAdd(): void {
+		$claimed = [];
+		$cache   = $this->createMock(IMemcache::class);
+		$cache->expects($this->never())->method('hasKey');
+		$cache->method('add')->willReturnCallback(
+			static function (string $key, mixed $value, int $ttl) use (&$claimed): bool {
+				if (isset($claimed[$key]) === true) {
+					return false;
+				}
+
+				$claimed[$key] = $ttl;
+				return true;
+			}
+		);
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('createDistributed')->with('integriq-stuf-nonce')->willReturn($cache);
+		$verifier = new StufWsseInboundVerifier($factory, $this->createMock(LoggerInterface::class));
+		$request  = self::envelope(self::fresh('n-1'));
+
+		$this->assertTrue($verifier->verify($request, self::TOKEN, [], 'zsh'));
+		$this->assertFalse($verifier->verify($request, self::TOKEN, [], 'zsh'), 'the repeat is a replay');
+		$this->assertTrue($verifier->verify($request, self::TOKEN, [], 'other-source'), 'the same nonce at another source is its own');
+		$this->assertSame([hash('sha256', 'zsh|zsh|n-1'), hash('sha256', 'other-source|zsh|n-1')], array_keys($claimed));
+	}//end testAMemcacheClaimsANonceWithOneAtomicAdd()
 }//end class
