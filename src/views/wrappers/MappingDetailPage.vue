@@ -168,6 +168,8 @@
 						@inputError="sampleParseError = $event" />
 				</section>
 			</div>
+
+			<RegressionSuitePanel subjectType="mapping" :subjectId="suiteSubjectId" />
 		</div>
 	</CnDetailPage>
 </template>
@@ -181,8 +183,10 @@ import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
 import MappingCallableByField from '../../components/mapping/MappingCallableByField.vue'
 import MappingResultPanel from '../../components/mapping/MappingResultPanel.vue'
+import RegressionSuitePanel from '../../components/regression/RegressionSuitePanel.vue'
 import MappingRulesEditor from './MappingRulesEditor.vue'
 import { asObjectMap, asUnsetList } from '../../components/mapping/mappingShape.js'
+import { subjectIdOf } from '../../components/regression/regressionCases.js'
 import { EVENT_OPEN_TEST_MAPPING, modalBus } from '../../handlers/modalBus.js'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import { useObjectStore } from '../../store/objectStore.js'
@@ -202,6 +206,7 @@ export default {
 		NcButton,
 		NcCheckboxRadioSwitch,
 		PlayOutlineIcon,
+		RegressionSuitePanel,
 		RestoreIcon,
 	},
 
@@ -268,6 +273,11 @@ export default {
 
 		hasMapping() {
 			return !!this.mapping && Object.keys(this.mapping).length > 0
+		},
+
+		/** @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003 */
+		suiteSubjectId() {
+			return subjectIdOf(this.mapping, this.resolvedId)
 		},
 
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */

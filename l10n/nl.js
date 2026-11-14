@@ -2277,7 +2277,23 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Actual": "Werkelijk",
+        "Expected": "Verwacht",
+        "Path": "Pad",
+        "Ignored paths": "Genegeerde paden",
+        "Dot paths left out of the comparison, separated by commas.": "Paden met punten die niet worden vergeleken, gescheiden door komma's.",
+        "Run test cases": "Testgevallen uitvoeren",
+        "Save as test case": "Opslaan als testgeval",
+        "Save test case": "Testgeval opslaan",
+        "Test case saved": "Testgeval opgeslagen",
+        "Test cases": "Testgevallen",
+        "The test case could not be saved.": "Het testgeval kon niet worden opgeslagen.",
+        "The test cases could not be run.": "De testgevallen konden niet worden uitgevoerd.",
+        "There are no test cases for this yet.": "Hiervoor zijn nog geen testgevallen.",
+        "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.": "Deze velden zijn afgeschermd toen de trace werd opgeslagen. Vervang ze door testwaarden, anders slaagt het testgeval niet.",
+        "Passed: {count}": "Geslaagd: {count}",
+        "Failed: {count}": "Mislukt: {count}"
     },
     "nplurals=2; plural=(n != 1);"
 )

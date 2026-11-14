@@ -3539,7 +3539,23 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Actual": "Actual",
+        "Expected": "Expected",
+        "Path": "Path",
+        "Ignored paths": "Ignored paths",
+        "Dot paths left out of the comparison, separated by commas.": "Dot paths left out of the comparison, separated by commas.",
+        "Run test cases": "Run test cases",
+        "Save as test case": "Save as test case",
+        "Save test case": "Save test case",
+        "Test case saved": "Test case saved",
+        "Test cases": "Test cases",
+        "The test case could not be saved.": "The test case could not be saved.",
+        "The test cases could not be run.": "The test cases could not be run.",
+        "There are no test cases for this yet.": "There are no test cases for this yet.",
+        "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.": "These fields were redacted when the trace was stored. Replace them with test values, or the case will not pass.",
+        "Passed: {count}": "Passed: {count}",
+        "Failed: {count}": "Failed: {count}"
     },
     "nplurals=2; plural=(n != 1);"
 )

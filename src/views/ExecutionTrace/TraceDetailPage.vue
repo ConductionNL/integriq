@@ -13,6 +13,9 @@
   REQ-006/REQ-007). No inline NcModal/NcDialog is used for the confirmation
   step, so the interaction stays within the page (mirrors ApprovalDetail).
 
+  "Save as test case" opens SaveTestCaseModal on a trace with a mapping or
+  synchronization step (automation-integration-regression-tests REQ-IRT-002).
+
   @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007
 -->
 <template>
@@ -60,6 +63,20 @@
 
 			<h3>{{ t('integriq', 'Steps') }}</h3>
 			<TraceTimelineWidget :steps="trace.steps || []" />
+
+			<NcButton
+				v-if="hasRecordableStep"
+				variant="secondary"
+				class="traceDetail__saveCase"
+				data-testid="save-as-test-case"
+				@click="savingCase = true">
+				{{ t('integriq', 'Save as test case') }}
+			</NcButton>
+			<SaveTestCaseModal
+				:open="savingCase"
+				:traceId="String(traceId)"
+				:steps="trace.steps || []"
+				@close="savingCase = false" />
 
 			<div class="traceDetail__replay">
 				<h3>{{ t('integriq', 'Replay') }}</h3>
@@ -152,7 +169,9 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import SaveTestCaseModal from '../../modals/SaveTestCaseModal.vue'
 import TraceTimelineWidget from './TraceTimelineWidget.vue'
+import { recordableSteps } from '../../components/regression/regressionCases.js'
 
 export default {
 	name: 'TraceDetailPage',
@@ -163,6 +182,7 @@ export default {
 		NcLoadingIcon,
 		AlertCircleOutline,
 		TraceTimelineWidget,
+		SaveTestCaseModal,
 	},
 
 	data() {
@@ -172,6 +192,7 @@ export default {
 			busy: false,
 			preview: null,
 			confirmingForce: false,
+			savingCase: false,
 		}
 	},
 
@@ -179,6 +200,11 @@ export default {
 		/** @spec openspec/specs/execution-trace/spec.md#requirement-traces-ui--typed-list-and-detail-timeline-req-007 */
 		traceId() {
 			return this.$route?.params?.id
+		},
+
+		/** @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002 */
+		hasRecordableStep() {
+			return recordableSteps(this.trace?.steps).length > 0
 		},
 	},
 
@@ -340,6 +366,10 @@ export default {
 	background: var(--color-error, #e9322d);
 	color: var(--color-primary-text);
 	border-radius: var(--border-radius);
+}
+
+.traceDetail__saveCase {
+	margin-top: 12px;
 }
 
 .traceDetail__replay {

@@ -525,6 +525,11 @@ exports[`template handlers > the detail page writes each pick as recorded 1`] = 
       "targetType": "picked-id",
     },
   ],
+  [
+    "NcButton",
+    "onClick",
+    "unchanged",
+  ],
 ]
 `;
 
