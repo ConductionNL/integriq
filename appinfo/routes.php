@@ -427,6 +427,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Every refusal is one undifferentiated 401
 		// (openspec/specs/digid-eherkenning-auth-adapter/spec.md).
 		['name' => 'idpBroker#exchange', 'url' => '/api/idp/envelope/exchange', 'verb' => 'POST'],
+		// Each organisation's SP / RP, published for its identity provider (portal-idp-broker-config D3).
+		['name' => 'idpMetadata#metadata', 'url' => '/api/idp/metadata/{organisation}/{provider}', 'verb' => 'GET'],
+		['name' => 'idpMetadata#jwks', 'url' => '/api/idp/jwks/{organisation}/{provider}', 'verb' => 'GET'],
 		// The browser half of the same login. The start checks the consumer and
 		// its registered return address before anything leaves integriq; the
 		// callback sends the browser back only to the address kept in the

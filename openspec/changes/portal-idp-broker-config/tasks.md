@@ -101,8 +101,9 @@ the flag is `1`.
   - GIVEN an `oidc-rp` registration WHEN fetched THEN the JSON carries client id, redirect URI and JWKS URI and no secret
   - GIVEN an unknown organisation, unknown provider, missing or disabled registration WHEN fetched THEN each answers the same 404
   - GIVEN an unreadable certificate WHEN fetched THEN 503, and neither the body nor the log carries credential bytes
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
+      > `IdpMetadataController` (`metadata`, and `jwks` for an `oidc-rp` client using `private_key_jwt`) over `IdpMetadataService`: SP metadata XML with the EntityID (the metadata URL unless `spEntityId` is set), the public signing and encryption certificates read through the seam, the callback for HTTP-POST and HTTP-Redirect and the mapped attributes; the OIDC client document without any secret. Unknown provider, missing and disabled registration answer the same throttled 404; an unreadable certificate 503, logging the reference only. PHPUnit: `IdpMetadataServiceTest`, `IdpMetadataControllerTest`. Not run here: validation against the SAML metadata XSD (no schema file in the repo) and the route gates of the live pipeline.
 
 ### Task 10: The Beheer > Authenticatie section
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-beheer-authenticatie-configures-the-registrations-req-idpc-008`
