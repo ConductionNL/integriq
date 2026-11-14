@@ -66,4 +66,18 @@ class GatewayOpenApiImportFragmentTest extends TestCase {
 		$this->assertArrayHasKey('configuration', $properties);
 		$this->assertTrue($properties['password']['writeOnly']);
 	}//end testASourceKeepsItsImportedDocument()
+
+	/**
+	 * Endpoint gains an optional upstreamPath string; its own path and routing fields remain.
+	 *
+	 * @return void
+	 */
+	public function testAnEndpointCanNameItsUpstreamPath(): void {
+		$properties = self::merged()['components']['schemas']['endpoint']['properties'];
+
+		$this->assertSame('string', $properties['upstreamPath']['type']);
+		$this->assertArrayHasKey('endpoint', $properties);
+		$this->assertArrayHasKey('endpointArray', $properties);
+		$this->assertArrayHasKey('endpointRegex', $properties);
+	}//end testAnEndpointCanNameItsUpstreamPath()
 }//end class

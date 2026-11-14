@@ -2316,7 +2316,9 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Upstream path": "Upstreampad",
+        "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself.": "Voor targetType api: het pad op de bron waar dit endpoint naar doorstuurt, met optionele {{param}}-plaatshouders die uit de gatewayroute worden gevuld. Laat leeg om naar het endpointpad zelf door te sturen."
     },
     "plurals": {}
 }

@@ -17,7 +17,7 @@ Kind: code. Size M. Rows `integriq:gw-openapi-import`, `integriq:gw-openapi-publ
 - **files**: `lib/Service/OpenApi/OpenApiImportService.php`, `lib/Service/ConfigurationHandlers/SourceHandler.php`, `lib/Service/ConfigurationHandlers/EndpointHandler.php`, `lib/Settings/integriq_register.json` (source `openApiDocument`)
 - **acceptance_criteria**:
   - GIVEN three chosen operations WHEN imported THEN one source and three endpoints exist, and the source asks for its credential
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit; Newman call through one created endpoint against a mock source)
 
 ### Task 3: The import dialog

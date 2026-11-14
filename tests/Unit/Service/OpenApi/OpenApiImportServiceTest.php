@@ -279,8 +279,12 @@ class OpenApiImportServiceTest extends TestCase {
 		$show = $this->saved[3][1];
 		$this->assertSame('showPetById', $show['name']);
 		$this->assertSame('GET', $show['method']);
-		$this->assertSame('pets/{{petId}}', $show['endpoint']);
+		// The gateway route, prefix included, is what the routing listener
+		// rebuilds endpointArray from on save; the vendor path is proxied to.
+		$this->assertSame('vendor/pets/{{petId}}', $show['endpoint']);
+		$this->assertSame('pets/{{petId}}', $show['upstreamPath']);
 		$this->assertSame(['vendor', 'pets', '{{petId}}'], $show['endpointArray']);
+		$this->assertSame($show['endpointArray'], explode('/', $show['endpoint']));
 		$this->assertSame(1, preg_match($show['endpointRegex'], 'vendor/pets/42'));
 		$this->assertSame(0, preg_match($show['endpointRegex'], 'pets/42'));
 		$this->assertSame('api', $show['targetType']);

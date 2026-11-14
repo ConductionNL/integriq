@@ -42,6 +42,7 @@ use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCA\Integriq\Service\EndpointService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -57,6 +58,7 @@ use RuntimeException;
 #[UsesClass(OpenApiPublishService::class)]
 #[UsesClass(OpenApiDocumentNormaliser::class)]
 #[UsesClass(EndpointTargetResolver::class)]
+#[UsesClass(EndpointService::class)]
 #[UsesClass(AsyncApiDocumentService::class)]
 #[UsesClass(ProductPolicyService::class)]
 class GatewayOpenApiControllerTest extends TestCase {

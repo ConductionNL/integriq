@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\OpenApi;
 
+use OCA\Integriq\Service\EndpointService;
 use OCA\Integriq\Service\EndpointTargetResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -315,7 +316,9 @@ class OpenApiPublishService {
 		}
 
 		$method = strtolower((string) ($data['method'] ?? ''));
-		$wanted = self::shape(path: (string) ($data['endpoint'] ?? ''));
+		// An imported endpoint keeps the vendor path in `upstreamPath`; its
+		// `endpoint` carries the gateway prefix the vendor document lacks.
+		$wanted = self::shape(path: EndpointService::upstreamTemplate(endpointData: $data));
 		foreach ((array) ($vendor['paths'] ?? []) as $path => $item) {
 			if (is_array($item) === false || is_array($item[$method] ?? null) === false || self::shape(path: (string) $path) !== $wanted) {
 				continue;

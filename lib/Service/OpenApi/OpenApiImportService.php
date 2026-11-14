@@ -334,7 +334,12 @@ class OpenApiImportService {
 		$data = [
 			'name' => $operation['name'],
 			'description' => $operation['summary'],
-			'endpoint' => $operation['endpoint'],
+			// `endpoint` is the gateway route, prefix included: the routing
+			// listener derives endpointArray and endpointRegex from it on
+			// every save. The vendor's own path goes in `upstreamPath`, which
+			// the proxy renders instead of `endpoint` when it is set.
+			'endpoint' => $operation['gatewayPath'],
+			'upstreamPath' => $operation['endpoint'],
 			'endpointArray' => $operation['endpointArray'],
 			'endpointRegex' => self::regexOf(segments: $operation['endpointArray']),
 			'method' => $operation['method'],

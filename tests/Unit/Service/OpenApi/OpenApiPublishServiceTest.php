@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Validator;
+use OCA\Integriq\Service\EndpointService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -43,6 +44,7 @@ use Psr\Log\LoggerInterface;
 #[CoversClass(OpenApiPublishService::class)]
 #[UsesClass(OpenApiDocumentNormaliser::class)]
 #[UsesClass(EndpointTargetResolver::class)]
+#[UsesClass(EndpointService::class)]
 class OpenApiPublishServiceTest extends TestCase {
 
 	private const LOCATION = 'https://petstore.example.com/v1';
@@ -72,7 +74,10 @@ class OpenApiPublishServiceTest extends TestCase {
 					'uuid' => 'ep-pet',
 					'slug' => 'vendor-show-pet',
 					'name' => 'showPetById',
-					'endpoint' => 'pets/{{petId}}',
+					// As the import writes it: the gateway route in `endpoint`,
+					// the vendor path in `upstreamPath`.
+					'endpoint' => 'vendor/pets/{{petId}}',
+					'upstreamPath' => 'pets/{{petId}}',
 					'endpointArray' => ['vendor', 'pets', '{{petId}}'],
 					'method' => 'GET',
 					'targetType' => 'api',
