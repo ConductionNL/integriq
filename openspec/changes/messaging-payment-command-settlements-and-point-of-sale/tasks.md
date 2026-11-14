@@ -10,7 +10,7 @@ Kind: code. Size M. Halves for shillinq `receivables-payment-links` and `receiva
 - **acceptance_criteria**:
   - GIVEN a Mollie source WHEN shillinq dispatches the event for EUR 125.00 THEN the result slot holds the payment intent id, the provider payment id and a checkout URL, and the `payment_intent` carries integriq's own webhook URL
   - GIVEN no payment source WHEN the event is dispatched THEN it is handled with refusal code `no-source` and nothing is thrown to the caller
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit with the real event class and `LogPaymentProvider`; one dispatch against a Mollie test key on a dev instance)
 
 ### Task 2: Settlement fetch on the provider seam
@@ -18,8 +18,8 @@ Kind: code. Size M. Halves for shillinq `receivables-payment-links` and `receiva
 - **files**: `lib/Service/Payment/PaymentProviderInterface.php`, `lib/Service/Payment/MolliePaymentProvider.php`, `lib/Service/Payment/LogPaymentProvider.php`
 - **acceptance_criteria**:
   - GIVEN a recorded Mollie settlements response with payments, one refund and fees WHEN `fetchSettlements()` runs THEN it returns one settlement whose transaction lines add up to the net amount
-- [ ] Implement
-- [ ] Test (PHPUnit against recorded Mollie responses)
+- [x] Implement
+- [x] Test (PHPUnit against recorded Mollie responses)
 
 ### Task 3: Store, emit and schedule settlements
 - **spec_ref**: `openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008`
@@ -27,7 +27,7 @@ Kind: code. Size M. Halves for shillinq `receivables-payment-links` and `receiva
 - **acceptance_criteria**:
   - GIVEN a settlement pulled yesterday WHEN the job runs again THEN no second `nl.conduction.payment.settlement` event is emitted
   - GIVEN a source on the `log` provider WHEN the job runs THEN it is skipped
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit; `occ background-job:list` shows the job after upgrade on a dev instance)
 
 ### Task 4: Point-of-sale payments and the terminal list
@@ -36,7 +36,7 @@ Kind: code. Size M. Halves for shillinq `receivables-payment-links` and `receiva
 - **acceptance_criteria**:
   - GIVEN a Mollie source with one terminal WHEN a command asks for method `pointofsale` on that terminal THEN a payment is created without a checkout URL and the result says so
   - GIVEN the `log` provider WHEN the same command is dispatched THEN the refusal code is `unsupported`
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit; Newman for the terminal list route, including a 403 for a user without `payments.create`)
 
 ### Task 5: Seed, docs and strings

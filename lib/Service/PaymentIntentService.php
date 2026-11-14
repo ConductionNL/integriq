@@ -34,6 +34,7 @@ namespace OCA\Integriq\Service;
 use DateTime;
 use InvalidArgumentException;
 use OCA\Integriq\Exception\PaymentProviderException;
+use OCA\Integriq\Exception\PaymentSourceMissingException;
 use OCA\Integriq\Service\Payment\LogPaymentProvider;
 use OCA\Integriq\Service\Payment\MolliePaymentProvider;
 use OCA\Integriq\Service\Payment\PaymentProviderInterface;
@@ -174,6 +175,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				'amountCurrency' => (string)($payload['amount']['currency'] ?? ''),
 				'description' => (string)($payload['description'] ?? ''),
 				'method' => ($payload['method'] ?? null),
+				'terminalId' => ($payload['terminalId'] ?? null),
 				'redirectUrl' => (string)($payload['redirectUrl'] ?? ''),
 				'checkoutUrl' => $result['checkoutUrl'],
 				'metadata' => ($payload['metadata'] ?? []),
@@ -315,6 +317,32 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 	}//end resolveActiveSource()
 
 	/**
+	 * The point-of-sale terminals of a payment source.
+	 *
+	 * @param string $sourceSlug The payment source slug.
+	 *
+	 * @return list<array{terminalId: string, label: string, status: string}>|null The terminals (empty for a
+	 *                                                                              binding without them), or
+	 *                                                                              null when no payment source
+	 *                                                                              has that slug.
+	 *
+	 * @throws PaymentProviderException When the provider is unreachable or errors.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function listTerminals(string $sourceSlug): ?array {
+		try {
+			$source = $this->resolveSource(sourceSlug: $sourceSlug);
+		} catch (PaymentSourceMissingException) {
+			return null;
+		}
+
+		$configuration = ($source->getObject()['configuration'] ?? []);
+
+		return $this->resolveProvider(configuration: $configuration)->listTerminals(sourceConfiguration: $configuration);
+	}//end listTerminals()
+
+	/**
 	 * Validate the create-payment request shape (REQ-LPP-001).
 	 *
 	 * @param array $payload The create-payment envelope.
@@ -334,6 +362,10 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 
 		if (empty($payload['description']) === true) {
 			throw new InvalidArgumentException('`description` is required.');
+		}
+
+		if (($payload['method'] ?? null) === 'pointofsale' && trim((string)($payload['terminalId'] ?? '')) === '') {
+			throw new InvalidArgumentException('`terminalId` is required for a point-of-sale payment.');
 		}
 
 	}//end validateCreateRequest()
@@ -376,7 +408,7 @@ class PaymentIntentService implements PaymentIntentServiceInterface {
 				$selector = ', slug "' . $sourceSlug . '"';
 			}
 
-			throw new PaymentProviderException(
+			throw new PaymentSourceMissingException(
 				message: $this->l->t('No active payment source is configured') . ' (register "openconnector", '
 					. 'schema "source", type "payment"' . $selector . '). '
 					. 'Configure one before using the payment connector.'

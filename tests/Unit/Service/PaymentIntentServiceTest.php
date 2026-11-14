@@ -422,4 +422,45 @@ class PaymentIntentServiceTest extends TestCase {
 		$this->assertSame('failed', $result['outcome']);
 
 	}//end testHandleWebhookFailedStatusCarriesDefaultErrorMessage()
+	/**
+	 * The terminal list asks the source's binding, and answers null for an
+	 * unknown source (REQ-LPP-009).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function testListTerminalsAsksTheSourcesBinding(): void {
+		$source = $this->entity(['slug' => 'mollie-live', 'type' => 'payment', 'configuration' => ['provider' => 'mollie']]);
+		$this->objectService->method('findAll')->willReturnCallback(
+			fn (array $config): array => ($config['filters']['slug'] ?? '') === 'mollie-live' ? ['results' => [$source], 'total' => 1] : ['results' => [], 'total' => 0]
+		);
+		$this->mollieProvider->expects($this->once())->method('listTerminals')->with(['provider' => 'mollie'])
+			->willReturn([['terminalId' => 'term_example0001', 'label' => 'Telefoon Anna', 'status' => 'active']]);
+
+		$this->assertSame([['terminalId' => 'term_example0001', 'label' => 'Telefoon Anna', 'status' => 'active']], $this->service->listTerminals(sourceSlug: 'mollie-live'));
+		$this->assertNull($this->service->listTerminals(sourceSlug: 'gone'));
+	}//end testListTerminalsAsksTheSourcesBinding()
+
+	/**
+	 * The payment intent keeps the terminal of a point-of-sale payment.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function testAPointOfSalePaymentKeepsItsTerminal(): void {
+		$source = $this->entity(['slug' => 'mollie-live', 'type' => 'payment', 'configuration' => ['provider' => 'mollie']]);
+		$this->objectService->method('findAll')->willReturn(['results' => [$source], 'total' => 1]);
+		$this->mollieProvider->method('createPayment')->willReturn(['providerPaymentId' => 'tr_pos0001', 'paymentStatus' => 'open', 'checkoutUrl' => '', 'extras' => []]);
+		$this->objectService->expects($this->once())->method('saveObject')
+			->with($this->callback(fn (array $object): bool => $object['terminalId'] === 'term_example0001' && $object['method'] === 'pointofsale' && $object['checkoutUrl'] === ''))
+			->willReturn($this->entity([], 'pi-pos'));
+
+		$result = $this->service->createPayment(payload: array_merge($this->payload(), ['method' => 'pointofsale', 'terminalId' => 'term_example0001']));
+
+		$this->assertSame('pi-pos', $result['paymentIntentId']);
+		$this->assertSame('', $result['checkoutUrl']);
+	}//end testAPointOfSalePaymentKeepsItsTerminal()
+
 }//end class
