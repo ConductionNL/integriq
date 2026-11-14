@@ -337,11 +337,12 @@ describe('Jobs form configuration consistency', () => {
 	})
 
 	it('declares an order in the schema fragment for every included field', () => {
-		// `arguments` is exempt: fieldsFromSchema drops bare `type: object`
-		// properties before overrides apply, so it never reaches the form and
-		// the Synchronization picker stands in for it.
+		// `arguments` and `schedule` are exempt: fieldsFromSchema drops bare
+		// `type: object` properties before overrides apply, so they never reach
+		// the form; the Synchronization picker and JobScheduleFields stand in
+		// for them.
 		for (const key of config.includeFields.filter(
-			(field) => field !== 'arguments',
+			(field) => field !== 'arguments' && field !== 'schedule',
 		)) {
 			expect(fragmentProps[key], `${key} has no schema order`).toBeDefined()
 			expect(typeof fragmentProps[key].order).toBe('number')

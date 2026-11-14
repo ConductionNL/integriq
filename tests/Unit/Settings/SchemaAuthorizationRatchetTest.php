@@ -71,6 +71,7 @@ class SchemaAuthorizationRatchetTest extends TestCase {
 		'openformulieren_submission',
 		'outbound_message',
 		'payment_intent',
+		'peppol_inbound_document',
 		'recipient_key',
 		'recipient_opt_out',
 		'rule',
