@@ -66,6 +66,7 @@ final class StandardProtocolPaths {
 		'Education and absence standards (ROD, Verzuimloket, UWLR, Edu-V, OSO)' => '#^/api/(?:rod|verzuimloket|uwlr-eduv|oso)/#',
 		'Peppol inbound'                                                        => '#^/api/peppol/inbound$#',
 		'NotifyNL inbound'                                                      => '#^/api/notifynl/inbound$#',
+		'SMS provider delivery callbacks'                                       => '#^/api/sms/[^/]+/status/[^/]+$#',
 		'Open Formulieren submissions'                                          => '#^/api/open-formulieren/submissions$#',
 		'Inbound intake channels'                                               => '#^/api/intake/channels/[^/]+/inbound$#',
 		'CloudEvents receivers'                                                 => '#^/api/cloudevents/sources/[^/]+$#',

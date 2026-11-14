@@ -43,8 +43,9 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
   - GIVEN a `sourceSlug` of an enabled SMS source WHEN a message is sent THEN that source sends and its slug is stored
   - GIVEN a slug of a non-SMS source WHEN a message is sent THEN it is refused
   - GIVEN a new SMS source WHEN the form opens THEN the provider picker lists the five providers
-- [ ] Implement
-- [ ] Test (PHPUnit on the dispatcher; `tests/e2e/sms-providers.spec.ts`)
+- [x] Implement
+- [x] Test (PHPUnit on the dispatcher and `SmsProvidersController`; vitest on the picker)
+- [ ] Test (`tests/e2e/sms-providers.spec.ts`; browser test, needs a live instance)
 
 ### Task 6: Vendor delivery callbacks
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
@@ -52,8 +53,9 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
 - **acceptance_criteria**:
   - GIVEN a Twilio callback with the right token and a valid signature WHEN it arrives THEN the message becomes `delivered`
   - GIVEN a wrong token WHEN a callback arrives THEN it is refused before the body is read
-- [ ] Implement
-- [ ] Test (PHPUnit on the controller; `tests/e2e/sms-providers.spec.ts` posts a signed fixture)
+- [x] Implement
+- [x] Test (PHPUnit on the controller, the callback service, the three bindings' signature checks and the save listener)
+- [ ] Test (`tests/e2e/sms-providers.spec.ts` posts a signed fixture; browser test, needs a live instance)
 
 ### Task 7: NotifyNL e-mail
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
@@ -61,8 +63,9 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
 - **acceptance_criteria**:
   - GIVEN a mapped mail template WHEN a caller posts an e-mail THEN NotifyNL gets `/v2/notifications/email` and the outbound log shows it handed over
   - GIVEN a NotifyNL callback for that id WHEN it arrives THEN the outbound record shows the recipient delivered
-- [ ] Implement
-- [ ] Test (PHPUnit on the provider and the controller; `tests/e2e/sms-providers.spec.ts`)
+- [x] Implement
+- [x] Test (PHPUnit on the provider, `NotifyNlEmailService` and the controller)
+- [ ] Test (`tests/e2e/sms-providers.spec.ts`; browser test, needs a live instance)
 
 ### Task 8: Demo rows
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-cmcom-messagebird-and-twilio-send-through-the-sms-provider-seam-req-smsp-001
@@ -74,7 +77,15 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
 
 ## Build notes
 
-Tasks 1 to 4 and 8 are built. The registry is `SmsProviderRegistry`; a provider value no binding answers to resolves to `UnknownSmsProvider`, which refuses both calls naming the value, so `attemptSend()` stores the message `failed` with that reason. No `Application.php` change was needed: the registry and the three bindings autowire, and `SmsDispatchService` takes the registry as an optional last argument. CM.com has no status read, so its `fetchStatus()` refuses and names the callback; it does not return a guessed status. Tasks 5, 6 and 7 (source choice and picker, vendor callbacks, NotifyNL e-mail) are open.
+Tasks 1 to 4 and 8 are built. The registry is `SmsProviderRegistry`; a provider value no binding answers to resolves to `UnknownSmsProvider`, which refuses both calls naming the value, so `attemptSend()` stores the message `failed` with that reason. No `Application.php` change was needed: the registry and the three bindings autowire, and `SmsDispatchService` takes the registry as an optional last argument. CM.com has no status read, so its `fetchStatus()` refuses and names the callback; it does not return a guessed status.
+
+Task 5: `sendMessage()` takes `sourceSlug` in its options. A slug is looked up by `slug` and refused (`unknown-source`, 400 at the controller) unless it is an enabled source of type `sms`, before anything is stored or sent. The sending source's slug is stored on `sms_message` (schema 1.1.0, register 1.1.8) and shown as a column on the SMS page; `pollStatus()` reads through that source. `GET /api/sms/providers` (`SmsProvidersController`) lists the registry's bindings with name, config schema and whether they take signed callbacks, and the source form's SMS picker is built from it, with the string settings of the picked binding's config schema as fields. `sms` is added to the form's type list.
+
+Task 6: `POST /api/sms/{provider}/status/{token}` (`SmsStatusController`) is a standard-protocol path, so the URL the vendor signs is not rewritten. `SmsStatusCallbackService` picks the enabled SMS source of that provider whose `configuration.statusCallbackToken` matches in constant time, before the body is read; Twilio and MessageBird signatures are checked by the bindings (`SmsStatusCallbackInterface`) with the source's signing key. `SmsSourceCallbackListener` gives an SMS source its token on save, keeps the stored token and key on an edit that leaves them out, and stores a typed `webhookSigningKey` as `encryptedWebhookSigningKey` through `ICrypto`. The form shows the callback URL once the source has its token, and a signing key field for a vendor that signs.
+
+Task 7: `RestNotifyNlProvider::sendEmail()` posts to `/v2/notifications/email`. `POST /api/notifynl/emails` (action `notifynl.email`) goes through `NotifyNlEmailService`: the address is checked first (nothing sent or recorded for an address without a domain), the opt-out list is asked on channel `mail`, the outbound log row is opened on channel `notifynl`, its uuid is sent as NotifyNL's `reference`, and the row is handed over with NotifyNL's id. `notifyNl#inbound` looks the id up in `sms_message` first; for anything else it uses the callback's `reference` to find the log row and moves the recipient NotifyNL's id was handed over for (`deliveryReported()` or `recipientFailed()`).
+
+Left open: the three e2e tests in `tests/e2e/sms-providers.spec.ts` (browser tests against a live instance) and the live send per vendor under Verification.
 
 ## Verification
 

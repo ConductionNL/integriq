@@ -314,6 +314,11 @@ final class EventListenerBindings {
 		// creating/updating events, whichever page or app saves it.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SubscriptionSigningDefaultListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SubscriptionSigningDefaultListener::class);
+		// REQ-SMSP-004 (messaging-sms-providers-and-notifynl-mail): an SMS source
+		// gets its status-callback token, and a typed signing key is encrypted,
+		// on OpenRegister's own save path, whichever page or app saves it.
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: SmsSourceCallbackListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: SmsSourceCallbackListener::class);
 		// REQ-MSV-001 (mapping-message-schema-validation): a message schema whose
 		// document does not parse for its kind is refused on OpenRegister's own
 		// save path, so the refusal holds whichever page or app saves it.

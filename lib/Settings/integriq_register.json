@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   "x-openregister": {
     "type": "application",
@@ -4589,7 +4589,7 @@
         "slug": "sms_message",
         "title": "SMS Message",
         "icon": "MessageTextOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Audit + lifecycle record for one outbound SMS sent through a configured SMS channel source",
         "description": "An SMS Message tracks one outbound message submitted through a configured SMS channel source (NotifyNL, or the log/sandbox provider), from queued through provider acceptance and any delivery-status poll or inbound callback. See openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback.",
         "required": [
@@ -4620,8 +4620,13 @@
           },
           "provider": {
             "type": "string",
-            "description": "The provider binding that handled this message (log|notifynl)",
+            "description": "The provider binding that handled this message (log|notifynl|cmcom|messagebird|twilio)",
             "title": "Provider"
+          },
+          "sourceSlug": {
+            "type": "string",
+            "description": "Slug of the SMS source that sent this message: the one the caller named, else the first enabled SMS source",
+            "title": "Source"
           },
           "providerMessageId": {
             "type": "string",

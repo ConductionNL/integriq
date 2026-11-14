@@ -201,4 +201,69 @@ class TwilioSmsProvider extends BrokeredSmsProvider {
 			detail: $detail
 		);
 	}//end result()
+
+	/**
+	 * Twilio signs its status callbacks with an `X-Twilio-Signature` header.
+	 *
+	 * @return bool True.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function signsStatusCallbacks(): bool {
+		return true;
+	}//end signsStatusCallbacks()
+
+	/**
+	 * Check a Twilio status callback's signature and read its SID and status.
+	 *
+	 * The signature is the base64 HMAC-SHA1, keyed with the account's auth
+	 * token, of the URL followed by every posted parameter name and value in
+	 * name order.
+	 *
+	 * @param array             $sourceConfiguration The SMS source's configuration (unused).
+	 * @param SmsStatusCallback $callback            The callback as it arrived.
+	 *
+	 * @return DeliveryResult The SID and mapped status.
+	 *
+	 * @throws SmsProviderException When the signature does not verify or the callback names no message.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function readStatusCallback(array $sourceConfiguration, SmsStatusCallback $callback): DeliveryResult {
+		$key = (string)$callback->signingKey;
+		$signature = $callback->header(name: 'X-Twilio-Signature');
+		if ($key === '' || $signature === '') {
+			throw $this->badSignature();
+		}
+
+		$posted = [];
+		parse_str($callback->rawBody, $posted);
+		ksort($posted, SORT_STRING);
+		$signed = $callback->url;
+		foreach ($posted as $name => $value) {
+			if (is_scalar($value) === false) {
+				throw $this->badSignature();
+			}
+
+			$signed .= $name . (string)$value;
+		}
+
+		if (hash_equals(base64_encode(hash_hmac('sha1', $signed, $key, true)), $signature) === false) {
+			throw $this->badSignature();
+		}
+
+		$sid = self::callbackField(params: $posted, names: ['MessageSid', 'SmsSid']);
+		if ($sid === '') {
+			throw $this->unreadableCallback();
+		}
+
+		$vendorStatus = strtolower(self::callbackField(params: $posted, names: ['MessageStatus', 'SmsStatus']));
+		$detail = 'Twilio status: ' . $vendorStatus;
+		$errorCode = self::callbackField(params: $posted, names: ['ErrorCode']);
+		if ($errorCode !== '') {
+			$detail .= ' (error ' . $errorCode . ')';
+		}
+
+		return new DeliveryResult(providerMessageId: $sid, status: (self::STATUS_MAP[$vendorStatus] ?? 'queued'), detail: $detail);
+	}//end readStatusCallback()
 }//end class

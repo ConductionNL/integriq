@@ -39,6 +39,18 @@ class CmComSmsProvider extends BrokeredSmsProvider {
 
 	public const PROVIDER_ID = 'cmcom';
 
+	/**
+	 * CM.com status report codes and the status each maps to.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STATUS_MAP = [
+		'0' => 'sent',
+		'1' => 'failed',
+		'2' => 'delivered',
+		'3' => 'failed',
+	];
+
 	public const DEFAULT_BASE_URL = 'https://gw.messaging.cm.com/v1.0';
 
 	/**
@@ -141,4 +153,63 @@ class CmComSmsProvider extends BrokeredSmsProvider {
 			errorCode: 'status_read_unsupported'
 		);
 	}//end fetchStatus()
+
+	/**
+	 * CM.com does not sign its status reports: the per-source token in the callback URL is the check.
+	 *
+	 * @return bool False.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function signsStatusCallbacks(): bool {
+		return false;
+	}//end signsStatusCallbacks()
+
+	/**
+	 * Read a CM.com status report: the reference the message was sent with and its status code.
+	 *
+	 * Accepts the flat report (`reference`, `statuscode` or `status`) and the
+	 * JSON report nesting it under `messages.msg`, whose `status` is an object
+	 * with a `code`. Codes: 0 accepted, 1 rejected, 2 delivered, 3 failed.
+	 *
+	 * @param array             $sourceConfiguration The SMS source's configuration (unused).
+	 * @param SmsStatusCallback $callback            The callback as it arrived.
+	 *
+	 * @return DeliveryResult The reference and mapped status.
+	 *
+	 * @throws SmsProviderException When the report names no reference.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+	 */
+	public function readStatusCallback(array $sourceConfiguration, SmsStatusCallback $callback): DeliveryResult {
+		$report = $callback->params;
+		$nested = ($report['messages']['msg'] ?? null);
+		if (is_array($nested) === true) {
+			if (array_is_list($nested) === true) {
+				$nested = ($nested[0] ?? []);
+			}
+
+			$report = (array)$nested;
+		}
+
+		$status = ($report['status'] ?? null);
+		if (is_array($status) === true) {
+			$report['statuscode'] = ($status['code'] ?? null);
+			$report['errordescription'] = ($status['errorDescription'] ?? ($report['errordescription'] ?? null));
+		}
+
+		$reference = self::callbackField(params: $report, names: ['reference']);
+		if ($reference === '') {
+			throw $this->unreadableCallback();
+		}
+
+		$code = self::callbackField(params: $report, names: ['statuscode', 'status']);
+		$detail = 'CM.com status code: ' . $code;
+		$error = self::callbackField(params: $report, names: ['errordescription']);
+		if ($error !== '') {
+			$detail .= ' (' . $error . ')';
+		}
+
+		return new DeliveryResult(providerMessageId: $reference, status: (self::STATUS_MAP[$code] ?? 'sent'), detail: $detail);
+	}//end readStatusCallback()
 }//end class

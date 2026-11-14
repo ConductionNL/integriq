@@ -270,6 +270,77 @@
 					}}
 				</div>
 			</template>
+
+			<!-- SMS: the provider a source of type sms sends through, built
+			     from the registry over /api/sms/providers like the digital
+			     post picker above. Picking one shows the settings that
+			     provider reads; its credential is the brokered one above. -->
+			<template v-if="showsSmsPicker">
+				<label
+					for="cn-source-form-sms-provider"
+					class="cn-source-form-fields__label">
+					{{ t('integriq', 'SMS provider') }}
+				</label>
+				<NcSelect
+					inputId="cn-source-form-sms-provider"
+					:inputLabel="t('integriq', 'SMS provider')"
+					:aria-label-combobox="t('integriq', 'SMS provider')"
+					:modelValue="selectedSmsProvider"
+					:options="smsProviderOptions"
+					:loading="smsLoading"
+					:clearable="true"
+					:placeholder="t('integriq', 'Select an SMS provider')"
+					@update:modelValue="onSmsProviderPick" />
+				<span class="cn-source-form-fields__helper">
+					{{
+						t(
+							'integriq',
+							'Which service this source sends text messages through. Its credential is the brokered credential above.',
+						)
+					}}
+				</span>
+				<div
+					v-if="!smsLoading && smsProviderOptions.length === 0"
+					class="cn-source-form-fields__note">
+					{{
+						t(
+							'integriq',
+							'This instance has no SMS provider installed, so a text message cannot be sent from here yet.',
+						)
+					}}
+				</div>
+				<div
+					v-for="smsField in smsProviderFields"
+					:key="'sms-' + smsField.key"
+					class="cn-source-form-fields__field">
+					<SchemaTextField
+						:field="smsField"
+						:value="formData?.configuration?.[smsField.key] ?? null"
+						:placeholder="smsField.placeholder"
+						@update="onSmsConfigInput(smsField.key, $event)" />
+				</div>
+				<template v-if="smsStatusCallback">
+					<span class="cn-source-form-fields__label">
+						{{ t('integriq', 'Status callback URL') }}
+					</span>
+					<code
+						v-if="smsCallbackUrl"
+						class="cn-source-form-fields__callback-url">{{ smsCallbackUrl }}</code>
+					<span class="cn-source-form-fields__helper">
+						{{
+							smsCallbackUrl
+								? t('integriq', 'Enter this URL at the provider as the delivery report address, so delivery status reaches the SMS page.')
+								: t('integriq', 'Save the source to get its status callback URL.')
+						}}
+					</span>
+					<SchemaTextField
+						v-if="smsStatusCallback.signed"
+						:field="smsSigningKeyField"
+						:value="formData?.configuration?.webhookSigningKey ?? null"
+						type="password"
+						@update="onSmsConfigInput('webhookSigningKey', $event)" />
+				</template>
+			</template>
 		</div>
 	</div>
 </template>
@@ -305,7 +376,21 @@ const SOURCE_TYPE_OPTIONS = [
 	{ id: 'soap', label: 'SOAP' },
 	{ id: 'dso', label: 'DSO' },
 	{ id: 'case-system', label: 'Case system (ZGW)' },
+	{ id: 'sms', label: 'SMS' },
 ]
+
+/**
+ * Labels for the SMS provider settings the bindings' config schemas declare.
+ * A key not listed here is shown under its own name.
+ */
+const SMS_FIELD_LABELS = {
+	baseUrl: () => t('integriq', 'Base URL'),
+	senderId: () => t('integriq', 'Sender'),
+	accountSid: () => t('integriq', 'Account SID'),
+}
+
+/** Settings the SMS picker never shows as a text field: set by the picker, or by the credential picker. */
+const SMS_FIELDS_NOT_TYPED = ['provider', 'authentication']
 
 export default {
 	name: 'SourceFormFields',
@@ -345,6 +430,9 @@ export default {
 			/** Digital post bindings this instance carries, from the registry. */
 			digitalPostProviders: [],
 			digitalPostLoading: false,
+			/** SMS bindings this instance carries, from the registry. */
+			smsProviders: [],
+			smsLoading: false,
 		}
 	},
 
@@ -474,6 +562,111 @@ export default {
 			)
 		},
 
+		/**
+		 * Whether this source sends text messages, and so needs the SMS picker.
+		 *
+		 * @return {boolean} True for an SMS source.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 */
+		showsSmsPicker() {
+			return String(this.formData?.type ?? '') === 'sms'
+		},
+
+		/**
+		 * The SMS bindings this instance carries, as picker options.
+		 *
+		 * @return {object[]} The options, labelled with each binding's name.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 */
+		smsProviderOptions() {
+			return this.smsProviders
+				.filter((provider) => typeof provider?.providerId === 'string' && provider.providerId !== '')
+				.map((provider) => ({
+					id: provider.providerId,
+					label: String(provider.name || provider.providerId),
+				}))
+		},
+
+		/**
+		 * The option matching the written provider id. A stored id this
+		 * instance does not carry is shown as itself, never cleared.
+		 *
+		 * @return {object|null} The selected option.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 */
+		selectedSmsProvider() {
+			const id = String(this.formData?.configuration?.provider ?? '')
+			if (!id) return null
+			return this.smsProviderOptions.find((option) => option.id === id) ?? { id, label: id }
+		},
+
+		/**
+		 * The text settings the picked SMS binding reads, from its config schema.
+		 *
+		 * @return {object[]} Field descriptors for SchemaTextField.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 */
+		smsProviderFields() {
+			const id = String(this.formData?.configuration?.provider ?? '')
+			const provider = this.smsProviders.find((candidate) => candidate?.providerId === id)
+			const schema = provider?.configSchema
+			const properties = schema?.properties
+			if (!properties || typeof properties !== 'object') return []
+			const required = Array.isArray(schema.required) ? schema.required : []
+			return Object.entries(properties)
+				.filter(([key, property]) => !SMS_FIELDS_NOT_TYPED.includes(key) && property?.type === 'string')
+				.map(([key, property]) => ({
+					key,
+					label: SMS_FIELD_LABELS[key] ? SMS_FIELD_LABELS[key]() : key,
+					description: typeof property.description === 'string' ? property.description : '',
+					required: required.includes(key),
+					placeholder: typeof property.default === 'string' ? property.default : '',
+				}))
+		},
+
+		/**
+		 * The picked SMS binding's status callback, or null when it takes none.
+		 *
+		 * @return {{signed: boolean}|null} Whether the vendor signs its callbacks.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 */
+		smsStatusCallback() {
+			const id = String(this.formData?.configuration?.provider ?? '')
+			const provider = this.smsProviders.find((candidate) => candidate?.providerId === id)
+			const callback = provider?.statusCallback
+			if (!callback || typeof callback !== 'object') return null
+			return { signed: callback.signed === true }
+		},
+
+		/**
+		 * The absolute URL the vendor posts delivery status to, once the source has its token.
+		 *
+		 * @return {string} The URL, or an empty string before the first save.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 */
+		smsCallbackUrl() {
+			const provider = String(this.formData?.configuration?.provider ?? '')
+			const token = String(this.formData?.configuration?.statusCallbackToken ?? '')
+			if (!provider || !/^[A-Za-z0-9]+$/.test(token)) return ''
+			const path = generateUrl('/apps/integriq/api/sms/' + encodeURIComponent(provider) + '/status/' + token)
+			return window.location.origin + path
+		},
+
+		/**
+		 * The signing key field: typed in clear, stored encrypted.
+		 *
+		 * @return {object} The field descriptor.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
+		 */
+		smsSigningKeyField() {
+			return {
+				key: 'webhookSigningKey',
+				label: t('integriq', 'Callback signing key'),
+				description: t('integriq', 'The key the provider signs its delivery reports with (for Twilio, the auth token). It is stored encrypted; leave it empty to keep the stored key.'),
+				required: false,
+			}
+		},
+
 		selectedCredential() {
 			const id = readCredentialId(this.formData)
 			if (!id) return null
@@ -508,6 +701,10 @@ export default {
 			) {
 				this.fetchDigitalPostProviders()
 			}
+
+			if (this.showsSmsPicker && this.smsProviders.length === 0 && !this.smsLoading) {
+				this.fetchSmsProviders()
+			}
 		},
 	},
 
@@ -525,6 +722,10 @@ export default {
 
 		if (this.showsDigitalPostPicker) {
 			this.fetchDigitalPostProviders()
+		}
+
+		if (this.showsSmsPicker) {
+			this.fetchSmsProviders()
 		}
 	},
 
@@ -655,6 +856,58 @@ export default {
 			}
 		},
 
+		/**
+		 * Write the picked SMS binding onto the source's configuration.
+		 *
+		 * @param {object|null} option The picked option, or null when cleared.
+		 * @return {void}
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 */
+		onSmsProviderPick(option) {
+			const configuration = { ...(this.formData?.configuration ?? {}) }
+			configuration.provider = option?.id ?? ''
+			this.updateField('configuration', configuration)
+		},
+
+		/**
+		 * Write one typed SMS setting onto the source's configuration; an emptied one is removed.
+		 *
+		 * @param {string} key The configuration key.
+		 * @param {string} value The typed value.
+		 * @return {void}
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 */
+		onSmsConfigInput(key, value) {
+			const configuration = { ...(this.formData?.configuration ?? {}) }
+			if (value === '' || value === null || value === undefined) {
+				delete configuration[key]
+			} else {
+				configuration[key] = value
+			}
+			this.updateField('configuration', configuration)
+		},
+
+		/**
+		 * Ask the instance which SMS bindings it carries. Soft-fails to an empty list.
+		 *
+		 * @return {Promise<void>} Resolves once the bindings are loaded.
+		 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+		 */
+		async fetchSmsProviders() {
+			this.smsLoading = true
+			try {
+				const response = await axios.get(generateUrl('/apps/integriq/api/sms/providers'))
+				const providers = response?.data?.providers
+				this.smsProviders = Array.isArray(providers) ? providers : []
+			} catch (err) {
+				this.smsProviders = []
+				// eslint-disable-next-line no-console
+				console.warn('[SourceFormFields] SMS provider fetch failed', err)
+			} finally {
+				this.smsLoading = false
+			}
+		},
+
 		async fetchCredentials() {
 			this.credentialsLoading = true
 			this.brokerUnavailable = false
@@ -746,6 +999,13 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 	margin-top: 4px;
+}
+
+.cn-source-form-fields__callback-url {
+	word-break: break-all;
+	padding: 4px 8px;
+	background: var(--color-background-dark);
+	border-radius: var(--border-radius);
 }
 
 .cn-source-form-fields__note--warn {

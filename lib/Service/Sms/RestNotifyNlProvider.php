@@ -222,6 +222,55 @@ class RestNotifyNlProvider implements SmsProviderInterface {
 	}//end send()
 
 	/**
+	 * Send one e-mail through NotifyNL's `/v2/notifications/email`.
+	 *
+	 * The template id may be a logical name the source maps through
+	 * `templateMapping`. A non-empty reference is sent as NotifyNL's
+	 * `reference`, which NotifyNL hands back on its delivery callback. The
+	 * source's `emailReplyToId`, when set, names the reply-to address.
+	 *
+	 * @param array  $sourceConfiguration The NotifyNL source's `configuration` object.
+	 * @param string $emailAddress        The recipient address (validated by the caller).
+	 * @param string $templateId          The NotifyNL template id, or a name `templateMapping` maps.
+	 * @param array  $personalisation     The template's personalisation values.
+	 * @param string $reference           The caller's own reference, or empty.
+	 *
+	 * @return DeliveryResult The accepted `queued` result carrying NotifyNL's `id`.
+	 *
+	 * @throws SmsProviderException When no template resolves, or NotifyNL is unreachable or refuses.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-notifynl-sends-e-mail-and-the-send-is-logged-per-recipient-req-smsp-005
+	 */
+	public function sendEmail(
+		array $sourceConfiguration,
+		string $emailAddress,
+		string $templateId,
+		array $personalisation,
+		string $reference = '',
+	): DeliveryResult {
+		$payload = [
+			'email_address' => $emailAddress,
+			'template_id' => $this->resolveTemplateId(sourceConfiguration: $sourceConfiguration, options: ['templateId' => $templateId]),
+			'personalisation' => $personalisation,
+		];
+		if ($reference !== '') {
+			$payload['reference'] = $reference;
+		}
+
+		$replyTo = (string)($sourceConfiguration['emailReplyToId'] ?? '');
+		if ($replyTo !== '') {
+			$payload['email_reply_to_id'] = $replyTo;
+		}
+
+		$response = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			call: new NotifyCall(method: 'POST', path: '/v2/notifications/email', jsonBody: $payload)
+		);
+
+		return new DeliveryResult(providerMessageId: self::notificationId(response: $response), status: 'queued', detail: null);
+	}//end sendEmail()
+
+	/**
 	 * The template personalisation the options carry, or none.
 	 *
 	 * @param array $options The send options.

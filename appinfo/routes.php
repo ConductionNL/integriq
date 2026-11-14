@@ -99,6 +99,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// provider picker is built from the registry rather than from a list
 		// written beside it and left to go stale.
 		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		// The SMS bindings this instance has, for the provider picker of a source
+		// of type sms (messaging-sms-providers-and-notifynl-mail, REQ-SMSP-003).
+		['name' => 'smsProviders#providers', 'url' => '/api/sms/providers', 'verb' => 'GET'],
+		// A CM.com, MessageBird or Twilio delivery callback (REQ-SMSP-004). Public:
+		// the per-source token in the URL and, where the vendor signs, its
+		// signature are the check; see SmsStatusController::status().
+		['name' => 'smsStatus#status', 'url' => '/api/sms/{provider}/status/{token}', 'verb' => 'POST', 'requirements' => ['provider' => '[a-z]+', 'token' => '[A-Za-z0-9]+']],
 		// Test a draft rule against a sample and route held messages again
 		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
 		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
@@ -196,6 +203,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'notifyNl#send', 'url' => '/api/notifynl/messages', 'verb' => 'POST'],
 		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
 		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
+		// A NotifyNL e-mail (REQ-SMSP-005), behind the notifynl.email action.
+		['name' => 'notifyNl#sendEmail', 'url' => '/api/notifynl/emails', 'verb' => 'POST'],
 
 		// KISS (Klantinteractie Servicesysteem) KCC bridge (openspec/changes/kiss-kcc-bridge).
 		// Push is an authenticated NC-session call (production binding for sibling
