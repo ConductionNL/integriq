@@ -24,45 +24,55 @@
 		</p>
 
 		<div v-else class="integriq-admin__matrix-wrapper">
-			<table class="integriq-admin__matrix">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('integriq', 'Action') }}
-						</th>
-						<th
-							v-for="group in displayGroups"
-							:key="group"
-							scope="col"
-							class="integriq-admin__matrix-group">
-							{{ group }}
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="action in actions" :key="action">
-						<th scope="row" class="integriq-admin__matrix-action">
-							{{ action }}
-						</th>
-						<td
-							v-for="group in displayGroups"
-							:key="`${action}-${group}`"
-							class="integriq-admin__matrix-cell">
-							<NcCheckboxRadioSwitch
-								:modelValue="isChecked(action, group)"
-								:disabled="group === 'admin'"
-								:aria-label="
-									t(
-										'integriq',
-										'Allow group {group} to perform {action}',
-										{ group, action },
-									)
-								"
-								@update:modelValue="toggle(action, group, $event)" />
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<section
+				v-for="section in sections"
+				:key="section.area"
+				class="integriq-admin__matrix-section"
+				:data-testid="`admin-action-area-${section.area}`">
+				<h4 v-if="section.area" class="integriq-admin__matrix-area">
+					{{ t('integriq', section.area) }}
+				</h4>
+				<table class="integriq-admin__matrix">
+					<thead>
+						<tr>
+							<th scope="col">
+								{{ t('integriq', 'Action') }}
+							</th>
+							<th
+								v-for="group in displayGroups"
+								:key="group"
+								scope="col"
+								class="integriq-admin__matrix-group">
+								{{ group }}
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="action in section.actions" :key="action.name">
+							<th scope="row" class="integriq-admin__matrix-action">
+								<span class="integriq-admin__matrix-label">{{ t('integriq', action.label) }}</span>
+								<code class="integriq-admin__matrix-name">{{ action.name }}</code>
+							</th>
+							<td
+								v-for="group in displayGroups"
+								:key="`${action.name}-${group}`"
+								class="integriq-admin__matrix-cell">
+								<NcCheckboxRadioSwitch
+									:modelValue="isChecked(action.name, group)"
+									:disabled="group === 'admin'"
+									:aria-label="
+										t(
+											'integriq',
+											'Allow group {group} to perform {action}',
+											{ group, action: action.name },
+										)
+									"
+									@update:modelValue="toggle(action.name, group, $event)" />
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
 		</div>
 
 		<div class="integriq-admin__matrix-actions">
@@ -86,12 +96,13 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import { editableMatrix, savePayload } from './actionMatrix.js'
+import { actionSections, editableMatrix, savePayload } from './actionMatrix.js'
 
 /**
  * Admin editor for the ADR-023 action-authorization matrix.
  *
- * Renders one row per declared action and one column per Nextcloud group.
+ * Renders one section per area, one row per declared action (its label, with
+ * the action name beneath) and one column per Nextcloud group.
  * Each cell is a checkbox: ticking it adds the group to the action's allowed
  * list. The synthetic `admin` column is always-on and disabled because
  * Nextcloud admins always pass ActionAuthService::requireAction().
@@ -113,6 +124,9 @@ export default {
 			error: '',
 			actions: [],
 			groups: [],
+			// labels / areas: { '<action>': 'text', ... } from the seed.
+			labels: {},
+			areas: {},
 			// matrix: { '<action>': ['group', ...], ... }
 			matrix: {},
 		}
@@ -124,6 +138,11 @@ export default {
 		displayGroups() {
 			const rest = this.groups.filter((g) => g !== 'admin')
 			return ['admin', ...rest]
+		},
+
+		/** @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002 */
+		sections() {
+			return actionSections(this.actions, this.areas, this.labels)
 		},
 	},
 
@@ -143,6 +162,8 @@ export default {
 				)
 				this.actions = Array.isArray(data.actions) ? data.actions : []
 				this.groups = Array.isArray(data.groups) ? data.groups : []
+				this.labels = data.labels && typeof data.labels === 'object' ? data.labels : {}
+				this.areas = data.areas && typeof data.areas === 'object' ? data.areas : {}
 				// Clone the matrix into a plain editable map keyed by action.
 				this.matrix = editableMatrix(this.actions, data.matrix)
 			} catch (e) {
@@ -257,10 +278,27 @@ export default {
 	white-space: nowrap;
 }
 
+.integriq-admin__matrix-section {
+	margin-bottom: 16px;
+}
+
+.integriq-admin__matrix-area {
+	margin: 12px 0 8px;
+}
+
 .integriq-admin__matrix-action {
+	white-space: nowrap;
+}
+
+.integriq-admin__matrix-label {
+	display: block;
+}
+
+.integriq-admin__matrix-name {
+	display: block;
 	font-family: var(--font-face-monospace, monospace);
 	font-size: 0.85em;
-	white-space: nowrap;
+	color: var(--color-text-maxcontrast);
 }
 
 .integriq-admin__matrix-cell {

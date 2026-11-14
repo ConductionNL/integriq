@@ -160,6 +160,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 			schema: self::SCHEMA,
 			uuid: $trace->getTraceId(),
 			_rbac: false,
+			// Unscoped: system write of telemetry from background jobs and listeners, no user session.
 			_multitenancy: false
 		);
 
@@ -189,6 +190,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 				register: self::REGISTER,
 				schema: self::SCHEMA,
 				_rbac: false,
+				// Unscoped: the OpenTelemetry export job reads the trace it was queued for, no user session.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -463,6 +465,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 				register: 'integriq',
 				schema: 'job',
 				_rbac: false,
+				// Unscoped: replay re-reads the job of a trace the caller already reached in scope.
 				_multitenancy: false
 			);
 			$jobService = $this->containerInterface->get(JobService::class);
@@ -511,6 +514,7 @@ class ExecutionTraceService implements ExecutionTraceServiceInterface {
 				register: 'integriq',
 				schema: 'event_message',
 				_rbac: false,
+				// Unscoped: replay re-reads the event of a trace the caller already reached in scope.
 				_multitenancy: false
 			);
 			$preview = $eventService->previewWebhookDelivery(message: $message);

@@ -652,6 +652,7 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 				schema: InlineSecretMigrationPlanner::SCHEMA,
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: the inline secret migration runs as the system.
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
@@ -755,6 +756,7 @@ class InlineSecretMigrationExecutor implements InlineSecretMigrationExecutorInte
 				register: InlineSecretMigrationPlanner::REGISTER,
 				schema: $this->currentSchema,
 				_rbac: false,
+				// Unscoped: the inline secret migration reads the raw stored object, run as the system.
 				_multitenancy: false,
 				_render: false
 			);

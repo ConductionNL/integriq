@@ -1,0 +1,86 @@
+{
+	"_comment": "ADR-037 register fragment for openspec/changes/automation-job-calendar-schedules (REQ-JCAL-001). Adds a `schedule` object to the `job` schema: `type` `interval` (the default; today's behaviour, reading `interval`) or `calendar`, and for a calendar the ISO weekdays (1 is Monday), an optional day-of-month rule, one or more HH:MM times, an IANA time zone and dates to skip. An absent `schedule` means `interval`, so every existing job keeps its behaviour. `scheduleFingerprint` is written by JobService next to `nextRun`: a hash of the schedule the next run was computed from, so an edited calendar is noticed on the next tick (design D3). No `version` here on purpose: fragments merge in file-name order and learniq-exchange-jobs.json, which sorts after this file, sets the job schema's version last, so a bump here would be overwritten; the import's content-differs path picks the new properties up.",
+	"components": {
+		"schemas": {
+			"job": {
+				"properties": {
+					"schedule": {
+						"type": "object",
+						"title": "Schedule",
+						"description": "When the job runs: every `interval` seconds, or on a calendar of weekdays, a day-of-month rule and times of day in a time zone. Absent means interval.",
+						"order": 41,
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": ["interval", "calendar"],
+								"default": "interval",
+								"title": "Schedule type"
+							},
+							"weekdays": {
+								"type": "array",
+								"minItems": 1,
+								"uniqueItems": true,
+								"items": {
+									"type": "integer",
+									"minimum": 1,
+									"maximum": 7
+								},
+								"title": "Weekdays",
+								"description": "ISO weekday numbers: 1 is Monday, 7 is Sunday."
+							},
+							"dayOfMonth": {
+								"enum": ["first", "last", "firstWorkingDay", "lastWorkingDay", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+								"title": "Day of month",
+								"description": "Optional. A working day is Monday to Friday minus the skipped dates. A day number the month does not have skips that month."
+							},
+							"times": {
+								"type": "array",
+								"minItems": 1,
+								"uniqueItems": true,
+								"items": {
+									"type": "string",
+									"pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+								},
+								"title": "Times of day",
+								"description": "HH:MM in the calendar's time zone."
+							},
+							"timeZone": {
+								"type": "string",
+								"minLength": 1,
+								"title": "Time zone",
+								"description": "An IANA time zone such as Europe/Amsterdam."
+							},
+							"skipDates": {
+								"type": "array",
+								"uniqueItems": true,
+								"items": {
+									"type": "string",
+									"format": "date"
+								},
+								"title": "Dates to skip"
+							}
+						},
+						"required": ["type"],
+						"if": {
+							"properties": {
+								"type": {
+									"const": "calendar"
+								}
+							},
+							"required": ["type"]
+						},
+						"then": {
+							"required": ["weekdays", "times", "timeZone"]
+						}
+					},
+					"scheduleFingerprint": {
+						"type": "string",
+						"title": "Schedule fingerprint",
+						"description": "Set by the run loop: a hash of the calendar the next run was computed from.",
+						"order": 99
+					}
+				}
+			}
+		}
+	}
+}

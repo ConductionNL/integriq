@@ -191,4 +191,101 @@ class RestPeppolAccessPointProviderTest extends TestCase {
 		$this->assertSame(['ubl-invoice-2.1'], $result['supportedDocTypes']);
 
 	}//end testLookupParticipantParsesSuccessfulResponse()
+
+	/**
+	 * A configured broker whose dispatch records the URL and answers the given response.
+	 *
+	 * @param Response           $response The Access Point's answer.
+	 * @param array<int, string> $urls     Filled with the URLs fetched.
+	 *
+	 * @return void
+	 */
+	private function brokerAnswering(Response $response, array &$urls): void {
+		$this->brokeredCallService->method('hasCredentialRef')->willReturn(true);
+		$this->brokeredCallService->method('prepare')->willReturn(['credentialId' => 'cred-uuid', 'actingUserId' => null]);
+		$this->brokeredCallService->method('dispatch')->willReturnCallback(
+			function (string $credentialId, ?string $actingUserId, string $method, string $url) use ($response, &$urls): Response {
+				$urls[] = $method . ' ' . $url;
+				return $response;
+			}
+		);
+	}//end brokerAnswering()
+
+	/**
+	 * REQ-009: a document id is fetched under the Access Point's /documents/ with the brokered credential.
+	 *
+	 * @return void
+	 */
+	public function testFetchInboundDocumentByIdReturnsTheUbl(): void {
+		$urls = [];
+		$this->brokerAnswering(new Response(200, [], '<Invoice/>'), $urls);
+
+		$this->assertSame('<Invoice/>', $this->provider->fetchInboundDocument($this->configuration, 'AP DOC/9'));
+		$this->assertSame(['GET https://ap.example/peppol/documents/AP%20DOC%2F9'], $urls);
+	}//end testFetchInboundDocumentByIdReturnsTheUbl()
+
+	/**
+	 * An absolute URL on the Access Point's own host is fetched as given.
+	 *
+	 * @return void
+	 */
+	public function testFetchInboundDocumentByUrlOnTheAccessPointsHost(): void {
+		$urls = [];
+		$this->brokerAnswering(new Response(200, [], '<Invoice/>'), $urls);
+
+		$this->provider->fetchInboundDocument($this->configuration, 'https://AP.example/doc/AP-DOC-9');
+		$this->assertSame(['GET https://AP.example/doc/AP-DOC-9'], $urls);
+	}//end testFetchInboundDocumentByUrlOnTheAccessPointsHost()
+
+	/**
+	 * A URL on another host is refused before any call, so the credential never leaves for it.
+	 *
+	 * @return void
+	 */
+	public function testFetchInboundDocumentOnAnotherHostIsRefused(): void {
+		$this->brokeredCallService->expects($this->never())->method('dispatch');
+
+		$this->expectException(PeppolProviderException::class);
+		$this->expectExceptionMessage("The inbound document is not on the Access Point's host: https://elsewhere.example/doc/1");
+		$this->provider->fetchInboundDocument($this->configuration, 'https://elsewhere.example/doc/1');
+	}//end testFetchInboundDocumentOnAnotherHostIsRefused()
+
+	/**
+	 * A failing Access Point, an empty answer and an empty reference are provider exceptions.
+	 *
+	 * @return void
+	 */
+	public function testFetchInboundDocumentFailuresAreProviderExceptions(): void {
+		$urls = [];
+		$this->brokerAnswering(new Response(500, [], 'boom'), $urls);
+		try {
+			$this->provider->fetchInboundDocument($this->configuration, 'AP-DOC-9');
+			$this->fail('HTTP 500 was accepted.');
+		} catch (PeppolProviderException $e) {
+			$this->assertSame('The Peppol Access Point responded with HTTP 500.', $e->getMessage());
+		}
+
+		try {
+			$this->provider->fetchInboundDocument($this->configuration, '  ');
+			$this->fail('An empty reference was fetched.');
+		} catch (PeppolProviderException $e) {
+			$this->assertSame('The inbound notification named no document to fetch.', $e->getMessage());
+		}
+
+		$this->assertSame(['GET https://ap.example/peppol/documents/AP-DOC-9'], $urls);
+	}//end testFetchInboundDocumentFailuresAreProviderExceptions()
+
+	/**
+	 * An empty document is refused.
+	 *
+	 * @return void
+	 */
+	public function testFetchInboundDocumentRefusesAnEmptyDocument(): void {
+		$urls = [];
+		$this->brokerAnswering(new Response(200, [], " \n"), $urls);
+
+		$this->expectException(PeppolProviderException::class);
+		$this->expectExceptionMessage('The Peppol Access Point returned an empty document for AP-DOC-9.');
+		$this->provider->fetchInboundDocument($this->configuration, 'AP-DOC-9');
+	}//end testFetchInboundDocumentRefusesAnEmptyDocument()
 }//end class
