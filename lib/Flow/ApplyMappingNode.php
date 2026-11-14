@@ -286,8 +286,11 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 		$reference = trim((string)$config['mapping']);
 		$inputPath = trim((string)($config['input'] ?? ''));
 		$outputKey = trim((string)($config['output'] ?? ''));
-		$ownershipMode = trim((string)($config['ownership'] ?? ''));
-		$existsPath = trim((string)($config['exists'] ?? ''));
+		$step = [
+			'input' => $inputPath,
+			'ownership' => trim((string)($config['ownership'] ?? '')),
+			'exists' => trim((string)($config['exists'] ?? '')),
+		];
 		$onError = FlowNodeSupport::onErrorPolicy(config: $config, context: $context);
 		$stepId = FlowNodeSupport::stepId(config: $config, context: $context, nodeId: self::NODE_ID);
 
@@ -303,24 +306,10 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 				$mapping = null;
 				if ($templated === true) {
 					$itemReference = FlowTemplate::renderReference(template: $reference, json: $json);
-					if (array_key_exists($itemReference, $resolved) === false) {
-						$resolved[$itemReference] = $this->resolveItemMapping(name: $itemReference);
-					}
-
-					$mapping = $resolved[$itemReference];
-					if ($mapping instanceof FlowNodeException) {
-						throw $mapping;
-					}
+					$mapping = $this->templatedMapping(name: $itemReference, resolved: $resolved);
 				}
 
-				$mapped = $this->mapOne(
-					json: $json,
-					reference: $itemReference,
-					inputPath: $inputPath,
-					ownershipMode: $ownershipMode,
-					existsPath: $existsPath,
-					resolved: $mapping
-				);
+				$mapped = $this->mapOne(json: $json, reference: $itemReference, step: $step, resolved: $mapping);
 				$json = $this->applyResult(json: $json, mapped: $mapped, outputKey: $outputKey);
 			} catch (Throwable $exception) {
 				$failure = $this->asNodeFailure(exception: $exception, reference: $itemReference);
@@ -394,9 +383,9 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 *
 	 * @param array $json The item's record.
 	 * @param string $reference The authored mapping reference.
-	 * @param string $inputPath Dot-path to the input, or empty for the whole record.
-	 * @param string $ownershipMode `inbound`, `outbound`, or empty for no ownership rule.
-	 * @param string $existsPath Dot-path to the writing side's record id on the item.
+	 * @param array{input: string, ownership: string, exists: string} $step The step's trimmed `input`
+	 *        (dot-path to the input, or empty for the whole record), `ownership` (`inbound`, `outbound`,
+	 *        or empty for no ownership rule) and `exists` (dot-path to the writing side's record id).
 	 * @param ObjectEntity|null $resolved The mapping already resolved for a templated reference, or null.
 	 *
 	 * @return array The mapped result.
@@ -410,11 +399,12 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	private function mapOne(
 		array $json,
 		string $reference,
-		string $inputPath,
-		string $ownershipMode='',
-		string $existsPath='',
+		array $step,
 		?ObjectEntity $resolved=null
 	): array {
+		$inputPath = $step['input'];
+		$ownershipMode = $step['ownership'];
+		$existsPath = $step['exists'];
 		$input = $json;
 		if ($inputPath !== '') {
 			$value = FlowTemplate::lookup(path: $inputPath, json: $json);
@@ -458,6 +448,31 @@ class ApplyMappingNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 
 		return MappingOwnership::keepWriterFields(mapped: $mapped, ownership: $ownership, mode: $ownershipMode);
 	}//end mapOne()
+
+	/**
+	 * The mapping a templated reference names for one item, looked up once
+	 * per distinct name in the run.
+	 *
+	 * @param string                                         $name     The rendered mapping name.
+	 * @param array<string, ObjectEntity|FlowNodeException> $resolved Lookups made so far in this run, by name.
+	 *
+	 * @return ObjectEntity The mapping.
+	 *
+	 * @throws FlowNodeException When the name resolves to no mapping.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function templatedMapping(string $name, array &$resolved): ObjectEntity {
+		if (array_key_exists($name, $resolved) === false) {
+			$resolved[$name] = $this->resolveItemMapping(name: $name);
+		}
+
+		if ($resolved[$name] instanceof FlowNodeException) {
+			throw $resolved[$name];
+		}
+
+		return $resolved[$name];
+	}//end templatedMapping()
 
 	/**
 	 * Resolve one item's rendered mapping name, or say why there is none.

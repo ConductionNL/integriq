@@ -285,17 +285,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	public function configForm(): array {
 		return [
-			[
-				'key' => 'source',
-				'label' => $this->l10n->t('Source'),
-				'type' => 'select',
-				'help' => $this->l10n->t(
-					'The configured source this step calls. The call inherits its base URL, authentication and rate limits. '
-					. 'A template such as jobboard-{{ json.channel }} picks the source per item.'
-				),
-				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
-			],
+			$this->sourceField(),
 			[
 				'key' => 'endpoint',
 				'label' => $this->l10n->t('Endpoint'),
@@ -347,6 +337,28 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			],
 		];
 	}//end configForm()
+
+	/**
+	 * The `source` field: a picker fed by the app's own sources listing, or a
+	 * template that picks the source per item.
+	 *
+	 * @return array<string, mixed> The field description.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function sourceField(): array {
+		return [
+			'key' => 'source',
+			'label' => $this->l10n->t('Source'),
+			'type' => 'select',
+			'help' => $this->l10n->t(
+				'The configured source this step calls. The call inherits its base URL, authentication and rate limits. '
+				. 'A template such as jobboard-{{ json.channel }} picks the source per item.'
+			),
+			'required' => true,
+			'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
+		];
+	}//end sourceField()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
@@ -843,26 +855,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	private function resolveItemSources(SourceCallRun $run): void {
 		$resolved = [];
 		foreach (array_keys($run->items) as $index) {
-			if ($run->source !== null) {
-				$run->references[$index] = $run->reference;
-				$run->sources[$index] = $run->source;
-				continue;
-			}
-
-			$name = FlowTemplate::renderReference(template: $run->reference, json: $run->records[$index]);
-			$run->references[$index] = $name;
-
-			if (array_key_exists($name, $resolved) === false) {
-				$resolved[$name] = $this->resolveItemSource(name: $name);
-			}
-
-			if ($resolved[$name] instanceof ObjectEntity) {
-				$run->sources[$index] = $resolved[$name];
-				continue;
-			}
-
-			$run->unresolved[$index] = $resolved[$name];
-		}//end foreach
+			$this->assignItemSource(run: $run, index: $index, resolved: $resolved);
+		}
 
 		if ($run->unresolved === [] || $run->onError === 'continue') {
 			return;
@@ -873,6 +867,40 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		throw $run->unresolved[$run->index];
 	}//end resolveItemSources()
+
+	/**
+	 * Give one item its source: the step's one source for a plain reference,
+	 * else the source its rendered name resolves to, looked up once per name.
+	 * An item whose name does not resolve is recorded as unresolved.
+	 *
+	 * @param SourceCallRun                            $run      The step run, its records rendered.
+	 * @param int                                      $index    The item's index.
+	 * @param array<string, ObjectEntity|FlowNodeException> $resolved Lookups made so far in this run, by name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function assignItemSource(SourceCallRun $run, int $index, array &$resolved): void {
+		if ($run->source !== null) {
+			$run->references[$index] = $run->reference;
+			$run->sources[$index] = $run->source;
+			return;
+		}
+
+		$name = FlowTemplate::renderReference(template: $run->reference, json: $run->records[$index]);
+		$run->references[$index] = $name;
+		if (array_key_exists($name, $resolved) === false) {
+			$resolved[$name] = $this->resolveItemSource(name: $name);
+		}
+
+		if ($resolved[$name] instanceof ObjectEntity) {
+			$run->sources[$index] = $resolved[$name];
+			return;
+		}
+
+		$run->unresolved[$index] = $resolved[$name];
+	}//end assignItemSource()
 
 	/**
 	 * Resolve one item's rendered source name, or say why there is none.
