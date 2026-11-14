@@ -125,6 +125,16 @@
           "MOCK-PAY-3": "authorized"
         }
       }
+    },
+    {
+      "@self": { "register": "integriq", "schema": "source", "slug": "example-sftp-partner" },
+      "name": "Example partner SFTP server",
+      "description": "Dormant SFTP source for a partner's file drop. Set the location, a brokered credential and the server's host key fingerprint (the first test shows it) before enabling.",
+      "type": "sftp",
+      "location": "sftp.example.nl",
+      "configuration": { "rootPath": "/outgoing" },
+      "isEnabled": false,
+      "version": "1.0.0"
     }
   ],
   "consumer": [
@@ -331,6 +341,18 @@
       "sourceType": "register/schema",
       "targetId": "<placeholder>",
       "targetType": "api",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "synchronization", "slug": "example-sftp-pickup" },
+      "name": "Example partner file pickup",
+      "description": "Disabled pickup of the partner's new CSV files into Nextcloud Files, archived on the server to /outgoing/processed after each file is stored. Point sourceId at the example-sftp-partner source before enabling.",
+      "sourceId": "<placeholder>",
+      "sourceType": "sftp",
+      "sourceConfig": { "pattern": "*.csv", "after": "move", "archivePath": "processed", "filesFolder": "Partner/inbox" },
+      "targetId": "<placeholder>",
+      "targetType": "register/schema",
+      "status": "disabled",
       "version": "1.0.0"
     }
   ],
