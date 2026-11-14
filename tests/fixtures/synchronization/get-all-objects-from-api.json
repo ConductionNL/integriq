@@ -2109,6 +2109,119 @@
             ]
         ]
     },
+    "paced-source-page": {
+        "outcome": {
+            "return": [
+                {
+                    "id": "a"
+                },
+                {
+                    "id": "b"
+                }
+            ]
+        },
+        "fetchInfo": {
+            "complete": true,
+            "pagesFetched": 2,
+            "failureReason": null,
+            "resumePage": null,
+            "sourceVersion": null
+        },
+        "log": [
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                true
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.find",
+                "src-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                []
+            ],
+            [
+                "call.applyConfigDot",
+                {
+                    "endpoint": "/items",
+                    "resultsPosition": "items",
+                    "usesPagination": true
+                }
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 4
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ],
+            [
+                "call.call",
+                "src-1",
+                "/items",
+                "GET",
+                {
+                    "pagination": {
+                        "paginationQuery": "page",
+                        "paginationIn": "query",
+                        "page": 4,
+                        "index": 4
+                    }
+                }
+            ],
+            [
+                "call.bufferCallLogs",
+                false
+            ],
+            [
+                "call.flushCallLogs"
+            ],
+            [
+                "or.saveObject",
+                {
+                    "uuid": "sync-1",
+                    "sourceId": "src-1",
+                    "sourceConfig": {
+                        "endpoint": "/items",
+                        "resultsPosition": "items",
+                        "usesPagination": true
+                    },
+                    "currentPage": 1
+                },
+                "integriq",
+                "synchronization",
+                "sync-1"
+            ]
+        ]
+    },
     "current-page-ignored": {
         "outcome": {
             "return": [

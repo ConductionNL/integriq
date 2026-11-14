@@ -204,7 +204,8 @@ class UpstreamRouter {
 			source: $target['entity'],
 			endpoint: $request->upstreamPath,
 			method: $request->method,
-			config: ['query' => $request->parameters, 'headers' => $request->headers, 'body' => $request->rawBody],
+			// A gateway call is live: it waits only briefly for a paced turn (REQ-RLPC-002).
+			config: ['query' => $request->parameters, 'headers' => $request->headers, 'body' => $request->rawBody, 'pacing' => 'live'],
 			trace: $trace
 		);
 	}//end dispatch()

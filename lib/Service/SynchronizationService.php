@@ -937,19 +937,37 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * every page, and 156.9 ms with it written only when it is read.
 	 *
 	 * @param array $synchronization The synchronization to persist.
-	 * @param array $source The source, read for its `rateLimitLimit`.
+	 * @param array $source The source, read for its `rateLimitLimit` and `pace`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	private function persistPageCursor(array $synchronization, array $source): void {
-		if (($source['rateLimitLimit'] ?? null) === null) {
+		if ($this->resumesFromPageCursor(source: $source) === false) {
 			return;
 		}
 
 		$this->persistSynchronization(synchronization: $synchronization);
 	}//end persistPageCursor()
+
+	/**
+	 * Whether a run against this source keeps its page cursor, so a run cut off
+	 * mid-crawl resumes where it stopped: the source reports a rate limit, or
+	 * it is paced, where a call whose turn is further away than background
+	 * work may wait stops the run (REQ-RLPC-002).
+	 *
+	 * @param array $source The source.
+	 *
+	 * @return bool True when the page cursor is kept.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	private function resumesFromPageCursor(array $source): bool {
+		return ($source['rateLimitLimit'] ?? null) !== null
+			|| is_numeric($source['pace']['maxCalls'] ?? null) === true;
+	}//end resumesFromPageCursor()
 
 	/**
 	 * Upsert a synchronization through OpenRegister.
@@ -7526,7 +7544,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$fetch->config['body'] = json_encode((new Dot($fetch->data))->get($fetch->useDataAsRequestBody));
 		}
 
-		if (($fetch->source['rateLimitLimit'] ?? null) !== null || ($fetch->sourceConfig['format'] ?? null) === 'jsonl') {
+		if ($this->resumesFromPageCursor(source: $fetch->source) === true || ($fetch->sourceConfig['format'] ?? null) === 'jsonl') {
 			$fetch->currentPage = (int)(($fetch->synchronization['currentPage'] ?? null) ?? 1);
 		}
 	}//end configureApiFetch()

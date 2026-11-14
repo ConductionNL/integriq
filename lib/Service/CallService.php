@@ -62,6 +62,7 @@ use OCA\Integriq\Observability\Otel\TraceParent;
 use OCA\Integriq\Service\Call\CallPreparation;
 use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Call\FinishedCall;
+use OCA\Integriq\Service\Call\SourcePacer;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
@@ -231,6 +232,7 @@ class CallService implements CallServiceInterface {
 	 * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
 	 * @param BodyCapturePolicyInterface $bodyCapturePolicy Decides whether call bodies are stored (outbound-call-log-investigation-window).
 	 * @param CaseSystemOperations|null $caseSystemOperations Answers case-system sources in-process (case-system-operations-for-decidiq).
+	 * @param SourcePacer|null $pacer Spaces calls to a paced source (sources-outbound-rate-limit-pacing); no pacing when null.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
 	 */
@@ -244,6 +246,7 @@ class CallService implements CallServiceInterface {
 		private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
 		private readonly BodyCapturePolicyInterface $bodyCapturePolicy,
 		private readonly ?CaseSystemOperations $caseSystemOperations = null,
+		private readonly ?SourcePacer $pacer = null,
 	) {
 		$this->client = new Client([]);
 		// NO AUTOESCAPE: this environment renders headers/query/body values for
@@ -773,6 +776,7 @@ class CallService implements CallServiceInterface {
 	 * @param integer $statusCode HTTP-like status code to record (e.g. 409, 429).
 	 * @param string $statusMessage Human-readable status message.
 	 * @param \DateTime|null $expires Expiry for this log entry.
+	 * @param array $extra Further fields for the log entry, such as a pacing refusal's `retryAfter`.
 	 *
 	 * @return ObjectEntity The persisted CallLog ObjectEntity.
 	 *
@@ -785,6 +789,7 @@ class CallService implements CallServiceInterface {
 		int $statusCode,
 		string $statusMessage,
 		?\DateTime $expires,
+		array $extra = [],
 	): ObjectEntity {
 		$object = [
 			'source' => $source->getUuid(),
@@ -792,7 +797,7 @@ class CallService implements CallServiceInterface {
 			'statusCode' => $statusCode,
 			'statusMessage' => $statusMessage,
 			'created' => (new DateTime())->format('c'),
-		];
+		] + $extra;
 		$formatted = $this->formatExpires(expires: $expires);
 		if ($formatted !== null) {
 			$object['expires'] = $formatted;
@@ -1841,6 +1846,7 @@ class CallService implements CallServiceInterface {
 	 * @param ExecutionTraceContext|null $trace The active execution trace context, when present.
 	 * @param boolean $persistLog When false, return a transient (unsaved) CallLog and mutate nothing.
 	 * @param boolean $withholdBodies When true, the record is written without any body and names the user.
+	 * @param integer $pacedMs The milliseconds the call waited for its paced turn.
 	 *
 	 * The record is filed under the source's organisation, so that organisation's scoped log views list it.
 	 *
@@ -1862,6 +1868,7 @@ class CallService implements CallServiceInterface {
 		?ExecutionTraceContext $trace = null,
 		bool $persistLog = true,
 		bool $withholdBodies = false,
+		int $pacedMs = 0,
 	): ObjectEntity {
 		// Interactive "Test connection" path (persistLog=false): return the response
 		// WITHOUT the expensive CallLog write. Persisting a CallLog runs a full
@@ -1896,6 +1903,12 @@ class CallService implements CallServiceInterface {
 			'response' => $this->redactResponseHeaders(response: $data['response']),
 			'created' => (new DateTime())->format('c'),
 		] + $this->organisationSelf(object: $source);
+
+		// The time the call waited for its paced turn (REQ-RLPC-001). Left out
+		// for a call that did not wait, so unpaced sources log as before.
+		if ($pacedMs > 0) {
+			$callLogData['pacedMs'] = $pacedMs;
+		}
 
 		// Bodies are stored only inside the source's investigation window, or
 		// for a caller that passed logBody; a failure keeps its request for a
@@ -2089,17 +2102,22 @@ class CallService implements CallServiceInterface {
 	 * @param ObjectEntity $source The source ObjectEntity.
 	 * @param array $sourceData The mutable source data array (rate-limit reset mutates it).
 	 * @param \DateTime|null $errorExpires Expiry for error log entries.
+	 * @param bool $live True for a live caller, which may wait only briefly for a paced turn.
+	 * @param int $pacedMs Set to the milliseconds the call waited for its paced turn.
 	 *
 	 * @return ObjectEntity|null The early-error CallLog, or null to proceed.
 	 *
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 *
 	 * @spec openspec/specs/http-call-engine/spec.md
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	private function guardCallPreconditions(
 		ObjectEntity $source,
 		array &$sourceData,
 		?\DateTime $errorExpires,
+		bool $live = false,
+		int &$pacedMs = 0,
 	): ?ObjectEntity {
 		// Phase 3: Guard — source must be enabled.
 		$isEnabled = ($sourceData['isEnabled'] ?? null);
@@ -2125,7 +2143,19 @@ class CallService implements CallServiceInterface {
 		// Phase 5: Check if Source has a RateLimit and if we need to reset RateLimit-Reset and RateLimit-Remaining.
 		$this->checkAndResetRateLimit(source: $source, sourceData: $sourceData);
 
-		// Phase 6: Guard — rate-limit remaining must not be exhausted.
+		// Phase 5b: pace the call (REQ-RLPC-001): wait for its turn instead of
+		// spending the budget at once. A wait longer than the caller may wait
+		// is refused here, before anything is sent (REQ-RLPC-002).
+		$paced = $this->paceCall(source: $source, sourceData: $sourceData, errorExpires: $errorExpires, live: $live);
+		if ($paced instanceof ObjectEntity) {
+			return $paced;
+		}
+
+		$pacedMs = $paced;
+
+		// Phase 6: Guard — rate-limit remaining must not be exhausted. With
+		// pacing it is the last safety net: a source that still reports
+		// nothing remaining after the wait is refused as before.
 		$rateLimitRemaining = ($sourceData['rateLimitRemaining'] ?? null);
 		if ($rateLimitRemaining !== null && $rateLimitRemaining <= 0) {
 			return $this->saveEarlyErrorLog(
@@ -2994,13 +3024,92 @@ class CallService implements CallServiceInterface {
 	 * @return bool True when a guard short-circuited the call.
 	 */
 	private function guardSource(CallPreparation $run): bool {
-		$earlyError = $this->guardCallPreconditions(source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires);
+		// Pacing (phase 5b, paceCall()) runs inside the precondition guards, before the rate limit.
+		$live = $this->takePacingMode(run: $run);
+		$pacedMs = 0;
+		$earlyError = $this->guardCallPreconditions(
+			source: $run->source,
+			sourceData: $run->sourceData,
+			errorExpires: $run->errorExpires,
+			live: $live,
+			pacedMs: $pacedMs,
+		);
+		$run->prepared['pacedMs'] = $pacedMs;
 		if ($earlyError === null) {
 			$earlyError = $this->guardCircuitBreaker(source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires);
 		}
 
 		return $this->shortCircuit(run: $run, callLog: $earlyError);
 	}//end guardSource()
+
+	/**
+	 * Phase 1c: whether the caller is live (a gateway request, or the
+	 * interactive test) or background work. It decides how long a paced call
+	 * may wait for its turn (REQ-RLPC-002). Pulled out of the config like the
+	 * retry policy, so it never reaches the request.
+	 *
+	 * @param CallPreparation $run The call being prepared.
+	 *
+	 * @return bool True for a live caller.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	private function takePacingMode(CallPreparation $run): bool {
+		$live = (($run->config['pacing'] ?? null) === 'live' || $run->request->persistLog === false);
+		unset($run->config['pacing']);
+		$run->prepared['config'] = $run->config;
+
+		return $live;
+	}//end takePacingMode()
+
+	/**
+	 * Phase 5b: take the call's turn from the source's pace and wait for it.
+	 *
+	 * Without a pacer, or for a source with neither a configured pace nor an
+	 * announced window, nothing happens. A refused turn is recorded as a 429
+	 * call log carrying `retryAfter`, the seconds until the call's turn, and
+	 * the call is not sent. After a wait the announced window is checked
+	 * again, as the reset may have passed while waiting.
+	 *
+	 * @param ObjectEntity $source The source.
+	 * @param array $sourceData The mutable source data (a passed reset clears its counters).
+	 * @param \DateTime|null $errorExpires Expiry for the refusal's log entry.
+	 * @param bool $live True for a live caller.
+	 *
+	 * @return ObjectEntity|int The refusal's call log, or the milliseconds waited.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	private function paceCall(ObjectEntity $source, array &$sourceData, ?\DateTime $errorExpires, bool $live): ObjectEntity|int {
+		if ($this->pacer === null || $this->pacer->isPaced(sourceData: $sourceData) === false) {
+			return 0;
+		}
+
+		$sourceKey = (string)($source->getUuid() ?? $source->getId());
+		$decision = $this->pacer->acquire(sourceKey: $sourceKey, sourceData: $sourceData, live: $live);
+		if ($decision->refused === true) {
+			return $this->saveEarlyErrorLog(
+				source: $source,
+				statusCode: 429,
+				statusMessage: sprintf(
+					'This source is paced: the next call is due in %d seconds, longer than this call may wait.',
+					$decision->retryAfterSeconds
+				),
+				expires: $errorExpires,
+				extra: ['retryAfter' => $decision->retryAfterSeconds],
+			);
+		}
+
+		$this->pacer->wait(decision: $decision);
+		if ($decision->waitMicros > 0) {
+			$this->checkAndResetRateLimit(source: $source, sourceData: $sourceData);
+		}
+
+		return $decision->waitMs();
+	}//end paceCall()
 
 	/**
 	 * Phases 7-7a: merge the source-level configuration and the login the
@@ -3127,6 +3236,7 @@ class CallService implements CallServiceInterface {
 			trace: $prepared['request']->trace,
 			persistLog: $prepared['request']->persistLog,
 			withholdBodies: $prepared['request']->withholdBodies,
+			pacedMs: (int)($prepared['pacedMs'] ?? 0),
 		);
 	}//end persistCallLog()
 
