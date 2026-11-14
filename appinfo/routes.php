@@ -448,6 +448,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Investigation window: store call bodies for a bounded time (outbound-call-log-investigation-window).
 		['name' => 'bodyCapture#open', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'POST'],
 		['name' => 'bodyCapture#close', 'url' => '/api/sources/{id}/body-capture', 'verb' => 'DELETE'],
+		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
+		// manager behind a source reports, each with the Nextcloud user it maps to. Admin only.
+		['name' => 'endpointWorkspace#index', 'url' => '/api/sources/{id}/workspace-entries', 'verb' => 'GET'],
 
 		// dashboard-http-datasource: governed, read-only "resolve one value
 		// from a configured source" façade for dashboard/widget hosts
@@ -457,6 +460,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'datasource#resolve', 'url' => '/api/datasource/{sourceId}/resolve', 'verb' => 'POST'],
 
 		// Job endpoints
+		['name' => 'jobs#schedulePreview', 'url' => '/api/jobs/schedule-preview', 'verb' => 'POST'],
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],

@@ -1237,6 +1237,88 @@
             "icon": "ForumOutline",
             "title": "Incident war-room",
             "_note": "Deck and Talk are runtime-optional: OpenRegister's providers report isEnabled() false when the Nextcloud app is absent and the widget does not render. That is why the e2e spec tolerates their absence rather than asserting three widgets unconditionally."
+          },
+          {
+            "id": "src-workspace-devices",
+            "type": "record-list",
+            "icon": "Laptop",
+            "title": "Devices",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "intune",
+                "jamf-pro"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No devices listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
+          },
+          {
+            "id": "src-workspace-sessions",
+            "type": "record-list",
+            "icon": "MonitorAccount",
+            "title": "Sessions",
+            "_note": "connectors-endpoint-workspace-adapters (REQ-EWC-008): what the connected workspace manager reports, read through GET /api/sources/{id}/workspace-entries, which calls the vendor through the credential broker. Shown only on a source whose configuration.workspaceAdapter names one of these adapters. Each row names the Nextcloud user it maps to, or says that no user matched.",
+            "visibleWhen": {
+              "field": "configuration.workspaceAdapter",
+              "op": "in",
+              "value": [
+                "azure-virtual-desktop",
+                "citrix-daas"
+              ]
+            },
+            "content": {
+              "endpointSource": {
+                "url": "/apps/integriq/api/sources/@objectId/workspace-entries",
+                "responsePath": "entries"
+              },
+              "presentation": "rows",
+              "title": "{name}",
+              "meta": "{remoteUser} · {lastSeen|datetime}",
+              "pill": {
+                "label": "{user.displayName}",
+                "variant": "success",
+                "cases": [
+                  {
+                    "when": {
+                      "field": "userFound",
+                      "op": "eq",
+                      "value": false
+                    },
+                    "label": "No user found",
+                    "variant": "warning"
+                  }
+                ]
+              },
+              "emptyText": "No sessions listed. A source without a credential calls nothing: add a credential to see what it reports.",
+              "errorText": "The workspace manager could not be read."
+            }
           }
         ],
         "layout": [
@@ -1326,6 +1408,22 @@
             "gridX": 6,
             "gridY": 25,
             "gridWidth": 6,
+            "gridHeight": 6
+          },
+          {
+            "id": "9",
+            "widgetId": "src-workspace-devices",
+            "gridX": 0,
+            "gridY": 31,
+            "gridWidth": 12,
+            "gridHeight": 6
+          },
+          {
+            "id": "10",
+            "widgetId": "src-workspace-sessions",
+            "gridX": 0,
+            "gridY": 37,
+            "gridWidth": 12,
             "gridHeight": 6
           }
         ],
@@ -2249,6 +2347,7 @@
           "interval",
           "isEnabled",
           "lastRun",
+          "nextRun",
           "status"
         ],
         "includeFields": [
@@ -2257,6 +2356,7 @@
           "jobClass",
           "arguments",
           "interval",
+          "schedule",
           "timeSensitive",
           "allowParallelRuns",
           "isEnabled",
@@ -3272,6 +3372,14 @@
             "route": "PeppolTransmissions"
           },
           {
+            "id": "DigipoortFilings",
+            "label": "Digipoort filings",
+            "description": "Filings sent to the Belastingdienst and the KvK, and what each recipient answered.",
+            "icon": "FileSendOutline",
+            "category": "protocols",
+            "route": "DigipoortFilings"
+          },
+          {
             "id": "IwmoMessages",
             "label": "iWmo and iJw messages",
             "description": "Care messages in and out, with the answer each one received.",
@@ -3917,6 +4025,68 @@
             "label": "Attempts",
             "sortable": true,
             "width": "9%"
+          }
+        ]
+      }
+    },
+    {
+      "id": "DigipoortFilings",
+      "route": "/messages/digipoort",
+      "type": "logs",
+      "title": "Digipoort filings",
+      "_note": "connectors-digipoort-sbr-filing REQ-DPS-004: every SBR filing integriq delivered through Digipoort. The row detail shows the status history with its times and the recipient's errors. Columns are declared schema properties; the status colours map the schema's own enum members.",
+      "config": {
+        "register": "integriq",
+        "schema": "sbr_filing",
+        "sortKey": "created",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "created",
+            "label": "Time",
+            "sortable": true,
+            "width": "15%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "recipient",
+            "label": "Recipient",
+            "sortable": true,
+            "width": "14%"
+          },
+          {
+            "key": "filingType",
+            "label": "Filing type",
+            "sortable": true,
+            "width": "16%"
+          },
+          {
+            "key": "deliveryReference",
+            "label": "Delivery reference",
+            "sortable": true,
+            "width": "25%"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "sortable": true,
+            "width": "12%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "queued": "info",
+                "delivered": "info",
+                "accepted": "success",
+                "rejected": "error",
+                "failed": "error"
+              }
+            }
           }
         ]
       }

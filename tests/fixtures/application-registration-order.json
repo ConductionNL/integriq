@@ -312,6 +312,7 @@
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatingEvent, OCA\\Integriq\\EventListener\\DsoStamConsumerListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatingEvent, OCA\\Integriq\\EventListener\\DsoStamConsumerListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatedEvent, OCA\\Integriq\\Service\\PeppolOutboundConsumer, int)",
+	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatedEvent, OCA\\Integriq\\Service\\SbrFilingConsumer, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatedEvent, OCA\\Integriq\\EventListener\\CloudEventListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectUpdatedEvent, OCA\\Integriq\\EventListener\\CloudEventListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectDeletedEvent, OCA\\Integriq\\EventListener\\CloudEventListener, int)",

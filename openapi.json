@@ -4396,6 +4396,70 @@
                 ]
             }
         },
+        "/jobs/schedule-preview": {
+            "post": {
+                "operationId": "jobs-schedule-preview",
+                "summary": "The next five run times of a calendar, for the job form's preview",
+                "description": "The next five run times of a calendar schedule, computed by the same calculator the run loop uses. Requires the action job.schedule-preview.",
+                "tags": [
+                    "jobs"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "schedule"
+                                ],
+                                "properties": {
+                                    "schedule": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The run times, ascending, as ISO 8601 date-times.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "runs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
         "/jobs/run/{id}": {
             "post": {
                 "operationId": "jobs-run",
@@ -9823,6 +9887,57 @@
                         "$ref": "#/components/responses/Problem501"
                     }
                 }
+            }
+        },
+        "/sources/{id}/workspace-entries": {
+            "get": {
+                "operationId": "endpoint-workspace-index",
+                "summary": "List the sessions or devices the workspace manager behind a source reports",
+                "description": "List the sessions or devices the workspace manager behind a source reports, each with the Nextcloud user it maps to or none. Without a credential nothing is called.",
+                "tags": [
+                    "endpoint-workspace"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The entries, or that the credential is missing.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source's uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
             }
         }
     },
