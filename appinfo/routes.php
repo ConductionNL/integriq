@@ -24,6 +24,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// access-oauth-and-token-validation (REQ-TOKV-003): the client credentials token endpoint, the key set, and the admin acts behind them.
 		['name' => 'oAuthToken#token',           'url' => '/api/oauth/token',                'verb' => 'POST'],
 		['name' => 'oAuthToken#jwks',            'url' => '/.well-known/jwks.json',          'verb' => 'GET'],
+		// access-oauth-and-token-validation (REQ-TOKV-004): RFC 9728 metadata of a token-protected endpoint.
+		['name' => 'wellKnown#protectedResource', 'url' => '/.well-known/oauth-protected-resource/{_path}', 'verb' => 'GET', 'requirements' => ['_path' => '.+']],
 		['name' => 'oAuthToken#createIssuerKey', 'url' => '/api/oauth/issuer-key',           'verb' => 'POST'],
 		['name' => 'oAuthToken#clientSecret',    'url' => '/api/consumers/{id}/client-secret', 'verb' => 'POST'],
 		['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],

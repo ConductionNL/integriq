@@ -40,8 +40,12 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 - **files**: `lib/Controller/WellKnownController.php`, `lib/Service/EndpointService.php`, `appinfo/routes.php`
 - **acceptance_criteria**:
   - GIVEN a token-protected endpoint WHEN a client calls it without a token THEN the 401 names the metadata URL
-- [ ] Implement
-- [ ] Test (Newman: metadata document shape, 401 header, nothing for an open endpoint)
+- **status**: built.
+  - `ProtectedResourceMetadata` builds the RFC 9728 document of an endpoint behind a `jwt` or `jwt-zgw` authentication rule: `resource`, `authorization_servers` (integriq's issuer), `scopes_supported` (every `requiredScopes` value) and `bearer_methods_supported`. `WellKnownController` serves it publicly at `/.well-known/oauth-protected-resource/{path}` and answers 404 for an endpoint that is not token-protected.
+  - A call without a token to such an endpoint now gets 401 instead of 403, with `WWW-Authenticate: Bearer resource_metadata="…"`. A refused token gets the same header. Other authentication types keep their answers.
+  - The file list named `lib/Controller/WellKnownController.php`, `lib/Service/EndpointService.php` and `appinfo/routes.php`. The document is built in the new `lib/Service/OAuth/ProtectedResourceMetadata.php`.
+- [x] Implement
+- [ ] Test (Newman: metadata document shape, 401 header, nothing for an open endpoint). PHPUnit covers the same three points in `tests/Unit/Service/OAuth/ProtectedResourceMetadataTest.php`. Newman is not done.
 
 ### Task 5: Scopes on consumers and endpoints
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005`
