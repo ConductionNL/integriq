@@ -778,6 +778,7 @@ class CallService implements CallServiceInterface {
 
 		// The call_log schema is admin-only (REQ-OCD-012): the engine records the call
 		// for whoever triggered it, so the write runs past RBAC.
+		// System write, unscoped: the log carries the source's organisation (stamped above), not the caller's.
 		return $this->objectService->saveObject(
 			object: $object,
 			register: 'integriq',
@@ -1904,6 +1905,7 @@ class CallService implements CallServiceInterface {
 			return $this->buildTransientCallLog(source: $source, data: $data, trace: $trace);
 		}
 
+		// System write, unscoped: the log carries the source's organisation, not the caller's, and a run may have no user.
 		$callLog = $this->objectService->saveObject(
 			object: $callLogData,
 			register: 'integriq',
@@ -1990,6 +1992,7 @@ class CallService implements CallServiceInterface {
 		$this->callLogBuffer = [];
 
 		try {
+			// System write, unscoped: buffered logs carry their source's organisation, not the caller's.
 			$this->objectService->saveObjects(
 				objects: $batch,
 				register: 'integriq',
@@ -2419,6 +2422,7 @@ class CallService implements CallServiceInterface {
 	 * @throws \OCP\DB\Exception On persistence failure.
 	 */
 	private function persistSourceState(ObjectEntity $source, array $sourceData): ObjectEntity {
+		// System write, unscoped: bookkeeping on a source the caller already reached in scope.
 		return $this->objectService->saveObject(
 			object: $sourceData,
 			register: 'integriq',
@@ -2800,6 +2804,7 @@ class CallService implements CallServiceInterface {
 		}
 
 		try {
+			// System read, unscoped: re-reads the source already in hand, so a run without a user still dispatches.
 			$raw = $this->objectService->find(
 				id: $uuid,
 				register: 'integriq',

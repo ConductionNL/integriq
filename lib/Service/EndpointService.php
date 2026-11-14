@@ -1517,6 +1517,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	public function recordInboundCallLog(ObjectEntity $endpoint, ObjectEntity $product, int $statusCode, float $durationMs): void {
 		try {
+			// System write, unscoped: the log carries the endpoint's organisation; an inbound caller has none.
 			$this->orObjectService->saveObject(
 				object: [
 					'statusCode' => $statusCode,
@@ -3419,6 +3420,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	public function getEndpointById(string $id): ?ObjectEntity {
 		try {
+			// System read, unscoped: resolves the endpoint recorded on an approval request the caller already reached in scope.
 			return $this->orObjectService->find(id: $id, register: 'integriq', schema: 'endpoint', _rbac: false, _multitenancy: false);
 		} catch (Exception $e) {
 			$this->logger->error('Error fetching endpoint: ' . $e->getMessage());
