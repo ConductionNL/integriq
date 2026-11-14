@@ -61,3 +61,15 @@ nothing.
 On the integriq admin page, the **Woo starter set** section runs the same
 action with one button and shows how many types it created and how many
 categories already had one.
+
+## Limits
+
+- Every route is rate limited per client address: 600 requests a minute
+  (`#[AnonRateLimit]` on `CatalogiApiController`, ADR-082). A write answers 405
+  under the same limit, so probing for a writable route costs the same.
+
+## In the connector catalogue
+
+The catalogue lists this as one adapter card, *Catalogi API (document types)*,
+under Common Ground APIs. It is always available: the routes exist on every
+install, and they answer once an administrator creates the `catalogi_binding`.

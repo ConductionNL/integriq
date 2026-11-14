@@ -186,6 +186,33 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	];
 
 	/**
+	 * The served Catalogi API (read half) as one adapter card
+	 * (zgw-catalogi-served Task 5). The routes exist on every install and
+	 * answer once an administrator creates the catalogi binding, so it is
+	 * always available. A constant for the same reason as the Objecten card.
+	 *
+	 * @var array<string,mixed>
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001
+	 */
+	private const CATALOGI_DESCRIPTOR = [
+		'slug' => 'adapter:catalogi-api',
+		'name' => 'Catalogi API (document types)',
+		'description' => 'Serves the read half of the VNG Catalogi API 1.3, catalogussen and informatieobjecttypen, at '
+			. '/catalogi/api/v1, from the register and schema where the organisation keeps its document types. A Documenten '
+			. 'API points each document\'s informatieobjecttype at a URL served here. A caller sends a ZGW JWT whose client '
+			. 'the catalogi binding lists with catalogi.lezen; writes answer 405. It answers nobody until an administrator '
+			. 'creates the binding.',
+		'category' => 'Common Ground APIs',
+		'kind' => 'adapter',
+		'mechanism' => 'always-available',
+		'flagKey' => '',
+		'sourceTemplateSlug' => '',
+		'standards' => ['Catalogi API 1.3'],
+		'icon' => 'Api',
+	];
+
+	/**
 	 * How a vendor document-generation adapter ships and what a live source of it needs.
 	 *
 	 * @var string
@@ -286,6 +313,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'icon' => 'CityVariantOutline',
 		],
 		self::OBJECTEN_DESCRIPTOR,
+		self::CATALOGI_DESCRIPTOR,
 		[
 			'slug' => 'adapter:edurep',
 			'name' => 'Edurep open lesmateriaal (Kennisnet)',

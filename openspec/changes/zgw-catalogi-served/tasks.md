@@ -59,6 +59,8 @@ binding, handler or starter set exists.
   - GIVEN the admin page WHEN the starter set runs THEN the counts show and the types are listed
 - [ ] Implement
 - [ ] Test: Newman collection and Playwright spec above
+  - Built: the catalogue card `adapter:catalogi-api` (`CatalogRegistryService::CATALOGI_DESCRIPTOR`, golden `tests/fixtures/catalog/static-descriptors.json`; this repository has no `lib/Settings/catalog.seed.json`, the cards are those static descriptors), and the Limits and connector-catalogue sections in `docs/features/zgw-catalogi.md`. The throttle was already on every route (`#[AnonRateLimit(limit: 600, period: 60)]` on `CatalogiApiController`).
+  - Left: the Newman collection and the Playwright spec. Both need a running instance with an OpenRegister JWT consumer (issuer, HS256 secret of at least 32 bytes) and a `catalogi_binding` listing its client, so they are written and run in the live lane, not here.
 
 ## Verification
 
