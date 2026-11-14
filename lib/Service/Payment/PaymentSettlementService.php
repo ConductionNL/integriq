@@ -221,6 +221,7 @@ class PaymentSettlementService {
 	 * @return list<array<string, mixed>> The payloads.
 	 */
 	private function rows(array $filters, int $limit): array {
+		// Unscoped: the settlement pull job reads its rows as the system, with no user session.
 		$found = $this->objectService->findAll(
 			config: ['filters' => array_merge(['register' => self::REGISTER], $filters), 'limit' => $limit],
 			_rbac: false,

@@ -825,6 +825,7 @@ class FlowRunnerService implements FlowRunnerServiceInterface {
 	 * @spec openspec/specs/flow-orchestration/spec.md#requirement-flow-steps-execute-sequentially-in-order-req-001
 	 */
 	public function findFlow(string $id): ObjectEntity {
+		// Unscoped: the runner resolves the flow a trigger names, during a run that may have no user.
 		return $this->orObjectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA_FLOW, _rbac: false, _multitenancy: false);
 	}//end findFlow()
 }//end class

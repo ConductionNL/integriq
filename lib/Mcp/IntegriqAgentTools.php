@@ -321,7 +321,8 @@ class IntegriqAgentTools {
 	public function testSource(string $sourceId, ?string $agentId=null): array {
 		$tool   = 'testSource';
 		$user   = $this->authorize(tool: $tool, agentId: $agentId, ids: [$sourceId]);
-		$source = $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
+		// The agent acts for the session user: another organisation's source is not found (REQ-TEN-001).
+		$source = $this->objectService->find(id: $sourceId, register: 'integriq', schema: 'source', _rbac: false);
 		if ($source === null) {
 			throw new InvalidArgumentException('Not found: ' . $sourceId);
 		}
@@ -681,7 +682,8 @@ class IntegriqAgentTools {
 	 */
 	private function findObject(string $schema, string $id): \OCA\OpenRegister\Db\ObjectEntity {
 		try {
-			$found = $this->objectService->find(id: $id, register: 'integriq', schema: $schema, _rbac: false, _multitenancy: false);
+			// The agent acts for the session user: another organisation's object is not found (REQ-TEN-001).
+			$found = $this->objectService->find(id: $id, register: 'integriq', schema: $schema, _rbac: false);
 		} catch (Throwable $e) {
 			$found = null;
 		}

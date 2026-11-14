@@ -673,6 +673,7 @@ class IntegriqMetricsProvider implements IMetricsProvider {
 	 * @spec exclude Shared OR-aggregation plumbing for every gauge and counter below.
 	 */
 	private function searchScopedObjects(object $objectService, array $scope): array {
+		// Unscoped: metrics count objects across every organisation, as the system.
 		$results = $objectService->searchObjects(
 			query: ['@self' => $scope],
 			_rbac: false,

@@ -184,6 +184,7 @@ class IntegriqConsumerSource implements ConsumerSource {
 	 * @return ObjectEntity[]
 	 */
 	private function consumers(array $filters): array {
+		// Unscoped: OpenRegister's credential check resolves the calling consumer before any user is known.
 		$matches = $this->objectService->findAll(
 			config: [
 				'filters' => array_merge(['register' => 'integriq', 'schema' => 'consumer'], $filters),

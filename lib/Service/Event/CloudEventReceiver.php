@@ -126,6 +126,7 @@ class CloudEventReceiver {
 	 */
 	private function alreadyReceived(string $uuid): bool {
 		try {
+			// Unscoped: the inbound receiver checks for a duplicate of the event it stores unscoped above.
 			return $this->objectService->find(id: $uuid, register: 'integriq', schema: 'event', _rbac: false, _multitenancy: false) !== null;
 		} catch (Throwable) {
 			return false;

@@ -330,6 +330,7 @@ class SenderIdentityService implements SenderIdentityServiceInterface {
 	 */
 	private function systemContextEntity(string $identityId): ?ObjectEntity {
 		try {
+			// Unscoped: the named system-context read of a sender identity (see the method docblock).
 			$entity = $this->objectService->find(
 				id: $identityId,
 				register: MessageRecorder::REGISTER,

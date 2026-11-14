@@ -154,6 +154,7 @@ class DsoUnmappedActivities implements UnmappedActivitiesInterface {
 	 * @return array<int, array<string, mixed>> Their data.
 	 */
 	private function flaggedVerzoeken(): array {
+		// Unscoped: inbound DSO intake scans the flagged requests as the system.
 		$result = $this->objectService->findAll(
 			config: [
 				'filters' => ['register' => DsoActivityTable::REGISTER, 'schema' => 'dso_verzoek', 'activityUnmapped' => true],

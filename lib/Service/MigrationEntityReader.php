@@ -98,6 +98,7 @@ final class MigrationEntityReader {
 		}
 
 		try {
+			// Unscoped: a migration reads the stored entity as the system.
 			$entity = $this->objectService->find(
 				id: $trimmed,
 				register: self::REGISTER,

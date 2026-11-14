@@ -168,6 +168,7 @@ class RuleService {
 		if (count($sources) > 0) {
 			$source = $sources[0];
 		} else {
+			// Unscoped: a rule run records the external source it fetches from, during a run that may have no user.
 			$source = $this->orObjectService->saveObject(
 				object: [
 					'location' => $url,

@@ -824,6 +824,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$source = null;
 
 		try {
+			// Unscoped: a flow node resolves the source its definition names, during a run that may have no user.
 			$source = $this->objectService->find(
 				id: $reference,
 				register: self::SOURCE_REGISTER,

@@ -153,6 +153,7 @@ class ProductChannelsController extends Controller {
 	 */
 	private function versionsOf(string $productSlug): array {
 		try {
+			// Unscoped: a public page: an anonymous caller reads a public product's versions (see the docblock).
 			$matches = $this->objects->findAll(
 				config: ['filters' => ['register' => 'integriq', 'schema' => 'api_product', 'productSlug' => $productSlug], 'limit' => 100],
 				_rbac: false,

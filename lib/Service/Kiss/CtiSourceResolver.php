@@ -97,6 +97,7 @@ class CtiSourceResolver {
 		}
 
 		try {
+			// Unscoped: CTI event intake resolves its source as the system, before any user is known.
 			$entity = $this->objectService->find(
 				id: $sourceId,
 				register: self::REGISTER,

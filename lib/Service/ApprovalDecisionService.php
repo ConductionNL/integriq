@@ -327,6 +327,7 @@ class ApprovalDecisionService implements ApprovalDecisionServiceInterface {
 	 */
 	private function approveSynchronizationGate(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse {
 		try {
+			// Unscoped: re-reads the synchronization named on an approval request the caller already reached in scope.
 			$synchronization = $this->orObjectService->find(
 				id: (string)$data['synchronizationId'],
 				register: 'integriq',

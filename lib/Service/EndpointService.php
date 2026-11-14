@@ -2632,6 +2632,7 @@ class EndpointService implements EndpointServiceInterface {
 		$routed = $this->upstreamRouter()->routes(endpointData: $endpointData);
 		$source = null;
 		if ($routed === false) {
+			// Unscoped: serving an endpoint resolves the source it proxies; the endpoint caller may be anonymous.
 			$source = $this->orObjectService->find(
 				id: ($endpointData['targetId'] ?? ''),
 				register: 'integriq',

@@ -218,6 +218,7 @@ class InlineSecretMigrationPlanner implements InlineSecretMigrationPlannerInterf
 	 */
 	public function readRawSource(string $uuid, string $schema = self::SCHEMA): array {
 		try {
+			// Unscoped: the inline secret migration reads the raw stored object, run as the system.
 			$entity = $this->objectService->find(
 				id: $uuid,
 				register: self::REGISTER,

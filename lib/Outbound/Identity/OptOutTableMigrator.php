@@ -114,6 +114,7 @@ class OptOutTableMigrator implements OptOutTableMigratorInterface {
 	 * @return list<ObjectEntity> The objects.
 	 */
 	private function readPage(int $offset): array {
+		// Unscoped: a migration pages through the stored opt-outs, as the system.
 		$matches = $this->objectService->findAll(
 			config: [
 				'limit' => self::PAGE,
