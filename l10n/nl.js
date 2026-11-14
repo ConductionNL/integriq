@@ -2235,6 +2235,9 @@ OC.L10N.register(
         "This connection uses no client certificate": "Deze koppeling gebruikt geen clientcertificaat",
         "Expires on": "Verloopt op",
         "Days left": "Resterende dagen",
+        "Return an error to the caller": "Een fout teruggeven aan de aanroeper",
+        "Skip (resolve without writing)": "Overslaan (afhandelen zonder te schrijven)",
+        "Dead-letter for later review": "In de dead letter-wachtrij zetten voor later nazicht",
         "Renew in keepiq": "Vernieuwen in keepiq",
         "Reporting period": "Rapportageperiode",
         "Generated on": "Gegenereerd op",
@@ -2271,10 +2274,7 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
-        "Return an error to the caller": "Een fout teruggeven aan de aanroeper",
-        "Skip (resolve without writing)": "Overslaan (afhandelen zonder te schrijven)",
-        "Dead-letter for later review": "In de dead letter-wachtrij zetten voor later nazicht"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
     },
     "nplurals=2; plural=(n != 1);"
 )
