@@ -78,6 +78,11 @@ class MappingFunctionRegistrationListener implements IEventListener {
 				callable: [MappingRuntime::class, 'getOriginIdByTargetId']
 			)
 		);
+		// The allowlisted register lookup, so a mapping using it behaves the
+		// same in OpenRegister's engine as in integriq's (mapping-formats-and-lookups).
+		$event->registerFunction(
+			new TwigFunction(name: 'lookup', callable: [MappingRuntime::class, 'lookup'])
+		);
 
 	}//end handle()
 }//end class

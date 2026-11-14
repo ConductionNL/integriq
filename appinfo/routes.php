@@ -739,6 +739,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],
+		// The lookup allowlist (mapping-formats-and-lookups): admin only.
+		['name' => 'mappingLookup#index',  'url' => '/api/admin/mapping-lookups', 'verb' => 'GET'],
+		['name' => 'mappingLookup#add',    'url' => '/api/admin/mapping-lookups', 'verb' => 'POST'],
+		['name' => 'mappingLookup#remove', 'url' => '/api/admin/mapping-lookups/{register}/{schema}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 

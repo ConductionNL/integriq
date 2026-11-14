@@ -30,6 +30,7 @@ use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
+use OCA\Integriq\Util\CsvCodec;
 
 /**
  * The columns are mapped once and the mapping is stored, so the second
@@ -196,31 +197,11 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @param array<string,mixed> $config Carries an optional `delimiter`.
 	 *
 	 * @return array<int,array<string,string>> The rows.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 	 */
 	public function parse(string $content, array $config = []): array {
-		$delimiter = (string)($config['delimiter'] ?? ',');
-		$lines = preg_split('/\R/', trim($content));
-		if ($lines === false || $lines === [] || $lines === ['']) {
-			return [];
-		}
-
-		$headers = str_getcsv(array_shift($lines), $delimiter);
-		$rows = [];
-		foreach ($lines as $line) {
-			if (trim($line) === '') {
-				continue;
-			}
-
-			$values = str_getcsv($line, $delimiter);
-			$row = [];
-			foreach ($headers as $index => $header) {
-				$row[(string)$header] = (string)($values[$index] ?? '');
-			}
-
-			$rows[] = $row;
-		}
-
-		return $rows;
+		return CsvCodec::decode(content: $content, options: ['delimiter' => (string)($config['delimiter'] ?? ',')]);
 	}//end parse()
 
 	/**
@@ -230,15 +211,11 @@ class FileMigrationSource implements MigrationSourceAdapterInterface {
 	 * @param array<string,mixed> $config Carries an optional `delimiter`.
 	 *
 	 * @return array<int,string> The headers.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
 	 */
 	public function headers(string $content, array $config = []): array {
-		$delimiter = (string)($config['delimiter'] ?? ',');
-		$lines = preg_split('/\R/', trim($content));
-		if ($lines === false || $lines === []) {
-			return [];
-		}
-
-		return array_map(static fn ($header): string => (string)$header, str_getcsv((string)$lines[0], $delimiter));
+		return CsvCodec::headers(content: $content, options: ['delimiter' => (string)($config['delimiter'] ?? ',')]);
 	}//end headers()
 
 	/**

@@ -88,6 +88,8 @@ class MappingExtension extends AbstractExtension {
 			new TwigFunction(name: 'getFiles', callable: [MappingRuntime::class, 'getFiles']),
 			new TwigFunction(name: 'getTargetIdByOriginId', callable: [MappingRuntime::class, 'getTargetIdByOriginId']),
 			new TwigFunction(name: 'getOriginIdByTargetId', callable: [MappingRuntime::class, 'getOriginIdByTargetId']),
+			// A register read behind an administered allowlist; no outbound call (mapping-formats-and-lookups D4).
+			new TwigFunction(name: 'lookup', callable: [MappingRuntime::class, 'lookup']),
 		];
 
 	}//end getFunctions()
