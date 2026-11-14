@@ -194,6 +194,7 @@
 	"context.registerServiceAlias(OCA\\Integriq\\Connectors\\PdokConnectorInterface, OCA\\Integriq\\Connectors\\PdokConnector)",
 	"context.registerServiceAlias(OCA\\Integriq\\Intake\\IntakeRoutingServiceInterface, OCA\\Integriq\\Intake\\IntakeRoutingService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Intake\\IntakeReplyServiceInterface, OCA\\Integriq\\Intake\\IntakeReplyService)",
+	"context.registerServiceAlias(OCA\\Integriq\\Intake\\IntakeAssignmentServiceInterface, OCA\\Integriq\\Intake\\IntakeAssignmentService)",
 	"context.registerServiceAlias(OCA\\Integriq\\Intake\\IntakeChannelRegistryInterface, OCA\\Integriq\\Intake\\IntakeChannelRegistry)",
 	"context.registerService(OCA\\Integriq\\Intake\\IntakeChannelRegistry, closure, bool)",
 	"context.registerServiceAlias(OCA\\Integriq\\Observability\\Otel\\SpanMapperInterface, OCA\\Integriq\\Observability\\Otel\\SpanMapper)",
