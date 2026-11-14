@@ -1872,6 +1872,7 @@ OC.L10N.register(
         "Signature secret": "Ondertekeningsgeheim",
         "Telephony binding": "Telefoniekoppeling",
         "Telephony settings": "Telefonie-instellingen",
+        "This instance has no telephony binding installed, so call events cannot be received yet.": "Deze installatie heeft geen telefoniekoppeling, dus gesprekgebeurtenissen kunnen nog niet worden ontvangen.",
         "The Klantinteracties source whose parties are matched against the caller's number. Only an enabled source using the REST binding is asked. Without one, every caller is shown as unknown.": "De Klantinteracties-bron waarvan de partijen met het nummer van de beller worden vergeleken. Alleen een ingeschakelde bron met de REST-koppeling wordt bevraagd. Zonder bron wordt elke beller als onbekend getoond.",
         "The address appears once the source is saved.": "Het adres verschijnt zodra de bron is opgeslagen.",
         "The phone system posts its call events to this source. Integriq looks the caller up and tells the case app who is calling.": "De telefooncentrale stuurt haar gesprekgebeurtenissen naar deze bron. Integriq zoekt de beller op en laat de zaak-app weten wie er belt.",

@@ -74,6 +74,27 @@ const SOURCES = {
 	},
 }
 
+const PROVIDERS = {
+	data: {
+		providers: [
+			{ id: 'log', configSchema: {} },
+			{ id: 'webhook', configSchema: {} },
+		],
+	},
+}
+
+/**
+ * Answer each endpoint the form reads.
+ *
+ * @param {object} providers the /api/cti/providers answer
+ * @return {void}
+ */
+function answer(providers = PROVIDERS) {
+	get.mockImplementation((url) =>
+		Promise.resolve(url.includes('/api/cti/providers') ? providers : SOURCES),
+	)
+}
+
 /**
  * Mount the telephony fields over a configuration.
  *
@@ -113,15 +134,52 @@ function control(wrapper, name, id) {
 describe('CtiSourceFields', () => {
 	beforeEach(() => {
 		get.mockReset()
-		get.mockResolvedValue(SOURCES)
+		answer()
 	})
 
-	it('offers exactly the two bindings CtiSourceResolver knows', () => {
-		const provider = control(mountFields(), 'NcSelect', 'cn-cti-provider')
-		expect(provider.props('options').map((o) => o.id)).toEqual([
-			'webhook',
-			'log',
+	it('offers the bindings the providers endpoint lists, labelling the known ones', async () => {
+		answer({
+			data: {
+				providers: [
+					{ id: 'log' },
+					{ id: 'webhook' },
+					{ id: 'sip-trunk' },
+					{ id: '' },
+				],
+			},
+		})
+		const wrapper = mountFields()
+		await flushPromises()
+
+		expect(
+			get.mock.calls.some(([url]) =>
+				url.endsWith('/apps/integriq/api/cti/providers'),
+			),
+		).toBe(true)
+		const provider = control(wrapper, 'NcSelect', 'cn-cti-provider')
+		expect(provider.props('options')).toEqual([
+			{ id: 'log', label: 'Log (test events in our own shape)' },
+			{ id: 'webhook', label: 'Webhook (the phone system posts events)' },
+			{ id: 'sip-trunk', label: 'sip-trunk' },
 		])
+		expect(wrapper.find('[data-testid="cti-no-bindings"]').exists()).toBe(false)
+
+		provider.vm.$emit('update:modelValue', { id: 'webhook' })
+		expect(lastEmitted(wrapper).provider).toBe('webhook')
+	})
+
+	it('says so when the instance has no binding, or the list cannot be read', async () => {
+		get.mockImplementation((url) =>
+			url.includes('/api/cti/providers')
+				? Promise.reject(new Error('down'))
+				: Promise.resolve(SOURCES),
+		)
+		const wrapper = mountFields()
+		await flushPromises()
+		expect(
+			control(wrapper, 'NcSelect', 'cn-cti-provider').props('options'),
+		).toEqual([])
+		expect(wrapper.find('[data-testid="cti-no-bindings"]').exists()).toBe(true)
 	})
 
 	it('shows an unknown stored binding as itself rather than as empty', () => {
@@ -140,10 +198,10 @@ describe('CtiSourceFields', () => {
 		const wrapper = mountFields()
 		await flushPromises()
 
-		expect(get.mock.calls[0][0]).toContain(
-			'/apps/openregister/api/objects/integriq/source',
+		const call = get.mock.calls.find(([url]) =>
+			url.includes('/apps/openregister/api/objects/integriq/source'),
 		)
-		expect(get.mock.calls[0][1].params).toMatchObject({ type: 'kiss' })
+		expect(call[1].params).toMatchObject({ type: 'kiss' })
 		const lookup = control(wrapper, 'NcSelect', 'cn-cti-caller-lookup-source')
 		expect(lookup.props('options')).toEqual([
 			{ id: 'kiss-uuid', label: 'Klantinteracties' },
@@ -157,7 +215,11 @@ describe('CtiSourceFields', () => {
 	})
 
 	it('leaves the lookup list empty when the fetch fails', async () => {
-		get.mockRejectedValue(new Error('down'))
+		get.mockImplementation((url) =>
+			url.includes('/api/cti/providers')
+				? Promise.resolve(PROVIDERS)
+				: Promise.reject(new Error('down')),
+		)
 		const wrapper = mountFields()
 		await flushPromises()
 		const lookup = control(wrapper, 'NcSelect', 'cn-cti-caller-lookup-source')

@@ -141,12 +141,10 @@ class CtiSourceResolver {
 	public function provider(array $source): ?CtiProviderInterface {
 		$named = (string) (($source['configuration'] ?? [])['provider'] ?? '');
 
-		if ($named === $this->logProvider->getProviderId()) {
-			return $this->logProvider;
-		}
-
-		if ($named === $this->webhookProvider->getProviderId()) {
-			return $this->webhookProvider;
+		foreach ($this->bindings() as $binding) {
+			if ($named === $binding->getProviderId()) {
+				return $binding;
+			}
 		}
 
 		// NOT a fallback to the log binding. A typo would otherwise look like
@@ -156,5 +154,37 @@ class CtiSourceResolver {
 		return null;
 
 	}//end provider()
+
+	/**
+	 * Every CTI binding this instance has, with the configuration it reads.
+	 *
+	 * The source form builds its binding picker from this, so the picker
+	 * offers exactly what {@see provider()} resolves: a binding added here
+	 * shows up there, and a name the form saves is one a source can use.
+	 *
+	 * @return array<int, array{id: string, configSchema: array<string, mixed>}> One entry per binding.
+	 *
+	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+	 */
+	public function describeAll(): array {
+		return array_map(
+			static fn (CtiProviderInterface $binding): array => [
+				'id'           => $binding->getProviderId(),
+				'configSchema' => $binding->getConfigSchema(),
+			],
+			$this->bindings()
+		);
+
+	}//end describeAll()
+
+	/**
+	 * The bindings, in the order a name is matched against them.
+	 *
+	 * @return array<int, CtiProviderInterface> The bindings.
+	 */
+	private function bindings(): array {
+		return [$this->logProvider, $this->webhookProvider];
+
+	}//end bindings()
 
 }//end class

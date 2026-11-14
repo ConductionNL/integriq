@@ -11,8 +11,9 @@
   callerLookupSource. Keys this component does not know are kept, so nothing
   written elsewhere is lost.
 
-  The binding list mirrors CtiSourceResolver::provider(), which knows exactly
-  `log` and `webhook` and refuses any other name rather than falling back.
+  The binding picker is built from GET /api/cti/providers, which describes
+  the bindings CtiSourceResolver resolves, never from a list written here: a
+  name the form saves is then always one a source can use.
 
   kindMapping is stored the way CallEventNormaliser reads it, vendor word to
   our kind (`{ alerting: 'ringing' }`); the form asks the other way round, one
@@ -38,11 +39,23 @@
 			:inputLabel="t('integriq', 'Telephony binding')"
 			:modelValue="providerOption"
 			:options="providerOptions"
+			:loading="providersLoading"
 			:clearable="false"
 			:placeholder="t('integriq', 'Pick a telephony binding')"
 			@update:modelValue="(option) => write('provider', option?.id ?? '')" />
 		<p
-			v-if="!providerOption"
+			v-if="!providersLoading && providerOptions.length === 0"
+			data-testid="cti-no-bindings"
+			class="cn-cti-fields__helper cn-cti-fields__helper--warn">
+			{{
+				t(
+					'integriq',
+					'This instance has no telephony binding installed, so call events cannot be received yet.',
+				)
+			}}
+		</p>
+		<p
+			v-else-if="!providerOption"
 			class="cn-cti-fields__helper cn-cti-fields__helper--warn">
 			{{ t('integriq', 'Without a binding every call event is refused.') }}
 		</p>
@@ -297,27 +310,29 @@ export default {
 			vendorWords: vendorWordsFrom(this.configuration?.kindMapping),
 			lookupOptions: [],
 			sourcesLoading: false,
+			/** The bindings this instance has, from /api/cti/providers. */
+			providers: [],
+			providersLoading: false,
 		}
 	},
 
 	computed: {
 		/**
-		 * The bindings CtiSourceResolver knows.
+		 * The bindings this instance has, labelled. A binding the form has no
+		 * label for is offered under its own id.
 		 *
 		 * @return {object[]} the options
 		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
 		 */
 		providerOptions() {
-			return [
-				{
-					id: 'webhook',
-					label: t('integriq', 'Webhook (the phone system posts events)'),
-				},
-				{
-					id: 'log',
-					label: t('integriq', 'Log (test events in our own shape)'),
-				},
-			]
+			const labels = {
+				webhook: t('integriq', 'Webhook (the phone system posts events)'),
+				log: t('integriq', 'Log (test events in our own shape)'),
+			}
+			return this.providers.map((provider) => ({
+				id: provider.id,
+				label: labels[provider.id] ?? provider.id,
+			}))
 		},
 
 		/**
@@ -455,18 +470,46 @@ export default {
 	},
 
 	/**
-	 * Load the Klantinteracties sources the lookup picker offers.
+	 * Load the bindings and the Klantinteracties sources the pickers offer.
 	 *
 	 * @return {void}
 	 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-call-carries-its-caller-context-as-a-typed-event-req-006
 	 */
 	created() {
 		this.lastEmitted = null
+		this.fetchProviders()
 		this.fetchLookupSources()
 	},
 
 	methods: {
 		t,
+
+		/**
+		 * Load the CTI bindings this instance has. A failed fetch leaves an
+		 * empty list, which the form reports, never a broken editor.
+		 *
+		 * @return {Promise<void>} resolves once the list is loaded
+		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 */
+		async fetchProviders() {
+			this.providersLoading = true
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/integriq/api/cti/providers'),
+				)
+				const list = Array.isArray(response?.data?.providers)
+					? response.data.providers
+					: []
+				this.providers = list.filter(
+					(provider) =>
+						typeof provider?.id === 'string' && provider.id !== '',
+				)
+			} catch {
+				this.providers = []
+			} finally {
+				this.providersLoading = false
+			}
+		},
 
 		/**
 		 * Load the instance's KISS sources. A failed fetch leaves an empty

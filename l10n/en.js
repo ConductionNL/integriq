@@ -3214,6 +3214,7 @@ OC.L10N.register(
         "Signature secret": "Signature secret",
         "Telephony binding": "Telephony binding",
         "Telephony settings": "Telephony settings",
+        "This instance has no telephony binding installed, so call events cannot be received yet.": "This instance has no telephony binding installed, so call events cannot be received yet.",
         "The Klantinteracties source whose parties are matched against the caller's number. Only an enabled source using the REST binding is asked. Without one, every caller is shown as unknown.": "The Klantinteracties source whose parties are matched against the caller's number. Only an enabled source using the REST binding is asked. Without one, every caller is shown as unknown.",
         "The address appears once the source is saved.": "The address appears once the source is saved.",
         "The phone system posts its call events to this source. Integriq looks the caller up and tells the case app who is calling.": "The phone system posts its call events to this source. Integriq looks the caller up and tells the case app who is calling.",

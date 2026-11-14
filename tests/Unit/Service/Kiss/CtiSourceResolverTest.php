@@ -207,4 +207,22 @@ class CtiSourceResolverTest extends TestCase {
 			$warnings
 		);
 	}//end testAnUnknownProviderIsNoBinding()
+
+	/**
+	 * describeAll() lists exactly the bindings provider() resolves, with their own schemas.
+	 *
+	 * @return void
+	 */
+	public function testDescribesEveryBindingItResolves(): void {
+		$resolver = $this->resolver();
+
+		$described = $resolver->describeAll();
+
+		$this->assertSame(['log', 'webhook'], array_column($described, 'id'));
+		$this->assertSame($this->logProvider->getConfigSchema(), $described[0]['configSchema']);
+		$this->assertSame($this->webhookProvider->getConfigSchema(), $described[1]['configSchema']);
+		foreach ($described as $binding) {
+			$this->assertNotNull($resolver->provider(['configuration' => ['provider' => $binding['id']]]));
+		}
+	}//end testDescribesEveryBindingItResolves()
 }//end class

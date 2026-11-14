@@ -88,6 +88,10 @@
             "description": "Reads and sets the digital post service account"
         },
         {
+            "name": "cti-providers",
+            "description": "Describes the CTI bindings this instance carries"
+        },
+        {
             "name": "digital-post-providers",
             "description": "Describes the digital post bindings this instance carries"
         },
@@ -1990,6 +1994,37 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/cti/providers": {
+            "get": {
+                "operationId": "cti-providers-providers",
+                "summary": "Every CTI binding on this instance, with the configuration it reads",
+                "description": "Every CTI binding on this instance, with the configuration it reads.",
+                "tags": [
+                    "cti-providers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The binding descriptions, or 401 without a signed-in user.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     }
                 }
             }

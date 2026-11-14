@@ -133,18 +133,23 @@
   fields, and the raw configuration editor is hidden beside it. It writes
   `provider`, `sharedSecret`, `signatureSecret`, `eventsPath`,
   `fieldMapping`, `kindMapping` and `callerLookupSource`, keeping every other
-  key. The binding picker offers exactly `webhook` and `log`, the two
-  `CtiSourceResolver` knows; a stored name it does not know is shown as itself
-  so it can be seen and corrected. `kindMapping` is stored vendor word to our
+  key. The binding picker is built from the new `GET /api/cti/providers`
+  (`CtiProvidersController`, signed-in user), which answers
+  `CtiSourceResolver::describeAll()`: the same bindings `provider()` resolves,
+  each with its config schema, so the picker cannot offer a name no source can
+  use (the digital post picker's rule). A stored name it does not list is
+  shown as itself so it can be seen and corrected. `kindMapping` is stored vendor word to our
   kind, the way `CallEventNormaliser` reads it, but asked per kind of ours. The
   lookup picker lists KISS sources only. The events address is shown once the
   source has an id. `kiss` and `cti` were added to the type picker, which
   offered neither, so the KISS source the lookup needs can be made from the
   same page.
-- **note on the strings**: 32 keys added to `en` and `nl` only, as one block
+- **note on the strings**: 33 keys added to `en` and `nl` only, as one block
   after "Pick a source", so the catalogues are not re-sorted. Other locales
   fall back to English.
 - **note on the tests**: the Vue part is covered by
-  `tests/vitest/ctiSourceFields.spec.js` (14 tests, real components). The
+  `tests/vitest/ctiSourceFields.spec.js` (15 tests, real components), the
+  endpoint by `CtiProvidersControllerTest` and
+  `CtiSourceResolverTest::testDescribesEveryBindingItResolves`. The
   browser spec named above needs a running Nextcloud and is not written.
 - **docs**: `docs/features/telephony-cti.md`, listed in the features index.
