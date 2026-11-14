@@ -3537,7 +3537,12 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "CloudEvents receiver": "CloudEvents receiver",
+        "An outside system sends CloudEvents for this source to this URL, signed with the source's webhook connection.": "An outside system sends CloudEvents for this source to this URL, signed with the source's webhook connection.",
+        "Each source has its own receiver URL for CloudEvents. Open the source to copy its exact URL.": "Each source has its own receiver URL for CloudEvents. Open the source to copy its exact URL.",
+        "Copy the receiver URL": "Copy the receiver URL",
+        "source id": "source id"
     },
     "nplurals=2; plural=(n != 1);"
 )
