@@ -227,4 +227,41 @@ final class MigrateSchemaApplicationIdTest extends TestCase {
 		))->getName());
 
 	}//end testShippedIdsAreWellFormed()
+	/**
+	 * When the new application id reads but the old one does not, the step
+	 * logs it and moves nothing.
+	 *
+	 * @return void
+	 */
+	public function testAFailedReadOfTheOldAppIdMovesNothing(): void {
+		$claimed = $this->createMock(IResult::class);
+		$claimed->method('fetchAll')->willReturn([['slug' => 'source']]);
+		$db = $this->createMock(IDBConnection::class);
+		$calls = 0;
+		$db->method('executeQuery')->willReturnCallback(
+			static function () use (&$calls, $claimed): IResult {
+				$calls++;
+				if ($calls === 2) {
+					throw new \OCP\DB\Exception('old read failed');
+				}
+
+				return $claimed;
+			}
+		);
+		$db->expects(self::never())->method('executeStatement');
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects(self::once())->method('warning')->with(
+			'MigrateSchemaApplicationId: could not read schemas on the old application id; skipping.',
+			['exception' => 'old read failed']
+		);
+		$output = $this->createMock(IOutput::class);
+		$output->expects(self::once())->method('info')
+			->with('MigrateSchemaApplicationId: no schemas on the old application id; nothing to do.');
+
+		(new MigrateSchemaApplicationId($db, $logger))->run($output);
+
+		self::assertSame(2, $calls);
+
+	}//end testAFailedReadOfTheOldAppIdMovesNothing()
 }//end class

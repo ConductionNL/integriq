@@ -623,4 +623,127 @@ class IntakeRoutingServiceTest extends TestCase {
 
 	}//end chat()
 
+
+	/**
+	 * A batch counts a message nobody claims as held, not routed or failed.
+	 *
+	 * @return void
+	 */
+	public function testABatchCountsAnUnclaimedMessageAsHeld(): void {
+		$this->rules = [];
+
+		$this->assertSame(
+			['routed' => 0, 'held' => 1, 'failed' => 0, 'failures' => []],
+			$this->service->routeBatch([$this->chat('niemand')])
+		);
+
+	}//end testABatchCountsAnUnclaimedMessageAsHeld()
+
+	/**
+	 * When even the failure cannot be stored, the batch still counts it and logs why.
+	 *
+	 * @return void
+	 */
+	public function testAFailureThatCannotBeCapturedIsLogged(): void {
+		$objectService = ObjectServiceMockBuilder::make($this);
+		$objectService->method('saveObject')->willThrowException(new \RuntimeException('register is read-only'));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('error')
+			->with(
+				'Integriq intake: a failed message could not be captured either.',
+				['channel' => 'messaging', 'reason' => 'register is read-only']
+			);
+		$service = new IntakeRoutingService($objectService, $this->eventDispatcher, $this->schemaMapper, $logger);
+		$message = $this->chat('kapot');
+
+		$result = $service->routeBatch([$message]);
+
+		$this->assertSame(0, $result['routed']);
+		$this->assertSame(1, $result['failed']);
+		$this->assertSame([$message->getExternalId() . ': register is read-only'], $result['failures']);
+
+	}//end testAFailureThatCannotBeCapturedIsLogged()
+
+	/**
+	 * A rule onto a case type this instance does not have is refused, naming it.
+	 *
+	 * @return void
+	 */
+	public function testARuleOntoAnUnknownCaseTypeIsRefused(): void {
+		$this->schemaMapper->method('find')->with('bestaat_niet')->willReturn(null);
+
+		$this->expectException(IntakeRoutingException::class);
+		$this->expectExceptionMessage('No case type "bestaat_niet" on this instance.');
+
+		$this->service->validateRule(
+			['name' => 'Vragen', 'channelId' => 'messaging', 'targetSchema' => 'bestaat_niet', 'fieldMapping' => ['vraag' => 'text']],
+			$this->registry()
+		);
+
+	}//end testARuleOntoAnUnknownCaseTypeIsRefused()
+
+	/**
+	 * A case type that cannot list its fields is refused, because the mapping cannot be checked.
+	 *
+	 * @return void
+	 */
+	public function testACaseTypeThatCannotListItsFieldsIsRefused(): void {
+		$this->schemaMapper->method('find')->willReturn(new \stdClass());
+
+		$this->expectException(IntakeRoutingException::class);
+		$this->expectExceptionMessage('Case type "algemene_vraag" does not declare its fields, so a mapping cannot be checked.');
+
+		$this->service->validateRule(
+			['name' => 'Vragen', 'channelId' => 'messaging', 'targetSchema' => 'algemene_vraag', 'fieldMapping' => ['vraag' => 'text']],
+			$this->registry()
+		);
+
+	}//end testACaseTypeThatCannotListItsFieldsIsRefused()
+
+	/**
+	 * Fields that are not a list count as none, so any mapping is refused.
+	 *
+	 * @return void
+	 */
+	public function testFieldsThatAreNotAListCountAsNone(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			new class {
+				/**
+				 * Not a list.
+				 *
+				 * @return string
+				 */
+				public function getProperties(): string {
+					return 'vraag';
+				}
+			}
+		);
+
+		$this->expectException(IntakeRoutingException::class);
+		$this->expectExceptionMessage('Case type "algemene_vraag" has no field "vraag".');
+
+		$this->service->validateRule(
+			['name' => 'Vragen', 'channelId' => 'messaging', 'targetSchema' => 'algemene_vraag', 'fieldMapping' => ['vraag' => 'text']],
+			$this->registry()
+		);
+
+	}//end testFieldsThatAreNotAListCountAsNone()
+
+	/**
+	 * A mapped source the message does not carry writes no field at all.
+	 *
+	 * @return void
+	 */
+	public function testAMappedSourceTheMessageLacksWritesNoField(): void {
+		$payload = $this->service->buildTargetPayload(
+			['fieldMapping' => ['vraag' => 'text', 'onderwerp' => 'fields.subject']],
+			$this->chat('Wanneer komt de reiniging?')
+		);
+
+		$this->assertSame('Wanneer komt de reiniging?', $payload['vraag']);
+		$this->assertArrayNotHasKey('onderwerp', $payload);
+
+	}//end testAMappedSourceTheMessageLacksWritesNoField()
+
 }//end class

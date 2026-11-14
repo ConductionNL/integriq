@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Which CTI source a request names, and which binding handles it.
+ * A CTI source is only answered when it is an enabled CTI source, and only
+ * bound to a provider it names exactly.
  *
  * @category Test
  * @package  OCA\Integriq\Tests\Unit\Service\Kiss
@@ -12,8 +13,6 @@
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
- *
- * @link https://conduction.nl
  */
 
 declare(strict_types=1);
@@ -25,7 +24,7 @@ use OCA\Integriq\Service\Kiss\CtiSourceResolver;
 use OCA\Integriq\Service\Kiss\LogCtiProvider;
 use OCA\Integriq\Service\Kiss\WebhookCtiProvider;
 use OCA\Integriq\Service\WebhookSignatureService;
-use OCA\Integriq\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -33,9 +32,11 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
+ * Tests for CtiSourceResolver.
+ *
  * @covers \OCA\Integriq\Service\Kiss\CtiSourceResolver
- * @uses   \OCA\Integriq\Service\Kiss\LogCtiProvider
- * @uses   \OCA\Integriq\Service\Kiss\WebhookCtiProvider
+ * @uses \OCA\Integriq\Service\Kiss\LogCtiProvider
+ * @uses \OCA\Integriq\Service\Kiss\WebhookCtiProvider
  */
 class CtiSourceResolverTest extends TestCase {
 
@@ -44,145 +45,166 @@ class CtiSourceResolverTest extends TestCase {
 	 *
 	 * @var ObjectService&MockObject
 	 */
-	private ObjectService $objects;
+	private ObjectService&MockObject $objects;
 
 	/**
 	 * The logger double.
 	 *
 	 * @var LoggerInterface&MockObject
 	 */
-	private LoggerInterface $logger;
+	private LoggerInterface&MockObject $logger;
 
 	/**
-	 * The log binding.
+	 * The real log provider.
 	 *
 	 * @var LogCtiProvider
 	 */
-	private LogCtiProvider $log;
+	private LogCtiProvider $logProvider;
 
 	/**
-	 * The webhook binding.
+	 * The real webhook provider.
 	 *
 	 * @var WebhookCtiProvider
 	 */
-	private WebhookCtiProvider $webhook;
+	private WebhookCtiProvider $webhookProvider;
 
 	/**
-	 * The resolver under test.
-	 *
-	 * @var CtiSourceResolver
-	 */
-	private CtiSourceResolver $resolver;
-
-	/**
-	 * Set up the resolver over the real bindings.
+	 * Set up the collaborators.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
-		parent::setUp();
-		$this->objects  = $this->createMock(ObjectService::class);
-		$this->logger   = $this->createMock(LoggerInterface::class);
-		$this->log      = new LogCtiProvider(new CallEventNormaliser(), $this->createMock(LoggerInterface::class));
-		$this->webhook  = new WebhookCtiProvider(new CallEventNormaliser(), $this->createMock(WebhookSignatureService::class));
-		$this->resolver = new CtiSourceResolver($this->objects, $this->log, $this->webhook, $this->logger);
+		$this->objects = $this->getMockBuilder(ObjectService::class)->disableOriginalConstructor()->getMock();
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->logProvider = new LogCtiProvider(new CallEventNormaliser(), $this->createMock(LoggerInterface::class));
+		$this->webhookProvider = new WebhookCtiProvider(new CallEventNormaliser(), $this->createMock(WebhookSignatureService::class));
 	}//end setUp()
 
 	/**
-	 * The object service answers this source body for the id.
+	 * The resolver under test.
 	 *
-	 * @param array<string, mixed> $body The source body.
+	 * @return CtiSourceResolver
+	 */
+	private function resolver(): CtiSourceResolver {
+		return new CtiSourceResolver($this->objects, $this->logProvider, $this->webhookProvider, $this->logger);
+	}//end resolver()
+
+	/**
+	 * An entity whose stored object is the given value.
+	 *
+	 * @param array $object The stored object.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function entity(array $object): ObjectEntity {
+		$entity = $this->createMock(ObjectEntity::class);
+		$entity->method('getObject')->willReturn($object);
+		return $entity;
+	}//end entity()
+
+	/**
+	 * An enabled CTI source is read from the integriq source schema, unscoped.
 	 *
 	 * @return void
 	 */
-	private function stores(array $body): void {
+	public function testFindsAnEnabledCtiSource(): void {
+		$source = ['type' => 'cti', 'configuration' => ['provider' => 'log']];
 		$this->objects->expects($this->once())->method('find')
 			->with('src-1', 'integriq', 'source', false, false)
-			->willReturn(ObjectServiceMockBuilder::objectEntity($this, $body, 'src-1'));
-	}//end stores()
+			->willReturn($this->entity($source));
+
+		$this->assertSame($source, $this->resolver()->find('src-1'));
+	}//end testFindsAnEnabledCtiSource()
 
 	/**
-	 * An enabled CTI source is found, read past RBAC and multitenancy.
+	 * Without an isEnabled flag the source counts as enabled.
 	 *
 	 * @return void
 	 */
-	public function testAnEnabledCtiSourceIsFound(): void {
-		$body = ['type' => 'cti', 'configuration' => ['provider' => 'log']];
-		$this->stores($body);
-
-		$this->assertSame($body, $this->resolver->find('src-1'));
-	}//end testAnEnabledCtiSourceIsFound()
+	public function testAnUnflaggedSourceIsEnabled(): void {
+		$this->objects->method('find')->willReturn($this->entity(['type' => 'cti']));
+		$this->assertSame(['type' => 'cti'], $this->resolver()->find('src-1'));
+	}//end testAnUnflaggedSourceIsEnabled()
 
 	/**
-	 * A source of another type, or a disabled one, is not a CTI source.
+	 * A blank id is not looked up at all.
 	 *
-	 * @return array<string, array{0: array<string, mixed>}>
+	 * @return void
 	 */
-	public static function notCti(): array {
-		return [
-			'another type' => [['type' => 'rest', 'isEnabled' => true]],
-			'no type' => [['isEnabled' => true]],
-			'disabled' => [['type' => 'cti', 'isEnabled' => false]],
+	public function testABlankIdIsNotLookedUp(): void {
+		$this->objects->expects($this->never())->method('find');
+
+		$this->assertNull($this->resolver()->find('  '));
+	}//end testABlankIdIsNotLookedUp()
+
+	/**
+	 * A failed lookup, a missing entity, another source type and a disabled
+	 * source all answer null.
+	 *
+	 * @return void
+	 */
+	public function testEveryOtherSourceIsNull(): void {
+		$answers = [
+			new RuntimeException('not found'),
+			null,
+			$this->entity(['type' => 'email']),
+			$this->entity(['configuration' => []]),
+			$this->entity(['type' => 'cti', 'isEnabled' => false]),
 		];
-	}//end notCti()
+		$this->objects->method('find')->willReturnCallback(
+			static function () use (&$answers): ?ObjectEntity {
+				$answer = array_shift($answers);
+				if ($answer instanceof RuntimeException) {
+					throw $answer;
+				}
+
+				return $answer;
+			}
+		);
+		$resolver = $this->resolver();
+
+		for ($i = 0; $i < 5; $i++) {
+			$this->assertNull($resolver->find('src-' . $i), 'answer ' . $i);
+		}
+	}//end testEveryOtherSourceIsNull()
 
 	/**
-	 * A source that is not an enabled CTI source is not found.
-	 *
-	 * @param array<string, mixed> $body The source body.
-	 *
-	 * @dataProvider notCti
+	 * The provider named in the configuration is bound, by exact id.
 	 *
 	 * @return void
 	 */
-	public function testANonCtiOrDisabledSourceIsNotFound(array $body): void {
-		$this->stores($body);
-
-		$this->assertNull($this->resolver->find('src-1'));
-	}//end testANonCtiOrDisabledSourceIsNotFound()
-
-	/**
-	 * A blank id is not looked up; a missing or failing lookup is not found.
-	 *
-	 * @return void
-	 */
-	public function testABlankIdOrAFailedLookupFindsNothing(): void {
-		$this->objects->expects($this->exactly(2))->method('find')
-			->willReturnOnConsecutiveCalls(null, $this->throwException(new RuntimeException('no such object')));
-
-		$this->assertNull($this->resolver->find('  '));
-		$this->assertNull($this->resolver->find('src-1'));
-		$this->assertNull($this->resolver->find('src-2'));
-	}//end testABlankIdOrAFailedLookupFindsNothing()
-
-	/**
-	 * The binding is picked by the provider the source configuration names.
-	 *
-	 * @return void
-	 */
-	public function testTheBindingIsTheOneTheSourceNames(): void {
+	public function testBindsTheNamedProvider(): void {
 		$this->logger->expects($this->never())->method('warning');
+		$resolver = $this->resolver();
 
-		$this->assertSame($this->log, $this->resolver->provider(['configuration' => ['provider' => 'log']]));
-		$this->assertSame($this->webhook, $this->resolver->provider(['configuration' => ['provider' => 'webhook']]));
-	}//end testTheBindingIsTheOneTheSourceNames()
+		$this->assertSame($this->logProvider, $resolver->provider(['configuration' => ['provider' => 'log']]));
+		$this->assertSame($this->webhookProvider, $resolver->provider(['configuration' => ['provider' => 'webhook']]));
+	}//end testBindsTheNamedProvider()
 
 	/**
-	 * An unknown or missing binding is logged and none is returned.
+	 * An unknown, differently cased or missing provider is no binding, and says so.
 	 *
 	 * @return void
 	 */
-	public function testAnUnknownBindingIsLogged(): void {
+	public function testAnUnknownProviderIsNoBinding(): void {
 		$warnings = [];
-		$this->logger->method('warning')->willReturnCallback(static function (string $message) use (&$warnings): void {
-			$warnings[] = $message;
-		});
+		$this->logger->method('warning')->willReturnCallback(
+			static function (string $message) use (&$warnings): void {
+				$warnings[] = $message;
+			}
+		);
+		$resolver = $this->resolver();
 
-		$this->assertNull($this->resolver->provider(['configuration' => ['provider' => 'asterisk']]));
-		$this->assertNull($this->resolver->provider([]));
+		$this->assertNull($resolver->provider(['configuration' => ['provider' => 'sip']]));
+		$this->assertNull($resolver->provider(['configuration' => ['provider' => 'Webhook']]));
+		$this->assertNull($resolver->provider([]));
 		$this->assertSame(
-			['[CtiSourceResolver] no CTI binding named "asterisk"', '[CtiSourceResolver] no CTI binding named ""'],
+			[
+				'[CtiSourceResolver] no CTI binding named "sip"',
+				'[CtiSourceResolver] no CTI binding named "Webhook"',
+				'[CtiSourceResolver] no CTI binding named ""',
+			],
 			$warnings
 		);
-	}//end testAnUnknownBindingIsLogged()
+	}//end testAnUnknownProviderIsNoBinding()
 }//end class

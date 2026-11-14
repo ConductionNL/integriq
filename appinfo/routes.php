@@ -10,7 +10,8 @@
 // lives at OR's `/api/objects/integriq/{schema}/*`. Re-adding a
 // `resources` entry here without restoring the controller methods produces
 // auto-routes that 500 on hit — `composer check:routes` enforces this.
-$routes = [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 	'routes' => [
 		// SPA shell entry (root) — UiController serves the Vue app for all section paths.
 		// The Dashboard data routes (/api/dashboard/{callstats,jobstats,syncstats}) were
@@ -597,6 +598,7 @@ $routes = [
 		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
@@ -802,20 +804,4 @@ $routes = [
 		// catch-all is the one that actually serves `/` at runtime.
 		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(/|$)).*'], 'defaults' => ['path' => '']],
 	],
-];
-
-// The versioned API base (NL API Design Rules, /core/uri-version): every /api/ route
-// also answers under /api/v1/, the server URL the OpenAPI document names. The unversioned
-// route stays, so existing clients and the URLs the app generates keep working. Each
-// copy gets its own route name through 'postfix'.
-foreach ($routes['routes'] as $route) {
-	if (str_starts_with($route['url'], '/api/') === false) {
-		continue;
-	}
-
-	$route['url']      = '/api/v1/'.substr($route['url'], strlen('/api/'));
-	$route['postfix']  = ($route['postfix'] ?? '').'V1';
-	$routes['routes'][] = $route;
-}
-
-return $routes;
+]);

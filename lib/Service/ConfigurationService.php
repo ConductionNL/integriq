@@ -1152,12 +1152,20 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @throws \InvalidArgumentException If required components are missing or invalid.
 	 *
 	 * @spec openspec/specs/configuration-export-import/spec.md
+	 * @spec openspec/changes/connectors-hr-staff-sync/tasks.md#task-3
 	 */
 	public function importConfiguration(array $oas): array {
 		$this->resetMappings();
 
 		if (isset($oas['components']) === false) {
 			throw new \InvalidArgumentException('OAS must contain a components property');
+		}
+
+		// A set marked as carrying personal data imports only with allow-list
+		// mappings; it is refused before anything is written.
+		$refusals = PersonalDataSetGuard::refusals(document: $oas);
+		if ($refusals !== []) {
+			throw new \InvalidArgumentException(implode(' ', $refusals));
 		}
 
 		$result = [];

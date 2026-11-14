@@ -224,8 +224,7 @@ class BodyCaptureController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'source',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException) {
 			return null;
@@ -257,8 +256,7 @@ class BodyCaptureController extends Controller {
 				register: 'integriq',
 				schema: 'source',
 				uuid: $source->getUuid(),
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (Throwable) {
 			return new JSONResponse(

@@ -275,6 +275,37 @@ class DirectorySyncServiceTest extends TestCase {
 	}//end testALeaverIsRemovedFromTheMappedGroup()
 
 	/**
+	 * An account the directory marks inactive keeps no membership, even while
+	 * its directory groups still map; the account itself is left alone.
+	 *
+	 * @return void
+	 */
+	public function testAnInactiveAccountLosesItsMembership(): void {
+		$service = $this->service(currentMembers: ['anja', 'bram', 'cees', 'dana']);
+		$this->group->expects($this->never())->method('addUser');
+		$this->group->expects($this->once())->method('removeUser')->with($this->callback(static fn ($user): bool => $user->getUID() === 'dana'));
+		$this->userManager->expects($this->never())->method('createUser');
+
+		$record = $service->run(
+			connection: $this->connection(
+				users: [
+					['userName' => 'anja', 'groups' => ['OU=Vergunningen']],
+					['userName' => 'bram', 'groups' => ['OU=Toezicht']],
+					['userName' => 'cees', 'groups' => ['OU=Toezicht']],
+					['userName' => 'dana', 'groups' => ['OU=Toezicht'], 'active' => false],
+				]
+			),
+			dryRun: false,
+			confirmRemovals: true
+		);
+
+		$this->assertSame(0, $record['membershipsAdded']);
+		$this->assertSame(1, $record['membershipsRemoved']);
+		$this->assertSame([['userId' => 'dana', 'group' => 'behandelaars']], $record['removals']);
+
+	}//end testAnInactiveAccountLosesItsMembership()
+
+	/**
 	 * A leaver's open work is reported, and a silent consumer reads unknown.
 	 *
 	 * @return void

@@ -1,0 +1,71 @@
+{
+	"$comment": "shillinq WebshopOrder as its open change sales-webshop-orders defines it (design D2, shillinq development c5650d6). shillinq has not built the schema yet; this is the contract the integriq mappings write to, written out field for field so the tests hold the mappings to it. When shillinq ships the schema, replace this file with a copy of it.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["channelId", "shopOrderId", "orderedAt", "buyer", "currency", "pricesIncludeVat", "lines", "shipping", "discountTotal", "totals", "payment", "administrationId"],
+	"properties": {
+		"channelId": { "type": "string" },
+		"shopOrderId": { "type": "string", "minLength": 1 },
+		"orderedAt": { "type": "string", "format": "date-time" },
+		"buyer": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["type", "name", "email", "countryCode"],
+			"properties": {
+				"type": { "enum": ["business", "consumer"] },
+				"name": { "type": "string" },
+				"email": { "type": "string" },
+				"companyName": { "type": "string" },
+				"vatId": { "type": "string" },
+				"kvkNumber": { "type": "string" },
+				"address": { "type": "string" },
+				"countryCode": { "type": "string", "pattern": "^[A-Z]{2}$" }
+			}
+		},
+		"currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+		"pricesIncludeVat": { "type": "boolean" },
+		"lines": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["sku", "description", "quantity", "unitPrice", "vatRate"],
+				"properties": {
+					"sku": { "type": "string" },
+					"description": { "type": "string" },
+					"quantity": { "type": "number" },
+					"unitPrice": { "type": "number" },
+					"vatRate": { "type": "number" }
+				}
+			}
+		},
+		"shipping": { "type": "number" },
+		"discountTotal": { "type": "number" },
+		"totals": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["net", "vat", "gross"],
+			"properties": {
+				"net": { "type": "number" },
+				"vat": { "type": "number" },
+				"gross": { "type": "number" }
+			}
+		},
+		"payment": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "method", "providerPaymentId"],
+			"properties": {
+				"status": { "enum": ["paid", "pending", "refunded", "cancelled"] },
+				"method": { "type": "string" },
+				"providerPaymentId": { "type": "string" }
+			}
+		},
+		"administrationId": { "type": "string" },
+		"intakeState": { "enum": ["received", "invoiced", "refused", "duplicate", "credited"] },
+		"arInvoiceId": { "type": "string" },
+		"creditNoteId": { "type": "string" },
+		"refusalReason": { "type": "string" }
+	}
+}

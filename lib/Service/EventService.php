@@ -43,6 +43,7 @@ use OCA\Integriq\Service\Forms\FormsAnswerResolver;
 use OCA\Integriq\Service\Forms\FormsSyncAdapter;
 use OCA\Integriq\Service\Event\ActionDelivery;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\EgressGuard;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -92,6 +93,15 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
  */
 class EventService implements EventServiceInterface {
+	use OrganisationBoundary;
+
+	/**
+	 * CloudEvents extension attribute naming the organisation that owns the object an event is about.
+	 *
+	 * @var string
+	 */
+	public const ORGANISATION_ATTRIBUTE = 'sourceorganisation';
+
 	/**
 	 * Base backoff interval in seconds for the first retry.
 	 *
@@ -474,10 +484,17 @@ class EventService implements EventServiceInterface {
 	 * @return boolean
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	private function doesEventMatchSubscription(ObjectEntity $event, ObjectEntity $subscription): bool {
 		$eventData = $event->getObject();
 		$subscriptionData = $subscription->getObject();
+
+		// The fan-out reads every organisation's subscriptions, so an object event is kept to its own organisation here.
+		$eventOrganisation = (string)($eventData[self::ORGANISATION_ATTRIBUTE] ?? '');
+		if ($this->sameOrganisation(first: $eventOrganisation, second: $this->organisationOf(object: $subscription)) === false) {
+			return false;
+		}
 
 		// Check event type matches.
 		$types = ($subscriptionData['types'] ?? []);
@@ -503,6 +520,24 @@ class EventService implements EventServiceInterface {
 
 		return true;
 	}//end doesEventMatchSubscription()
+
+	/**
+	 * The CloudEvents extension attribute naming the organisation of the object an event is about.
+	 *
+	 * @param ObjectEntity $object The created, updated or deleted object.
+	 *
+	 * @return array<string, string> The attribute, or [] when the object has no organisation.
+	 *
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
+	 */
+	private function organisationAttribute(ObjectEntity $object): array {
+		$organisation = $this->organisationOf(object: $object);
+		if ($organisation === '') {
+			return [];
+		}
+
+		return [self::ORGANISATION_ATTRIBUTE => $organisation];
+	}//end organisationAttribute()
 
 	/**
 	 * Evaluate filter conditions against an event data array.
@@ -3204,6 +3239,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectCreated(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -3223,7 +3259,7 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
+			] + $this->organisationAttribute(object: $object),
 			register: 'integriq',
 			schema: 'event',
 			// System context: the `event` schema lets only administrators create
@@ -3249,6 +3285,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectUpdated(ObjectEntity $oldObject, ObjectEntity $newObject): array {
 		$oldData = $oldObject->getObject();
@@ -3273,7 +3310,7 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
+			] + $this->organisationAttribute(object: $newObject),
 			register: 'integriq',
 			schema: 'event',
 			// System context: the `event` schema lets only administrators create
@@ -3298,6 +3335,7 @@ class EventService implements EventServiceInterface {
 	 *
 	 * @spec openspec/specs/events-cloudevents/spec.md
 	 * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md#requirement-event-fan-out-shall-not-run-inside-the-originating-write-request
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
 	public function handleObjectDeleted(ObjectEntity $object): array {
 		$objectData = $object->getObject();
@@ -3317,7 +3355,7 @@ class EventService implements EventServiceInterface {
 				// even when the schema ids cannot identify it (a renamed register, or
 				// the schema copied elsewhere).
 				EventLoopGuard::MARKER_KEY => EventLoopGuard::MARKER_VALUE,
-			],
+			] + $this->organisationAttribute(object: $object),
 			register: 'integriq',
 			schema: 'event',
 			// System context: the `event` schema lets only administrators create
