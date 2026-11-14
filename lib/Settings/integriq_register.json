@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.6"
+    "version": "1.1.7"
   },
   "x-openregister": {
     "type": "application",
@@ -85,7 +85,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.4.0",
+        "version": "1.5.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad: see local ADR-005.",
         "required": [
@@ -273,11 +273,23 @@
                         "minLength": 1,
                         "title": "Credential Name",
                         "description": "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches)."
+                      },
+                      "provider": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Provider",
+                        "description": "With `perUser: true`: the broker provider slug whose per-user OAuth 2.0 account each call uses (sources-per-user-oauth). The call runs with the signed-in user's own personal credential at this provider, never a shared one; a call without a signed-in user is refused."
+                      },
+                      "perUser": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Each user's own account",
+                        "description": "Set together with `provider`, and with nothing else, to call with each signed-in user's own account at that provider."
                       }
                     },
                     "additionalProperties": false,
                     "minProperties": 1,
-                    "maxProperties": 1
+                    "maxProperties": 2
                   }
                 }
               }
