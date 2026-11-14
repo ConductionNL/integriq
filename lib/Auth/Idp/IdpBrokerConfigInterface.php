@@ -94,36 +94,4 @@ interface IdpBrokerConfigInterface {
 	 */
 	public function saveConsumer(IdpConsumer $consumer): void;
 
-	/**
-	 * The EntityID an assertion from this provider must name as its audience.
-	 *
-	 * @param string $provider The provider id.
-	 *
-	 * @return string The EntityID, or an empty string when none is configured.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-replay-audience-confusion-and-idp-initiated-flows-are-rejected
-	 */
-	public function entityId(string $provider): string;
-
-	/**
-	 * One organisation's pseudonym salt.
-	 *
-	 * @param string $organisation The organisation id.
-	 *
-	 * @return string The salt, or an empty string when the organisation has none.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-bsn-pseudonymisation-at-the-broker-edge
-	 */
-	public function organisationSalt(string $organisation): string;
-
-	/**
-	 * One provider's assurance-level aliases.
-	 *
-	 * @param string $provider The provider id.
-	 *
-	 * @return array<string,string> The aliases.
-	 *
-	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-trust-levels-map-to-the-eidas-aligned-vocabulary
-	 */
-	public function trustAliases(string $provider): array;
 }
