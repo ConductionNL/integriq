@@ -137,6 +137,8 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'woocommerce-shop' => 'Commerce',
 		'shopify-shop' => 'Commerce',
 		'lightspeed-shop' => 'Commerce',
+		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
+		'ecb-eurofxref-daily' => 'Bank',
 	];
 
 	/**

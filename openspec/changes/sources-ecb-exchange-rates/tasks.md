@@ -20,8 +20,8 @@ Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk
   - GIVEN rates for Friday 2026-09-25 WHEN USD to EUR is asked for Sunday 2026-09-27 THEN the answer is 1 / 1.1203 with rate date 2026-09-25
   - GIVEN rates for that date WHEN USD to GBP is asked THEN the answer is derived through the euro and marked derived
   - GIVEN no rate within seven days WHEN a pair is asked THEN the refusal is `no-rate` with the newest date
-- [ ] Implement
-- [ ] Test (PHPUnit with the real event class)
+- [x] Implement
+- [x] Test (PHPUnit with the real event class)
 
 ### Task 3: Published event and catalogue item
 - **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-the-ecb-reference-rates-are-stored-every-working-day-req-fx-001`
@@ -30,7 +30,7 @@ Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk
   - GIVEN a run that stores a new date WHEN it finishes THEN one `nl.conduction.fx.rates.published` event names that date
 - [x] Implement the published event (`ExchangeRateImportService::storeRates`)
 - [x] Test the published event (PHPUnit)
-- [ ] Catalogue item under `Bank`, docs/features page and l10n
+- [x] Catalogue item under `Bank`, docs/features page and l10n (no new user-visible strings: catalogue category labels and refusal codes are not translated)
 
 ## Verification
 - [x] `openspec validate sources-ecb-exchange-rates --strict` passes
