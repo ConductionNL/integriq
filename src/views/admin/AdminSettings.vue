@@ -18,8 +18,10 @@
 			<DigitalPostAccountSettings />
 			<BerichtenboxSettings />
 			<ExpressionSourceSettings />
+			<MappingLookupSettings />
 			<ConnectionAlertSettings />
 			<OtelSettings />
+			<WooStarterSetSettings />
 		</div>
 	</CnAdminSettingsShell>
 </template>
@@ -33,9 +35,11 @@ import DigitalPostAccountSettings from './DigitalPostAccountSettings.vue'
 import DsoActivityMappingSettings from './DsoActivityMappingSettings.vue'
 import DsoPkiSettings from './DsoPkiSettings.vue'
 import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
+import MappingLookupSettings from './MappingLookupSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
 import OtelSettings from './OtelSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
+import WooStarterSetSettings from './WooStarterSetSettings.vue'
 
 /**
  * Root admin settings panel for Integriq.
@@ -59,6 +63,7 @@ import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
  * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
  * @spec openspec/changes/digital-post-service-account-and-log-redaction/specs/digital-post-adapter/spec.md#requirement-digital-post-is-stored-as-its-service-account-req-dpa-007
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
+ * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-the-lookup-allowlist-is-administered-and-every-change-is-recorded-req-mfl-005
  * @spec openspec/changes/dso-activity-mapping-table/specs/dso-omgevingsloket/spec.md#requirement-administrators-maintain-the-activity-table-on-the-admin-settings-page-req-dso-012
  */
 export default {
@@ -73,9 +78,11 @@ export default {
 		DsoActivityMappingSettings,
 		DsoPkiSettings,
 		ExpressionSourceSettings,
+		MappingLookupSettings,
 		OpenFormulierenConnectionSettings,
 		OtelSettings,
 		WebhookConnectionsSettings,
+		WooStarterSetSettings,
 	},
 }
 </script>

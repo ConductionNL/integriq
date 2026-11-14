@@ -227,9 +227,33 @@ class MappingsController extends Controller {
 			);
 		}
 
-		return new JSONResponse(['resultObject' => $resultObject] + $this->testReport(test: $test, resultObject: $resultObject));
+		$rendered = $this->renderedOutput(mapping: $mappingPayload, resultObject: $resultObject);
+
+		return new JSONResponse(['resultObject' => $resultObject] + $rendered + $this->testReport(test: $test, resultObject: $resultObject));
 
 	}//end mapAndValidate()
+
+	/**
+	 * The result in the mapping's output format, when that is not JSON.
+	 *
+	 * A JSON mapping adds nothing, so its test answers exactly as before.
+	 *
+	 * @param array<string, mixed> $mapping      The mapping payload.
+	 * @param array<mixed>         $resultObject The mapped result.
+	 *
+	 * @return array<string, mixed> `renderedOutput` with format, contentType and body, or nothing.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+	 */
+	private function renderedOutput(array $mapping, array $resultObject): array {
+		$rendered = $this->mappingService->renderOutput(mapping: $mapping, result: $resultObject);
+		if (($rendered['body'] ?? null) === null) {
+			return [];
+		}
+
+		return ['renderedOutput' => $rendered];
+
+	}//end renderedOutput()
 
 	/**
 	 * The mapping as MappingService::executeMapping() takes it: it accepts a

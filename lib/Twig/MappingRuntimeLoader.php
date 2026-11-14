@@ -57,6 +57,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 	 * @param FileService $fileService Service that resolves file metadata.
 	 * @param SourceMappingServiceInterface $objectService Service that resolves OR objects.
 	 * @param SynchronizationContractServiceInterface $synchronizationContractService Service for contract lookups.
+	 * @param MappingLookup|null $lookup The allowlisted register lookup.
 	 */
 	public function __construct(
 		private readonly MappingServiceInterface $mappingService,
@@ -64,6 +65,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 		private readonly FileService $fileService,
 		private readonly SourceMappingServiceInterface $objectService,
 		private readonly SynchronizationContractServiceInterface $synchronizationContractService,
+		private readonly ?MappingLookup $lookup = null,
 	) {
 
 	}//end __construct()
@@ -83,6 +85,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 				fileService:                    $this->fileService,
 				objectService:                  $this->objectService,
 				synchronizationContractService: $this->synchronizationContractService,
+				lookup:                         $this->lookup,
 			);
 		}
 

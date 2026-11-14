@@ -491,6 +491,9 @@ class ServiceRegistrarTest extends TestCase {
 		'OCA\\Integriq\\Service\\Objecten\\ObjecttypeEndpointHandler',
 		'OCA\\Integriq\\Service\\Objecten\\ObjectEndpointHandler',
 		'OCA\\Integriq\\Service\\Objecten\\ObjectWriteHandler',
+		'OCA\\Integriq\\Service\\Catalogi\\CatalogiGate',
+		'OCA\\Integriq\\Service\\Catalogi\\InformatieobjecttypeEndpointHandler',
+		'OCA\\Integriq\\Service\\Catalogi\\WooStarterSet',
 		'OCA\\Integriq\\Service\\Tables\\TablesClientInterface',
 		'OCA\\Integriq\\Service\\Forms\\FormsClientInterface',
 	];

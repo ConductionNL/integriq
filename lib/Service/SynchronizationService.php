@@ -71,6 +71,7 @@ use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
+use OCA\Integriq\Util\CsvCodec;
 use OCA\Integriq\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -128,6 +129,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @var int|null
 	 */
 	private ?int $lastPageFromLink = null;
+
+	/**
+	 * Mappings read for their output format, by reference (mapping-formats-and-lookups).
+	 *
+	 * @var array<string, ObjectEntity|null>
+	 */
+	private array $outputMappings = [];
 
 	/**
 	 * Call logs for pages fetched ahead of the loop, keyed by page number.
@@ -929,19 +937,37 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * every page, and 156.9 ms with it written only when it is read.
 	 *
 	 * @param array $synchronization The synchronization to persist.
-	 * @param array $source The source, read for its `rateLimitLimit`.
+	 * @param array $source The source, read for its `rateLimitLimit` and `pace`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/synchronization-engine/spec.md
 	 */
 	private function persistPageCursor(array $synchronization, array $source): void {
-		if (($source['rateLimitLimit'] ?? null) === null) {
+		if ($this->resumesFromPageCursor(source: $source) === false) {
 			return;
 		}
 
 		$this->persistSynchronization(synchronization: $synchronization);
 	}//end persistPageCursor()
+
+	/**
+	 * Whether a run against this source keeps its page cursor, so a run cut off
+	 * mid-crawl resumes where it stopped: the source reports a rate limit, or
+	 * it is paced, where a call whose turn is further away than background
+	 * work may wait stops the run (REQ-RLPC-002).
+	 *
+	 * @param array $source The source.
+	 *
+	 * @return bool True when the page cursor is kept.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md
+	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 */
+	private function resumesFromPageCursor(array $source): bool {
+		return ($source['rateLimitLimit'] ?? null) !== null
+			|| is_numeric($source['pace']['maxCalls'] ?? null) === true;
+	}//end resumesFromPageCursor()
 
 	/**
 	 * Upsert a synchronization through OpenRegister.
@@ -7518,7 +7544,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$fetch->config['body'] = json_encode((new Dot($fetch->data))->get($fetch->useDataAsRequestBody));
 		}
 
-		if (($fetch->source['rateLimitLimit'] ?? null) !== null || ($fetch->sourceConfig['format'] ?? null) === 'jsonl') {
+		if ($this->resumesFromPageCursor(source: $fetch->source) === true || ($fetch->sourceConfig['format'] ?? null) === 'jsonl') {
 			$fetch->currentPage = (int)(($fetch->synchronization['currentPage'] ?? null) ?? 1);
 		}
 	}//end configureApiFetch()
@@ -8476,8 +8502,38 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			);
 		}
 
+		// mapping-formats-and-lookups REQ-MFL-001: a synchronization reading a
+		// CSV response hands one array per row to the mapping. Per
+		// synchronization, like `jsonl`, because the same source can serve
+		// several formats.
+		if (($synchronization['sourceConfig']['format'] ?? null) === 'csv') {
+			$rows = $this->decodeCsvPage(body: (string)$page->body, sourceConfig: $synchronization['sourceConfig']);
+			return ['objects' => $rows, 'result' => $rows];
+		}
+
 		return ($this->readYamlPage(page: $page, sourceFormat: $sourceFormat) ?? $this->readParsedPage(page: $page));
 	}//end fetchSinglePageData()
+
+	/**
+	 * The rows of a CSV page, with the synchronization's delimiter, enclosure and header flag.
+	 *
+	 * @param string              $body         The page body.
+	 * @param array<string,mixed> $sourceConfig The synchronization's `sourceConfig`.
+	 *
+	 * @return list<array<int|string,string>> The rows.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-reads-a-csv-source-response-req-mfl-001
+	 */
+	private function decodeCsvPage(string $body, array $sourceConfig): array {
+		return CsvCodec::decode(
+			content: $body,
+			options: [
+				'delimiter' => (string)($sourceConfig['csvDelimiter'] ?? ','),
+				'enclosure' => (string)($sourceConfig['csvEnclosure'] ?? '"'),
+				'header' => (($sourceConfig['csvHeader'] ?? true) !== false),
+			]
+		);
+	}//end decodeCsvPage()
 
 	/**
 	 * The call log of a page: taken from the concurrent prefetch when it is
@@ -10480,11 +10536,75 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				source: $write->target,
 				endpoint: $write->endpoint,
 				method: $method,
-				config: $write->targetConfig,
+				config: $this->formattedTargetConfig(write: $write, method: $method),
 				trace: $write->trace
 			)
 		);
 	}//end sendToTarget()
+
+	/**
+	 * The call config with the body in the output format of the mapping that made it.
+	 *
+	 * The mapping is the synchronization's sourceTargetMapping, or the
+	 * updateMapping on an update. When it declares `xml` or `csv` the mapped
+	 * object is sent as that text with its content type, and not as JSON. A
+	 * mapping without an output format, no mapping, or a body already turned
+	 * into a file upload leave the config as it was.
+	 *
+	 * @param TargetWrite $write  The write.
+	 * @param string      $method The HTTP method.
+	 *
+	 * @return array The call config.
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-synchronization-sends-the-mappings-output-format-to-an-api-target-req-mfl-003
+	 */
+	private function formattedTargetConfig(TargetWrite $write, string $method): array {
+		$config = $write->targetConfig;
+		if (is_array($config['json'] ?? null) === false) {
+			return $config;
+		}
+
+		$reference = ($write->synchronization['sourceTargetMapping'] ?? null);
+		if ($method !== 'POST' && empty($config['updateMapping']) === false) {
+			$reference = $config['updateMapping'];
+		}
+
+		$mapping = $this->outputMapping(reference: $reference);
+		if ($mapping === null) {
+			return $config;
+		}
+
+		$rendered = $this->mappingService->renderOutput(mapping: $mapping, result: $config['json']);
+		if (($rendered['body'] ?? null) === null) {
+			return $config;
+		}
+
+		unset($config['json']);
+		$config['body'] = $rendered['body'];
+		$config['headers'] = array_merge((array)($config['headers'] ?? []), ['Content-Type' => $rendered['contentType']]);
+
+		return $config;
+	}//end formattedTargetConfig()
+
+	/**
+	 * The stored mapping object a reference names, read once per reference.
+	 *
+	 * @param mixed $reference The mapping id, uuid or slug.
+	 *
+	 * @return ObjectEntity|null The mapping, or null for no or an unknown reference.
+	 */
+	private function outputMapping(mixed $reference): ?ObjectEntity {
+		if (is_scalar($reference) === false || (string)$reference === '') {
+			return null;
+		}
+
+		$key = (string)$reference;
+		if (array_key_exists($key, $this->outputMappings) === false) {
+			$this->outputMappings[$key] = $this->mappingService->findMapping(reference: $key);
+		}
+
+		return $this->outputMappings[$key];
+	}//end outputMapping()
 
 	/**
 	 * Push one delivery as a new document to a ZGW Documenten API.
