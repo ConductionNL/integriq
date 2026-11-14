@@ -376,6 +376,12 @@ final class EventListenerBindings {
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
 		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
+		// A sibling app hands over a connection it used to run itself (first:
+		// pipelinq's BRP connection). Named by string: the event is the sender's.
+		foreach (array_keys(ConnectionHandoverListener::EVENTS) as $handoverEvent) {
+			$dispatcher->addServiceListener(eventName: $handoverEvent, className: ConnectionHandoverListener::class);
+		}
+
 		// Forms-service-fetch-for-apps (REQ-SF-002): a sibling app runs a service
 		// fetch an administrator defined, and gets its declared outputs or a refusal.
 		$dispatcher->addServiceListener(eventName: ServiceFetchRequestedEvent::class, className: ServiceFetchRequestedListener::class);
