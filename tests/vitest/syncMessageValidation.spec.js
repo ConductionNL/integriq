@@ -35,6 +35,7 @@ vi.mock('@nextcloud/vue', async () => {
 		})
 	return {
 		NcButton: stub('NcButton'),
+		NcCheckboxRadioSwitch: stub('NcCheckboxRadioSwitch'),
 		NcLoadingIcon: stub('NcLoadingIcon'),
 		NcSelect: stub('NcSelect'),
 		NcTextField: stub('NcTextField'),

@@ -509,10 +509,6 @@ export default {
 		},
 
 		/**
-		 * @return {object[]} The two validation modes.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
-		 */
-		/**
 		 * The file formats a synchronization reads.
 		 *
 		 * @return {Array<{id: string, label: string}>} The options.
@@ -537,6 +533,10 @@ export default {
 			return this.formatOptions.find((option) => option.id === this.configValue('format')) || null
 		},
 
+		/**
+		 * @return {object[]} The two validation modes.
+		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+		 */
 		validationModeOptions() {
 			return [
 				{ id: 'record', label: t('integriq', 'Record') },
