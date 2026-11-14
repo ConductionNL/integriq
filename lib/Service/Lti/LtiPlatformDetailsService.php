@@ -77,6 +77,7 @@ class LtiPlatformDetailsService implements ToolPlatformDetailsInterface {
 				register: 'integriq',
 				schema: 'lti_tool',
 				_rbac: false,
+				// Unscoped: admin-only endpoint (LtiPlatformDetailsController); an administrator reads the values before approving the tool.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
