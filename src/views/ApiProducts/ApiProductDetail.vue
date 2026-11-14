@@ -198,6 +198,91 @@
 				</form>
 			</section>
 
+			<section class="apiProductDetail__section" data-testid="api-product-channels">
+				<h3>{{ t('integriq', 'Channels') }}</h3>
+				<p v-if="productChannels.length > 0" class="apiProductDetail__hint">
+					<a :href="asyncApiUrl" target="_blank" rel="noopener">{{ t('integriq', 'AsyncAPI document of these channels') }}</a>
+				</p>
+				<table v-if="productChannels.length > 0" class="apiProductDetail__table">
+					<thead>
+						<tr>
+							<th scope="col">{{ t('integriq', 'Slug') }}</th>
+							<th scope="col">{{ t('integriq', 'Title') }}</th>
+							<th scope="col">{{ t('integriq', 'Event types') }}</th>
+							<th />
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="channel in productChannels" :key="channel.slug">
+							<td>{{ channel.slug }}</td>
+							<td>{{ channel.title }}</td>
+							<td>{{ (channel.types || []).join(', ') }}</td>
+							<td>
+								<NcButton
+									variant="tertiary"
+									:aria-label="t('integriq', 'Edit channel')"
+									@click="editChannel(channel)">
+									{{ t('integriq', 'Edit') }}
+								</NcButton>
+								<NcButton
+									variant="tertiary"
+									:aria-label="t('integriq', 'Remove channel')"
+									@click="removeChannel(channel.slug)">
+									{{ t('integriq', 'Remove') }}
+								</NcButton>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<p v-else class="apiProductDetail__hint">
+					{{ t('integriq', 'This product version carries no event channels yet.') }}
+				</p>
+
+				<form class="apiProductDetail__tierForm" @submit.prevent="saveChannel">
+					<label :for="'apiProductDetail-channel-slug-' + uid">{{ t('integriq', 'Channel slug') }}</label>
+					<input
+						:id="'apiProductDetail-channel-slug-' + uid"
+						v-model="newChannel.slug"
+						type="text"
+						pattern="[a-z0-9][a-z0-9-]*" />
+
+					<label :for="'apiProductDetail-channel-title-' + uid">{{ t('integriq', 'Channel title') }}</label>
+					<input
+						:id="'apiProductDetail-channel-title-' + uid"
+						v-model="newChannel.title"
+						type="text" />
+
+					<label :for="'apiProductDetail-channel-types-' + uid">{{ t('integriq', 'CloudEvent types, one per line') }}</label>
+					<textarea
+						:id="'apiProductDetail-channel-types-' + uid"
+						v-model="newChannel.types"
+						rows="3" />
+
+					<label :for="'apiProductDetail-channel-description-' + uid">{{ t('integriq', 'Description') }}</label>
+					<input
+						:id="'apiProductDetail-channel-description-' + uid"
+						v-model="newChannel.description"
+						type="text" />
+
+					<p v-if="channelError" class="apiProductDetail__error" role="alert">
+						{{ channelError }}
+					</p>
+
+					<NcButton
+						variant="primary"
+						type="submit"
+						:disabled="saving">
+						{{ editingChannel ? t('integriq', 'Save channel') : t('integriq', 'Add channel') }}
+					</NcButton>
+					<NcButton
+						v-if="editingChannel"
+						variant="tertiary"
+						@click="resetChannelForm">
+						{{ t('integriq', 'Cancel') }}
+					</NcButton>
+				</form>
+			</section>
+
 			<!-- Analytics panel -->
 			<section class="apiProductDetail__section">
 				<h3>{{ t('integriq', 'Analytics') }}</h3>
@@ -273,6 +358,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import { channelsOf, draftOf, withChannel, withoutChannel } from './productChannels.js'
 
 let uidCounter = 0
 
@@ -300,6 +386,9 @@ export default {
 			analytics: null,
 			loadingAnalytics: false,
 			subscriptions: [],
+			newChannel: draftOf(null),
+			editingChannel: '',
+			channelError: '',
 			newTier: {
 				name: '',
 				requestsPerWindow: null,
@@ -321,6 +410,16 @@ export default {
 			return Array.isArray(this.product?.endpoints)
 				? this.product.endpoints
 				: []
+		},
+
+		/** @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001 */
+		productChannels() {
+			return channelsOf(this.product)
+		},
+
+		/** @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-the-product-publishes-an-asyncapi-document-of-its-channels-req-aapi-004 */
+		asyncApiUrl() {
+			return generateUrl(`/apps/integriq/api/products/${encodeURIComponent(this.product?.productSlug || '')}/asyncapi.json`)
 		},
 
 		/** @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001 */
@@ -572,6 +671,67 @@ export default {
 		},
 
 		/**
+		 * Add the channel in the form, or save the one being edited.
+		 *
+		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
+		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 */
+		async saveChannel() {
+			const result = withChannel(this.productChannels, this.newChannel, this.editingChannel)
+			if (result.error) {
+				this.channelError = {
+					slug: t('integriq', 'A slug is lower-case letters, digits and dashes, starting with a letter or digit.'),
+					title: t('integriq', 'Give the channel a title.'),
+					types: t('integriq', 'Name at least one CloudEvent type.'),
+					duplicate: t('integriq', 'This product version already has a channel with this slug.'),
+				}[result.error]
+				return
+			}
+			await this.saveProductField('channels', result.channels)
+			this.resetChannelForm()
+			showSuccess(t('integriq', 'Channel saved'))
+		},
+
+		/**
+		 * Fill the form with a channel to edit it.
+		 *
+		 * @param {object} channel The channel.
+		 * @return {void}
+		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 */
+		editChannel(channel) {
+			this.newChannel = draftOf(channel)
+			this.editingChannel = channel.slug
+			this.channelError = ''
+		},
+
+		/**
+		 * Remove one channel and persist the rest.
+		 *
+		 * @param {string} slug The channel slug.
+		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
+		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 */
+		async removeChannel(slug) {
+			await this.saveProductField('channels', withoutChannel(this.productChannels, slug))
+			if (this.editingChannel === slug) {
+				this.resetChannelForm()
+			}
+		},
+
+		/**
+		 * Empty the channel form.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/events-async-api-products/specs/api-product-gateway/spec.md#requirement-an-api-product-can-declare-event-channels-req-aapi-001
+		 */
+		resetChannelForm() {
+			this.newChannel = draftOf(null)
+			this.editingChannel = ''
+			this.channelError = ''
+		},
+
+		/**
 		 * Delete one subscription tier and persist the remaining tiers.
 		 *
 		 * @param {string} name Tier name — the key under which it is stored in the product's `tiers` object.
@@ -749,5 +909,11 @@ export default {
 
 .apiProductDetail__loading {
 	margin: 32px auto;
+}
+.apiProductDetail__error {
+	color: var(--color-error-text);
+}
+.apiProductDetail__hint {
+	color: var(--color-text-maxcontrast);
 }
 </style>

@@ -308,6 +308,8 @@ final class EventListenerBindings {
 		// imowId; refused on OpenRegister's own save path.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoActivityMappingGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoActivityMappingGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: ProductChannelSlugGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ProductChannelSlugGuardListener::class);
 		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
 		// subscription through OpenRegister's object API, so the signing
 		// default and the unsigned-needs-a-reason refusal run on its stoppable

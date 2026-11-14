@@ -3224,6 +3224,7 @@
         "Every samenloop rule needs the imow-id of the other activity.": "Every samenloop rule needs the imow-id of the other activity.",
         "Fill in the imow-id or the activity id. A row without either never matches a verzoek.": "Fill in the imow-id or the activity id. A row without either never matches a verzoek.",
         "Another active row already maps imow-id %s. Edit that row, or deactivate it first.": "Another active row already maps imow-id %s. Edit that row, or deactivate it first.",
+        "Two channels of this product version are called %s. Give each channel its own slug.": "Two channels of this product version are called %s. Give each channel its own slug.",
         "Samenloop": "Samenloop",
         "Imow-id": "Imow-id",
         "{count} activity arrived without an imow-id or activity id and cannot be mapped.": [

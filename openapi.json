@@ -7231,6 +7231,238 @@
                 ]
             }
         },
+        "/products/{productSlug}/channels/{channel}/events": {
+            "get": {
+                "operationId": "product-channels-pull",
+                "summary": "Pull a consumer's pending events on an API product channel",
+                "description": "The consumer authenticates with a JWT and needs an active subscription to the product (403 `subscription_required` otherwise). Each pull spends the subscription tier's budget under the same counter as the product's endpoints; a deprecated version adds Deprecation and Sunset headers. The first pull opens the consumer's pull subscription on the channel.",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "in": "path",
+                        "required": true,
+                        "description": "The channel.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "required": false,
+                        "description": "The last message id read.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "description": "How many messages, at most 100.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The messages and the cursor to read on from.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "429": {
+                        "description": "The subscription tier's rate limit or quota is spent; Retry-After says when to try again."
+                    }
+                }
+            }
+        },
+        "/products/{productSlug}/channels/{channel}/subscriptions": {
+            "post": {
+                "operationId": "product-channels-subscribe",
+                "summary": "Register a push subscription on an API product channel",
+                "description": "Filters on the channel's CloudEvent types, is signed (the secret is returned once) and names the product subscription it rides on. A sink that is not https or that resolves to a loopback, link-local, private or metadata address is refused with 400.",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "in": "path",
+                        "required": true,
+                        "description": "The channel.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "sink": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    }
+                                },
+                                "required": [
+                                    "sink"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The subscription, with its signing secret.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "429": {
+                        "description": "The subscription tier's rate limit or quota is spent; Retry-After says when to try again."
+                    }
+                }
+            }
+        },
+        "/products/{productSlug}/channels/{channel}/subscriptions/{id}": {
+            "delete": {
+                "operationId": "product-channels-unsubscribe",
+                "summary": "End a push subscription on an API product channel",
+                "description": "Only a subscription riding on the caller's own product subscription, on this channel, can be ended; any other id answers 404.",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "productSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "in": "path",
+                        "required": true,
+                        "description": "The channel.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ended.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "429": {
+                        "description": "The subscription tier's rate limit or quota is spent; Retry-After says when to try again."
+                    }
+                }
+            }
+        },
         "/promotions": {
             "post": {
                 "operationId": "promotion-confirm",
