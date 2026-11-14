@@ -84,7 +84,7 @@
     "@pinia/testing": "^2.0.1",
     "@playwright/test": "^1.63.0",
     "@types/jest": "^30.0.0",
-    "@types/lodash": "^4.17.14",
+    "@types/lodash": "^4.17.27",
     "@types/node": "^26.6.5",
     "@typescript-eslint/parser": "^8.71.2",
     "@vitejs/plugin-vue": "^6.0.10",
