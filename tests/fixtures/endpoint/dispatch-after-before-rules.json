@@ -1,18 +1,20 @@
 {
     "before-error-response": {
         "outcome": {
-            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "class": "OCA\\Integriq\\Http\\ProblemResponse",
             "status": 401,
             "data": {
-                "type": "m",
-                "code": 401,
-                "title": "m",
+                "type": "https://integriq.nl/problems/authentication-failed",
+                "title": "The caller could not be authenticated",
                 "status": 401,
+                "detail": "e",
                 "instance": "req-1",
-                "detail": "e"
+                "message": "m",
+                "error": "e",
+                "code": 401
             },
             "headers": {
-                "Content-Type": "application/json; charset=utf-8"
+                "Content-Type": "application/problem+json"
             }
         },
         "request": {
@@ -378,18 +380,20 @@
     },
     "post-400": {
         "outcome": {
-            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "class": "OCA\\Integriq\\Http\\ProblemResponse",
             "status": 400,
             "data": {
-                "type": "bad",
-                "code": 400,
-                "title": "bad",
+                "type": "https://integriq.nl/problems/validation-failed",
+                "title": "The request is not valid",
                 "status": 400,
+                "detail": "invalid",
                 "instance": "req-1",
-                "detail": "invalid"
+                "message": "bad",
+                "error": "invalid",
+                "code": 400
             },
             "headers": {
-                "Content-Type": "application/json; charset=utf-8"
+                "Content-Type": "application/problem+json"
             }
         },
         "request": {
@@ -422,18 +426,20 @@
     },
     "post-500": {
         "outcome": {
-            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "class": "OCA\\Integriq\\Http\\ProblemResponse",
             "status": 500,
             "data": {
-                "type": "boom",
-                "code": 500,
-                "title": "boom",
+                "type": "https://integriq.nl/problems/upstream-unavailable",
+                "title": "The source behind this endpoint did not answer correctly",
                 "status": 500,
+                "detail": "boom",
                 "instance": "req-1",
-                "detail": null
+                "message": "boom",
+                "code": 500,
+                "error": "boom"
             },
             "headers": {
-                "Content-Type": "application/json; charset=utf-8"
+                "Content-Type": "application/problem+json"
             }
         },
         "request": {
@@ -936,18 +942,20 @@
     },
     "after-error-rule": {
         "outcome": {
-            "class": "OCP\\AppFramework\\Http\\JSONResponse",
+            "class": "OCA\\Integriq\\Http\\ProblemResponse",
             "status": 418,
             "data": {
-                "type": "not allowed",
-                "code": 418,
-                "title": "not allowed",
+                "type": "https://integriq.nl/problems/gateway-error",
+                "title": "The gateway could not handle the request",
                 "status": 418,
+                "detail": "Nope",
                 "instance": "req-1",
-                "detail": "Nope"
+                "error": "Nope",
+                "message": "not allowed",
+                "code": 418
             },
             "headers": {
-                "Content-Type": "application/json; charset=utf-8"
+                "Content-Type": "application/problem+json"
             }
         },
         "request": {
