@@ -517,17 +517,31 @@ class ApprovalService implements ApprovalServiceInterface {
 	/**
 	 * Find an approval_request by id.
 	 *
-	 * @param string $id The approval_request uuid.
+	 * Within the caller's organisation by default: a request of another
+	 * organisation answers 404. `$asSystem` reads across organisations, for a
+	 * path that runs without a user or re-reads a request already found in scope.
+	 *
+	 * @param string $id       The approval_request uuid.
+	 * @param bool   $asSystem Whether to read without the organisation filter.
 	 *
 	 * @return ObjectEntity
 	 *
 	 * @throws ApprovalStateException (404) When no such request exists.
 	 *
 	 * @spec openspec/changes/archive/2026-07-15-hitl-approval-rule-action/design.md#api-design
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
-	public function find(string $id): ObjectEntity {
+	public function find(string $id, bool $asSystem = false): ObjectEntity {
 		try {
-			return $this->objectService->find(id: $id, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false);
+			// RBAC stays off: the caller's integriq action check is the gate for
+			// these objects. The organisation filter is off only for a system read.
+			return $this->objectService->find(
+				id: $id,
+				register: self::REGISTER,
+				schema: self::SCHEMA,
+				_rbac: false,
+				_multitenancy: ($asSystem === false)
+			);
 			// Throwable alone: DoesNotExistException is a Throwable, so naming it
 			// separately caught nothing extra.
 		} catch (Throwable $e) {
