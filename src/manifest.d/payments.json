@@ -1,0 +1,120 @@
+{
+  "$comment": "ADR-037 manifest fragment (messaging-payments-review, design D1 and D2). The payments integriq created through POST /api/payments, for an administrator to review: every column and the detail sidebar are payment_intent properties, so the page is declared, not built. No create and no edit: a payment is made by the calling app and its status by the provider. 'Refresh status' re-derives one payment's status through the webhook's own path (POST /api/payments/{id}/refresh, behind payments.review) for an instance the provider's webhook cannot reach. Status tabs come from the paymentStatus values present, and every column header (source included) filters on its own values. The badge colours map the schema's own paymentStatus enum; open and pending are not green, because nothing has been paid yet.",
+  "pages": [
+    {
+      "id": "Payments",
+      "route": "/payments",
+      "type": "index",
+      "title": "Payments",
+      "config": {
+        "register": "integriq",
+        "schema": "payment_intent",
+        "defaultSort": {
+          "key": "createdAt",
+          "direction": "desc"
+        },
+        "columns": [
+          {
+            "key": "createdAt",
+            "label": "Created",
+            "sortable": true,
+            "width": "15%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "description",
+            "label": "Description",
+            "sortable": true,
+            "width": "22%"
+          },
+          {
+            "key": "amountValue",
+            "label": "Amount",
+            "sortable": true,
+            "width": "9%"
+          },
+          {
+            "key": "amountCurrency",
+            "label": "Currency",
+            "sortable": true,
+            "width": "7%"
+          },
+          {
+            "key": "provider",
+            "label": "Provider",
+            "sortable": true,
+            "width": "9%"
+          },
+          {
+            "key": "paymentStatus",
+            "label": "Status",
+            "sortable": true,
+            "width": "11%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "open": "info",
+                "pending": "info",
+                "authorized": "info",
+                "paid": "success",
+                "failed": "error",
+                "canceled": "warning",
+                "expired": "warning",
+                "refunded": "warning",
+                "chargeback": "error"
+              }
+            }
+          },
+          {
+            "key": "lastOutcome",
+            "label": "Last outcome",
+            "sortable": true,
+            "width": "11%"
+          },
+          {
+            "key": "sourceSlug",
+            "label": "Source",
+            "sortable": true,
+            "width": "16%"
+          }
+        ],
+        "quickFiltersFrom": {
+          "field": "paymentStatus",
+          "allLabel": "All payments"
+        },
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "showAdd": false,
+        "showViewAction": true,
+        "showEditAction": false,
+        "showCopyAction": false,
+        "showDeleteAction": false,
+        "actions": [
+          {
+            "id": "refresh-payment-status",
+            "label": "Refresh status",
+            "icon": "Refresh",
+            "handler": "refreshPaymentHandler"
+          }
+        ]
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "ConnectionsGroup",
+      "children": [
+        {
+          "id": "Payments",
+          "label": "Payments",
+          "icon": "CreditCardOutline",
+          "route": "Payments",
+          "order": 40
+        }
+      ]
+    }
+  ]
+}

@@ -6266,6 +6266,125 @@
                 }
             }
         },
+        "/payments/providers": {
+            "get": {
+                "operationId": "payments-providers",
+                "summary": "The payment provider bindings a payment source can pick",
+                "description": "The payment provider bindings a payment source can pick, with whether each needs a brokered key.",
+                "tags": [
+                    "payments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{providers: [{id, label, needsKey}]}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/payments/providers/check": {
+            "post": {
+                "operationId": "payments-check",
+                "summary": "Check a draft payment source configuration with its binding's read-only probe",
+                "description": "Check a draft payment source configuration with its binding's read-only probe. Behind the `payments.review` action. The answer says whether the key is accepted and whether it is a test or a live key, and never carries the key.",
+                "tags": [
+                    "payments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The check result: `{provider, ok, mode, profile, message}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/payments/{id}/refresh": {
+            "post": {
+                "operationId": "payments-refresh",
+                "summary": "Refresh one payment's status from its provider",
+                "description": "Refresh one payment's status from its provider through the webhook's own re-derive. Behind the `payments.review` action, checked before any provider call.",
+                "tags": [
+                    "payments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The refresh result: `{result, outcome, paymentStatus}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "502": {
+                        "$ref": "#/components/responses/Problem502"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The payment_intent id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/pdok/free": {
             "get": {
                 "operationId": "pdok-free-action",

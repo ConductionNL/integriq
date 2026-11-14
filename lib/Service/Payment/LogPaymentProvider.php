@@ -37,7 +37,7 @@ namespace OCA\Integriq\Service\Payment;
  *
  * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
-class LogPaymentProvider implements PaymentProviderInterface {
+class LogPaymentProvider implements PaymentProviderInterface, PaymentProviderProbeInterface {
 
 	/**
 	 * Per-process counter for synthetic provider payment ids (`MOCK-PAY-<n>`).
@@ -102,4 +102,25 @@ class LogPaymentProvider implements PaymentProviderInterface {
 		];
 
 	}//end fetchPaymentStatus()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * The sandbox binding needs no key and makes no call, so it always answers `ok`, mode `log`.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object (unused).
+	 *
+	 * @return array{ok: bool, mode: ?string, profile: ?string, message: ?string}
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	public function probe(array $sourceConfiguration): array {
+		return [
+			'ok' => true,
+			'mode' => 'log',
+			'profile' => null,
+			'message' => null,
+		];
+
+	}//end probe()
 }//end class

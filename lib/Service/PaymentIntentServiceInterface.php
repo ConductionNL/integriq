@@ -62,8 +62,9 @@ interface PaymentIntentServiceInterface {
 	 * @param string $providerPaymentId The provider payment id from the webhook body (`id`).
 	 *                                  Any other field in the body is deliberately ignored.
 	 *
-	 * @return array{result: string, outcome: ?string} `result` is one of
-	 *                                                 `applied`|`noop`|`not-found`; `outcome` is the mapped outcome when applied.
+	 * @return array{result: string, outcome: ?string, paymentStatus: ?string} `result` is one of
+	 *                                                 `applied`|`noop`|`not-found`; `outcome` is the mapped outcome when applied;
+	 *                                                 `paymentStatus` is the provider-native status read, null when not found.
 	 *
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
 	 */
@@ -82,4 +83,37 @@ interface PaymentIntentServiceInterface {
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
 	 */
 	public function resolveActiveSource(): ObjectEntity;
+
+	/**
+	 * Refresh one payment's status from its provider through the webhook's path.
+	 *
+	 * @param string $paymentIntentId The `payment_intent` object id.
+	 *
+	 * @return array{result: string, outcome: ?string, paymentStatus: ?string} The refresh result.
+	 *
+	 * @throws PaymentProviderException When the source names an unknown provider or the provider errors.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+	 */
+	public function refreshPayment(string $paymentIntentId): array;
+
+	/**
+	 * The provider bindings a payment source can pick.
+	 *
+	 * @return array<int, array{id: string, label: string, needsKey: bool}> The bindings.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	public function listProviders(): array;
+
+	/**
+	 * Check a draft payment source configuration with its binding's read-only probe.
+	 *
+	 * @param array $configuration The draft `configuration` of a payment source.
+	 *
+	 * @return array{ok: bool, provider: string, mode: ?string, profile: ?string, message: ?string} The check result.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	public function checkProvider(array $configuration): array;
 }

@@ -161,6 +161,14 @@
 			:configuration="caseSystemConfiguration"
 			@update:configuration="updateField('configuration', $event)" />
 
+		<!-- A payment source picks its provider here and checks its brokered
+		     key before it goes live (messaging-payments-review D3). -->
+		<PaymentProviderFields
+			v-if="isPayment"
+			class="cn-source-form-fields__field"
+			:configuration="caseSystemConfiguration"
+			@update:configuration="updateField('configuration', $event)" />
+
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
 			<NcCheckboxRadioSwitch
@@ -281,6 +289,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
+import PaymentProviderFields from './PaymentProviderFields.vue'
 import SchemaTextField from './SchemaTextField.vue'
 import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
@@ -316,6 +325,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
 		CaseSystemSourceFields,
+		PaymentProviderFields,
 	},
 
 	mixins: [jsonFieldDrafts],
@@ -380,7 +390,17 @@ export default {
 		},
 
 		/**
-		 * The configuration the case-system fields edit, as an object.
+		 * Whether this is a payment source, which gets the provider step.
+		 *
+		 * @return {boolean} True for a payment source.
+		 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+		 */
+		isPayment() {
+			return String(this.formData?.type ?? '') === 'payment'
+		},
+
+		/**
+		 * The configuration the case-system and payment fields edit, as an object.
 		 *
 		 * @return {object} The configuration.
 		 * @spec exclude trivial projection of the form value, presentation only

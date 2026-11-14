@@ -4,7 +4,8 @@
  * Integriq Payments Controller.
  *
  * REST controller for the live-payment-providers connector: payment
- * creation and the signature-gated inbound webhook. The webhook never trusts
+ * creation, the signature-gated inbound webhook, the administrator's status
+ * refresh, and the provider list and check of the payment source form. The webhook never trusts
  * a status claimed in the body — it re-derives the authoritative status via
  * the configured provider before doing anything else (REQ-LPP-003).
  *
@@ -116,6 +117,99 @@ class PaymentsController extends Controller {
 		}//end try
 
 	}//end create()
+
+	/**
+	 * Refresh one payment's status from its provider.
+	 *
+	 * For an instance the provider's webhook cannot reach. The `payments.review`
+	 * action is checked first, so a refused caller causes no provider call; the
+	 * refresh then runs the webhook's own re-derive (REQ-PRV-002).
+	 *
+	 * @param string $id The `payment_intent` object id.
+	 *
+	 * @return JSONResponse The refresh result, 404 for an unknown payment, 502 on a provider error.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payments-status-is-refreshed-from-the-provider-on-request-req-prv-002
+	 */
+	#[NoAdminRequired]
+	public function refresh(string $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: 'payments.review');
+
+		try {
+			$result = $this->paymentIntentService->refreshPayment(paymentIntentId: $id);
+		} catch (PaymentProviderException $exception) {
+			$this->logger->warning('[PaymentsController] payment refresh failed: ' . $exception->getMessage());
+			return new JSONResponse(
+				['error' => 'payment_provider_unavailable', 'message' => $exception->getMessage()],
+				Http::STATUS_BAD_GATEWAY
+			);
+		}
+
+		if ($result['result'] === 'not-found') {
+			return new JSONResponse(
+				['error' => 'not_found', 'message' => $this->l->t('Payment not found')],
+				Http::STATUS_NOT_FOUND
+			);
+		}
+
+		return new JSONResponse($result);
+
+	}//end refresh()
+
+	/**
+	 * The payment provider bindings a payment source can pick.
+	 *
+	 * @return JSONResponse `{providers: [{id, label, needsKey}]}`.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function providers(): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		return new JSONResponse(['providers' => $this->paymentIntentService->listProviders()]);
+
+	}//end providers()
+
+	/**
+	 * Check a draft payment source configuration with its binding's read-only probe.
+	 *
+	 * Behind `payments.review`, checked before any provider call. The body is
+	 * `{configuration: {...}}`; the answer says whether the key is accepted and
+	 * its mode, and never carries the key.
+	 *
+	 * @return JSONResponse The check result, or 400 when no configuration object was sent.
+	 *
+	 * @spec openspec/changes/messaging-payments-review/specs/live-payment-providers/spec.md#requirement-a-payment-source-moves-to-a-live-provider-with-a-checked-key-req-prv-003
+	 */
+	#[NoAdminRequired]
+	public function check(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: 'payments.review');
+
+		$configuration = $this->request->getParam('configuration');
+		if (is_array($configuration) === false) {
+			return new JSONResponse(
+				['error' => 'invalid_request', 'message' => $this->l->t('A configuration object is required')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return new JSONResponse($this->paymentIntentService->checkProvider(configuration: $configuration));
+
+	}//end check()
 
 	/**
 	 * Receive a provider payment-status webhook.

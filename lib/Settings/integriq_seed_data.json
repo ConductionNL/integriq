@@ -571,6 +571,23 @@
       "lastOutcome": "authorized",
       "createdAt": "2026-07-13T08:00:00+00:00",
       "updatedAt": "2026-07-13T08:02:00+00:00"
+    },
+    {
+      "@self": { "register": "integriq", "schema": "payment_intent", "slug": "pi-ouderbijdrage-expired" },
+      "sourceSlug": "ideal-ouderbijdrage",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-4",
+      "amountValue": "45.00",
+      "amountCurrency": "EUR",
+      "description": "Ouderbijdrage schooljaar 2026-2027",
+      "method": "ideal",
+      "redirectUrl": "https://school.example/ouderbijdrage/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-4",
+      "metadata": {},
+      "paymentStatus": "expired",
+      "lastOutcome": "failed",
+      "createdAt": "2026-07-14T10:00:00+00:00",
+      "updatedAt": "2026-07-14T10:15:00+00:00"
     }
   ],
   "sender_identity": [

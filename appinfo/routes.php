@@ -173,6 +173,10 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// authoritative status from the provider.
 		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
 		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+		// Payments review (openspec/changes/messaging-payments-review).
+		['name' => 'payments#providers', 'url' => '/api/payments/providers', 'verb' => 'GET'],
+		['name' => 'payments#check', 'url' => '/api/payments/providers/check', 'verb' => 'POST'],
+		['name' => 'payments#refresh', 'url' => '/api/payments/{id}/refresh', 'verb' => 'POST'],
 
 		// NotifyNL SMS channel connector (openspec/changes/notifynl-sms-channel).
 		// send/status are authenticated NC-session calls (production binding for
