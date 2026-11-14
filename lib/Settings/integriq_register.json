@@ -492,7 +492,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -535,13 +535,18 @@
           },
           "authorizationType": {
             "type": "string",
-            "description": "Auth strategy used by this consumer",
+            "description": "Auth strategy used by this consumer. client_credentials: integriq issues it tokens at /api/oauth/token for its client secret.",
             "title": "Authorization Type"
           },
           "authorizationConfiguration": {
             "type": "object",
             "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "clientSecretHash": {
+              "type": "string",
+              "title": "Client secret hash",
+              "description": "The password hash of a client_credentials consumer's secret (access-oauth-and-token-validation). Set by an admin through POST /api/consumers/{id}/client-secret, which shows the secret once; the secret itself is never stored."
           },
           "scopes": {
             "type": "array",

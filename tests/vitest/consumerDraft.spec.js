@@ -580,15 +580,34 @@ describe('Consumer form configuration consistency', () => {
 		expect(AUTHORIZATION_TYPES).toContain('none')
 	})
 
-	it('treats every offered type but `none` as credential-bearing', () => {
+	it('treats every offered type but `none` and `client_credentials` as credential-bearing', () => {
 		// The deny-list and the offered list have to agree on the types they both
 		// know about; they are only allowed to differ on the ones neither lists.
+		// `client_credentials` keeps no authorizationConfiguration: its secret is
+		// set through its own route and only its hash is stored, top level.
 		for (const type of AUTHORIZATION_TYPES) {
 			expect(carriesCredential(type), `${type} classification`).toBe(
-				type !== 'none',
+				type !== 'none' && type !== 'client_credentials',
 			)
 		}
 		expect(CREDENTIALLESS_AUTHORIZATION_TYPES).toContain('none')
+		expect(CREDENTIALLESS_AUTHORIZATION_TYPES).toContain('client_credentials')
+	})
+
+	it('carries scopes from the stored consumer to the payload, and an emptied list as []', () => {
+		const item = { id: 'c-1', name: 'Partner', scopes: ['zaken:read', ' zaken:write ', ''] }
+		const draft = consumerDraftFromItem(item)
+		expect(draft.scopes).toEqual(['zaken:read', 'zaken:write'])
+		expect(buildConsumerPayload(item, draft, undefined).scopes).toEqual(['zaken:read', 'zaken:write'])
+		expect(buildConsumerPayload(item, { ...draft, scopes: [] }, undefined).scopes).toEqual([])
+		expect(emptyConsumerDraft().scopes).toEqual([])
+	})
+
+	it('keeps the client secret hash of a client credentials consumer and sends no configuration', () => {
+		const item = { id: 'c-2', name: 'Partner', authorizationType: 'client_credentials', clientSecretHash: '$2y$10$abc' }
+		const payload = buildConsumerPayload(item, consumerDraftFromItem(item), undefined)
+		expect(payload.clientSecretHash).toBe('$2y$10$abc')
+		expect(payload.authorizationConfiguration).toBeNull()
 	})
 
 	it('has a translated label for every offered type and period', () => {

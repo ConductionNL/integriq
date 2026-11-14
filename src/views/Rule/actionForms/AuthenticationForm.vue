@@ -46,6 +46,28 @@
 				placeholder="admin,users"
 				@update:modelValue="(next) => patch('groups', toArray(next))" />
 		</template>
+		<template v-if="value.type !== 'nc-session'">
+			<NcTextField
+				:label="t('integriq', 'Scopes required to read (comma-separated)')"
+				:modelValue="csv(readScopes)"
+				placeholder="zaken:read"
+				data-testid="rule-required-scopes-read"
+				@update:modelValue="(next) => setScopes('read', next)" />
+			<NcTextField
+				:label="t('integriq', 'Scopes required to write (comma-separated)')"
+				:modelValue="csv(writeScopes)"
+				placeholder="zaken:write"
+				data-testid="rule-required-scopes-write"
+				@update:modelValue="(next) => setScopes('write', next)" />
+			<span class="action-form__helper">
+				{{
+					t(
+						'integriq',
+						'A caller without a required scope gets 403 naming it. Reading is GET and HEAD; writing is POST, PUT, PATCH and DELETE. Leave both empty to require no scope.',
+					)
+				}}
+			</span>
+		</template>
 		<span v-if="value.type === 'nc-session'" class="action-form__helper">
 			{{
 				t(
@@ -67,6 +89,7 @@
 
 <script>
 import { NcSelect, NcTextField } from '@nextcloud/vue'
+import { scopesFor, withScopes } from './requiredScopes.js'
 import { patchMethod, valueProp } from './shared.js'
 
 const AUTH_TYPES = [
@@ -102,6 +125,16 @@ export default {
 		usesAllowLists() {
 			return ALLOW_LIST_TYPES.includes(this.value.type)
 		},
+
+		/** @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005 */
+		readScopes() {
+			return scopesFor(this.value.requiredScopes, 'read')
+		},
+
+		/** @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005 */
+		writeScopes() {
+			return scopesFor(this.value.requiredScopes, 'write')
+		},
 	},
 
 	methods: {
@@ -116,6 +149,17 @@ export default {
 		 */
 		onTypePick(option) {
 			this.patch('type', option?.id || '')
+		},
+
+		/**
+		 * Store the scopes a caller needs to read or to write.
+		 *
+		 * @param {'read'|'write'} kind The list that changed.
+		 * @param {string} text Its comma-separated scopes.
+		 * @spec openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005
+		 */
+		setScopes(kind, text) {
+			this.patch('requiredScopes', withScopes(this.value.requiredScopes, kind, this.toArray(text)))
 		},
 
 		/**
