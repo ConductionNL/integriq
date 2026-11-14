@@ -27,16 +27,21 @@ Kind: code. Size M. Half for shillinq `reporting-data-delivery` (row shillinq `r
 - **files**: `lib/Settings/integriq_register.json` (`consumer.feedScopes`), the consumer form, `lib/Service/Feed/FeedRequestHandler.php`
 - **acceptance_criteria**:
   - GIVEN a consumer bound to Gemeente Voorbeeld WHEN it asks for another administration THEN the answer is 403; WHEN a consumer without a binding asks THEN the answer is 403
-- [ ] Implement
+- [x] Implement
+  - Enforcement in `FeedRequestHandler` (pass 1); the consumer form gains **Data feeds**, one line per app (`app: value, value`) edited into `consumer.feedScopes`, refusing to save a line it cannot read and sending `{}` when cleared (`src/modals/v2/consumerDraft.js`, `ConsumerEditorModal.vue`). vitest: `tests/vitest/consumerFeedScopes.spec.js`.
 - [ ] Test (Newman with two consumers)
+  - Open: needs a running instance.
 
 ### Task 4: Feeds page and docs
 - **spec_ref**: `openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-an-app-declares-its-data-feeds-in-a-file-req-ddf-001`
 - **files**: `src/manifest.json` (Feeds page), `docs/features/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN shillinq's declaration WHEN an administrator opens Feeds THEN the four datasets show with their URL, fields and subscribed consumers
-- [ ] Implement
+- [x] Implement
+  - **Data feeds** menu entry opens Endpoints with `?targetType=feed` through a query preset: app, address, declared fields, page size; nothing to create. `docs/features/data-feeds.md`; en/nl strings.
+  - Not on this page: the subscribed consumers per feed. They are on the app's API product (`<app> data feeds`), which the footer note points to; a per-row join of product subscriptions is not something an index preset expresses.
 - [ ] Test (Playwright)
+  - Open: needs a running instance.
 
 ## Verification
 - [ ] `openspec validate gateway-declared-data-feeds --strict` passes

@@ -278,6 +278,25 @@
 				</div>
 			</section>
 
+			<!-- ── Data feeds (gateway-declared-data-feeds) ─────────────── -->
+			<section class="cn-consumer-editor__section">
+				<header class="cn-consumer-editor__section-header">
+					<ShieldCheckOutlineIcon :size="20" />
+					<h3>{{ t('integriq', 'Data feeds') }}</h3>
+				</header>
+
+				<NcTextArea
+					:modelValue="draft.feedScopesText"
+					:label="t('integriq', 'Feed scopes')"
+					:disabled="saving"
+					:error="feedScopesError !== ''"
+					:helperText="feedScopesHelper"
+					placeholder="shillinq: 0f3c…, 9a1d…"
+					resize="vertical"
+					data-testid="consumer-feed-scopes"
+					@update:modelValue="updateDraft('feedScopesText', $event)" />
+			</section>
+
 			<!-- ── Limits ──────────────────────────────────────────────── -->
 			<section class="cn-consumer-editor__section">
 				<header class="cn-consumer-editor__section-header">
@@ -392,6 +411,7 @@ import {
 	consumerDraftFromItem,
 	emptyConsumerDraft,
 	normaliseList,
+	parseFeedScopes,
 	positiveIntOrNull,
 	QUOTA_PERIODS,
 	// Aliased: the computed below keeps the bare name for the template's sake.
@@ -737,7 +757,31 @@ export default {
 				&& typeof this.confirm === 'function'
 				&& NAME_PATTERN.test(this.draft.name || '')
 				&& !this.authConfigError
+				&& !this.feedScopesError
 			)
+		},
+
+		/**
+		 * The line of the feed-scope text that cannot be read, or ''.
+		 *
+		 * @return {string} The line number, or ''.
+		 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+		 */
+		feedScopesError() {
+			return parseFeedScopes(this.draft.feedScopesText).error
+		},
+
+		/**
+		 * What the feed-scope field means, or which line is wrong.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-consumer-reads-only-the-scope-it-is-bound-to-req-ddf-003
+		 */
+		feedScopesHelper() {
+			if (this.feedScopesError !== '') {
+				return t('integriq', 'Line {line} is not "app: value, value".', { line: this.feedScopesError })
+			}
+			return t('integriq', 'One line per app that declares data feeds, with the values this consumer may read, e.g. its administration ids. Without a line for an app, every feed of that app refuses this consumer.')
 		},
 	},
 

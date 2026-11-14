@@ -47,6 +47,13 @@ exports[`ConsumerEditorModal > renders an invalid name while saving as recorded 
       </div>
     </section>
     <section class="cn-consumer-editor__section">
+      <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon shield-check-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9"></path></svg></span>
+        <h3>Data feeds</h3>
+      </header>
+      <div class="NcTextArea" data-label="Feed scopes" data-helper="One line per app that declares data feeds, with the values this consumer may read, e.g. its administration ids. Without a line for an app, every feed of that app refuses this consumer." data-value="" data-attrs="data-testid=consumer-feed-scopes placeholder=shillinq: 0f3c…, 9a1d… resize=vertical" data-disabled="yes">
+      </div>
+    </section>
+    <section class="cn-consumer-editor__section">
       <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon speedometer-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z"></path></svg></span>
         <h3>Limits</h3>
       </header>
@@ -113,6 +120,13 @@ exports[`ConsumerEditorModal > renders create as recorded 1`] = `
       <div class="cn-consumer-editor__field cn-consumer-editor__field--narrow"><label for="cn-consumer-editor-auth-type" class="cn-consumer-editor__label">Authorization type</label>
         <div class="NcSelect" data-attrs="aria-label-combobox=Authorization type clearable=false inputId=cn-consumer-editor-auth-type options=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]">
         </div><span class="cn-consumer-editor__helper">No credential is checked. Restrict access with the allowed sources above instead.</span>
+      </div>
+    </section>
+    <section class="cn-consumer-editor__section">
+      <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon shield-check-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9"></path></svg></span>
+        <h3>Data feeds</h3>
+      </header>
+      <div class="NcTextArea" data-label="Feed scopes" data-helper="One line per app that declares data feeds, with the values this consumer may read, e.g. its administration ids. Without a line for an app, every feed of that app refuses this consumer." data-value="" data-attrs="data-testid=consumer-feed-scopes placeholder=shillinq: 0f3c…, 9a1d… resize=vertical">
       </div>
     </section>
     <section class="cn-consumer-editor__section">
@@ -200,6 +214,13 @@ exports[`ConsumerEditorModal > renders edit as recorded 1`] = `
       </div>
     </section>
     <section class="cn-consumer-editor__section">
+      <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon shield-check-outline-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9"></path></svg></span>
+        <h3>Data feeds</h3>
+      </header>
+      <div class="NcTextArea" data-label="Feed scopes" data-helper="One line per app that declares data feeds, with the values this consumer may read, e.g. its administration ids. Without a line for an app, every feed of that app refuses this consumer." data-value="" data-attrs="data-testid=consumer-feed-scopes placeholder=shillinq: 0f3c…, 9a1d… resize=vertical">
+      </div>
+    </section>
+    <section class="cn-consumer-editor__section">
       <header class="cn-consumer-editor__section-header"><span aria-hidden="true" class="material-design-icon speedometer-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z"></path></svg></span>
         <h3>Limits</h3>
       </header>
@@ -246,6 +267,7 @@ exports[`ConsumerEditorModal > saves on a failed save as recorded 1`] = `
       "domains": [
         "a.example",
       ],
+      "feedScopes": {},
       "id": "c1",
       "ips": [
         "10.0.0.1",
@@ -274,6 +296,7 @@ exports[`ConsumerEditorModal > saves on a failed save without message as recorde
       "domains": [
         "a.example",
       ],
+      "feedScopes": {},
       "id": "c1",
       "ips": [
         "10.0.0.1",
@@ -300,6 +323,7 @@ exports[`ConsumerEditorModal > saves on create as recorded 1`] = `
       "authorizationConfiguration": null,
       "authorizationType": "none",
       "description": "",
+      "feedScopes": {},
       "name": "Named",
       "quota": null,
       "rateLimit": null,
@@ -327,6 +351,7 @@ exports[`ConsumerEditorModal > saves on edit as recorded 1`] = `
       "domains": [
         "a.example",
       ],
+      "feedScopes": {},
       "id": "c1",
       "ips": [
         "10.0.0.1",
@@ -412,6 +437,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "domains": [
         "a.example",
       ],
+      "feedScopesText": "",
       "ips": [
         "10.0.0.1",
       ],
@@ -431,6 +457,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "domains": [
         "a.example",
       ],
+      "feedScopesText": "",
       "ips": [
         "10.0.0.1",
       ],
@@ -450,6 +477,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "domains": [
         "a.example",
       ],
+      "feedScopesText": "",
       "ips": [
         "10.0.0.1",
       ],
@@ -469,6 +497,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "domains": [
         "a.example",
       ],
+      "feedScopesText": "",
       "ips": [
         "10.0.0.1",
       ],
@@ -486,6 +515,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "jwt",
       "description": "42",
       "domains": "picked",
+      "feedScopesText": "",
       "ips": [
         "10.0.0.1",
       ],
@@ -503,6 +533,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "jwt",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "",
       "ips": [
         "10.0.0.1",
       ],
@@ -520,6 +551,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "jwt",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "",
       "ips": "picked",
       "name": "42",
       "quotaLimit": null,
@@ -535,6 +567,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "jwt",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "",
       "ips": "42",
       "name": "42",
       "quotaLimit": null,
@@ -550,6 +583,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "picked-id",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "",
       "ips": "42",
       "name": "42",
       "quotaLimit": null,
@@ -565,6 +599,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "none",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "",
       "ips": "42",
       "name": "42",
       "quotaLimit": null,
@@ -584,6 +619,38 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
     "unchanged",
   ],
   [
+    "NcTextArea",
+    "onUpdate:modelValue",
+    {
+      "authorizationType": "none",
+      "description": "42",
+      "domains": "42",
+      "feedScopesText": "picked",
+      "ips": "42",
+      "name": "42",
+      "quotaLimit": null,
+      "quotaPeriod": null,
+      "rateLimitRequestsPerWindow": null,
+      "rateLimitWindowSeconds": null,
+    },
+  ],
+  [
+    "NcTextArea",
+    "onUpdate:modelValue",
+    {
+      "authorizationType": "none",
+      "description": "42",
+      "domains": "42",
+      "feedScopesText": "42",
+      "ips": "42",
+      "name": "42",
+      "quotaLimit": null,
+      "quotaPeriod": null,
+      "rateLimitRequestsPerWindow": null,
+      "rateLimitWindowSeconds": null,
+    },
+  ],
+  [
     "NcInputField",
     "onUpdate:modelValue",
     "unchanged",
@@ -595,6 +662,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "none",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "42",
       "ips": "42",
       "name": "42",
       "quotaLimit": null,
@@ -615,6 +683,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "none",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "42",
       "ips": "42",
       "name": "42",
       "quotaLimit": null,
@@ -635,6 +704,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "none",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "42",
       "ips": "42",
       "name": "42",
       "quotaLimit": 42,
@@ -650,6 +720,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "none",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "42",
       "ips": "42",
       "name": "42",
       "quotaLimit": 42,
@@ -665,6 +736,7 @@ exports[`ConsumerEditorModal > writes each listener into the draft as recorded 1
       "authorizationType": "none",
       "description": "42",
       "domains": "42",
+      "feedScopesText": "42",
       "ips": "42",
       "name": "42",
       "quotaLimit": 42,

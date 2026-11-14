@@ -220,6 +220,16 @@
           "order": 10
         },
         {
+          "id": "Feeds",
+          "label": "Data feeds",
+          "icon": "DatabaseExportOutline",
+          "route": "Endpoints",
+          "query": {
+            "targetType": "feed"
+          },
+          "order": 15
+        },
+        {
           "id": "ApiProducts",
           "label": "API products",
           "icon": "PackageVariantClosed",
@@ -1540,7 +1550,27 @@
       "route": "/endpoints",
       "type": "index",
       "title": "Endpoints",
+      "_note": "gateway-declared-data-feeds task 4: the Data feeds menu entry opens Endpoints with ?targetType=feed, so the list holds only the read-only endpoints FeedDeclarationService keeps in step with each app's lib/Settings/feeds.json: the declaring app, the address, the declared fields and the page size. Nothing is created here: a feed exists because an app declares it. The consumers subscribed to an app's feeds are on its API product (<app> data feeds).",
       "config": {
+        "queryPresets": [
+          {
+            "match": {
+              "targetType": "feed"
+            },
+            "title": "Data feeds",
+            "columns": [
+              "name",
+              "feed.app",
+              "endpoint",
+              "feed.fields",
+              "feed.pageSize",
+              "updated"
+            ],
+            "showAdd": false,
+            "searchPlaceholder": "Search data feeds",
+            "footerNote": "A feed is declared by its app in lib/Settings/feeds.json. The consumers that may read it are those subscribed to the app's API product, each within the scope values bound to it."
+          }
+        ],
         "register": "integriq",
         "schema": "endpoint",
         "columns": [

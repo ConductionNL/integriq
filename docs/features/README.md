@@ -13,6 +13,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Reliability](reliability.md) | Retry policy, per-Source circuit breaker, sync dead letters | Implemented |
 | [Rules](rules.md) | Authentication, file handling, locking, and audit trail rules | Implemented |
 | [Approvals](approvals.md) | Pause an endpoint call or a synchronization until a person approves it | Implemented |
+| [Data feeds](data-feeds.md) | Read-only feeds an app declares for reporting tools, bound per consumer | Implemented |
 | [Jobs](jobs.md) | Cron-based scheduled task execution | Implemented |
 | [Data gathering](data-gathering.md) | Scheduled feeds filled into a register: the connector contract, the ten shipped connectors, and gathering versus leaf providers | Implemented |
 | [Flow nodes](flow-nodes.md) | Contributed step types for OpenRegister's flow engine | Implemented |
