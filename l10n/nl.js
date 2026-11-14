@@ -1,6 +1,14 @@
 OC.L10N.register(
     "integriq",
     {
+        "When the handler assigned the message to a case": "Wanneer de behandelaar het bericht aan een zaak toewees",
+        "The user id of the handler who assigned the message to a case from the inbox": "De gebruikers-id van de behandelaar die het bericht vanuit de inbox aan een zaak toewees",
+        "The object the owning app opened for this message, or the case a handler assigned it to": "Het object dat de eigenaar-app voor dit bericht opende, of de zaak waaraan een behandelaar het toewees",
+        "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel) | assigned (a handler linked it to a case from the inbox)": "Levensloop: ontvangen (opgeslagen) -> gerouteerd (een regel paste en een app opende het doel) | vastgehouden (geen regel paste, of niets nam het doel aan; een mens beslist) | mislukt (dit ene bericht kon niet worden verwerkt, de rest van de batch wel) | geweigerd (aan de deur geweigerd, handtekening of niet-ingesteld kanaal) | toegewezen (een behandelaar koppelde het vanuit de inbox aan een zaak)",
+        "Assigned By": "Toegewezen door",
+        "Assigned At": "Toegewezen op",
+        "Assigning a message to a case is not available.": "Een bericht aan een zaak toewijzen is niet beschikbaar.",
+        "Assigned by": "Toegewezen door",
         "synchronizations": "synchronisaties",
         "Load example data?": "Voorbeeldgegevens laden?",
         "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Voorbeeldgegevens vullen de lijsten, detailpagina’s en dashboards, zodat je de app meteen ziet werken. Elke kaart heeft een eigen knop Laden. Kies \"Geen\" op een productieomgeving.",

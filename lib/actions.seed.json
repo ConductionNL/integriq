@@ -27,6 +27,7 @@
     "mail.import": ["admin"],
     "intake.rules": ["admin"],
     "intake.reply": ["admin"],
+    "intake.assign": ["admin"],
     "outbound.read-body": ["admin"],
     "outbound.retry": ["admin"],
     "outbound.forward": ["admin"],

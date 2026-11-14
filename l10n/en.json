@@ -1,5 +1,13 @@
 {
     "translations": {
+        "When the handler assigned the message to a case": "When the handler assigned the message to a case",
+        "The user id of the handler who assigned the message to a case from the inbox": "The user id of the handler who assigned the message to a case from the inbox",
+        "The object the owning app opened for this message, or the case a handler assigned it to": "The object the owning app opened for this message, or the case a handler assigned it to",
+        "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel) | assigned (a handler linked it to a case from the inbox)": "Lifecycle: received (stored) -> routed (a rule matched and an app opened the target) | held (no rule matched, or nothing claimed the target; a human decides) | failed (this one message could not be handled, the rest of its batch was) | rejected (refused at the door, signature or unconfigured channel) | assigned (a handler linked it to a case from the inbox)",
+        "Assigned By": "Assigned By",
+        "Assigned At": "Assigned At",
+        "Assigning a message to a case is not available.": "Assigning a message to a case is not available.",
+        "Assigned by": "Assigned by",
         "Marketplace": "Marketplace",
         "synchronizations": "synchronizations",
         "API key": "API Key",

@@ -33,6 +33,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
+use OCA\Integriq\Intake\IntakeAssignmentServiceInterface;
 use OCA\Integriq\Intake\IntakeChannelRegistryInterface;
 use OCA\Integriq\Intake\IntakeReplyServiceInterface;
 use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
@@ -77,6 +78,11 @@ class IntakeChannelsController extends Controller {
 	public const ACTION_REPLY = 'intake.reply';
 
 	/**
+	 * ADR-023 action that guards assigning a message to a case.
+	 */
+	public const ACTION_ASSIGN = 'intake.assign';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
@@ -89,6 +95,7 @@ class IntakeChannelsController extends Controller {
 	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param OrObjectService $orObjectService Stores routing rules and rejections.
 	 * @param IL10N $l Translations.
+	 * @param IntakeAssignmentServiceInterface|null $assignmentService Links a message to a case a handler picks.
 	 */
 	public function __construct(
 		$appName,
@@ -101,6 +108,7 @@ class IntakeChannelsController extends Controller {
 		private readonly WebhookGateInterface $gate,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
+		private readonly ?IntakeAssignmentServiceInterface $assignmentService=null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -237,6 +245,52 @@ class IntakeChannelsController extends Controller {
 		);
 
 	}//end saveRule()
+
+	/**
+	 * Assign an inbound message to a case a handler picks.
+	 *
+	 * The handler names the case as `caseRef`; the message records it and who
+	 * assigned it, and the app that owns the case is asked to take the message
+	 * and its attachments in.
+	 *
+	 * @param string $id The `intake_message` uuid.
+	 *
+	 * @return JSONResponse The assignment, or why it was refused.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+	 */
+	#[NoAdminRequired]
+	public function assign(string $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_ASSIGN);
+
+		if ($this->assignmentService === null) {
+			return new JSONResponse(
+				['error' => $this->l->t('Assigning a message to a case is not available.')],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
+		}
+
+		try {
+			$result = $this->assignmentService->assign(
+				$id,
+				['caseRef' => (string)$this->request->getParam('caseRef', ''), 'assignedBy' => $user->getUID()]
+			);
+		} catch (IntakeChannelException $exception) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (IntakeRoutingException $exception) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse($result);
+
+	}//end assign()
 
 	/**
 	 * Reply to an inbound message on the channel it arrived on.
