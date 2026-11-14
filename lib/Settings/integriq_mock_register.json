@@ -11299,6 +11299,69 @@
       {
         "@self": {
           "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-cmcom-sent"
+        },
+        "recipientMsisdn": "+31612345671",
+        "status": "sent",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "cmcom",
+        "providerMessageId": "4f3c2a1e9b8d7c6a5f4e3d2c1b0a9f8e",
+        "detail": "Accepted by CM.com",
+        "attempts": [
+          {
+            "at": "2026-03-04T09:00:00+00:00",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-messagebird-delivered"
+        },
+        "recipientMsisdn": "+31612345672",
+        "status": "delivered",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "messagebird",
+        "providerMessageId": "b7e2c0a4f1d94e8a9c3b5d6e7f8a9b0c",
+        "detail": "MessageBird status: delivered",
+        "attempts": [
+          {
+            "at": "2026-03-04T10:15:00+00:00",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-twilio-failed"
+        },
+        "recipientMsisdn": "+31612345673",
+        "status": "failed",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "twilio",
+        "providerMessageId": "",
+        "detail": "Twilio responded with HTTP 401.",
+        "attempts": [
+          {
+            "at": "2026-03-04T11:30:00+00:00",
+            "error": "Twilio responded with HTTP 401."
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
           "schema": "source",
           "slug": "source-voorbeeld-name-1-1"
         },
