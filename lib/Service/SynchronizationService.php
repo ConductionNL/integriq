@@ -616,6 +616,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 	/**
 	 * Runs a synchronization whose source is an SFTP or FTPS server as a file pickup (sources-sftp-adapter Task 3).
+	 * Resolved from the container on the first pickup run only, so no other run looks it up.
 	 *
 	 * @var FilePickupSynchronization|null
 	 */
@@ -731,11 +732,6 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		$prerequisiteGuard = $this->containerInterface->get(RunPrerequisiteGuard::class);
 		if ($prerequisiteGuard instanceof RunPrerequisiteGuard) {
 			$this->prerequisiteGuard = $prerequisiteGuard;
-		}
-
-		$filePickupSynchronization = $this->containerInterface->get(FilePickupSynchronization::class);
-		if ($filePickupSynchronization instanceof FilePickupSynchronization) {
-			$this->filePickupSynchronization = $filePickupSynchronization;
 		}
 
 		// Fall back to the defaults the settings read reports, from one table,
@@ -2814,6 +2810,13 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002
 	 */
 	private function runFilePickup(ExternSyncRun $run): void {
+		if ($this->filePickupSynchronization === null) {
+			$pickup = $this->containerInterface->get(FilePickupSynchronization::class);
+			if ($pickup instanceof FilePickupSynchronization) {
+				$this->filePickupSynchronization = $pickup;
+			}
+		}
+
 		if ($this->filePickupSynchronization === null) {
 			$this->failExternRun(run: $run, message: 'File pickup is not available on this instance. Canceling synchronization...');
 		}
