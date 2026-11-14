@@ -112,7 +112,8 @@ class SmsProviderRegistry {
 	 * source's callback URL, and whether it signs it (so the source needs a
 	 * signing key); null for a binding that takes no callbacks.
 	 *
-	 * @return list<array{providerId: string, name: string, configSchema: array<string, mixed>, statusCallback: array{signed: bool}|null}> The descriptions.
+	 * @return list<array{providerId: string, name: string, configSchema: array<string, mixed>, statusCallback: array{signed: bool}|null}>
+	 *         The descriptions.
 	 *
 	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004
