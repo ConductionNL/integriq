@@ -1,0 +1,82 @@
+{
+	"orders": [
+		{
+			"id": 5500000000001,
+			"name": "#1001",
+			"order_number": 1001,
+			"created_at": "2026-09-15T10:20:00+02:00",
+			"updated_at": "2026-09-15T10:21:30+02:00",
+			"cancelled_at": null,
+			"currency": "EUR",
+			"taxes_included": false,
+			"financial_status": "paid",
+			"email": "inkoop@kantoorkoffie.example",
+			"payment_gateway_names": ["ideal"],
+			"total_discounts": "0.00",
+			"total_price": "31.80",
+			"total_tax": "3.08",
+			"subtotal_price": "24.63",
+			"billing_address": {
+				"name": "P. de Wit",
+				"company": "Kantoor Koffie B.V.",
+				"address1": "Stationsplein 4",
+				"address2": "",
+				"city": "Amersfoort",
+				"zip": "3818 LE",
+				"country_code": "NL"
+			},
+			"line_items": [
+				{
+					"id": 13000000001,
+					"sku": "EG-250",
+					"title": "Earl Grey los 250 g",
+					"quantity": 3,
+					"price": "8.21",
+					"tax_lines": [{ "title": "BTW", "rate": 0.09, "price": "2.22" }]
+				}
+			],
+			"shipping_lines": [
+				{ "title": "PostNL", "price": "4.09", "tax_lines": [{ "title": "BTW", "rate": 0.21, "price": "0.86" }] }
+			]
+		},
+		{
+			"id": 5500000000002,
+			"name": "#1002",
+			"order_number": 1002,
+			"created_at": "2026-09-16T08:00:00+02:00",
+			"updated_at": "2026-09-17T11:00:00+02:00",
+			"cancelled_at": "2026-09-17T11:00:00+02:00",
+			"currency": "EUR",
+			"taxes_included": true,
+			"financial_status": "voided",
+			"email": "a.jansen@example.nl",
+			"payment_gateway_names": ["ideal"],
+			"total_discounts": "1.00",
+			"total_price": "12.90",
+			"total_tax": "1.52",
+			"subtotal_price": "7.95",
+			"billing_address": {
+				"name": "A. Jansen",
+				"company": "",
+				"address1": "Markt 1",
+				"address2": "",
+				"city": "Gouda",
+				"zip": "2801 JG",
+				"country_code": "NL"
+			},
+			"line_items": [
+				{
+					"id": 13000000002,
+					"sku": "RO-100",
+					"title": "Rooibos 100 g",
+					"quantity": 1,
+					"price": "8.95",
+					"tax_lines": [{ "title": "BTW", "rate": 0.09, "price": "0.66" }]
+				}
+			],
+			"shipping_lines": [
+				{ "title": "PostNL", "price": "4.95", "tax_lines": [{ "title": "BTW", "rate": 0.21, "price": "0.86" }] }
+			]
+		}
+	]
+}

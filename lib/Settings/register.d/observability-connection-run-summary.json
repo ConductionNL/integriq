@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (observability-connection-run-summary). Adds alertThresholds to source and synchronization and declares connection_alert, the alert ConnectionThresholdJob opens when a count passes a threshold and clears when it falls back. The warning is declarative: a created rule on connection_alert notifies the members of the group named in the app setting connection_alert_group (ConnectionAlertRecipientResolver). No group is set by default, so nobody is notified until an administrator names one. See openspec/changes/archive/2026-09-29-observability-connection-run-summary/design.md D4 and D5.",
+  "$comment": "ADR-037 register fragment (observability-connection-run-summary). Adds alertThresholds to source and synchronization and declares connection_alert, the alert ConnectionThresholdJob opens when a count passes a threshold and clears when it falls back. The warning is declarative: a created rule on connection_alert notifies the members of the group named in the app setting connection_alert_group (ConnectionAlertRecipientResolver). No group is set by default, so nobody is notified until an administrator names one. See openspec/changes/archive/2026-09-29-observability-connection-run-summary/design.md D4 and D5. The brp-connection-monitor-from-pipelinq change adds the certificateExpiry rule: the hourly ConnectionHealthJob opens one alert per source and threshold (alertThresholds.certificateExpiryDays, default 30, 14 and 7) when the client certificate comes that close to expiry.",
   "components": {
     "registers": {
       "integriq": {
@@ -10,7 +10,7 @@
     },
     "schemas": {
       "source": {
-        "version": "1.6.0",
+        "version": "1.8.0",
         "properties": {
           "alertThresholds": {
             "type": "object",
@@ -88,6 +88,16 @@
                   "count",
                   "windowMinutes"
                 ]
+              },
+              "certificateExpiryDays": {
+                "type": "array",
+                "title": "Certificate expiry warnings",
+                "description": "Days before the client certificate expires on which an alert opens, once per threshold. Leave it empty for 30, 14 and 7.",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 365
+                }
               }
             }
           }
@@ -181,7 +191,7 @@
         "slug": "connection_alert",
         "title": "Connection alert",
         "icon": "AlertOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A source or synchronization passed one of its alert thresholds",
         "description": "Opened by the threshold job when a count of failures passes a threshold, and cleared when the count falls back. While an alert is open for a subject and rule, no second one opens, so a source failing all night warns once.",
         "authorization": {
@@ -241,10 +251,11 @@
             "enum": [
               "failedCalls",
               "failedRuns",
-              "invalidObjects"
+              "invalidObjects",
+              "certificateExpiry"
             ],
             "title": "Rule",
-            "description": "What was counted: failed calls, failed runs or invalid objects."
+            "description": "What was counted: failed calls, failed runs or invalid objects; or, for certificateExpiry, the days left before the client certificate expires."
           },
           "count": {
             "type": "integer",
@@ -284,12 +295,25 @@
             "format": "date-time",
             "title": "Cleared at",
             "description": "When the count fell back and the alert cleared."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Certificate expires at",
+            "description": "For a certificateExpiry alert: when the certificate expires. A renewed certificate has another date, so its thresholds warn again."
           }
         },
         "x-openregister-notifications": {
           "threshold-passed": {
             "trigger": {
-              "type": "created"
+              "type": "created",
+              "filter": {
+                "field": "rule",
+                "operator": "notIn",
+                "values": [
+                  "certificateExpiry"
+                ]
+              }
             },
             "enabled": true,
             "channels": [
@@ -308,6 +332,33 @@
             "message": {
               "nl": "Open Integriq > Verbindingsmeldingen voor de details.",
               "en": "Open Integriq > Connection alerts for the details."
+            }
+          },
+          "certificate-expiring": {
+            "trigger": {
+              "type": "created",
+              "filter": {
+                "field": "rule",
+                "value": "certificateExpiry"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "expression",
+                "resolver": "OCA\\Integriq\\Notification\\ConnectionAlertRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "{{subjectName}}: het certificaat verloopt over {{count}} dagen",
+              "en": "{{subjectName}}: the certificate expires in {{count}} days"
+            },
+            "message": {
+              "nl": "Vernieuw het certificaat in keepiq voor {{expiresAt}}. Open Integriq > Verbindingsmeldingen voor de details.",
+              "en": "Renew the certificate in keepiq before {{expiresAt}}. Open Integriq > Connection alerts for the details."
             }
           }
         }

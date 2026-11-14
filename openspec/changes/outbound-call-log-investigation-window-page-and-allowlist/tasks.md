@@ -16,8 +16,9 @@ no window dialog exist.
 - **acceptance_criteria**:
   - GIVEN the SLO adapter WHEN it passes `logBody` THEN the response body is stored
   - GIVEN any other class under `lib/` that passes `logBody` WHEN the suite runs THEN the scan test fails naming it
-- [ ] Implement
-- [ ] Test: PHPUnit `CallServiceBodyCaptureTest::testOnlyListedCallersPassLogBody` (scans `lib/` for `'logBody'` and compares against the allowlist)
+- [x] Implement
+- [x] Test: PHPUnit `CallServiceBodyCaptureTest::testOnlyListedCallersPassLogBody` (scans `lib/` for `'logBody'` and compares against the allowlist)
+- note: `logBody` is honoured only when its value is the class name of a caller on `LOG_BODY_ALLOWLIST` (the SLO adapter passes `self::class`); a bare `true` or a source setting stores nothing. `SupplierSourceCall` (pupil results, rosters, SWV hand-offs) no longer passes it: it reads the answer from the returned call log, which always carries the body.
 
 ### Task 6: The source page
 - **spec_ref**: `openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-the-source-page-shows-the-window-and-says-when-no-body-was-stored-req-ocd-011`
