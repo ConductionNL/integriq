@@ -41,6 +41,9 @@ use OCA\Integriq\Rule\ReferenceNumberRuleInterface;
 use OCA\Integriq\Service\Consumer\ConsumerScopeCheck;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Observability\Otel\TraceParent;
+use OCA\Integriq\Service\Endpoint\UpstreamRequest;
+use OCA\Integriq\Service\Endpoint\UpstreamRouter;
+use OCA\Integriq\Service\Endpoint\UpstreamSelector;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\FlowToken;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
@@ -185,6 +188,9 @@ class EndpointService implements EndpointServiceInterface {
 	 *                                              the endpoint's message schemas (REQ-MSV-002);
 	 *                                              nullable for the same reason, and a declared
 	 *                                              validation without it is refused, never skipped.
+	 * @param UpstreamRouter|null $upstreamRouter Routes an endpoint with several targets
+	 *                                            (gateway-upstream-routing); built from the object
+	 *                                            and call services when not injected.
 	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
 	 *                                                        channels; built from the object service and
 	 *                                                        logger when not injected.
@@ -218,10 +224,32 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?EndpointTargetResolver $targetResolver = null,
 		private readonly ?EndpointMessageGate $messageGate = null,
+		?UpstreamRouter $upstreamRouter = null,
 		?ProductPolicyService $productPolicyService = null,
 	) {
 		$this->productPolicy = $productPolicyService;
+		$this->upstreamRouter = $upstreamRouter;
 	}//end __construct()
+
+	/**
+	 * The router of endpoints with several targets; built from this service's own collaborators when not injected.
+	 *
+	 * @return UpstreamRouter The router.
+	 *
+	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+	 */
+	private function upstreamRouter(): UpstreamRouter {
+		if ($this->upstreamRouter === null) {
+			$this->upstreamRouter = new UpstreamRouter(
+				objects: $this->orObjectService,
+				calls: $this->callService,
+				selector: new UpstreamSelector(),
+				logger: $this->logger
+			);
+		}
+
+		return $this->upstreamRouter;
+	}//end upstreamRouter()
 
 	/**
 	 * The product policy shared with product channels; built from this service's own collaborators when not injected.
@@ -259,6 +287,13 @@ class EndpointService implements EndpointServiceInterface {
 	 * @var ProductPolicyService|null
 	 */
 	private ?ProductPolicyService $productPolicy = null;
+
+	/**
+	 * Routes an endpoint with several targets; built from this service's own collaborators when not injected.
+	 *
+	 * @var UpstreamRouter|null
+	 */
+	private ?UpstreamRouter $upstreamRouter = null;
 
 	/**
 	 * RFC 8594 `Deprecation`/`Sunset` response headers to attach to the
@@ -2589,14 +2624,21 @@ class EndpointService implements EndpointServiceInterface {
 		// needs the source; the caller must not be able to read it.
 		// Unscoped because an inbound gateway call carries no organisation; the endpoint's
 		// own organisation bounds which source it may use (REQ-TEN-001).
-		$source = $this->orObjectService->find(
-			id: ($endpointData['targetId'] ?? ''),
-			register: 'integriq',
-			schema: 'source',
-			_rbac: false,
-			_multitenancy: false
-		);
-		if ($this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
+		// An endpoint with `targets` routes over several sources (gateway-upstream-routing
+		// REQ-UPRT-001); the router loads and checks each candidate itself.
+		$routed = $this->upstreamRouter()->routes(endpointData: $endpointData);
+		$source = null;
+		if ($routed === false) {
+			$source = $this->orObjectService->find(
+				id: ($endpointData['targetId'] ?? ''),
+				register: 'integriq',
+				schema: 'source',
+				_rbac: false,
+				_multitenancy: false
+			);
+		}
+
+		if ($routed === false && $this->sharesOrganisation(endpoint: $endpoint, source: $source) === false) {
 			$this->logger->warning(
 				'integriq: endpoint ' . $endpoint->getUuid() . ' refused to proxy to a source of another organisation'
 			);
@@ -2634,18 +2676,38 @@ class EndpointService implements EndpointServiceInterface {
 			);
 		}//end try
 
-		// Proxy the request to the source via CallService.
-		$callLog = $this->callService->call(
-			source: $source,
-			endpoint: $upstreamPath,
-			method: $request->getMethod(),
-			config: [
-				'query' => $request->getParams(),
-				'headers' => $headers,
-				'body' => $rawBody,
-			],
-			trace: $trace
-		);
+		// Proxy the request to the source via CallService, or to the target the
+		// router picks (gateway-upstream-routing REQ-UPRT-001/002).
+		if ($routed === true) {
+			$callLog = $this->upstreamRouter()->call(
+				request: new UpstreamRequest(
+					endpoint: $endpoint,
+					method: $request->getMethod(),
+					upstreamPath: $upstreamPath,
+					parameters: $request->getParams(),
+					headers: $headers,
+					rawBody: $rawBody,
+					consumer: $this->authorizationService->getResolvedConsumer()?->getUuid()
+				),
+				trace: $trace
+			);
+			if ($callLog instanceof JSONResponse === true) {
+				return $callLog;
+			}
+		} else {
+			$callLog = $this->callService->call(
+				source: $source,
+				endpoint: $upstreamPath,
+				method: $request->getMethod(),
+				config: [
+					'query' => $request->getParams(),
+					'headers' => $headers,
+					'body' => $rawBody,
+				],
+				trace: $trace
+			);
+		}//end if
+
 		$callLogData = $callLog->getObject();
 
 		// REQ-MSV-002: the proxied answer is checked against the endpoint's
