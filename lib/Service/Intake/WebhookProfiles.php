@@ -83,6 +83,10 @@ final class WebhookProfiles implements WebhookProfilesInterface {
 			return self::intakeChannel(channelId: substr($type, strlen(self::INTAKE_CHANNEL_PREFIX)));
 		}
 
+		if (str_starts_with($type, self::CLOUDEVENTS_SOURCE_PREFIX) === true && strlen($type) > strlen(self::CLOUDEVENTS_SOURCE_PREFIX)) {
+			return self::cloudEventsSource(sourceId: substr($type, strlen(self::CLOUDEVENTS_SOURCE_PREFIX)));
+		}
+
 		return (self::all()[$type] ?? null);
 
 	}//end byAuthorizationType()
@@ -331,4 +335,25 @@ final class WebhookProfiles implements WebhookProfilesInterface {
 		);
 
 	}//end intakeChannel()
+
+	/**
+	 * The CloudEvents receiver of one source. Each source has its own
+	 * connection, so a credential for one source never admits another.
+	 *
+	 * @param string $sourceId The source id from the receiver URL.
+	 *
+	 * @return WebhookProfile
+	 *
+	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 */
+	public static function cloudEventsSource(string $sourceId): WebhookProfile {
+		return new WebhookProfile(
+			authorizationType: self::CLOUDEVENTS_SOURCE_PREFIX . $sourceId,
+			channel: 'cloudevents',
+			label: 'CloudEvents source ' . $sourceId,
+			schema: 'event',
+			requiredActions: ['create']
+		);
+
+	}//end cloudEventsSource()
 }//end class

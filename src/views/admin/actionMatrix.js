@@ -45,3 +45,34 @@ export function savePayload(actions, matrix) {
 	}
 	return payload
 }
+
+/**
+ * The actions grouped into one section per area, for the screen.
+ *
+ * Sections are ordered by area name, actions within a section by name. An
+ * action the seed gives no area to lands in a last section with an empty
+ * area; an action without a label is labelled by its name.
+ *
+ * @param {Array<string>} actions The declared actions.
+ * @param {object|null|undefined} areas Action name to area.
+ * @param {object|null|undefined} labels Action name to label.
+ * @return {Array<{area: string, actions: Array<{name: string, label: string}>}>} The sections.
+ *
+ * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+ */
+export function actionSections(actions, areas, labels) {
+	const areaOf = areas && typeof areas === 'object' ? areas : {}
+	const labelOf = labels && typeof labels === 'object' ? labels : {}
+	const sections = new Map()
+	for (const name of [...actions].sort()) {
+		const area = typeof areaOf[name] === 'string' ? areaOf[name] : ''
+		const label = typeof labelOf[name] === 'string' && labelOf[name] !== '' ? labelOf[name] : name
+		if (!sections.has(area)) {
+			sections.set(area, [])
+		}
+		sections.get(area).push({ name, label })
+	}
+	return [...sections.entries()]
+		.sort(([one], [two]) => (one === '') - (two === '') || one.localeCompare(two))
+		.map(([area, entries]) => ({ area, actions: entries }))
+}

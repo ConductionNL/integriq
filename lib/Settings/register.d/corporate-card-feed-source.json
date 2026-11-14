@@ -1,0 +1,30 @@
+{
+  "$comment": "ADR-037 register fragment (platform-bookkeeping-catalogue-items D1). A dormant bookkeeping source template the catalogue lists under its bookkeeping category (CatalogRegistryService::SLUG_CATEGORY_OVERRIDES). No key material: the credential is a broker reference the administrator creates when instantiating it; the live binding fails closed without it. The sandbox record of the same connector in integriq_seed_data.json is for demos only.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "corporate-card-feed"
+        },
+        "name": "Corporate card feed",
+        "description": "Import the transactions of a corporate card programme through its provider's REST API (a Stripe Issuing style API): enrol, discover the cards and sync their transactions, idempotent on the transaction id. Set configuration.baseUrl to the provider's API address and create the credential named below in the credential broker, then enable.",
+        "type": "cardfeed",
+        "location": "",
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0",
+        "configuration": {
+          "provider": "rest",
+          "baseUrl": "",
+          "authentication": {
+            "credentialRef": {
+              "credentialName": "corporate-card-feed-api-key"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

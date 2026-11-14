@@ -26,7 +26,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.4.0",
+        "version": "1.5.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad: see local ADR-005.",
         "required": [
@@ -214,11 +214,23 @@
                         "minLength": 1,
                         "title": "Credential Name",
                         "description": "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches)."
+                      },
+                      "provider": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Provider",
+                        "description": "With `perUser: true`: the broker provider slug whose per-user OAuth 2.0 account each call uses (sources-per-user-oauth). The call runs with the signed-in user's own personal credential at this provider, never a shared one; a call without a signed-in user is refused."
+                      },
+                      "perUser": {
+                        "type": "boolean",
+                        "const": true,
+                        "title": "Each user's own account",
+                        "description": "Set together with `provider`, and with nothing else, to call with each signed-in user's own account at that provider."
                       }
                     },
                     "additionalProperties": false,
                     "minProperties": 1,
-                    "maxProperties": 1
+                    "maxProperties": 2
                   }
                 }
               }
@@ -9341,61 +9353,65 @@
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-1-1"
+          "slug": "intake-routing-rule-teams-meldingen-naar-algemene-vraag"
         },
-        "name": "Voorbeeld Name 1",
-        "channelId": "Voorbeeld Channelid 1",
-        "targetSchema": "Voorbeeld Targetschema 1",
-        "description": "Voorbeeld Description 1",
-        "condition": {
-          "field": "Voorbeeld Field 1",
-          "operator": "equals",
-          "value": "Voorbeeld Value 1"
+        "name": "Teams meldingen naar algemene vraag",
+        "channelId": "teams",
+        "targetSchema": "case",
+        "description": "Elk Teams-bericht opent een zaak met de tekst van het bericht als titel en omschrijving.",
+        "condition": {},
+        "fieldMapping": {
+          "title": "text",
+          "description": "text"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 1",
-        "order": 1,
+        "locationField": "",
+        "order": 10,
         "isEnabled": true
       },
       {
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-2-2"
+          "slug": "intake-routing-rule-openbare-ruimte-straatverlichting"
         },
-        "name": "Voorbeeld Name 2",
-        "channelId": "Voorbeeld Channelid 2",
-        "targetSchema": "Voorbeeld Targetschema 2",
-        "description": "Voorbeeld Description 2",
+        "name": "Openbare ruimte straatverlichting",
+        "channelId": "public-space-report",
+        "targetSchema": "case",
+        "description": "Een melding over een lantaarnpaal opent een zaak met de omschrijving van de melder.",
         "condition": {
-          "field": "Voorbeeld Field 2",
+          "field": "text",
           "operator": "contains",
-          "value": "Voorbeeld Value 2"
+          "value": "lantaarnpaal"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 2",
-        "order": 2,
-        "isEnabled": false
+        "fieldMapping": {
+          "title": "fields.category",
+          "description": "text"
+        },
+        "locationField": "",
+        "order": 10,
+        "isEnabled": true
       },
       {
         "@self": {
           "register": "integriq",
           "schema": "intake_routing_rule",
-          "slug": "intake-routing-rule-voorbeeld-name-3-3"
+          "slug": "intake-routing-rule-formulier-bezwaar"
         },
-        "name": "Voorbeeld Name 3",
-        "channelId": "Voorbeeld Channelid 3",
-        "targetSchema": "Voorbeeld Targetschema 3",
-        "description": "Voorbeeld Description 3",
+        "name": "Formulier bezwaar",
+        "channelId": "form-submission",
+        "targetSchema": "case",
+        "description": "Een ingezonden bezwaarformulier opent een zaak. Uitgeschakeld, zodat de demo ook een uitgeschakelde regel laat zien.",
         "condition": {
-          "field": "Voorbeeld Field 3",
-          "operator": "exists",
-          "value": "Voorbeeld Value 3"
+          "field": "fields.formType",
+          "operator": "equals",
+          "value": "bezwaar"
         },
-        "fieldMapping": {},
-        "locationField": "Voorbeeld Locationfield 3",
-        "order": 3,
-        "isEnabled": true
+        "fieldMapping": {
+          "description": "text"
+        },
+        "locationField": "",
+        "order": 20,
+        "isEnabled": false
       },
       {
         "@self": {
@@ -11305,6 +11321,69 @@
           {
             "at": "2026-03-03T09:00:00+00:00",
             "error": "Voorbeeld Error 3"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-cmcom-sent"
+        },
+        "recipientMsisdn": "+31612345671",
+        "status": "sent",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "cmcom",
+        "providerMessageId": "4f3c2a1e9b8d7c6a5f4e3d2c1b0a9f8e",
+        "detail": "Accepted by CM.com",
+        "attempts": [
+          {
+            "at": "2026-03-04T09:00:00+00:00",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-messagebird-delivered"
+        },
+        "recipientMsisdn": "+31612345672",
+        "status": "delivered",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "messagebird",
+        "providerMessageId": "b7e2c0a4f1d94e8a9c3b5d6e7f8a9b0c",
+        "detail": "MessageBird status: delivered",
+        "attempts": [
+          {
+            "at": "2026-03-04T10:15:00+00:00",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "sms_message",
+          "slug": "sms-message-twilio-failed"
+        },
+        "recipientMsisdn": "+31612345673",
+        "status": "failed",
+        "objectUri": "",
+        "sourceApp": "pipelinq",
+        "templateId": "",
+        "provider": "twilio",
+        "providerMessageId": "",
+        "detail": "Twilio responded with HTTP 401.",
+        "attempts": [
+          {
+            "at": "2026-03-04T11:30:00+00:00",
+            "error": "Twilio responded with HTTP 401."
           }
         ]
       },

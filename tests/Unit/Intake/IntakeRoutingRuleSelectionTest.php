@@ -24,6 +24,7 @@ namespace OCA\Integriq\Tests\Unit\Intake;
 use OCA\Integriq\Exception\IntakeRoutingException;
 use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
 use OCA\Integriq\Intake\Adapter\PublicSpaceReportAdapter;
+use OCA\Integriq\Intake\HeldMessageFiles;
 use OCA\Integriq\Intake\InboundMessage;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Intake\IntakeRoutingService;
@@ -90,6 +91,7 @@ class IntakeRoutingRuleSelectionTest extends TestCase {
 			$this->createMock(IEventDispatcher::class),
 			$this->schemaMapper,
 			$this->createMock(LoggerInterface::class),
+			$this->keptAsIs(),
 		);
 
 	}//end setUp()
@@ -267,5 +269,17 @@ class IntakeRoutingRuleSelectionTest extends TestCase {
 		$this->assertSame('Case type "melding" has no field "0".', $this->refusal(array_merge($valid, ['fieldMapping' => ['x']])));
 
 	}//end testEveryRuleRefusalNamesItsCause()
+
+	/**
+	 * A held-files double that keeps the payload as it is.
+	 *
+	 * @return HeldMessageFiles
+	 */
+	private function keptAsIs(): HeldMessageFiles {
+		$heldFiles = $this->createMock(HeldMessageFiles::class);
+		$heldFiles->method('keep')->willReturnArgument(2);
+
+		return $heldFiles;
+	}//end keptAsIs()
 
 }//end class
