@@ -460,6 +460,7 @@ OC.L10N.register(
         "Path appended to the source URL": "Pad toegevoegd aan de bron-URL",
         "Payload": "Lading",
         "Payment provider credential missing": "Betalingsprovider-inloggegeven ontbreekt",
+        "Payment source not found": "Betalingsbron niet gevonden",
         "Peppol participant not found": "Peppol-deelnemer niet gevonden",
         "Pick a Source → Target mapping above to enable the preview.": "Kies hierboven een Bron → Doel-mapping om het voorbeeld in te schakelen.",
         "Pick a configured source": "Kies een geconfigureerde bron",

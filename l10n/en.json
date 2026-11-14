@@ -500,6 +500,7 @@
         "No ended call with this call id": "No ended call with this call id",
         "Invalid payment amount": "Invalid payment amount",
         "Payment provider credential missing": "Payment provider credential missing",
+        "Payment source not found": "Payment source not found",
         "No active payment source is configured": "No active payment source is configured",
         "Event types": "Event types",
         "One CloudEvents type per line, e.g. com.nextcloud.files.node.created": "One CloudEvents type per line, e.g. com.nextcloud.files.node.created",
