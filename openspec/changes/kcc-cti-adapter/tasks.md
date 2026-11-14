@@ -1,7 +1,8 @@
 # Tasks: kcc-cti-adapter
 
-> Tasks 1, 2 and 3 are done, the caller search binding included. Task 4, the
-> source form and the docs, is open.
+> Tasks 1, 2 and 3 are done, the caller search binding included. Task 4's
+> source form, strings and docs are built; its screenshots and the e2e spec
+> need a running instance and are still owed.
 >
 > Two things found while building, recorded rather than worked around:
 >
@@ -125,5 +126,25 @@
 
 ### Task 4: Source form, i18n, docs
 - CTI provider picker and field mapping on the source page; Dutch and English strings; docs with screenshots.
-- [ ] Implement
+- [x] Implement (source form, strings, docs; screenshots still owed, they need a running instance)
 - [ ] Test (`tests/e2e/cti-source.spec.ts`)
+- **note on the form**: `src/modals/v2/CtiSourceFields.vue`, shown by
+  `SourceFormFields` for `type = cti` on the same pattern as the case-system
+  fields, and the raw configuration editor is hidden beside it. It writes
+  `provider`, `sharedSecret`, `signatureSecret`, `eventsPath`,
+  `fieldMapping`, `kindMapping` and `callerLookupSource`, keeping every other
+  key. The binding picker offers exactly `webhook` and `log`, the two
+  `CtiSourceResolver` knows; a stored name it does not know is shown as itself
+  so it can be seen and corrected. `kindMapping` is stored vendor word to our
+  kind, the way `CallEventNormaliser` reads it, but asked per kind of ours. The
+  lookup picker lists KISS sources only. The events address is shown once the
+  source has an id. `kiss` and `cti` were added to the type picker, which
+  offered neither, so the KISS source the lookup needs can be made from the
+  same page.
+- **note on the strings**: 32 keys added to `en` and `nl` only, as one block
+  after "Pick a source", so the catalogues are not re-sorted. Other locales
+  fall back to English.
+- **note on the tests**: the Vue part is covered by
+  `tests/vitest/ctiSourceFields.spec.js` (14 tests, real components). The
+  browser spec named above needs a running Nextcloud and is not written.
+- **docs**: `docs/features/telephony-cti.md`, listed in the features index.

@@ -161,6 +161,15 @@
 			:configuration="caseSystemConfiguration"
 			@update:configuration="updateField('configuration', $event)" />
 
+		<!-- A telephony source likewise: the binding, its secrets, the field
+		     mapping and the Klantinteracties source callers are looked up in. -->
+		<CtiSourceFields
+			v-if="isCti"
+			class="cn-source-form-fields__field"
+			:configuration="caseSystemConfiguration"
+			:sourceId="savedSourceId"
+			@update:configuration="updateField('configuration', $event)" />
+
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
 			<NcCheckboxRadioSwitch
@@ -281,6 +290,7 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import CaseSystemSourceFields from './CaseSystemSourceFields.vue'
+import CtiSourceFields from './CtiSourceFields.vue'
 import SchemaTextField from './SchemaTextField.vue'
 import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
@@ -305,6 +315,8 @@ const SOURCE_TYPE_OPTIONS = [
 	{ id: 'soap', label: 'SOAP' },
 	{ id: 'dso', label: 'DSO' },
 	{ id: 'case-system', label: 'Case system (ZGW)' },
+	{ id: 'kiss', label: 'KISS (Klantinteracties)' },
+	{ id: 'cti', label: 'Telephony (CTI)' },
 ]
 
 export default {
@@ -316,6 +328,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		CnFieldHelper,
 		CaseSystemSourceFields,
+		CtiSourceFields,
 	},
 
 	mixins: [jsonFieldDrafts],
@@ -358,11 +371,12 @@ export default {
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
-			// On a case-system source CaseSystemSourceFields owns the
-			// configuration; a raw JSON editor beside it would hold a stale draft.
-			const fields = this.isCaseSystem
-				? this.fields.filter((field) => field.key !== 'configuration')
-				: this.fields
+			// On a case-system or telephony source its own fields own the
+			// configuration; a raw JSON editor beside them would hold a stale draft.
+			const fields =
+				this.isCaseSystem || this.isCti
+					? this.fields.filter((field) => field.key !== 'configuration')
+					: this.fields
 			if (!this.brokeredEnabled) return fields
 			return fields.filter(
 				(field) => !EMBEDDED_SECRET_FIELDS.includes(field.key),
@@ -380,7 +394,28 @@ export default {
 		},
 
 		/**
-		 * The configuration the case-system fields edit, as an object.
+		 * Whether this is a telephony source, which gets its own fields.
+		 *
+		 * @return {boolean} True for a cti source.
+		 * @spec openspec/changes/kcc-cti-adapter/specs/kiss-kcc-bridge/spec.md#requirement-a-telephony-provider-seam-with-a-verified-webhook-req-005
+		 */
+		isCti() {
+			return String(this.formData?.type ?? '') === 'cti'
+		},
+
+		/**
+		 * The id of the source being edited, or '' for one not saved yet.
+		 *
+		 * @return {string} The id.
+		 * @spec exclude trivial projection of the form value, presentation only
+		 */
+		savedSourceId() {
+			const data = this.formData ?? {}
+			return String(data['@self']?.id || data.id || data.uuid || '')
+		},
+
+		/**
+		 * The configuration the case-system and telephony fields edit, as an object.
 		 *
 		 * @return {object} The configuration.
 		 * @spec exclude trivial projection of the form value, presentation only
