@@ -119,6 +119,7 @@ class ExchangeReadModel implements ExchangeReadModelInterface {
 				register: ExchangeJobService::REGISTER,
 				schema: ExchangeJobService::SCHEMA_JOB,
 				_rbac: false,
+				// Unscoped: exchange jobs are written without a session and carry no user organisation; the job is held to its owning app here and ExchangeController authorises the caller.
 				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {
@@ -387,6 +388,7 @@ class ExchangeReadModel implements ExchangeReadModelInterface {
 		$matches = $this->objectService->findAll(
 			config: ['filters' => $filters, 'limit' => $limit, 'offset' => $offset],
 			_rbac: false,
+			// Unscoped: exchange jobs are written without a session and carry no user organisation; the filters hold the read to the owning app and ExchangeController authorises the caller.
 			_multitenancy: false
 		);
 
