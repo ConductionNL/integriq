@@ -29,7 +29,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
   - GIVEN the `xml-response` unit tests WHEN they run after the extraction THEN they pass unchanged
   - GIVEN `person-to-xml` WHEN the engineer previews a sample THEN XML with root `persoon` is shown
   - GIVEN a mapping without `outputFormat` WHEN tested THEN no rendered text is returned and JSON behaviour is unchanged
-- [ ] Implement
+- [x] Implement
 - [ ] Test (PHPUnit on `renderOutput()`; Playwright for the preview)
 
 ### Task 4: Send XML or CSV to an API target
@@ -54,7 +54,7 @@ Kind: code. Matrix rows `integriq:map-csv`, `integriq:map-lookup` and
 
 ## Build notes
 
-Task 1 and the implementation of task 2 are built: `CsvCodec` reads through `fgetcsv()`, the file migration source uses it, a synchronization with `sourceConfig.format: csv` hands one array per row to the mapping, and the file format field is a select with the three CSV options for `csv`. Task 2's PHPUnit half is in `SynchronizationFetchSinglePageTest`; its Playwright half needs a running instance and is open, so its Test box stays unchecked. Tasks 3, 4 and 5 are open.
+Task 1 and the implementation of task 2 are built: `CsvCodec` reads through `fgetcsv()`, the file migration source uses it, a synchronization with `sourceConfig.format: csv` hands one array per row to the mapping, and the file format field is a select with the three CSV options for `csv`. Task 2's PHPUnit half is in `SynchronizationFetchSinglePageTest`; its Playwright half needs a running instance and is open, so its Test box stays unchecked. Task 3 is built: `ArrayToXml` holds the writer `XMLResponse::arrayToXml()` now calls (the xml-response tests pass unchanged), `MappingOutput` writes a result as XML or CSV and leaves JSON to the caller, `MappingService::renderOutput()` reads the mapping's `outputFormat` and `outputOptions` from the fragment `mapping-formats-and-lookups.json` (which also seeds `person-to-xml`), the mapping test answers `renderedOutput` for an XML or CSV mapping only, and the preview shows it read-only. Its PHPUnit half is `MappingOutputTest` and `MappingsControllerRenderedOutputTest`; the Playwright half is open. Tasks 4 and 5 are open.
 
 ## Verification
 

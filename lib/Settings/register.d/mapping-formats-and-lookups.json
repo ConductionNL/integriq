@@ -1,0 +1,59 @@
+{
+  "$comment": "ADR-037 register fragment (mapping-formats-and-lookups, REQ-MFL-002). Merges outputFormat and outputOptions onto the mapping schema: a mapping keeps producing an array, and the format says how integriq writes it when the mapping is tested or its result is sent to an API target (json as before, xml through ArrayToXml, csv through CsvCodec). A mapping without outputFormat is json, so every existing mapping keeps its behaviour. Seeds one example, person-to-xml. Does NOT edit lib/Settings/integriq_register.json.",
+  "components": {
+    "schemas": {
+      "mapping": {
+        "version": "1.2.0",
+        "properties": {
+          "outputFormat": {
+            "type": "string",
+            "enum": ["json", "xml", "csv"],
+            "default": "json",
+            "title": "Output format",
+            "description": "How the mapping's result is written when it is sent: JSON, XML or CSV."
+          },
+          "outputOptions": {
+            "type": "object",
+            "title": "Output options",
+            "description": "For XML the root element; for CSV the delimiter and whether a header row is written.",
+            "properties": {
+              "rootElement": {
+                "type": "string",
+                "title": "XML root element",
+                "description": "The name of the XML document's root element."
+              },
+              "csvDelimiter": {
+                "type": "string",
+                "maxLength": 1,
+                "default": ",",
+                "title": "CSV delimiter",
+                "description": "The character between CSV values."
+              },
+              "csvHeader": {
+                "type": "boolean",
+                "default": true,
+                "title": "CSV header row",
+                "description": "Whether the first CSV line names the columns."
+              }
+            }
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {"register": "integriq", "schema": "mapping", "slug": "person-to-xml"},
+        "name": "Person to XML",
+        "description": "Example: writes a person as an XML document with root persoon, for an API target that takes XML.",
+        "mapping": {
+          "naam": "{{ name }}",
+          "geboortedatum": "{{ birthDate }}",
+          "woonplaats": "{{ city }}"
+        },
+        "passThrough": false,
+        "outputFormat": "xml",
+        "outputOptions": {"rootElement": "persoon"}
+      }
+    ]
+  }
+}

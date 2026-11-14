@@ -2319,7 +2319,17 @@
         "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
         "CSV delimiter": "CSV-scheidingsteken",
         "CSV enclosure": "CSV-aanhalingsteken",
-        "The first row names the columns": "De eerste rij bevat de kolomnamen"
+        "The first row names the columns": "De eerste rij bevat de kolomnamen",
+        "CSV header row": "CSV-kopregel",
+        "For XML the root element; for CSV the delimiter and whether a header row is written.": "Voor XML het hoofdelement; voor CSV het scheidingsteken en of er een kopregel wordt geschreven.",
+        "How the mapping's result is written when it is sent: JSON, XML or CSV.": "Hoe het resultaat van de mapping wordt geschreven bij verzenden: JSON, XML of CSV.",
+        "Output format": "Uitvoerformaat",
+        "Output options": "Uitvoeropties",
+        "The character between CSV values.": "Het teken tussen CSV-waarden.",
+        "The name of the XML document's root element.": "De naam van het hoofdelement van het XML-document.",
+        "Whether the first CSV line names the columns.": "Of de eerste CSV-regel de kolommen benoemt.",
+        "XML root element": "XML-hoofdelement",
+        "Written as {format}": "Geschreven als {format}"
     },
     "plurals": {}
 }

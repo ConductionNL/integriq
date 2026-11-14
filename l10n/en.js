@@ -3570,7 +3570,17 @@ OC.L10N.register(
         "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
         "CSV delimiter": "CSV delimiter",
         "CSV enclosure": "CSV enclosure",
-        "The first row names the columns": "The first row names the columns"
+        "The first row names the columns": "The first row names the columns",
+        "CSV header row": "CSV header row",
+        "For XML the root element; for CSV the delimiter and whether a header row is written.": "For XML the root element; for CSV the delimiter and whether a header row is written.",
+        "How the mapping's result is written when it is sent: JSON, XML or CSV.": "How the mapping's result is written when it is sent: JSON, XML or CSV.",
+        "Output format": "Output format",
+        "Output options": "Output options",
+        "The character between CSV values.": "The character between CSV values.",
+        "The name of the XML document's root element.": "The name of the XML document's root element.",
+        "Whether the first CSV line names the columns.": "Whether the first CSV line names the columns.",
+        "XML root element": "XML root element",
+        "Written as {format}": "Written as {format}"
     },
     "nplurals=2; plural=(n != 1);"
 )

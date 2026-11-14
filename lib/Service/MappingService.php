@@ -49,6 +49,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\Integriq\Twig\MappingExtension;
 use OCA\Integriq\Twig\MappingRuntimeLoader;
+use OCA\Integriq\Util\MappingOutput;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -1021,4 +1022,29 @@ class MappingService implements MappingServiceInterface {
 		$resolvedArray['_truncatedExpand'] = [$nestedExpand];
 		return $resolvedArray;
 	}//end resolveExpandValue()
+	/**
+	 * A mapping result in the output format the mapping declares.
+	 *
+	 * JSON, the default, returns a null body: the caller keeps the array. XML
+	 * and CSV return the rendered text and its content type.
+	 *
+	 * @param OrMapping|ObjectEntity|array $mapping The mapping; an OpenRegister mapping entity carries no output format and is JSON.
+	 * @param array                        $result  The mapping result.
+	 *
+	 * @return array{format: string, contentType: string, body: string|null}
+	 *
+	 * @spec openspec/changes/mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-declares-its-output-format-req-mfl-002
+	 */
+	public function renderOutput(OrMapping|ObjectEntity|array $mapping, array $result): array {
+		$fields = $mapping;
+		if ($mapping instanceof ObjectEntity) {
+			$fields = $mapping->getObject();
+		}
+
+		if ($mapping instanceof OrMapping) {
+			$fields = $mapping->jsonSerialize();
+		}
+
+		return (new MappingOutput())->render(mapping: (array)$fields, result: $result);
+	}//end renderOutput()
 }//end class
