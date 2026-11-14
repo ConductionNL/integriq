@@ -1,0 +1,34 @@
+{
+  "$comment": "ADR-037 register fragment (send-at-on-the-messaging-leaf, task 1.1). Seeds the pre-built `smtp-mail` OpenConnector source that OpenRegister's outbound-messaging dispatch leaf (MessageDispatchProvider::EMAIL_SOURCE) sends e-mail through: POST /api/integrations/email/send on OpenRegister POSTs `{to, subject, text, html?, replyTo?}` to this source, with the RFC Message-ID the leaf minted as the `Message-ID` header. The leaf speaks HTTP, so the source is an HTTP mail relay (a relay or mail API that accepts that JSON body and hands the message to SMTP), not a raw SMTP server. MOCK MODE (integration-mock-mode): ships with `configuration.mock:true` and a canned accepted response, and isEnabled:true, so the e-mail channel is demonstrably functional end to end without a relay: OpenRegister's ExternalIntegrationRouter short-circuits the mock-flagged source and returns the canned body WITHOUT sending any mail. To go live: set `location` to your relay's send URL (the seeded one is a reserved `.invalid` placeholder that never resolves), set its credentials, and REMOVE `configuration.mock`. The send leaf is admin-owned: the address is fixed on the source and only the message travels in the POST body, so there is no SSRF surface. Receiving, threading and the inbox stay with integriq's mail intake; this source is OUTBOUND only.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "smtp-mail"
+        },
+        "name": "SMTP mail relay",
+        "description": "Outbound e-mail for the OpenRegister messaging leaf (POST one message with to, subject, text, and optionally html and replyTo). Dormant placeholder: set the address to your mail relay's send URL, add its credentials, and switch mock mode off.",
+        "type": "api",
+        "location": "https://mail-relay.invalid/v1/send",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          },
+          "mock": true,
+          "mockResponse": {
+            "status": "accepted",
+            "id": "MOCK-MAIL-0001",
+            "to": "mock-recipient@example.org"
+          }
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
