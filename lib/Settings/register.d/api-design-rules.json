@@ -1,0 +1,208 @@
+{
+  "$comment": "ADR-037 register fragment (gateway-api-design-rules-check, decisions D3 and D4). Adds `api_design_ruleset` (an organisation's own rule set in the built-in format; the Dutch API design rules ship as a file, lib/Settings/api-design-rules/) and `api_design_finding` (one failed rule of one product version, open or waived with a reason). A check replaces the open findings of a product version and keeps the waived ones whose rule and path still match. Seeds the custom rule set `gemeente-voorbeeld`.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "api_design_ruleset",
+          "api_design_finding"
+        ]
+      }
+    },
+    "schemas": {
+      "api_design_ruleset": {
+        "slug": "api_design_ruleset",
+        "title": "API design rule set",
+        "icon": "ClipboardCheckOutline",
+        "version": "1.0.0",
+        "description": "A set of rules an API product's OpenAPI description is checked against. Same format as the built-in Dutch API design rules.",
+        "type": "object",
+        "required": [
+          "name",
+          "rules"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the rule set, shown on every finding it produces."
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "The version of the rules this set follows."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "built-in",
+              "custom"
+            ],
+            "default": "custom",
+            "title": "Source",
+            "description": "Built-in sets ship with integriq; custom sets are the organisation's own."
+          },
+          "rules": {
+            "type": "array",
+            "title": "Rules",
+            "description": "Rules: id, title, severity (error, warning, info), given (a JSONPath selector), then (truthy, falsy, pattern, enum, casing, schema or length), url, or manual: true for a rule a person checks.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "title": "Enabled",
+            "description": "Only enabled rule sets are checked."
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "name": "gemeente-voorbeeld",
+            "version": "1.0.0",
+            "source": "custom",
+            "enabled": true,
+            "rules": [
+              {
+                "id": "gemeente-voorbeeld/operation-summary",
+                "title": "Every operation has a summary",
+                "severity": "warning",
+                "given": "$.paths.*[?(@property.match(/^(get|put|post|delete|patch)$/))]",
+                "then": {
+                  "field": "summary",
+                  "function": "truthy"
+                },
+                "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/"
+              }
+            ]
+          }
+        ],
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        }
+      },
+      "api_design_finding": {
+        "slug": "api_design_finding",
+        "title": "API design finding",
+        "icon": "AlertCircleOutline",
+        "version": "1.0.0",
+        "description": "One failed rule of one API product version: open, or waived by an administrator with a reason.",
+        "type": "object",
+        "required": [
+          "product",
+          "ruleId",
+          "severity",
+          "status"
+        ],
+        "properties": {
+          "product": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product",
+            "description": "The api_product this finding belongs to."
+          },
+          "productVersion": {
+            "type": "string",
+            "title": "Product version",
+            "description": "The product version that was checked."
+          },
+          "ruleset": {
+            "type": "string",
+            "title": "Rule set",
+            "description": "Name of the rule set the rule belongs to."
+          },
+          "ruleId": {
+            "type": "string",
+            "title": "Rule",
+            "description": "The rule id, for the Dutch rules the Logius rule id."
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ],
+            "title": "Severity",
+            "description": "Error-level findings that are open hold back publication."
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "JSON pointer into the checked document."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "What failed."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "title": "Rule text",
+            "description": "Link to the text of the rule."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "waived"
+            ],
+            "default": "open",
+            "title": "Status",
+            "description": "Open, or waived by an administrator with a reason."
+          },
+          "waivedBy": {
+            "type": "string",
+            "title": "Waived by",
+            "description": "User id of the administrator who waived the finding."
+          },
+          "waiveReason": {
+            "type": "string",
+            "title": "Waiver reason",
+            "description": "Why the finding is accepted."
+          },
+          "waivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Waived at",
+            "description": "When the finding was waived."
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked at",
+            "description": "When the check that produced it ran."
+          }
+        },
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        }
+      }
+    }
+  }
+}

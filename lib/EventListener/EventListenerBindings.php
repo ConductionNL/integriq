@@ -327,6 +327,8 @@ final class EventListenerBindings {
 		// dso-stam consumer, so the STAM intake never has to guess its account.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoStamConsumerListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoStamConsumerListener::class);
+		// Gateway-api-design-rules-check D4: a product with an open design rule error is not made active.
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ApiProductPublishGuardListener::class);
 	}//end registerObjectSaveGuards()
 
 	/**

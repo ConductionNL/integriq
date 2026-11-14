@@ -618,6 +618,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'serviceFetch#index', 'url' => '/api/service-fetches', 'verb' => 'GET'],
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+		// API design rules (gateway-api-design-rules-check): check a product, waive a finding. Admin only.
+		['name' => 'apiDesignCheck#check', 'url' => '/api/products/{productId}/design-check', 'verb' => 'POST'],
+		['name' => 'apiDesignCheck#waive', 'url' => '/api/products/design-findings/{findingId}/waive', 'verb' => 'POST'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes

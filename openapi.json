@@ -336,6 +336,10 @@
             "description": "Translate one ZGW resource payload between `1.0` and `1.6`"
         },
         {
+            "name": "api-design-check",
+            "description": "Checking API products against design rules"
+        },
+        {
             "name": "registration-targets",
             "description": "Where a sibling app may register form submissions."
         }
@@ -9887,6 +9891,102 @@
                         "$ref": "#/components/responses/Problem501"
                     }
                 }
+            }
+        },
+        "/products/{productId}/design-check": {
+            "post": {
+                "operationId": "api-design-check-check",
+                "summary": "Check an API product against the enabled design rule sets",
+                "description": "Checks the product's OpenAPI description against every enabled rule set and answers the findings by severity, with the rules a person checks. The product version's open findings are replaced; matching waivers are kept. Admin-only via #[AuthorizedAdminSetting].",
+                "tags": [
+                    "api-design-check"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The productId.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/products/design-findings/{findingId}/waive": {
+            "post": {
+                "operationId": "api-design-check-waive",
+                "summary": "Waive an open design rule finding with a reason",
+                "description": "Records the administrator, the reason and the time on the finding. A waived error no longer holds back making the product active. Admin-only via #[AuthorizedAdminSetting].",
+                "tags": [
+                    "api-design-check"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "findingId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The findingId.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
             }
         }
     },

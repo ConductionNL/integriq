@@ -3624,7 +3624,16 @@
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "The API product cannot be made active: its description could not be checked.": "The API product cannot be made active: its description could not be checked.",
+        "The API product could not be checked: %s": "The API product could not be checked: %s",
+        "A waiver needs a reason.": "A waiver needs a reason.",
+        "Only an open finding can be waived.": "Only an open finding can be waived.",
+        "There is no such finding.": "There is no such finding.",
+        "_The API product cannot be made active: %n design rule error is open. Fix it or waive it with a reason._::_The API product cannot be made active: %n design rule errors are open. Fix them or waive them with a reason._": [
+            "The API product cannot be made active: %n design rule error is open. Fix it or waive it with a reason.",
+            "The API product cannot be made active: %n design rule errors are open. Fix them or waive them with a reason."
+        ]
     },
     "plurals": {}
 }

@@ -1,0 +1,20 @@
+{
+	"openapi": "2.0",
+	"info": {"title": "Besluiten API", "version": "v1"},
+	"servers": [{"url": "http://api.voorbeeld.nl/besluiten"}],
+	"paths": {
+		"/besluiten/": {
+			"get": {
+				"parameters": [{"name": "zaak_type", "in": "query"}],
+				"responses": {
+					"200": {"content": {"application/json": {"schema": {"type": "array"}}}},
+					"404": {"content": {"application/json": {"schema": {"type": "object"}}}}
+				}
+			},
+			"head": {"responses": {"200": {"headers": {"API-Version": {}}}}}
+		},
+		"/BesluitTypen": {
+			"post": {"responses": {"201": {"headers": {"API-Version": {}}}}}
+		}
+	}
+}

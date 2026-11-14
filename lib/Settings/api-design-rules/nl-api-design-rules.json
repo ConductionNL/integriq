@@ -1,0 +1,462 @@
+{
+	"name": "nl-api-design-rules",
+	"title": "API Design Rules (Logius)",
+	"version": "2.2.2",
+	"published": "2026-09-29",
+	"source": "built-in",
+	"enabled": true,
+	"description": "The core rules of the Dutch API Design Rules 2.2.2 as published by Logius. Rules that can be checked on an OpenAPI description carry a check taken from the Logius linter; the others are listed as manual, for a person to confirm.",
+	"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/",
+	"rules": [
+		{
+			"id": "/core/naming-resources",
+			"title": "Use nouns to name resources",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/naming-resources",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/naming-collections",
+			"title": "Use plural nouns to name collection resources",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/naming-collections",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/interface-language",
+			"title": "Define interfaces in Dutch unless there is an official English glossary available",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/interface-language",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/no-trailing-slash",
+			"title": "Leave off trailing slashes from URIs",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/no-trailing-slash",
+			"severity": "error",
+			"given": "$.paths.*",
+			"then": {
+				"field": "@key",
+				"function": "pattern",
+				"functionOptions": {
+					"notMatch": ".+\\/$"
+				}
+			},
+			"message": "Leave off trailing slashes from URIs: {{property}}"
+		},
+		{
+			"id": "/core/path-segments-kebab-case",
+			"title": "Use kebab-case in path segments",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/path-segments-kebab-case",
+			"severity": "error",
+			"given": "$.paths[?(!@property.match(/\\/openapi\\.(json|yaml)$/))]",
+			"then": {
+				"field": "@key",
+				"function": "pattern",
+				"functionOptions": {
+					"match": "^(\\/|(\\/_[a-z0-9]+|\\/(([a-z0-9\\-]+|{[^}]+})(\\/([a-z0-9\\-\\.]+|{[^}]+}))*)(\\/_[a-z]+)?)\\/?)$"
+				}
+			},
+			"message": "{{property}} is not kebab-case."
+		},
+		{
+			"id": "/core/query-keys-camel-case",
+			"title": "Use camelCase in query keys",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/query-keys-camel-case",
+			"severity": "error",
+			"given": [
+				"$.paths.*.*.parameters[?(@.in=='query')]",
+				"$.components.securitySchemes[?(@.in=='query')]"
+			],
+			"then": {
+				"field": "name",
+				"function": "pattern",
+				"functionOptions": {
+					"match": "^\\$?[a-z][a-z\\d]*([A-Z][a-z\\d]*)*$"
+				}
+			},
+			"message": "{{value}} is not lower camelCase."
+		},
+		{
+			"id": "/core/always-return-objects",
+			"title": "Always return a response with an object",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/always-return-objects",
+			"severity": "error",
+			"given": "$.paths.*.*.responses.*.content[?(@property.match(/json|xml/))].schema",
+			"then": {
+				"field": "type",
+				"function": "pattern",
+				"functionOptions": {
+					"match": "^object$"
+				}
+			},
+			"message": "The content of all responses should be wrapped in an object."
+		},
+		{
+			"id": "/core/hide-implementation",
+			"title": "Hide irrelevant implementation details",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/hide-implementation",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/lang-code",
+			"title": "Use standard language codes and field names for language content",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/lang-code",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/date-time/format",
+			"title": "Use standard format for date, datetime and time",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/date-time/format",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/date-time/timezone",
+			"title": "Allow all time zone offsets in requests and use UTC in responses",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/date-time/timezone",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/date-time/date-omit-time-portion",
+			"title": "Omit time portion for date fields",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/date-time/date-omit-time-portion",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/http-methods",
+			"title": "Only apply standard HTTP methods",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/http-methods",
+			"severity": "error",
+			"given": "$.paths.*[?(!@property.match(/^(summary|description|servers|parameters|\\$ref)$/))]",
+			"then": {
+				"field": "@key",
+				"function": "enum",
+				"functionOptions": {
+					"values": [
+						"get",
+						"post",
+						"put",
+						"patch",
+						"delete"
+					]
+				}
+			},
+			"message": "Only apply standard HTTP methods: {{property}}"
+		},
+		{
+			"id": "/core/http-safety",
+			"title": "Adhere to HTTP safety and idempotency semantics for operations",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/http-safety",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/http-response-code",
+			"title": "Adhere to HTTP status codes to convey appropriate errors",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/http-response-code",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/stateless",
+			"title": "Do not maintain session state on the server",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/stateless",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/nested-child",
+			"title": "Use nested URIs for child resources",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/nested-child",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/resource-operations",
+			"title": "Model resource operations as a sub-resource or dedicated resource",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/resource-operations",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/error-handling/problem-details",
+			"title": "Use problem details for error responses",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/error-handling/problem-details",
+			"severity": "error",
+			"given": "$.paths.*.*.responses[?(@property.match(/^[45]\\d\\d$/))].content",
+			"then": {
+				"function": "schema",
+				"functionOptions": {
+					"schema": {
+						"anyOf": [
+							{
+								"required": [
+									"application/problem+json"
+								]
+							},
+							{
+								"required": [
+									"application/problem+xml"
+								]
+							}
+						]
+					}
+				}
+			},
+			"message": "The content type of an error response should be application/problem+json or application/problem+xml (RFC 9457)."
+		},
+		{
+			"id": "/core/error-handling/invalid-input",
+			"title": "Use status code 400 for invalid input",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/error-handling/invalid-input",
+			"severity": "error",
+			"given": [
+				"$.paths.*[?(@property.match(/^(put|post|patch)$/))]",
+				"$.paths.*[?(@property.match(/^(get|delete)$/) && @.parameters)]"
+			],
+			"then": {
+				"field": "responses",
+				"function": "schema",
+				"functionOptions": {
+					"schema": {
+						"type": "object",
+						"required": [
+							"400"
+						]
+					}
+				}
+			},
+			"message": "GET and DELETE operations with parameters, and all other operations, must be able to return a 400 response."
+		},
+		{
+			"id": "/core/error-handling/all-errors",
+			"title": "Return all errors together for bad requests",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/error-handling/all-errors",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/doc-openapi",
+			"title": "Use OpenAPI Specification for documentation",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/doc-openapi",
+			"severity": "error",
+			"given": "$",
+			"then": [
+				{
+					"field": "openapi",
+					"function": "truthy"
+				},
+				{
+					"field": "openapi",
+					"function": "pattern",
+					"functionOptions": {
+						"match": "^3(\\.\\d+){1,2}$"
+					}
+				}
+			],
+			"message": "Use a version 3 OpenAPI Specification for documentation."
+		},
+		{
+			"id": "/core/doc-openapi-contact",
+			"title": "Document contact information for publicly available APIs",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/doc-openapi-contact",
+			"severity": "error",
+			"given": "$",
+			"then": {
+				"field": "info.contact",
+				"function": "schema",
+				"functionOptions": {
+					"schema": {
+						"type": "object",
+						"required": [
+							"email",
+							"name",
+							"url"
+						]
+					}
+				}
+			},
+			"message": "Document contact information: info.contact needs email, name and url."
+		},
+		{
+			"id": "/core/doc-language",
+			"title": "Publish documentation in Dutch unless there is existing documentation in English",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/doc-language",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/publish-openapi",
+			"title": "Publish OAS document at a standard location in JSON-format",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/publish-openapi",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/deprecation-schedule",
+			"title": "Include a deprecation schedule when deprecating features or versions",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/deprecation-schedule",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/transition-period",
+			"title": "Schedule a fixed transition period for a new major API version",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/transition-period",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/uri-version",
+			"title": "Include the major version number in the URI",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/uri-version",
+			"severity": "error",
+			"given": "$.servers.*",
+			"then": {
+				"field": "url",
+				"function": "pattern",
+				"functionOptions": {
+					"match": "\\/v\\d+"
+				}
+			},
+			"message": "Include the major version number in the URI: {{value}}"
+		},
+		{
+			"id": "/core/changelog",
+			"title": "Publish a changelog for API changes between versions",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/changelog",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/semver",
+			"title": "Adhere to the Semantic Versioning model when releasing API changes",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/semver",
+			"severity": "error",
+			"given": "$.info",
+			"then": [
+				{
+					"field": "version",
+					"function": "truthy"
+				},
+				{
+					"field": "version",
+					"function": "pattern",
+					"functionOptions": {
+						"match": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+					}
+				}
+			],
+			"message": "Version {{value}} is not in semver format."
+		},
+		{
+			"id": "/core/version-header",
+			"title": "Return the full version number in a response header",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/version-header",
+			"severity": "error",
+			"given": "$.paths.*.*.responses[?(@property.match(/^[23]\\d\\d$/))]",
+			"then": {
+				"field": "headers",
+				"function": "schema",
+				"functionOptions": {
+					"schema": {
+						"type": "object",
+						"anyOf": [
+							{
+								"required": [
+									"API-Version"
+								]
+							},
+							{
+								"required": [
+									"Api-Version"
+								]
+							},
+							{
+								"required": [
+									"Api-version"
+								]
+							},
+							{
+								"required": [
+									"api-version"
+								]
+							},
+							{
+								"required": [
+									"API-version"
+								]
+							}
+						]
+					}
+				}
+			},
+			"message": "Return the full version number in an API-Version response header."
+		},
+		{
+			"id": "/core/transport/tls",
+			"title": "Secure connections using TLS",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/transport/tls",
+			"severity": "error",
+			"given": [
+				"$.servers.*",
+				"$.paths..servers.*"
+			],
+			"then": {
+				"field": "url",
+				"function": "pattern",
+				"functionOptions": {
+					"notMatch": "^http://"
+				}
+			},
+			"message": "Secure connections using TLS: server URL {{value}} uses http."
+		},
+		{
+			"id": "/core/transport/no-sensitive-uris",
+			"title": "No sensitive information in URIs",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/transport/no-sensitive-uris",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/transport/security-headers",
+			"title": "Use mandatory security headers in all API responses",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/transport/security-headers",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/transport/cors",
+			"title": "Use CORS to control access",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/transport/cors",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/modules/geospatial",
+			"title": "Apply the geospatial module for geospatial data",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/modules/geospatial",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/modules/signing",
+			"title": "Apply the signing module for signing payloads",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/modules/signing",
+			"severity": "info",
+			"manual": true
+		},
+		{
+			"id": "/core/modules/encryption",
+			"title": "Apply the encryption module for encrypting payloads",
+			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/modules/encryption",
+			"severity": "info",
+			"manual": true
+		}
+	]
+}

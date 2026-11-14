@@ -9,16 +9,20 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
 - **files**: `lib/Service/ApiDesign/ApiDesignRuleService.php`, `lib/Service/ApiDesign/Check/*.php`, `composer.json` (JSONPath library after the licence check)
 - **acceptance_criteria**:
   - GIVEN a rule with given paths.* and then pattern WHEN run on a document with a trailing slash path THEN one finding points at that path
-- [ ] Implement
-- [ ] Test (PHPUnit per check type with small fixture documents)
+- [x] Implement
+  - `lib/Service/ApiDesign/ApiDesignRuleService.php` (+ interface, bound in `ServiceBindings`), the seven checks in `lib/Service/ApiDesign/Check/`. No JSONPath library was added: `JsonPathSelector` evaluates the part of JSONPath the rules use (child, wildcard, recursive descent, key and member filters, `~` for keys) and refuses anything else, so a rule cannot silently select nothing. That keeps `composer.json` unchanged and skips the licence check the library would need.
+- [x] Test (PHPUnit per check type with small fixture documents)
+  - `tests/Unit/Service/ApiDesign/JsonPathSelectorTest.php`, `Check/RuleChecksTest.php`, `ApiDesignRuleServiceTest.php` (the trailing-slash scenario, references, manual rules, the custom rule set validation).
 
 ### Task 2: The Dutch rule set
 - **spec_ref**: `openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002`
 - **files**: `lib/Settings/api-design-rules/nl-api-design-rules.json`
 - **acceptance_criteria**:
   - GIVEN the published Logius version WHEN the rule set is loaded THEN every automatable core rule id is present with its URL, and the rest are listed as manual
-- [ ] Implement
-- [ ] Test (PHPUnit comparing rule ids with a recorded list from the published version; a known-good and a known-bad document)
+- [x] Implement
+  - API Design Rules 2.2.2 (published 2026-09-29): all 38 core rules, 13 with a check taken from the Logius linter of that version, 25 manual. `/core/publish-openapi` stays manual: the linter checks it as OpenAPI schema validity, which the import owns.
+- [x] Test (PHPUnit comparing rule ids with a recorded list from the published version; a known-good and a known-bad document)
+  - `tests/Unit/Service/ApiDesign/NlApiDesignRuleSetTest.php` with `fixtures/good.json` and `fixtures/bad.json`.
 
 ### Task 3: Rule sets and findings as objects, and the product panel
 - **spec_ref**: `openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001`
@@ -26,15 +30,19 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
 - **acceptance_criteria**:
   - GIVEN an administrator on a product WHEN they press check THEN findings are listed by severity with a link to each rule
 - [ ] Implement
+  - Backend done: `lib/Settings/register.d/api-design-rules.json` adds `api_design_ruleset` and `api_design_finding` (admin-only). `ApiProductDesignCheck` checks the product's description, which it gets from `OpenApiPublishService` (looked up by class name). It uses the built-in and stored rule sets, and `ApiDesignFindingStore` replaces the open findings and keeps matching waivers. `POST /api/products/{productId}/design-check` answers the findings errors first. Still left: the findings panel and check button on the custom `ApiProductDetail` component, its frontend strings, and the rule set pages.
 - [ ] Test (Playwright)
+  - PHPUnit: `ApiProductDesignCheckTest`, `ApiDesignFindingStoreTest`, `ApiDesignCheckControllerTest`, `Settings/ApiDesignRulesFragmentTest`. Playwright waits for the panel.
 
 ### Task 4: The publish guard and waivers
 - **spec_ref**: `openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003`
 - **files**: `lib/Service/ApiDesign/ApiDesignRuleService.php`, the product status action, the finding waiver action
 - **acceptance_criteria**:
   - GIVEN an open error finding WHEN the administrator sets the product active THEN it is refused with the finding listed; after a waiver with a reason it succeeds
-- [ ] Implement
+- [x] Implement
+  - `ApiDesignRuleService::blockingFindings()` decides which findings block: the open, error-level ones. `ApiProductPublishGuardListener`, on `ObjectUpdatingEvent`, runs a fresh check when an `api_product` moves to `active`. It refuses with 409 and the blocking findings, and it also refuses when the description cannot be checked. Waiving goes through `POST /api/products/design-findings/{findingId}/waive` with a reason; `ApiDesignFindingStore::waive()` records who waived the finding and when.
 - [ ] Test (PHPUnit on the guard; Playwright for waive and publish)
+  - PHPUnit done: `ApiProductPublishGuardListenerTest`, plus the waive tests in `ApiDesignFindingStoreTest` and `ApiDesignCheckControllerTest`. Playwright left.
 
 ### Task 5: Seed data and documentation
 - **spec_ref**: `openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002`
@@ -42,6 +50,7 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the seeded product page opens THEN one error and one waived warning are shown
 - [ ] Implement
+  - The custom rule set `gemeente-voorbeeld` is seeded. Left: the `besluiten-api` product and its two findings (no seeded product of that name exists yet), and the docs.
 - [ ] Test (docs walked once)
 
 ## Verification
