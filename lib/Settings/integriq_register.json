@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.7"
+    "version": "1.2.0"
   },
   "x-openregister": {
     "type": "application",
@@ -55,6 +55,7 @@
           "payment_intent",
           "payment_settlement",
           "peppol_transmission",
+          "peppol_inbound_document",
           "recipient_key",
           "recipient_opt_out",
           "ris_sync_record",
@@ -711,12 +712,12 @@
           },
           "targetType": {
             "type": "string",
-            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`.",
+            "description": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `job`, `synchronization`.",
             "title": "Target Type"
           },
           "targetId": {
             "type": "string",
-            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
+            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` and `a2a` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
             "title": "Target ID"
           },
           "conditions": {
@@ -3451,6 +3452,81 @@
               "nl": "Peppol-verzending mislukt: {{recipientPeppolId}} ({{documentType}})",
               "en": "Peppol transmission failed: {{recipientPeppolId}} ({{documentType}})"
             }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "peppol_inbound_document": {
+        "slug": "peppol_inbound_document",
+        "title": "Peppol Inbound Document",
+        "icon": "InboxArrowDown",
+        "version": "1.0.0",
+        "summary": "One UBL document received over the Peppol network, stored as a file the receiving app can read",
+        "description": "An inbound document announced by the Peppol Access Point. integriq fetches it with the Access Point's credential and stores the UBL as a file on this object, then emits nl.conduction.peppol.inbound.received naming this object and its file. A fetch or store that fails leaves the object fetch-failed; a redelivered notification for the same accessPointReference retries it. See openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009.",
+        "authorization": {
+          "create": [],
+          "read": [
+            "authenticated"
+          ],
+          "update": [],
+          "delete": []
+        },
+        "required": [
+          "senderPeppolId",
+          "accessPointReference",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "senderPeppolId": {
+            "type": "string",
+            "description": "Sender Peppol participant identifier, `scheme:identifier` (e.g. 0106:12345678)",
+            "title": "Sender Peppol ID"
+          },
+          "documentType": {
+            "type": "string",
+            "description": "UBL document type slug (e.g. ubl-invoice-2.1)",
+            "title": "Document Type"
+          },
+          "accessPointReference": {
+            "type": "string",
+            "description": "The Access Point's own reference to the document, as its notification named it; the idempotency key for redeliveries",
+            "title": "Access Point Reference"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the notification first arrived",
+            "title": "Received At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "stored",
+              "fetch-failed"
+            ],
+            "description": "stored (the UBL is a file on this object and the inbound event was emitted) or fetch-failed (fetch or store failed; no event was emitted)",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why the last fetch or store failed",
+            "title": "Detail"
+          },
+          "fileId": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Nextcloud file id of the stored UBL",
+            "title": "File ID"
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true,
+            "description": "File name of the stored UBL",
+            "title": "File Name"
           }
         },
         "x-openregister-seed": [],

@@ -945,4 +945,76 @@ class StufZdsCaseClientTest extends TestCase {
 		$this->assertStringContainsString('encryptedPassword', $result['fout']['omschrijving']);
 		$this->assertSame('failed', $this->rows[$first['messageId']]['status']);
 	}//end testARetryWithoutUsableCredentialsIsRefusedBeforeSending()
+	/**
+	 * Open the source's circuit with four refused creeerZaak calls.
+	 *
+	 * @param StufZdsCaseClient $client The client, answering four Fo03 refusals.
+	 *
+	 * @return void
+	 */
+	private function openTheCircuit(StufZdsCaseClient $client): void {
+		for ($i = 0; $i < 4; $i++) {
+			$client->creeerZaak('zsh', [], 'Melding');
+		}
+	}//end openTheCircuit()
+
+	public function testAnOpenCircuitHoldsEveryOtherOperationBeforeAnythingIsSent(): void {
+		$client = $this->client(array_fill(0, 4, self::fout(400, 'StUF055')));
+		$this->openTheCircuit(client: $client);
+		$rowsBefore = count($this->rows);
+
+		$results = [
+			'actualiseerZaak' => $client->actualiseerZaak('zsh', 'Z-1', ['omschrijving' => 'Nieuw']),
+			'vrijBericht' => $client->vrijBericht('zsh', 'meldBesluit', ['besluit' => 'B-1']),
+			'geefZaakdetails' => $client->geefZaakdetails('zsh', 'Z-1'),
+			'genereerZaakIdentificatie' => $client->genereerZaakIdentificatie('zsh'),
+		];
+
+		foreach ($results as $operation => $result) {
+			$this->assertFalse($result['success'], $operation);
+			$this->assertSame('CIRCUIT_OPEN', $result['fout']['code'], $operation);
+			$this->assertSame('', $result['messageId'], $operation);
+		}
+
+		$this->assertArrayHasKey('case', $results['geefZaakdetails']);
+		$this->assertNull($results['geefZaakdetails']['case']);
+		$this->assertCount(4, $this->history, 'nothing more is sent once the circuit is open');
+		$this->assertCount($rowsBefore, $this->rows, 'no message row is opened for a held call');
+	}//end testAnOpenCircuitHoldsEveryOtherOperationBeforeAnythingIsSent()
+
+	public function testActualiseerZaakWithoutAnIdentificatieIsRefusedBeforeTheSourceIsRead(): void {
+		unset($this->sources['zsh']);
+
+		try {
+			$this->client([])->actualiseerZaak('zsh', '  ', ['omschrijving' => 'Nieuw']);
+			$this->fail('An empty zaak identificatie must be refused');
+		} catch (StufZknTranslationException $exception) {
+			$this->assertStringContainsString('zaak identificatie', $exception->getMessage());
+			$this->assertSame([], $this->history);
+		}
+	}//end testActualiseerZaakWithoutAnIdentificatieIsRefusedBeforeTheSourceIsRead()
+
+	public function testVoorafReturnsTheFailedAllocationAndCreatesNoZaak(): void {
+		$this->sources['zsh']['configuration']['caseIdentificationStrategy'] = 'vooraf';
+
+		$result = $this->client([self::fout(400, 'StUF058')])->creeerZaak('zsh', [], 'Melding');
+
+		$this->assertFalse($result['success']);
+		$this->assertSame('StUF058', $result['fout']['code']);
+		$this->assertCount(1, $this->history, 'only the identificatie was asked for');
+		$this->assertSame('https://zsh.example.nl/VrijeBerichten', (string)$this->history[0]['request']->getUri());
+	}//end testVoorafReturnsTheFailedAllocationAndCreatesNoZaak()
+
+	public function testASourceWithoutAnOrganisatieIsRefusedBeforeAnyRowIsOpened(): void {
+		$this->sources['zsh']['configuration']['ontvangerOrganisatie'] = '';
+
+		try {
+			$this->client([self::bevestiging('0363-Z-1')])->creeerZaak('zsh', [], 'Melding');
+			$this->fail('A source without an ontvangerOrganisatie must be refused');
+		} catch (StufZknProviderException $exception) {
+			$this->assertStringContainsString('ontvangerOrganisatie', $exception->getMessage());
+			$this->assertSame([], $this->rows);
+			$this->assertSame([], $this->history);
+		}
+	}//end testASourceWithoutAnOrganisatieIsRefusedBeforeAnyRowIsOpened()
 }//end class
