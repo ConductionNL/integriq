@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\ExchangeRateRequestedEvent;
-use OCA\Integriq\Service\ExchangeRateService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;

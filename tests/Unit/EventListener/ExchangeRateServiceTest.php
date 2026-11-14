@@ -18,9 +18,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Tests\Unit\Service;
+namespace OCA\Integriq\Tests\Unit\EventListener;
 
-use OCA\Integriq\Service\ExchangeRateService;
+use OCA\Integriq\EventListener\ExchangeRateService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The newest rate on or before a date, inverted or crossed through the euro.
  *
- * @covers \OCA\Integriq\Service\ExchangeRateService
+ * @covers \OCA\Integriq\EventListener\ExchangeRateService
  *
  * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  */

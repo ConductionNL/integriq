@@ -24,7 +24,7 @@ namespace OCA\Integriq\Tests\Unit\EventListener;
 use DateTimeImmutable;
 use OCA\Integriq\Event\ExchangeRateRequestedEvent;
 use OCA\Integriq\EventListener\ExchangeRateRequestedListener;
-use OCA\Integriq\Service\ExchangeRateService;
+use OCA\Integriq\EventListener\ExchangeRateService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
@@ -34,7 +34,7 @@ use RuntimeException;
 /**
  * @covers \OCA\Integriq\EventListener\ExchangeRateRequestedListener
  * @covers \OCA\Integriq\Event\ExchangeRateRequestedEvent
- * @uses   \OCA\Integriq\Service\ExchangeRateService
+ * @uses   \OCA\Integriq\EventListener\ExchangeRateService
  *
  * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
  */

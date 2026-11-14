@@ -15,7 +15,7 @@ Kind: code. Size S. Half for shillinq `banking-fx-at-booking` (row shillinq `bnk
 
 ### Task 2: The rate request
 - **spec_ref**: `openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002`
-- **files**: `lib/Event/ExchangeRateRequestedEvent.php`, `lib/EventListener/ExchangeRateRequestedListener.php`, `lib/Service/ExchangeRateService.php`, `lib/AppInfo/Application.php`
+- **files**: `lib/Event/ExchangeRateRequestedEvent.php`, `lib/EventListener/ExchangeRateRequestedListener.php`, `lib/EventListener/ExchangeRateService.php`, `lib/AppInfo/Application.php`
 - **acceptance_criteria**:
   - GIVEN rates for Friday 2026-09-25 WHEN USD to EUR is asked for Sunday 2026-09-27 THEN the answer is 1 / 1.1203 with rate date 2026-09-25
   - GIVEN rates for that date WHEN USD to GBP is asked THEN the answer is derived through the euro and marked derived

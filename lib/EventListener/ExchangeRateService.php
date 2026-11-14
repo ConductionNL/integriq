@@ -23,10 +23,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Integriq\Service;
+namespace OCA\Integriq\EventListener;
 
 use DateTimeImmutable;
-use OCA\Integriq\BackgroundJob\ExchangeRate\ExchangeRateImportService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 
@@ -69,6 +68,34 @@ class ExchangeRateService {
 	 * @var integer
 	 */
 	public const MAX_AGE_LIMIT = 31;
+
+	/**
+	 * Register of the stored rates; the same value ExchangeRateImportService writes to.
+	 *
+	 * @var string
+	 */
+	private const REGISTER = 'integriq';
+
+	/**
+	 * Schema of the stored rates; the same value ExchangeRateImportService writes to.
+	 *
+	 * @var string
+	 */
+	private const SCHEMA = 'exchange_rate';
+
+	/**
+	 * Source marker on every stored ECB rate; the same value ExchangeRateImportService sets.
+	 *
+	 * @var string
+	 */
+	private const RATE_SOURCE = 'ecb';
+
+	/**
+	 * The currency every stored rate is expressed against.
+	 *
+	 * @var string
+	 */
+	private const BASE_CURRENCY = 'EUR';
 
 	/**
 	 * Constructor.
@@ -168,12 +195,12 @@ class ExchangeRateService {
 	 * @return array<string,mixed> `{rate, rateDate, source, derived}`.
 	 */
 	private function answer(string $base, string $quote, array $rates, string $date): array {
-		$euro = ExchangeRateImportService::BASE_CURRENCY;
+		$euro = self::BASE_CURRENCY;
 
 		return [
 			'rate'     => ($rates[$quote] / $rates[$base]),
 			'rateDate' => $date,
-			'source'   => ExchangeRateImportService::RATE_SOURCE,
+			'source'   => self::RATE_SOURCE,
 			'derived'  => ($base !== $euro && $quote !== $euro && $base !== $quote),
 		];
 	}//end answer()
@@ -186,23 +213,8 @@ class ExchangeRateService {
 	 * @return array<string, float> Empty when nothing was published that day.
 	 */
 	private function ratesOn(string $date): array {
-		// System path: the rate table is instance-wide reference data any app may read.
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => ExchangeRateImportService::REGISTER,
-					'schema'   => ExchangeRateImportService::SCHEMA,
-					'source'   => ExchangeRateImportService::RATE_SOURCE,
-					'rateDate' => $date,
-				],
-				'limit'   => 1000,
-			],
-			_rbac: false,
-			_multitenancy: false
-		);
-
 		$rates = [];
-		foreach ($this->dataOf(matches: $matches) as $data) {
+		foreach ($this->stored(filters: ['rateDate' => $date], options: ['limit' => 1000]) as $data) {
 			$rate = ($data['rate'] ?? null);
 			if (($data['rateDate'] ?? '') !== $date || isset($data['currency']) === false || is_numeric($rate) === false || (float)$rate <= 0.0) {
 				continue;
@@ -215,7 +227,7 @@ class ExchangeRateService {
 			return [];
 		}
 
-		$rates[ExchangeRateImportService::BASE_CURRENCY] = 1.0;
+		$rates[self::BASE_CURRENCY] = 1.0;
 
 		return $rates;
 	}//end ratesOn()
@@ -226,23 +238,8 @@ class ExchangeRateService {
 	 * @return string|null The date.
 	 */
 	private function newestDate(): ?string {
-		// System path: the rate table is instance-wide reference data any app may read.
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => ExchangeRateImportService::REGISTER,
-					'schema'   => ExchangeRateImportService::SCHEMA,
-					'source'   => ExchangeRateImportService::RATE_SOURCE,
-				],
-				'limit'   => 1,
-				'sort'    => ['rateDate' => 'DESC'],
-			],
-			_rbac: false,
-			_multitenancy: false
-		);
-
 		$newest = null;
-		foreach ($this->dataOf(matches: $matches) as $data) {
+		foreach ($this->stored(filters: [], options: ['limit' => 1, 'sort' => ['rateDate' => 'DESC']]) as $data) {
 			$date = (string)($data['rateDate'] ?? '');
 			if ($date !== '' && ($newest === null || strcmp($date, $newest) > 0)) {
 				$newest = $date;
@@ -251,6 +248,33 @@ class ExchangeRateService {
 
 		return $newest;
 	}//end newestDate()
+
+	/**
+	 * The data of the stored ECB rate objects matching extra filters.
+	 *
+	 * @param array<string, mixed> $filters Filters added after register, schema and source.
+	 * @param array<string, mixed> $options Query options after the filters (limit, sort).
+	 *
+	 * @return list<array<string, mixed>> The object data.
+	 *
+	 * @spec openspec/changes/sources-ecb-exchange-rates/specs/exchange-rate-source/spec.md#requirement-a-sibling-app-asks-for-a-rate-on-a-date-req-fx-002
+	 */
+	private function stored(array $filters, array $options): array {
+		// System path: the rate table is instance-wide reference data any app may read.
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema'   => self::SCHEMA,
+					'source'   => self::RATE_SOURCE,
+				] + $filters,
+			] + $options,
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		return $this->dataOf(matches: $matches);
+	}//end stored()
 
 	/**
 	 * The object data of a findAll answer, whether it is paged or a bare list.
