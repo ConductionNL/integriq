@@ -55,6 +55,7 @@ use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use OCA\Integriq\Kernel\EndpointContainment;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Service\CaseSystem\CaseSystemOperations;
 use OCA\Integriq\Observability\Otel\TraceParent;
@@ -1156,7 +1157,11 @@ class CallService implements CallServiceInterface {
 			ARRAY_FILTER_USE_KEY
 		);
 
-		$logBody = (isset($config['logBody']) === true && (bool)$config['logBody']);
+		// Only a caller on the allowlist keeps its bodies, and it says so by
+		// passing its own class name: a bare true, or one set on a source's
+		// configuration, stores nothing (outbound-call-log REQ-OCD-010).
+		$caller  = ($config['logBody'] ?? null);
+		$logBody = (is_string($caller) === true && in_array($caller, BodyCapturePolicy::LOG_BODY_ALLOWLIST, true) === true);
 		unset($config['logBody']);
 
 		// We want to surpress guzzle exceptions and return the response instead.
