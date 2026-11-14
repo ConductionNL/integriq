@@ -123,6 +123,24 @@ class SharePointPublicationSet {
 			return array_merge($refusals, ['The set declares no components.']);
 		}
 
+		return array_merge(
+			$refusals,
+			$this->undeclaredRefusals(template: $template, components: $components),
+			$this->authenticationRefusals(components: $components),
+			$this->mappedFieldRefusals(components: $components)
+		);
+	}//end refuseTemplate()
+
+	/**
+	 * The refusals for every listed synchronization, mapping or rule the set does not declare.
+	 *
+	 * @param array<string, mixed> $template   The declaration.
+	 * @param array<string, mixed> $components Its components.
+	 *
+	 * @return string[]
+	 */
+	private function undeclaredRefusals(array $template, array $components): array {
+		$refusals = [];
 		foreach (['synchronizations', 'mappings', 'rules'] as $bucket) {
 			foreach ((array)($template[$bucket] ?? []) as $slug) {
 				if (isset($components[$bucket][$slug]) === false) {
@@ -131,6 +149,18 @@ class SharePointPublicationSet {
 			}
 		}
 
+		return $refusals;
+	}//end undeclaredRefusals()
+
+	/**
+	 * The refusals for every source that authenticates with anything but a broker reference.
+	 *
+	 * @param array<string, mixed> $components The declaration's components.
+	 *
+	 * @return string[]
+	 */
+	private function authenticationRefusals(array $components): array {
+		$refusals = [];
 		foreach ((array)($components['sources'] ?? []) as $slug => $source) {
 			$authentication = (array)($source['configuration']['authentication'] ?? []);
 			if (array_keys($authentication) !== ['credentialRef']) {
@@ -138,6 +168,18 @@ class SharePointPublicationSet {
 			}
 		}
 
+		return $refusals;
+	}//end authenticationRefusals()
+
+	/**
+	 * The refusals for every mapping that writes a field which would publish on the first run.
+	 *
+	 * @param array<string, mixed> $components The declaration's components.
+	 *
+	 * @return string[]
+	 */
+	private function mappedFieldRefusals(array $components): array {
+		$refusals = [];
 		foreach ((array)($components['mappings'] ?? []) as $slug => $mapping) {
 			foreach (self::FORBIDDEN_MAPPED_FIELDS as $field) {
 				if (array_key_exists($field, (array)($mapping['mapping'] ?? [])) === true) {
@@ -147,7 +189,7 @@ class SharePointPublicationSet {
 		}
 
 		return $refusals;
-	}//end refuseTemplate()
+	}//end mappedFieldRefusals()
 
 	/**
 	 * The import document for one setup: the set filled with the administrator's choices.
@@ -166,6 +208,34 @@ class SharePointPublicationSet {
 	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
 	 */
 	public function build(array $choices): array {
+		$values   = $this->checkedChoices(choices: $choices);
+		$template = $this->template();
+		$refusals = $this->refuseTemplate(template: $template);
+		if ($refusals !== []) {
+			throw new InvalidArgumentException(implode(' ', $refusals));
+		}
+
+		$renames    = $this->renames(template: $template, values: $values);
+		$components = $this->filledComponents(template: $template, replacements: $this->replacements(values: $values), renames: $renames);
+
+		$syncSlug = $renames[(string)($template['synchronizations'][0] ?? '')] ?? null;
+		if ($syncSlug !== null) {
+			$components['synchronizations'][$syncSlug]['sourceConfig']['requiresApproval'] = $values['requiresApproval'];
+		}
+
+		return ['components' => $components, 'slugs' => $renames];
+	}//end build()
+
+	/**
+	 * The trimmed choices, refused when one is missing or the credential is not a uuid.
+	 *
+	 * @param array<string, mixed> $choices The submitted choices.
+	 *
+	 * @return array<string, mixed> The values of choiceValues().
+	 *
+	 * @throws InvalidArgumentException When a choice is missing or the credential is not a uuid.
+	 */
+	private function checkedChoices(array $choices): array {
 		$values  = $this->choiceValues(choices: $choices);
 		$missing = array_values(array_filter(self::REQUIRED_CHOICES, static fn (string $key): bool => $values[$key] === ''));
 		if ($missing !== []) {
@@ -176,12 +246,18 @@ class SharePointPublicationSet {
 			throw new InvalidArgumentException('The credential must be a brokered credential\'s uuid.');
 		}
 
-		$template = $this->template();
-		$refusals = $this->refuseTemplate(template: $template);
-		if ($refusals !== []) {
-			throw new InvalidArgumentException(implode(' ', $refusals));
-		}
+		return $values;
+	}//end checkedChoices()
 
+	/**
+	 * Every declared slug with the suffix of the chosen site, library and folder.
+	 *
+	 * @param array<string, mixed> $template The declaration.
+	 * @param array<string, mixed> $values   The checked choices.
+	 *
+	 * @return array<string, string> Old slug to new slug.
+	 */
+	private function renames(array $template, array $values): array {
 		$suffix  = substr(hash('sha256', $values['siteId'] . '|' . $values['driveId'] . '|' . $values['folderId']), 0, 8);
 		$renames = [];
 		foreach (self::BUCKETS as $bucket) {
@@ -190,6 +266,17 @@ class SharePointPublicationSet {
 			}
 		}
 
+		return $renames;
+	}//end renames()
+
+	/**
+	 * The placeholder values: every choice, the encoded drive id and the list endpoint.
+	 *
+	 * @param array<string, mixed> $values The checked choices.
+	 *
+	 * @return array<string, string> Placeholder to value.
+	 */
+	private function replacements(array $values): array {
 		$replacements = [];
 		foreach ($values as $key => $value) {
 			$replacements['%' . $key . '%'] = (string)$value;
@@ -198,6 +285,19 @@ class SharePointPublicationSet {
 		$replacements['%driveIdPath%']  = rawurlencode($values['driveId']);
 		$replacements['%listEndpoint%'] = $this->listEndpoint(driveId: $values['driveId'], folderId: $values['folderId']);
 
+		return $replacements;
+	}//end replacements()
+
+	/**
+	 * The declared components, filled and renamed, per bucket.
+	 *
+	 * @param array<string, mixed>  $template     The declaration.
+	 * @param array<string, string> $replacements Placeholder to value.
+	 * @param array<string, string> $renames      Old slug to new slug.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function filledComponents(array $template, array $replacements, array $renames): array {
 		$components = [];
 		foreach (self::BUCKETS as $bucket) {
 			foreach ((array)($template['components'][$bucket] ?? []) as $slug => $entity) {
@@ -205,13 +305,8 @@ class SharePointPublicationSet {
 			}
 		}
 
-		$syncSlug = $renames[(string)($template['synchronizations'][0] ?? '')] ?? null;
-		if ($syncSlug !== null) {
-			$components['synchronizations'][$syncSlug]['sourceConfig']['requiresApproval'] = $values['requiresApproval'];
-		}
-
-		return ['components' => $components, 'slugs' => $renames];
-	}//end build()
+		return $components;
+	}//end filledComponents()
 
 	/**
 	 * The trimmed choices, every key present.

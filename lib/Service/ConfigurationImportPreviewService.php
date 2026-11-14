@@ -181,10 +181,7 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 			$run->result['unresolvedReferences'][] = $unresolved;
 		}
 
-		$deprecation = $this->deprecationOf(entity: $entity);
-		if ($deprecation !== null) {
-			$run->result['deprecations'][] = $deprecation;
-		}
+		$this->recordDeprecation(run: $run, entity: $entity);
 
 		if ($entity['type'] === 'source') {
 			$missing = $this->missingCredentialFields(payload: $entity['payload']);
@@ -198,6 +195,23 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 		}
 
 	}//end previewEntity()
+
+	/**
+	 * Add the entity's deprecation, when it declares one, to the preview's `deprecations`.
+	 *
+	 * @param ConfigurationImportPreviewRun                                     $run    The preview being built.
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
+	 */
+	private function recordDeprecation(ConfigurationImportPreviewRun $run, array $entity): void {
+		$deprecation = $this->deprecationOf(entity: $entity);
+		if ($deprecation !== null) {
+			$run->result['deprecations'][] = $deprecation;
+		}
+	}//end recordDeprecation()
 
 	/**
 	 * The deprecation an entity declares, so the import warns before it is written.

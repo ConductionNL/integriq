@@ -112,13 +112,8 @@ class SharePointSetupController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function intake(): JSONResponse {
-		$choices = [];
-		foreach (['credentialId', 'siteId', 'driveId', 'folderId', 'folderName', 'catalog', 'register', 'schema', 'requiresApproval'] as $key) {
-			$choices[$key] = $this->request->getParam($key, '');
-		}
-
 		try {
-			$document = $this->set->build(choices: $choices);
+			$document = $this->set->build(choices: $this->submittedChoices());
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(['error' => 'invalid_setup', 'message' => $exception->getMessage()], 400);
 		}
@@ -130,6 +125,31 @@ class SharePointSetupController extends Controller {
 			return new JSONResponse(['error' => 'import_failed', 'message' => $exception->getMessage()], 500);
 		}
 
+		return new JSONResponse(['created' => $this->createdIds(imported: $imported)], 201);
+	}//end intake()
+
+	/**
+	 * The setup choices of the request, every key present.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function submittedChoices(): array {
+		$choices = [];
+		foreach (['credentialId', 'siteId', 'driveId', 'folderId', 'folderName', 'catalog', 'register', 'schema', 'requiresApproval'] as $key) {
+			$choices[$key] = $this->request->getParam($key, '');
+		}
+
+		return $choices;
+	}//end submittedChoices()
+
+	/**
+	 * The slug and id of every imported entity, by component.
+	 *
+	 * @param array<string, mixed> $imported The import's answer, entities by bucket.
+	 *
+	 * @return array<string, array<int, array{slug: string, id: string|null}>>
+	 */
+	private function createdIds(array $imported): array {
 		$created = [];
 		foreach (['sources', 'mappings', 'rules', 'synchronizations'] as $bucket) {
 			foreach ((array)($imported[$bucket] ?? []) as $slug => $entity) {
@@ -137,8 +157,8 @@ class SharePointSetupController extends Controller {
 			}
 		}
 
-		return new JSONResponse(['created' => $created], 201);
-	}//end intake()
+		return $created;
+	}//end createdIds()
 
 	/**
 	 * The uuid, else the id, of an imported entity.
