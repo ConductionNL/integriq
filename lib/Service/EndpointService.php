@@ -186,12 +186,12 @@ class EndpointService implements EndpointServiceInterface {
 	 *                                              the endpoint's message schemas (REQ-MSV-002);
 	 *                                              nullable for the same reason, and a declared
 	 *                                              validation without it is refused, never skipped.
-	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
-	 *                                                        channels; built from the object service and
-	 *                                                        logger when not injected.
 	 * @param UpstreamRouter|null $upstreamRouter Routes an endpoint with several targets
 	 *                                            (gateway-upstream-routing); built from the object
 	 *                                            and call services when not injected.
+	 * @param ProductPolicyService|null $productPolicyService The API product policy shared with product
+	 *                                                        channels; built from the object service and
+	 *                                                        logger when not injected.
 	 *
 	 * @return void
 	 */
@@ -222,8 +222,8 @@ class EndpointService implements EndpointServiceInterface {
 		private readonly ?ExecutionTraceService $executionTraceService = null,
 		private readonly ?EndpointTargetResolver $targetResolver = null,
 		private readonly ?EndpointMessageGate $messageGate = null,
-		?ProductPolicyService $productPolicyService = null,
 		?UpstreamRouter $upstreamRouter = null,
+		?ProductPolicyService $productPolicyService = null,
 	) {
 		$this->productPolicy = $productPolicyService;
 		$this->upstreamRouter = $upstreamRouter;
