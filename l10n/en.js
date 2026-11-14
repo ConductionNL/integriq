@@ -1786,6 +1786,11 @@ OC.L10N.register(
         "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches).": "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches).",
         "Next Attempt": "Next Attempt",
         "Next Free Index": "Next Free Index",
+        "Give a label of at most %1$s characters.": "Give a label of at most %1$s characters.",
+        "Give the expiry as a date and time.": "Give the expiry as a date and time.",
+        "Give a PEM certificate, or an issuing CA certificate and a subject pattern.": "Give a PEM certificate, or an issuing CA certificate and a subject pattern.",
+        "The consumer could not be saved. Nothing changed.": "The consumer could not be saved. Nothing changed.",
+        "Only an administrator can manage consumer credentials.": "Only an administrator can manage consumer credentials.",
         "Next Retry At": "Next Retry At",
         "Next step order": "Next step order",
         "Next unassigned bit index; incremented each time a credential offer is assigned a status-list slot": "Next unassigned bit index; incremented each time a credential offer is assigned a status-list slot",
@@ -3567,12 +3572,7 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
-        "Give a label of at most %1$s characters.": "Give a label of at most %1$s characters.",
-        "Give the expiry as a date and time.": "Give the expiry as a date and time.",
-        "Give a PEM certificate, or an issuing CA certificate and a subject pattern.": "Give a PEM certificate, or an issuing CA certificate and a subject pattern.",
-        "The consumer could not be saved. Nothing changed.": "The consumer could not be saved. Nothing changed.",
-        "Only an administrator can manage consumer credentials.": "Only an administrator can manage consumer credentials."
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
     },
     "nplurals=2; plural=(n != 1);"
 )

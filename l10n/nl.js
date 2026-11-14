@@ -1155,6 +1155,11 @@ OC.L10N.register(
         "Removed": "Verwijderd",
         "Users read": "Gebruikers gelezen",
         "Groups read": "Groepen gelezen",
+        "Give a label of at most %1$s characters.": "Geef een label van hoogstens %1$s tekens.",
+        "Give the expiry as a date and time.": "Geef de vervaldatum als datum en tijd.",
+        "Give a PEM certificate, or an issuing CA certificate and a subject pattern.": "Geef een PEM-certificaat, of een uitgevend CA-certificaat met een onderwerppatroon.",
+        "The consumer could not be saved. Nothing changed.": "De consumer kon niet worden opgeslagen. Er is niets gewijzigd.",
+        "Only an administrator can manage consumer credentials.": "Alleen een beheerder kan de inloggegevens van een consumer beheren.",
         "Memberships added": "Lidmaatschappen toegevoegd",
         "Memberships removed": "Lidmaatschappen verwijderd",
         "{user} joins {group}": "{user} komt in {group}",
@@ -2305,12 +2310,7 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
-        "Give a label of at most %1$s characters.": "Geef een label van hoogstens %1$s tekens.",
-        "Give the expiry as a date and time.": "Geef de vervaldatum als datum en tijd.",
-        "Give a PEM certificate, or an issuing CA certificate and a subject pattern.": "Geef een PEM-certificaat, of een uitgevend CA-certificaat met een onderwerppatroon.",
-        "The consumer could not be saved. Nothing changed.": "De consumer kon niet worden opgeslagen. Er is niets gewijzigd.",
-        "Only an administrator can manage consumer credentials.": "Alleen een beheerder kan de inloggegevens van een consumer beheren."
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
     },
     "nplurals=2; plural=(n != 1);"
 )
