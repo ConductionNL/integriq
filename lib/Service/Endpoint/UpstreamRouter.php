@@ -178,6 +178,7 @@ class UpstreamRouter {
 	 */
 	private function findSource(string $uuid): ?ObjectEntity {
 		try {
+			// Unscoped: resolves the upstream source of an endpoint already reached for an inbound caller.
 			$source = $this->objects->find(id: $uuid, register: 'integriq', schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
@@ -233,6 +234,7 @@ class UpstreamRouter {
 		try {
 			// Merge onto the stored row, which CallService redacted before persisting
 			// (http-call-engine REQ-006); the entity in hand may still hold the bodies.
+			// Unscoped: system write stamping the routing decision on the inbound call log.
 			$stored = $this->objects->find(id: $uuid, register: 'integriq', schema: 'call_log', _rbac: false, _multitenancy: false);
 			if ($stored instanceof ObjectEntity === false) {
 				$this->logger->warning('[integriq] the call log ' . $uuid . ' was not found to record its routed target');
@@ -245,6 +247,7 @@ class UpstreamRouter {
 				schema: 'call_log',
 				uuid: $uuid,
 				_rbac: false,
+				// Unscoped: system write stamping the routing decision on the inbound call log.
 				_multitenancy: false,
 				silent: true,
 				_validation: false

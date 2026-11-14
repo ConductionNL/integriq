@@ -83,6 +83,7 @@ class IntegrationObjectLookup {
 				register: self::REGISTER,
 				schema: $schema,
 				_rbac: false,
+				// Unscoped: an occ command, run by the operator without a user session.
 				_multitenancy: false
 			);
 			if ($found instanceof ObjectEntity) {
@@ -131,6 +132,7 @@ class IntegrationObjectLookup {
 				'limit' => $limit,
 			],
 			_rbac: false,
+			// Unscoped: an occ command, run by the operator without a user session.
 			_multitenancy: false
 		);
 		$results = ($found['results'] ?? $found);

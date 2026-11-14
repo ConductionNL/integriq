@@ -890,7 +890,7 @@ class EndpointService implements EndpointServiceInterface {
 
 		// A register schema target makes no call log: record mode's findings
 		// go to the server log (REQ-MSV-002).
-		if ($validationFindings !== [] && $targetType !== 'api') {
+		if ($validationFindings !== [] && $this->isSourceTarget(targetType: $targetType) === false) {
 			$this->messageGate?->record(callLog: null, findings: $validationFindings, endpoint: (string)$endpoint->getUuid());
 		}
 
@@ -910,8 +910,10 @@ class EndpointService implements EndpointServiceInterface {
 			return $this->answerSchemaRequest(run: $run, result: $result);
 		}
 
-		if ($targetType === 'api') {
-			// Proxy request to source via CallService.
+		if ($this->isSourceTarget(targetType: $targetType) === true) {
+			// Proxy request to source via CallService. An `a2a` target is a
+			// source holding an A2A agent, proxied the same way; its agent
+			// card is answered pointing at the gateway (REQ-A2A-001).
 			return $this->handleSourceRequest(
 				endpoint: $endpoint,
 				request: $request,
@@ -924,6 +926,20 @@ class EndpointService implements EndpointServiceInterface {
 		// Invalid endpoint configuration.
 		throw new Exception('Endpoint must specify either a schema or source connection');
 	}//end dispatchAfterBeforeRules()
+
+	/**
+	 * Whether a target type proxies to a source: `api`, or `a2a` for a
+	 * source holding an A2A agent.
+	 *
+	 * @param string $targetType The endpoint's target type.
+	 *
+	 * @return bool True when the endpoint proxies to a source.
+	 *
+	 * @spec openspec/changes/gateway-a2a-agent-card/specs/endpoint-runtime/spec.md#requirement-an-a2a-agents-card-points-at-the-gateway-req-a2a-001
+	 */
+	private function isSourceTarget(string $targetType): bool {
+		return ($targetType === 'api' || $targetType === A2aAgentCardRewriter::TARGET_TYPE);
+	}//end isSourceTarget()
 
 	/**
 	 * Apply the inbound consumer source scope and then the inbound rate limit.
@@ -1616,6 +1632,7 @@ class EndpointService implements EndpointServiceInterface {
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 				_rbac: false,
+				// Unscoped: system write of an inbound call log; the caller is an API consumer, not a user.
 				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
@@ -1655,6 +1672,7 @@ class EndpointService implements EndpointServiceInterface {
 				schema: 'call_log',
 				// The call_log schema is admin-only (REQ-OCD-012); an inbound caller is not.
 				_rbac: false,
+				// Unscoped: system write of an inbound throttle record for an API consumer, not a user.
 				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
@@ -2741,10 +2759,12 @@ class EndpointService implements EndpointServiceInterface {
 
 		$this->proxiedAnswer = true;
 
-		return new JSONResponse(
-			(new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? [])),
-			$callLogData['statusCode'] ?? 200
-		);
+		$answer = (new EndpointProxiedAnswer())->forCaller(response: (array)($callLogData['response'] ?? []));
+		if (($endpointData['targetType'] ?? '') === A2aAgentCardRewriter::TARGET_TYPE) {
+			$answer = $this->pointAgentCardAtGateway(answer: $answer, source: $source, path: $path);
+		}
+
+		return new JSONResponse($answer, $callLogData['statusCode'] ?? 200);
 	}//end handleSourceRequest()
 
 	/**
@@ -2766,6 +2786,37 @@ class EndpointService implements EndpointServiceInterface {
 
 		return $response;
 	}//end pacedRefusal()
+
+	/**
+	 * Point an A2A agent card at the gateway when the call asked for one.
+	 *
+	 * Any other answer of an `a2a` endpoint is handed on as it came.
+	 *
+	 * @param array             $answer The proxied answer as the caller may see it.
+	 * @param ObjectEntity|null $source The source holding the agent.
+	 * @param string            $path   The path the endpoint was called on.
+	 *
+	 * @return array The answer, its card body rewritten.
+	 *
+	 * @spec openspec/changes/gateway-a2a-agent-card/specs/endpoint-runtime/spec.md#requirement-an-a2a-agents-card-points-at-the-gateway-req-a2a-001
+	 */
+	private function pointAgentCardAtGateway(array $answer, ?ObjectEntity $source, string $path): array {
+		$rewriter = new A2aAgentCardRewriter();
+		if ($source === null || $rewriter->isCardPath(path: $path) === false || array_key_exists('body', $answer) === false) {
+			return $answer;
+		}
+
+		$answer['body'] = $rewriter->rewrite(
+			body: $answer['body'],
+			agentAddress: (string)($source->getObject()['location'] ?? ''),
+			gatewayAddress: $rewriter->gatewayAddress(
+				endpointBase: rtrim($this->urlGenerator->getBaseUrl(), '/') . '/apps/integriq/api/endpoint',
+				path: $path
+			)
+		);
+
+		return $answer;
+	}//end pointAgentCardAtGateway()
 
 	/**
 	 * Whether an endpoint may proxy to a source: both belong to the same
@@ -3539,6 +3590,7 @@ class EndpointService implements EndpointServiceInterface {
 				register: 'integriq',
 				schema: 'rule',
 				_rbac: false,
+				// Unscoped: resolves a rule of an endpoint already reached for an inbound API consumer.
 				_multitenancy: false,
 				_render: false
 			);

@@ -1,0 +1,48 @@
+{
+	"orderProducts": [
+		{
+			"id": 2,
+			"supplierTitle": "",
+			"brandTitle": "Theehandel",
+			"productTitle": "Earl Grey los",
+			"variantTitle": "250 g",
+			"articleCode": "EG-250",
+			"ean": "",
+			"sku": "EG-250",
+			"quantityOrdered": 3,
+			"quantityInvoiced": 0,
+			"quantityShipped": 0,
+			"quantityRefunded": 0,
+			"quantityReturned": 0,
+			"basePriceExcl": 8.21,
+			"basePriceIncl": 8.95,
+			"priceExcl": 24.63,
+			"priceIncl": 26.85,
+			"discountExcl": 0,
+			"discountIncl": 0,
+			"taxRate": 0.09
+		},
+		{
+			"id": 3,
+			"supplierTitle": "",
+			"brandTitle": "",
+			"productTitle": "Theepot glas",
+			"variantTitle": "",
+			"articleCode": "TP-1",
+			"ean": "",
+			"sku": "",
+			"quantityOrdered": 1,
+			"quantityInvoiced": 0,
+			"quantityShipped": 0,
+			"quantityRefunded": 0,
+			"quantityReturned": 0,
+			"basePriceExcl": 14.1,
+			"basePriceIncl": 17.06,
+			"priceExcl": 14.1,
+			"priceIncl": 17.06,
+			"discountExcl": 0,
+			"discountIncl": 0,
+			"taxRate": 0.21
+		}
+	]
+}
