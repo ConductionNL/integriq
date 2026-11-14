@@ -276,6 +276,10 @@
 			     untouched ["admin"] default. AFTER InitializeActions, so a fresh install
 			     is seeded first and this step then has nothing to do. Never throws. -->
 			<step>OCA\Integriq\Repair\BroadenExchangeReadDefault</step>
+			<!-- portal-idp-broker-config: warns, never writes. One warning per
+			     superseded idp broker key that still holds a value, never the value.
+			     Upgrade only: a first install has none of these keys. -->
+			<step>OCA\Integriq\Repair\WarnSupersededIdpBrokerKeys</step>
 			<step>OCA\Integriq\Repair\MigrateLegacyStorage</step>
 			<step>OCA\Integriq\Repair\FlagSourceSecretsWriteOnly</step>
 			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
