@@ -9382,6 +9382,254 @@
                     }
                 }
             }
+        },
+        "/openapi/import/preview": {
+            "post": {
+                "operationId": "open-api-import-preview",
+                "summary": "Preview the import of a vendor OpenAPI document",
+                "description": "Lists the source and the endpoints an import would create, flags an operation whose path collides with an existing endpoint, and names a credential placeholder per security scheme. Writes nothing. Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].",
+                "tags": [
+                    "sources"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "document": {
+                                        "description": "The OpenAPI 3.0/3.1 or Swagger 2.0 document, as an object or as JSON or YAML text. Give this or url."
+                                    },
+                                    "url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "description": "Where to fetch the document; fetched through the egress guard, so an internal address is refused."
+                                    },
+                                    "prefix": {
+                                        "type": "string",
+                                        "description": "The gateway path prefix every imported endpoint is served under, e.g. vendor."
+                                    },
+                                    "serverIndex": {
+                                        "type": "integer",
+                                        "description": "The document server that becomes the source location; the first when left out."
+                                    },
+                                    "offset": {
+                                        "type": "integer"
+                                    },
+                                    "limit": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "required": [
+                                    "prefix"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/openapi/import": {
+            "post": {
+                "operationId": "open-api-import",
+                "summary": "Import a vendor OpenAPI document as a source and endpoints",
+                "description": "Creates one source from the chosen server, keeping the document on it, and one endpoint per chosen operation, in batches of 50 with an outcome per operation. A colliding operation is skipped. No secret is read from the document. Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].",
+                "tags": [
+                    "sources"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "document": {
+                                        "description": "The OpenAPI 3.0/3.1 or Swagger 2.0 document, as an object or as JSON or YAML text. Give this or url."
+                                    },
+                                    "url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "description": "Where to fetch the document; fetched through the egress guard, so an internal address is refused."
+                                    },
+                                    "prefix": {
+                                        "type": "string",
+                                        "description": "The gateway path prefix every imported endpoint is served under, e.g. vendor."
+                                    },
+                                    "serverIndex": {
+                                        "type": "integer",
+                                        "description": "The document server that becomes the source location; the first when left out."
+                                    },
+                                    "operations": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "The chosen operations, by the key the preview gave them."
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "The source name; the document title when left out."
+                                    }
+                                },
+                                "required": [
+                                    "prefix",
+                                    "operations"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Nothing created: every chosen operation was skipped",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Created",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/gateway/openapi.json": {
+            "get": {
+                "operationId": "gateway-open-api-gateway",
+                "summary": "The OpenAPI 3.1 document of the gateway's published endpoints",
+                "description": "Generated from the endpoints of every public, active API product. Never contains a source location. Readable without authentication.",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{id}/openapi.json": {
+            "get": {
+                "operationId": "gateway-open-api-product",
+                "summary": "The OpenAPI 3.1 document of one API product",
+                "description": "Generated from the product's endpoints, with schemas from OpenRegister for register endpoints and from the stored vendor document for imported ones. Readable without authentication for a public product; a private product needs an administrator or a consumer with an active subscription (403 `subscription_required` otherwise).",
+                "tags": [
+                    "product-subscriptions"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The product's uuid or productSlug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
         }
     },
     "components": {

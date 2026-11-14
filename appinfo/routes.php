@@ -599,6 +599,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		// OpenAPI import and publish (openspec/changes/gateway-openapi-import-and-publish).
+		// /api/openapi.json stays the app's own API contract; the gateway's published
+		// document has its own path. Import is admin-only (#[AuthorizedAdminSetting]);
+		// both documents are public routes, a private product's checked in the controller.
+		['name' => 'openApiImport#preview', 'url' => '/api/openapi/import/preview', 'verb' => 'POST'],
+		['name' => 'openApiImport#import', 'url' => '/api/openapi/import', 'verb' => 'POST'],
+		['name' => 'gatewayOpenApi#gateway', 'url' => '/api/gateway/openapi.json', 'verb' => 'GET'],
+		['name' => 'gatewayOpenApi#product', 'url' => '/api/products/{id}/openapi.json', 'verb' => 'GET'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
