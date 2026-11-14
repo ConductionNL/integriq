@@ -12651,6 +12651,177 @@
         "agentId": "demo-agent",
         "at": "2026-03-01T09:04:20+00:00",
         "durationSeconds": 252
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "demo-sharepoint-publications-source"
+        },
+        "slug": "demo-sharepoint-publications-source",
+        "name": "SharePoint publications (Gereed (demo))",
+        "description": "Microsoft Graph for the SharePoint library folder whose subfolders become draft publications. The secret stays in the credential broker; this source holds only a reference to it. Demo: points at no real tenant and is disabled; the canned Graph answer below shows the folder listing it reads (two dossiers).",
+        "type": "api",
+        "location": "https://graph.microsoft.com/v1.0",
+        "isEnabled": false,
+        "configuration": {
+          "authentication": {
+            "credentialRef": {
+              "credentialId": "5d3a0000-0000-4000-8000-000000000001"
+            }
+          },
+          "headers": {
+            "Accept": "application/json"
+          },
+          "siteId": "example.sharepoint.com,demo-site,demo-web",
+          "driveId": "b!woo-dossiers",
+          "folderId": "01GEREED",
+          "mock": true,
+          "mockResponse": {
+            "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#drives('b!woo-dossiers')/items('01GEREED')/children",
+            "value": [
+              {
+                "id": "01WOO2026014",
+                "name": "Woo-2026-014",
+                "webUrl": "https://example.sharepoint.com/sites/woo-verzoeken/Dossiers/Gereed/Woo-2026-014",
+                "folder": {
+                  "childCount": 2
+                },
+                "parentReference": {
+                  "driveId": "b!woo-dossiers",
+                  "id": "01GEREED",
+                  "path": "/drives/b!woo-dossiers/root:/Gereed"
+                },
+                "listItem": {
+                  "fields": {
+                    "Title": "Besluit op het Woo-verzoek over de herinrichting van het Stationsplein",
+                    "Summary": "Besluit en inventarislijst bij het verzoek van 3 september 2026.",
+                    "Description": "Openbaarmaking van de stukken over de herinrichting.",
+                    "publicatiedatum": "2026-10-01T00:00:00Z"
+                  }
+                }
+              },
+              {
+                "id": "01WOO2026015",
+                "name": "Woo-2026-015",
+                "webUrl": "https://example.sharepoint.com/sites/woo-verzoeken/Dossiers/Gereed/Woo-2026-015",
+                "folder": {
+                  "childCount": 1
+                },
+                "parentReference": {
+                  "driveId": "b!woo-dossiers",
+                  "id": "01GEREED",
+                  "path": "/drives/b!woo-dossiers/root:/Gereed"
+                },
+                "listItem": {
+                  "fields": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "demo-sharepoint-folder-to-publication"
+        },
+        "slug": "demo-sharepoint-folder-to-publication",
+        "name": "SharePoint folder to publication (Gereed (demo))",
+        "description": "One dossier folder to one draft publication: the title column, else the folder name; summary and description from their columns when filled; the chosen catalogue; the folder's web address as its source; every file in the folder as an attachment. No publication date: an editor publishes.",
+        "version": "1.0.0",
+        "passThrough": false,
+        "mapping": {
+          "title": "{{ listItem.fields.Title|default(name) }}",
+          "summary": "{{ listItem.fields.Summary|default('') }}",
+          "description": "{{ listItem.fields.Description|default('') }}",
+          "catalog": "demo-woo-catalogus",
+          "source": "{{ webUrl|default('') }}",
+          "attachments": "[{% for doc in documents.value|default([]) %}{% if doc.file is defined %}{% if not loop.first %},{% endif %}{\"filename\": {{ doc.name|json_encode|raw }}, \"endpoint\": {{ ('/drives/' ~ (doc.parentReference.driveId|default(parentReference.driveId|default(''))) ~ '/items/' ~ doc.id ~ '/content')|json_encode|raw }}}{% endif %}{% endfor %}]"
+        },
+        "unset": [],
+        "cast": {
+          "summary": "unsetIfValue==",
+          "description": "unsetIfValue==",
+          "source": "unsetIfValue==",
+          "attachments": "jsonToArray"
+        }
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "rule",
+          "slug": "demo-sharepoint-publication-documents"
+        },
+        "slug": "demo-sharepoint-publication-documents",
+        "name": "Attach SharePoint documents (Gereed (demo))",
+        "description": "Fetches every file of a dossier folder through the Graph source and attaches it to the publication object. It runs inside the synchronization, so a cron run keeps the files; nothing is written to anyone's Files folder.",
+        "version": "1.0.0",
+        "action": "create",
+        "timing": "after",
+        "conditions": {
+          "==": [
+            1,
+            1
+          ]
+        },
+        "type": "fetch_file",
+        "configuration": {
+          "fetch_file": {
+            "source": "demo-sharepoint-publications-source",
+            "filePath": "attachments",
+            "method": "GET",
+            "sourceConfiguration": []
+          }
+        },
+        "order": 0
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "demo-sharepoint-publications-pull"
+        },
+        "slug": "demo-sharepoint-publications-pull",
+        "name": "SharePoint to publications (Gereed (demo))",
+        "description": "Lists the subfolders of one SharePoint library folder and writes each as a draft publication with its files.",
+        "version": "1.0.0",
+        "sourceId": "demo-sharepoint-publications-source",
+        "sourceType": "api",
+        "sourceTargetMapping": "demo-sharepoint-folder-to-publication",
+        "sourceConfig": {
+          "endpoint": "/drives/b%21woo-dossiers/items/01GEREED/children",
+          "query": {
+            "$expand": "listItem($expand=fields)"
+          },
+          "resultsPosition": "value",
+          "idPosition": "id",
+          "usesPagination": "true",
+          "paginationMode": "nextLink",
+          "requiresApproval": true,
+          "extraDataConfigs": [
+            {
+              "staticEndpoint": "/drives/b%21woo-dossiers/items/{{ originId }}/children",
+              "keyToSetExtraData": "documents",
+              "mergeExtraData": "true"
+            }
+          ]
+        },
+        "conditions": [
+          {
+            "!!": [
+              {
+                "var": "folder"
+              }
+            ]
+          }
+        ],
+        "actions": [
+          "demo-sharepoint-publication-documents"
+        ],
+        "targetId": "publication/publication",
+        "targetType": "register/schema"
       }
     ]
   }

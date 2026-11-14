@@ -116,7 +116,8 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 	 * @param array<string,mixed> $oas The OAS document (must contain `components`).
 	 *
 	 * @return array<string, array<int,array<string,mixed>>> Keys: creates, updates, collisions,
-	 *                                                       unresolvedReferences, credentialsNeedingReentry.
+	 *                                                       unresolvedReferences, credentialsNeedingReentry,
+	 *                                                       and deprecations when an entity declares one.
 	 *
 	 * @throws InvalidArgumentException When the document has no top-level `components` key (mirrors importConfiguration()).
 	 *
@@ -180,6 +181,8 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 			$run->result['unresolvedReferences'][] = $unresolved;
 		}
 
+		$this->recordDeprecation(run: $run, entity: $entity);
+
 		if ($entity['type'] === 'source') {
 			$missing = $this->missingCredentialFields(payload: $entity['payload']);
 			if (count($missing) > 0) {
@@ -192,6 +195,54 @@ class ConfigurationImportPreviewService implements ConfigurationImportPreviewSer
 		}
 
 	}//end previewEntity()
+
+	/**
+	 * Add the entity's deprecation, when it declares one, to the preview's `deprecations`.
+	 *
+	 * @param ConfigurationImportPreviewRun                                     $run    The preview being built.
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
+	 */
+	private function recordDeprecation(ConfigurationImportPreviewRun $run, array $entity): void {
+		$deprecation = $this->deprecationOf(entity: $entity);
+		if ($deprecation !== null) {
+			$run->result['deprecations'][] = $deprecation;
+		}
+	}//end recordDeprecation()
+
+	/**
+	 * The deprecation an entity declares, so the import warns before it is written.
+	 *
+	 * A deprecated template carries `deprecated: {replacedBy, reason}` (a
+	 * string is read as the replacement); the preview only gains its
+	 * `deprecations` list when an entity declares one.
+	 *
+	 * @param array{type: string, slug: string, payload: array<string, mixed>} $entity The entity's schema, slug and payload.
+	 *
+	 * @return array{type: string, slug: string, replacedBy: string, reason: string}|null
+	 *
+	 * @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-the-legacy-sharepoint-woo-template-is-marked-deprecated-req-sppi-003
+	 */
+	private function deprecationOf(array $entity): ?array {
+		$deprecated = ($entity['payload']['deprecated'] ?? null);
+		if (is_string($deprecated) === true && trim($deprecated) !== '') {
+			$deprecated = ['replacedBy' => $deprecated];
+		}
+
+		if (is_array($deprecated) === false || $deprecated === []) {
+			return null;
+		}
+
+		return [
+			'type' => $entity['type'],
+			'slug' => $entity['slug'],
+			'replacedBy' => trim((string)($deprecated['replacedBy'] ?? '')),
+			'reason' => trim((string)($deprecated['reason'] ?? '')),
+		];
+	}//end deprecationOf()
 
 	/**
 	 * Add one entity to the creates, updates or collisions of the preview.

@@ -7971,6 +7971,102 @@
                 }
             }
         },
+        "/sharepoint/publication-intake": {
+            "post": {
+                "operationId": "sharepoint-setup-intake",
+                "summary": "Save a SharePoint to publication setup",
+                "description": "Creates one source, one mapping, one fetch_file rule and one synchronization from the `sharepoint-publications` set through the configuration import, filled with the credential, site, library, folder, catalogue and target the administrator picked. The source holds a broker reference and no secret; `requiresApproval` makes the first run pause for approval. Integriq administrators only.",
+                "tags": [
+                    "sharepoint"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "credentialId",
+                                    "siteId",
+                                    "driveId",
+                                    "catalog",
+                                    "register",
+                                    "schema"
+                                ],
+                                "properties": {
+                                    "credentialId": {
+                                        "type": "string",
+                                        "description": "The brokered credential's uuid."
+                                    },
+                                    "siteId": {
+                                        "type": "string",
+                                        "description": "The Graph site id."
+                                    },
+                                    "driveId": {
+                                        "type": "string",
+                                        "description": "The document library id."
+                                    },
+                                    "folderId": {
+                                        "type": "string",
+                                        "description": "The folder whose subfolders become publications; the library root when empty."
+                                    },
+                                    "folderName": {
+                                        "type": "string",
+                                        "description": "The folder's name, shown in the created objects' names."
+                                    },
+                                    "catalog": {
+                                        "type": "string",
+                                        "description": "The catalogue the publications are written into."
+                                    },
+                                    "register": {
+                                        "type": "string",
+                                        "description": "The target register."
+                                    },
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The target schema."
+                                    },
+                                    "requiresApproval": {
+                                        "type": "boolean",
+                                        "description": "Pause each run for approval before it writes."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The created objects by component.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/sources/logs": {
             "get": {
                 "operationId": "sources-logs",

@@ -7932,6 +7932,26 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	}//end pagedFetchExceedsMemory()
 
 	/**
+	 * Whether the answer pages by a next link: it carries a `next` key, or the
+	 * synchronization declares `paginationMode: nextLink` (Microsoft Graph), whose
+	 * answer carries its next page as `@odata.nextLink` and has none on its last
+	 * page, where a page number would refetch the first page
+	 * (connectors-sharepoint-publication-intake).
+	 *
+	 * @param array $result          The answer of the call.
+	 * @param array $synchronization The synchronization.
+	 *
+	 * @return bool
+	 */
+	private function pagesByNextLink(array $result, array $synchronization): bool {
+		if (array_key_exists('next', $result) === true) {
+			return true;
+		}
+
+		return strtolower(trim((string)($synchronization['sourceConfig']['paginationMode'] ?? ''))) === 'nextlink';
+	}//end pagesByNextLink()
+
+	/**
 	 * Gets information for the next page in pagination.
 	 *
 	 * This method determines the next page URL and configuration based on the current
@@ -7961,7 +7981,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		// Determine pagination method if not already known.
-		if ($usesNextEndpoint === null && array_key_exists('next', $result) === true) {
+		if ($usesNextEndpoint === null && $this->pagesByNextLink(result: $result, synchronization: $synchronization) === true) {
 			$usesNextEndpoint = true;
 		}
 
@@ -9936,7 +9956,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @return string|null The URL for the next page of results, or null if there is no next page.
 	 */
 	public function getNextlinkFromCall(array $body): ?string {
-		return $body['next'] ?? null;
+		return $body['next'] ?? $body['@odata.nextLink'] ?? null;
 	}//end getNextlinkFromCall()
 
 	/**

@@ -9,8 +9,8 @@ Kind: code. Size M. Rows `opencatalogi:int-sharepoint` and
 - **acceptance_criteria**:
   - GIVEN the Graph fixture of two dossiers WHEN the synchronization runs THEN two publications are written with titles and a `source` reference and no `publicationDate`
   - GIVEN a renamed folder in the fixture WHEN it runs again THEN the same publication gets the new title
-- [ ] Implement
-- [ ] Test (PHPUnit on the mapping against the fixture; the set passes the install guard)
+- [x] Implement
+- [x] Test (PHPUnit on the mapping against the fixture; the set passes the install guard)
 
 ### Task 2: Documents attached in a cron run
 - **spec_ref**: openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-each-dossier-folder-becomes-a-draft-publication-with-its-documents-req-sppi-002
@@ -18,8 +18,8 @@ Kind: code. Size M. Rows `opencatalogi:int-sharepoint` and
 - **acceptance_criteria**:
   - GIVEN a run with no session and an acting user recorded on the source WHEN documents are fetched THEN each is attached to its publication object
   - GIVEN the same run WHEN it completes THEN no file exists in any user's `OpenConnector SharePoint Documents` folder
-- [ ] Implement
-- [ ] Test (integration test running the synchronization without a session)
+- [x] Implement
+- [x] Test (integration test running the synchronization without a session)
 
 ### Task 3: The Graph lookup route
 - **spec_ref**: openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001
@@ -36,7 +36,7 @@ Kind: code. Size M. Rows `opencatalogi:int-sharepoint` and
 - **acceptance_criteria**:
   - GIVEN the four choices made WHEN the administrator saves THEN one source, one synchronization and one mapping are created through the configuration import
   - GIVEN "Review before import" on WHEN the first run starts THEN it pauses for approval
-- [ ] Implement
+- [x] Implement
 - [ ] Test (`tests/e2e/sharepoint-publications.spec.ts` against the mock Graph)
 
 ### Task 5: Deprecate the legacy template and seed a demo
@@ -45,7 +45,7 @@ Kind: code. Size M. Rows `opencatalogi:int-sharepoint` and
 - **acceptance_criteria**:
   - GIVEN the import screen WHEN the legacy template is chosen THEN a deprecation warning names the new set
   - GIVEN demo data WHEN the Synchronizations page opens THEN a mock SharePoint to publication synchronization is listed
-- [ ] Implement
+- [x] Implement
 - [ ] Test (`tests/e2e/sharepoint-publications.spec.ts`)
 
 ## Verification
