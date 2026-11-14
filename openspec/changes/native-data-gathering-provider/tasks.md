@@ -8,16 +8,27 @@
 
 ## Contract and boundary (spec)
 
-- [ ] Confirm the gather contract shape against the shipped `tenderned.json`
+- [x] Confirm the gather contract shape against the shipped `tenderned.json`
   bundle (Source + Mapping×2 + Synchronization + Job; `targetType:
   "register/schema"`, `targetId: "spectr/tender"`) and against
-  `SynchronizationService` / `JobService` / `Cron/JobTask` at HEAD
-- [ ] Confirm the Integriq-vs-leaf split against OpenRegister
+  `SynchronizationService` / `JobService` / `Cron/JobTask` at HEAD — confirmed
+  and enforced by `tests/Unit/Settings/GatherContractTest.php` for all ten
+  Wave-0 fragments (register/schema target, own Source and Mappings, Job via
+  `SynchronizationAction`); the cron class lives at
+  `lib/BackgroundJob/JobTask.php` (a `TimedJob`), not `lib/Cron/`
+- [x] Confirm the Integriq-vs-leaf split against OpenRegister
   `integration-leaf-foundation` and `object-source-providers` (transport-only
-  source = no Synchronization + no Job; leaf = per-object live read)
-- [ ] Confirm the flow-reaction seam: OpenRegister emits object-created/updated
+  source = no Synchronization + no Job; leaf = per-object live read) —
+  OpenRegister main carries `Service/Integration/IntegrationProvider` and
+  `Service/ObjectSource/ObjectSourceProvider`; `GatherContractTest` asserts the
+  BRP/KvK/xWiki seeds ship no Synchronization or Job and no shipped
+  Synchronization gathers from them
+- [x] Confirm the flow-reaction seam: OpenRegister emits object-created/updated
   events on write; or#2068 trigger set consumes them; no gather-side flow-engine
-  dependency
+  dependency — gathered rows are written through OpenRegister's
+  `ObjectService::saveObject` (which raises `ObjectCreatedEvent` /
+  `ObjectUpdatedEvent`); `GatherContractTest` asserts JobTask, JobService,
+  SynchronizationAction and SynchronizationService import no flow-engine class
 
 ## Wave 0 — formalize the ten live-verified connectors as register.d fragments
 
@@ -125,16 +136,18 @@
 
 ## Out of scope (stay Python)
 
-- [ ] Document that the analytics/scoring scripts (`sync_adoption_metrics.py`,
+- [x] Document that the analytics/scoring scripts (`sync_adoption_metrics.py`,
   relevance/classification, `run_sync.py` orchestration) are NOT ingestion and
   remain scheduled Python jobs (earlier routing decision) — no Integriq
   connector for these
-- [ ] Document the dead tendrils (croatia native NIAS login-wall; dead legacy
-  APIs) as not-addressable, per `spectr/connectors/IMPORT.md`
+- [x] Document the dead tendrils (croatia native NIAS login-wall; dead legacy
+  APIs) as not-addressable, per `spectr/connectors/IMPORT.md` — both in
+  `docs/features/data-gathering.md`, "What stays outside Integriq"
 
 ## Validation
 
 - [x] `openspec validate native-data-gathering-provider --strict` clean
   (re-confirmed on the Wave-0 landing branch)
-- [ ] Cross-check no overlap with or#2067 / or#2068 / or#2070 / or#2071:
-  this change adds no flow node, trigger, or runtime
+- [x] Cross-check no overlap with or#2067 / or#2068 / or#2070 / or#2071:
+  this change adds no flow node, trigger, or runtime — it adds connector
+  fragments, a contract test and a feature page only
