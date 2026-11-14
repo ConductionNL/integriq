@@ -218,7 +218,8 @@ class OsoServiceTest extends TestCase {
 	}//end testTranslationFailureNeverPersistsARecord()
 
 	/**
-	 * receiveImport() persists an import record and dispatches OsoDossierReceivedEvent.
+	 * receiveImport() persists an import record and dispatches OsoDossierReceivedEvent
+	 * carrying the categories as sent, the attachment references and the draft profile.
 	 *
 	 * @return void
 	 */
@@ -231,6 +232,13 @@ class OsoServiceTest extends TestCase {
 		$this->assertInstanceOf(OsoDossierReceivedEvent::class, $event);
 		$this->assertSame('12AB', $event->getSourceSchoolBrin());
 		$this->assertSame('eck-id-seed-001', $event->getLearnerEckId());
+		$this->assertSame(['basisgegevens', 'onderwijskundig-rapport'], array_column($event->getCategories(), 'category'));
+		$this->assertSame([true, false], array_column($event->getCategories(), 'included'));
+		$this->assertSame(['nc:files/oso/onderwijskundig-rapport.pdf'], $event->getAttachmentRefs());
+		$this->assertSame(
+			['givenName' => 'Fatima', 'familyName' => 'El Amrani', 'birthDate' => '2015-04-12', 'eckId' => 'eck-id-seed-001', 'schoolId' => '12AB'],
+			$event->getDraftProfile()
+		);
 
 		$saved = $this->saved[OsoService::SCHEMA_MESSAGE][0]['object'];
 		$this->assertSame('import', $saved['direction']);

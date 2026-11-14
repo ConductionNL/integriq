@@ -1,0 +1,53 @@
+[
+	{
+		"id": 100231,
+		"number": "100231",
+		"status": "refunded",
+		"currency": "EUR",
+		"prices_include_tax": true,
+		"date_created_gmt": "2026-09-14T09:12:04",
+		"date_modified_gmt": "2026-09-20T14:02:11",
+		"date_paid_gmt": "2026-09-14T09:12:31",
+		"discount_total": "0.00",
+		"discount_tax": "0.00",
+		"shipping_total": "4.09",
+		"shipping_tax": "0.86",
+		"total": "22.85",
+		"total_tax": "2.34",
+		"billing": {
+			"first_name": "J.",
+			"last_name": "Bakker",
+			"company": "",
+			"address_1": "Oudegracht 120",
+			"address_2": "",
+			"city": "Utrecht",
+			"postcode": "3511 AW",
+			"country": "NL",
+			"email": "j.bakker@example.nl",
+			"phone": ""
+		},
+		"payment_method": "mollie_wc_gateway_ideal",
+		"payment_method_title": "iDEAL",
+		"transaction_id": "tr_example0001",
+		"line_items": [
+			{
+				"id": 41,
+				"name": "Earl Grey los 250 g",
+				"sku": "EG-250",
+				"quantity": 2,
+				"subtotal": "16.42",
+				"subtotal_tax": "1.48",
+				"total": "16.42",
+				"total_tax": "1.48",
+				"price": 8.211009
+			}
+		],
+		"refunds": [
+			{
+				"id": 100240,
+				"reason": "Damaged in transit",
+				"total": "-22.85"
+			}
+		]
+	}
+]

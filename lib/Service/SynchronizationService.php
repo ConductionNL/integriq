@@ -2450,7 +2450,14 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	): ?array {
 		$serializedObject = $this->extendInternBeforeConditions(synchronization: $synchronization, object: $object);
 		if (self::conditionsHold(conditions: ($synchronization['conditions'] ?? []), data: (array)$serializedObject) === false) {
-			return null;
+			return $this->withdrawWhenConditionsStopHolding(
+				synchronization: $synchronization,
+				object: $serializedObject,
+				log: $log,
+				flowToken: $flowToken,
+				isTest: $isTest,
+				trace: $trace
+			);
 		}
 
 		// Keep the working object in sync with pre-condition enrichment so mapping
@@ -2493,6 +2500,60 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $this->internContractResult(result: $result, isTest: $isTest);
 	}//end synchronizeInternToExtern()
+
+	/**
+	 * Remove an object from the target once the synchronization's conditions stop holding for it.
+	 *
+	 * Opt-in per synchronization with `targetConfig.deleteWhenConditionsFail:
+	 * true`. Without it an object whose conditions fail is skipped, as before.
+	 * With it, an object that was pushed earlier (its contract names a target
+	 * id) is deleted at the target through the synchronization's normal delete
+	 * path, so an approved leave request that is later rejected removes the
+	 * absence it created. An object never pushed is still skipped.
+	 *
+	 * @param array                      $synchronization The synchronization.
+	 * @param mixed                      $object          The object, serialized, after extend-before-conditions.
+	 * @param SynchronizationRunLog      $log             The run log.
+	 * @param FlowToken                  $flowToken       The flow token.
+	 * @param bool|null                  $isTest          Whether this is a test run (no persist).
+	 * @param ExecutionTraceContext|null $trace           The active execution trace context.
+	 *
+	 * @return array|null The contract after the delete, or null when nothing was withdrawn.
+	 *
+	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-only-approved-leave-becomes-an-untis-teacher-absence-req-hrs-002
+	 */
+	private function withdrawWhenConditionsStopHolding(
+		array $synchronization,
+		mixed $object,
+		SynchronizationRunLog $log,
+		FlowToken &$flowToken,
+		?bool $isTest,
+		?ExecutionTraceContext $trace,
+	): ?array {
+		if ((($synchronization['targetConfig']['deleteWhenConditionsFail'] ?? false) === true) === false) {
+			return null;
+		}
+
+		$contract = $this->findInternContract(synchronization: $synchronization, originId: $this->internOriginId(object: $object));
+		if (is_array($contract) === false || empty($contract['targetId']) === true) {
+			return null;
+		}
+
+		$object = (array)$object;
+		$result = $this->synchronizeContract(
+			synchronizationContract: $contract,
+			synchronization: $synchronization,
+			flowToken: $flowToken,
+			object: $object,
+			isTest: $isTest,
+			force: true,
+			log: $log,
+			mutationType: 'delete',
+			trace: $trace
+		);
+
+		return $this->internContractResult(result: $result, isTest: $isTest);
+	}//end withdrawWhenConditionsStopHolding()
 
 	/**
 	 * What an intern-to-extern run answers for a contract synchronization's result.
@@ -6186,6 +6247,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		[$registerId, $schemaId] = array_pad(explode(separator: '/', string: (string)($synchronization['targetId'] ?? '')), 2, '');
+		// System read, unscoped: the engine reads the target its own contract points at, during a run that may have no user.
 		$targetObject = $this->orObjectService->find(
 			id: (string)$contract['targetId'],
 			register: $registerId,
@@ -11161,6 +11223,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	public function findRule(string $id): ?array {
 		try {
+			// System read, unscoped: a synchronization resolves the rule it names, as the system (see the docblock).
 			$object = $this->orObjectService->find(
 				id: $id,
 				register: 'integriq',
