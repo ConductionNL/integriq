@@ -53,7 +53,7 @@ use RuntimeException;
  * @uses   \OCA\Integriq\Service\StufZkn\StufZknAcknowledgementBuilder
  * @uses   \OCA\Integriq\Service\StufZkn\StufZdsResponseReader
  * @uses   \OCA\Integriq\Service\Stuf\StufXmlParser
- * @uses   \OCA\Integriq\Event\StufZdsCaseConcludedEvent
+ * @covers \OCA\Integriq\Event\StufZdsCaseConcludedEvent
  */
 class StufZdsConfirmationReceiverTest extends TestCase {
 
@@ -205,6 +205,7 @@ class StufZdsConfirmationReceiverTest extends TestCase {
 		$this->assertSame('dossiq', $event->getSourceApp());
 		$this->assertSame('case-42', $event->getCorrelationId());
 		$this->assertSame('creeerZaak', $event->getOperation());
+		$this->assertSame(1, $event->getAttempts(), 'The event carries the attempts the row recorded');
 		$this->assertTrue($event->getResult()['success']);
 		$this->assertSame('Bv01', $event->getResult()['confirmation']);
 		$this->assertSame('ZAAK-2026-7', $event->getResult()['caseIdentification']);

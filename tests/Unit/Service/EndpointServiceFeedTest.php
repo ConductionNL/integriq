@@ -133,7 +133,7 @@ class EndpointServiceFeedTest extends TestCase {
 			null,
 			null,
 			null,
-			new FeedRequestHandler($this->objects),
+			feedRequestHandler: new FeedRequestHandler($this->objects),
 		);
 	}//end setUp()
 

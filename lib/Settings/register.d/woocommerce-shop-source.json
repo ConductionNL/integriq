@@ -1,0 +1,133 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-webshop-orders). The dormant WooCommerce shop template, its mapping onto shillinq's WebshopOrder and an incremental synchronization of the shop's orders. No code: the synchronization engine does the work.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "woocommerce-shop"
+        },
+        "name": "WooCommerce shop",
+        "description": "A WooCommerce web shop (WooCommerce REST API v3, https://woocommerce.github.io/woocommerce-rest-api-docs/). Orders: GET <shop>/wp-json/wc/v3/orders, paged by `page` and `per_page` (at most 100), changed-since filter `modified_after`. Auth: a REST API consumer key and secret over HTTP Basic, the secret held by the credential broker. Set the location to your shop's address followed by /wp-json/wc/v3, the consumer key, and the credential, then enable.",
+        "type": "api",
+        "location": "",
+        "auth": "basic",
+        "documentation": "https://woocommerce.github.io/woocommerce-rest-api-docs/#list-all-orders",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "authentication": {
+            "username": "",
+            "password": {
+              "credentialRef": {
+                "credentialName": "woocommerce-shop-consumer-secret"
+              }
+            }
+          },
+          "auth": [
+            "{{ source.configuration.authentication.username }}",
+            "{{ source.configuration.authentication.password }}"
+          ]
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "woocommerce-shop-to-webshop-order"
+        },
+        "name": "WooCommerce order to shillinq WebshopOrder",
+        "description": "One WooCommerce order as shillinq's WebshopOrder (shillinq sales-webshop-orders, design D2). Fill `channelId` and `administrationId` with the ids of this shop's WebshopChannel in shillinq (Sales, Web shops): the synchronization does not run while either is empty. The mapping never writes shillinq's own fields (`intakeState`, `arInvoiceId`, `creditNoteId`, `refusalReason`). `payment.status` is paid, pending, refunded or cancelled; a later fetch of the same order updates it on the same object.",
+        "mapping": {
+          "channelId": "",
+          "administrationId": "",
+          "shopOrderId": "{{ number|default(id) }}",
+          "orderedAt": "{{ date_created_gmt ~ 'Z' }}",
+          "buyer.type": "{{ billing.company|default('') is empty ? 'consumer' : 'business' }}",
+          "buyer.name": "{{ (billing.first_name|default('') ~ ' ' ~ billing.last_name|default(''))|trim }}",
+          "buyer.email": "{{ billing.email|default('') }}",
+          "buyer.companyName": "{{ billing.company|default('') }}",
+          "buyer.vatId": "",
+          "buyer.kvkNumber": "",
+          "buyer.address": "{{ ([billing.address_1|default(''), billing.address_2|default(''), (billing.postcode|default('') ~ ' ' ~ billing.city|default(''))|trim]|filter(p => p is not empty))|join(', ') }}",
+          "buyer.countryCode": "{{ billing.country|default('')|upper }}",
+          "currency": "{{ currency|upper }}",
+          "pricesIncludeVat": "{{ prices_include_tax ? 'true' : 'false' }}",
+          "lines": "{{ line_items|map(l => {sku: l.sku|default(''), description: l.name, quantity: l.quantity, unitPrice: (l.quantity > 0 ? ((prices_include_tax ? l.total + l.total_tax : l.total) / l.quantity) : 0)|round(2), vatRate: (l.total > 0 ? (l.total_tax / l.total * 100) : 0)|round(0)})|json_encode }}",
+          "shipping": "{{ (prices_include_tax ? shipping_total + shipping_tax : shipping_total)|round(2) }}",
+          "discountTotal": "{{ (prices_include_tax ? discount_total + discount_tax : discount_total)|round(2) }}",
+          "totals.net": "{{ (total - total_tax)|round(2) }}",
+          "totals.vat": "{{ total_tax }}",
+          "totals.gross": "{{ total }}",
+          "payment.status": "{{ status == 'refunded' ? 'refunded' : (status == 'cancelled' ? 'cancelled' : (date_paid_gmt is not empty ? 'paid' : 'pending')) }}",
+          "payment.method": "{{ payment_method_title|default(payment_method)|default('') }}",
+          "payment.providerPaymentId": "{{ transaction_id|default('') }}"
+        },
+        "unset": [],
+        "cast": {
+          "pricesIncludeVat": "bool",
+          "lines": "jsonToArray",
+          "shipping": "float",
+          "discountTotal": "float",
+          "totals.net": "float",
+          "totals.vat": "float",
+          "totals.gross": "float"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "woocommerce-shop-orders"
+        },
+        "name": "WooCommerce orders to shillinq",
+        "description": "Writes the WooCommerce shop's orders into shillinq as one WebshopOrder each, incrementally: each run asks only for orders changed since the last complete run (`modified_after`, read from each order's `date_modified_gmt`), and the cursor moves only after a complete fetch. Each order is kept on its shop order id, so a later refund or cancellation updates the payment status of the WebshopOrder already written and never makes a second one. Nothing is deleted. Off until the source and the mapping's channel and administration ids are filled.",
+        "sourceId": "woocommerce-shop",
+        "sourceType": "api",
+        "sourceTargetMapping": "woocommerce-shop-to-webshop-order",
+        "sourceConfig": {
+          "requiredMappingValues": [
+            {
+              "mapping": "woocommerce-shop-to-webshop-order",
+              "key": "channelId",
+              "name": "the shillinq WebshopChannel id of this WooCommerce shop"
+            },
+            {
+              "mapping": "woocommerce-shop-to-webshop-order",
+              "key": "administrationId",
+              "name": "the shillinq administration id of this WooCommerce shop"
+            }
+          ],
+          "endpoint": "/orders",
+          "query": {
+            "modified_after": "{{ cursor }}",
+            "orderby": "modified",
+            "order": "asc",
+            "per_page": 100,
+            "dates_are_gmt": "true"
+          },
+          "idPosition": "id",
+          "resultsPosition": "_root",
+          "usesPagination": true,
+          "paginationMode": "page",
+          "paginationQuery": "page",
+          "pageSize": 100,
+          "cursorField": "date_modified_gmt"
+        },
+        "syncMode": "incremental",
+        "conditions": [],
+        "targetId": "shillinq/WebshopOrder",
+        "targetType": "register/schema",
+        "isEnabled": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
