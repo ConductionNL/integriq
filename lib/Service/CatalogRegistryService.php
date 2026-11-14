@@ -217,6 +217,21 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'icon' => 'MapMarkerOutline',
 		],
 		[
+			'slug' => 'adapter:digid-eherkenning-auth-adapter',
+			'name' => 'DigiD, eHerkenning and eIDAS login',
+			'description' => 'Signs residents and businesses in through DigiD, eHerkenning or eIDAS for an app such as portaliq, '
+				. 'which receives a signed pseudonymous envelope, never a BSN. Each organisation gets its own SAML Service Provider '
+				. 'or OIDC Relying Party registration, configured under Beheer > Authenticatie; this entry creates no configuration '
+				. 'of its own. Keys stay in Keepiq. Substantial is the lowest level accepted. Dormant until `idp_broker_enabled` is 1.',
+			'category' => 'Identity',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'idp_broker_enabled',
+			'sourceTemplateSlug' => '',
+			'standards' => ['SAML 2.0', 'OpenID Connect', 'DigiD', 'eHerkenning', 'eIDAS'],
+			'icon' => 'AccountKeyOutline',
+		],
+		[
 			'slug' => 'adapter:digikoppeling',
 			'name' => 'Digikoppeling',
 			'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '

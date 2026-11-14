@@ -66,7 +66,7 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 
 		$entries = $this->service(logger: $logger)->collect();
 
-		$this->assertSame('4eaf5a691cd1967719ba150e7cb6a9ffc08351b434bd5fc5d0afa90a10fbf0e6', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
+		$this->assertSame('2906e2a924b06198a31960b69d3cb1670e090b7e9f8f83a0235afea4c7b95d7f', hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)));
 
 	}//end testCollectIsUnchanged()
 
@@ -88,6 +88,30 @@ class CatalogRegistrySeedGoldenTest extends TestCase {
 		$this->assertSame('ecb-eurofxref-daily', $entries[0]['sourceTemplateSlug']);
 
 	}//end testTheEcbRatesAreListedUnderBank()
+
+	/**
+	 * The government login adapter is listed, gated on the broker flag, and
+	 * points to Beheer > Authenticatie instead of carrying a configuration
+	 * of its own (portal-idp-broker-config task 13).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-configuration-placement-follows-adr-017-rules-1-3-7
+	 */
+	public function testTheGovernmentLoginAdapterIsListedAndPointsToBeheer(): void {
+		$entries = array_values(array_filter(
+			$this->service()->collect(),
+			static fn (array $entry): bool => $entry['slug'] === 'adapter:digid-eherkenning-auth-adapter'
+		));
+
+		$this->assertCount(1, $entries);
+		$this->assertSame('adapter', $entries[0]['kind']);
+		$this->assertSame('flag-gated', $entries[0]['mechanism']);
+		$this->assertSame('idp_broker_enabled', $entries[0]['flagKey']);
+		$this->assertSame('', $entries[0]['sourceTemplateSlug']);
+		$this->assertStringContainsString('Beheer > Authenticatie', $entries[0]['description']);
+
+	}//end testTheGovernmentLoginAdapterIsListedAndPointsToBeheer()
 
 	/**
 	 * Every seed payload, and the misses, are as before.

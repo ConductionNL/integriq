@@ -143,8 +143,9 @@ the flag is `1`.
 - **acceptance_criteria**:
   - GIVEN the documentation page WHEN read THEN it walks an administrator through one registration per kind, says keys live in Keepiq, states the floor, and names Berichtenbox linkage as out of scope
   - GIVEN the catalogue entry WHEN opened THEN it links to *Beheer > Authenticatie* and creates no configuration of its own
-- [ ] Implement
+- [x] Implement
 - [ ] Test
+      > `docs/administrators/citizen-authentication.md` walks one SAML and one OIDC registration, says keys live in Keepiq, gives the metadata address, states the substantial floor and names Berichtenbox linkage as out of scope. The catalogue lists `adapter:digid-eherkenning-auth-adapter` (flag-gated on `idp_broker_enabled`, no source template) pointing to Beheer > Authenticatie; PHPUnit `CatalogRegistrySeedGoldenTest::testTheGovernmentLoginAdapterIsListedAndPointsToBeheer`. The docs build is not run: `docs/package-lock.json` is out of sync with `docs/package.json` on development (`npm ci` refuses), so it stays unticked.
 
 ## Not done, and named as not done
 
