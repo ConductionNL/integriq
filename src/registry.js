@@ -70,6 +70,7 @@ import {
 	openConfigurationImportHandler,
 	openGatewayCatalogueHandler,
 	openLinkSourceHandler,
+	openOpenApiImportHandler,
 	openPromotionHandler,
 	openRegistryLookupHandler,
 	previewDirectorySyncHandler,
@@ -125,6 +126,9 @@ export default {
 	// Sources page header action (statutory-gateways-and-frameworks): the
 	// gateway catalogue and where data goes.
 	openGatewayCatalogueHandler,
+	// Sources page header action (gateway-openapi-import-and-publish): import
+	// a vendor's OpenAPI document as a source and endpoints.
+	openOpenApiImportHandler,
 	// App connections page header action (connection-registry D9): open the
 	// link-a-source dialog via the modal bus.
 	openLinkSourceHandler,

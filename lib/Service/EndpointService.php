@@ -2655,7 +2655,7 @@ class EndpointService implements EndpointServiceInterface {
 		// never a dispatched request.
 		try {
 			$upstreamPath = $this->callService->renderEndpointPath(
-				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				endpoint: self::upstreamTemplate(endpointData: $endpointData),
 				context: $this->buildUpstreamPathContext(
 					endpointData: $endpointData,
 					request: $request,
@@ -2862,6 +2862,31 @@ class EndpointService implements EndpointServiceInterface {
 		);
 
 	}//end buildUpstreamPathContext()
+
+	/**
+	 * The upstream path template an `api` endpoint proxies to.
+	 *
+	 * `endpoint` is both the gateway route (the routing fields are derived
+	 * from it) and, by default, the upstream path. An endpoint whose gateway
+	 * route differs from the upstream path, such as one imported from an
+	 * OpenAPI document under a prefix, names the upstream path in
+	 * `upstreamPath`; without it nothing changes.
+	 *
+	 * @param array<string,mixed> $endpointData The endpoint's object data.
+	 *
+	 * @return string The template.
+	 *
+	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+	 */
+	public static function upstreamTemplate(array $endpointData): string {
+		$upstream = ($endpointData['upstreamPath'] ?? null);
+		if (is_string($upstream) === true && trim($upstream) !== '') {
+			return $upstream;
+		}
+
+		return (string)($endpointData['endpoint'] ?? '');
+
+	}//end upstreamTemplate()
 
 	/**
 	 * Generates url based on available endpoints for the object type.

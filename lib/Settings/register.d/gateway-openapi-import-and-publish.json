@@ -1,0 +1,26 @@
+{
+  "$comment": "ADR-037 register fragment (gateway-openapi-import-and-publish, REQ-OAPI-001). Deep-merges `openApiDocument` onto source: the vendor OpenAPI or Swagger document a source was imported from, kept so the published gateway document can reuse its operation schemas (decisions D2 and D3 of the change). Security schemes in it are stored as shapes only; no secret is read from it. Optional; a hand-made source has none. Also deep-merges `upstreamPath` onto endpoint: the path an `api` endpoint proxies to when it differs from its gateway route `endpoint`, as on an endpoint imported under a prefix. Optional; without it the proxy uses `endpoint` as before.",
+  "components": {
+    "schemas": {
+      "source": {
+        "properties": {
+          "openApiDocument": {
+            "type": "object",
+            "title": "Imported OpenAPI document",
+            "description": "The vendor OpenAPI 3.0/3.1 or Swagger 2.0 document this source was imported from. The published gateway document takes the request and response schemas of the source's imported endpoints from it; its servers are never published.",
+            "additionalProperties": true
+          }
+        }
+      },
+      "endpoint": {
+        "properties": {
+          "upstreamPath": {
+            "type": "string",
+            "title": "Upstream path",
+            "description": "For targetType api: the path on the source this endpoint proxies to, with optional {{param}} placeholders filled from the gateway route. Leave empty to proxy to the endpoint path itself."
+          }
+        }
+      }
+    }
+  }
+}
