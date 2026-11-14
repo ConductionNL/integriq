@@ -24,11 +24,13 @@
 namespace OCA\Integriq\Service;
 
 use DateTime;
+use DateTimeImmutable;
 use Exception;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJob;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -85,6 +87,20 @@ class JobService implements JobServiceInterface {
 	private int $successRetention;
 
 	/**
+	 * The calendar calculator for jobs whose `schedule.type` is `calendar`.
+	 *
+	 * @var JobCalendarSchedule
+	 */
+	private JobCalendarSchedule $calendar;
+
+	/**
+	 * The clock a calendar job's next slot is measured from; the system clock when null.
+	 *
+	 * @var ITimeFactory|null
+	 */
+	private ?ITimeFactory $timeFactory;
+
+	/**
 	 * JobService constructor.
 	 *
 	 * Initializes the job service with required dependencies for job execution
@@ -97,6 +113,8 @@ class JobService implements JobServiceInterface {
 	 * @param IUserSession $userSession User session manager.
 	 * @param IUserManager $userManager User manager for user operations.
 	 * @param IAppConfig $appConfig App config used to read global retention overrides.
+	 * @param JobCalendarSchedule|null $calendar The calendar calculator for calendar-scheduled jobs.
+	 * @param ITimeFactory|null $timeFactory The clock a calendar job's next slot is measured from.
 	 *
 	 * @psalm-param IJobList $jobList
 	 * @psalm-param ORObjectService $objectService
@@ -113,7 +131,11 @@ class JobService implements JobServiceInterface {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		IAppConfig $appConfig,
+		?JobCalendarSchedule $calendar = null,
+		?ITimeFactory $timeFactory = null,
 	) {
+		$this->calendar = ($calendar ?? new JobCalendarSchedule());
+		$this->timeFactory = $timeFactory;
 		// One resolver for every log writer: the configured value, else the
 		// default the job_log schema declares (platform-admin-defaults).
 		$retention = new RetentionSettings(appConfig: $appConfig);
@@ -575,7 +597,12 @@ class JobService implements JobServiceInterface {
 	private function recordJobRun(ObjectEntity $job, array $jobData, bool $forceRun, array $outcome): ObjectEntity {
 		$jobConfig = $jobData;
 		$jobData['lastRun'] = (new DateTime())->format('c');
-		if ($forceRun === false) {
+		if ($forceRun === false && $this->calendar->isCalendar(jobData: $jobConfig) === true) {
+			$jobData = $this->withCalendarNextRun(jobData: $jobData);
+			if ($this->isSingleRunJob(jobConfig: $jobConfig) === true && $outcome['exception'] === null) {
+				$jobData['isEnabled'] = false;
+			}
+		} else if ($forceRun === false) {
 			$jobData['nextRun'] = $this->calculateNextRun(jobConfig: $jobConfig, outcome: $outcome)->format('c');
 			if ($this->isSingleRunJob(jobConfig: $jobConfig) === true && $outcome['exception'] === null) {
 				$jobData['isEnabled'] = false;
@@ -599,6 +626,87 @@ class JobService implements JobServiceInterface {
 
 		return $logEntry;
 	}//end recordJobRun()
+
+	/**
+	 * A calendar job's data with its next slot and the fingerprint of the
+	 * schedule that slot was computed from.
+	 *
+	 * After a success and after a failure alike the next run is the first
+	 * calendar slot after now (D4): retrying on the next tick would turn a job
+	 * meant for seven o'clock into one that runs every five minutes. A calendar
+	 * with no slot at all leaves `nextRun` absent: the schema types it as a date-time.
+	 *
+	 * @param array $jobData The job's data.
+	 *
+	 * @return array The job's data with `nextRun` and `scheduleFingerprint` set.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function withCalendarNextRun(array $jobData): array {
+		$schedule = $jobData['schedule'];
+		$next = $this->calendar->nextRunAfter(after: $this->now(), calendar: $schedule);
+
+		unset($jobData['nextRun']);
+		if ($next !== null) {
+			$jobData['nextRun'] = $next->format('c');
+		}
+
+		$jobData['scheduleFingerprint'] = $this->calendar->fingerprint(schedule: $schedule);
+
+		return $jobData;
+	}//end withCalendarNextRun()
+
+	/**
+	 * Whether a calendar job's stored next run has to be computed first.
+	 *
+	 * True when the next run was never computed from this schedule: the job
+	 * has no fingerprint yet (created through OpenRegister's objects endpoint
+	 * or imported) or its schedule changed since (D3). A job whose fingerprint
+	 * matches and whose `nextRun` is empty has a calendar with no slot.
+	 *
+	 * @param array $jobData The job's data.
+	 *
+	 * @return boolean True when the next run must be computed before the job may run.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function calendarNeedsNextRun(array $jobData): bool {
+		return ($jobData['scheduleFingerprint'] ?? null) !== $this->calendar->fingerprint(schedule: $jobData['schedule']);
+	}//end calendarNeedsNextRun()
+
+	/**
+	 * Computes and saves a calendar job's next run without running it.
+	 *
+	 * @param ObjectEntity $job The job.
+	 * @param array $jobData The job's data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function scheduleCalendarJob(ObjectEntity $job, array $jobData): void {
+		$this->objectService->saveObject(
+			object: $this->withCalendarNextRun(jobData: $jobData),
+			register: 'integriq',
+			schema: 'job',
+			uuid: $job->getUuid()
+		);
+	}//end scheduleCalendarJob()
+
+	/**
+	 * The current moment.
+	 *
+	 * @return DateTimeImmutable Now, from the injected clock when there is one.
+	 *
+	 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-next-run-follows-the-calendar-after-success-and-after-failure-req-jcal-002
+	 */
+	private function now(): DateTimeImmutable {
+		if ($this->timeFactory !== null) {
+			return $this->timeFactory->now();
+		}
+
+		return new DateTimeImmutable();
+	}//end now()
 
 	/**
 	 * Checks whether a job runs only once.
@@ -935,6 +1043,27 @@ class JobService implements JobServiceInterface {
 		foreach ($jobs as $job) {
 			$jobData = $job->getObject();
 			$nextRun = ($jobData['nextRun'] ?? null);
+
+			// A calendar job without a next run, or whose calendar was edited,
+			// gets its next slot computed and saved; it does not run on this tick.
+			if ($this->calendar->isCalendar(jobData: $jobData) === true
+				&& $this->calendarNeedsNextRun(jobData: $jobData) === true
+			) {
+				try {
+					$this->scheduleCalendarJob(job: $job, jobData: $jobData);
+				} catch (\Throwable $e) {
+					// A malformed calendar or a failed save must not stop the
+					// remaining jobs of this pass.
+					unset($e);
+				}
+
+				continue;
+			}
+
+			// A calendar job whose calendar has no slot never runs on its own.
+			if ($this->calendar->isCalendar(jobData: $jobData) === true && empty($nextRun) === true) {
+				continue;
+			}
 
 			// Skip jobs that are not yet due.
 			if ($nextRun !== null && (new DateTime($nextRun)) > new DateTime()) {
