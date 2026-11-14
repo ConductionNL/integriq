@@ -144,6 +144,7 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 		'corporate-card-feed' => 'Bank',
 		'mollie-payments' => 'Payments',
 		'digipoort-sbr' => 'Tax filing',
+		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
 		'ecb-eurofxref-daily' => 'Bank',
 	];
 
