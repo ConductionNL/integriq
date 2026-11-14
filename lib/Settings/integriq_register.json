@@ -5050,7 +5050,7 @@
         "slug": "outbound_message",
         "title": "Outbound Message",
         "icon": "SendOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "authorization": {
           "create": [
             "digitale-post-verzenders"
@@ -5366,6 +5366,37 @@
             "type": "string",
             "description": "Who forwarded it",
             "title": "Forwarded By"
+          },
+          "recipientSelection": {
+            "type": "object",
+            "description": "The per-message recipient decision, when there was one: the standing recipients the calling app passed, the ones added for this message only, and the ones suppressed for this message only, each kept on its own",
+            "properties": {
+              "standing": {
+                "type": "array",
+                "description": "The standing recipients as the calling app passed them, with the required marker and what requires it",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Standing"
+              },
+              "added": {
+                "type": "array",
+                "description": "Recipients added for this message only. They are written nowhere else",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Added"
+              },
+              "suppressed": {
+                "type": "array",
+                "description": "Recipients suppressed for this message only. Each reads suppressed, carries the typed reason, the user and the time, and has no delivery state",
+                "items": {
+                  "type": "object"
+                },
+                "title": "Suppressed"
+              }
+            },
+            "title": "Recipient Selection"
           },
           "forwardedTo": {
             "type": "array",

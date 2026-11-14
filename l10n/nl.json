@@ -2282,7 +2282,19 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "%1$s is marked required, but the request does not say what requires it.": "%1$s is als verplicht gemarkeerd, maar het verzoek zegt niet wat dat vereist.",
+        "An added recipient has no address.": "Een toegevoegde ontvanger heeft geen adres.",
+        "The suppression names %1$s, who is not a recipient of this message.": "Het weglaten noemt %1$s, maar die is geen ontvanger van dit bericht.",
+        "%1$s cannot be left out of this message: %2$s": "%1$s kan niet uit dit bericht worden weggelaten: %2$s",
+        "Leaving %1$s out of this message needs a reason.": "Om %1$s uit dit bericht weg te laten is een reden nodig.",
+        "Recipient Selection": "Ontvangerskeuze",
+        "Recipients added for this message only. They are written nowhere else": "Ontvangers die alleen voor dit bericht zijn toegevoegd. Ze worden nergens anders vastgelegd",
+        "Recipients suppressed for this message only. Each reads suppressed, carries the typed reason, the user and the time, and has no delivery state": "Ontvangers die alleen voor dit bericht zijn weggelaten. Elk staat als weggelaten, met de ingetypte reden, de gebruiker en het tijdstip, en heeft geen afleverstatus",
+        "Standing": "Vaste ontvangers",
+        "Suppressed": "Weggelaten",
+        "The per-message recipient decision, when there was one: the standing recipients the calling app passed, the ones added for this message only, and the ones suppressed for this message only, each kept on its own": "De ontvangerskeuze voor dit ene bericht, als die er was: de vaste ontvangers die de aanroepende app doorgaf, de ontvangers die alleen voor dit bericht zijn toegevoegd en de ontvangers die alleen voor dit bericht zijn weggelaten, elk apart bewaard",
+        "The standing recipients as the calling app passed them, with the required marker and what requires it": "De vaste ontvangers zoals de aanroepende app ze doorgaf, met de markering verplicht en wat dat vereist"
     },
     "plurals": {}
 }

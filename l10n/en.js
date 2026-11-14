@@ -3536,7 +3536,19 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "%1$s is marked required, but the request does not say what requires it.": "%1$s is marked required, but the request does not say what requires it.",
+        "An added recipient has no address.": "An added recipient has no address.",
+        "The suppression names %1$s, who is not a recipient of this message.": "The suppression names %1$s, who is not a recipient of this message.",
+        "%1$s cannot be left out of this message: %2$s": "%1$s cannot be left out of this message: %2$s",
+        "Leaving %1$s out of this message needs a reason.": "Leaving %1$s out of this message needs a reason.",
+        "Recipient Selection": "Recipient Selection",
+        "Recipients added for this message only. They are written nowhere else": "Recipients added for this message only. They are written nowhere else",
+        "Recipients suppressed for this message only. Each reads suppressed, carries the typed reason, the user and the time, and has no delivery state": "Recipients suppressed for this message only. Each reads suppressed, carries the typed reason, the user and the time, and has no delivery state",
+        "Standing": "Standing",
+        "Suppressed": "Suppressed",
+        "The per-message recipient decision, when there was one: the standing recipients the calling app passed, the ones added for this message only, and the ones suppressed for this message only, each kept on its own": "The per-message recipient decision, when there was one: the standing recipients the calling app passed, the ones added for this message only, and the ones suppressed for this message only, each kept on its own",
+        "The standing recipients as the calling app passed them, with the required marker and what requires it": "The standing recipients as the calling app passed them, with the required marker and what requires it"
     },
     "nplurals=2; plural=(n != 1);"
 )

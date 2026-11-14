@@ -109,6 +109,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'outboundLog#retry', 'url' => '/api/outbound/messages/retry', 'verb' => 'POST', 'postfix' => 'bulk'],
 		['name' => 'outboundLog#forward', 'url' => '/api/outbound/messages/{id}/forward', 'verb' => 'POST'],
 		['name' => 'outboundLog#lastContact', 'url' => '/api/outbound/last-contact', 'verb' => 'GET'],
+		// One-off and suppressed recipients: the send screen's preview of who receives a message.
+		['name' => 'outboundRecipients#preview', 'url' => '/api/outbound/recipients/preview', 'verb' => 'POST'],
 
 		// Sender identity and deliverability
 		// (openspec/changes/outbound-sender-identity-and-deliverability). An
