@@ -104,4 +104,24 @@ class SmsProviderRegistry {
 	public function all(): array {
 		return $this->providers;
 	}//end all()
+
+	/**
+	 * Every binding with its display name and the configuration it needs, log first.
+	 *
+	 * @return list<array{providerId: string, name: string, configSchema: array<string, mixed>}> The descriptions.
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function describeAll(): array {
+		$described = [];
+		foreach ($this->providers as $id => $provider) {
+			$described[] = [
+				'providerId' => $id,
+				'name' => $provider->getProviderName(),
+				'configSchema' => $provider->getConfigSchema(),
+			];
+		}
+
+		return $described;
+	}//end describeAll()
 }//end class

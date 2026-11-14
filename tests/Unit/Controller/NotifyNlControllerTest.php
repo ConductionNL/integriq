@@ -336,6 +336,71 @@ class NotifyNlControllerTest extends TestCase {
 	}//end testSendFallsBackToTheServiceCategory()
 
 	/**
+	 * A named source reaches the dispatch service trimmed; a blank or non-string one is left out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function testSendPassesTheNamedSource(): void {
+		$this->request->method('getParams')->willReturnOnConsecutiveCalls(
+			['to' => '0612345678', 'sourceSlug' => ' sms-twee '],
+			['to' => '0612345678', 'sourceSlug' => '  '],
+			['to' => '0612345678', 'sourceSlug' => ['sms-twee']]
+		);
+		$message = new ObjectEntity();
+		$message->setObject([]);
+		$message->setUuid('sms-uuid-4');
+		$options = [];
+		$this->dispatchService->expects($this->exactly(3))->method('sendMessage')->willReturnCallback(
+			function (string $to, string $body, array $sent) use (&$options, $message): ObjectEntity {
+				$options[] = $sent;
+				return $message;
+			}
+		);
+
+		$this->controller->send();
+		$this->controller->send();
+		$this->controller->send();
+
+		$this->assertSame(
+			[
+				['category' => 'service', 'sourceSlug' => 'sms-twee'],
+				['category' => 'service'],
+				['category' => 'service'],
+			],
+			$options
+		);
+
+	}//end testSendPassesTheNamedSource()
+
+	/**
+	 * A source that is not an enabled SMS source answers 400 naming it, not 502.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function testSendAnswersBadRequestForASourceThatIsNotAnSmsSource(): void {
+		$this->request->method('getParams')->willReturn(['to' => '0612345678', 'sourceSlug' => 'brp-haalcentraal']);
+		$this->dispatchService->method('sendMessage')->willThrowException(
+			new SmsProviderException(
+				message: '"brp-haalcentraal" is not an enabled SMS source.',
+				errorCode: SmsDispatchService::ERROR_UNKNOWN_SOURCE
+			)
+		);
+
+		$response = $this->controller->send();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(
+			['error' => 'unknown-source', 'message' => '"brp-haalcentraal" is not an enabled SMS source.'],
+			$response->getData()
+		);
+
+	}//end testSendAnswersBadRequestForASourceThatIsNotAnSmsSource()
+
+	/**
 	 * status() rejects an empty id with 400, never reaching the dispatch service.
 	 *
 	 * @return void

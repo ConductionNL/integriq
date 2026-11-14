@@ -30,6 +30,7 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\SmsProviderException;
 use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\SmsDispatchService;
 use OCA\Integriq\Service\SmsDispatchServiceInterface;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\Intake\WebhookGateInterface;
@@ -98,13 +99,16 @@ class NotifyNlController extends Controller {
 	 * Send one SMS message. The production binding for sibling apps' (e.g.
 	 * procest's) own local send adapter — mirrors PeppolController::participants().
 	 *
-	 * Expected JSON body: `{to, body, templateId, personalisation, sourceApp, objectUri, category, caseRef}`.
-	 * `category` (default `service`) decides whether an opt-out stops the message.
+	 * Expected JSON body: `{to, body, templateId, personalisation, sourceApp, objectUri, category, caseRef,
+	 * sourceSlug}`. `category` (default `service`) decides whether an opt-out stops the message;
+	 * `sourceSlug` names the SMS source that sends (default: the first enabled one).
 	 *
-	 * @return JSONResponse The created `sms_message` record, a 400/502 error envelope, or 409 with
-	 *                      `error` set to the decision code when the opt-out list refused the send.
+	 * @return JSONResponse The created `sms_message` record, a 400/502 error envelope (400 `unknown-source`
+	 *                      for a slug that is not an enabled SMS source), or 409 with `error` set to the
+	 *                      decision code when the opt-out list refused the send.
 	 *
 	 * @spec openspec/specs/notifynl-sms-channel/spec.md
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -157,9 +161,17 @@ class NotifyNlController extends Controller {
 	 *
 	 * @param SmsProviderException $exception The provider or opt-out failure.
 	 *
-	 * @return JSONResponse 409 with the decision code when the opt-out list refused the send, else 502.
+	 * @return JSONResponse 409 with the decision code when the opt-out list refused the send, 400 for a
+	 *                      source that is not an enabled SMS source, else 502.
 	 */
 	private function sendFailure(SmsProviderException $exception): JSONResponse {
+		if ($exception->getErrorCode() === SmsDispatchService::ERROR_UNKNOWN_SOURCE) {
+			return new JSONResponse(
+				['error' => $exception->getErrorCode(), 'message' => $exception->getMessage()],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
 		if (in_array($exception->getErrorCode(), self::REFUSAL_CODES, true) === true) {
 			// The opt-out list refused the send: no provider call happened.
 			return new JSONResponse(
@@ -198,7 +210,8 @@ class NotifyNlController extends Controller {
 	 *
 	 * @param array<string,mixed> $params The request parameters.
 	 *
-	 * @return array<string,mixed> `templateId`, `personalisation`, `category` (default `service`), `caseRef`.
+	 * @return array<string,mixed> `templateId`, `personalisation`, `category` (default `service`), `caseRef`,
+	 *                             `sourceSlug`.
 	 */
 	private function sendOptions(array $params): array {
 		$options = [];
@@ -213,6 +226,10 @@ class NotifyNlController extends Controller {
 		$options['category'] = $this->sendCategory(params: $params);
 		if (is_string($params['caseRef'] ?? null) === true) {
 			$options['caseRef'] = $params['caseRef'];
+		}
+
+		if (is_string($params['sourceSlug'] ?? null) === true && trim($params['sourceSlug']) !== '') {
+			$options['sourceSlug'] = trim($params['sourceSlug']);
 		}
 
 		return $options;

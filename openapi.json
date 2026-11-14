@@ -92,6 +92,10 @@
             "description": "Describes the digital post bindings this instance carries"
         },
         {
+            "name": "sms-providers",
+            "description": "Describes the SMS bindings this instance carries"
+        },
+        {
             "name": "directory-sync",
             "description": "Admin-only REST surface for directory connections and their runs"
         },
@@ -2005,6 +2009,37 @@
                 "responses": {
                     "200": {
                         "description": "The provider descriptions.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/sms/providers": {
+            "get": {
+                "operationId": "sms-providers-providers",
+                "summary": "Every SMS binding on this instance, with its name and the configuration it needs",
+                "description": "Every SMS binding on this instance, with its name and the configuration it needs.",
+                "tags": [
+                    "sms-providers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{providers: [{providerId, name, configSchema}]}`.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"

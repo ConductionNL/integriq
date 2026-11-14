@@ -43,8 +43,9 @@ Kind: code. Size M. Rows `integriq:msg-sms` and `integriq:nl-notifynl`.
   - GIVEN a `sourceSlug` of an enabled SMS source WHEN a message is sent THEN that source sends and its slug is stored
   - GIVEN a slug of a non-SMS source WHEN a message is sent THEN it is refused
   - GIVEN a new SMS source WHEN the form opens THEN the provider picker lists the five providers
-- [ ] Implement
-- [ ] Test (PHPUnit on the dispatcher; `tests/e2e/sms-providers.spec.ts`)
+- [x] Implement
+- [x] Test (PHPUnit on the dispatcher and `SmsProvidersController`; vitest on the picker)
+- [ ] Test (`tests/e2e/sms-providers.spec.ts`; browser test, needs a live instance)
 
 ### Task 6: Vendor delivery callbacks
 - **spec_ref**: openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-vendor-delivery-status-reaches-the-stored-message-req-smsp-004

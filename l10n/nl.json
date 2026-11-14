@@ -2316,7 +2316,15 @@
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "SMS provider": "Sms-provider",
+        "Select an SMS provider": "Kies een sms-provider",
+        "Which service this source sends text messages through. Its credential is the brokered credential above.": "Via welke dienst deze bron sms-berichten verstuurt. De referentie is de bemiddelde referentie hierboven.",
+        "This instance has no SMS provider installed, so a text message cannot be sent from here yet.": "Deze omgeving heeft geen sms-provider geïnstalleerd, dus vanaf hier kan nog geen sms-bericht worden verstuurd.",
+        "Base URL": "Basis-URL",
+        "Sender": "Afzender",
+        "Account SID": "Account-SID",
+        "\"%s\" is not an enabled SMS source.": "\"%s\" is geen ingeschakelde sms-bron."
     },
     "plurals": {}
 }

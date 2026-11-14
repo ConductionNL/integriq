@@ -532,4 +532,173 @@ class SmsDispatchServiceTest extends TestCase {
 		$this->assertSame('delivered', $result->getObject()['status']);
 
 	}//end testHandleStatusCallbackUpdatesMatchingMessage()
+	/**
+	 * A send naming an enabled SMS source goes through that source, looked up
+	 * by its slug, and the stored message says which source sent.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function testSendThroughANamedSourceUsesThatSourceAndStoresItsSlug(): void {
+		$source = $this->entity(
+			['slug' => 'sms-twee', 'type' => 'sms', 'isEnabled' => true, 'configuration' => ['provider' => 'log', 'senderId' => 'Twee']],
+			'source-2'
+		);
+		$filters = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use (&$filters, $source): array {
+				$filters[] = $config['filters'];
+				return ['results' => [$source], 'total' => 1];
+			}
+		);
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved): ObjectEntity {
+				$saved[] = $object;
+				return $this->entity($object, 'sms-uuid-1');
+			}
+		);
+
+		$sentWith = null;
+		$this->logProvider->expects($this->once())->method('send')->willReturnCallback(
+			function (array $config, string $to, string $body, array $options) use (&$sentWith): DeliveryResult {
+				$sentWith = [$config, $options];
+				return new DeliveryResult('MOCK-SMS-9', 'sent', null);
+			}
+		);
+
+		$result = $this->service->sendMessage(
+			to: '0612345678',
+			body: 'hello',
+			options: ['templateId' => 'tmpl-1', 'sourceSlug' => 'sms-twee']
+		);
+
+		$this->assertSame(
+			[['register' => 'integriq', 'schema' => 'source', 'slug' => 'sms-twee']],
+			$filters
+		);
+		$this->assertSame('sms-twee', $saved[0]['sourceSlug']);
+		$this->assertSame('sms-twee', $result->getObject()['sourceSlug']);
+		$this->assertSame(['provider' => 'log', 'senderId' => 'Twee'], $sentWith[0]);
+		$this->assertArrayNotHasKey('sourceSlug', $sentWith[1]);
+		$this->assertSame('sent', $result->getObject()['status']);
+
+	}//end testSendThroughANamedSourceUsesThatSourceAndStoresItsSlug()
+
+	/**
+	 * Without a slug the first enabled SMS source sends, as before, and its slug is stored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function testSendWithoutASlugUsesTheFirstEnabledSmsSource(): void {
+		$source = $this->entity(['slug' => 'sms-een', 'type' => 'sms', 'isEnabled' => true, 'configuration' => ['provider' => 'log']]);
+		$filters = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use (&$filters, $source): array {
+				$filters[] = $config['filters'];
+				return ['results' => [$source], 'total' => 1];
+			}
+		);
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved): ObjectEntity {
+				$saved[] = $object;
+				return $this->entity($object, 'sms-uuid-1');
+			}
+		);
+		$this->logProvider->method('send')->willReturn(new DeliveryResult('MOCK-SMS-1', 'sent', null));
+
+		$this->service->sendMessage(to: '0612345678', body: 'hello', options: ['sourceSlug' => '  ']);
+
+		$this->assertSame([['register' => 'integriq', 'schema' => 'source', 'type' => 'sms', 'isEnabled' => true]], $filters);
+		$this->assertSame('sms-een', $saved[0]['sourceSlug']);
+
+	}//end testSendWithoutASlugUsesTheFirstEnabledSmsSource()
+
+	/**
+	 * Slugs that are no enabled SMS source.
+	 *
+	 * @return array<string, array{0: list<ObjectEntity>}>
+	 */
+	public static function notAnSmsSource(): array {
+		$entity = static function (array $data): ObjectEntity {
+			$source = new ObjectEntity();
+			$source->setObject($data);
+			$source->setUuid('');
+			return $source;
+		};
+
+		return [
+			'an api source' => [[$entity(['slug' => 'brp-haalcentraal', 'type' => 'api', 'isEnabled' => true])]],
+			'a disabled sms source' => [[$entity(['slug' => 'brp-haalcentraal', 'type' => 'sms', 'isEnabled' => false])]],
+			'a different slug' => [[$entity(['slug' => 'other', 'type' => 'sms', 'isEnabled' => true])]],
+			'no source' => [[]],
+		];
+
+	}//end notAnSmsSource()
+
+	/**
+	 * A slug that is not an enabled SMS source is refused naming the slug,
+	 * before anything is stored or sent.
+	 *
+	 * @param list<ObjectEntity> $found What the slug lookup finds.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider notAnSmsSource
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function testANamedSourceThatIsNotAnEnabledSmsSourceIsRefused(array $found): void {
+		$this->objectService->method('findAll')->willReturn(['results' => $found, 'total' => count($found)]);
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->logProvider->expects($this->never())->method('send');
+
+		try {
+			$this->service->sendMessage(to: '0612345678', body: 'hello', options: ['sourceSlug' => 'brp-haalcentraal']);
+			$this->fail('A send through a source that is not an enabled SMS source must be refused.');
+		} catch (SmsProviderException $exception) {
+			$this->assertSame(SmsDispatchService::ERROR_UNKNOWN_SOURCE, $exception->getErrorCode());
+			$this->assertSame('"%s" is not an enabled SMS source.', $exception->getMessage());
+		}
+
+	}//end testANamedSourceThatIsNotAnEnabledSmsSourceIsRefused()
+
+	/**
+	 * A status read goes through the source the message was sent through.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/messaging-sms-providers-and-notifynl-mail/specs/notifynl-sms-channel/spec.md#requirement-a-caller-picks-the-sms-source-and-the-form-picks-the-provider-req-smsp-003
+	 */
+	public function testPollStatusReadsThroughTheSourceTheMessageNames(): void {
+		$message = $this->entity(['status' => 'sent', 'providerMessageId' => 'MOCK-SMS-1', 'sourceSlug' => 'sms-twee'], 'sms-uuid-1');
+		$this->objectService->method('find')->willReturn($message);
+
+		$source = $this->entity(['slug' => 'sms-twee', 'type' => 'sms', 'isEnabled' => true, 'configuration' => ['provider' => 'notifynl']], '');
+		$filters = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use (&$filters, $source): array {
+				$filters[] = $config['filters'];
+				return ['results' => [$source], 'total' => 1];
+			}
+		);
+		$this->logProvider->expects($this->never())->method('fetchStatus');
+		$this->notifyNlProvider->expects($this->once())->method('fetchStatus')
+			->with(['provider' => 'notifynl'], 'MOCK-SMS-1')
+			->willReturn(new DeliveryResult('MOCK-SMS-1', 'delivered', null));
+		$this->objectService->method('saveObject')->willReturnCallback(
+			fn (array $object): ObjectEntity => $this->entity($object, 'sms-uuid-1')
+		);
+
+		$result = $this->service->pollStatus(uuid: 'sms-uuid-1');
+
+		$this->assertSame([['register' => 'integriq', 'schema' => 'source', 'slug' => 'sms-twee']], $filters);
+		$this->assertSame('delivered', $result->getObject()['status']);
+
+	}//end testPollStatusReadsThroughTheSourceTheMessageNames()
 }//end class

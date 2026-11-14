@@ -99,6 +99,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// provider picker is built from the registry rather than from a list
 		// written beside it and left to go stale.
 		['name' => 'digitalPostProviders#providers', 'url' => '/api/digital-post/providers', 'verb' => 'GET'],
+		// The SMS bindings this instance has, for the provider picker of a source
+		// of type sms (messaging-sms-providers-and-notifynl-mail, REQ-SMSP-003).
+		['name' => 'smsProviders#providers', 'url' => '/api/sms/providers', 'verb' => 'GET'],
 		// Test a draft rule against a sample and route held messages again
 		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
 		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
