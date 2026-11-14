@@ -318,6 +318,7 @@
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\OutboundSendDecisionRequestedEvent, OCA\\Integriq\\EventListener\\OutboundSendDecisionRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\OptOutChangeRequestedEvent, OCA\\Integriq\\EventListener\\OptOutChangeRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\SourceRequestedEvent, OCA\\Integriq\\EventListener\\SourceRequestedListener, int)",
+	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\ServiceFetchRequestedEvent, OCA\\Integriq\\EventListener\\ServiceFetchRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\DocumentSearchRequestedEvent, OCA\\Integriq\\EventListener\\DocumentSearchRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\Integriq\\Event\\DocumentFetchRequestedEvent, OCA\\Integriq\\EventListener\\DocumentFetchRequestedListener, int)",
 	"dispatcher.addServiceListener(OCA\\OpenRegister\\Event\\ObjectCreatedEvent, OCA\\Integriq\\EventListener\\EndpointCacheInvalidationListener, int)",
