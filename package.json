@@ -100,7 +100,7 @@
     "eslint-webpack-plugin": "^6.0.0",
     "espree": "^11.0.0",
     "jest": "^30.5.2",
-    "jest-environment-jsdom": "^30.5.1",
+    "jest-environment-jsdom": "^30.5.2",
     "jest-transform-stub": "^2.0.0",
     "node-polyfill-webpack-plugin": "4.1.0",
     "postcss-html": "^1.0.0",
