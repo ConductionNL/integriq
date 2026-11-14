@@ -299,6 +299,10 @@
 			     authenticationConfig is excluded (manual review). The register JSON
 			     keeps all five fields on purpose (see the step's docblock). -->
 			<step>OCA\Integriq\Repair\RemoveMigratedSourceSecretFields</step>
+			<!-- access-consumer-credentials: each consumer's plaintext apiKey becomes
+			     a hashed `credentials` entry labelled "migrated"; the plaintext is
+			     nulled only after that entry is saved. Idempotent, never throws. -->
+			<step>OCA\Integriq\Repair\HashConsumerApiKeys</step>
 			<step>OCA\Integriq\Repair\MaterializeCatalogItems</step>
 			<!-- connection-registry D5: every enabled app's
 			     lib/Settings/connections.json becomes connection rows. After

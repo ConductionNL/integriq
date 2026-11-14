@@ -493,7 +493,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -543,6 +543,83 @@
             "type": "object",
             "description": "Provider-specific auth config for this consumer's INBOUND authentication: `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. `keySource` says where a JWT consumer's key comes from: `static` (default, the stored `publicKey`/`algorithm`, issuer matched on the consumer name), `jwks` (`issuer` the tokens' `iss`, `jwksUri` the published key set; the key is chosen by the token's `kid`) or `oidc` (`issuerUrl`, `audience` and optional `requiredClaims`, a list of claim names or a map of claim to value; the JWKS address and issuer come from the provider's discovery document). `jwks` and `oidc` accept RS and PS algorithms only. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
+          },
+          "credentials": {
+            "type": "array",
+            "title": "Credentials",
+            "description": "The consumer's credentials, several at once so a key can be rotated without an outage. Each entry: `id`, `label`, `type` (`apiKey` or `clientCertificate`), `createdAt`, optional `expiresAt`, `lastUsedAt`; an API key adds `keyPrefix` (its first six characters) and `keyHash` (an HMAC-SHA256 under an instance pepper, never the key). Generated and revoked through /api/consumers/{id}/credentials; the key is returned only by the call that creates it. WRITE-ONLY on the object API (register.d/99-consumer-secrets-writeonly.json): the credentials route lists entries without their hash.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "apiKey",
+                    "clientCertificate"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expiresAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "lastUsedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "keyPrefix": {
+                  "type": "string"
+                },
+                "keyHash": {
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "type": "string",
+                  "description": "A client certificate pinned by the lowercase hex SHA-256 of its DER bytes."
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "The pinned certificate's subject, one line."
+                },
+                "oin": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The OIN from a PKIoverheid certificate's subject serialNumber."
+                },
+                "issuerCertificate": {
+                  "type": "string",
+                  "description": "The issuing CA certificate (public, PEM) that must have signed the presented certificate."
+                },
+                "issuerFingerprint": {
+                  "type": "string"
+                },
+                "issuer": {
+                  "type": "string"
+                },
+                "subjectPattern": {
+                  "type": "string",
+                  "description": "Shell pattern the presented certificate's one-line subject must fit, with an issuer pin."
+                }
+              }
+            },
+            "default": []
           },
           "scopes": {
             "type": "array",
