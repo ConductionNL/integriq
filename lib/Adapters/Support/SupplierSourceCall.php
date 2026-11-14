@@ -76,7 +76,6 @@ class SupplierSourceCall {
 		}
 
 		$config['headers'] = array_merge(['Accept' => 'application/json'], $headers);
-		$config['logBody'] = ($withholdBodies === false);
 
 		try {
 			$callLog = $this->callService->call(

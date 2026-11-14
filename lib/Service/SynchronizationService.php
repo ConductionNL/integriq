@@ -6298,6 +6298,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		[$registerId, $schemaId] = array_pad(explode(separator: '/', string: (string)($synchronization['targetId'] ?? '')), 2, '');
+		// System read, unscoped: the engine reads the target its own contract points at, during a run that may have no user.
 		$targetObject = $this->orObjectService->find(
 			id: (string)$contract['targetId'],
 			register: $registerId,
@@ -11273,6 +11274,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	public function findRule(string $id): ?array {
 		try {
+			// System read, unscoped: a synchronization resolves the rule it names, as the system (see the docblock).
 			$object = $this->orObjectService->find(
 				id: $id,
 				register: 'integriq',
