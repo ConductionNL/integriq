@@ -21,6 +21,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Peppol e-invoicing](peppol.md) | Send and receive UBL documents over Peppol for sibling apps, through a configured Access Point | Implemented |
 | [Nextcloud event triggers](nextcloud-event-triggers.md) | Files, Calendar, Tables and Forms events start a webhook, synchronization, job or flow, with retries and per-family self-service | Implemented |
 | [Logging & Monitoring](logging.md) | Call logs, sync logs, and Prometheus metrics | Implemented |
+| [Payments for other apps](payments.md) | Another app asks for a payment, online or on a terminal, and hears its status and the payout that settled it | Implemented |
 | [Outbound call log: the investigation window](outbound-call-log.md) | Store a source's call bodies for a bounded time, with a reason, and see why a call has none | Implemented |
 | [Configuration Management](configuration-management.md) | Import/export, configuration groups, slug-based references | Implemented |
 | [StUF Adapter](stuf-adapter.md) | REST/ZGW to StUF-BG/ZKN SOAP translation | Partial |
@@ -33,6 +34,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Objecten API](objecten-api.md) | The VNG Objecten and Objecttypen APIs over your registers, one token per caller | Implemented |
 | [ZGW consumer sets](zgw-sets.md) | Read a ZGW store (Zaken, Documenten, Catalogi, Besluiten, Objecten) into a schema you choose, in the store's own shape, and write changes back | Partial |
 | [Case system for meeting apps](case-system.md) | A `case-system` source answers a meeting app's five case operations through the ZGW Zaken and Documenten APIs, or from test data | Implemented |
+| [ECB exchange rates](exchange-rates.md) | The daily euro reference rates of the European Central Bank, stored as objects and answered to a sibling app for a currency pair on a date | Implemented |
 | [Connection calls and route distance](connection-calls.md) | Other apps call a connection they declared, and ask the road distance between two postcodes, without holding a credential | Implemented |
 | [Web shop orders](webshop-orders.md) | WooCommerce and Shopify orders arrive in shillinq as web shop orders, refunds included | Partial |
 | [Documents to the case system](case-system-document-delivery.md) | Two seeded synchronizations send a filinq document, or its anonymised copy, to the case system as a new document, and write the outcome back | Partial |

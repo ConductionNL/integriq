@@ -37,6 +37,7 @@ use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\Event\DocumentFetchRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\Event\DocumentSearchRequestedEvent;
+use OCA\Integriq\Event\ExchangeRateRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
@@ -384,6 +385,8 @@ final class EventListenerBindings {
 		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
 		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
+		// Sources-ecb-exchange-rates D2: a sibling app (shillinq) asks for the rate of a currency pair on a date.
+		$dispatcher->addServiceListener(eventName: ExchangeRateRequestedEvent::class, className: ExchangeRateRequestedListener::class);
 		// Sources-route-distance-and-rdw-lookup: a sibling app calls a connection it declared, and asks a road distance.
 		$dispatcher->addServiceListener(eventName: ConnectionCallRequestedEvent::class, className: ConnectionCallRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: RouteDistanceRequestedEvent::class, className: RouteDistanceRequestedListener::class);
