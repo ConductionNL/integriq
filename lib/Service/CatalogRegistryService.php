@@ -228,6 +228,22 @@ class CatalogRegistryService implements CatalogRegistryServiceInterface {
 			'icon' => 'EmailOutline',
 		],
 		[
+			'slug' => 'adapter:digipoort-sbr',
+			'name' => 'Digipoort (SBR filing)',
+			'description' => 'Files XBRL instances with the Belastingdienst and the KvK through Digipoort: a sibling app such as '
+				. 'shillinq raises a filing request, integriq delivers the instance once, polls the processing status and '
+				. 'reports every status back as an event. Ships on the log provider, which answers without a network call. '
+				. 'The live WUS provider signs with your PKIoverheid certificate from the credential broker and sends over '
+				. 'two-way TLS; without the certificate it refuses and sends nothing.',
+			'category' => 'Tax filing',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'digipoort-sbr',
+			'standards' => ['Digipoort WUS', 'SBR', 'PKIoverheid'],
+			'icon' => 'FileSendOutline',
+		],
+		[
 			'slug' => 'adapter:smartdocuments',
 			'name' => 'SmartDocuments',
 			'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '

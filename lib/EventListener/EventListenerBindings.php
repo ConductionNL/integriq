@@ -50,6 +50,7 @@ use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
+use OCA\Integriq\Service\SbrFilingConsumer;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -331,6 +332,10 @@ final class EventListenerBindings {
 		// CloudEvents (register `openconnector` — the OpenRegister register slug,
 		// frozen across the app-id rename; schema event) created by any app.
 		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: PeppolOutboundConsumer::class);
+		// connectors-digipoort-sbr-filing: reacts to nl.conduction.sbr.filing.requested
+		// CloudEvents in the same register and `event` schema, and files the
+		// XBRL instance with Digipoort.
+		$dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: SbrFilingConsumer::class);
 		// Outbound webhooks / CloudEvent subscriptions: turns any OR object
 		// create/update/delete (any app) into a CloudEvent fanned out to
 		// matching `event_subscription`s (events-cloudevents spec REQ-004).

@@ -24,6 +24,7 @@
     "OCA\\Integriq\\Service\\ApprovalDecisionService::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\BankfeedSyncService::$eventService": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\CardfeedSyncService::$eventService": "OCA\\Integriq\\Service\\EventService",
+    "OCA\\Integriq\\Service\\Digipoort\\SbrFilingService::$events": "OCA\\Integriq\\Service\\EventService",
     "OCA\\Integriq\\Service\\EndpointService::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\EventService::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",
     "OCA\\Integriq\\Service\\FlowRunnerService::$synchronizationService": "OCA\\Integriq\\Service\\SynchronizationService",

@@ -164,6 +164,10 @@
 		     exchange_rate objects, four runs a day so the 16:00 CET file lands
 		     the same day. -->
 		<job>OCA\Integriq\BackgroundJob\ExchangeRateSyncJob</job>
+		<!-- connectors-digipoort-sbr-filing: every ten minutes, retries a Digipoort
+		     delivery that failed with budget left and asks the status service
+		     about every filing that has not reached a final status. -->
+		<job>OCA\Integriq\BackgroundJob\SbrFilingStatusJob</job>
 	</background-jobs>
 
 	<!-- ⚠️ CHILD ORDER IS FIXED BY THE APP STORE SCHEMA, and it is NOT the order

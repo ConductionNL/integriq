@@ -3269,6 +3269,14 @@
             "route": "PeppolTransmissions"
           },
           {
+            "id": "DigipoortFilings",
+            "label": "Digipoort filings",
+            "description": "Filings sent to the Belastingdienst and the KvK, and what each recipient answered.",
+            "icon": "FileSendOutline",
+            "category": "protocols",
+            "route": "DigipoortFilings"
+          },
+          {
             "id": "IwmoMessages",
             "label": "iWmo and iJw messages",
             "description": "Care messages in and out, with the answer each one received.",
@@ -3914,6 +3922,68 @@
             "label": "Attempts",
             "sortable": true,
             "width": "9%"
+          }
+        ]
+      }
+    },
+    {
+      "id": "DigipoortFilings",
+      "route": "/messages/digipoort",
+      "type": "logs",
+      "title": "Digipoort filings",
+      "_note": "connectors-digipoort-sbr-filing REQ-DPS-004: every SBR filing integriq delivered through Digipoort. The row detail shows the status history with its times and the recipient's errors. Columns are declared schema properties; the status colours map the schema's own enum members.",
+      "config": {
+        "register": "integriq",
+        "schema": "sbr_filing",
+        "sortKey": "created",
+        "sortOrder": "desc",
+        "pagination": {
+          "limit": 50
+        },
+        "rowDetail": true,
+        "fixedLayout": true,
+        "columns": [
+          {
+            "key": "created",
+            "label": "Time",
+            "sortable": true,
+            "width": "15%",
+            "formatter": "datetime"
+          },
+          {
+            "key": "recipient",
+            "label": "Recipient",
+            "sortable": true,
+            "width": "14%"
+          },
+          {
+            "key": "filingType",
+            "label": "Filing type",
+            "sortable": true,
+            "width": "16%"
+          },
+          {
+            "key": "deliveryReference",
+            "label": "Delivery reference",
+            "sortable": true,
+            "width": "25%"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "sortable": true,
+            "width": "12%",
+            "widget": "badge",
+            "widgetProps": {
+              "variant": "default",
+              "colorMap": {
+                "queued": "info",
+                "delivered": "info",
+                "accepted": "success",
+                "rejected": "error",
+                "failed": "error"
+              }
+            }
           }
         ]
       }
