@@ -124,10 +124,10 @@ export default {
 		ImportPreviewDialog,
 		ExportConfigurationDialog,
 		PromotePreviewModal,
+		SharePointPublicationSetupDialog,
 		LinkSourceDialog,
 		RegistryLookupDialog,
 		GatewayCatalogueDialog,
-		SharePointPublicationSetupDialog,
 	},
 
 	data() {
@@ -142,10 +142,10 @@ export default {
 			configurationImport: { open: false },
 			configurationExport: { open: false },
 			promotion: { open: false },
+			sharePointPublicationSetup: { open: false },
 			registryLookup: { open: false },
 			gatewayCatalogue: { open: false },
 			linkSource: { open: false, app: '' },
-			sharePointPublicationSetup: { open: false },
 		}
 	},
 
@@ -192,10 +192,10 @@ export default {
 		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.on(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
-		modalBus.on(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 	},
 
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
@@ -210,10 +210,10 @@ export default {
 		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.off(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
-		modalBus.off(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 	},
 
 	methods: {
