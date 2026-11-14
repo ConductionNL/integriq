@@ -40,6 +40,7 @@ use OCA\Integriq\Service\AgentTools\DeadLetterProjection;
 use OCA\Integriq\Service\AgentTools\DeadLetterProjectionInterface;
 use OCA\Integriq\Service\AgentTools\HermiqVerdictClient;
 use OCA\Integriq\Service\AgentTools\HttpHermiqVerdictClient;
+use OCA\Integriq\Service\Catalogi\CatalogiWiring;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
 use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\Datasource\DashboardDatasourceService;
@@ -633,12 +634,14 @@ final class ServiceBindings {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectenWiring registers its facade services through one static entry point.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectenWiring and CatalogiWiring register their facade services through one static entry point.
 	 */
 	private function registerObjectenApis(IRegistrationContext $context): void {
 		// The Objecten and Objecttypen APIs: every facade service is built with
 		// its OpenRegister seams wired, or every route answers 401 or 404.
 		ObjectenWiring::register(context: $context);
+		// The Catalogi API facade (zgw-catalogi-served), its seams wired the same way.
+		CatalogiWiring::register(context: $context);
 	}//end registerObjectenApis()
 
 	/**

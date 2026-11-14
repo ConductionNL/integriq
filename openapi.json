@@ -322,6 +322,10 @@
         {
             "name": "zgw-version-translate",
             "description": "Translate one ZGW resource payload between `1.0` and `1.6`"
+        },
+        {
+            "name": "catalogi",
+            "description": "The Catalogi API facade's administrator actions."
         }
     ],
     "paths": {
@@ -786,6 +790,69 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/Problem400"
+                    }
+                }
+            }
+        },
+        "/catalogi/woo-starter-set": {
+            "post": {
+                "operationId": "catalogi-woo-starter-set",
+                "summary": "Create one document type per missing Woo information category",
+                "description": "Creates, in the schema the Catalogi binding names, one document type per Woo information category (TOOI scheme in OpenRegister's concept register) that no existing type carries. Existing types are never changed. Administrators only.",
+                "tags": [
+                    "catalogi"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "How many types were created and skipped.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "created": {
+                                            "type": "integer"
+                                        },
+                                        "skipped": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "description": "No catalogue is configured (catalogue-not-configured).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The TOOI scheme cannot be read (tooi-scheme-missing); nothing was created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
                     }
                 }
             }

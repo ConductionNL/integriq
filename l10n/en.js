@@ -3536,7 +3536,26 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Catalogi API binding": "Catalogi API binding",
+        "Catalogue uuid": "Catalogue uuid",
+        "Client id": "Client id",
+        "Clients": "Clients",
+        "Field map": "Field map",
+        "RSIN": "RSIN",
+        "Reads concepts": "Reads concepts",
+        "Scopes": "Scopes",
+        "The RSIN of the organisation that owns the catalogue.": "The RSIN of the organisation that owns the catalogue.",
+        "The ZGW clients that may read the catalogue, with their scopes.": "The ZGW clients that may read the catalogue, with their scopes.",
+        "The catalogue's domain, for example WOO.": "The catalogue's domain, for example WOO.",
+        "The catalogue's name.": "The catalogue's name.",
+        "The client_id the client's JWT carries.": "The client_id the client's JWT carries.",
+        "The register that holds the document types.": "The register that holds the document types.",
+        "The schema that holds the document types.": "The schema that holds the document types.",
+        "The scopes the client holds. catalogi.lezen reads the catalogue.": "The scopes the client holds. catalogi.lezen reads the catalogue.",
+        "The uuid the catalogue is published under. It stays the same when a register is rebuilt.": "The uuid the catalogue is published under. It stays the same when a register is rebuilt.",
+        "Whether the client may read document types that are still a concept.": "Whether the client may read document types that are still a concept.",
+        "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.": "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map."
     },
     "nplurals=2; plural=(n != 1);"
 )

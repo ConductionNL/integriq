@@ -14,8 +14,8 @@ binding, handler or starter set exists.
   - GIVEN no binding WHEN resolved THEN null, and the handler answers `catalogue-not-configured`
   - GIVEN a binding whose schema does not resolve WHEN resolved THEN null, as above
   - GIVEN the default field map WHEN a `documentType` object is mapped THEN the six resource fields come out as REQ-ZCS-001 says
-- [ ] Implement
-- [ ] Test: PHPUnit `CatalogiBindingTest::testNoBindingResolvesToNull`, `::testTheDefaultFieldMap`; a test that greps `lib/Service/Catalogi/` for an app id (`filinq`, `docudesk`) and fails on a hit, as `ZgwSetCatalogue` demands
+- [x] Implement
+- [x] Test: PHPUnit `CatalogiBindingTest::testNoBindingResolvesToNull`, `::testTheDefaultFieldMap`; a test that greps `lib/Service/Catalogi/` for an app id (`filinq`, `docudesk`) and fails on a hit, as `ZgwSetCatalogue` demands
 
 ### Task 2: The read endpoints
 - **spec_ref**: `openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001`
@@ -25,10 +25,10 @@ binding, handler or starter set exists.
   - GIVEN 120 types WHEN listed THEN `count` 120, 100 in `results`, and `next` set
   - GIVEN `catalogus` filter for another catalogue WHEN listed THEN empty `results`
   - GIVEN any write method WHEN called THEN 405
-- [ ] Implement. Read `objecten-api-facade` design D7 first; the handlers take their OpenRegister access as callables and the wiring class hands them the production side.
-- [ ] Test: PHPUnit `InformatieobjecttypeEndpointHandlerTest::testATypeIsServedWithItsOwnUrl`, `::testListsArePaged`, `::testWritesAnswer405`, `::testAnUnboundFacadeAnswersNotConfigured`; `CatalogusEndpointHandlerTest::testTheCatalogueResolves`. Double OpenRegister's `ObjectService` with `environmentAwareDouble` after reading its real `findAll()` and `find()` signatures on `openregister` `development`.
-- [ ] Wiring: `CatalogiWiringTest::testEveryHandlerIsBuiltWithItsSeams` boots `Application::register()` and asserts no handler is autowired with a null seam. The objecten facade shipped exactly that defect once (every route 401 or 404); this test is why.
-- [ ] `testATypeIsServedWithItsOwnUrl` must be shown failing on `development` before the change. Paste the failing line in the PR body.
+- [x] Implement. Read `objecten-api-facade` design D7 first; the handlers take their OpenRegister access as callables and the wiring class hands them the production side.
+- [x] Test: PHPUnit `InformatieobjecttypeEndpointHandlerTest::testATypeIsServedWithItsOwnUrl`, `::testListsArePaged`, `::testWritesAnswer405`, `::testAnUnboundFacadeAnswersNotConfigured`; `CatalogusEndpointHandlerTest::testTheCatalogueResolves`. Double OpenRegister's `ObjectService` with `environmentAwareDouble` after reading its real `findAll()` and `find()` signatures on `openregister` `development`.
+- [x] Wiring: `CatalogiWiringTest::testEveryHandlerIsBuiltWithItsSeams` boots `Application::register()` and asserts no handler is autowired with a null seam. The objecten facade shipped exactly that defect once (every route 401 or 404); this test is why.
+- [x] `testATypeIsServedWithItsOwnUrl` must be shown failing on `development` before the change. Paste the failing line in the PR body.
 
 ### Task 3: Authorisation and concept types
 - **spec_ref**: `openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-only-an-authorised-client-reads-and-concept-types-stay-hidden-req-zcs-002`
@@ -37,8 +37,8 @@ binding, handler or starter set exists.
   - GIVEN a JWT without `catalogi.lezen` WHEN any route is called THEN 403 and the OpenRegister access callable is never invoked
   - GIVEN a type mapped `concept: true` WHEN listed by default THEN omitted; WHEN fetched by uuid THEN 404
   - GIVEN a client allowed concept reads WHEN listed with `status=alles` THEN included
-- [ ] Implement
-- [ ] Test: PHPUnit `CatalogiTokenServiceTest::testAMissingScopeIsRefusedBeforeAnyRead`; `InformatieobjecttypeEndpointHandlerTest::testConceptTypesAreHiddenByDefault`, `::testAConceptReaderSeesConceptsWhenAsked`
+- [x] Implement
+- [x] Test: PHPUnit `CatalogiTokenServiceTest::testAMissingScopeIsRefusedBeforeAnyRead`; `InformatieobjecttypeEndpointHandlerTest::testConceptTypesAreHiddenByDefault`, `::testAConceptReaderSeesConceptsWhenAsked`
 
 ### Task 4: The Woo starter set
 - **spec_ref**: `openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-a-woo-starter-set-gives-one-type-per-woo-information-category-req-zcs-003`

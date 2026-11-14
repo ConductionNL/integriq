@@ -712,6 +712,20 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'objectenApi#replaceObject',     'url' => '/api/v2/objects/{uuid}', 'verb' => 'PUT', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#updateObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'objectenApi#deleteObject',      'url' => '/api/v2/objects/{uuid}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+']],
+		// zgw-catalogi-served: the VNG Catalogi API 1.3 read half (catalogussen,
+		// informatieobjecttypen). #[PublicPage] and CSRF-free like the Objecten
+		// routes: CatalogiGate checks the binding, the ZGW JWT and the
+		// catalogi.lezen scope before any document type is read. Writes answer 405.
+		['name' => 'catalogiApi#catalogussen',          'url' => '/catalogi/api/v1/catalogussen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#catalogus',             'url' => '/catalogi/api/v1/catalogussen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#informatieobjecttypen', 'url' => '/catalogi/api/v1/informatieobjecttypen', 'verb' => 'GET'],
+		['name' => 'catalogiApi#informatieobjecttype',  'url' => '/catalogi/api/v1/informatieobjecttypen/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}', 'verb' => 'POST', 'postfix' => 'create', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PUT', 'postfix' => 'replace', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'PATCH', 'postfix' => 'update', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		['name' => 'catalogiApi#write', 'url' => '/catalogi/api/v1/{resource}/{uuid}', 'verb' => 'DELETE', 'postfix' => 'delete', 'requirements' => ['resource' => 'catalogussen|informatieobjecttypen', 'uuid' => '[^/]+']],
+		// The Woo starter set, administrator only (AuthorizedAdminSetting and a check in the method).
+		['name' => 'catalogiAdmin#wooStarterSet', 'url' => '/api/catalogi/woo-starter-set', 'verb' => 'POST'],
 		['name' => 'expressionSource#index',  'url' => '/api/admin/expression-sources', 'verb' => 'GET'],
 		['name' => 'expressionSource#add',    'url' => '/api/admin/expression-sources/env', 'verb' => 'POST'],
 		['name' => 'expressionSource#remove', 'url' => '/api/admin/expression-sources/env/{key}', 'verb' => 'DELETE', 'requirements' => ['key' => '[^/]+']],

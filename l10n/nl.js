@@ -2271,7 +2271,24 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Catalogi API binding": "Koppeling Catalogi API",
+        "Catalogue uuid": "Uuid van de catalogus",
+        "Client id": "Client-id",
+        "Field map": "Veldkoppeling",
+        "RSIN": "RSIN-nummer",
+        "Reads concepts": "Leest concepten",
+        "The RSIN of the organisation that owns the catalogue.": "Het RSIN van de organisatie die eigenaar is van de catalogus.",
+        "The ZGW clients that may read the catalogue, with their scopes.": "De ZGW-clients die de catalogus mogen lezen, met hun scopes.",
+        "The catalogue's domain, for example WOO.": "Het domein van de catalogus, bijvoorbeeld WOO.",
+        "The catalogue's name.": "De naam van de catalogus.",
+        "The client_id the client's JWT carries.": "De client_id die de JWT van de client draagt.",
+        "The register that holds the document types.": "Het register met de documenttypen.",
+        "The schema that holds the document types.": "Het schema met de documenttypen.",
+        "The scopes the client holds. catalogi.lezen reads the catalogue.": "De scopes die de client heeft. Met catalogi.lezen leest hij de catalogus.",
+        "The uuid the catalogue is published under. It stays the same when a register is rebuilt.": "De uuid waaronder de catalogus is gepubliceerd. Die blijft gelijk als een register opnieuw wordt opgebouwd.",
+        "Whether the client may read document types that are still a concept.": "Of de client documenttypen mag lezen die nog een concept zijn.",
+        "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.": "Welk veld van het schema welk veld van een informatieobjecttype vult. Een ! vooraan keert een ja/nee-veld om. Weggelaten velden houden de standaardkoppeling."
     },
     "nplurals=2; plural=(n != 1);"
 )
