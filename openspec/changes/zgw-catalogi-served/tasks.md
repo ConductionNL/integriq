@@ -47,8 +47,9 @@ binding, handler or starter set exists.
   - GIVEN one existing type in "besluiten" and 17 TOOI categories WHEN run THEN 16 created, 1 skipped, and no existing type changed
   - GIVEN the TOOI scheme unreadable WHEN run THEN `tooi-scheme-missing` and nothing created
   - GIVEN a non-administrator WHEN the route is called THEN 403
-- [ ] Implement. Read the TOOI scheme through OpenRegister's concept register service; read its real method signature on `openregister` `development` and name it in the PR body. Do not bundle a copy of the category list (decision D3).
-- [ ] Test: PHPUnit `WooStarterSetTest::testOnlyMissingCategoriesAreCreated`, `::testAMissingSchemeRefuses`; `CatalogiAdminControllerTest::testANonAdminIsRefused`; the route-reachability gate
+- [x] Implement. Read the TOOI scheme through OpenRegister's concept register service; read its real method signature on `openregister` `development` and name it in the PR body. Do not bundle a copy of the category list (decision D3).
+- [x] Test: PHPUnit `WooStarterSetTest::testOnlyMissingCategoriesAreCreated`, `::testAMissingSchemeRefuses`; `CatalogiAdminControllerTest::testANonAdminIsRefused`; the route-reachability gate
+  - The admin page button is `src/views/admin/WooStarterSetSettings.vue`. It shows the created and skipped counts and a message per refusal code, covered by `tests/vitest/wooStarterSetSettings.spec.js`.
 
 ### Task 5: Contract tests and documentation
 - **spec_ref**: `openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001`

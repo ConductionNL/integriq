@@ -57,3 +57,7 @@ OpenRegister's concept register; no copy is kept in integriq. The answer gives
 `created` and `skipped`. Existing types are never changed or deleted. When the
 scheme cannot be read the run refuses with `tooi-scheme-missing` and creates
 nothing.
+
+On the integriq admin page, the **Woo starter set** section runs the same
+action with one button and shows how many types it created and how many
+categories already had one.

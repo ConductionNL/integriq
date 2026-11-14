@@ -20,6 +20,7 @@
 			<ExpressionSourceSettings />
 			<ConnectionAlertSettings />
 			<OtelSettings />
+			<WooStarterSetSettings />
 		</div>
 	</CnAdminSettingsShell>
 </template>
@@ -36,6 +37,7 @@ import ExpressionSourceSettings from './ExpressionSourceSettings.vue'
 import OpenFormulierenConnectionSettings from './OpenFormulierenConnectionSettings.vue'
 import OtelSettings from './OtelSettings.vue'
 import WebhookConnectionsSettings from './WebhookConnectionsSettings.vue'
+import WooStarterSetSettings from './WooStarterSetSettings.vue'
 
 /**
  * Root admin settings panel for Integriq.
@@ -76,6 +78,7 @@ export default {
 		OpenFormulierenConnectionSettings,
 		OtelSettings,
 		WebhookConnectionsSettings,
+		WooStarterSetSettings,
 	},
 }
 </script>

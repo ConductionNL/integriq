@@ -3555,7 +3555,15 @@ OC.L10N.register(
         "The scopes the client holds. catalogi.lezen reads the catalogue.": "The scopes the client holds. catalogi.lezen reads the catalogue.",
         "The uuid the catalogue is published under. It stays the same when a register is rebuilt.": "The uuid the catalogue is published under. It stays the same when a register is rebuilt.",
         "Whether the client may read document types that are still a concept.": "Whether the client may read document types that are still a concept.",
-        "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.": "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map."
+        "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.": "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.",
+        "Woo starter set": "Woo starter set",
+        "Create one document type in the catalogue for every Woo information category that does not have one yet. Existing types are not changed.": "Create one document type in the catalogue for every Woo information category that does not have one yet. Existing types are not changed.",
+        "Creating the document types…": "Creating the document types…",
+        "Create the Woo starter set": "Create the Woo starter set",
+        "Created: {created}. Already present: {skipped}.": "Created: {created}. Already present: {skipped}.",
+        "The list of Woo information categories cannot be read. Nothing was created.": "The list of Woo information categories cannot be read. Nothing was created.",
+        "No catalogue is configured yet. Set one up first.": "No catalogue is configured yet. Set one up first.",
+        "The Woo starter set could not be created.": "The Woo starter set could not be created."
     },
     "nplurals=2; plural=(n != 1);"
 )

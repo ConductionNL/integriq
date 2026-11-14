@@ -2299,7 +2299,15 @@
         "The scopes the client holds. catalogi.lezen reads the catalogue.": "De scopes die de client heeft. Met catalogi.lezen leest hij de catalogus.",
         "The uuid the catalogue is published under. It stays the same when a register is rebuilt.": "De uuid waaronder de catalogus is gepubliceerd. Die blijft gelijk als een register opnieuw wordt opgebouwd.",
         "Whether the client may read document types that are still a concept.": "Of de client documenttypen mag lezen die nog een concept zijn.",
-        "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.": "Welk veld van het schema welk veld van een informatieobjecttype vult. Een ! vooraan keert een ja/nee-veld om. Weggelaten velden houden de standaardkoppeling."
+        "Which field of the schema fills which field of an informatieobjecttype. A leading ! inverts a yes/no field. Fields left out keep the default map.": "Welk veld van het schema welk veld van een informatieobjecttype vult. Een ! vooraan keert een ja/nee-veld om. Weggelaten velden houden de standaardkoppeling.",
+        "Woo starter set": "Woo-startset",
+        "Create one document type in the catalogue for every Woo information category that does not have one yet. Existing types are not changed.": "Maak in de catalogus één documenttype aan voor elke Woo-informatiecategorie die er nog geen heeft. Bestaande typen blijven ongewijzigd.",
+        "Creating the document types…": "De documenttypen worden aangemaakt…",
+        "Create the Woo starter set": "Woo-startset aanmaken",
+        "Created: {created}. Already present: {skipped}.": "Aangemaakt: {created}. Al aanwezig: {skipped}.",
+        "The list of Woo information categories cannot be read. Nothing was created.": "De lijst met Woo-informatiecategorieën kan niet worden gelezen. Er is niets aangemaakt.",
+        "No catalogue is configured yet. Set one up first.": "Er is nog geen catalogus ingesteld. Stel er eerst een in.",
+        "The Woo starter set could not be created.": "De Woo-startset kon niet worden aangemaakt."
     },
     "plurals": {}
 }
