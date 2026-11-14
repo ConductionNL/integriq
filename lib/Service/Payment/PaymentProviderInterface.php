@@ -44,15 +44,19 @@ interface PaymentProviderInterface {
 	 * @param array $payload The create-payment envelope — `amount{value,currency}`,
 	 *                       `description`, `redirectUrl`, `webhookUrl`, optional
 	 *                       `method` (`ideal`|`creditcard`|`bancontact`|`sepadirectdebit`),
-	 *                       optional `metadata` (opaque passthrough object).
+	 *                       optional `metadata` (opaque passthrough object), and for
+	 *                       `method` = `pointofsale` a `terminalId`.
 	 *
 	 * @return array{providerPaymentId: string, paymentStatus: string, checkoutUrl: string, extras: array}
 	 *                                                                                                     The dispatch outcome.
 	 *
 	 * @throws PaymentProviderException When the provider is unreachable, errors, or cannot be
-	 *                                  configured (e.g. missing credential).
+	 *                                  configured (e.g. missing credential); a
+	 *                                  PaymentMethodUnsupportedException when the binding has
+	 *                                  no such method (point of sale on `log`).
 	 *
 	 * @spec openspec/specs/live-payment-providers/spec.md
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
 	 */
 	public function createPayment(array $sourceConfiguration, array $payload): array;
 
@@ -74,4 +78,40 @@ interface PaymentProviderInterface {
 	 * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
 	 */
 	public function fetchPaymentStatus(array $sourceConfiguration, string $providerPaymentId): array;
+
+	/**
+	 * The provider's settlements (payouts) settled on or after a moment.
+	 *
+	 * Each settlement lists the payments, refunds and chargebacks it holds as
+	 * transaction lines, with amounts as decimal strings: a refund or
+	 * chargeback line is negative, so the lines minus `amountFees` add up to
+	 * `amountNet`. A binding without a settlement API returns an empty list.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object.
+	 * @param string $since ISO 8601 moment; older settlements are not returned.
+	 *
+	 * @return list<array<string, mixed>> Each `{settlementReference, settledAt, currency, amountGross,
+	 *                                    amountFees, amountRefunds, amountChargebacks, amountNet,
+	 *                                    transactions: [{providerPaymentId, type, amount, fee}]}`.
+	 *
+	 * @throws PaymentProviderException When the provider is unreachable or errors.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008
+	 */
+	public function fetchSettlements(array $sourceConfiguration, string $since): array;
+
+	/**
+	 * The point-of-sale terminals registered on the provider account.
+	 *
+	 * A binding without a point-of-sale method returns an empty list.
+	 *
+	 * @param array $sourceConfiguration The payment source's `configuration` object.
+	 *
+	 * @return list<array{terminalId: string, label: string, status: string}>
+	 *
+	 * @throws PaymentProviderException When the provider is unreachable or errors.
+	 *
+	 * @spec openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-a-payment-can-be-taken-on-a-registered-point-of-sale-device-req-lpp-009
+	 */
+	public function listTerminals(array $sourceConfiguration): array;
 }//end interface
