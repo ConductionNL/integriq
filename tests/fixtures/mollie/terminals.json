@@ -1,0 +1,23 @@
+{
+  "count": 2,
+  "_embedded": {
+    "terminals": [
+      {
+        "resource": "terminal",
+        "id": "term_example0001",
+        "description": "Telefoon Anna",
+        "status": "active",
+        "brand": "Tap to Pay"
+      },
+      {
+        "resource": "terminal",
+        "id": "term_example0002",
+        "description": "Balie",
+        "status": "inactive"
+      }
+    ]
+  },
+  "_links": {
+    "next": null
+  }
+}

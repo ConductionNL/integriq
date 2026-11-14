@@ -47,7 +47,7 @@ class SwvHandoffClientHttpTest extends TestCase {
 		);
 		$this->assertSame(expected: ['swv-kindkans', '/handoff', 'POST'], actual: array_slice($this->calls[0], 0, 3));
 		$this->assertSame(expected: $dossier, actual: $this->calls[0][3]['json']);
-		$this->assertFalse($this->calls[0][3]['logBody']);
+		$this->assertArrayNotHasKey('logBody', $this->calls[0][3]);
 		$this->assertTrue($this->calls[0][4]);
 	}//end testTheReceiverAcknowledgesTheDossier()
 

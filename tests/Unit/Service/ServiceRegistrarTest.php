@@ -154,6 +154,8 @@ use OCA\Integriq\Service\JobToFlowGenerator;
 use OCA\Integriq\Service\JobToFlowGeneratorInterface;
 use OCA\Integriq\Service\KissSyncService;
 use OCA\Integriq\Service\KissSyncServiceInterface;
+use OCA\Integriq\Service\Kiss\CallerSearchInterface;
+use OCA\Integriq\Service\Kiss\ConfiguredCallerSearch;
 use OCA\Integriq\Service\Kiss\CtiEventIntake;
 use OCA\Integriq\Service\Kiss\CtiEventIntakeInterface;
 use OCA\Integriq\Service\Lti\LtiAgsService;
@@ -422,6 +424,7 @@ class ServiceRegistrarTest extends TestCase {
 		WebhookTrustMigratorInterface::class => WebhookTrustMigrator::class,
 		Microsoft365AdapterInterface::class => Microsoft365Adapter::class,
 		CtiEventIntakeInterface::class => CtiEventIntake::class,
+		CallerSearchInterface::class => ConfiguredCallerSearch::class,
 		IntakeGroupsInterface::class => IntakeGroups::class,
 		ObjecttypeEndpointHandlerInterface::class => ObjecttypeEndpointHandler::class,
 		ActionAuthServiceInterface::class => ActionAuthService::class,

@@ -75,7 +75,8 @@ describe('ActionAuthMatrix rendering', () => {
 		expect(wrapper.text()).toContain('Loading action matrix…')
 		await flushPromises()
 		expect(wrapper.findAll('thead th').map((th) => th.text())).toEqual(['Action', 'admin', 'editors'])
-		expect(wrapper.findAll('tbody th').map((th) => th.text())).toEqual(['rule.edit', 'source.delete'])
+		expect(wrapper.findAll('tbody th .integriq-admin__matrix-name').map((name) => name.text())).toEqual(['rule.edit', 'source.delete'])
+		expect(wrapper.findAll('tbody th .integriq-admin__matrix-label').map((label) => label.text())).toEqual(['rule.edit', 'source.delete'])
 		const switches = wrapper.findAllComponents({ name: 'NcCheckboxRadioSwitch' })
 		expect(switches.map((s) => [s.props('modelValue'), s.props('disabled')])).toEqual([
 			[true, true], [true, false],
@@ -87,6 +88,24 @@ describe('ActionAuthMatrix rendering', () => {
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.matrix['source.delete']).toEqual(['editors'])
 		expect(wrapper.findComponent({ name: 'NcButton' }).text()).toBe('Save action matrix')
+	})
+
+	it('draws one section per area with each action\'s label above its name', async () => {
+		get.mockResolvedValue({
+			data: {
+				actions: ['stuf-zkn.push', 'sms.send'],
+				groups: ['integratie-beheer'],
+				matrix: {},
+				labels: { 'stuf-zkn.push': 'Push through the StUF-ZKN bridge', 'sms.send': 'Send a text message' },
+				areas: { 'stuf-zkn.push': 'Adapters', 'sms.send': 'Notifications' },
+			},
+		})
+		const wrapper = mountPanel(ActionAuthMatrix)
+		await flushPromises()
+		expect(wrapper.findAll('h4').map((h) => h.text())).toEqual(['Adapters', 'Notifications'])
+		const adapters = wrapper.find('[data-testid="admin-action-area-Adapters"]')
+		expect(adapters.find('.integriq-admin__matrix-label').text()).toBe('Push through the StUF-ZKN bridge')
+		expect(adapters.find('.integriq-admin__matrix-name').text()).toBe('stuf-zkn.push')
 	})
 
 	it('shows a load failure as an alert', async () => {
