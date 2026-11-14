@@ -681,12 +681,12 @@
           },
           "targetType": {
             "type": "string",
-            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`.",
+            "description": "Polymorphic target kind: `register/schema`, `api`, `a2a` (a source holding an A2A agent, its agent card answered pointing at the endpoint), `job`, `synchronization`.",
             "title": "Target Type"
           },
           "targetId": {
             "type": "string",
-            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
+            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` and `a2a` → integer Source PK (legacy) or UUID; for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID.",
             "title": "Target ID"
           },
           "conditions": {
