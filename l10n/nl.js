@@ -2271,7 +2271,19 @@ OC.L10N.register(
         "Rate date": "Koersdatum",
         "The publication date the rate applies to": "De publicatiedatum waarop de koers van toepassing is",
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
+        "Add target": "Doel toevoegen",
+        "For an endpoint that calls a source: send its calls to several sources, by weight or by a rule on the request. Without targets the endpoint calls its one target.": "Voor een endpoint dat een bron aanroept: verdeel de aanroepen over meerdere bronnen, naar gewicht of met een regel op het verzoek. Zonder doelen roept het endpoint zijn ene doel aan.",
+        "Group": "Groep",
+        "Keeps each consumer on the same target. With few consumers this unbalances the weights.": "Houdt elke afnemer bij hetzelfde doel. Met weinig afnemers raken de gewichten daardoor uit balans.",
+        "Remove this target": "Dit doel verwijderen",
+        "Rule (JsonLogic, optional)": "Regel (JsonLogic, optioneel)",
+        "Sticky": "Vaste koppeling",
+        "This is not a JSON object; the rule was not changed.": "Dit is geen JSON-object; de regel is niet gewijzigd.",
+        "Weight": "Gewicht",
+        "{share} of its group": "{share} van de groep",
+        "Calls per target": "Aanroepen per doel",
+        "No call has been routed to a target yet.": "Er is nog geen aanroep naar een doel gestuurd."
     },
     "nplurals=2; plural=(n != 1);"
 )

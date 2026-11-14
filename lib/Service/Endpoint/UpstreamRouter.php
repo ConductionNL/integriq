@@ -113,14 +113,14 @@ class UpstreamRouter {
 			$others = array_values(array_filter($healthy, static fn (array $other): bool => $other['index'] !== $target['index']));
 			$retryTarget = $this->selector->pick(candidates: $others);
 			if ($retryTarget !== null) {
-				$this->stamp(callLog: $callLog, target: $target, reason: $reason);
+				$this->stamp(callLog: $callLog, target: $target, reason: $reason, endpoint: (string)$request->endpoint->getUuid());
 				$target = $retryTarget;
 				$reason = 'retry';
 				$callLog = $this->dispatch(request: $request, target: $target, trace: $trace);
 			}
 		}
 
-		return $this->stamp(callLog: $callLog, target: $target, reason: $reason);
+		return $this->stamp(callLog: $callLog, target: $target, reason: $reason, endpoint: (string)$request->endpoint->getUuid());
 	}//end call()
 
 	/**
@@ -217,13 +217,17 @@ class UpstreamRouter {
 	 * @param ObjectEntity $callLog The call log.
 	 * @param array{source: string} $target The target that served the call.
 	 * @param string $reason `rule:<index>`, `weight`, `sticky` or `retry`.
+	 * @param string $endpoint The endpoint the call came in on, so its page can count calls per target.
 	 *
 	 * @return ObjectEntity The call log, stamped when it could be.
 	 *
 	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-the-call-log-records-which-target-served-a-call-req-uprt-003
 	 */
-	private function stamp(ObjectEntity $callLog, array $target, string $reason): ObjectEntity {
+	private function stamp(ObjectEntity $callLog, array $target, string $reason, string $endpoint = ''): ObjectEntity {
 		$routing = ['routedTarget' => $target['source'], 'routedReason' => $reason];
+		if ($endpoint !== '') {
+			$routing['routedEndpoint'] = $endpoint;
+		}
 		$uuid = (string)$callLog->getUuid();
 		if ($uuid === '') {
 			return $callLog;

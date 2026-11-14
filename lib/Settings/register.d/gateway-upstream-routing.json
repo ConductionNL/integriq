@@ -54,6 +54,12 @@
 						"title": "Routed target",
 						"description": "The source that served this call, for an endpoint with several targets."
 					},
+					"routedEndpoint": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Routed endpoint",
+						"description": "The endpoint with several targets this call came in on, so the endpoint page can count its calls per target."
+					},
 					"routedReason": {
 						"type": "string",
 						"title": "Routed reason",

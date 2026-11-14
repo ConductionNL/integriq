@@ -35,7 +35,7 @@ Kind: code. Size M. Rows `integriq:gw-loadbalance`, `integriq:gw-canary`, `integ
 - **files**: the endpoint editor, `src/manifest.json` (split widget on the endpoint detail), `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN an administrator WHEN they add a second target with weight 5 THEN the endpoint page shows both and, after traffic, the split per target
-- [ ] Implement
+- [x] Implement
 - [ ] Test (Playwright)
 
 ## Verification

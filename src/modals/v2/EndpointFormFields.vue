@@ -211,6 +211,13 @@
 			</template>
 		</div>
 
+		<!-- gateway-upstream-routing: several sources for one endpoint. -->
+		<EndpointTargetsField
+			:targets="Array.isArray(formData.targets) ? formData.targets : []"
+			:sticky="!!formData.sticky"
+			@update:targets="updateField('targets', $event)"
+			@update:sticky="updateField('sticky', $event)" />
+
 		<!-- REQ-MSV-002: the message schemas the request and the proxied
 		     answer must match, and whether a mismatch is refused or recorded. -->
 		<fieldset class="cn-endpoint-form-fields__validation">
@@ -283,6 +290,7 @@ const FIELD_PLACEHOLDERS = {
 	endpoint: 'api/v1/objects/{id}',
 	endpointArray: 'api, v1, objects, {id}',
 }
+import EndpointTargetsField from './EndpointTargetsField.vue'
 import SchemaTextField from './SchemaTextField.vue'
 import messageSchemaOptions from '../../mixins/messageSchemaOptions.js'
 
@@ -290,6 +298,7 @@ export default {
 	name: 'EndpointFormFields',
 
 	components: {
+		EndpointTargetsField,
 		SchemaTextField,
 		NcTextField,
 		NcSelect,
@@ -358,7 +367,7 @@ export default {
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
 			return this.fields.filter(
-				(field) => field.key !== 'targetId' && field.key !== 'validation',
+				(field) => !['targetId', 'validation', 'targets', 'sticky'].includes(field.key),
 			)
 		},
 

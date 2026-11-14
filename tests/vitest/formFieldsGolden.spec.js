@@ -15,6 +15,8 @@ import { describe, expect, it, vi } from 'vitest'
 import EndpointFormFields from '@/modals/v2/EndpointFormFields.vue'
 import SourceFormFields from '@/modals/v2/SourceFormFields.vue'
 
+// The targets editor (gateway-upstream-routing) has its own spec, endpointTargets.spec.js.
+vi.mock('@/modals/v2/EndpointTargetsField.vue', () => ({ default: { name: 'EndpointTargetsField', render: () => null } }))
 vi.mock('@nextcloud/axios', () => ({
 	default: {
 		get: vi.fn().mockResolvedValue({ data: { results: [] } }),

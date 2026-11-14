@@ -1658,6 +1658,34 @@
             "type": "related",
             "icon": "LinkVariant",
             "title": "Wired to"
+          },
+          {
+            "_note": "gateway-upstream-routing REQ-UPRT-003: how many calls each target of an endpoint with several targets served, from the call logs the upstream router stamps with routedEndpoint and routedTarget; the source uuids resolve to source names. Empty for an endpoint with one target.",
+            "id": "ep-target-split",
+            "type": "chart",
+            "icon": "ChartDonut",
+            "title": "Calls per target",
+            "props": {
+              "chartKind": "donut",
+              "legendPosition": "bottom",
+              "emptyLabel": "No call has been routed to a target yet."
+            },
+            "dataSource": {
+              "register": "integriq",
+              "schema": "call_log",
+              "filter": {
+                "routedEndpoint": "@objectId"
+              },
+              "aggregate": {
+                "groupBy": "routedTarget",
+                "metric": "count",
+                "labelResolve": {
+                  "register": "integriq",
+                  "schema": "source",
+                  "labelField": "name"
+                }
+              }
+            }
           }
         ],
         "layout": [
@@ -1676,6 +1704,14 @@
             "gridY": 0,
             "gridWidth": 4,
             "gridHeight": 7
+          },
+          {
+            "id": "3",
+            "widgetId": "ep-target-split",
+            "gridX": 0,
+            "gridY": 7,
+            "gridWidth": 6,
+            "gridHeight": 5
           }
         ],
         "sidebar": {

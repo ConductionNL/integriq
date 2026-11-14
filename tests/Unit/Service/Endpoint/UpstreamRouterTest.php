@@ -252,6 +252,7 @@ class UpstreamRouterTest extends TestCase {
 		$this->assertSame('call_log', $this->saved[0]['schema']);
 		$this->assertSame('[redacted]', $this->saved[0]['response']['body']);
 		$this->assertSame('a', $this->saved[0]['routedTarget']);
+		$this->assertSame('endpoint-1', $this->saved[0]['routedEndpoint']);
 	}//end testTheStampKeepsTheStoredRedactedCallLog()
 
 	/**
@@ -270,8 +271,8 @@ class UpstreamRouterTest extends TestCase {
 		$this->assertSame('b', $result->getObject()['routedTarget']);
 		$this->assertSame('retry', $result->getObject()['routedReason']);
 		$this->assertSame(
-			[['log-1', 'a', 'weight'], ['log-2', 'b', 'retry']],
-			array_map(static fn (array $row): array => [$row['uuid'], $row['routedTarget'], $row['routedReason']], $this->saved)
+			[['log-1', 'a', 'weight', 'endpoint-1'], ['log-2', 'b', 'retry', 'endpoint-1']],
+			array_map(static fn (array $row): array => [$row['uuid'], $row['routedTarget'], $row['routedReason'], $row['routedEndpoint']], $this->saved)
 		);
 	}//end testAnIdempotentCallIsRetriedOnceOnAnotherTarget()
 

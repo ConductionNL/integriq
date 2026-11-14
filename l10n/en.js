@@ -3536,7 +3536,19 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Add target": "Add target",
+        "For an endpoint that calls a source: send its calls to several sources, by weight or by a rule on the request. Without targets the endpoint calls its one target.": "For an endpoint that calls a source: send its calls to several sources, by weight or by a rule on the request. Without targets the endpoint calls its one target.",
+        "Group": "Group",
+        "Keeps each consumer on the same target. With few consumers this unbalances the weights.": "Keeps each consumer on the same target. With few consumers this unbalances the weights.",
+        "Remove this target": "Remove this target",
+        "Rule (JsonLogic, optional)": "Rule (JsonLogic, optional)",
+        "Sticky": "Sticky",
+        "This is not a JSON object; the rule was not changed.": "This is not a JSON object; the rule was not changed.",
+        "Weight": "Weight",
+        "{share} of its group": "{share} of its group",
+        "Calls per target": "Calls per target",
+        "No call has been routed to a target yet.": "No call has been routed to a target yet."
     },
     "nplurals=2; plural=(n != 1);"
 )
