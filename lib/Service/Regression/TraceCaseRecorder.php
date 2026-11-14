@@ -35,7 +35,7 @@ namespace OCA\Integriq\Service\Regression;
 use InvalidArgumentException;
 use OCA\Integriq\Service\ExecutionTraceService;
 use OCA\Integriq\Service\RegressionSuiteService;
-use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
+use OCA\Integriq\Service\Security\RedactedValueFilter;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OutOfBoundsException;
 
@@ -160,7 +160,7 @@ class TraceCaseRecorder {
 				continue;
 			}
 
-			if ($value === SensitiveFieldRegistry::PLACEHOLDER) {
+			if (RedactedValueFilter::isPlaceholder(value: $value) === true) {
 				$paths[] = $path;
 			}
 		}
