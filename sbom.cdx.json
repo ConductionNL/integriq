@@ -7,7 +7,7 @@
     "tools": [
       {
         "name": "composer",
-        "version": "2.10.2"
+        "version": "2.8.12"
       },
       {
         "vendor": "cyclonedx",
@@ -3127,10 +3127,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/polyfill-intl-normalizer-1.42.0.0",
+      "bom-ref": "symfony/polyfill-intl-normalizer-1.43.0.0",
       "type": "library",
       "name": "polyfill-intl-normalizer",
-      "version": "v1.42.0",
+      "version": "v1.43.0",
       "group": "symfony",
       "description": "Symfony polyfill for intl's Normalizer class and related functions",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3141,17 +3141,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/polyfill-intl-normalizer@v1.42.0",
+      "purl": "pkg:composer/symfony/polyfill-intl-normalizer@v1.43.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/polyfill-intl-normalizer/zipball/aa20edea75bd9c48cfecc8360922e5a6e5c44502",
-          "comment": "dist reference: aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "url": "https://api.github.com/repos/symfony/polyfill-intl-normalizer/zipball/ebd57ccc7edb93d632e184efbe7693d2517bab3b",
+          "comment": "dist reference: ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/polyfill-intl-normalizer.git",
-          "comment": "source reference: aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "comment": "source reference: ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "type": "website",
@@ -3160,18 +3160,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/polyfill-intl-normalizer/tree/v1.42.0",
+          "url": "https://github.com/symfony/polyfill-intl-normalizer/tree/v1.43.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "value": "ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+          "value": "ebd57ccc7edb93d632e184efbe7693d2517bab3b"
         },
         {
           "name": "cdx:composer:package:type",
@@ -5706,6 +5706,40 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@humanwhocodes/retry"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "nonrecursive-glob-match",
+      "group": "@isaacs",
+      "version": "1.1.0",
+      "bom-ref": "integriq@1.0.0|@isaacs/nonrecursive-glob-match@1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BlueOak-1.0.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40isaacs/nonrecursive-glob-match@1.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@isaacs/nonrecursive-glob-match/-/nonrecursive-glob-match-1.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "18f9bf0dbbe4e512e68519f15c86bb9d3a4ad31b65e04d308f432c96cb8d889d45211394fb6fbd960502fdd805ec4cb84025a17c4b20c6294c44c09d1cf7c37f"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@isaacs/nonrecursive-glob-match"
         }
       ]
     },
@@ -12074,10 +12108,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/balanced-match"
         }
@@ -12283,10 +12313,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/brace-expansion"
@@ -27498,24 +27524,24 @@
         {
           "type": "library",
           "name": "minimatch",
-          "version": "9.0.9",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|minimatch@9.0.9",
+          "version": "11.0.8",
+          "bom-ref": "integriq@1.0.0|webdav@5.10.0|minimatch@11.0.8",
           "licenses": [
             {
               "license": {
-                "id": "ISC"
+                "id": "BlueOak-1.0.0"
               }
             }
           ],
-          "purl": "pkg:npm/minimatch@9.0.9",
+          "purl": "pkg:npm/minimatch@11.0.8",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/minimatch/-/minimatch-9.0.9.tgz",
+              "url": "https://registry.npmjs.org/minimatch/-/minimatch-11.0.8.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "381c0137d00be1daa61139694b6cdab31faf4de59c956ce46e57d993b2930398f78de38e373fed4429d9a26532bcd83cdf02f966ff52b3a1cc2570202fc47662"
+                  "content": "9c542e6124d5ac6bf2b15069b39221fb405d9d814dfc28f70bcd7aafafa9ef22be147ad52c61383b837d005c3292b94d96f3361d8b7e45a775522ae8ea1f3c22"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27525,72 +27551,6 @@
             {
               "name": "cdx:npm:package:path",
               "value": "node_modules/webdav/node_modules/minimatch"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "brace-expansion",
-          "version": "2.1.7",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|brace-expansion@2.1.7",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/brace-expansion@2.1.7",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-2.1.7.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "b996dec3536a7663c34cc27c6a1d72f9bfbd40426b7e45c593745c4d0c375f48d6ff1454bc52ac83509f41d49819d4db5d9584c6d53727771cc6d9dfc35162d2"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/webdav/node_modules/brace-expansion"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "balanced-match",
-          "version": "1.0.2",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|balanced-match@1.0.2",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/balanced-match@1.0.2",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "de849e50ed13315ebb84dd4099b5ec2b8c9aa94eed8e21e56f144364ea47d0a5bdf82797e1b440697d009f1b74b71d8cae94695b041a3f02252121098585393f"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/webdav/node_modules/balanced-match"
             }
           ]
         }
@@ -28328,7 +28288,7 @@
       "ref": "symfony/polyfill-intl-grapheme-1.41.0.0"
     },
     {
-      "ref": "symfony/polyfill-intl-normalizer-1.42.0.0"
+      "ref": "symfony/polyfill-intl-normalizer-1.43.0.0"
     },
     {
       "ref": "symfony/polyfill-mbstring-1.43.3.0"
@@ -28358,7 +28318,7 @@
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-ctype-1.37.0.0",
         "symfony/polyfill-intl-grapheme-1.41.0.0",
-        "symfony/polyfill-intl-normalizer-1.42.0.0",
+        "symfony/polyfill-intl-normalizer-1.43.0.0",
         "symfony/polyfill-mbstring-1.43.3.0"
       ]
     },
