@@ -7,9 +7,9 @@
   "publishedDate": "2026-06-15",
   "closingDate": "2026-08-31",
   "channels": ["werk-nl", "linkedin"],
-  "channel": "linkedin",
   "postedToChannels": true,
   "minEducationLevel": 6,
   "minExperienceYears": 3,
-  "administrationId": "ADM-001"
+  "administrationId": "ADM-001",
+  "channel": "linkedin"
 }
