@@ -77,7 +77,8 @@ class SynchronizationApprovalGate {
 	public function resolve(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity {
 		if ($bypassApprovalId !== null) {
 			try {
-				$candidate = $this->approvalService->find(id: $bypassApprovalId);
+				// System read: the engine resolves the id its caller already authorised, and checks below that it belongs to this synchronization.
+				$candidate = $this->approvalService->find(id: $bypassApprovalId, asSystem: true);
 			} catch (Exception $e) {
 				return null;
 			}

@@ -3,6 +3,9 @@
 /**
  * Integriq ConnectionConfigReader.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Reads the declaring app's settings for the connection status resolver
  * (hydra umbrella design D4 rules 3 and 5, amended by D12): whether every
  * required setting is filled, and the value that selects an adapter.
@@ -29,9 +32,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @version GIT: <git_id>
  *

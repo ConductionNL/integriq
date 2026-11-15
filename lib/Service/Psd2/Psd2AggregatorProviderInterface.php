@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Psd2;
 
-use OCA\Integriq\Exception\Psd2ConsentRevokedException;
 use OCA\Integriq\Exception\Psd2ProviderException;
 
 /**

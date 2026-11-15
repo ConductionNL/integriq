@@ -50,8 +50,7 @@ Thumbs.db
 .docusaurus
 .phpunit.result.cache
 
-# SBOM is published as release asset (see SECURITY.md), not stored in repo
-sbom.cdx.json
+# Intermediate SBOM files. The merged sbom.cdx.json at the root is committed.
 bom-php.cdx.json
 bom-npm.cdx.json
 
@@ -80,3 +79,8 @@ bom-npm.cdx.json
 # are gate FIXTURES, not artefacts, and must stay tracked.
 /*.log
 /changed.tsv
+
+# Agent work files. They belong in an issue or a PR, not in the tree.
+/scratchpad/
+/task-audit.json
+/LANE-LOG.md

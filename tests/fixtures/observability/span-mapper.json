@@ -1,0 +1,1944 @@
+{
+    "full": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-full"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "own-otel-trace-id": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-own-otel-trace-id"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "no-parent-span": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-no-parent-span"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "bad-parent-span": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-bad-parent-span"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "iso-times-only": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-iso-times-only"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540001000000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "end-before-start": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-end-before-start"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000000000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "step-without-time": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-step-without-time"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "29ef4f45f091d60e",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "rule x",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000000000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "rule"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "x"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "truncated-and-junk-steps": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-truncated-and-junk-steps"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.sync",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "sync"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "9"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "step",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000000000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "step"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "empty": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-empty"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "",
+                                "spanId": "9c336d84dfb2fa15",
+                                "name": "integriq.execution",
+                                "kind": 1,
+                                "startTimeUnixNano": "0000",
+                                "endTimeUnixNano": "0000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "execution"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 0
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "endpoint-entry": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-endpoint-entry"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.endpoint",
+                                "kind": 2,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "endpoint"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "cron-entry": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "svc-cron-entry"
+                            }
+                        }
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "integriq.execution-trace"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "6507c7be4aef567c",
+                                "name": "integriq.cron",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000000000000",
+                                "endTimeUnixNano": "1791540000900000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.entry_point",
+                                        "value": {
+                                            "stringValue": "cron"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.entry_point_id",
+                                        "value": {
+                                            "stringValue": "sync-1"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.trace_id",
+                                        "value": {
+                                            "stringValue": "4bf92f35-77b3-4da6-a3ce-929d0e0e4736"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.steps.dropped",
+                                        "value": {
+                                            "intValue": "0"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                },
+                                "parentSpanId": "00f067aa0ba902b7"
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "860ccba6bdd6e9e5",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "mapping person",
+                                "kind": 1,
+                                "startTimeUnixNano": "1791540000100000000",
+                                "endTimeUnixNano": "1791540000105000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "mapping"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "person"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "5"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "a1b2c3d4e5f60718",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call BRP",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000100200000",
+                                "endTimeUnixNano": "1791540000140200000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "BRP"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "success"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "40"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "GET"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://brp.example.org/personen"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "200"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 1
+                                }
+                            },
+                            {
+                                "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                                "spanId": "cf9b6cb5a3185479",
+                                "parentSpanId": "6507c7be4aef567c",
+                                "name": "call ZRC",
+                                "kind": 3,
+                                "startTimeUnixNano": "1791540000300000000",
+                                "endTimeUnixNano": "1791540000312000000",
+                                "attributes": [
+                                    {
+                                        "key": "integriq.step.type",
+                                        "value": {
+                                            "stringValue": "call"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.name",
+                                        "value": {
+                                            "stringValue": "ZRC"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.status",
+                                        "value": {
+                                            "stringValue": "error"
+                                        }
+                                    },
+                                    {
+                                        "key": "integriq.step.duration_ms",
+                                        "value": {
+                                            "intValue": "12"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.request.method",
+                                        "value": {
+                                            "stringValue": "POST"
+                                        }
+                                    },
+                                    {
+                                        "key": "url.full",
+                                        "value": {
+                                            "stringValue": "https://zrc.example.org/zaken"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response.status_code",
+                                        "value": {
+                                            "intValue": "503"
+                                        }
+                                    }
+                                ],
+                                "status": {
+                                    "code": 2
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

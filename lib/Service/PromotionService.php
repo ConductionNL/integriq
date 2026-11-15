@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/environments-and-promotion/spec.md
  */
-class PromotionService {
+class PromotionService implements PromotionServiceInterface {
 	// Frozen on the old id: this is the OpenRegister REGISTER SLUG, not the app id.
 	// OpenRegister matches registers by slug; renaming it orphans every stored object.
 	private const REGISTER = 'integriq';
@@ -84,12 +84,14 @@ class PromotionService {
 	 * @param EnvironmentService $environmentService Resolves target environments and their connectivity Source.
 	 * @param CallService $callService The existing outbound dispatch pipeline (reused unchanged).
 	 * @param OrObjectService $orObjectService Used only to write `promotion_audit` objects.
+	 * @param PromotionRegressionCheck|null $regressionCheck Replays the configuration's test cases (REQ-IRT-005); none checks nothing.
 	 */
 	public function __construct(
 		private readonly ConfigurationService $configurationService,
 		private readonly EnvironmentService $environmentService,
 		private readonly CallService $callService,
 		private readonly OrObjectService $orObjectService,
+		private readonly ?PromotionRegressionCheck $regressionCheck = null,
 	) {
 
 	}//end __construct()
@@ -157,35 +159,11 @@ class PromotionService {
 	 */
 	public function scanCredentialRefs(array $document): array {
 		$flagged = [];
-		$sourceGroups = ($document['components']['sources'] ?? []);
-		if (is_array($sourceGroups) === false) {
-			return [];
+		foreach ($this->sourceAuthentications(document: $document) as $found) {
+			$refs = new SourceCredentialRefs(slug: $found['slug']);
+			$refs->collect(node: $found['authentication'], parentPath: 'configuration.authentication');
+			$flagged = array_merge($flagged, $refs->flagged);
 		}
-
-		foreach ($sourceGroups as $entities) {
-			if (is_array($entities) === false) {
-				continue;
-			}
-
-			foreach ($entities as $sourceData) {
-				if (is_array($sourceData) === false) {
-					continue;
-				}
-
-				$slug = (string)($sourceData['slug'] ?? '');
-				$authentication = ($sourceData['configuration']['authentication'] ?? null);
-				if (is_array($authentication) === false) {
-					continue;
-				}
-
-				$this->collectPlaceholders(
-					node: $authentication,
-					parentPath: 'configuration.authentication',
-					slug: $slug,
-					flagged: $flagged
-				);
-			}
-		}//end foreach
 
 		return $flagged;
 	}//end scanCredentialRefs()
@@ -211,39 +189,81 @@ class PromotionService {
 			return $document;
 		}
 
-		$sourceGroups = ($document['components']['sources'] ?? []);
-		if (is_array($sourceGroups) === false) {
-			return $document;
+		foreach ($this->sourceAuthentications(document: $document) as $found) {
+			$refs = new SourceCredentialRefs(slug: $found['slug'], index: $index);
+			$document['components']['sources'][$found['group']][$found['index']]['configuration']['authentication'] = $refs->rewrite(
+				node: $found['authentication'],
+				parentPath: 'configuration.authentication'
+			);
 		}
-
-		foreach ($sourceGroups as $componentType => $entities) {
-			if (is_array($entities) === false) {
-				continue;
-			}
-
-			foreach ($entities as $idx => $sourceData) {
-				if (is_array($sourceData) === false) {
-					continue;
-				}
-
-				$slug = (string)($sourceData['slug'] ?? '');
-				$authentication = ($sourceData['configuration']['authentication'] ?? null);
-				if (is_array($authentication) === false) {
-					continue;
-				}
-
-				$document['components']['sources'][$componentType][$idx]['configuration']['authentication'] = $this->rewriteNode(
-					node: $authentication,
-					parentPath: 'configuration.authentication',
-					slug: $slug,
-					bySlugField: $index['bySlugField'],
-					bySlug: $index['bySlug']
-				);
-			}
-		}//end foreach
 
 		return $document;
 	}//end applyCredentialBindings()
+
+	/**
+	 * Every exported Source that carries a `configuration.authentication`
+	 * array, with where it sits in the document. Groups and entries that are
+	 * not arrays are passed over.
+	 *
+	 * @param array<string,mixed> $document The exported OAS document.
+	 *
+	 * @return list<array{group:int|string,index:int|string,slug:string,authentication:array<string,mixed>}>
+	 */
+	private function sourceAuthentications(array $document): array {
+		$sourceGroups = ($document['components']['sources'] ?? []);
+		if (is_array($sourceGroups) === false) {
+			return [];
+		}
+
+		$found = [];
+		foreach ($sourceGroups as $group => $entities) {
+			if (is_array($entities) === true) {
+				$found = array_merge($found, $this->groupAuthentications(group: $group, entities: $entities));
+			}
+		}
+
+		return $found;
+	}//end sourceAuthentications()
+
+	/**
+	 * The Sources of one component group that carry a `configuration.authentication` array.
+	 *
+	 * @param int|string $group The component group key.
+	 * @param array<int|string,mixed> $entities The group's entries.
+	 *
+	 * @return list<array{group:int|string,index:int|string,slug:string,authentication:array<string,mixed>}>
+	 */
+	private function groupAuthentications(int|string $group, array $entities): array {
+		$found = [];
+		foreach ($entities as $index => $sourceData) {
+			$authentication = $this->authenticationOf(sourceData: $sourceData);
+			if ($authentication !== null) {
+				$found[] = ['group' => $group, 'index' => $index, 'slug' => (string)($sourceData['slug'] ?? ''), 'authentication' => $authentication];
+			}
+		}
+
+		return $found;
+	}//end groupAuthentications()
+
+	/**
+	 * A Source entry's `configuration.authentication`, when the entry and it are arrays.
+	 *
+	 * @param mixed $sourceData One entry of a component group.
+	 *
+	 * @return array<string,mixed>|null The authentication subtree, or null.
+	 */
+	private function authenticationOf(mixed $sourceData): ?array {
+		if (is_array($sourceData) === false) {
+			return null;
+		}
+
+		$authentication = ($sourceData['configuration']['authentication'] ?? null);
+		if (is_array($authentication) === false) {
+			return null;
+		}
+
+		return $authentication;
+	}//end authenticationOf()
 
 	/**
 	 * Compute the merged promotion preview: the target's own REQ-007
@@ -274,8 +294,25 @@ class PromotionService {
 		$callLog = $this->dispatchToTarget(source: $targetSource, path: self::IMPORT_PREVIEW_PATH, payload: ['document' => $rewritten]);
 		$targetPreview = $this->decodeCallLogBody(callLog: $callLog);
 
-		return array_merge($targetPreview, ['credentialRefsNeedingRebind' => $flagged]);
+		return array_merge($targetPreview, ['credentialRefsNeedingRebind' => $flagged, 'failingTestCases' => $this->failingTestCases(document: $document)]);
 	}//end preview()
+
+	/**
+	 * The failing test cases of an exported configuration; none without a check.
+	 *
+	 * @param array<string,mixed> $document The exported OAS document.
+	 *
+	 * @return list<array<string,string>>
+	 *
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 */
+	private function failingTestCases(array $document): array {
+		if ($this->regressionCheck === null) {
+			return [];
+		}
+
+		return $this->regressionCheck->failingCases(document: $document);
+	}//end failingTestCases()
 
 	/**
 	 * Confirmed promotion (REQ-002/REQ-005/REQ-006): exports locally,
@@ -287,6 +324,7 @@ class PromotionService {
 	 * @param array<int,array<string,string>> $credentialBindings Operator-supplied rebindings (see class docblock for shape).
 	 * @param string $actorUid The confirming operator's Nextcloud user id.
 	 * @param string $fromEnvironmentSlug Origin slug (default "local", the seeded local-instance row).
+	 * @param bool $overrideFailingTests Promote although test cases fail (REQ-IRT-005); recorded on the audit.
 	 *
 	 * @return array<string,mixed> The target's post-import summary plus `auditId`/`callLogId`.
 	 *
@@ -301,65 +339,174 @@ class PromotionService {
 		array $credentialBindings,
 		string $actorUid,
 		string $fromEnvironmentSlug = 'local',
+		bool $overrideFailingTests = false,
 	): array {
-		$startedAt = new DateTime();
-		$index = $this->buildBindingIndex(credentialBindings: $credentialBindings);
-		$callLogId = null;
+		$run = new PromotionRun(configurationId: $configurationId, targetEnvironmentSlug: $targetEnvironmentSlug);
+		$run->credentialBindings = $credentialBindings;
+		$run->actorUid = $actorUid;
+		$run->fromEnvironmentSlug = $fromEnvironmentSlug;
+		$run->overrideFailingTests = $overrideFailingTests;
+
+		return $this->promoteRun(run: $run);
+	}//end promote()
+
+	/**
+	 * Promote, and audit the attempt either way: a failure is audited and rethrown.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 *
+	 * @return array<string,mixed> The target's post-import summary plus `auditId`/`callLogId`.
+	 *
+	 * @throws Throwable Whatever stopped the promotion, after its `failed` audit.
+	 */
+	private function promoteRun(PromotionRun $run): array {
+		$index = $this->buildBindingIndex(credentialBindings: $run->credentialBindings);
 
 		try {
-			$targetSource = $this->resolveTargetSource(targetEnvironmentSlug: $targetEnvironmentSlug);
-
-			$document = $this->export(configurationId: $configurationId);
-			$flagged = $this->scanCredentialRefs(document: $document);
-			$rebindCount = $this->countRebound(flagged: $flagged, index: $index);
-			$rewritten = $this->applyCredentialBindings(document: $document, credentialBindings: $credentialBindings);
-
-			$callLog = $this->dispatchToTarget(
-				source: $targetSource,
-				path: self::IMPORT_PATH,
-				payload: ['document' => $rewritten, 'confirmed' => true]
-			);
-			$callLogId = $callLog->getUuid();
-			$result = $this->decodeCallLogBody(callLog: $callLog);
-
-			$previewSummary = [
-				'creates' => count($result['creates'] ?? []),
-				'updates' => count($result['updates'] ?? []),
-				'collisions' => count($result['collisions'] ?? []),
-				'written' => ($result['written'] ?? []),
-			];
-
-			$audit = $this->writeAudit(
-				configurationId: $configurationId,
-				fromEnvironmentSlug: $fromEnvironmentSlug,
-				toEnvironmentSlug: $targetEnvironmentSlug,
-				actorUid: $actorUid,
-				startedAt: $startedAt,
-				outcome: 'success',
-				message: '',
-				previewSummary: $previewSummary,
-				credentialRebindCount: $rebindCount,
-				callLogId: $callLogId
-			);
-
-			return array_merge($result, ['auditId' => $audit->getUuid(), 'callLogId' => $callLogId]);
+			return $this->promoteDocument(run: $run, index: $index);
 		} catch (Throwable $e) {
-			$this->writeAudit(
-				configurationId: $configurationId,
-				fromEnvironmentSlug: $fromEnvironmentSlug,
-				toEnvironmentSlug: $targetEnvironmentSlug,
-				actorUid: $actorUid,
-				startedAt: $startedAt,
-				outcome: 'failed',
-				message: $e->getMessage(),
-				previewSummary: [],
-				credentialRebindCount: 0,
-				callLogId: $callLogId
-			);
+			$this->auditFailure(run: $run, exception: $e);
 			throw $e;
-		}//end try
+		}
 
-	}//end promote()
+	}//end promoteRun()
+
+	/**
+	 * Export, rebind, import on the target, and audit the success.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 * @param array<string,array<string,array<string,string>>> $index Binding index (see {@see buildBindingIndex()}).
+	 *
+	 * @return array<string,mixed> The target's post-import summary plus `auditId`/`callLogId`.
+	 */
+	private function promoteDocument(PromotionRun $run, array $index): array {
+		$targetSource = $this->resolveTargetSource(targetEnvironmentSlug: $run->targetEnvironmentSlug);
+
+		$document = $this->export(configurationId: $run->configurationId);
+		$this->requireTestsPassOrOverride(run: $run, document: $document);
+		$run->rebindCount = $this->countRebound(flagged: $this->scanCredentialRefs(document: $document), index: $index);
+		$rewritten = $this->applyCredentialBindings(document: $document, credentialBindings: $run->credentialBindings);
+
+		$callLog = $this->dispatchToTarget(
+			source: $targetSource,
+			path: self::IMPORT_PATH,
+			payload: ['document' => $rewritten, 'confirmed' => true]
+		);
+		$run->callLogId = $callLog->getUuid();
+		$result = $this->decodeCallLogBody(callLog: $callLog);
+
+		$audit = $this->auditSuccess(run: $run, result: $result);
+
+		return array_merge($result, ['auditId' => $audit->getUuid(), 'callLogId' => $run->callLogId]);
+	}//end promoteDocument()
+
+	/**
+	 * Refuse a promotion whose test cases fail, unless the promoter accepted that.
+	 *
+	 * Runs before anything is sent to the target. The failed count is kept on
+	 * the run, so the audit records it either way.
+	 *
+	 * @param PromotionRun        $run      The promotion.
+	 * @param array<string,mixed> $document The exported OAS document.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When cases fail and the override was not given.
+	 *
+	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-the-promotion-preview-shows-failing-cases-before-a-change-goes-live-req-irt-005
+	 */
+	private function requireTestsPassOrOverride(PromotionRun $run, array $document): void {
+		$run->failedTestCount = count($this->failingTestCases(document: $document));
+		if ($run->failedTestCount > 0 && $run->overrideFailingTests === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'%d test case(s) of this configuration fail. Fix them, or confirm again with overrideFailingTests to promote anyway.',
+					$run->failedTestCount
+				)
+			);
+		}
+	}//end requireTestsPassOrOverride()
+
+	/**
+	 * Write the `success` audit: counts only, never the entities themselves.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 * @param array<string,mixed> $result The target's post-import summary.
+	 *
+	 * @return ObjectEntity The audit record.
+	 */
+	private function auditSuccess(PromotionRun $run, array $result): ObjectEntity {
+		return $this->writeAudit(
+			configurationId: $run->configurationId,
+			fromEnvironmentSlug: $run->fromEnvironmentSlug,
+			toEnvironmentSlug: $run->targetEnvironmentSlug,
+			actorUid: $run->actorUid,
+			startedAt: $run->startedAt,
+			outcome: 'success',
+			message: '',
+			previewSummary: $this->previewSummary(result: $result),
+			credentialRebindCount: $run->rebindCount,
+			callLogId: $run->callLogId,
+			tests: self::testFields(run: $run)
+		);
+	}//end auditSuccess()
+
+	/**
+	 * The test-case fields of an audit entry (REQ-IRT-005): written when cases
+	 * failed or the override was given, so a promotion with nothing to say
+	 * about its tests keeps the entry it always had.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 *
+	 * @return array{failedTestCount?:int,overrideFailingTests?:bool}
+	 */
+	private static function testFields(PromotionRun $run): array {
+		if ($run->failedTestCount === 0 && $run->overrideFailingTests === false) {
+			return [];
+		}
+
+		return ['failedTestCount' => $run->failedTestCount, 'overrideFailingTests' => $run->overrideFailingTests];
+	}//end testFields()
+
+	/**
+	 * Write the `failed` audit: the reason, no summary, the call log when the import was sent.
+	 *
+	 * @param PromotionRun $run The promotion.
+	 * @param Throwable $exception What stopped it.
+	 *
+	 * @return void
+	 */
+	private function auditFailure(PromotionRun $run, Throwable $exception): void {
+		$this->writeAudit(
+			configurationId: $run->configurationId,
+			fromEnvironmentSlug: $run->fromEnvironmentSlug,
+			toEnvironmentSlug: $run->targetEnvironmentSlug,
+			actorUid: $run->actorUid,
+			startedAt: $run->startedAt,
+			outcome: 'failed',
+			message: $exception->getMessage(),
+			previewSummary: [],
+			credentialRebindCount: 0,
+			callLogId: $run->callLogId,
+			tests: self::testFields(run: $run)
+		);
+	}//end auditFailure()
+
+	/**
+	 * The counts-only summary of the target's answer.
+	 *
+	 * @param array<string,mixed> $result The target's post-import summary.
+	 *
+	 * @return array{creates:int,updates:int,collisions:int,written:mixed}
+	 */
+	private function previewSummary(array $result): array {
+		return [
+			'creates' => count($result['creates'] ?? []),
+			'updates' => count($result['updates'] ?? []),
+			'collisions' => count($result['collisions'] ?? []),
+			'written' => ($result['written'] ?? []),
+		];
+	}//end previewSummary()
 
 	/**
 	 * Dispatch a preview/import call to the target environment's Source via
@@ -443,6 +590,7 @@ class PromotionService {
 	 * @param array<string,mixed> $previewSummary Counts-only summary (empty on failure).
 	 * @param int $credentialRebindCount Number of credentialRef placeholders rewritten.
 	 * @param string|null $callLogId UUID of the underlying CallLog, if dispatched.
+	 * @param array<string,mixed> $tests The test-case fields (REQ-IRT-005): failedTestCount and overrideFailingTests.
 	 *
 	 * @return ObjectEntity The created `promotion_audit` object.
 	 *
@@ -460,6 +608,7 @@ class PromotionService {
 		array $previewSummary,
 		int $credentialRebindCount,
 		?string $callLogId,
+		array $tests = [],
 	): ObjectEntity {
 		$payload = [
 			'actorUid' => $actorUid,
@@ -473,138 +622,10 @@ class PromotionService {
 			'previewSummary' => $previewSummary,
 			'credentialRebindCount' => $credentialRebindCount,
 			'callLogId' => ($callLogId ?? ''),
-		];
+		] + $tests;
 
 		return $this->orObjectService->saveObject(object: $payload, register: self::REGISTER, schema: self::AUDIT_SCHEMA);
 	}//end writeAudit()
-
-	/**
-	 * Recursively collect `credentialRef` placeholder field paths under a
-	 * Source's `configuration.authentication` subtree.
-	 *
-	 * @param array<string,mixed> $node The current subtree.
-	 * @param string $parentPath Dotted path to `$node` (not yet including the leaf key).
-	 * @param string $slug The owning Source's slug.
-	 * @param array<int,array{type:string,slug:string,field:string}> $flagged Accumulator (by reference).
-	 *
-	 * @return void
-	 */
-	private function collectPlaceholders(array $node, string $parentPath, string $slug, array &$flagged): void {
-		if ($this->isPlaceholder(value: $node) === true) {
-			$flagged[] = ['type' => 'source', 'slug' => $slug, 'field' => $parentPath . '.credentialRef'];
-			return;
-		}
-
-		foreach ($node as $key => $value) {
-			if (is_array($value) === false) {
-				continue;
-			}
-
-			if ($this->isPlaceholder(value: $value) === true) {
-				$flagged[] = ['type' => 'source', 'slug' => $slug, 'field' => $parentPath . '.' . $key . '.credentialRef'];
-				continue;
-			}
-
-			$this->collectPlaceholders(node: $value, parentPath: $parentPath . '.' . $key, slug: $slug, flagged: $flagged);
-		}
-
-	}//end collectPlaceholders()
-
-	/**
-	 * Recursively rewrite matched `credentialRef` placeholders; unmatched
-	 * placeholders are returned byte-for-byte unchanged (REQ-004).
-	 *
-	 * @param array<string,mixed> $node The current subtree.
-	 * @param string $parentPath Dotted path to `$node`.
-	 * @param string $slug The owning Source's slug.
-	 * @param array<string,array<string,string>> $bySlugField Bindings keyed `slug|field`.
-	 * @param array<string,array<string,string>> $bySlug Bindings keyed `slug` only (field-agnostic).
-	 *
-	 * @return array<string,mixed> The rewritten subtree.
-	 */
-	private function rewriteNode(array $node, string $parentPath, string $slug, array $bySlugField, array $bySlug): array {
-		if ($this->isPlaceholder(value: $node) === true) {
-			return $this->resolveReplacement(
-				node: $node,
-				field: $parentPath . '.credentialRef',
-				slug: $slug,
-				bySlugField: $bySlugField,
-				bySlug: $bySlug
-			);
-		}
-
-		$result = [];
-		foreach ($node as $key => $value) {
-			if (is_array($value) === false) {
-				$result[$key] = $value;
-				continue;
-			}
-
-			if ($this->isPlaceholder(value: $value) === true) {
-				$result[$key] = $this->resolveReplacement(
-					node: $value,
-					field: $parentPath . '.' . $key . '.credentialRef',
-					slug: $slug,
-					bySlugField: $bySlugField,
-					bySlug: $bySlug
-				);
-				continue;
-			}
-
-			$result[$key] = $this->rewriteNode(
-				node: $value,
-				parentPath: $parentPath . '.' . $key,
-				slug: $slug,
-				bySlugField: $bySlugField,
-				bySlug: $bySlug
-			);
-		}//end foreach
-
-		return $result;
-	}//end rewriteNode()
-
-	/**
-	 * Resolve one placeholder's replacement reference, or return it verbatim
-	 * when no binding matches.
-	 *
-	 * @param array<string,mixed> $node The placeholder node (`{"credentialRef": {...}}`).
-	 * @param string $field The placeholder's dotted field path.
-	 * @param string $slug The owning Source's slug.
-	 * @param array<string,array<string,string>> $bySlugField Bindings keyed `slug|field`.
-	 * @param array<string,array<string,string>> $bySlug Bindings keyed `slug` only.
-	 *
-	 * @return array<string,mixed> `{"credentialRef": <replacement>}` when matched, else `$node` unchanged.
-	 */
-	private function resolveReplacement(array $node, string $field, string $slug, array $bySlugField, array $bySlug): array {
-		$key = $slug . '|' . $field;
-		if (isset($bySlugField[$key]) === true) {
-			return ['credentialRef' => $bySlugField[$key]];
-		}
-
-		if (isset($bySlug[$slug]) === true) {
-			return ['credentialRef' => $bySlug[$slug]];
-		}
-
-		return $node;
-	}//end resolveReplacement()
-
-	/**
-	 * Whether a value is a credential placeholder — the same shape
-	 * {@see BrokeredCallService::isPlaceholder()} detects (single
-	 * `credentialRef` key, array value). Deliberately duplicated rather than
-	 * calling the private method on a service this class does not otherwise
-	 * depend on — see design.md Decision 3 ("new, in-process" scan step).
-	 *
-	 * @param mixed $value The candidate value.
-	 *
-	 * @return boolean Whether the value is a credential placeholder.
-	 */
-	private function isPlaceholder(mixed $value): bool {
-		return (is_array($value) === true
-			&& array_keys($value) === ['credentialRef']
-			&& is_array($value['credentialRef']) === true);
-
-	}//end isPlaceholder()
 
 	/**
 	 * Build a reference-only replacement (`credentialId`/`credentialName`)

@@ -3,6 +3,9 @@
 /**
  * Integriq Contract Commit flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.contract-commit` — the "[Commit contracts]" step of the
  * decomposed synchronization flow: AFTER the page's objects are written, the
  * decisions the `openconnector.contract` step stamped are upserted as
@@ -60,9 +63,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
@@ -75,16 +75,15 @@ declare(strict_types=1);
 namespace OCA\Integriq\Flow;
 
 use DateTime;
-use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\Integriq\Service\SynchronizationContractServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -95,21 +94,15 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/tasks.md#1-engine-steps-each-a-thin-adapter-over-a-kept-service
  */
-class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
-
-	use SynchronizationLogActions;
+class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, ContractCommitNodeInterface {
+	use FlowNodePaletteDefaults;
 
 	/**
-	 * The step type this node answers to.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
+	 * Palette icon: app and image path.
 	 */
-	public const NODE_ID = 'openconnector.contract-commit';
+	private const PALETTE_ICON = ['integriq', 'flow-synchronization-run.svg'];
+
+	use SynchronizationLogActions;
 
 	/**
 	 * The dot-path an unset `contractPosition` reads the decision block from.
@@ -144,14 +137,14 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationContractService $synchronizationContractService The contract store.
+	 * @param SynchronizationContractServiceInterface $synchronizationContractService The contract store.
 	 * @param FlowOwner $flowOwner Fail-closed run-owner resolution.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon.
 	 * @param LoggerInterface $logger Run diagnostics.
 	 */
 	public function __construct(
-		private readonly SynchronizationContractService $synchronizationContractService,
+		private readonly SynchronizationContractServiceInterface $synchronizationContractService,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
@@ -159,17 +152,6 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	) {
 
 	}//end __construct()
-
-	/**
-	 * The step type.
-	 *
-	 * @return string The type identifier.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getId(): string {
-		return self::NODE_ID;
-	}//end getId()
 
 	/**
 	 * Palette name.
@@ -195,30 +177,6 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		);
 
 	}//end getDescription()
-
-	/**
-	 * Palette icon.
-	 *
-	 * @return string The icon URL.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('integriq', 'flow-synchronization-run.svg');
-	}//end getIcon()
-
-	/**
-	 * Whether the node is offered in the given scope.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The node's whole config vocabulary.
@@ -283,14 +241,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					. 'hash changes on every pass and nothing is ever skipped.'
 				),
 			],
-			[
-				'key' => 'onError',
-				'label' => $this->l10n->t('On error'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What a failed item does to the run: stop, continue or dead_letter.'
-				),
-			],
+			FlowNodeSupport::onErrorField(l10n: $this->l10n),
 		];
 	}//end configForm()
 
@@ -320,9 +271,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	/**
 	 * Commit the page's contracts in one bulk upsert.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata (carries the run owner).
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items, one per input item, in input order.
 	 *
@@ -331,7 +280,11 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		if ($items === []) {
 			return [];
 		}

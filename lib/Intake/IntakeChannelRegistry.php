@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-channel-is-a-declared-adapter-behind-one-contract-req-ic-001
  */
-class IntakeChannelRegistry {
+class IntakeChannelRegistry implements IntakeChannelRegistryInterface {
 
 	/**
 	 * The adapters, keyed by channel id.

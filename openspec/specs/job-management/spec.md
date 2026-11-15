@@ -16,7 +16,7 @@ the backend job-execution internals (covered by PHPUnit/Newman). It is a
 retrofit spec.
 ## Requirements
 
-### REQ-JOB-UI-001: Job Management UI
+### Requirement: Job Management UI (REQ-JOB-UI-001)
 
 Integriq MUST provide a Jobs section in its SPA where administrators can
 browse, create, edit, enable/disable, and manually trigger background jobs.
@@ -39,7 +39,7 @@ browse, create, edit, enable/disable, and manually trigger background jobs.
 - WHEN they navigate to the Job logs page at `/apps/integriq/jobs/logs`
 - THEN the page mounts and renders the main content area
 
-### REQ-JOB-001: Job execution runtime
+### Requirement: Job execution runtime (REQ-JOB-001)
 
 The system SHALL execute registered jobs via the Nextcloud background-job
 framework, resolving the `jobClass`, passing `arguments` (decoded from JSON),
@@ -69,7 +69,7 @@ entry.
 - **WHEN** the job completes
 - **THEN** the response includes the resulting `job_log` entry
 
-### REQ-JOB-002: Job dry-run (test mode)
+### Requirement: Job dry-run (test mode) (REQ-JOB-002)
 
 The system SHALL provide a `POST /api/jobs/{id}/test` endpoint that executes
 the job in dry-run mode (no side-effects committed) and returns a preview log.
@@ -85,12 +85,12 @@ the job in dry-run mode (no side-effects committed) and returns a preview log.
 
 ### Requirement: `FlowAction` runs a flow as a scheduled job (REQ-JOB-003)
 
-The system MUST provide `OCA\Integriq\Action\FlowAction`
+The system MUST provide `OCA\Integriq\Service\Job\FlowAction`
 implementing the same duck-typed `run(array $arguments): array` contract
 as the existing `SynchronizationAction`/`PingAction` (no new Action
 interface is introduced — `jobClass` resolution via the DI container is
 unchanged). A `job` OR object configured with `jobClass:
-'OCA\Integriq\Action\FlowAction'` and `arguments: { flowId: '<uuid>'
+'OCA\Integriq\Service\Job\FlowAction'` and `arguments: { flowId: '<uuid>'
 }` MUST, when executed by `JobService::executeJob()` (on its normal cron
 cadence, on-demand `run`, or forced `test`), resolve the referenced
 `flow` OR object and call `FlowRunnerService::run($flow, triggerSource:
@@ -107,7 +107,7 @@ handle flow-backed jobs.
 #### Scenario: a job configured with FlowAction runs the referenced flow
 
 - **GIVEN** an enabled `job` OR object with `jobClass:
-  'OCA\Integriq\Action\FlowAction'`, `arguments: { flowId: '<uuid>'
+  'OCA\Integriq\Service\Job\FlowAction'`, `arguments: { flowId: '<uuid>'
   }`, and `nextRun` in the past
 - **WHEN** `JobService::run()` sweeps due jobs
 - **THEN** `FlowAction::run({ flowId: '<uuid>' })` is invoked

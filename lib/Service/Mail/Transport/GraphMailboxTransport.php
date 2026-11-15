@@ -116,13 +116,14 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 		}
 
 		$payload = $this->get(url: $url, token: $token, query: $query);
+		$run = new GraphMessagesRun(messagesUrl: $url, token: $token);
 		$messages = [];
 		foreach (($payload['value'] ?? []) as $raw) {
 			if (is_array($raw) === false) {
 				continue;
 			}
 
-			$messages[] = $this->toMessage(raw: $raw, messagesUrl: $url, token: $token);
+			$messages[] = $this->toMessage(raw: $raw, run: $run);
 		}
 
 		return $messages;
@@ -133,12 +134,38 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 	 * Map one Graph message onto a parsed message.
 	 *
 	 * @param array<string,mixed> $raw The Graph message.
-	 * @param string $messagesUrl The collection url, used to fetch attachments.
-	 * @param string $token The bearer token.
+	 * @param GraphMessagesRun    $run The collection url, used to fetch attachments, and the token.
 	 *
 	 * @return ParsedMessage The message.
 	 */
-	private function toMessage(array $raw, string $messagesUrl, string $token): ParsedMessage {
+	private function toMessage(array $raw, GraphMessagesRun $run): ParsedMessage {
+		$attachments = [];
+		if (($raw['hasAttachments'] ?? false) === true) {
+			$attachments = $this->fetchAttachments(run: $run, messageId: (string)($raw['id'] ?? ''));
+		}
+
+		$bodies = self::bodies(raw: $raw);
+
+		return new ParsedMessage(
+			messageId: self::messageId(raw: $raw),
+			from: (string)($raw['from']['emailAddress']['address'] ?? ''),
+			to: self::recipients(raw: $raw),
+			subject: (string)($raw['subject'] ?? ''),
+			receivedAt: self::receivedAt(raw: $raw),
+			bodyText: $bodies['text'],
+			bodyHtml: $bodies['html'],
+			attachments: $attachments);
+
+	}//end toMessage()
+
+	/**
+	 * The recipient addresses of a Graph message, without the empty ones.
+	 *
+	 * @param array<string,mixed> $raw The Graph message.
+	 *
+	 * @return array<int,string> The addresses.
+	 */
+	private static function recipients(array $raw): array {
 		$recipients = [];
 		foreach (($raw['toRecipients'] ?? []) as $recipient) {
 			$address = (string)($recipient['emailAddress']['address'] ?? '');
@@ -147,59 +174,77 @@ class GraphMailboxTransport implements MailboxTransportInterface {
 			}
 		}
 
-		$body = (string)($raw['body']['content'] ?? '');
-		$isHtml = (strtolower((string)($raw['body']['contentType'] ?? 'text')) === 'html');
-		$attachments = [];
-		if (($raw['hasAttachments'] ?? false) === true) {
-			$attachments = $this->fetchAttachments(messagesUrl: $messagesUrl, messageId: (string)($raw['id'] ?? ''), token: $token);
-		}
+		return $recipients;
 
+	}//end recipients()
+
+	/**
+	 * The internet message id without its angle brackets, or the Graph id when there is none.
+	 *
+	 * @param array<string,mixed> $raw The Graph message.
+	 *
+	 * @return string The message id.
+	 */
+	private static function messageId(array $raw): string {
 		$messageId = trim((string)($raw['internetMessageId'] ?? ''), " <>\t");
 		if ($messageId === '') {
 			$messageId = (string)($raw['id'] ?? '');
 		}
 
+		return $messageId;
+
+	}//end messageId()
+
+	/**
+	 * When the message arrived, as text, or null when Graph does not say.
+	 *
+	 * @param array<string,mixed> $raw The Graph message.
+	 *
+	 * @return string|null The received moment.
+	 */
+	private static function receivedAt(array $raw): ?string {
 		$receivedAt = ($raw['receivedDateTime'] ?? null);
 		if ($receivedAt !== null) {
 			$receivedAt = (string)$receivedAt;
 		}
 
-		// A Graph message carries either a preview plus sanitised HTML, or a
-		// plain-text body and no HTML at all.
-		$text = $body;
-		$html = '';
+		return $receivedAt;
+
+	}//end receivedAt()
+
+	/**
+	 * The text and HTML bodies. A Graph message carries either a preview plus
+	 * sanitised HTML, or a plain-text body and no HTML at all.
+	 *
+	 * @param array<string,mixed> $raw The Graph message.
+	 *
+	 * @return array{text: string, html: string} The bodies.
+	 */
+	private static function bodies(array $raw): array {
+		$body   = (string)($raw['body']['content'] ?? '');
+		$isHtml = (strtolower((string)($raw['body']['contentType'] ?? 'text')) === 'html');
 		if ($isHtml === true) {
-			$text = (string)($raw['bodyPreview'] ?? '');
-			$html = HtmlSanitizer::sanitize($body);
+			return ['text' => (string)($raw['bodyPreview'] ?? ''), 'html' => HtmlSanitizer::sanitize($body)];
 		}
 
-		return new ParsedMessage(
-			messageId: $messageId,
-			from: (string)($raw['from']['emailAddress']['address'] ?? ''),
-			to: $recipients,
-			subject: (string)($raw['subject'] ?? ''),
-			receivedAt: $receivedAt,
-			bodyText: $text,
-			bodyHtml: $html,
-			attachments: $attachments);
+		return ['text' => $body, 'html' => ''];
 
-	}//end toMessage()
+	}//end bodies()
 
 	/**
 	 * Read one message's attachments.
 	 *
-	 * @param string $messagesUrl The collection url.
-	 * @param string $messageId The Graph message id.
-	 * @param string $token The bearer token.
+	 * @param GraphMessagesRun $run       The collection url and the token.
+	 * @param string           $messageId The Graph message id.
 	 *
 	 * @return array<int,array<string,mixed>> The attachments.
 	 */
-	private function fetchAttachments(string $messagesUrl, string $messageId, string $token): array {
+	private function fetchAttachments(GraphMessagesRun $run, string $messageId): array {
 		if ($messageId === '') {
 			return [];
 		}
 
-		$payload = $this->get(url: $messagesUrl . '/' . rawurlencode($messageId) . '/attachments', token: $token, query: []);
+		$payload = $this->get(url: $run->messagesUrl . '/' . rawurlencode($messageId) . '/attachments', token: $run->token, query: []);
 		$attachments = [];
 		foreach (($payload['value'] ?? []) as $raw) {
 			if (is_array($raw) === false) {

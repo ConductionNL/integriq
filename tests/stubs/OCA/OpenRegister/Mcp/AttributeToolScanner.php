@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;

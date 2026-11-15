@@ -18,13 +18,16 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\EventService;
+use OCA\Integriq\Service\EventServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\SystemTag\ISystemTagManager;
@@ -64,12 +67,12 @@ class NextcloudFileTagEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param EventService $eventService Service for managing CloudEvents.
+	 * @param EventServiceInterface $eventService Service for managing CloudEvents.
 	 * @param ISystemTagManager $systemTagManager Resolves tag ids to human-readable names.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		private readonly EventService $eventService,
+		private readonly EventServiceInterface $eventService,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -87,18 +90,7 @@ class NextcloudFileTagEventListener implements IEventListener {
 	 * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof MapperEvent === false) {
-			return;
-		}
-
-		if ($event->getObjectType() !== self::OBJECT_TYPE_FILES) {
-			return;
-		}
-
-		$mapperEventType = $event->getEvent();
-		if ($mapperEventType !== MapperEvent::EVENT_ASSIGN
-			&& $mapperEventType !== MapperEvent::EVENT_UNASSIGN
-		) {
+		if ($this->isFileTagChange(event: $event) === false) {
 			return;
 		}
 
@@ -110,26 +102,7 @@ class NextcloudFileTagEventListener implements IEventListener {
 				return;
 			}
 
-			$tagIds = $event->getTags();
-			$tagNames = $this->resolveTagNames(tagIds: $tagIds);
-			$action = 'unassigned';
-			if ($mapperEventType === MapperEvent::EVENT_ASSIGN) {
-				$action = 'assigned';
-			}
-
-			$this->eventService->handleNextcloudEvent(
-				type: 'com.nextcloud.files.node.tagged',
-				payload: [
-					'source' => self::SOURCE,
-					'subject' => $event->getObjectId(),
-					'data' => [
-						'fileid' => $event->getObjectId(),
-						'action' => $action,
-						'tagIds' => $tagIds,
-						'tagNames' => $tagNames,
-					],
-				]
-			);
+			$this->eventService->handleNextcloudEvent(type: 'com.nextcloud.files.node.tagged', payload: $this->payload(event: $event));
 		} catch (\Throwable $e) {
 			// Broad catch is deliberate: this listener runs synchronously
 			// inside the tagging operation that triggered it.
@@ -143,6 +116,54 @@ class NextcloudFileTagEventListener implements IEventListener {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Whether the event assigns or unassigns tags on a file.
+	 *
+	 * @param Event $event The incoming event.
+	 *
+	 * @return bool
+	 *
+	 * @psalm-assert-if-true MapperEvent $event
+	 * @phpstan-assert-if-true MapperEvent $event
+	 */
+	private function isFileTagChange(Event $event): bool {
+		if ($event instanceof MapperEvent === false || $event->getObjectType() !== self::OBJECT_TYPE_FILES) {
+			return false;
+		}
+
+		$mapperEventType = $event->getEvent();
+		return $mapperEventType === MapperEvent::EVENT_ASSIGN || $mapperEventType === MapperEvent::EVENT_UNASSIGN;
+
+	}//end isFileTagChange()
+
+	/**
+	 * The CloudEvent payload of a tag change: the file, the action and the tags.
+	 *
+	 * @param MapperEvent $event The tag change.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function payload(MapperEvent $event): array {
+		$tagIds = $event->getTags();
+		$tagNames = $this->resolveTagNames(tagIds: $tagIds);
+		$action = 'unassigned';
+		if ($event->getEvent() === MapperEvent::EVENT_ASSIGN) {
+			$action = 'assigned';
+		}
+
+		return [
+			'source' => self::SOURCE,
+			'subject' => $event->getObjectId(),
+			'data' => [
+				'fileid' => $event->getObjectId(),
+				'action' => $action,
+				'tagIds' => $tagIds,
+				'tagNames' => $tagNames,
+			],
+		];
+
+	}//end payload()
 
 	/**
 	 * Resolve tag ids to their human-readable names, defensively — a tag may

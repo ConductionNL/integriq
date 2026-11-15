@@ -32,7 +32,7 @@ use Throwable;
  *
  * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-polled-change-is-posted-to-openregister-not-stored-locally-req-rsc-003
  */
-class RegistryUpdateClient {
+class RegistryUpdateClient implements RegistryUpdateClientInterface {
 	/**
 	 * App id for app-config reads.
 	 */
@@ -71,17 +71,8 @@ class RegistryUpdateClient {
 	 */
 	public function postUpdate(string $registryId, array $payload): int {
 		$url = $this->urlGenerator->getAbsoluteURL('/index.php/apps/openregister/api/registry/' . rawurlencode($registryId) . '/updates');
-		$credential = $this->appConfig->getValueString(self::APP_ID, self::CREDENTIAL_KEY, '');
-
-		$headers = ['Content-Type' => 'application/json', 'OCS-APIRequest' => 'true'];
-		if ($credential !== '') {
-			$headers['Authorization'] = 'Basic ' . $credential;
-		}
-
-		$encodedBody = json_encode($payload);
-		if ($encodedBody === false) {
-			$encodedBody = '{}';
-		}
+		$headers = $this->headers();
+		$encodedBody = self::encodedBody(payload: $payload);
 
 		try {
 			$response = $this->clientService->newClient()->post(
@@ -106,4 +97,36 @@ class RegistryUpdateClient {
 
 		return $response->getStatusCode();
 	}//end postUpdate()
+
+	/**
+	 * The request headers: JSON, OCS, and the stored connector credential when there is one.
+	 *
+	 * @return array<string, string> The headers.
+	 */
+	private function headers(): array {
+		$credential = $this->appConfig->getValueString(self::APP_ID, self::CREDENTIAL_KEY, '');
+
+		$headers = ['Content-Type' => 'application/json', 'OCS-APIRequest' => 'true'];
+		if ($credential !== '') {
+			$headers['Authorization'] = 'Basic ' . $credential;
+		}
+
+		return $headers;
+	}//end headers()
+
+	/**
+	 * The JSON body, or an empty object when the payload cannot be encoded.
+	 *
+	 * @param array<string, mixed> $payload The update.
+	 *
+	 * @return string The body.
+	 */
+	private static function encodedBody(array $payload): string {
+		$encodedBody = json_encode($payload);
+		if ($encodedBody === false) {
+			return '{}';
+		}
+
+		return $encodedBody;
+	}//end encodedBody()
 }//end class

@@ -33,12 +33,13 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\IntakeChannelException;
 use OCA\Integriq\Exception\IntakeRoutingException;
-use OCA\Integriq\Intake\IntakeChannelRegistry;
-use OCA\Integriq\Intake\IntakeReplyService;
-use OCA\Integriq\Intake\IntakeRoutingService;
-use OCA\Integriq\Service\ActionAuthService;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Intake\InboundMessage;
+use OCA\Integriq\Intake\IntakeChannelRegistryInterface;
+use OCA\Integriq\Intake\IntakeReplyServiceInterface;
+use OCA\Integriq\Intake\IntakeRoutingServiceInterface;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -82,11 +83,11 @@ class IntakeChannelsController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession Names the principal making a write.
-	 * @param ActionAuthService $actionAuth The ADR-023 action gate.
-	 * @param IntakeChannelRegistry $registry The channels this instance has.
-	 * @param IntakeRoutingService $routingService Routes and validates.
-	 * @param IntakeReplyService $replyService Replies on the arriving channel.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param ActionAuthServiceInterface $actionAuth The ADR-023 action gate.
+	 * @param IntakeChannelRegistryInterface $registry The channels this instance has.
+	 * @param IntakeRoutingServiceInterface $routingService Routes and validates.
+	 * @param IntakeReplyServiceInterface $replyService Replies on the arriving channel.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param OrObjectService $orObjectService Stores routing rules and rejections.
 	 * @param IL10N $l Translations.
 	 */
@@ -94,11 +95,11 @@ class IntakeChannelsController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
-		private readonly IntakeChannelRegistry $registry,
-		private readonly IntakeRoutingService $routingService,
-		private readonly IntakeReplyService $replyService,
-		private readonly WebhookGate $gate,
+		private readonly ActionAuthServiceInterface $actionAuth,
+		private readonly IntakeChannelRegistryInterface $registry,
+		private readonly IntakeRoutingServiceInterface $routingService,
+		private readonly IntakeReplyServiceInterface $replyService,
+		private readonly WebhookGateInterface $gate,
 		private readonly OrObjectService $orObjectService,
 		private readonly IL10N $l,
 	) {
@@ -124,7 +125,7 @@ class IntakeChannelsController extends Controller {
 	public function inbound(string $channel): JSONResponse {
 		$rawBody = $this->getRawContent();
 		$identity = $this->gate->identify(
-			profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . $channel,
+			profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . $channel,
 			rawBody: $rawBody,
 			request: $this->request
 		);
@@ -147,7 +148,7 @@ class IntakeChannelsController extends Controller {
 			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $exception) {
 			// The account's write was refused: answer 503 so the channel delivers again.
-			return $this->gate->notStored(profile: WebhookProfiles::INTAKE_CHANNEL_PREFIX . $channel, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::INTAKE_CHANNEL_PREFIX . $channel, reason: $exception->getMessage());
 		}
 
 		$object = $stored->getObject();
@@ -226,8 +227,8 @@ class IntakeChannelsController extends Controller {
 
 		$saved = $this->orObjectService->saveObject(
 			object: $rule,
-			register: IntakeRoutingService::REGISTER,
-			schema: IntakeRoutingService::SCHEMA_RULE,
+			register: IntakeRoutingServiceInterface::REGISTER,
+			schema: IntakeRoutingServiceInterface::SCHEMA_RULE,
 			uuid: $targetUuid,
 		);
 
@@ -237,6 +238,152 @@ class IntakeChannelsController extends Controller {
 		);
 
 	}//end saveRule()
+
+	/**
+	 * Test a draft rule against a sample message, storing nothing.
+	 *
+	 * Runs the save's validation, then the match and the payload the case
+	 * would receive, and names the saved rule that wins for that channel
+	 * today. No object is written and no routed event is dispatched: the app
+	 * that listens for it opens a real case.
+	 *
+	 * @return JSONResponse Whether the draft matches, its payload and today's winner.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-draft-rule-is-tested-against-a-sample-message-without-side-effects-req-ire-002
+	 */
+	#[NoAdminRequired]
+	public function testRule(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RULES);
+
+		$rule = $this->request->getParam('rule', []);
+		$sample = $this->request->getParam('sample', []);
+		if (is_array($rule) === false || is_array($sample) === false) {
+			return new JSONResponse(
+				['error' => $this->l->t('A test needs a rule and a sample message.')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$this->routingService->validateRule($rule, $this->registry);
+		} catch (IntakeRoutingException $exception) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		// The draft is tested on its own channel, whatever the sample says.
+		$sample['channelId'] = (string)($rule['channelId'] ?? '');
+		$message = InboundMessage::fromObject(object: $sample);
+		$matches = $this->routingService->matches(rule: $rule, message: $message);
+
+		$payload = [];
+		if ($matches === true) {
+			$payload = $this->routingService->buildTargetPayload(rule: $rule, message: $message);
+		}
+
+		$winner = $this->routingService->firstMatchingRule(message: $message);
+		$winningRule = null;
+		if ($winner !== null) {
+			$winningRule = ['name' => (string)($winner['name'] ?? ''), 'order' => (int)($winner['order'] ?? 0)];
+		}
+
+		return new JSONResponse(['matches' => $matches, 'payload' => $payload, 'winningRule' => $winningRule]);
+
+	}//end testRule()
+
+	/**
+	 * Route one held or failed message again.
+	 *
+	 * @param string $id The `intake_message` uuid.
+	 *
+	 * @return JSONResponse The message's new state.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
+	 */
+	#[NoAdminRequired]
+	public function routeAgain(string $id): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RULES);
+
+		$outcome = $this->rerouteOne(id: $id);
+		if (isset($outcome['error']) === true) {
+			return new JSONResponse($outcome, Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse($outcome);
+
+	}//end routeAgain()
+
+	/**
+	 * Route a selection of held or failed messages again, answering each one.
+	 *
+	 * @return JSONResponse One outcome per id, in the order asked.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/messaging-intake-routing-rules/specs/intake-channels/spec.md#requirement-a-held-message-is-routed-again-on-request-with-its-files-req-ire-003
+	 */
+	#[NoAdminRequired]
+	public function routeAgainMany(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		$this->actionAuth->requireAction(user: $user, action: self::ACTION_RULES);
+
+		$ids = $this->request->getParam('ids', []);
+		if (is_array($ids) === false || $ids === []) {
+			return new JSONResponse(
+				['error' => $this->l->t('Choose the messages to route again.')],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$results = [];
+		foreach ($ids as $id) {
+			$results[] = $this->rerouteOne(id: (string)$id);
+		}
+
+		return new JSONResponse(['results' => $results]);
+
+	}//end routeAgainMany()
+
+	/**
+	 * Route one message again and describe the outcome, or why it was refused.
+	 *
+	 * @param string $id The `intake_message` uuid.
+	 *
+	 * @return array<string,string> The id with its status, rule, case and reason, or an error.
+	 */
+	private function rerouteOne(string $id): array {
+		try {
+			$object = $this->routingService->reroute($id)->getObject();
+		} catch (IntakeRoutingException $exception) {
+			return ['id' => $id, 'error' => $exception->getMessage()];
+		}
+
+		return [
+			'id' => $id,
+			'status' => (string)($object['status'] ?? ''),
+			'ruleName' => (string)($object['ruleName'] ?? ''),
+			'targetRef' => (string)($object['targetRef'] ?? ''),
+			'reason' => (string)($object['reason'] ?? ''),
+		];
+
+	}//end rerouteOne()
 
 	/**
 	 * Reply to an inbound message on the channel it arrived on.
@@ -293,8 +440,8 @@ class IntakeChannelsController extends Controller {
 					'status' => 'rejected',
 					'reason' => $reason,
 				],
-				register: IntakeRoutingService::REGISTER,
-				schema: IntakeRoutingService::SCHEMA_MESSAGE,
+				register: IntakeRoutingServiceInterface::REGISTER,
+				schema: IntakeRoutingServiceInterface::SCHEMA_MESSAGE,
 			);
 		} catch (Throwable) {
 			// The rejection record is evidence, not the refusal itself: a

@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -87,7 +90,7 @@ class CatalogControllerTest extends TestCase {
 		$actionAuth = new ActionAuthService($authConfig, $groupManager);
 
 		$registryService = new CatalogRegistryService(
-			new \OCA\OpenRegister\Service\Integration\IntegrationRegistry(),
+			new \OCA\OpenRegister\Service\Integration\IntegrationRegistry(new NullLogger()),
 			$this->orObjectService,
 			$this->appConfig,
 			new NullLogger()

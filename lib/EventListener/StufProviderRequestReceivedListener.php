@@ -17,7 +17,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
-use OCA\Integriq\Service\StufZkn\StufProviderReceiver;
+use OCA\Integriq\Service\StufZkn\StufProviderReceiverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -34,17 +34,17 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
  */
 class StufProviderRequestReceivedListener implements IEventListener {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param StufProviderReceiver $receiver The receiver.
+	 * @param StufProviderReceiverInterface $receiver The receiver.
 	 */
 	public function __construct(
-		private readonly StufProviderReceiver $receiver,
+		private readonly StufProviderReceiverInterface $receiver,
 	) {
 
 	}//end __construct()
@@ -56,7 +56,7 @@ class StufProviderRequestReceivedListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof StufProviderRequestReceivedEvent) === false) {

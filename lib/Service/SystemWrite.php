@@ -41,8 +41,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
-use OCA\Integriq\Exception\SystemWriteUnavailableException;
-
 /**
  * Runs a declared system write, or refuses to run it at all.
  */

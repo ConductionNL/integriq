@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Controller;
 
-use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
+use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -65,7 +65,7 @@ class BodyCaptureController extends Controller {
 	 * @param IUserSession $userSession Names the principal.
 	 * @param IGroupManager $groupManager Answers whether the principal is an administrator.
 	 * @param OrObjectService $objectService Reads and saves the source.
-	 * @param BodyCapturePolicy $policy The window maximum and the clock.
+	 * @param BodyCapturePolicyInterface $policy The window maximum and the clock.
 	 * @param IL10N $l Translations.
 	 */
 	public function __construct(
@@ -74,7 +74,7 @@ class BodyCaptureController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly OrObjectService $objectService,
-		private readonly BodyCapturePolicy $policy,
+		private readonly BodyCapturePolicyInterface $policy,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -224,8 +224,7 @@ class BodyCaptureController extends Controller {
 				id: $id,
 				register: 'integriq',
 				schema: 'source',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException) {
 			return null;
@@ -257,8 +256,7 @@ class BodyCaptureController extends Controller {
 				register: 'integriq',
 				schema: 'source',
 				uuid: $source->getUuid(),
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (Throwable) {
 			return new JSONResponse(

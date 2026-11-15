@@ -51,7 +51,7 @@ use RuntimeException;
  * @uses \OCA\Integriq\Adapters\Pdok\PdokWfsClientHttp
  * @uses \OCA\Integriq\Adapters\Pdok\PdokWfsClientMock
  *
- * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+ * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
  */
 class BagObjectReaderTest extends TestCase {
 	/**
@@ -290,7 +290,7 @@ class BagObjectReaderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/bag-object-read/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
+	 * @spec openspec/specs/registry-field-source/spec.md#requirement-a-bag-object-is-read-by-its-identificatie-and-an-unanswered-read-is-not-a-missing-object
 	 */
 	public function testAClientThatThrowsIsUnreachable(): void {
 		$wfs = new class extends PdokWfsClient {

@@ -3,6 +3,9 @@
 /**
  * Catalog Registry Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Single PHP-side source of truth for the Catalog page's card entries
  * (REQ-003). Assembles catalog descriptors from three existing sources —
  * never inventing an entry:
@@ -51,7 +54,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class CatalogRegistryService {
+class CatalogRegistryService implements CatalogRegistryServiceInterface {
 	/**
 	 * Directory holding the register.d seed fragments this service reads
 	 * for seeded source templates.
@@ -130,7 +133,31 @@ class CatalogRegistryService {
 		// GitHub for the publiccode harvest (sources-github-publiccode).
 		'github-api' => 'Code hosting',
 		'github-raw' => 'Code hosting',
+		// Web shops whose orders go to shillinq (connectors-webshop-orders D4).
+		'woocommerce-shop' => 'Commerce',
+		'shopify-shop' => 'Commerce',
+		'lightspeed-shop' => 'Commerce',
+		// Bookkeeping connectors in the categories shillinq's integrations page filters on
+		// (platform-bookkeeping-catalogue-items D2). These names are a contract: see BOOKKEEPING_CATEGORIES.
+		'peppol-access-point' => 'E-invoicing',
+		'psd2-bank-aggregator' => 'Bank',
+		'corporate-card-feed' => 'Bank',
+		'mollie-payments' => 'Payments',
+		'digipoort-sbr' => 'Tax filing',
+		// The ECB euro reference rates, credential-free (sources-ecb-exchange-rates D4).
+		'ecb-eurofxref-daily' => 'Bank',
 	];
+
+	/**
+	 * The categories shillinq's integrations page filters integriq's catalogue on
+	 * (shillinq platform-integration-catalogue D1). Every bookkeeping connector
+	 * template carries one of them.
+	 *
+	 * @var list<string>
+	 *
+	 * @spec openspec/changes/platform-bookkeeping-catalogue-items/specs/connector-catalog/spec.md#requirement-bookkeeping-connectors-are-catalogue-templates-in-bookkeeping-categories-req-cat-bk-001
+	 */
+	public const BOOKKEEPING_CATEGORIES = ['Bank', 'Payments', 'E-invoicing', 'Tax filing', 'Commerce', 'Payroll'];
 
 	/**
 	 * The Objecten API and Objecttypen API facade as one adapter card
@@ -160,6 +187,124 @@ class CatalogRegistryService {
 	];
 
 	/**
+	 * How a vendor document-generation adapter ships and what a live source of it needs.
+	 *
+	 * @var string
+	 */
+	private const DOCUMENT_GENERATION_NOTE = 'Ships in mock mode with fixture templates, so the path works before a licence exists. '
+		. 'A live source needs a baseUrl and a '
+		. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.';
+
+	/**
+	 * The built-in adapters not registered with OR's IntegrationRegistry, as
+	 * catalog descriptors (see {@see collectStaticDescriptors()}).
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const STATIC_DESCRIPTORS = [
+		[
+			'slug' => 'adapter:pdok',
+			'name' => 'PDOK Locatieserver & kaartlagen',
+			'description' => 'Dutch national geo-data platform (Publieke Dienstverlening Op de Kaart) — address/location suggest+lookup, '
+				. 'WMS/WFS map layers. Ships with a deterministic mock flavour so the leaf is demonstrably functional without a live '
+				. 'PDOK dependency; flip `pdok.feature_flag` to reach the real api.pdok.nl / service.pdok.nl endpoints.',
+			'category' => 'Geo / Maps',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'pdok.feature_flag',
+			'sourceTemplateSlug' => '',
+			'standards' => ['OGC WMS', 'OGC WFS', 'PDOK Locatieserver'],
+			'icon' => 'MapMarkerOutline',
+		],
+		[
+			'slug' => 'adapter:digikoppeling',
+			'name' => 'Digikoppeling',
+			'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '
+				. 'PKIoverheid credentials, Grote Berichten large-message reference transfer) for secure inter-government data exchange.',
+			'category' => 'Government messaging',
+			'kind' => 'adapter',
+			'mechanism' => 'always-available',
+			'flagKey' => '',
+			'sourceTemplateSlug' => '',
+			'standards' => ['Digikoppeling WUS', 'ebMS2', 'PKIoverheid'],
+			'icon' => 'SwapHorizontal',
+		],
+		[
+			'slug' => 'adapter:berichtenbox',
+			'name' => 'Berichtenbox (Logius)',
+			'description' => 'MijnOverheid Berichtenbox: letters to the message box a citizen reads in MijnOverheid. '
+				. 'Letters go over Digikoppeling ebMS through an ebMS adapter you run; the subscription is checked over '
+				. 'Digikoppeling WUS before every letter. It needs a Logius aansluiting, a PKIoverheid certificate with '
+				. 'your OIN (uploaded under Administration settings, Integriq, and stored encrypted) and the CPA values '
+				. 'Logius gives you. Ships mock while `logius.berichtenbox.feature_flag` is unset, and every send is then '
+				. 'reported as simulated. With the flag set the mock is not served: a source that lacks a value is '
+				. 'refused, naming each one. Logius reports delivered or not, never read.',
+			'category' => 'Government messaging',
+			'kind' => 'adapter',
+			'mechanism' => 'flag-gated',
+			'flagKey' => 'logius.berichtenbox.feature_flag',
+			'sourceTemplateSlug' => '',
+			'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
+			'icon' => 'EmailOutline',
+		],
+		[
+			'slug' => 'adapter:smartdocuments',
+			'name' => 'SmartDocuments',
+			'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+				. self::DOCUMENT_GENERATION_NOTE,
+			'category' => 'Document generation',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'smartdocuments',
+			'standards' => ['REST API'],
+			'icon' => 'FileDocumentOutline',
+		],
+		[
+			'slug' => 'adapter:xential',
+			'name' => 'Xential',
+			'description' => 'Vendor document generation (Xential). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
+				. self::DOCUMENT_GENERATION_NOTE,
+			'category' => 'Document generation',
+			'kind' => 'adapter',
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => 'xential',
+			'standards' => ['REST API'],
+			'icon' => 'FileDocumentOutline',
+		],
+		[
+			'slug' => 'adapter:dso',
+			'name' => 'DSO / Omgevingsloket STAM',
+			'description' => 'Digitaal Stelsel Omgevingswet (DSO) STAM koppelvlak — receives Omgevingsloket verzoeken with '
+				. 'PKIoverheid certificate-chain / HMAC shared-secret signature verification.',
+			'category' => 'DSO / Omgevingsloket',
+			'kind' => 'adapter',
+			'mechanism' => 'always-available',
+			'flagKey' => '',
+			'sourceTemplateSlug' => '',
+			'standards' => ['STAM'],
+			'icon' => 'CityVariantOutline',
+		],
+		self::OBJECTEN_DESCRIPTOR,
+		[
+			'slug' => 'adapter:edurep',
+			'name' => 'Edurep open lesmateriaal (Kennisnet)',
+			'description' => 'Searches open learning material in Edurep, the free and keyless SRU search of Kennisnet over about 495,000 Dutch '
+				. 'records from every sector (Wikiwijs, Schooltv, SURFsharekit and more). Each record is mapped to one shape with its makers, '
+				. 'licence and access rights. learniq calls it through the LearningMaterialRequestedEvent. Live by default; set '
+				. '`edurep.feature_flag` to 0 to serve recorded responses.',
+			'category' => 'Education data',
+			'kind' => 'adapter',
+			'mechanism' => 'always-available',
+			'flagKey' => '',
+			'sourceTemplateSlug' => '',
+			'standards' => ['SRU 1.2', 'IMS LOM 1.2', 'NL-LOM'],
+			'icon' => 'BookOpenPageVariantOutline',
+		],
+	];
+
+	/**
 	 * Category overrides for IntegrationRegistry providers whose getGroup()
 	 * is null (all four category adapters today), keyed by provider id.
 	 * An unknown provider falls back to its group (when set) or the
@@ -170,6 +315,9 @@ class CatalogRegistryService {
 	 */
 	private const PROVIDER_CATEGORY_OVERRIDES = [
 		'azure-virtual-desktop' => 'Endpoint / Workspace',
+		'intune' => 'Endpoint / Workspace',
+		'jamf-pro' => 'Endpoint / Workspace',
+		'citrix-daas' => 'Endpoint / Workspace',
 		'sharepoint-online' => 'Document / CMS',
 		'microsoft-365' => 'SaaS productivity',
 		'data-infra-s3' => 'Data infrastructure',
@@ -290,95 +438,7 @@ class CatalogRegistryService {
 	 * @return array<int, array<string,mixed>>
 	 */
 	private function collectStaticDescriptors(): array {
-		return [
-			[
-				'slug' => 'adapter:pdok',
-				'name' => 'PDOK Locatieserver & kaartlagen',
-				'description' => 'Dutch national geo-data platform (Publieke Dienstverlening Op de Kaart) — address/location suggest+lookup, '
-					. 'WMS/WFS map layers. Ships with a deterministic mock flavour so the leaf is demonstrably functional without a live '
-					. 'PDOK dependency; flip `pdok.feature_flag` to reach the real api.pdok.nl / service.pdok.nl endpoints.',
-				'category' => 'Geo / Maps',
-				'kind' => 'adapter',
-				'mechanism' => 'flag-gated',
-				'flagKey' => 'pdok.feature_flag',
-				'sourceTemplateSlug' => '',
-				'standards' => ['OGC WMS', 'OGC WFS', 'PDOK Locatieserver'],
-				'icon' => 'MapMarkerOutline',
-			],
-			[
-				'slug' => 'adapter:digikoppeling',
-				'name' => 'Digikoppeling',
-				'description' => 'Dutch government messaging standard (WUS profile, ebMS2 reliable messaging, WS-Security signing, '
-					. 'PKIoverheid credentials, Grote Berichten large-message reference transfer) for secure inter-government data exchange.',
-				'category' => 'Government messaging',
-				'kind' => 'adapter',
-				'mechanism' => 'always-available',
-				'flagKey' => '',
-				'sourceTemplateSlug' => '',
-				'standards' => ['Digikoppeling WUS', 'ebMS2', 'PKIoverheid'],
-				'icon' => 'SwapHorizontal',
-			],
-			[
-				'slug' => 'adapter:berichtenbox',
-				'name' => 'Berichtenbox (Logius)',
-				'description' => 'MijnOverheid Berichtenbox: letters to the message box a citizen reads in MijnOverheid. '
-					. 'Letters go over Digikoppeling ebMS through an ebMS adapter you run; the subscription is checked over '
-					. 'Digikoppeling WUS before every letter. It needs a Logius aansluiting, a PKIoverheid certificate with '
-					. 'your OIN (uploaded under Administration settings, Integriq, and stored encrypted) and the CPA values '
-					. 'Logius gives you. Ships mock while `logius.berichtenbox.feature_flag` is unset, and every send is then '
-					. 'reported as simulated. With the flag set the mock is not served: a source that lacks a value is '
-					. 'refused, naming each one. Logius reports delivered or not, never read.',
-				'category' => 'Government messaging',
-				'kind' => 'adapter',
-				'mechanism' => 'flag-gated',
-				'flagKey' => 'logius.berichtenbox.feature_flag',
-				'sourceTemplateSlug' => '',
-				'standards' => ['Digikoppeling ebMS2', 'Digikoppeling WUS', 'PKIoverheid'],
-				'icon' => 'EmailOutline',
-			],
-			[
-				'slug' => 'adapter:smartdocuments',
-				'name' => 'SmartDocuments',
-				'description' => 'Vendor document generation (SmartDocuments). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
-					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
-					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
-				'category' => 'Document generation',
-				'kind' => 'adapter',
-				'mechanism' => 'mock-seeded',
-				'flagKey' => '',
-				'sourceTemplateSlug' => 'smartdocuments',
-				'standards' => ['REST API'],
-				'icon' => 'FileDocumentOutline',
-			],
-			[
-				'slug' => 'adapter:xential',
-				'name' => 'Xential',
-				'description' => 'Vendor document generation (Xential). Filinq calls it as a template backend (ADR-075); no case app talks to the vendor. '
-					. 'Ships in mock mode with fixture templates, so the path works before a licence exists. A live source needs a baseUrl and a '
-					. '`credentialRef` held by the OpenRegister credential broker; an API key written into the source is refused.',
-				'category' => 'Document generation',
-				'kind' => 'adapter',
-				'mechanism' => 'mock-seeded',
-				'flagKey' => '',
-				'sourceTemplateSlug' => 'xential',
-				'standards' => ['REST API'],
-				'icon' => 'FileDocumentOutline',
-			],
-			[
-				'slug' => 'adapter:dso',
-				'name' => 'DSO / Omgevingsloket STAM',
-				'description' => 'Digitaal Stelsel Omgevingswet (DSO) STAM koppelvlak — receives Omgevingsloket verzoeken with '
-					. 'PKIoverheid certificate-chain / HMAC shared-secret signature verification.',
-				'category' => 'DSO / Omgevingsloket',
-				'kind' => 'adapter',
-				'mechanism' => 'always-available',
-				'flagKey' => '',
-				'sourceTemplateSlug' => '',
-				'standards' => ['STAM'],
-				'icon' => 'CityVariantOutline',
-			],
-			self::OBJECTEN_DESCRIPTOR,
-		];
+		return self::STATIC_DESCRIPTORS;
 
 	}//end collectStaticDescriptors()
 
@@ -396,16 +456,8 @@ class CatalogRegistryService {
 	 */
 	private function collectFromSeedFragments(): array {
 		$entries = [];
-
-		if (is_dir(self::FRAGMENT_DIR) === false) {
-			return $entries;
-		}
-
-		$files = glob(self::FRAGMENT_DIR . '/*.json');
-		if ($files === false) {
-			return $entries;
-		}
-
+		$fragments = new SeedFragments(directory: self::FRAGMENT_DIR);
+		$files = $fragments->files();
 		sort($files);
 
 		foreach ($files as $file) {
@@ -414,54 +466,73 @@ class CatalogRegistryService {
 				continue;
 			}
 
-			$data = json_decode($raw, true);
-			if (json_last_error() !== JSON_ERROR_NONE || is_array($data) === false) {
+			$data = $fragments->decode(raw: $raw);
+			if ($data === null) {
 				$this->logger->warning('[integriq] CatalogRegistryService: skipping malformed seed fragment ' . basename($file));
 				continue;
 			}
 
-			$objects = ($data['components']['objects'] ?? []);
-			if (is_array($objects) === false) {
-				continue;
+			foreach ($fragments->objects(data: $data) as $object) {
+				$entries = $this->withTemplateEntry(entries: $entries, object: $object);
 			}
-
-			foreach ($objects as $object) {
-				$self = ($object['@self'] ?? []);
-				if (($self['schema'] ?? '') !== 'source') {
-					// Not a Source seed (e.g. a schema-defining fragment
-					// like eudi-wallet-credential-issuance.json) — skip.
-					continue;
-				}
-
-				$slug = (string)($self['slug'] ?? '');
-				if ($slug === '' || str_starts_with($slug, self::PLACEHOLDER_SLUG_PREFIX) === true) {
-					continue;
-				}
-
-				$type = (string)($object['type'] ?? 'api');
-				$category = (self::SLUG_CATEGORY_OVERRIDES[$slug] ?? self::TYPE_CATEGORY_LABELS[$type] ?? 'Integrations');
-
-				$entries[] = [
-					'slug' => 'source-template:' . $slug,
-					'name' => (string)($object['name'] ?? $slug),
-					'description' => (string)($object['description'] ?? ''),
-					'category' => $category,
-					'kind' => 'source-template',
-					// Design decision (proposal.md Risk 2): every register.d
-					// seed source uses the mock/isEnabled mechanism, distinct
-					// from the flag-gated container-level PDOK/Berichtenbox
-					// adapters above.
-					'mechanism' => 'mock-seeded',
-					'flagKey' => '',
-					'sourceTemplateSlug' => $slug,
-					'standards' => $this->standardsForType(type: $type),
-					'icon' => $this->iconForType(type: $type),
-				];
-			}//end foreach
-		}//end foreach
+		}
 
 		return $entries;
 	}//end collectFromSeedFragments()
+
+	/**
+	 * The entries with the catalog entry of one seeded object added, when it is a real Source seed.
+	 *
+	 * @param array<int, array<string,mixed>> $entries The entries so far.
+	 * @param mixed                           $object  One seeded object.
+	 *
+	 * @return array<int, array<string,mixed>>
+	 */
+	private function withTemplateEntry(array $entries, mixed $object): array {
+		$self = ($object['@self'] ?? []);
+		if (($self['schema'] ?? '') !== 'source') {
+			// Not a Source seed (e.g. a schema-defining fragment
+			// like eudi-wallet-credential-issuance.json) — skip.
+			return $entries;
+		}
+
+		$slug = (string)($self['slug'] ?? '');
+		if ($slug === '' || str_starts_with($slug, self::PLACEHOLDER_SLUG_PREFIX) === true) {
+			return $entries;
+		}
+
+		$entries[] = $this->templateEntry(object: $object, slug: $slug);
+		return $entries;
+	}//end withTemplateEntry()
+
+	/**
+	 * The catalog entry of a seeded Source.
+	 *
+	 * @param array<string,mixed> $object The seeded Source object.
+	 * @param string              $slug   Its slug.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function templateEntry(array $object, string $slug): array {
+		$type = (string)($object['type'] ?? 'api');
+
+		return [
+			'slug' => 'source-template:' . $slug,
+			'name' => (string)($object['name'] ?? $slug),
+			'description' => (string)($object['description'] ?? ''),
+			'category' => (self::SLUG_CATEGORY_OVERRIDES[$slug] ?? self::TYPE_CATEGORY_LABELS[$type] ?? 'Integrations'),
+			'kind' => 'source-template',
+			// Design decision (proposal.md Risk 2): every register.d
+			// seed source uses the mock/isEnabled mechanism, distinct
+			// from the flag-gated container-level PDOK/Berichtenbox
+			// adapters above.
+			'mechanism' => 'mock-seeded',
+			'flagKey' => '',
+			'sourceTemplateSlug' => $slug,
+			'standards' => $this->standardsForType(type: $type),
+			'icon' => $this->iconForType(type: $type),
+		];
+	}//end templateEntry()
 
 	/**
 	 * Small standards vocabulary lookup keyed by the source's free-form
@@ -527,41 +598,19 @@ class CatalogRegistryService {
 			return $templatePayload;
 		}
 
-		if (is_dir(self::FRAGMENT_DIR) === false) {
-			return null;
-		}
-
-		$files = glob(self::FRAGMENT_DIR . '/*.json');
-		if ($files === false) {
-			return null;
-		}
-
-		foreach ($files as $file) {
+		$fragments = new SeedFragments(directory: self::FRAGMENT_DIR);
+		foreach ($fragments->files() as $file) {
 			$raw = file_get_contents($file);
-			if ($raw === false) {
-				continue;
+			$data = null;
+			if ($raw !== false) {
+				$data = $fragments->decode(raw: $raw);
 			}
 
-			$data = json_decode($raw, true);
-			if (json_last_error() !== JSON_ERROR_NONE || is_array($data) === false) {
-				continue;
+			$payload = $fragments->sourcePayload(objects: $fragments->objects(data: ($data ?? [])), slug: $slug);
+			if ($payload !== null) {
+				return $payload;
 			}
-
-			$objects = ($data['components']['objects'] ?? []);
-			if (is_array($objects) === false) {
-				continue;
-			}
-
-			foreach ($objects as $object) {
-				$self = ($object['@self'] ?? []);
-				if (($self['schema'] ?? '') === 'source' && ($self['slug'] ?? '') === $slug) {
-					$payload = $object;
-					$payload['slug'] = $slug;
-					unset($payload['@self']);
-					return $payload;
-				}
-			}
-		}//end foreach
+		}
 
 		return null;
 	}//end findSeedSourcePayload()
@@ -584,53 +633,65 @@ class CatalogRegistryService {
 		$mechanism = (string)($entry['mechanism'] ?? 'always-available');
 
 		if ($mechanism === 'flag-gated') {
-			$flagKey = (string)($entry['flagKey'] ?? '');
-			if ($flagKey === '') {
-				return 'dormant';
-			}
-
-			$raw = $this->appConfig->getValueString('integriq', $flagKey, '0');
-			if ($raw === '1' || strtolower($raw) === 'true') {
-				return 'available';
-			}
-
-			return 'dormant';
+			return $this->flagStatus(flagKey: (string)($entry['flagKey'] ?? ''));
 		}
 
 		if ($mechanism === 'mock-seeded') {
-			$slug = (string)($entry['sourceTemplateSlug'] ?? '');
-			if ($slug === '') {
-				return 'dormant';
-			}
-
-			$source = $this->findSourceBySlug(slug: $slug);
-			if ($source === null) {
-				return 'dormant';
-			}
-
-			$data = $source->getObject();
-			// Mock mode is NOT dormant — the source is reachable, just
-			// returning canned data (REQ-001 scenario).
-			if (($data['isEnabled'] ?? false) === true) {
-				return 'available';
-			}
-
-			return 'dormant';
+			return $this->seededStatus(slug: (string)($entry['sourceTemplateSlug'] ?? ''));
 		}
 
 		// 'always-available' — fall back to the collector's own
 		// isEnabled() read when present (IntegrationRegistry providers),
 		// otherwise treat as always available.
-		if (array_key_exists('_fallbackEnabled', $entry) === true) {
-			if ($entry['_fallbackEnabled'] === true) {
-				return 'available';
-			}
-
+		if (array_key_exists('_fallbackEnabled', $entry) === true && $entry['_fallbackEnabled'] !== true) {
 			return 'dormant';
 		}
 
 		return 'available';
 	}//end resolveStatus()
+
+	/**
+	 * The status of a flag-gated entry: available when its app-config flag is on.
+	 *
+	 * @param string $flagKey The app-config key, or ''.
+	 *
+	 * @return string 'available' | 'dormant'.
+	 */
+	private function flagStatus(string $flagKey): string {
+		if ($flagKey === '') {
+			return 'dormant';
+		}
+
+		$raw = $this->appConfig->getValueString('integriq', $flagKey, '0');
+		if ($raw === '1' || strtolower($raw) === 'true') {
+			return 'available';
+		}
+
+		return 'dormant';
+	}//end flagStatus()
+
+	/**
+	 * The status of a mock-seeded entry: available when its seeded Source exists and is enabled.
+	 *
+	 * Mock mode is NOT dormant — the source is reachable, just returning
+	 * canned data (REQ-001 scenario).
+	 *
+	 * @param string $slug The source template's slug, or ''.
+	 *
+	 * @return string 'available' | 'dormant'.
+	 */
+	private function seededStatus(string $slug): string {
+		if ($slug === '') {
+			return 'dormant';
+		}
+
+		$source = $this->findSourceBySlug(slug: $slug);
+		if ($source !== null && ($source->getObject()['isEnabled'] ?? false) === true) {
+			return 'available';
+		}
+
+		return 'dormant';
+	}//end seededStatus()
 
 	/**
 	 * Find a `source` OpenRegister object by its slug.

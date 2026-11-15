@@ -86,25 +86,20 @@
 				<p>{{ saveError }}</p>
 			</NcNoteCard>
 
-			<!-- Identity fields — the synchronization's own metadata, so they sit
+			<!-- Identity fields — the synchronization metadata itself, so they sit
 			     above the source → transform → target columns rather than inside
 			     one, stacked and capped short of the modal width. -->
-			<div class="cn-sync-editor__identity">
-				<NcTextField
-					v-model="draft.name"
-					:label="nameLabel"
-					:error="!!nameError"
-					:helperText="nameError"
-					:disabled="saving"
-					required
-					@blur="nameTouched = true" />
-				<NcTextArea
-					v-model="draft.description"
-					:label="t('integriq', 'Description')"
-					:disabled="saving"
-					rows="1"
-					resize="vertical" />
-			</div>
+			<EditorIdentityFields
+				block="cn-sync-editor"
+				:name="draft.name"
+				:description="draft.description"
+				:nameLabel="nameLabel"
+				:nameError="nameError"
+				:disabled="saving"
+				required
+				@update:name="draft.name = $event"
+				@update:description="draft.description = $event"
+				@blur="nameTouched = true" />
 
 			<div class="cn-sync-editor__columns">
 				<!-- ── Source ──────────────────────────────────────────── -->
@@ -131,12 +126,8 @@
 							:type="draft.sourceType"
 							:sourceId="draft.sourceId"
 							:config="draft.sourceConfig"
-							@update:sourceId="
-								(value) => updateDraft('sourceId', value)
-							"
-							@update:config="
-								(value) => updateDraft('sourceConfig', value)
-							" />
+							@update:sourceId="updateDraft('sourceId', $event)"
+							@update:config="updateDraft('sourceConfig', $event)" />
 
 						<label class="cn-sync-editor__label">{{
 							t('integriq', 'Sync mode')
@@ -155,8 +146,7 @@
 								:label="t('integriq', 'Cursor field')"
 								:disabled="saving"
 								@update:modelValue="
-									(value) =>
-										updateSourceConfigField('cursorField', value)
+									updateSourceConfigField('cursorField', $event)
 								" />
 							<label class="cn-sync-editor__label">{{
 								t('integriq', 'Cursor comparator')
@@ -181,11 +171,10 @@
 							:disabled="saving"
 							data-testid="sync-editor-ownership-mode"
 							@update:modelValue="
-								(option) =>
-									updateSourceConfigField(
-										'ownershipMode',
-										option?.id || 'local',
-									)
+								updateSourceConfigField(
+									'ownershipMode',
+									$event?.id || 'local',
+								)
 							" />
 						<NcSelect
 							inputId="cn-sync-editor-disappearance-policy"
@@ -201,11 +190,10 @@
 							:disabled="saving"
 							data-testid="sync-editor-disappearance-policy"
 							@update:modelValue="
-								(option) =>
-									updateSourceConfigField(
-										'disappearancePolicy',
-										option?.id || 'delete',
-									)
+								updateSourceConfigField(
+									'disappearancePolicy',
+									$event?.id || 'delete',
+								)
 							" />
 						<NcSelect
 							inputId="cn-sync-editor-source-destroyed"
@@ -264,12 +252,8 @@
 							:type="draft.targetType"
 							:sourceId="draft.targetId"
 							:config="draft.targetConfig"
-							@update:sourceId="
-								(value) => updateDraft('targetId', value)
-							"
-							@update:config="
-								(value) => updateDraft('targetConfig', value)
-							" />
+							@update:sourceId="updateDraft('targetId', $event)"
+							@update:config="updateDraft('targetConfig', $event)" />
 
 						<!-- REQ-CSD-001: only a register/schema source has an object
 						     to write the push's outcome back onto. -->
@@ -277,9 +261,7 @@
 							v-if="draft.sourceType === 'register/schema'"
 							:value="draft.writeBack"
 							:disabled="saving"
-							@update:value="
-								(value) => updateDraft('writeBack', value)
-							" />
+							@update:value="updateDraft('writeBack', $event)" />
 
 						<!-- Dry-run result. The row action discards this payload for a
 						     bare toast; here it is the point of pressing Test. -->
@@ -363,9 +345,7 @@
 									:emptyLabel="
 										t('integriq', 'No rules linked yet.')
 									"
-									@input="
-										(value) => updateDraft('actions', value)
-									" />
+									@input="updateDraft('actions', $event)" />
 							</div>
 						</CnTab>
 
@@ -376,16 +356,13 @@
 									:hashValue="draft.sourceHashMapping"
 									:targetSourceValue="draft.targetSourceMapping"
 									@update:value="
-										(value) =>
-											updateDraft('sourceTargetMapping', value)
+										updateDraft('sourceTargetMapping', $event)
 									"
 									@update:hashValue="
-										(value) =>
-											updateDraft('sourceHashMapping', value)
+										updateDraft('sourceHashMapping', $event)
 									"
 									@update:targetSourceValue="
-										(value) =>
-											updateDraft('targetSourceMapping', value)
+										updateDraft('targetSourceMapping', $event)
 									" />
 							</div>
 						</CnTab>
@@ -423,9 +400,7 @@
 									:emptyLabel="
 										t('integriq', 'No follow-ups linked yet.')
 									"
-									@input="
-										(value) => updateDraft('followUps', value)
-									" />
+									@input="updateDraft('followUps', $event)" />
 							</div>
 						</CnTab>
 					</CnTabs>
@@ -464,14 +439,11 @@
 				</template>
 				{{ t('integriq', 'Test') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<PlusIcon v-else-if="isCreate" :size="20" />
-					<ContentSaveOutlineIcon v-else :size="20" />
-				</template>
-				{{ isCreate ? t('integriq', 'Create') : t('integriq', 'Save') }}
-			</NcButton>
+			<EditorSaveButton
+				:disabled="!canSave"
+				:saving="saving"
+				:isCreate="isCreate"
+				@click="onSave" />
 		</template>
 	</NcDialog>
 </template>
@@ -479,7 +451,6 @@
 <script>
 import { CnTab, CnTabs } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
-import { showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
@@ -487,22 +458,23 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
-	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
 import ArrowRightIcon from 'vue-material-design-icons/ArrowRight.vue'
-import ContentSaveOutlineIcon from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseArrowLeftOutlineIcon from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseArrowRightOutlineIcon from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import PlayCircleOutlineIcon from 'vue-material-design-icons/PlayCircleOutline.vue'
-import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import SwapHorizontalIcon from 'vue-material-design-icons/SwapHorizontal.vue'
 import RuleConditionGroup from '../../views/Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from '../../views/Synchronization/SyncConfigWidget.vue'
 import SyncMappingPicker from '../../views/Synchronization/SyncMappingPicker.vue'
 import SyncReferenceList from '../../views/Synchronization/SyncReferenceList.vue'
 import SyncWriteBackFields from '../../views/Synchronization/SyncWriteBackFields.vue'
-import { NEXTCLOUD_FORM_KIND } from '../../views/Synchronization/formsBridge.js'
+import EditorIdentityFields from './EditorIdentityFields.vue'
+import EditorSaveButton from './EditorSaveButton.vue'
+import confirmSave from '../../mixins/confirmSave.js'
+import namedEditorDialog from '../../mixins/namedEditorDialog.js'
+import syncKindOptions from '../../mixins/syncKindOptions.js'
 import {
 	disappearancePolicyError,
 	disappearancePolicyOptions,
@@ -514,22 +486,19 @@ import {
 	CURSOR_COMPARATOR_OPTIONS,
 	emptyDraft,
 	fetchBridgeStatus,
-	NEXTCLOUD_FORM_OPTION,
-	NEXTCLOUD_TABLE_OPTION,
 	normaliseConditions,
 	serializeConditions,
 	SYNC_MODE_OPTIONS,
 	TYPE_OPTIONS,
 } from '../../views/Synchronization/syncDraft.js'
-import { NEXTCLOUD_TABLE_KIND } from '../../views/Synchronization/tablesBridge.js'
-
-/** A name has to carry at least one letter or digit — punctuation alone is not a name. */
-const NAME_PATTERN = /[\p{L}\p{N}]/u
+import { editorSlotScopeProps } from '../editorSlotScope.js'
 
 export default {
 	name: 'SynchronizationEditorModal',
 
 	components: {
+		EditorSaveButton,
+		EditorIdentityFields,
 		CnTab,
 		CnTabs,
 		NcButton,
@@ -537,7 +506,6 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
-		NcTextArea,
 		NcTextField,
 		RuleConditionGroup,
 		SyncConfigWidget,
@@ -545,51 +513,15 @@ export default {
 		SyncReferenceList,
 		SyncWriteBackFields,
 		ArrowRightIcon,
-		ContentSaveOutlineIcon,
 		DatabaseArrowLeftOutlineIcon,
 		DatabaseArrowRightOutlineIcon,
 		PlayCircleOutlineIcon,
-		PlusIcon,
 		SwapHorizontalIcon,
 	},
 
-	props: {
-		/** Slot scope: whether CnIndexPage wants the form dialog open. */
-		show: {
-			type: Boolean,
-			default: false,
-		},
+	mixins: [namedEditorDialog, confirmSave, syncKindOptions],
 
-		/** Slot scope: the row being edited, or `null` in create mode. */
-		item: {
-			type: Object,
-			default: null,
-		},
-
-		/** Slot scope: the effective JSON schema. Unused — the fields are bespoke. */
-		schema: {
-			type: Object,
-			default: null,
-		},
-
-		/**
-		 * Slot scope: persists the object through CnIndexPage's own save path
-		 * and refreshes the list. Saving here instead of calling this would
-		 * leave the index stale until a reload — the built-in refresh only runs
-		 * inside that handler — and would write to a different store than the
-		 * one the list reads from.
-		 */
-		confirm: {
-			type: Function,
-			default: null,
-		},
-
-		/** Slot scope: closes the form dialog on CnIndexPage. */
-		close: {
-			type: Function,
-			default: null,
-		},
-	},
+	props: { ...editorSlotScopeProps },
 
 	data() {
 		return {
@@ -613,10 +545,6 @@ export default {
 	},
 
 	computed: {
-		isCreate() {
-			return !this.item
-		},
-
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		itemIdString() {
 			return this.item?.id != null ? String(this.item.id) : ''
@@ -627,33 +555,6 @@ export default {
 			return this.isCreate
 				? this.t('integriq', 'Create synchronization')
 				: this.t('integriq', 'Edit synchronization')
-		},
-
-		/**
-		 * Required marker on the label. NcTextField/NcInputField has no
-		 * `required` prop and renders no marker of its own, so the ` *` suffix
-		 * is appended here — the same convention CnFormDialog uses for
-		 * schema-required fields. `name` is the schema's only required property.
-		 *
-		 * @return {string} Label text.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md
-		 */
-		nameLabel() {
-			return this.t('integriq', 'Name') + ' *'
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		nameError() {
-			if (!this.draft.name) {
-				return this.nameTouched ? this.t('integriq', 'Name is required') : ''
-			}
-			return NAME_PATTERN.test(this.draft.name)
-				? ''
-				: this.t(
-						'integriq',
-						'Name must contain at least one letter or number',
-					)
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
@@ -670,72 +571,6 @@ export default {
 				// No `confirm` means the host did not bind the slot scope, so
 				// there is nothing to save through.
 				&& typeof this.confirm === 'function'
-			)
-		},
-
-		/**
-		 * Kind options shared by both selectors. An already-configured
-		 * `nextcloud-table` stays visible even if the Tables app is later
-		 * disabled, so an existing record never silently loses its type.
-		 *
-		 * @return {Array<object>} Type options.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
-		 */
-		typeOptions() {
-			const usesTable =
-				this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
-				|| this.draft?.targetType === NEXTCLOUD_TABLE_KIND
-			if (this.tablesEnabled || usesTable) {
-				return [...TYPE_OPTIONS, NEXTCLOUD_TABLE_OPTION]
-			}
-			return TYPE_OPTIONS
-		},
-
-		/**
-		 * Kind options offered in the SOURCE selector only. `nextcloud-form` is
-		 * appended here and never to the shared list the target selector uses —
-		 * it is a source-only type (nextcloud-forms-connector REQ-002).
-		 *
-		 * @return {Array<object>} Source type options.
-		 *
-		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
-		 */
-		sourceTypeOptions() {
-			const usesForm = this.draft?.sourceType === NEXTCLOUD_FORM_KIND
-			if (this.formsEnabled || usesForm) {
-				return [...this.typeOptions, NEXTCLOUD_FORM_OPTION]
-			}
-			return this.typeOptions
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedSourceType() {
-			return (
-				this.sourceTypeOptions.find(
-					(opt) => opt.id === this.draft?.sourceType,
-				) || TYPE_OPTIONS[0]
-			)
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedTargetType() {
-			return (
-				this.typeOptions.find((opt) => opt.id === this.draft?.targetType)
-				|| TYPE_OPTIONS[1]
-			)
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		syncModeOptions() {
-			return SYNC_MODE_OPTIONS
-		},
-
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		selectedSyncMode() {
-			return (
-				SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode)
-				|| SYNC_MODE_OPTIONS[0]
 			)
 		},
 
@@ -856,23 +691,6 @@ export default {
 			} catch (_e) {
 				return String(this.testResult)
 			}
-		},
-	},
-
-	watch: {
-		show: {
-			immediate: true,
-			/**
-			 * Re-seed the draft every time the dialog opens, so a cancelled edit
-			 * leaves nothing behind for the next one.
-			 *
-			 * @param {boolean} value Whether the dialog is now open.
-			 *
-			 * @spec openspec/specs/sync-editor-ui/spec.md
-			 */
-			handler(value) {
-				if (value) this.seedDraft()
-			},
 		},
 	},
 
@@ -1005,12 +823,6 @@ export default {
 			this.updateDraft('conditions', node)
 		},
 
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
-		onCancel() {
-			if (this.saving) return
-			this.close?.()
-		},
-
 		/**
 		 * Run the dry run against the SAVED record. Guarded to edit mode and a
 		 * clean draft by the button itself; the endpoint takes only an id.
@@ -1075,47 +887,37 @@ export default {
 		},
 
 		/**
-		 * Persist the draft through CnIndexPage's `confirm` binding rather than
-		 * saving here directly — that is what runs the index's list refresh and
-		 * keeps the write in the store the list reads from.
+		 * Refuse an unknown disappearance policy at save (REQ-SOR-002), rather
+		 * than discovering it at the first run that deletes nothing.
 		 *
-		 * The draft is merged over `item` so fields this dialog does not edit
-		 * (slug, version, status, the engine-managed hashes and timestamps)
-		 * survive; no `id` means create. `conditions` is re-serialised to the
-		 * schema's `array<object>` wire shape on the way out.
+		 * @return {Promise<boolean>} True when the policy was refused.
+		 * @spec openspec/specs/source-owned-records/spec.md#requirement-what-happens-when-a-record-disappears-is-declared-not-hardcoded-req-sor-002
+		 */
+		async saveRefused() {
+			this.saveError = await disappearancePolicyError(this.draft.sourceConfig)
+			return this.saveError !== ''
+		},
+
+		/**
+		 * The toast after a save.
 		 *
-		 * @return {Promise<void>} Resolves once the save has settled.
-		 *
+		 * @return {string} The translated text.
 		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
-		async onSave() {
-			if (!this.canSave) return
-			this.saving = true
-			this.saveError = ''
-			try {
-				// REQ-SOR-002: an unknown policy is refused at save, not
-				// discovered at the first run that deletes nothing.
-				const policyError = await disappearancePolicyError(
-					this.draft.sourceConfig,
-				)
-				if (policyError) {
-					this.saveError = policyError
-					return
-				}
-				await this.confirm(this.savePayload())
-				showSuccess(
-					this.isCreate
-						? this.t('integriq', 'Synchronization created')
-						: this.t('integriq', 'Synchronization saved'),
-				)
-				this.close?.()
-			} catch (err) {
-				this.saveError =
-					err?.message
-					|| this.t('integriq', 'Failed to save synchronization')
-			} finally {
-				this.saving = false
-			}
+		savedText() {
+			return this.isCreate
+				? this.t('integriq', 'Synchronization created')
+				: this.t('integriq', 'Synchronization saved')
+		},
+
+		/**
+		 * The reason shown when a save fails without one.
+		 *
+		 * @return {string} The translated text.
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		saveFailedText() {
+			return this.t('integriq', 'Failed to save synchronization')
 		},
 	},
 }

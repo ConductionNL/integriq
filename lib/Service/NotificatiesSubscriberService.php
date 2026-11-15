@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/notificaties-api-connector/spec.md
  */
-class NotificatiesSubscriberService {
+class NotificatiesSubscriberService implements NotificatiesSubscriberServiceInterface {
 	/**
 	 * Abonnement lifecycle statuses (design.md Decision 5).
 	 *
@@ -85,7 +85,7 @@ class NotificatiesSubscriberService {
 	 *
 	 * @param ORObjectService $objectService The OR ObjectService for data access.
 	 * @param CallService $callService Outbound HTTP calls against a `Source` (abonnement CRUD, no new client).
-	 * @param EventService $eventService Normalizes inbound notifications into the CloudEvents pipe (REQ-003/REQ-011).
+	 * @param CloudEventEmitterInterface $eventService Normalizes inbound notifications into the CloudEvents pipe (REQ-003/REQ-011).
 	 * @param WebhookSignatureService $signatureService Reused for its secret-generation algorithm only (Decision 2 — no `whsec_` prefix).
 	 * @param IURLGenerator $urlGenerator Builds this app's absolute callback URL per abonnement.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics (cascade-delete failures, etc.).
@@ -95,7 +95,7 @@ class NotificatiesSubscriberService {
 	public function __construct(
 		private readonly ORObjectService $objectService,
 		private readonly CallService $callService,
-		private readonly EventService $eventService,
+		private readonly CloudEventEmitterInterface $eventService,
 		private readonly WebhookSignatureService $signatureService,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,

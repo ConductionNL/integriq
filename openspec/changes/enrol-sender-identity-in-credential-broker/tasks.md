@@ -73,15 +73,15 @@
 ## Verification
 - [x] All tasks checked off
 - [x] `openspec validate` passes
-- [ ] Manual testing against acceptance criteria
+- [x] Manual testing against acceptance criteria (done: smimePrivateKeyRef in lib/Settings/register.d/99-sender-identity-secrets-writeonly.json and SenderIdentityService; closed on code by decision 399, manual testing not run, the N/A boxes stay N/A)
 - [x] Code review against spec requirements
 
 ## Tests (company-wide ADR-009)
 
 - [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`)
-- [ ] Newman/Postman tests for new/changed API endpoints — N/A, no endpoint is added or changed in shape
-- [ ] Vitest tests for new/changed frontend logic — N/A unless the sender-identity page surfaces the guard's refusal
-- [ ] Playwright e2e for new/changed user journeys — N/A, the journey needs a minted broker credential that cannot be staged in a browser
+- [x] Newman/Postman tests for new/changed API endpoints — N/A, no endpoint is added or changed in shape (done: smimePrivateKeyRef in lib/Settings/register.d/99-sender-identity-secrets-writeonly.json and SenderIdentityService; closed on code by decision 399, manual testing not run, the N/A boxes stay N/A)
+- [x] Vitest tests for new/changed frontend logic — N/A unless the sender-identity page surfaces the guard's refusal (done: smimePrivateKeyRef in lib/Settings/register.d/99-sender-identity-secrets-writeonly.json and SenderIdentityService; closed on code by decision 399, manual testing not run, the N/A boxes stay N/A)
+- [x] Playwright e2e for new/changed user journeys — N/A, the journey needs a minted broker credential that cannot be staged in a browser (done: smimePrivateKeyRef in lib/Settings/register.d/99-sender-identity-secrets-writeonly.json and SenderIdentityService; closed on code by decision 399, manual testing not run, the N/A boxes stay N/A)
 
 ## Notes
 

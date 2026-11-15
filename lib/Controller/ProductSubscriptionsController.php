@@ -33,7 +33,7 @@ namespace OCA\Integriq\Controller;
 
 use DateTime;
 use OCA\Integriq\Exception\ApprovalStateException;
-use OCA\Integriq\Service\ApprovalService;
+use OCA\Integriq\Service\ApprovalServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -79,7 +79,7 @@ class ProductSubscriptionsController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
-	 * @param ApprovalService $approvalService The approval state-machine service (subscription approval gate).
+	 * @param ApprovalServiceInterface $approvalService The approval state-machine service (subscription approval gate).
 	 * @param OrObjectService $orObjectService OpenRegister object service (product/subscription/call_log persistence).
 	 * @param IUserSession $userSession The user session.
 	 * @param IL10N $l The localization service.
@@ -88,7 +88,7 @@ class ProductSubscriptionsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ApprovalService $approvalService,
+		private readonly ApprovalServiceInterface $approvalService,
 		private readonly OrObjectService $orObjectService,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l,
@@ -126,8 +126,7 @@ class ProductSubscriptionsController extends Controller {
 				id: $productId,
 				register: self::REGISTER,
 				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
@@ -177,7 +176,7 @@ class ProductSubscriptionsController extends Controller {
 			subscriptionId: (string)$subscription->getUuid(),
 			approverGroup: $approverGroup,
 			onReject: 'error',
-			ttlSeconds: ApprovalService::DEFAULT_TTL_SECONDS
+			ttlSeconds: ApprovalServiceInterface::DEFAULT_TTL_SECONDS
 		);
 
 		$subscriptionData = $subscription->getObject();
@@ -313,8 +312,7 @@ class ProductSubscriptionsController extends Controller {
 				id: $productId,
 				register: self::REGISTER,
 				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
@@ -394,8 +392,7 @@ class ProductSubscriptionsController extends Controller {
 					'sort' => ['created' => 'desc'],
 					'limit' => self::ANALYTICS_ROW_LIMIT,
 				],
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: failed to fetch product call_log rows for analytics: ' . $e->getMessage());
@@ -453,8 +450,7 @@ class ProductSubscriptionsController extends Controller {
 				id: $subscriptionId,
 				register: self::REGISTER,
 				schema: 'api_product_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return [null, null, new JSONResponse(['error' => $this->l->t('No such subscription')], Http::STATUS_NOT_FOUND)];

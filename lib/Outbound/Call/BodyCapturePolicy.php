@@ -34,7 +34,8 @@ namespace OCA\Integriq\Outbound\Call;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\Integriq\Service\RetentionDefaults;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
+use OCA\Integriq\Service\RetentionDefaultsInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Clock\ClockInterface;
@@ -45,7 +46,25 @@ use Throwable;
  *
  * @spec openspec/specs/outbound-call-log/spec.md#requirement-every-outbound-call-is-a-record-with-its-request-and-its-response-req-ocd-001
  */
-class BodyCapturePolicy {
+class BodyCapturePolicy implements BodyCapturePolicyInterface {
+
+	/**
+	 * The callers whose code may keep call bodies outside a window: those whose data is public.
+	 *
+	 * A caller passes its own class name as `logBody`; CallService honours
+	 * nothing else, so a bare `true`, a source setting or a class missing here
+	 * stores no body. CallServiceBodyCaptureTest scans lib/ and fails on any
+	 * other class that passes `logBody`. Add a class only when every answer it
+	 * receives is public data.
+	 *
+	 * @var array<int, class-string>
+	 *
+	 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-code-may-keep-bodies-only-for-listed-public-data-callers-req-ocd-010
+	 */
+	public const LOG_BODY_ALLOWLIST = [
+		// SLO's curriculum (doelen, leerlijnen) is published openly.
+		SloCurriculumClientHttp::class,
+	];
 
 	/**
 	 * App setting: the longest window an administrator may open, in hours.
@@ -391,7 +410,7 @@ class BodyCapturePolicy {
 
 		// A record kept for ever still lets its replay request go after the
 		// instance's default error retention.
-		$seconds = intdiv(RetentionDefaults::CALL_LOG, 1000);
+		$seconds = intdiv(RetentionDefaultsInterface::CALL_LOG, 1000);
 
 		return $this->now()->add(new DateInterval('PT' . $seconds . 'S'))->format('c');
 

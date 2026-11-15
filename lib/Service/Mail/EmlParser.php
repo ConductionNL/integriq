@@ -27,9 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Mail;
 
-use DateTimeImmutable;
-use Throwable;
-
 /**
  * Parses RFC 5322 messages into a {@see ParsedMessage}.
  *
@@ -49,14 +46,10 @@ class EmlParser {
 	public function parse(string $raw): ParsedMessage {
 		$normalised = str_replace(["\r\n", "\r"], "\n", $raw);
 		[$headerBlock, $body] = $this->split(message: $normalised);
-		$headers = $this->parseHeaders(headerBlock: $headerBlock);
+		$headers = MailHeaders::parse(headerBlock: $headerBlock);
 
-		$collected = [
-			'text' => '',
-			'html' => '',
-			'attachments' => [],
-		];
-		$this->walkPart(headers: $headers, body: $body, collected: $collected);
+		$collected = new MimeCollection();
+		$this->walkPart(part: new MimePart(headers: $headers, body: $body), collected: $collected);
 
 		$messageId = trim((string)($headers['message-id'] ?? ''), " <>\t");
 		if ($messageId === '') {
@@ -68,10 +61,10 @@ class EmlParser {
 			$this->firstAddress(header: (string)($headers['from'] ?? '')),
 			$this->addressList(header: (string)($headers['to'] ?? '')),
 			$this->decodeWords(value: (string)($headers['subject'] ?? '')),
-			$this->parseDate(header: (string)($headers['date'] ?? '')),
-			$collected['text'],
-			HtmlSanitizer::sanitize($collected['html']),
-			$collected['attachments'],
+			MailHeaders::date(header: (string)($headers['date'] ?? '')),
+			$collected->text,
+			HtmlSanitizer::sanitize($collected->html),
+			$collected->attachments,
 		);
 
 	}//end parse()
@@ -94,103 +87,138 @@ class EmlParser {
 	}//end split()
 
 	/**
-	 * Parse and unfold a header block.
+	 * Walk one MIME part, appending bodies and attachments to the collection.
 	 *
-	 * Repeated headers keep the first occurrence, which is what a reader wants
-	 * for `Received` and friends.
-	 *
-	 * @param string $headerBlock The raw header block.
-	 *
-	 * @return array<string,string> Lower-cased header names to values.
-	 */
-	private function parseHeaders(string $headerBlock): array {
-		$headers = [];
-		$current = null;
-		foreach (explode("\n", $headerBlock) as $line) {
-			if ($line === '') {
-				continue;
-			}
-
-			if (($line[0] === ' ' || $line[0] === "\t") && $current !== null) {
-				$headers[$current] .= ' ' . trim($line);
-				continue;
-			}
-
-			$colon = strpos($line, ':');
-			if ($colon === false) {
-				continue;
-			}
-
-			$name = strtolower(trim(substr($line, 0, $colon)));
-			$value = trim(substr($line, ($colon + 1)));
-			if (isset($headers[$name]) === false) {
-				$headers[$name] = $value;
-			}
-
-			$current = $name;
-		}
-
-		return $headers;
-
-	}//end parseHeaders()
-
-	/**
-	 * Walk one MIME part, appending bodies and attachments to the collector.
-	 *
-	 * @param array<string,string> $headers The part headers.
-	 * @param string $body The part body.
-	 * @param array<string,mixed> $collected The collector, by reference.
+	 * @param MimePart       $part      The part.
+	 * @param MimeCollection $collected The collection.
 	 *
 	 * @return void
 	 */
-	private function walkPart(array $headers, string $body, array &$collected): void {
+	private function walkPart(MimePart $part, MimeCollection $collected): void {
+		if (str_starts_with($this->mimeType(headers: $part->headers), 'multipart/') === true) {
+			$this->walkMultipart(part: $part, collected: $collected);
+			return;
+		}
+
+		$this->collectLeaf(part: $part, collected: $collected);
+
+	}//end walkPart()
+
+	/**
+	 * Walk every sub-part of a multipart part; one without a boundary yields nothing.
+	 *
+	 * @param MimePart       $part      The multipart part.
+	 * @param MimeCollection $collected The collection.
+	 *
+	 * @return void
+	 */
+	private function walkMultipart(MimePart $part, MimeCollection $collected): void {
+		$boundary = $this->parameter(headerValue: (string)($part->headers['content-type'] ?? ''), name: 'boundary');
+		if ($boundary === null) {
+			return;
+		}
+
+		foreach ($this->splitMultipart(body: $part->body, boundary: $boundary) as $rawPart) {
+			[$partHeaders, $partBody] = $this->split(message: $rawPart);
+			$this->walkPart(part: new MimePart(headers: MailHeaders::parse(headerBlock: $partHeaders), body: $partBody), collected: $collected);
+		}
+
+	}//end walkMultipart()
+
+	/**
+	 * Collect a leaf part: an inline text or HTML body, or else an attachment.
+	 *
+	 * @param MimePart       $part      The leaf part.
+	 * @param MimeCollection $collected The collection.
+	 *
+	 * @return void
+	 */
+	private function collectLeaf(MimePart $part, MimeCollection $collected): void {
+		$mime = $this->mimeType(headers: $part->headers);
+		$decoded = $this->decodeBody(body: $part->body, encoding: strtolower((string)($part->headers['content-transfer-encoding'] ?? '7bit')));
+		$isAttachment = $this->isAttachment(headers: $part->headers);
+
+		if ($isAttachment === false && $mime === 'text/plain') {
+			$collected->text .= $decoded;
+			return;
+		}
+
+		if ($isAttachment === false && $mime === 'text/html') {
+			$collected->html .= $decoded;
+			return;
+		}
+
+		$collected->attachments[] = $this->attachment(part: $part, decoded: $decoded);
+
+	}//end collectLeaf()
+
+	/**
+	 * The part's lower-cased MIME type without parameters; `text/plain` when absent.
+	 *
+	 * @param array<string,string> $headers The part headers.
+	 *
+	 * @return string The MIME type, empty when the header names none.
+	 */
+	private function mimeType(array $headers): string {
 		$contentType = strtolower((string)($headers['content-type'] ?? 'text/plain'));
-		$mime = trim(explode(';', $contentType)[0]);
-		$disposition = strtolower((string)($headers['content-disposition'] ?? ''));
+
+		return trim(explode(';', $contentType)[0]);
+
+	}//end mimeType()
+
+	/**
+	 * The part's file name: the disposition's `filename`, else the content type's `name`.
+	 *
+	 * @param array<string,string> $headers The part headers.
+	 *
+	 * @return string|null The file name, or null when it has none.
+	 */
+	private function filename(array $headers): ?string {
 		$filename = $this->parameter(headerValue: (string)($headers['content-disposition'] ?? ''), name: 'filename');
 		if ($filename === null) {
 			$filename = $this->parameter(headerValue: (string)($headers['content-type'] ?? ''), name: 'name');
 		}
 
-		if (str_starts_with($mime, 'multipart/') === true) {
-			$boundary = $this->parameter(headerValue: (string)($headers['content-type'] ?? ''), name: 'boundary');
-			if ($boundary === null) {
-				return;
-			}
+		return $filename;
 
-			foreach ($this->splitMultipart(body: $body, boundary: $boundary) as $rawPart) {
-				[$partHeaders, $partBody] = $this->split(message: $rawPart);
-				$this->walkPart(headers: $this->parseHeaders(headerBlock: $partHeaders), body: $partBody, collected: $collected);
-			}
+	}//end filename()
 
-			return;
-		}
+	/**
+	 * Whether the part is an attachment: disposed as one, or carrying a file name.
+	 *
+	 * @param array<string,string> $headers The part headers.
+	 *
+	 * @return bool True for an attachment.
+	 */
+	private function isAttachment(array $headers): bool {
+		$disposition = strtolower((string)($headers['content-disposition'] ?? ''));
 
-		$decoded = $this->decodeBody(body: $body, encoding: strtolower((string)($headers['content-transfer-encoding'] ?? '7bit')));
-		$isAttachment = (str_contains($disposition, 'attachment') === true || $filename !== null);
+		return (str_contains($disposition, 'attachment') === true || $this->filename(headers: $headers) !== null);
 
-		if ($isAttachment === false && $mime === 'text/plain') {
-			$collected['text'] .= $decoded;
-			return;
-		}
+	}//end isAttachment()
 
-		if ($isAttachment === false && $mime === 'text/html') {
-			$collected['html'] .= $decoded;
-			return;
-		}
-
+	/**
+	 * The attachment a leaf part becomes; a part without a MIME type is `application/octet-stream`.
+	 *
+	 * @param MimePart $part    The leaf part.
+	 * @param string   $decoded The decoded body.
+	 *
+	 * @return array{name: string, mime: string, size: int, content: string} The attachment.
+	 */
+	private function attachment(MimePart $part, string $decoded): array {
+		$mime = $this->mimeType(headers: $part->headers);
 		if ($mime === '') {
 			$mime = 'application/octet-stream';
 		}
 
-		$collected['attachments'][] = [
-			'name' => ($filename ?? 'attachment'),
+		return [
+			'name' => ($this->filename(headers: $part->headers) ?? 'attachment'),
 			'mime' => $mime,
 			'size' => strlen($decoded),
 			'content' => $decoded,
 		];
 
-	}//end walkPart()
+	}//end attachment()
 
 	/**
 	 * Split a multipart body on its boundary.
@@ -339,25 +367,5 @@ class EmlParser {
 		return $addresses;
 
 	}//end addressList()
-
-	/**
-	 * Parse a `Date` header into an ISO 8601 timestamp.
-	 *
-	 * @param string $header The header value.
-	 *
-	 * @return string|null The timestamp, or null when the header is absent or unreadable.
-	 */
-	private function parseDate(string $header): ?string {
-		if (trim($header) === '') {
-			return null;
-		}
-
-		try {
-			return (new DateTimeImmutable($header))->format('c');
-		} catch (Throwable) {
-			return null;
-		}
-
-	}//end parseDate()
 
 }//end class

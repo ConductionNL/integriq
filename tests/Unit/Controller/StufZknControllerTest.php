@@ -248,4 +248,97 @@ class StufZknControllerTest extends TestCase {
 		$this->assertSame('stuf_zkn_send_failed', $response->getData()['error']);
 
 	}//end testOutboundMapsProviderFailureTo502()
+
+	/**
+	 * outbound() asks for the `stuf-zkn.push` action, and a caller refused it
+	 * never reaches the sync service.
+	 *
+	 * @return void
+	 */
+	public function testOutboundStopsACallerRefusedThePushAction(): void {
+		$this->request->method('getParams')->willReturn(['zaak' => ['id' => 'z-1'], 'verwerkingssoort' => 'T']);
+		$this->actionAuth->expects($this->once())->method('requireAction')
+			->with($this->anything(), 'stuf-zkn.push')
+			->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException('no'));
+		$this->syncService->expects($this->never())->method('sendNotification');
+
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->outbound();
+
+	}//end testOutboundStopsACallerRefusedThePushAction()
+
+	/**
+	 * A missing zaak is refused like a missing verwerkingssoort, and both reach
+	 * the sync service once there.
+	 *
+	 * @return void
+	 */
+	public function testOutboundNeedsBothFieldsAndPassesThem(): void {
+		$this->request->method('getParams')->willReturnOnConsecutiveCalls(
+			['verwerkingssoort' => 'T'],
+			['zaak' => ['id' => 'z-1'], 'verwerkingssoort' => 'W']
+		);
+		$this->syncService->expects($this->once())->method('sendNotification')
+			->with(['id' => 'z-1'], 'W')->willReturn(['ref' => 'r']);
+
+		$this->assertSame(
+			['error' => 'missing_fields', 'message' => 'The "zaak" and "verwerkingssoort" fields are required'],
+			$this->controller->outbound()->getData()
+		);
+		$this->assertSame(['ref' => 'r'], $this->controller->outbound()->getData());
+
+	}//end testOutboundNeedsBothFieldsAndPassesThem()
+
+	/**
+	 * The failure envelopes carry the exception's message, and only a
+	 * provider failure is logged.
+	 *
+	 * @return void
+	 */
+	public function testOutboundFailureEnvelopes(): void {
+		$this->request->method('getParams')->willReturn(['zaak' => ['id' => 'z-1'], 'verwerkingssoort' => 'T']);
+		$this->syncService->method('sendNotification')->willReturnOnConsecutiveCalls(
+			$this->throwException(new \OCA\Integriq\Exception\StufZknTranslationException(message: 'bad zaak')),
+			$this->throwException(new \OCA\Integriq\Exception\StufZknProviderException(message: 'No active StUF-ZKN source here')),
+			$this->throwException(new \OCA\Integriq\Exception\StufZknProviderException(message: 'HTTP 500'))
+		);
+		$this->logger->expects($this->exactly(2))->method('warning');
+
+		$first = $this->controller->outbound();
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['error' => 'invalid_kennisgeving', 'message' => 'bad zaak']], [$first->getStatus(), $first->getData()]);
+		$second = $this->controller->outbound();
+		$this->assertSame([Http::STATUS_SERVICE_UNAVAILABLE, ['error' => 'not_configured', 'message' => 'No active StUF-ZKN source here']], [$second->getStatus(), $second->getData()]);
+		$third = $this->controller->outbound();
+		$this->assertSame([Http::STATUS_BAD_GATEWAY, ['error' => 'stuf_zkn_send_failed', 'message' => 'HTTP 500']], [$third->getStatus(), $third->getData()]);
+
+	}//end testOutboundFailureEnvelopes()
+
+	/**
+	 * A kennisgeving is answered with the sync service's reply as XML, run as
+	 * the identified account; a refused write answers the gate's not-stored
+	 * response and a refused identification is answered as is.
+	 *
+	 * @return void
+	 */
+	public function testInboundAnswersTheReplyOrTheGatesRefusal(): void {
+		$refusal = new \OCP\AppFramework\Http\JSONResponse(['error' => 'bad signature'], Http::STATUS_UNAUTHORIZED);
+		$identity = new \OCA\Integriq\Service\Dso\DsoIdentity($this->createMock(IUser::class), 'c-1');
+		$this->gate->method('identify')->willReturnOnConsecutiveCalls($refusal, $identity, $identity);
+		$this->syncService->method('receiveInbound')->with('')->willReturn('<Bv03/>');
+		$this->gate->expects($this->exactly(2))->method('deliver')->willReturnOnConsecutiveCalls(
+			$this->returnCallback(fn ($who, callable $operation) => $operation()),
+			$this->throwException(new \RuntimeException('write refused'))
+		);
+		$notStored = new \OCP\AppFramework\Http\JSONResponse(['error' => 'not stored'], Http::STATUS_SERVICE_UNAVAILABLE);
+		$this->gate->expects($this->once())->method('notStored')->with('stuf-zkn-webhook', 'write refused')->willReturn($notStored);
+
+		$this->assertSame($refusal, $this->controller->inbound());
+		$reply = $this->controller->inbound();
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDisplayResponse::class, $reply);
+		$this->assertSame(['<Bv03/>', Http::STATUS_OK], [$reply->getData(), $reply->getStatus()]);
+		$headers = (new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers'))->getValue($reply);
+		$this->assertSame('text/xml; charset=utf-8', $headers['Content-Type']);
+		$this->assertSame($notStored, $this->controller->inbound());
+
+	}//end testInboundAnswersTheReplyOrTheGatesRefusal()
 }//end class

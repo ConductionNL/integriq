@@ -36,14 +36,17 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Adapters\Slo;
 
-use OCA\Integriq\Exception\SloCurriculumException;
-
 /**
  * Abstract SLO curriculum client: one GET, one raw body.
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-the-client-is-a-mock-by-default-and-live-only-behind-the-flag-req-003
  */
 abstract class SloCurriculumClient {
+	/**
+	 * App-config key of the flag that switches the binding to the live client.
+	 */
+	public const FLAG_KEY = 'slo.curriculum.feature_flag';
+
 	/**
 	 * Which binding handles calls: `mock` or `https`.
 	 *

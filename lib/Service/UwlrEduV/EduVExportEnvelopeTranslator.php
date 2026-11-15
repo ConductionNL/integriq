@@ -37,10 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\UwlrEduV;
 
-use DateTime;
-use DOMDocument;
-use DOMElement;
 use OCA\Integriq\Exception\UwlrEduVTranslationException;
+use OCA\Integriq\Service\Stuf\ExportEnvelope;
 use OCA\Integriq\Service\Stuf\StufLiteralLeakGuard;
 
 /**
@@ -106,91 +104,18 @@ class EduVExportEnvelopeTranslator {
 			);
 		}
 
-		$this->assertRequiredFieldsPresent(payload: $payload);
+		$guard = new ExportPayloadGuard(leakGuard: $this->leakGuard, envelopeLabel: 'an Edu-V export');
+		$guard->assertRequiredFields(fields: self::REQUIRED_FIELDS, payload: $payload);
 
 		$targetSchema = self::DATA_SERVICE_SCHEMAS[$dataService];
 
-		$document = new DOMDocument(version: '1.0', encoding: 'UTF-8');
-		$root = $document->createElement('EduVExport');
-		$document->appendChild($root);
-
-		$stuurgegevens = $document->createElement('stuurgegevens');
-		$root->appendChild($stuurgegevens);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'kenmerk', value: $kenmerk);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'targetSchema', value: $targetSchema);
-		$this->appendText(
-			document: $document,
-			parent: $stuurgegevens,
-			name: 'tijdstipBericht',
-			value: (new DateTime())->format('c')
-		);
-
-		$body = $document->createElement('body');
-		$root->appendChild($body);
-		foreach (self::REQUIRED_FIELDS as $field) {
-			$this->appendText(document: $document, parent: $body, name: $field, value: (string)$payload[$field]);
-		}
-
-		$xml = (string)$document->saveXML();
-		$this->assertNoUnresolvedPlaceholder(xml: $xml);
+		$envelope = new ExportEnvelope(rootName: 'EduVExport', kenmerk: $kenmerk);
+		$envelope->header()->addText(name: 'targetSchema', value: $targetSchema);
+		$envelope->stampMessageTime();
+		$envelope->addBody(fields: self::REQUIRED_FIELDS, payload: $payload);
+		$xml = $envelope->toXml();
+		$guard->assertNoUnresolvedPlaceholder(xml: $xml);
 
 		return $xml;
 	}//end translate()
-
-	/**
-	 * Assert every required field is present and non-empty — the
-	 * literal-leak guard's first line of defence.
-	 *
-	 * @param array $payload The field payload.
-	 *
-	 * @return void
-	 *
-	 * @throws UwlrEduVTranslationException Naming the first missing/empty required field found.
-	 */
-	private function assertRequiredFieldsPresent(array $payload): void {
-		foreach (self::REQUIRED_FIELDS as $field) {
-			$value = ($payload[$field] ?? null);
-			$isEmptyString = (is_string($value) === true && trim($value) === '');
-			if ($value === null || $isEmptyString === true) {
-				throw new UwlrEduVTranslationException(
-					message: 'Required field "' . $field . '" is missing or empty for an Edu-V export — refusing '
-						. 'to build an envelope with unresolved data.'
-				);
-			}
-		}
-
-	}//end assertRequiredFieldsPresent()
-
-	/**
-	 * Append a text-valued child element.
-	 *
-	 * @param DOMDocument $document The owning document.
-	 * @param DOMElement $parent The parent element.
-	 * @param string $name The child element name.
-	 * @param string $value The text value.
-	 *
-	 * @return void
-	 */
-	private function appendText(DOMDocument $document, DOMElement $parent, string $name, string $value): void {
-		$parent->appendChild($document->createElement($name, htmlspecialchars($value, ENT_XML1 | ENT_QUOTES)));
-
-	}//end appendText()
-
-	/**
-	 * Scan the rendered envelope for leftover unresolved template markers.
-	 *
-	 * @param string $xml The fully rendered envelope XML.
-	 *
-	 * @return void
-	 *
-	 * @throws UwlrEduVTranslationException When any marker survives.
-	 */
-	private function assertNoUnresolvedPlaceholder(string $xml): void {
-		if ($this->leakGuard->hasUnresolvedPlaceholder(xml: $xml) === true) {
-			throw new UwlrEduVTranslationException(
-				message: 'Rendered envelope still contains an unresolved template marker — refusing to send.'
-			);
-		}
-
-	}//end assertNoUnresolvedPlaceholder()
 }//end class

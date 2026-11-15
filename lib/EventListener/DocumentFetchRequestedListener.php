@@ -27,8 +27,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\DocumentFetchRequestedEvent;
-use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuard;
-use OCA\Integriq\Service\Adapter\Saas\Microsoft365Adapter;
+use OCA\Integriq\Service\Adapter\Saas\DocumentConnectionGuardInterface;
+use OCA\Integriq\Service\Adapter\Saas\Microsoft365AdapterInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -47,13 +47,13 @@ class DocumentFetchRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param Microsoft365Adapter $adapter The Microsoft 365 source.
-	 * @param DocumentConnectionGuard $guard Refuses an app without a linked connection.
+	 * @param Microsoft365AdapterInterface $adapter The Microsoft 365 source.
+	 * @param DocumentConnectionGuardInterface $guard Refuses an app without a linked connection.
 	 * @param LoggerInterface     $logger  Records who asked and for which handle, never what was found.
 	 */
 	public function __construct(
-		private readonly Microsoft365Adapter $adapter,
-		private readonly DocumentConnectionGuard $guard,
+		private readonly Microsoft365AdapterInterface $adapter,
+		private readonly DocumentConnectionGuardInterface $guard,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -44,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
  */
-class MailboxSourceHandler {
+class MailboxSourceHandler implements MailboxSourceHandlerInterface {
 
 	/**
 	 * Constructor.
@@ -148,6 +148,7 @@ class MailboxSourceHandler {
 	 * @spec openspec/specs/mail-intake/spec.md#requirement-a-mailbox-is-a-source-and-a-message-is-an-object-req-mail-001
 	 */
 	public function pollAll(): array {
+		// Unscoped: the mailbox poll job reads every enabled mailbox source, as the system.
 		$found = $this->objectService->findAll(
 			config: [
 				'filters' => [
