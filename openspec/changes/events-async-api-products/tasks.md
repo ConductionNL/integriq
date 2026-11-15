@@ -48,7 +48,7 @@ Kind: code. Matrix row `integriq:evt-async-apis`.
   - GIVEN a public product with a channel WHEN the document is requested without a session THEN a valid AsyncAPI 3.0 document is returned
   - GIVEN a private product WHEN it is requested without a subscribed consumer THEN 403
 - [x] Implement (a private product's consumer authenticates with a JWT; API-key consumers are not accepted on this route yet)
-- [ ] Test (PHPUnit on the document's structure and the route done; validation against the AsyncAPI 3.0 JSON schema fixture left, the fixture is not vendored)
+- [x] Test (PHPUnit on the document's structure and the route; the built document validates against the official AsyncAPI 3.0.0 JSON schema, vendored in tests/fixtures/asyncapi/, in tests/Unit/Service/AsyncApiDocumentSchemaTest.php)
 
 ## Verification
 
