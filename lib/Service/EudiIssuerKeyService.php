@@ -18,6 +18,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,11 +29,10 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use Jose\Component\Core\AlgorithmManager;
-use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use OCA\Integriq\AppInfo\Application;
+use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
@@ -64,14 +66,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
-class EudiIssuerKeyService {
-
-	/**
-	 * Signing algorithm for the issuer key (OpenID4VCI/EUDI convention: ES256/P-256).
-	 *
-	 * @var string
-	 */
-	public const ALGORITHM = 'ES256';
+class EudiIssuerKeyService implements EudiIssuerKeyServiceInterface {
 
 	/**
 	 * Maximum number of archived (retired) public keys retained per organisation,
@@ -135,7 +130,7 @@ class EudiIssuerKeyService {
 	 * @return array{active: array|null, archived: array[]}
 	 */
 	private function loadKeySet(?string $organisationId): array {
-		$raw = $this->appConfig->getValueString(Application::APP_ID, $this->configKey(organisationId: $organisationId), '');
+		$raw = $this->appConfig->getValueString(AppIdentity::APP_ID, $this->configKey(organisationId: $organisationId), '');
 		if ($raw === '') {
 			return ['active' => null, 'archived' => []];
 		}
@@ -162,7 +157,7 @@ class EudiIssuerKeyService {
 	 */
 	private function saveKeySet(?string $organisationId, array $keySet): void {
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			$this->configKey(organisationId: $organisationId),
 			json_encode($keySet),
 			sensitive: true
@@ -373,25 +368,9 @@ class EudiIssuerKeyService {
 	 * @throws RuntimeException When a secure temp file cannot be allocated.
 	 */
 	private function derivePublicJwk(string $publicKeyPem, string $kid): array {
-		$filename = tempnam(sys_get_temp_dir(), 'oc-eudi-key-');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(request: new PemKeyFileRequest(prefix: 'oc-eudi-key-', pem: $publicKeyPem, kid: $kid, algorithm: self::ALGORITHM));
+		if ($jwk === null) {
 			throw new RuntimeException('Could not allocate temp file for EUDI issuer key');
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, $publicKeyPem);
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['kid' => $kid, 'alg' => self::ALGORITHM, 'use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		return $jwk->toPublic()->jsonSerialize();
@@ -460,25 +439,11 @@ class EudiIssuerKeyService {
 	public function signJwt(?string $organisationId, array $payload, array $extraHeaderClaims = []): string {
 		$active = $this->resolveActiveKey(organisationId: $organisationId);
 
-		$filename = tempnam(sys_get_temp_dir(), 'oc-eudi-sign-');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(
+			request: new PemKeyFileRequest(prefix: 'oc-eudi-sign-', pem: $active['privateKeyPem'], kid: $active['kid'], algorithm: self::ALGORITHM)
+		);
+		if ($jwk === null) {
 			throw new RuntimeException('Could not allocate temp file for EUDI issuer signing key');
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, $active['privateKeyPem']);
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['kid' => $active['kid'], 'alg' => self::ALGORITHM, 'use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		$algorithmManager = new AlgorithmManager([new ES256()]);

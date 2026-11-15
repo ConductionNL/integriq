@@ -18,11 +18,14 @@
  * @link https://www.Integriq.nl
  *
  * @todo This listener should be moved to the software catalog app.
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\SoftwareCatalogueService;
+use OCA\Integriq\Service\SoftwareCatalogueServiceInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -54,11 +57,11 @@ class SoftwareCatalogEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SoftwareCatalogueService $softwareCatalogueService The software catalog service.
+	 * @param SoftwareCatalogueServiceInterface $softwareCatalogueService The software catalog service.
 	 * @param LoggerInterface $logger The logger instance.
 	 */
 	public function __construct(
-		private readonly SoftwareCatalogueService $softwareCatalogueService,
+		private readonly SoftwareCatalogueServiceInterface $softwareCatalogueService,
 		private readonly LoggerInterface $logger,
 	) {
 

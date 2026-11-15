@@ -83,37 +83,51 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import adminSetting from '../../mixins/adminSetting.js'
 
 const URL = '/apps/integriq/api/admin/otel'
+
+/**
+ * The export settings before the stored ones are read.
+ *
+ * @return {object} Export switched off, sampling at 10 percent.
+ */
+function defaultForm() {
+	return {
+		enabled: false,
+		endpoint: '',
+		allowLocal: false,
+		serviceName: '',
+		samplingRatio: 0.1,
+		credentialName: '',
+		headerName: '',
+	}
+}
 
 export default {
 	name: 'OtelSettings',
 
 	components: { NcButton, NcCheckboxRadioSwitch, NcTextField },
 
+	mixins: [adminSetting],
+
 	data() {
 		return {
-			loading: true,
-			busy: false,
-			error: '',
-			form: {
-				enabled: false,
-				endpoint: '',
-				allowLocal: false,
-				serviceName: '',
-				samplingRatio: 0.1,
-				credentialName: '',
-				headerName: '',
-			},
+			form: defaultForm(),
 		}
 	},
 
 	computed: {
+		/**
+		 * @return {string} The setting endpoint.
+		 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
+		 */
+		settingUrl() {
+			return URL
+		},
+
 		samplingPercent: {
 			/**
 			 * The sampling ratio shown as a percentage.
@@ -121,7 +135,7 @@ export default {
 			 * @return {string}
 			 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
 			 */
-			get() {
+			get: function () {
 				return String(Math.round(this.form.samplingRatio * 100))
 			},
 
@@ -131,7 +145,7 @@ export default {
 			 * @param {string} value The percentage.
 			 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
 			 */
-			set(value) {
+			set: function (value) {
 				const percent = Number(value)
 				this.form.samplingRatio = Number.isFinite(percent)
 					? percent / 100
@@ -140,48 +154,28 @@ export default {
 		},
 	},
 
-	/**
-	 * Read the stored settings.
-	 *
-	 * @return {Promise<void>}
-	 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
-	 */
-	async mounted() {
-		try {
-			const { data } = await axios.get(generateUrl(URL))
-			this.form = { ...this.form, ...data }
-		} catch (e) {
-			this.error =
-				e?.response?.data?.error
-				|| t('integriq', 'The setting could not be read.')
-		} finally {
-			this.loading = false
-		}
-	},
-
 	methods: {
 		t,
 
 		/**
-		 * Store the settings; the server refuses an address that is not https unless it is marked as internal.
+		 * Show what the server holds.
 		 *
-		 * @return {Promise<void>}
+		 * @param {object|null} data The stored setting.
+		 * @return {void}
 		 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
 		 */
-		async save() {
-			this.busy = true
-			this.error = ''
-			try {
-				const { data } = await axios.put(generateUrl(URL), { ...this.form })
-				this.form = { ...this.form, ...data }
-				showSuccess(t('integriq', 'Saved.'))
-			} catch (e) {
-				this.error =
-					e?.response?.data?.error
-					|| t('integriq', 'The setting could not be saved.')
-			} finally {
-				this.busy = false
-			}
+		applyStored(data) {
+			this.form = { ...this.form, ...data }
+		},
+
+		/**
+		 * What to store.
+		 *
+		 * @return {object} The request body.
+		 * @spec openspec/changes/observability-opentelemetry-export/specs/execution-trace/spec.md#requirement-export-is-configured-by-an-administrator-req-otel-005
+		 */
+		settingBody() {
+			return { ...this.form }
 		},
 	},
 }

@@ -3,6 +3,9 @@
 /**
  * Rewrites a Rule's JsonLogic from the request envelope onto a flow item.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Split out of {@see \OCA\Integriq\Service\RuleToFlowGenerator} because it
  * is the part of that translation with a right answer independent of flows: a
  * dialect question, testable on its own.
@@ -30,9 +33,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

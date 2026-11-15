@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\DigitalPost;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use OCA\Integriq\Service\ConnectionStore;
 use OCA\Integriq\Service\DigitalPost\BerichtenboxHealth;
 use OCA\Integriq\Service\DigitalPost\DigitalPostAccount;
@@ -63,7 +64,9 @@ class BerichtenboxHealthTest extends TestCase {
 		openssl_x509_export($x509, $pem);
 		openssl_pkey_export($key, $keyPem);
 
-		$now = new DateTimeImmutable('2026-10-08T12:00:00Z');
+		// The certificate is dated by openssl_csr_sign() from the real clock, so the test measures from it too.
+		$now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+		$at = static fn (string $offset): string => $now->modify($offset)->format('c');
 		$source = $this->entity([
 			'slug' => 'berichtenbox',
 			'configuration' => [
@@ -72,11 +75,11 @@ class BerichtenboxHealthTest extends TestCase {
 			],
 		]);
 		$letters = [
-			$this->entity(['providerId' => 'berichtenbox', 'status' => 'sent', 'simulated' => false, 'created' => '2026-10-07T10:00:00+00:00']),
-			$this->entity(['providerId' => 'berichtenbox', 'status' => 'sent', 'simulated' => false, 'created' => '2026-10-08T10:00:00+00:00']),
-			$this->entity(['providerId' => 'berichtenbox', 'status' => 'sent', 'simulated' => true, 'created' => '2026-10-01T10:00:00+00:00']),
-			$this->entity(['providerId' => 'berichtenbox', 'status' => 'delivered', 'simulated' => false, 'created' => '2026-10-01T10:00:00+00:00']),
-			$this->entity(['providerId' => 'postex', 'status' => 'sent', 'simulated' => false, 'created' => '2026-10-01T10:00:00+00:00']),
+			$this->entity(['providerId' => 'berichtenbox', 'status' => 'sent', 'simulated' => false, 'created' => $at('-26 hours')]),
+			$this->entity(['providerId' => 'berichtenbox', 'status' => 'sent', 'simulated' => false, 'created' => $at('-2 hours')]),
+			$this->entity(['providerId' => 'berichtenbox', 'status' => 'sent', 'simulated' => true, 'created' => $at('-7 days')]),
+			$this->entity(['providerId' => 'berichtenbox', 'status' => 'delivered', 'simulated' => false, 'created' => $at('-7 days')]),
+			$this->entity(['providerId' => 'postex', 'status' => 'sent', 'simulated' => false, 'created' => $at('-7 days')]),
 		];
 
 		$objectService = $this->createMock(OrObjectService::class);

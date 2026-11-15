@@ -1,0 +1,5137 @@
+{
+	"normaliseColumn undefined": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn null": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn zero": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn emptyString": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn empty": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn full": {
+		"id": 7,
+		"title": "Amount",
+		"type": "number",
+		"subtype": "progress",
+		"mandatory": true,
+		"constraints": {
+			"numberDecimals": 2
+		}
+	},
+	"normaliseColumn nullFields": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn undefinedSubtype": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn zeroSubtype": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": "0",
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn emptySubtype": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": "",
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn falseSubtype": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": "false",
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn numericTitle": {
+		"id": 3,
+		"title": "12",
+		"type": "5",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn constraintsString": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn constraintsArray": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": [1]
+	},
+	"normaliseColumn constraintsZero": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn idNaN": {
+		"id": "__NaN__",
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": false,
+		"constraints": {}
+	},
+	"normaliseColumn idZero": {
+		"id": 0,
+		"title": "",
+		"type": "",
+		"subtype": null,
+		"mandatory": true,
+		"constraints": {}
+	},
+	"mapColumnDescriptors list": [
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 7,
+			"title": "Amount",
+			"type": "number",
+			"subtype": "progress",
+			"mandatory": true,
+			"constraints": {
+				"numberDecimals": 2
+			}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": "0",
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": "",
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": "false",
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 3,
+			"title": "12",
+			"type": "5",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": [1]
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": "__NaN__",
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": false,
+			"constraints": {}
+		},
+		{
+			"id": 0,
+			"title": "",
+			"type": "",
+			"subtype": null,
+			"mandatory": true,
+			"constraints": {}
+		}
+	],
+	"mapColumnDescriptors object": [],
+	"mapColumnDescriptors null": [],
+	"readColumnMapping undefined": [],
+	"mappedValueFor undefined A": "",
+	"upsert undefined A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor undefined B": "",
+	"upsert undefined B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor undefined C": "",
+	"upsert undefined C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor undefined D": "",
+	"upsert undefined D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor undefined ": "",
+	"upsert undefined  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor undefined 3": "",
+	"upsert undefined 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert undefined 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert undefined 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged undefined": true,
+	"readColumnMapping null": [],
+	"mappedValueFor null A": "",
+	"upsert null A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor null B": "",
+	"upsert null B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor null C": "",
+	"upsert null C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor null D": "",
+	"upsert null D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor null ": "",
+	"upsert null  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor null 3": "",
+	"upsert null 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert null 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert null 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged null": true,
+	"readColumnMapping string": [],
+	"mappedValueFor string A": "",
+	"upsert string A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor string B": "",
+	"upsert string B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor string C": "",
+	"upsert string C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor string D": "",
+	"upsert string D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor string ": "",
+	"upsert string  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor string 3": "",
+	"upsert string 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert string 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert string 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged string": true,
+	"readColumnMapping array": [],
+	"mappedValueFor array A": "",
+	"upsert array A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor array B": "",
+	"upsert array B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor array C": "",
+	"upsert array C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor array D": "",
+	"upsert array D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor array ": "",
+	"upsert array  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor array 3": "",
+	"upsert array 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert array 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert array 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged array": true,
+	"readColumnMapping empty": [],
+	"mappedValueFor empty A": "",
+	"upsert empty A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor empty B": "",
+	"upsert empty B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor empty C": "",
+	"upsert empty C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor empty D": "",
+	"upsert empty D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor empty ": "",
+	"upsert empty  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor empty 3": "",
+	"upsert empty 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert empty 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert empty 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged empty": true,
+	"readColumnMapping noArray": [],
+	"mappedValueFor noArray A": "",
+	"upsert noArray A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor noArray B": "",
+	"upsert noArray B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor noArray C": "",
+	"upsert noArray C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor noArray D": "",
+	"upsert noArray D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor noArray ": "",
+	"upsert noArray  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor noArray 3": "",
+	"upsert noArray 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert noArray 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert noArray 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged noArray": true,
+	"readColumnMapping mappingObject": [],
+	"mappedValueFor mappingObject A": "",
+	"upsert mappingObject A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor mappingObject B": "",
+	"upsert mappingObject B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor mappingObject C": "",
+	"upsert mappingObject C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor mappingObject D": "",
+	"upsert mappingObject D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor mappingObject ": "",
+	"upsert mappingObject  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor mappingObject 3": "",
+	"upsert mappingObject 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mappingObject 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert mappingObject 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged mappingObject": true,
+	"readColumnMapping functionEntry": [],
+	"mappedValueFor functionEntry A": "",
+	"upsert functionEntry A 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry A 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry A 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry A 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry A 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry A 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor functionEntry B": "",
+	"upsert functionEntry B 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry B 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry B 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry B 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry B 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry B 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor functionEntry C": "",
+	"upsert functionEntry C 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry C 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry C 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry C 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry C 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry C 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor functionEntry D": "",
+	"upsert functionEntry D 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry D 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry D 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry D 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry D 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry D 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor functionEntry ": "",
+	"upsert functionEntry  0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry  1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry  2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry  3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry  6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry  7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor functionEntry 3": "",
+	"upsert functionEntry 3 0": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry 3 1": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry 3 2": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry 3 3": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert functionEntry 3 6": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert functionEntry 3 7": {
+		"result": {},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged functionEntry": true,
+	"readColumnMapping emptyMapping": [],
+	"mappedValueFor emptyMapping A": "",
+	"upsert emptyMapping A 0": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping A 1": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping A 2": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping A 3": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping A 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "x"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping A 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "y"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping A 6": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping A 7": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor emptyMapping B": "",
+	"upsert emptyMapping B 0": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping B 1": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping B 2": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping B 3": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping B 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "x"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping B 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": "y"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping B 6": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping B 7": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor emptyMapping C": "",
+	"upsert emptyMapping C 0": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping C 1": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping C 2": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping C 3": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping C 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "x"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping C 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "C",
+					"value": "y"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping C 6": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping C 7": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor emptyMapping D": "",
+	"upsert emptyMapping D 0": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping D 1": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping D 2": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping D 3": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping D 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "x"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping D 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "D",
+					"value": "y"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping D 6": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping D 7": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor emptyMapping ": "",
+	"upsert emptyMapping  0": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping  1": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping  2": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping  3": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping  4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "x"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping  5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": "",
+					"value": "y"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping  6": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping  7": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"mappedValueFor emptyMapping 3": "",
+	"upsert emptyMapping 3 0": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping 3 1": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping 3 2": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping 3 3": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping 3 4": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "x"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping 3 5": {
+		"result": {
+			"columnMapping": [
+				{
+					"column": 3,
+					"value": "y"
+				}
+			],
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert emptyMapping 3 6": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"upsert emptyMapping 3 7": {
+		"result": {
+			"other": 1
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": false
+	},
+	"unchanged emptyMapping": true,
+	"readColumnMapping mixed": [
+		{
+			"column": "A",
+			"value": "{{ a }}"
+		},
+		{
+			"column": "B",
+			"value": null
+		},
+		{
+			"column": "C"
+		},
+		{
+			"column": "A",
+			"value": "second"
+		},
+		{
+			"column": "",
+			"value": "blank"
+		}
+	],
+	"mappedValueFor mixed A": "{{ a }}",
+	"upsert mixed A 0": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed A 1": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed A 2": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed A 3": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed A 4": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "A",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed A 5": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "A",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed A 6": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed A 7": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"mappedValueFor mixed B": "",
+	"upsert mixed B 0": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed B 1": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed B 2": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed B 3": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed B 4": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "B",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed B 5": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "B",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed B 6": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed B 7": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"mappedValueFor mixed C": "",
+	"upsert mixed C 0": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed C 1": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed C 2": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed C 3": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed C 4": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "C",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed C 5": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "C",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed C 6": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed C 7": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"mappedValueFor mixed D": "",
+	"upsert mixed D 0": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed D 1": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed D 2": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed D 3": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed D 4": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "D",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed D 5": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": "D",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed D 6": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed D 7": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"mappedValueFor mixed ": "blank",
+	"upsert mixed  0": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed  1": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed  2": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed  3": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed  4": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed  5": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed  6": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed  7": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"mappedValueFor mixed 3": "",
+	"upsert mixed 3 0": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed 3 1": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed 3 2": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed 3 3": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed 3 4": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": 3,
+					"value": "x"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed 3 5": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				},
+				{
+					"column": 3,
+					"value": "y"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed 3 6": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"upsert mixed 3 7": {
+		"result": {
+			"other": true,
+			"columnMapping": [
+				{
+					"column": "A",
+					"value": "{{ a }}"
+				},
+				{
+					"column": "B",
+					"value": null
+				},
+				{
+					"column": "C"
+				},
+				{
+					"column": "A",
+					"value": "second"
+				},
+				{
+					"column": "",
+					"value": "blank"
+				}
+			]
+		},
+		"isArray": false,
+		"same": false,
+		"hasKey": true
+	},
+	"unchanged mixed": true,
+	"extractResults 0": [],
+	"extractResults 1": [],
+	"extractResults 2": [],
+	"extractResults 3": [
+		{
+			"id": 1
+		}
+	],
+	"extractResults 4": [
+		{
+			"id": 2
+		}
+	],
+	"extractResults 5": [],
+	"extractResults 6": [],
+	"extractResults 7": [],
+	"mapTableOptions": [
+		{
+			"id": 0,
+			"label": "0"
+		},
+		{
+			"id": 4,
+			"label": "T"
+		},
+		{
+			"id": 5,
+			"label": "5"
+		},
+		{
+			"id": "__NaN__",
+			"label": "x"
+		}
+	],
+	"mapTableOptions object": []
+}

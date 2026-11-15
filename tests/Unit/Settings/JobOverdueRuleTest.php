@@ -14,6 +14,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/openconnector-notifications/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -22,14 +25,15 @@ namespace OCA\Integriq\Tests\Unit\Settings;
 
 use DateTimeImmutable;
 use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterParser;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Runs the shipped rule through the real OpenRegister classes (tests/stubs
- * holds verbatim copies of openregister development a5832f2498).
+ * holds verbatim copies of openregister main 0f8e856049).
  */
 final class JobOverdueRuleTest extends TestCase {
 
@@ -76,7 +80,7 @@ final class JobOverdueRuleTest extends TestCase {
 	private function job(bool $enabled, string $nextRun): array {
 		$job = [
 			'name'      => 'Nightly BAG pull',
-			'jobClass'  => 'OCA\\Integriq\\Action\\SynchronizationAction',
+			'jobClass'  => 'OCA\\Integriq\\Service\\Job\\SynchronizationAction',
 			'interval'  => 3600,
 			'isEnabled' => $enabled,
 			'userId'    => 'admin',
@@ -129,9 +133,9 @@ final class JobOverdueRuleTest extends TestCase {
 		$evaluator = new ScheduledFilterEvaluator();
 		$now       = new DateTimeImmutable(self::NOW);
 
-		$this->assertTrue($evaluator->matches($this->job(true, '2026-09-29T10:00:00+00:00'), $filter, $now), 'overdue');
-		$this->assertFalse($evaluator->matches($this->job(true, '2026-09-29T14:00:00+00:00'), $filter, $now), 'not yet due');
-		$this->assertFalse($evaluator->matches($this->job(false, '2026-09-29T10:00:00+00:00'), $filter, $now), 'disabled');
+		$this->assertTrue($evaluator->matchesTarget($filter, new ScheduledFilterTarget($this->job(true, '2026-09-29T10:00:00+00:00'), $now)), 'overdue');
+		$this->assertFalse($evaluator->matchesTarget($filter, new ScheduledFilterTarget($this->job(true, '2026-09-29T14:00:00+00:00'), $now)), 'not yet due');
+		$this->assertFalse($evaluator->matchesTarget($filter, new ScheduledFilterTarget($this->job(false, '2026-09-29T10:00:00+00:00'), $now)), 'disabled');
 	}//end testOnlyAnEnabledJobPastItsNextRunMatches()
 
 	/**

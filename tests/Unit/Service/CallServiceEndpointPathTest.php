@@ -9,12 +9,16 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\CallService;
@@ -62,6 +66,7 @@ class CallServiceEndpointPathTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$brokered,
 			new SensitiveFieldRegistry(),
+			new BodyCapturePolicy(appConfig: $appConfig),
 		);
 
 	}//end setUp()

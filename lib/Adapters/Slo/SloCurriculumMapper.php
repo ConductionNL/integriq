@@ -42,7 +42,7 @@ use Symfony\Component\Uid\Factory\UuidFactory;
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-one-framework-per-set-and-root-with-stable-ids-and-attribution-req-007
  */
-final class SloCurriculumMapper {
+final class SloCurriculumMapper implements SloCurriculumMapperInterface {
 	/**
 	 * UUID v5 namespace for every id this adapter derives. Never change it:
 	 * every imported learniq object's id is derived from it.
@@ -63,11 +63,6 @@ final class SloCurriculumMapper {
 	 * Target schema slug for competencies.
 	 */
 	public const COMPETENCY_SCHEMA = 'competency';
-
-	/**
-	 * Base of the persistent SLO uri of an entity.
-	 */
-	public const SLO_URI_BASE = 'https://opendata.slo.nl/curriculum/uuid/';
 
 	/**
 	 * Constructor.

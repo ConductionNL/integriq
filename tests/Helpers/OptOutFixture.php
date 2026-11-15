@@ -31,6 +31,7 @@ use OCA\Integriq\Outbound\Identity\OptOutRegistry;
 use OCA\Integriq\Outbound\Identity\OptOutRowBuilder;
 use OCA\Integriq\Outbound\Identity\RecipientKey;
 use OCA\Integriq\Outbound\Identity\UnsubscribeTokenService;
+use OCA\Integriq\Service\Sms\E164PhoneNumberNormaliser;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -70,7 +71,7 @@ class OptOutFixture {
 	 *
 	 * @var array<string,string>
 	 */
-	public array $config = [UnsubscribeTokenService::CONFIG_SECRET => 'unit-secret-0123456789'];
+	public array $config = [UnsubscribeTokenService::SIGNING_CONFIG_NAME => 'unit-secret-0123456789'];
 
 	/**
 	 * The unix time the clock answers.
@@ -227,7 +228,7 @@ class OptOutFixture {
 	 * @return RecipientKey The key.
 	 */
 	public function recipientKey(): RecipientKey {
-		return new RecipientKey($this->appConfig(), $this->random());
+		return new RecipientKey($this->appConfig(), $this->random(), new E164PhoneNumberNormaliser());
 
 	}//end recipientKey()
 

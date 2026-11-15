@@ -1,0 +1,21 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * Layout shared by the rule action forms; each form loads it as a scoped
+ * style block.
+ */
+.action-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.action-form__label {
+	font-weight: bold;
+}
+
+.action-form__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}

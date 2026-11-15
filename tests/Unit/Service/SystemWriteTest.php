@@ -36,8 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
-use OCA\Integriq\Exception\SystemWriteUnavailableException;
 use OCA\Integriq\Service\SystemWrite;
+use OCA\Integriq\Service\SystemWriteUnavailableException;
 use PHPUnit\Framework\TestCase;
 
 /**

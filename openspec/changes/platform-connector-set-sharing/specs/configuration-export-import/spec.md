@@ -10,7 +10,7 @@ Only decided behaviour is specified here. Matrix row `integriq:plt-share-config`
 ### Requirement: A connector set is shared through OpenRegister's configuration sharing (REQ-CSHR-001)
 
 Integriq MUST hand a connector set it shares to OpenRegister's configuration sharing.
-Integriq MUST NOT open a sharing connection of its own to another instance, to GitHub or to a store registry.
+Integriq MUST NOT open a sharing connection of its own to another instance, to GitHub or to a marketplace registry.
 
 #### Scenario: sharing hands the set to OpenRegister
 - GIVEN an administrator who selects a connector set to share

@@ -110,4 +110,50 @@ class BagPropertySourceTest extends TestCase {
 		$this->assertSame(BagPropertySource::STALENESS_BUDGET, $described['stalenessBudget']);
 		$this->assertFalse($described['listShaped']);
 	}//end testDescribeNamesTheIdentifierAndTheBudget()
+
+	/**
+	 * The provider id is bag.
+	 *
+	 * @return void
+	 */
+	public function testTheIdIsBag(): void {
+		$this->assertSame('bag', (new BagPropertySource($this->geocoding()))->id());
+	}//end testTheIdIsBag()
+
+	/**
+	 * A suggest PDOK does not answer is an unreachable source carrying the cause, asked for the declared rows.
+	 *
+	 * @return void
+	 */
+	public function testASuggestPdokDoesNotAnswerIsUnreachable(): void {
+		$geocoding = $this->geocoding();
+		$geocoding->expects($this->once())->method('suggest')->with('kerkstr', 3)
+			->willThrowException(new \RuntimeException('timeout'));
+
+		try {
+			(new BagPropertySource($geocoding))->suggest('kerkstr', ['rows' => '3']);
+			$this->fail('A suggest PDOK does not answer must be unreachable.');
+		} catch (SourceUnreachableException $e) {
+			$this->assertSame('bag', $e->getProviderId());
+			$this->assertSame('The PDOK Locatieserver did not answer a suggest: timeout', $e->getMessage());
+		}
+	}//end testASuggestPdokDoesNotAnswerIsUnreachable()
+
+	/**
+	 * A lookup PDOK does not answer is an unreachable source carrying the cause.
+	 *
+	 * @return void
+	 */
+	public function testALookupPdokDoesNotAnswerIsUnreachable(): void {
+		$geocoding = $this->geocoding();
+		$geocoding->method('lookup')->willThrowException(new \RuntimeException('503'));
+
+		try {
+			(new BagPropertySource($geocoding))->resolve('adres-1');
+			$this->fail('A lookup PDOK does not answer must be unreachable.');
+		} catch (SourceUnreachableException $e) {
+			$this->assertSame('bag', $e->getProviderId());
+			$this->assertSame('The PDOK Locatieserver did not answer a lookup: 503', $e->getMessage());
+		}
+	}//end testALookupPdokDoesNotAnswerIsUnreachable()
 }//end class

@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\StufZknSyncService;
+use OCA\Integriq\Service\StufZknSyncServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -57,14 +57,14 @@ class StufZknRetryJob extends TimedJob {
 	 * StufZknRetryJob constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling.
-	 * @param StufZknSyncService $syncService The StUF-ZKN sync service.
+	 * @param StufZknSyncServiceInterface $syncService The StUF-ZKN sync service.
 	 * @param LoggerInterface $logger Logger for sweep outcomes and containment.
 	 *
 	 * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly StufZknSyncService $syncService,
+		private readonly StufZknSyncServiceInterface $syncService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

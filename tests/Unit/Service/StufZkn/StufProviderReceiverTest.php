@@ -55,6 +55,8 @@ use RuntimeException;
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderReceiver
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderRequestReader
  * @covers \OCA\Integriq\Service\StufZkn\StufProviderOperationMapper
+ * @covers \OCA\Integriq\Service\StufZkn\ProviderRequest
+ * @covers \OCA\Integriq\Service\StufZkn\ProviderRequestRun
  * @covers \OCA\Integriq\Controller\StufProviderController
  * @covers \OCA\Integriq\Event\StufProviderQueryEvent
  * @covers \OCA\Integriq\Event\StufCaseQueryEvent
@@ -179,6 +181,14 @@ class StufProviderReceiverTest extends TestCase {
 				'type' => 'stuf-zkn',
 				'configuration' => ['organisatie' => '0363', 'acceptsProviderRequests' => true, 'authentication' => ['mode' => 'token']],
 			],
+			'blankpass' => [
+				'type' => 'stuf-zkn',
+				'configuration' => [
+					'organisatie' => '0363',
+					'acceptsProviderRequests' => true,
+					'authentication' => ['mode' => 'wsse', 'wsse' => ['username' => 'zsh', 'encryptedPassword' => 'blank']],
+				],
+			],
 			'rest' => [
 				'type' => 'rest',
 				'configuration' => ['acceptsProviderRequests' => true, 'authentication' => $wsse],
@@ -227,7 +237,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function testAReplayedNonceIsRefused(): void {
 		$receiver = $this->receiver();
@@ -312,7 +322,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function testAQueryWithoutACriterionIsRefusedWithoutAsking(): void {
 		$receiver = $this->receiver();
@@ -374,7 +384,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function testAnotherAppsAnswerDoesNotCountWhenTheSourceNamesItsOwner(): void {
 		$this->sources['zsh']['configuration']['owningApp'] = 'pipelinq';
@@ -390,7 +400,7 @@ class StufProviderReceiverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function testTheOwningAppsAnswerCountsAndTheOwnerCannotBeMoved(): void {
 		$this->sources['zsh']['configuration']['owningApp'] = 'dossiq';
@@ -570,6 +580,49 @@ class StufProviderReceiverTest extends TestCase {
 			$event->getOperation()
 		);
 	}//end testACreateMessageMapsToAGenericCaseOperation()
+
+	/**
+	 * An organisation known only by its branch is the initiator by its vestigingsnummer; an impossible date is left out.
+	 *
+	 * @return void
+	 */
+	public function testABranchInitiatorIsMappedAndAnImpossibleDateLeftOut(): void {
+		$xml = str_replace('<ZKN:startdatum>20261012</ZKN:startdatum>', '<ZKN:startdatum>20261332</ZKN:startdatum>', self::creeerZaak());
+		$xml = preg_replace(
+			'#<ZKN:natuurlijkPersoon .*</ZKN:natuurlijkPersoon>#',
+			'<ZKN:vestiging StUF:entiteittype="VES" StUF:verwerkingssoort="I"><BG:vestigingsNummer>000012345678</BG:vestigingsNummer>'
+				. '<BG:handelsnaam>Boomverzorging BV</BG:handelsnaam></ZKN:vestiging>',
+			$xml
+		);
+
+		$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$operation = $this->events[0]->getOperation();
+		$this->assertSame(['type' => 'company', 'sourceId' => '000012345678', 'name' => 'Boomverzorging BV'], $operation['initiator']);
+		$this->assertArrayNotHasKey('startDate', $operation, 'A date that does not exist is not passed on');
+		$this->assertSame('2026-10-12', $operation['registrationDate']);
+	}//end testABranchInitiatorIsMappedAndAnImpossibleDateLeftOut()
+
+	/**
+	 * An initiator that carries neither a BSN nor an organisation number is left out rather than guessed.
+	 *
+	 * @return void
+	 */
+	public function testAnInitiatorWithoutANumberIsLeftOut(): void {
+		$xml = preg_replace(
+			'#<ZKN:natuurlijkPersoon .*</ZKN:natuurlijkPersoon>#',
+			'<ZKN:nietNatuurlijkPersoon StUF:entiteittype="NNP" StUF:verwerkingssoort="I"><BG:statutaireNaam>Naamloos</BG:statutaireNaam></ZKN:nietNatuurlijkPersoon>',
+			self::creeerZaak()
+		);
+
+		$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(200, $answer['statusCode']);
+		$operation = $this->events[0]->getOperation();
+		$this->assertSame('create', $operation['action']);
+		$this->assertArrayNotHasKey('initiator', $operation);
+	}//end testAnInitiatorWithoutANumberIsLeftOut()
 
 	/**
 	 * An updateZaak (zakLk01, W) sends the old object and then the new one: the new one counts.
@@ -836,6 +889,22 @@ class StufProviderReceiverTest extends TestCase {
 	}//end testAWriteThisAdapterDoesNotCarryOutIsRefusedWithoutAsking()
 
 	/**
+	 * A kennisgeving that names no mutatiesoort, neither as parameter nor as verwerkingssoort, is refused without asking.
+	 *
+	 * @return void
+	 */
+	public function testAKennisgevingWithoutAMutatiesoortIsRefusedWithoutAsking(): void {
+		$xml = str_replace(' StUF:verwerkingssoort="W"', '', self::zakLk01());
+
+		$answer = $this->receiver()->receive(rawXml: $xml, sourceId: 'zsh', service: 'cases');
+
+		$this->assertSame(400, $answer['statusCode']);
+		$this->assertStringContainsString('Fo03Bericht', $answer['body']);
+		$this->assertStringContainsString('StUF058', $answer['body']);
+		$this->assertSame([], $this->events, 'The owning app is not asked');
+	}//end testAKennisgevingWithoutAMutatiesoortIsRefusedWithoutAsking()
+
+	/**
 	 * A write without the source's UsernameToken, or on a source that did not opt in, never reaches the owning app.
 	 *
 	 * @return void
@@ -962,7 +1031,7 @@ class StufProviderReceiverTest extends TestCase {
 	 */
 	private function receiver(): StufProviderReceiver {
 		$crypto = $this->createMock(ICrypto::class);
-		$crypto->method('decrypt')->willReturn('secret');
+		$crypto->method('decrypt')->willReturnCallback(static fn (string $cipher): string => ($cipher === 'blank' ? '' : 'secret'));
 
 		$objects = $this->getMockBuilder(ORObjectService::class)->disableOriginalConstructor()->getMock();
 		$objects->method('find')->willReturnCallback(
@@ -1191,4 +1260,95 @@ class StufProviderReceiverTest extends TestCase {
 			. ' xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">'
 			. $header . '<soapenv:Body>' . $body . '</soapenv:Body></soapenv:Envelope>';
 	}//end envelope()
+	/**
+	 * Golden transcript: the answer (status and body, with the generated reference and the time
+	 * masked) and every log line of each outcome, pinned against a fixture.
+	 *
+	 * @return void
+	 */
+	public function testGoldenTranscriptOfEveryOutcome(): void {
+		$scenarios = [
+			['answer', 'zsh', 'cases', self::zakLv01(), false],
+			['empty', 'zsh', 'cases', self::zakLv01(), false],
+			['many', 'zsh', 'cases', self::zakLv01(), false],
+			['silent', 'zsh', 'cases', self::zakLv01(), false],
+			['throw', 'zsh', 'cases', self::zakLv01(), false],
+			['refuse', 'zsh', 'cases', self::zakLv01(), false],
+			['forbidden', 'zsh', 'cases', self::zakLv01(), false],
+			['not-found', 'zsh', 'cases', self::zakLv01(), false],
+			['conflict', 'zsh', 'cases', self::zakLv01(), false],
+			['leaky', 'zsh', 'cases', self::zakLv01(), false],
+			['intruder', 'zsh', 'cases', self::zakLv01(), false],
+			['answer', 'zsh', 'cases', self::zakLv01(criteria: ''), false],
+			['answer', 'zsh', 'persons', self::npsLv01(), false],
+			['silent', 'zsh', 'persons', self::npsLv01(), false],
+			['answer', 'zsh', 'cases', self::zakLk01(), false],
+			['refuse', 'zsh', 'cases', self::zakLk01(), false],
+			['silent', 'zsh', 'cases', self::zakLk01(), false],
+			['answer', 'zsh', 'cases', self::edcLk01(), false],
+			['answer', 'zsh', 'cases', self::creeerZaak(), false],
+			['answer', 'zsh', 'cases', self::voegZaakdocumentToe(inhoud: 'aGFsbG8='), false],
+			['answer', 'zsh', 'cases', self::creeerZaak(), true],
+			['answer', 'zsh', 'cases', self::zakLv01(), true],
+			['answer', 'zsh', 'cases', self::zakLv01(password: 'wrong'), false],
+			['answer', 'zsh', 'cases', self::zakLv01(password: null), false],
+			['answer', 'closed', 'cases', self::zakLv01(), false],
+			['answer', 'tokenless', 'cases', self::zakLv01(), false],
+			['answer', 'missing', 'cases', self::zakLv01(), false],
+			['answer', 'rest', 'cases', self::zakLv01(), false],
+			['answer', 'blankpass', 'cases', self::zakLv01(password: ''), false],
+			['answer', 'zsh', 'cases', self::npsLv01(), false],
+			['answer', 'zsh', 'persons', self::zakLv01(), false],
+			['answer', 'zsh', 'cases', self::envelope(body: '<ZKN:adrLv01/>'), false],
+			['answer', 'zsh', 'cases', '<not-xml', false],
+			['answer', 'zsh', 'cases', '', false],
+			['answer', 'zsh', 'cases', str_repeat('a', 2097153), false],
+		];
+
+		$transcript = [];
+		foreach ($scenarios as $index => [$owner, $sourceId, $service, $xml, $forwarded]) {
+			$lines = [];
+			$this->logger = new class($lines) extends \Psr\Log\AbstractLogger {
+				/**
+				 * Constructor.
+				 *
+				 * @param array $lines The shared log line list.
+				 */
+				public function __construct(private array &$lines) {
+				}
+
+				/**
+				 * Record one log line.
+				 *
+				 * @param mixed              $level   The level.
+				 * @param string|\Stringable $message The message.
+				 * @param array              $context The context.
+				 *
+				 * @return void
+				 */
+				public function log($level, string|\Stringable $message, array $context = []): void {
+					$this->lines[] = [$level, (string)$message, $context];
+				}
+			};
+			$this->owner = $owner;
+			$this->nonces = [];
+			$this->events = [];
+			$receiver = $this->receiver();
+			if ($forwarded === true) {
+				$answer = $receiver->receiveForwarded(rawXml: $xml, sourceId: $sourceId, service: $service);
+			} else {
+				$answer = $receiver->receive(rawXml: $xml, sourceId: $sourceId, service: $service);
+			}
+
+			$body = preg_replace('/<StUF:(referentienummer|tijdstipBericht)>[^<]*</', '<StUF:$1>X<', (string)$answer['body']);
+			$transcript[] = ['scenario' => $index, 'status' => $answer['statusCode'], 'body' => $body, 'events' => count($this->events), 'log' => $lines];
+		}
+
+		$fixture = __DIR__ . '/../../../fixtures/stuf-provider/receiver-transcript.json';
+		$this->assertSame(
+			(string)file_get_contents($fixture),
+			json_encode($transcript, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n"
+		);
+
+	}//end testGoldenTranscriptOfEveryOutcome()
 }//end class

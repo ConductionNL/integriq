@@ -16,7 +16,7 @@ Sources section plus the backend call/rate-limit internals (covered by PHPUnit
 and Newman). It is a retrofit spec: the code already exists.
 ## Requirements
 
-### REQ-SRC-UI-001: Source Management UI
+### Requirement: Source Management UI (REQ-SRC-UI-001)
 
 Integriq MUST provide a Sources section in its SPA where administrators can
 browse, create, edit, delete, and test source connections.
@@ -39,7 +39,7 @@ browse, create, edit, delete, and test source connections.
 - WHEN they navigate to the Source logs page at `/apps/integriq/sources/logs`
 - THEN the page mounts and renders the main content area
 
-### REQ-SRC-001: External HTTP source call
+### Requirement: External HTTP source call (REQ-SRC-001)
 
 The system SHALL dispatch HTTP calls to external sources via `CallService`,
 applying source-configured authentication (bearer, basic, API key, JWT),
@@ -66,7 +66,7 @@ persisted as `call_log` objects in OpenRegister.
 - **WHEN** the response is received
 - **THEN** a `call_log` record is persisted with the source id, status code, and duration.
 
-### REQ-SRC-002: Source connection test
+### Requirement: Source connection test (REQ-SRC-002)
 
 The system SHALL provide a `POST /api/sources/{id}/test` endpoint that
 dispatches a single test call to the source and returns the response body and

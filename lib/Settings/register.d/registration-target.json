@@ -1,0 +1,236 @@
+{
+ "$comment": "ADR-037 register fragment (form-submission-registration-targets, Task 1, design D1). Adds registrationTarget, an outside system a sibling app registers form submissions in, and registrationRecord, one registration keyed by target, app and submission reference. Both are admin-only for every verb: a target names sources and settings, and a record carries outside urls. Apps reach targets only through SubmissionRegistrationRequestedEvent and the slug-title-kind projection of GET /api/registration-targets.",
+ "components": {
+  "registers": {
+   "integriq": {
+    "schemas": [
+     "registrationTarget",
+     "registrationRecord"
+    ]
+   }
+  },
+  "schemas": {
+   "registrationTarget": {
+    "slug": "registrationTarget",
+    "title": "Registration target",
+    "icon": "SendCheckOutline",
+    "version": "1.0.0",
+    "summary": "An outside system a form submission is registered in",
+    "description": "Where integriq registers a submission another app hands over (form-submission-registration-targets, design D1): a ZGW case system, the Objects API, a StUF-ZDS case system or a plain JSON endpoint, with its sources, the mapping from the hand-over to the outside shape, the settings of its kind and the apps allowed to use it. Admin-only for every verb: a target names sources and settings.",
+    "required": [
+     "slug",
+     "title",
+     "kind"
+    ],
+    "type": "object",
+    "authorization": {
+     "create": [
+      "admin"
+     ],
+     "read": [
+      "admin"
+     ],
+     "update": [
+      "admin"
+     ],
+     "delete": [
+      "admin"
+     ]
+    },
+    "properties": {
+     "slug": {
+      "type": "string",
+      "title": "Slug",
+      "description": "Stable identifier an app names the target by."
+     },
+     "title": {
+      "type": "string",
+      "title": "Title",
+      "description": "The name administrators and the portal picker show."
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind",
+      "description": "Which outside system this is.",
+      "enum": [
+       "zgw",
+       "objects-api",
+       "stuf-zds",
+       "json"
+      ]
+     },
+     "sources": {
+      "type": "object",
+      "title": "Sources",
+      "description": "The integriq source uuids per role: zgw zaken, documenten and optional catalogi; objects-api objects and optional documenten; stuf-zds zkn; json endpoint.",
+      "properties": {
+       "zaken": {
+        "type": "string",
+        "title": "Zaken API",
+        "description": "Source uuid of the Zaken API."
+       },
+       "documenten": {
+        "type": "string",
+        "title": "Documenten API",
+        "description": "Source uuid of the Documenten API."
+       },
+       "catalogi": {
+        "type": "string",
+        "title": "Catalogi API",
+        "description": "Source uuid of the Catalogi API."
+       },
+       "objects": {
+        "type": "string",
+        "title": "Objects API",
+        "description": "Source uuid of the Objects API."
+       },
+       "zkn": {
+        "type": "string",
+        "title": "StUF-ZKN",
+        "description": "Source uuid of the StUF-ZKN service."
+       },
+       "endpoint": {
+        "type": "string",
+        "title": "Endpoint",
+        "description": "Source uuid of the JSON endpoint."
+       }
+      }
+     },
+     "mapping": {
+      "type": "string",
+      "title": "Mapping",
+      "description": "Uuid or slug of the Mapping from the hand-over to the outside shape."
+     },
+     "zgw": {
+      "type": "object",
+      "title": "ZGW settings",
+      "description": "zaaktype url, bronorganisatie and verantwoordelijkeOrganisatie RSIN, informatieobjecttype urls for the PDF and the attachments, vertrouwelijkheidaanduiding and optional zaakeigenschappen."
+     },
+     "objectsApi": {
+      "type": "object",
+      "title": "Objects API settings",
+      "description": "objecttype url, objecttypeVersion and an optional informatieobjecttype for files."
+     },
+     "stufZds": {
+      "type": "object",
+      "title": "StUF-ZDS settings",
+      "description": "zender and ontvanger (organisatie, applicatie), zaaktypeCode and documenttypeCode."
+     },
+     "json": {
+      "type": "object",
+      "title": "JSON settings",
+      "description": "path on the endpoint source and an optional JSON Schema the mapped body must satisfy."
+     },
+     "allowedApps": {
+      "type": "array",
+      "title": "Allowed apps",
+      "description": "The apps that may register submissions at this target.",
+      "items": {
+       "type": "string"
+      },
+      "default": [
+       "portaliq"
+      ]
+     },
+     "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether apps may use the target.",
+      "default": true
+     }
+    }
+   },
+   "registrationRecord": {
+    "slug": "registrationRecord",
+    "title": "Registration record",
+    "icon": "ClipboardCheckOutline",
+    "version": "1.0.0",
+    "summary": "One submission's registration at one target",
+    "description": "What integriq did for one hand-over (form-submission-registration-targets, design D1 and D5): the target, the calling app and the submission reference it is keyed by, its state, the steps already done with their outside urls, and the result. A repeated hand-over answers the stored result or resumes after the last step. Admin-only for every verb.",
+    "required": [
+     "target",
+     "app",
+     "submissionReference",
+     "state"
+    ],
+    "type": "object",
+    "authorization": {
+     "create": [
+      "admin"
+     ],
+     "read": [
+      "admin"
+     ],
+     "update": [
+      "admin"
+     ],
+     "delete": [
+      "admin"
+     ]
+    },
+    "properties": {
+     "target": {
+      "type": "string",
+      "title": "Target",
+      "description": "Slug of the registration target."
+     },
+     "app": {
+      "type": "string",
+      "title": "App",
+      "description": "The app that handed the submission over."
+     },
+     "submissionReference": {
+      "type": "string",
+      "title": "Submission",
+      "description": "The submission reference the app gave."
+     },
+     "state": {
+      "type": "string",
+      "title": "State",
+      "description": "started while running, done once registered, failed after a refusal.",
+      "enum": [
+       "started",
+       "done",
+       "failed"
+      ]
+     },
+     "steps": {
+      "type": "array",
+      "title": "Steps",
+      "description": "What was created outside, in order, with its url.",
+      "items": {
+       "type": "object"
+      }
+     },
+     "externalReference": {
+      "type": "string",
+      "title": "External reference",
+      "description": "The reference the outside system gave the registration."
+     },
+     "externalUrl": {
+      "type": "string",
+      "title": "External url",
+      "description": "Where the registration lives outside."
+     },
+     "lastError": {
+      "type": "object",
+      "title": "Last error",
+      "description": "The last refusal: code, retryable and message."
+     },
+     "startedAt": {
+      "type": "string",
+      "title": "Started",
+      "description": "When the first hand-over started.",
+      "format": "date-time"
+     },
+     "finishedAt": {
+      "type": "string",
+      "title": "Finished",
+      "description": "When the registration was done or last failed.",
+      "format": "date-time"
+     }
+    }
+   }
+  }
+ }
+}

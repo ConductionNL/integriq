@@ -29,12 +29,15 @@ declare(strict_types=1);
 namespace OCA\Integriq\Service\Dso;
 
 use DateTime;
-use OCA\Integriq\AppInfo\Application;
 use OCA\Integriq\Exception\DsoConnectionUnavailableException;
+use OCA\Integriq\Kernel\AppIdentity;
+use OCA\Integriq\Service\Portal\PortalConnectionAlertsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
+use OCP\Notification\INotification;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -43,49 +46,7 @@ use Throwable;
  *
  * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
  */
-class DsoConnectionAlerts {
-
-	/**
-	 * The notification subject.
-	 *
-	 * @var string
-	 */
-	public const SUBJECT = 'dso_connection_alert';
-
-	/**
-	 * Reason: OpenRegister refused a write anyway.
-	 *
-	 * @var string
-	 */
-	public const REASON_NOT_STORED = 'verzoek_not_stored';
-
-	/**
-	 * Reason: a bijlage job found no usable account.
-	 *
-	 * @var string
-	 */
-	public const REASON_JOB_ACCOUNT = 'job_account_unavailable';
-
-	/**
-	 * Reason: OpenRegister refused an Open Formulieren submission write anyway.
-	 *
-	 * @var string
-	 */
-	public const REASON_SUBMISSION_NOT_STORED = 'submission_not_stored';
-
-	/**
-	 * A signed webhook delivery whose work OpenRegister refused (503).
-	 *
-	 * @var string
-	 */
-	public const REASON_DELIVERY_NOT_STORED = 'delivery_not_stored';
-
-	/**
-	 * Reason: the migration created a connection without an account.
-	 *
-	 * @var string
-	 */
-	public const REASON_CHOOSE_ACCOUNT = 'choose_account';
+class DsoConnectionAlerts implements PortalConnectionAlertsInterface {
 
 	/**
 	 * Seconds between two notifications for the same reason.
@@ -140,15 +101,14 @@ class DsoConnectionAlerts {
 	 * @spec openspec/changes/openformulieren-intake-through-an-integriq-connection/design.md
 	 */
 	public function notify(string $reason, string $channel = DsoConnectionUnavailableException::CHANNEL_DSO): bool {
-		$now = $this->timeFactory->getTime();
-		$channel = (string)preg_replace('/[^a-z]/', '', $channel);
-		$key = $channel . self::LAST_SENT_INFIX . preg_replace('/[^a-z_]/', '', $reason);
-		$last = $this->appConfig->getValueInt(Application::APP_ID, $key, 0);
-		if ($last > 0 && ($now - $last) < self::THROTTLE_SECONDS) {
+		$notice = new DsoAlertNotice(
+			reason: $reason,
+			channel: (string)preg_replace('/[^a-z]/', '', $channel),
+			now: $this->timeFactory->getTime()
+		);
+		if ($this->claimSlot(notice: $notice) === false) {
 			return false;
 		}
-
-		$this->appConfig->setValueInt(Application::APP_ID, $key, $now);
 
 		$admins = $this->groupManager->get('admin');
 		if ($admins === null) {
@@ -157,24 +117,76 @@ class DsoConnectionAlerts {
 
 		$sent = false;
 		foreach ($admins->getUsers() as $admin) {
-			try {
-				$notification = $this->notificationManager->createNotification();
-				$notification->setApp(Application::APP_ID)
-					->setUser($admin->getUID())
-					->setDateTime((new DateTime())->setTimestamp($now))
-					->setObject($channel . '_connection', $reason)
-					->setSubject(self::SUBJECT, ['reason' => $reason, 'channel' => $channel]);
-				$this->notificationManager->notify($notification);
-				$sent = true;
-			} catch (Throwable $exception) {
-				$this->logger->warning(
-					'[DsoConnectionAlerts] could not notify an administrator',
-					['reason' => $reason, 'exception' => $exception->getMessage()]
-				);
-			}
+			$sent = $this->notifyAdmin(admin: $admin, notice: $notice) || $sent;
 		}
 
 		return $sent;
 
 	}//end notify()
+
+	/**
+	 * Remember this send, unless the same channel and reason went out within the hour.
+	 *
+	 * @param DsoAlertNotice $notice The alert.
+	 *
+	 * @return bool False when the alert is throttled.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function claimSlot(DsoAlertNotice $notice): bool {
+		$key = $notice->channel . self::LAST_SENT_INFIX . preg_replace('/[^a-z_]/', '', $notice->reason);
+		$last = $this->appConfig->getValueInt(AppIdentity::APP_ID, $key, 0);
+		if ($last > 0 && ($notice->now - $last) < self::THROTTLE_SECONDS) {
+			return false;
+		}
+
+		$this->appConfig->setValueInt(AppIdentity::APP_ID, $key, $notice->now);
+		return true;
+
+	}//end claimSlot()
+
+	/**
+	 * Send the alert to one administrator; a failure is logged, not thrown.
+	 *
+	 * @param IUser          $admin  The administrator.
+	 * @param DsoAlertNotice $notice The alert.
+	 *
+	 * @return bool True when the notification went out.
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function notifyAdmin(IUser $admin, DsoAlertNotice $notice): bool {
+		try {
+			$this->notificationManager->notify($this->notificationFor(admin: $admin, notice: $notice));
+			return true;
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[DsoConnectionAlerts] could not notify an administrator',
+				['reason' => $notice->reason, 'exception' => $exception->getMessage()]
+			);
+			return false;
+		}
+
+	}//end notifyAdmin()
+
+	/**
+	 * The notification for one administrator.
+	 *
+	 * @param IUser          $admin  The administrator.
+	 * @param DsoAlertNotice $notice The alert.
+	 *
+	 * @return INotification
+	 *
+	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/tasks.md#task-2
+	 */
+	private function notificationFor(IUser $admin, DsoAlertNotice $notice): INotification {
+		$notification = $this->notificationManager->createNotification();
+		$notification->setApp(AppIdentity::APP_ID)
+			->setUser($admin->getUID())
+			->setDateTime((new DateTime())->setTimestamp($notice->now))
+			->setObject($notice->channel . '_connection', $notice->reason)
+			->setSubject(self::SUBJECT, ['reason' => $notice->reason, 'channel' => $notice->channel]);
+		return $notification;
+
+	}//end notificationFor()
 }//end class

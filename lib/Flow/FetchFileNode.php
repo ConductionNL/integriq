@@ -3,6 +3,9 @@
 /**
  * Integriq Fetch File flow node.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `openconnector.fetch-file` — runs one configured `fetch_file` Rule against
  * every item in a page, through the SAME `SynchronizationService` code path the
  * legacy engine uses.
@@ -55,9 +58,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git_id>
  *
  * @link https://Integriq.app
@@ -69,16 +69,15 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
-use OCA\Integriq\Exception\FlowNodeException;
-use OCA\Integriq\Service\SynchronizationService;
+use OCA\Integriq\Service\SynchronizationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use UnexpectedValueException;
@@ -88,21 +87,10 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-native-synchronization/design.md
  */
-class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions {
+class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeLogActions, FetchFileNodeInterface {
+	use FlowNodePaletteDefaults;
 
 	use SynchronizationLogActions;
-
-	/**
-	 * The step type.
-	 *
-	 * FROZEN on `openconnector.*` across the openconnector -> integriq app-id
-	 * rename: this value is written into stored flow documents (OpenRegister
-	 * objects). Renaming it makes every existing flow reference a node type
-	 * nothing answers to.
-	 *
-	 * @var string
-	 */
-	public const NODE_ID = 'openconnector.fetch-file';
 
 	/**
 	 * Where the written object's id sits when the step does not say otherwise.
@@ -117,14 +105,14 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * Constructor.
 	 *
-	 * @param SynchronizationService $synchronizations The engine that owns the fetch.
+	 * @param SynchronizationServiceInterface $synchronizations The engine that owns the fetch.
 	 * @param FlowOwner $flowOwner Resolves whose permissions the step runs with.
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator For the palette icon and log links.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly SynchronizationService $synchronizations,
+		private readonly SynchronizationServiceInterface $synchronizations,
 		private readonly FlowOwner $flowOwner,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
@@ -132,17 +120,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	) {
 
 	}//end __construct()
-
-	/**
-	 * The step type.
-	 *
-	 * @return string The type identifier.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function getId(): string {
-		return self::NODE_ID;
-	}//end getId()
 
 	/**
 	 * The palette name.
@@ -180,23 +157,6 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	public function getIcon(): string {
 		return 'paperclip';
 	}//end getIcon()
-
-	/**
-	 * Whether the node is offered in the given scope.
-	 *
-	 * Answered with Nextcloud's own constants and false for anything else — an
-	 * unrecognised scope is not a reason to offer a node that makes outbound
-	 * calls and writes files.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/flow-native-synchronization/design.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a fetch-file step.
@@ -272,15 +232,17 @@ class FetchFileNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * Run the rule over every item in the page.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step's configuration and the run context.
 	 *
 	 * @return array The output items.
 	 *
 	 * @spec openspec/changes/flow-native-synchronization/design.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+
 		// An empty page fetches nothing and produces no items — the filter
 		// contract, not a failure.
 		if ($items === []) {

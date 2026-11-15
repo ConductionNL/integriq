@@ -22,35 +22,21 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * A provider request a sibling app received, for integriq to answer.
  *
- * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
+ * The envelope and the answer live in {@see StufEnvelopeReceivedEvent}.
+ *
+ * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
  */
-class StufProviderRequestReceivedEvent extends Event {
-
-	/**
-	 * The HTTP status integriq answered, null while unhandled.
-	 *
-	 * @var integer|null
-	 */
-	private ?int $statusCode = null;
-
-	/**
-	 * The body integriq answered.
-	 *
-	 * @var string
-	 */
-	private string $body = '';
+class StufProviderRequestReceivedEvent extends StufEnvelopeReceivedEvent {
 
 	/**
 	 * Constructor.
@@ -61,42 +47,20 @@ class StufProviderRequestReceivedEvent extends Event {
 	 * @param string $service   `cases` or `persons`.
 	 */
 	public function __construct(
-		private readonly string $sourceApp,
-		private readonly string $rawXml,
+		string $sourceApp,
+		string $rawXml,
 		private readonly string $sourceId,
 		private readonly string $service,
 	) {
-		parent::__construct();
+		parent::__construct(sourceApp: $sourceApp, rawXml: $rawXml);
 	}//end __construct()
-
-	/**
-	 * The app that received the envelope.
-	 *
-	 * @return string The app id.
-	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
-	 */
-	public function getSourceApp(): string {
-		return $this->sourceApp;
-	}//end getSourceApp()
-
-	/**
-	 * The raw request body.
-	 *
-	 * @return string The envelope.
-	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
-	 */
-	public function getRawXml(): string {
-		return $this->rawXml;
-	}//end getRawXml()
 
 	/**
 	 * The integriq source the request is for.
 	 *
 	 * @return string The source id.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
 	 */
 	public function getSourceId(): string {
 		return $this->sourceId;
@@ -107,57 +71,9 @@ class StufProviderRequestReceivedEvent extends Event {
 	 *
 	 * @return string `cases` or `persons`.
 	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
+	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
 	 */
 	public function getService(): string {
 		return $this->service;
 	}//end getService()
-
-	/**
-	 * Record integriq's answer.
-	 *
-	 * @param int    $statusCode The HTTP status.
-	 * @param string $body       The SOAP body.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
-	 */
-	public function answer(int $statusCode, string $body): void {
-		$this->statusCode = $statusCode;
-		$this->body       = $body;
-	}//end answer()
-
-	/**
-	 * Whether integriq answered.
-	 *
-	 * @return bool True once answered.
-	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
-	 */
-	public function isHandled(): bool {
-		return $this->statusCode !== null;
-	}//end isHandled()
-
-	/**
-	 * The HTTP status integriq answered.
-	 *
-	 * @return int|null The status, null while unhandled.
-	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
-	 */
-	public function getStatusCode(): ?int {
-		return $this->statusCode;
-	}//end getStatusCode()
-
-	/**
-	 * The body integriq answered.
-	 *
-	 * @return string The SOAP body, '' while unhandled.
-	 *
-	 * @spec openspec/changes/stuf-provider-receiver/specs/stuf-provider-receiver/spec.md#requirement-a-sibling-app-forwards-its-wire-contract-urls-for-one-release
-	 */
-	public function getBody(): string {
-		return $this->body;
-	}//end getBody()
 }//end class

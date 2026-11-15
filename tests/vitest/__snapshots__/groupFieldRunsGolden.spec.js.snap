@@ -1,0 +1,387 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`groupFieldRuns golden > groups every field list as recorded 1`] = `
+[
+  [
+    null,
+    [],
+  ],
+  [
+    undefined,
+    [],
+  ],
+  [
+    "fields",
+    [],
+  ],
+  [
+    {},
+    [],
+  ],
+  [
+    [],
+    [],
+  ],
+  [
+    [
+      {
+        "key": "a",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "key": "a",
+          },
+        ],
+        "group": null,
+        "key": "field:a",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "group": "g",
+        "key": "a",
+      },
+      {
+        "group": "g",
+        "key": "b",
+      },
+      {
+        "key": "c",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": "g",
+            "key": "a",
+          },
+          {
+            "group": "g",
+            "key": "b",
+          },
+        ],
+        "group": "g",
+        "key": "group:g:a",
+      },
+      {
+        "fields": [
+          {
+            "key": "c",
+          },
+        ],
+        "group": null,
+        "key": "field:c",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "group": "g",
+        "key": "a",
+      },
+      {
+        "key": "b",
+      },
+      {
+        "group": "g",
+        "key": "c",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": "g",
+            "key": "a",
+          },
+        ],
+        "group": "g",
+        "key": "group:g:a",
+      },
+      {
+        "fields": [
+          {
+            "key": "b",
+          },
+        ],
+        "group": null,
+        "key": "field:b",
+      },
+      {
+        "fields": [
+          {
+            "group": "g",
+            "key": "c",
+          },
+        ],
+        "group": "g",
+        "key": "group:g:c",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "group": "g",
+        "key": "a",
+      },
+      {
+        "group": "h",
+        "key": "b",
+      },
+      {
+        "group": "h",
+        "key": "c",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": "g",
+            "key": "a",
+          },
+        ],
+        "group": "g",
+        "key": "group:g:a",
+      },
+      {
+        "fields": [
+          {
+            "group": "h",
+            "key": "b",
+          },
+          {
+            "group": "h",
+            "key": "c",
+          },
+        ],
+        "group": "h",
+        "key": "group:h:b",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "group": "",
+        "key": "a",
+      },
+      {
+        "group": "",
+        "key": "b",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": "",
+            "key": "a",
+          },
+        ],
+        "group": null,
+        "key": "field:a",
+      },
+      {
+        "fields": [
+          {
+            "group": "",
+            "key": "b",
+          },
+        ],
+        "group": null,
+        "key": "field:b",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "group": 5,
+        "key": "a",
+      },
+      {
+        "group": 5,
+        "key": "b",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": 5,
+            "key": "a",
+          },
+        ],
+        "group": null,
+        "key": "field:a",
+      },
+      {
+        "fields": [
+          {
+            "group": 5,
+            "key": "b",
+          },
+        ],
+        "group": null,
+        "key": "field:b",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "group": null,
+        "key": "a",
+      },
+      {
+        "group": null,
+        "key": "b",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": null,
+            "key": "a",
+          },
+        ],
+        "group": null,
+        "key": "field:a",
+      },
+      {
+        "fields": [
+          {
+            "group": null,
+            "key": "b",
+          },
+        ],
+        "group": null,
+        "key": "field:b",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "group": "a",
+        "key": "a",
+      },
+      {
+        "key": "a",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": "a",
+            "key": "a",
+          },
+        ],
+        "group": "a",
+        "key": "group:a:a",
+      },
+      {
+        "fields": [
+          {
+            "key": "a",
+          },
+        ],
+        "group": null,
+        "key": "field:a",
+      },
+    ],
+  ],
+  [
+    [
+      null,
+      {
+        "group": "g",
+        "key": "a",
+      },
+      undefined,
+      {
+        "group": "g",
+      },
+      {
+        "group": "g",
+        "key": 3,
+      },
+      {
+        "group": "g",
+        "key": "b",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "group": "g",
+            "key": "a",
+          },
+          {
+            "group": "g",
+            "key": "b",
+          },
+        ],
+        "group": "g",
+        "key": "group:g:a",
+      },
+    ],
+  ],
+  [
+    [
+      {
+        "key": "x",
+      },
+      {
+        "key": "y",
+      },
+      {
+        "group": "g",
+        "key": "z",
+      },
+    ],
+    [
+      {
+        "fields": [
+          {
+            "key": "x",
+          },
+        ],
+        "group": null,
+        "key": "field:x",
+      },
+      {
+        "fields": [
+          {
+            "key": "y",
+          },
+        ],
+        "group": null,
+        "key": "field:y",
+      },
+      {
+        "fields": [
+          {
+            "group": "g",
+            "key": "z",
+          },
+        ],
+        "group": "g",
+        "key": "group:g:z",
+      },
+    ],
+  ],
+]
+`;

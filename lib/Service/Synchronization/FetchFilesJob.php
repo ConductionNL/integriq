@@ -1,0 +1,157 @@
+<?php
+
+/**
+ * Integriq — deferred file fetching for one synchronised object.
+ *
+ * @category Cron
+ * @package  OCA\Integriq\Service\Synchronization
+ *
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://github.com/ConductionNL/integriq
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Integriq\Service\Synchronization;
+
+use OCA\Integriq\Service\SynchronizationServiceInterface;
+use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\BackgroundJob\QueuedJob;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Fetches one object's files OUTSIDE the synchronization request.
+ *
+ * WHY THIS EXISTS. `startAsyncFileFetching()` is not async — it calls
+ * `executeAsyncFileFetching()` inline, so "fire-and-forget" there means *errors
+ * are swallowed*, not *work is deferred*. Every download and every save happens
+ * while the caller's HTTP request is still open, which is why files more than
+ * DOUBLE a sync's wall clock: measured 7,507 ms with no files against 17,256 ms
+ * with 40, even with the fetch window fully parallel.
+ *
+ * A source that opts into `fileFetchMode: async` enqueues one of these per
+ * object instead. The synchronization returns as soon as its objects are
+ * written; the files arrive afterwards, on the cron worker.
+ *
+ * A QueuedJob, not a TimedJob: it runs once and removes itself. Every other job
+ * in this app is a TimedJob because they are recurring sweeps — this one is a
+ * unit of deferred work, which is exactly what QueuedJob is for.
+ *
+ * ⚠️ THE FILES ARE NOT THERE YET WHEN THE SYNC FINISHES. Anything that reasons
+ * about a missing file — most importantly a deletion sweep — must consult
+ * `filesPending` on the run record first. "Not fetched yet" and "no longer in
+ * the source" are different facts that look identical from the object.
+ *
+ * ⚠️ A background job that never runs is indistinguishable from one that
+ * succeeded. Verified on this instance before relying on it:
+ * `backgroundjobs_mode=cron`, with `oc_jobs.last_run` one minute old.
+ *
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+ */
+class FetchFilesJob extends QueuedJob {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time The time factory.
+	 * @param SynchronizationServiceInterface $syncService The engine that owns the fetch path.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly SynchronizationServiceInterface $syncService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+	}//end __construct()
+
+	/**
+	 * Fetch the files this job was queued for.
+	 *
+	 * @param mixed $argument The queued arguments: config, endpoint, objectId, ruleId.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+	 */
+	protected function run($argument): void {
+		$dropped = self::droppedReason(argument: $argument);
+		if ($dropped !== null) {
+			$this->logger->warning($dropped);
+
+			return;
+		}
+
+		$this->fetch(argument: $argument);
+	}//end run()
+
+	/**
+	 * Why a job argument is dropped, or null when it carries config, endpoint and objectId.
+	 *
+	 * @param mixed $argument The job argument.
+	 *
+	 * @return string|null The warning.
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+	 */
+	private static function droppedReason(mixed $argument): ?string {
+		if (is_array($argument) === false) {
+			return '[FetchFilesJob] dropped: argument was not an array';
+		}
+
+		if (self::isComplete(argument: $argument) === false) {
+			return '[FetchFilesJob] dropped: incomplete arguments (config/endpoint/objectId required)';
+		}
+
+		return null;
+	}//end droppedReason()
+
+	/**
+	 * Whether the argument carries a config array, an endpoint and an objectId.
+	 *
+	 * @param array<string, mixed> $argument The job argument.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+	 */
+	private static function isComplete(array $argument): bool {
+		return is_array($argument['config'] ?? null) === true
+			&& ($argument['endpoint'] ?? null) !== null
+			&& ($argument['objectId'] ?? null) !== null;
+	}//end isComplete()
+
+	/**
+	 * Fetch the object's files; a failure is logged, never thrown.
+	 *
+	 * A deferred fetch that throws must not take the worker down with it; the
+	 * next job in the queue is someone else's object.
+	 *
+	 * @param array<string, mixed> $argument A complete job argument.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-file-fetching-can-be-deferred-off-the-synchronization-request-req-023
+	 */
+	private function fetch(array $argument): void {
+		try {
+			$this->syncService->fetchFilesForObject(
+				config: $argument['config'],
+				endpoint: $argument['endpoint'],
+				objectId: (string)$argument['objectId'],
+				ruleId: (int)($argument['ruleId'] ?? 0)
+			);
+		} catch (\Throwable $exception) {
+			$this->logger->error(
+				'[FetchFilesJob] deferred file fetch failed for object ' . $argument['objectId'] . ': ' . $exception->getMessage(),
+				['exception' => $exception]
+			);
+		}
+	}//end fetch()
+}//end class

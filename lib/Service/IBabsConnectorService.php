@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -35,7 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
  */
-class IBabsConnectorService {
+class IBabsConnectorService implements IBabsConnectorServiceInterface {
 
 	/**
 	 * IBabs REST API base path for organisations.
@@ -74,67 +77,71 @@ class IBabsConnectorService {
 	}//end __construct()
 
 	/**
-	 * Extract and normalise the source configuration array.
+	 * The iBabs organisation id configured on the source, if any.
 	 *
-	 * @param ObjectEntity $source The source entity.
+	 * @param ObjectEntity $source The iBabs source.
 	 *
-	 * @return array<string,mixed> Normalised configuration.
+	 * @return mixed The `organisatieId` configuration value, or null when it is not configured.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
 	 */
-	private function extractConfig(ObjectEntity $source): array {
-		$sourceData = $source->getObject();
-		$config = ($sourceData['configuration'] ?? []);
-		if (is_string($config) === true) {
-			$config = json_decode($config, true) ?? [];
-		}
-
-		if (is_array($config) === false) {
-			return [];
-		}
-
-		return $config;
-	}//end extractConfig()
+	private function organisationId(ObjectEntity $source): mixed {
+		return ((new CallLogReader())->sourceConfig(source: $source)['organisatieId'] ?? null);
+	}//end organisationId()
 
 	/**
-	 * Get the HTTP status code from a call log ObjectEntity.
+	 * A failed call's result, before the call adds its null id.
 	 *
-	 * @param ObjectEntity|null $callLog The entity returned by CallService::call().
+	 * @param string $message The failure message.
 	 *
-	 * @return int HTTP status code, 0 if callLog is null or missing.
+	 * @return array{success: false, message: string}
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
 	 */
-	private function getStatusCode(?ObjectEntity $callLog): int {
-		if ($callLog === null) {
-			return 0;
-		}
-
-		$data = $callLog->getObject();
-		return (int)($data['statusCode'] ?? 0);
-	}//end getStatusCode()
+	private function failure(string $message): array {
+		return [
+			'success' => false,
+			'message' => $message,
+		];
+	}//end failure()
 
 	/**
-	 * Get the decoded response body from a call log ObjectEntity.
+	 * The id iBabs gave a created resource: `id`, else the alternate key.
 	 *
-	 * @param ObjectEntity|null $callLog The entity returned by CallService::call().
+	 * @param ObjectEntity $callLog      The call log of the create request.
+	 * @param string       $alternateKey The body key read when `id` is absent.
 	 *
-	 * @return mixed The decoded response body, or null.
+	 * @return mixed The id, or null when the body is no object or names none.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
 	 */
-	private function getResponseBody(?ObjectEntity $callLog): mixed {
-		if ($callLog === null) {
+	private function responseId(ObjectEntity $callLog, string $alternateKey): mixed {
+		$body = (new CallLogReader())->responseBody(callLog: $callLog);
+		if (is_array($body) === false) {
 			return null;
 		}
 
-		$data = $callLog->getObject();
-		$body = $data['response']['body'] ?? null;
-		if (is_string($body) === true) {
-			$decoded = json_decode($body, true);
-			if ($decoded !== null) {
-				return $decoded;
-			}
+		return ($body['id'] ?? $body[$alternateKey] ?? null);
+	}//end responseId()
 
-			return $body;
-		}
+	/**
+	 * GET an iBabs endpoint through the source.
+	 *
+	 * @param ObjectEntity $source   The iBabs source.
+	 * @param string       $endpoint The endpoint path.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
+	 */
+	private function fetch(ObjectEntity $source, string $endpoint): ObjectEntity {
+		return $this->callService->call(
+			source: $source,
+			endpoint: $endpoint,
+			method: 'GET'
+		);
 
-		return $body;
-	}//end getResponseBody()
+	}//end fetch()
 
 	/**
 	 * Test the connection to an iBabs API source.
@@ -148,9 +155,7 @@ class IBabsConnectorService {
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-1
 	 */
 	public function testConnection(ObjectEntity $source): array {
-		$config = $this->extractConfig(source: $source);
-
-		$organisationId = $config['organisatieId'] ?? null;
+		$organisationId = $this->organisationId(source: $source);
 		if ($organisationId === null) {
 			return [
 				'success' => false,
@@ -160,13 +165,9 @@ class IBabsConnectorService {
 
 		try {
 			$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen';
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: $endpoint,
-				method: 'GET'
-			);
+			$callLog = $this->fetch(source: $source, endpoint: $endpoint);
 
-			$statusCode = $this->getStatusCode(callLog: $callLog);
+			$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
 			if ($statusCode === 200) {
 				return [
 					'success' => true,
@@ -211,14 +212,9 @@ class IBabsConnectorService {
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-2
 	 */
 	public function pushProposal(ObjectEntity $source, array $proposal): array {
-		$config = $this->extractConfig(source: $source);
-		$organisationId = $config['organisatieId'] ?? null;
+		$organisationId = $this->organisationId(source: $source);
 		if ($organisationId === null) {
-			return [
-				'success' => false,
-				'message' => 'Organisation ID not configured',
-				'vergaderstukId' => null,
-			];
+			return $this->failure(message: 'Organisation ID not configured') + ['vergaderstukId' => null];
 		}
 
 		$metadata = [
@@ -242,48 +238,46 @@ class IBabsConnectorService {
 				config: ['json' => $metadata]
 			);
 
-			$statusCode = $this->getStatusCode(callLog: $callLog);
+			$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
 			if ($statusCode < 200 || $statusCode >= 300) {
-				$message = match ($statusCode) {
-					0 => 'API call failed — no response',
-					401 => 'Invalid API key',
-					413 => 'Document too large — consider compressing before upload',
-					default => 'Upload failed with status ' . $statusCode,
-				};
-
 				$this->logger->error(
 					'iBabs: voorstel push failed',
 					['status' => $statusCode, 'onderwerp' => $metadata['onderwerp']]
 				);
 
-				return [
-					'success' => false,
-					'message' => $message,
-					'vergaderstukId' => null,
-				];
-			}//end if
-
-			$body = $this->getResponseBody(callLog: $callLog);
-			$vergaderstukId = null;
-			if (is_array($body) === true) {
-				$vergaderstukId = $body['id'] ?? $body['documentId'] ?? null;
+				return $this->failure(message: $this->pushFailureMessage(statusCode: $statusCode)) + ['vergaderstukId' => null];
 			}
 
 			return [
 				'success' => true,
 				'message' => 'Voorstel pushed successfully',
-				'vergaderstukId' => $vergaderstukId,
+				'vergaderstukId' => $this->responseId(callLog: $callLog, alternateKey: 'documentId'),
 			];
 		} catch (\Exception $e) {
 			$this->logger->error('iBabs: voorstel push exception', ['exception' => $e->getMessage()]);
-			return [
-				'success' => false,
-				'message' => 'Push failed: ' . $e->getMessage(),
-				'vergaderstukId' => null,
-			];
+			return $this->failure(message: 'Push failed: ' . $e->getMessage()) + ['vergaderstukId' => null];
 		}//end try
 
 	}//end pushProposal()
+
+	/**
+	 * The message of a failed proposal upload.
+	 *
+	 * @param integer $statusCode The HTTP status iBabs answered with (0 when there was no response).
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-2
+	 */
+	private function pushFailureMessage(int $statusCode): string {
+		return match ($statusCode) {
+			0 => 'API call failed — no response',
+			401 => 'Invalid API key',
+			413 => 'Document too large — consider compressing before upload',
+			default => 'Upload failed with status ' . $statusCode,
+		};
+
+	}//end pushFailureMessage()
 
 	/**
 	 * Create an agendapunt in iBabs linked to a vergaderstuk.
@@ -311,72 +305,39 @@ class IBabsConnectorService {
 		string $vergaderstukId,
 		?string $meetingId = null,
 	): array {
-		$config = $this->extractConfig(source: $source);
-		$organisationId = $config['organisatieId'] ?? null;
+		$organisationId = $this->organisationId(source: $source);
 		if ($organisationId === null) {
-			return [
-				'success' => false,
-				'message' => 'Organisation ID not configured',
-				'agendapuntId' => null,
-			];
+			return $this->failure(message: 'Organisation ID not configured') + ['agendapuntId' => null];
 		}
 
 		try {
-			if ($meetingId === null) {
-				$meetingId = $this->selectNextMeeting(
-					source: $source,
-					organisationId: $organisationId
-				);
-			}
-
+			$meetingId ??= $this->selectNextMeeting(source: $source, organisationId: $organisationId);
 			if ($meetingId === null) {
 				$this->logger->warning('iBabs: no upcoming vergadering found for agendapunt');
-				return [
-					'success' => false,
-					'message' => 'No upcoming vergadering available — sync set to pending',
-					'agendapuntId' => null,
-				];
+				return $this->failure(message: 'No upcoming vergadering available — sync set to pending') + ['agendapuntId' => null];
 			}
 
-			$payload = [
-				'vergaderingId' => $meetingId,
-				'vergaderstukId' => $vergaderstukId,
-			];
 			$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen/' . $meetingId . '/agendapunten';
 			$callLog = $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
 				method: 'POST',
-				config: ['json' => $payload]
+				config: ['json' => ['vergaderingId' => $meetingId, 'vergaderstukId' => $vergaderstukId]]
 			);
 
-			$statusCode = $this->getStatusCode(callLog: $callLog);
+			$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
 			if ($statusCode < 200 || $statusCode >= 300) {
-				return [
-					'success' => false,
-					'message' => 'Agendapunt creation failed with status ' . $statusCode,
-					'agendapuntId' => null,
-				];
-			}
-
-			$body = $this->getResponseBody(callLog: $callLog);
-			$agendaItemId = null;
-			if (is_array($body) === true) {
-				$agendaItemId = $body['id'] ?? $body['agendapuntId'] ?? null;
+				return $this->failure(message: 'Agendapunt creation failed with status ' . $statusCode) + ['agendapuntId' => null];
 			}
 
 			return [
 				'success' => true,
 				'message' => 'Agendapunt created',
-				'agendapuntId' => $agendaItemId,
+				'agendapuntId' => $this->responseId(callLog: $callLog, alternateKey: 'agendapuntId'),
 			];
 		} catch (\Exception $e) {
 			$this->logger->error('iBabs: agendapunt creation exception', ['exception' => $e->getMessage()]);
-			return [
-				'success' => false,
-				'message' => 'Agendapunt creation failed: ' . $e->getMessage(),
-				'agendapuntId' => null,
-			];
+			return $this->failure(message: 'Agendapunt creation failed: ' . $e->getMessage()) + ['agendapuntId' => null];
 		}//end try
 
 	}//end createAgendaItem()
@@ -391,18 +352,14 @@ class IBabsConnectorService {
 	 */
 	private function selectNextMeeting(ObjectEntity $source, string $organisationId): ?string {
 		$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen';
-		$callLog = $this->callService->call(
-			source: $source,
-			endpoint: $endpoint,
-			method: 'GET'
-		);
+		$callLog = $this->fetch(source: $source, endpoint: $endpoint);
 
-		$statusCode = $this->getStatusCode(callLog: $callLog);
+		$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
 		if ($statusCode !== 200) {
 			return null;
 		}
 
-		$body = $this->getResponseBody(callLog: $callLog);
+		$body = (new CallLogReader())->responseBody(callLog: $callLog);
 		if (is_array($body) === false) {
 			return null;
 		}
@@ -451,8 +408,7 @@ class IBabsConnectorService {
 	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-4
 	 */
 	public function pollDecisions(ObjectEntity $source, array $syncedItems = []): array {
-		$config = $this->extractConfig(source: $source);
-		$organisationId = $config['organisatieId'] ?? null;
+		$organisationId = $this->organisationId(source: $source);
 		if ($organisationId === null) {
 			$this->logger->warning('iBabs: pollBesluiten called without organisatieId');
 			return [];
@@ -470,13 +426,9 @@ class IBabsConnectorService {
 
 			try {
 				$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen/' . $meetingId . '/besluiten';
-				$callLog = $this->callService->call(
-					source: $source,
-					endpoint: $endpoint,
-					method: 'GET'
-				);
+				$callLog = $this->fetch(source: $source, endpoint: $endpoint);
 
-				$statusCode = $this->getStatusCode(callLog: $callLog);
+				$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
 				if ($statusCode !== 200) {
 					$this->logger->info(
 						'iBabs: no besluit yet for vergadering',
@@ -485,7 +437,7 @@ class IBabsConnectorService {
 					continue;
 				}
 
-				$body = $this->getResponseBody(callLog: $callLog);
+				$body = (new CallLogReader())->responseBody(callLog: $callLog);
 				if (is_array($body) === false) {
 					continue;
 				}
@@ -554,53 +506,23 @@ class IBabsConnectorService {
 		string $meetingDate,
 		string $userId,
 	): array {
-		$config = $this->extractConfig(source: $source);
-		$organisationId = $config['organisatieId'] ?? null;
+		$organisationId = $this->organisationId(source: $source);
 		if ($organisationId === null) {
-			return [
-				'success' => false,
-				'message' => 'Organisation ID not configured',
-				'filePath' => null,
-			];
+			return $this->failure(message: 'Organisation ID not configured') + ['filePath' => null];
 		}
 
 		try {
 			$endpoint = self::API_BASE . '/' . $organisationId . '/vergaderingen/' . $meetingId . '/besluitenlijst';
-			$callLog = $this->callService->call(
-				source: $source,
-				endpoint: $endpoint,
-				method: 'GET'
-			);
+			$callLog = $this->fetch(source: $source, endpoint: $endpoint);
 
-			$statusCode = $this->getStatusCode(callLog: $callLog);
-			if ($statusCode === 404) {
-				return [
-					'success' => false,
-					'message' => 'Besluitenlijst not yet published',
-					'filePath' => null,
-				];
+			$failure = $this->besluitenlijstFailure(callLog: $callLog);
+			if ($failure !== null) {
+				return $this->failure(message: $failure) + ['filePath' => null];
 			}
 
-			if ($statusCode !== 200) {
-				return [
-					'success' => false,
-					'message' => 'Failed to retrieve besluitenlijst (HTTP ' . $statusCode . ')',
-					'filePath' => null,
-				];
-			}
-
-			$body = $this->getResponseBody(callLog: $callLog);
-			if ($body === null) {
-				return [
-					'success' => false,
-					'message' => 'Empty besluitenlijst response',
-					'filePath' => null,
-				];
-			}
-
-			if (is_string($body) === true) {
-				$content = $body;
-			} else {
+			$body = (new CallLogReader())->responseBody(callLog: $callLog);
+			$content = $body;
+			if (is_string($body) === false) {
 				$content = (string)json_encode($body);
 			}
 
@@ -620,14 +542,37 @@ class IBabsConnectorService {
 				'iBabs: besluitenlijst retrieval failed',
 				['vergaderingId' => $meetingId, 'exception' => $e->getMessage()]
 			);
-			return [
-				'success' => false,
-				'message' => 'Retrieval failed: ' . $e->getMessage(),
-				'filePath' => null,
-			];
+			return $this->failure(message: 'Retrieval failed: ' . $e->getMessage()) + ['filePath' => null];
 		}//end try
 
 	}//end retrieveBesluitenlijst()
+
+	/**
+	 * Why a besluitenlijst answer cannot be stored, if it cannot.
+	 *
+	 * @param ObjectEntity $callLog The call log of the besluitenlijst request.
+	 *
+	 * @return string|null The failure message, or null when the answer holds a besluitenlijst.
+	 *
+	 * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-5
+	 */
+	private function besluitenlijstFailure(ObjectEntity $callLog): ?string {
+		$statusCode = (new CallLogReader())->statusCode(callLog: $callLog);
+		if ($statusCode === 404) {
+			return 'Besluitenlijst not yet published';
+		}
+
+		if ($statusCode !== 200) {
+			return 'Failed to retrieve besluitenlijst (HTTP ' . $statusCode . ')';
+		}
+
+		if ((new CallLogReader())->responseBody(callLog: $callLog) === null) {
+			return 'Empty besluitenlijst response';
+		}
+
+		return null;
+
+	}//end besluitenlijstFailure()
 
 	/**
 	 * Store besluitenlijst content in Nextcloud Files.

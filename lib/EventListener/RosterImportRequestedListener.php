@@ -4,7 +4,7 @@
  * Integriq Roster Import Requested Listener.
  *
  * Answers {@see \OCA\Integriq\Event\RosterImportRequestedEvent} by running
- * {@see \OCA\Integriq\Sources\Roster\RosterDeliveryService} for the event's
+ * {@see RosterDeliveryServiceInterface} for the event's
  * source, inside integriq's own DI context (ADR-041). Always answers: a failed
  * delivery comes back handled with `status: failed` and the contract's error
  * code, so the asking app can tell "integriq could not deliver" from
@@ -31,8 +31,8 @@ namespace OCA\Integriq\EventListener;
 
 use OCA\Integriq\Event\RosterImportRequestedEvent;
 use OCA\Integriq\Sources\Roster\RosterDeliveryException;
-use OCA\Integriq\Sources\Roster\RosterDeliveryService;
-use OCA\Integriq\Sources\Roster\RosterTargetConfiguration;
+use OCA\Integriq\Sources\Roster\RosterDeliveryServiceInterface;
+use OCA\Integriq\Sources\Roster\RosterTargetConfigurationInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -49,11 +49,11 @@ class RosterImportRequestedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param RosterDeliveryService $delivery The delivery service.
+	 * @param RosterDeliveryServiceInterface $delivery The delivery service.
 	 * @param LoggerInterface       $logger   Structured logger.
 	 */
 	public function __construct(
-		private readonly RosterDeliveryService $delivery,
+		private readonly RosterDeliveryServiceInterface $delivery,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -73,25 +73,40 @@ class RosterImportRequestedListener implements IEventListener {
 		}
 
 		try {
-			$event->setResult(
-				$this->delivery->deliver(
-					systemId: $event->getSystemId(),
-					options: $event->getOptions(),
-					correlationId: $event->getCorrelationId()
-				)
-			);
-			return;
-		} catch (RosterDeliveryException $e) {
-			$code = $e->getErrorCode();
-			$message = $e->getMessage();
+			$event->setResult($this->deliver(event: $event));
 		} catch (Throwable $e) {
-			$code = 'fetch-failed';
-			$message = $e->getMessage();
+			$this->answerFailure(event: $event, exception: $e);
 		}
+	}//end handle()
 
+	/**
+	 * Deliver the asked source's roster.
+	 *
+	 * @param RosterImportRequestedEvent $event The request.
+	 *
+	 * @return array<string,mixed> The delivery service's result.
+	 */
+	private function deliver(RosterImportRequestedEvent $event): array {
+		return $this->delivery->deliver(
+			systemId: $event->getSystemId(),
+			options: $event->getOptions(),
+			correlationId: $event->getCorrelationId()
+		);
+	}//end deliver()
+
+	/**
+	 * Log a failed delivery and answer it as failed.
+	 *
+	 * @param RosterImportRequestedEvent $event     The request.
+	 * @param Throwable                  $exception Why the delivery failed.
+	 *
+	 * @return void
+	 */
+	private function answerFailure(RosterImportRequestedEvent $event, Throwable $exception): void {
+		$failure = ['errorCode' => $this->errorCodeOf(exception: $exception), 'error' => $exception->getMessage()];
 		$this->logger->warning(
 			'roster-delivery.failed',
-			['app' => $event->getSourceApp(), 'source' => $event->getSystemId(), 'errorCode' => $code, 'error' => $message]
+			['app' => $event->getSourceApp(), 'source' => $event->getSystemId()] + $failure
 		);
 
 		$event->setResult(
@@ -99,10 +114,23 @@ class RosterImportRequestedListener implements IEventListener {
 				'contractVersion' => RosterImportRequestedEvent::CONTRACT_VERSION,
 				'status' => 'failed',
 				'systemId' => $event->getSystemId(),
-				'target' => RosterTargetConfiguration::TARGET,
-				'errorCode' => $code,
-				'error' => $message,
-			]
+				'target' => RosterTargetConfigurationInterface::TARGET,
+			] + $failure
 		);
-	}//end handle()
+	}//end answerFailure()
+
+	/**
+	 * The error code of a failed delivery: the refusal's own, else `fetch-failed`.
+	 *
+	 * @param Throwable $exception Why the delivery failed.
+	 *
+	 * @return string The error code.
+	 */
+	private function errorCodeOf(Throwable $exception): string {
+		if ($exception instanceof RosterDeliveryException) {
+			return $exception->getErrorCode();
+		}
+
+		return 'fetch-failed';
+	}//end errorCodeOf()
 }//end class

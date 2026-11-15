@@ -37,13 +37,16 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use GuzzleHttp\Client;
-use OCA\Integriq\Exception\MappingResolutionException;
 use OCA\Integriq\Exception\OpenFormulierenException;
 use OCA\Integriq\Service\Dso\DsoIdentity;
 use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
+use OCA\Integriq\Service\OpenFormulieren\MappingResolutionException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileTransfer;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Psr\Log\LoggerInterface;
@@ -57,7 +60,7 @@ use Throwable;
  *
  * @spec openspec/specs/open-formulieren-intake/spec.md
  */
-class OpenFormulierenIntakeService {
+class OpenFormulierenIntakeService implements OpenFormulierenIntakeServiceInterface {
 
 	/**
 	 * OpenRegister register slug holding sources, mappings, and submissions.
@@ -438,9 +441,8 @@ class OpenFormulierenIntakeService {
 
 				$content = (string)$response->getBody();
 				$file = $this->fileService->addFile(
-					objectEntity: $submission,
-					fileName: $filename,
-					content: $content
+					target: new FileTarget(object: $submission),
+					upload: new FileUpload(fileName: $filename, content: $content, share: false)
 				);
 
 				$results[] = [
@@ -524,10 +526,8 @@ class OpenFormulierenIntakeService {
 			}
 
 			try {
-				$this->fileService->copyFile(
-					sourceObject: $submission,
-					fileId: (int)$attachment['fileId'],
-					targetObject: $targetObject
+				$this->fileService->copyAttachedFile(
+					transfer: new FileTransfer(source: $submission, fileId: (int)$attachment['fileId'], target: $targetObject)
 				);
 				$attachments[$index]['copiedToCase'] = true;
 			} catch (Throwable $exception) {

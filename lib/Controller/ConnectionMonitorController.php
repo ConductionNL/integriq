@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Controller;
 
 use DateTimeImmutable;
-use OCA\Integriq\Service\ConnectionMonitorService;
+use OCA\Integriq\Service\ConnectionMonitorServiceInterface;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -44,13 +44,13 @@ class ConnectionMonitorController extends Controller {
 	 *
 	 * @param string                    $appName The app id.
 	 * @param IRequest                  $request The request.
-	 * @param ConnectionMonitorService  $monitor Builds the report.
+	 * @param ConnectionMonitorServiceInterface  $monitor Builds the report.
 	 * @param IL10N                     $l       Translations.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly ConnectionMonitorService $monitor,
+		private readonly ConnectionMonitorServiceInterface $monitor,
 		private readonly IL10N $l,
 	) {
 		parent::__construct(appName: $appName, request: $request);

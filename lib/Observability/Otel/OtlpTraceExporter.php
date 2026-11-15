@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Observability\Otel;
 
-use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\BrokeredCallServiceInterface;
 use OCP\Http\Client\IClientService;
 use RuntimeException;
 use Throwable;
@@ -52,12 +52,12 @@ class OtlpTraceExporter implements TraceExporterInterface {
 	 *
 	 * @param IClientService $clientService Nextcloud's HTTP client.
 	 * @param OtelSettings $settings The export settings.
-	 * @param BrokeredCallService $credentials Resolves the collector credential reference.
+	 * @param BrokeredCallServiceInterface $credentials Resolves the collector credential reference.
 	 */
 	public function __construct(
 		private readonly IClientService $clientService,
 		private readonly OtelSettings $settings,
-		private readonly BrokeredCallService $credentials,
+		private readonly BrokeredCallServiceInterface $credentials,
 	) {
 
 	}//end __construct()

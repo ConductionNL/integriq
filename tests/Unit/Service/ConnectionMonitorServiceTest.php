@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/brp-connection-monitor-from-pipelinq/specs/connection-run-monitoring/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -145,6 +148,38 @@ final class ConnectionMonitorServiceTest extends TestCase {
 		$this->assertSame('2026-10-06T11:00:00+02:00', $report['period']['from']);
 		$this->assertSame(['configured' => false, 'none' => true], $report['certificate']);
 	}//end testItAggregatesTheLastDayBySlug()
+
+	/**
+	 * A call log written by CallService carries its timing in response.responseTime, not in durationMs.
+	 *
+	 * @return void
+	 */
+	public function testItReadsTheTimingOfACallServiceRow(): void {
+		$this->store['source'] = [
+			ObjectServiceMockBuilder::objectEntity($this, ['name' => 'BRP Haal Centraal', 'slug' => 'brp-haalcentraal', 'configuration' => []], self::SOURCE),
+		];
+		$call = fn (string $id, float $responseTime): ObjectEntity => ObjectServiceMockBuilder::objectEntity(
+			$this,
+			[
+				'source' => self::SOURCE,
+				'direction' => 'outbound',
+				'statusCode' => 200,
+				'statusMessage' => 'OK',
+				'request' => ['url' => 'https://brp.example/personen', 'method' => 'POST'],
+				'response' => ['statusCode' => 200, 'statusMessage' => 'OK', 'responseTime' => $responseTime],
+				'created' => '2026-10-07T10:50:00+02:00',
+			],
+			$id
+		);
+		$this->store['call_log'] = [$call('c1', 2400.4), $call('c2', 199.6)];
+
+		$performance = $this->makeService()->report(sourceRef: 'brp-haalcentraal', now: new DateTimeImmutable(self::NOW))['performance'];
+
+		$this->assertSame(2, $performance['calls']);
+		$this->assertSame(2400, $performance['slowestMs']);
+		$this->assertSame(1300, $performance['averageMs']);
+		$this->assertSame(1, $performance['slowCount']);
+	}//end testItReadsTheTimingOfACallServiceRow()
 
 	/**
 	 * An unknown source has no report.

@@ -1,0 +1,565 @@
+{
+    "replay-new": {
+        "outcome": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 1,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ]
+            },
+            "targetId": "t-1"
+        },
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": []
+            },
+            "targetIds": [],
+            "timed": 0
+        },
+        "steps": [],
+        "log": [
+            [
+                "or.findAll",
+                {
+                    "register": "integriq",
+                    "schema": "synchronization_contract",
+                    "synchronizationId": "s-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "s-1",
+                        "originId": "o-1"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    {
+                        "id": "s-1",
+                        "name": "Zaken"
+                    },
+                    {
+                        "id": "o-1"
+                    },
+                    false,
+                    true,
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "replay-existing-test-traced": {
+        "outcome": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 1,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [
+                    "c-9"
+                ],
+                "logs": [
+                    "l-1"
+                ]
+            },
+            "targetId": "t-1"
+        },
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": []
+            },
+            "targetIds": [],
+            "timed": 0
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "synchronization",
+                "name": "Zaken",
+                "timing": null,
+                "input": {
+                    "id": "o-1",
+                    "touched": true
+                },
+                "output": {
+                    "uuid": "c-9",
+                    "id": "c-9",
+                    "originId": "o-1",
+                    "synchronizationId": "s-1",
+                    "targetId": "t-1"
+                }
+            }
+        ],
+        "log": [
+            [
+                "or.findAll",
+                {
+                    "register": "integriq",
+                    "schema": "synchronization_contract",
+                    "synchronizationId": "s-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "uuid": "c-9",
+                        "id": "c-9",
+                        "originId": "o-1",
+                        "synchronizationId": "s-1"
+                    },
+                    {
+                        "object": "OCA\\Integriq\\Service\\Helper\\FlowToken"
+                    },
+                    {
+                        "id": "s-1",
+                        "name": "Zaken"
+                    },
+                    {
+                        "id": "o-1"
+                    },
+                    true,
+                    true,
+                    {
+                        "object": "OCA\\Integriq\\Service\\SynchronizationRunLog"
+                    },
+                    null,
+                    {
+                        "object": "trace"
+                    }
+                ]
+            ]
+        ]
+    },
+    "replay-skipped-by-conditions": {
+        "outcome": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 1,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": []
+            },
+            "targetId": null
+        },
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": []
+            },
+            "targetIds": [],
+            "timed": 0
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "synchronization",
+                "name": "Zaken",
+                "timing": null,
+                "input": {
+                    "id": "o-1"
+                },
+                "output": []
+            }
+        ],
+        "log": []
+    },
+    "delete": {
+        "outcome": null,
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": []
+            },
+            "targetIds": [],
+            "timed": 0
+        },
+        "steps": [],
+        "log": [
+            [
+                "or.findAll",
+                {
+                    "register": "integriq",
+                    "schema": "synchronization_contract",
+                    "synchronizationId": "s-1",
+                    "originId": "o-2"
+                }
+            ],
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "s-1",
+                        "originId": "o-2"
+                    },
+                    {
+                        "object": "runFlowToken"
+                    },
+                    {
+                        "id": "s-1",
+                        "name": "Zaken"
+                    },
+                    {
+                        "id": "o-2"
+                    },
+                    false,
+                    true,
+                    null,
+                    "delete",
+                    null
+                ]
+            ]
+        ]
+    },
+    "delete-test-traced-existing": {
+        "outcome": null,
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [],
+                "logs": []
+            },
+            "targetIds": [],
+            "timed": 0
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "synchronization",
+                "name": "Zaken",
+                "timing": null,
+                "input": {
+                    "id": "o-1",
+                    "touched": true
+                },
+                "output": {
+                    "uuid": "c-9",
+                    "id": "c-9",
+                    "originId": "o-1",
+                    "synchronizationId": "s-1",
+                    "targetId": "t-1"
+                }
+            }
+        ],
+        "log": [
+            [
+                "or.findAll",
+                {
+                    "register": "integriq",
+                    "schema": "synchronization_contract",
+                    "synchronizationId": "s-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "uuid": "c-9",
+                        "id": "c-9",
+                        "originId": "o-1",
+                        "synchronizationId": "s-1"
+                    },
+                    {
+                        "object": "runFlowToken"
+                    },
+                    {
+                        "id": "s-1",
+                        "name": "Zaken"
+                    },
+                    {
+                        "id": "o-1"
+                    },
+                    true,
+                    false,
+                    {
+                        "object": "runLog"
+                    },
+                    "delete",
+                    {
+                        "object": "trace"
+                    }
+                ]
+            ]
+        ]
+    },
+    "batch-indexed-hit": {
+        "outcome": null,
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 1,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ]
+            },
+            "targetIds": [
+                "t-1"
+            ],
+            "timed": 1
+        },
+        "steps": [
+            {
+                "order": 1,
+                "type": "synchronization",
+                "name": "Zaken",
+                "timing": null,
+                "input": {
+                    "id": "o-1",
+                    "touched": true
+                },
+                "output": {
+                    "id": "c-9",
+                    "originId": "o-1",
+                    "synchronizationId": "s-1",
+                    "uuid": "c-1",
+                    "targetId": "t-1"
+                }
+            }
+        ],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "id": "c-9",
+                        "originId": "o-1",
+                        "synchronizationId": "s-1"
+                    },
+                    {
+                        "object": "runFlowToken"
+                    },
+                    {
+                        "id": "s-1",
+                        "name": "Zaken"
+                    },
+                    {
+                        "id": "o-1"
+                    },
+                    false,
+                    true,
+                    {
+                        "object": "runLog"
+                    },
+                    null,
+                    {
+                        "object": "trace"
+                    }
+                ]
+            ]
+        ]
+    },
+    "batch-indexed-miss": {
+        "outcome": null,
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 1,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [
+                    "c-1"
+                ],
+                "logs": [
+                    "l-1"
+                ]
+            },
+            "targetIds": [
+                "t-1"
+            ],
+            "timed": 1
+        },
+        "steps": [],
+        "log": [
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "synchronizationId": "s-1",
+                        "originId": "o-3"
+                    },
+                    {
+                        "object": "runFlowToken"
+                    },
+                    {
+                        "id": "s-1",
+                        "name": "Zaken"
+                    },
+                    {
+                        "id": "o-3"
+                    },
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "batch-unindexed": {
+        "outcome": null,
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 1,
+                    "deleted": 0,
+                    "invalid": 0
+                },
+                "contracts": [
+                    "c-9"
+                ],
+                "logs": [
+                    "l-1"
+                ]
+            },
+            "targetIds": [
+                "t-1"
+            ],
+            "timed": 1
+        },
+        "steps": [],
+        "log": [
+            [
+                "or.findAll",
+                {
+                    "register": "integriq",
+                    "schema": "synchronization_contract",
+                    "synchronizationId": "s-1",
+                    "originId": "o-1"
+                }
+            ],
+            [
+                "synchronizeContract",
+                [
+                    {
+                        "uuid": "c-9",
+                        "id": "c-9",
+                        "originId": "o-1",
+                        "synchronizationId": "s-1"
+                    },
+                    {
+                        "object": "runFlowToken"
+                    },
+                    {
+                        "id": "s-1",
+                        "name": "Zaken"
+                    },
+                    {
+                        "id": "o-1"
+                    },
+                    false,
+                    false,
+                    {
+                        "object": "runLog"
+                    },
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "batch-scalar": {
+        "outcome": null,
+        "run": {
+            "result": {
+                "objects": {
+                    "found": 1,
+                    "skipped": 0,
+                    "created": 0,
+                    "updated": 0,
+                    "deleted": 0,
+                    "invalid": 1
+                },
+                "contracts": [],
+                "logs": []
+            },
+            "targetIds": [],
+            "timed": 1
+        },
+        "steps": [],
+        "log": []
+    }
+}

@@ -19,6 +19,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/intake-channels-on-the-consumer-model/specs/intake-channels/spec.md#requirement-a-channel-acts-as-its-connections-account-req-ic-020
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -28,6 +31,7 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\IntakeChannelsController;
 use OCA\Integriq\Controller\VerdictController;
 use OCA\Integriq\Intake\Adapter\FormSubmissionAdapter;
+use OCA\Integriq\Intake\HeldMessageFiles;
 use OCA\Integriq\Intake\IntakeChannelRegistry;
 use OCA\Integriq\Intake\IntakeReplyService;
 use OCA\Integriq\Intake\IntakeRoutingService;
@@ -220,7 +224,8 @@ class IntakeWebhooksConsumerTest extends TestCase {
 				objectService: $this->objectService,
 				eventDispatcher: $this->createMock(IEventDispatcher::class),
 				schemaMapper: $this->createMock(SchemaMapper::class),
-				logger: new NullLogger()
+				logger: new NullLogger(),
+				heldFiles: $this->keptAsIs()
 			),
 			replyService: new IntakeReplyService(objectService: $this->objectService, registry: $registry, gate: (new \OCA\Integriq\Tests\Helpers\OptOutFixture($this, $this->createMock(\OCP\IDBConnection::class)))->gate()),
 			gate: $this->buildWorldGate(objectService: $this->objectService),
@@ -229,4 +234,16 @@ class IntakeWebhooksConsumerTest extends TestCase {
 		);
 
 	}//end channelsController()
+	/**
+	 * A held-files double that keeps the payload as it is.
+	 *
+	 * @return HeldMessageFiles
+	 */
+	private function keptAsIs(): HeldMessageFiles {
+		$heldFiles = $this->createMock(HeldMessageFiles::class);
+		$heldFiles->method('keep')->willReturnArgument(2);
+
+		return $heldFiles;
+	}//end keptAsIs()
+
 }//end class

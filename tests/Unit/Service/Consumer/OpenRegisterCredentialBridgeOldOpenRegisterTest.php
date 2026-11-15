@@ -13,6 +13,9 @@
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-an-openregister-without-the-public-checks-is-refused-req-008
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

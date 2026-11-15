@@ -70,7 +70,7 @@ class ZgwSetsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheListShowsEverySetAndItsBinding(): void {
-		$installer = $this->createMock(ZgwSetInstaller::class);
+		$installer = $this->createPartialMock(ZgwSetInstaller::class, ['bindings']);
 		$installer->method('bindings')->willReturn(['cases/case' => 'zgw-zaken']);
 
 		$sets = $this->controller($installer)->index()->getData()['results'];

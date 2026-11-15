@@ -5,7 +5,7 @@
 
 <!--
   ConnectionAlertSettings: the group whose members hear about an opened
-  connection alert and about integriq's other alerts, failed jobs, deliveries
+  connection alert and about the other integriq alerts, failed jobs, deliveries
   and payments among them (app setting connection_alert_group). Until an
   administrator names another group, the admin group is told; clearing the
   field puts the admin group back.
@@ -51,11 +51,9 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcTextField } from '@nextcloud/vue'
+import adminSetting from '../../mixins/adminSetting.js'
 
 const URL = '/apps/integriq/api/admin/connection-alert-group'
 
@@ -64,62 +62,48 @@ export default {
 
 	components: { NcButton, NcTextField },
 
+	mixins: [adminSetting],
+
 	data() {
 		return {
-			loading: true,
-			busy: false,
-			error: '',
 			group: '',
 			saved: '',
 		}
 	},
 
-	/**
-	 * Read the named group.
-	 *
-	 * @return {Promise<void>}
-	 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
-	 */
-	async mounted() {
-		try {
-			const { data } = await axios.get(generateUrl(URL))
-			this.group = data?.group || ''
-			this.saved = this.group
-		} catch (e) {
-			this.error =
-				e?.response?.data?.error
-				|| t('integriq', 'The setting could not be read.')
-		} finally {
-			this.loading = false
-		}
+	computed: {
+		/**
+		 * @return {string} The setting endpoint.
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+		 */
+		settingUrl() {
+			return URL
+		},
 	},
 
 	methods: {
 		t,
 
 		/**
-		 * Store the group, or clear it to go back to the admin group; the server refuses a group that does not exist.
+		 * Show what the server holds.
 		 *
-		 * @return {Promise<void>}
+		 * @param {object|null} data The stored setting.
+		 * @return {void}
 		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
 		 */
-		async save() {
-			this.busy = true
-			this.error = ''
-			try {
-				const { data } = await axios.put(generateUrl(URL), {
-					group: this.group.trim(),
-				})
-				this.saved = data?.group || ''
-				this.group = this.saved
-				showSuccess(t('integriq', 'Saved.'))
-			} catch (e) {
-				this.error =
-					e?.response?.data?.error
-					|| t('integriq', 'The setting could not be saved.')
-			} finally {
-				this.busy = false
-			}
+		applyStored(data) {
+			this.saved = data?.group || ''
+			this.group = this.saved
+		},
+
+		/**
+		 * What to store.
+		 *
+		 * @return {object} The request body.
+		 * @spec openspec/specs/connection-run-monitoring/spec.md#requirement-an-opened-alert-notifies-the-group-an-administrator-named-req-crun-005
+		 */
+		settingBody() {
+			return { group: this.group.trim() }
 		},
 	},
 }

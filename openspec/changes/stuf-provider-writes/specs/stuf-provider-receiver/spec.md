@@ -73,6 +73,12 @@ An answered case query SHALL go back as a zakLa01, a person query as an npsLa01,
 mutation as a Bv03, each cross-referencing the request's referentienummer. A refusal by the owning
 app SHALL go back as a Fo03 for a kennisgeving and a Fo02 for a vraag.
 
+#### Scenario: A found zaak is answered as a zakLa01
+
+- GIVEN the owning app answers the query with one case
+- WHEN the response is built
+- THEN it is a zakLa01 with aantalVoorkomens 1 and the case's identificatie
+
 #### Scenario: An accepted kennisgeving is a Bv03
 
 - GIVEN the owning app accepts a zakLk01
