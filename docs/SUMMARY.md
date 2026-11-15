@@ -10,6 +10,7 @@
     * [Synchronysation](administrators/synchronysation/synchronysation.md)
   * [Directory and group synchronisation](administrators/directory-and-group-sync.md)
   * [API design rules](administrators/api-design-rules.md)
+  * [Keeping a configuration in git](administrators/configuration-in-git.md)
   * [Open a case from a Microsoft Teams message](administrators/teams-intake.md)
   * [Check the ROD adapter against DUO's XSD](administrators/rod-xsd-check.md)
   * [sources](administrators/sources/README.md)
