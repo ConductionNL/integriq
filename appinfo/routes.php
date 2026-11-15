@@ -159,6 +159,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'connectionMonitor#show', 'url' => '/api/connection-monitor', 'verb' => 'GET'],
 		// The registration targets an app may use, by slug, title and kind only (form-submission-registration-targets).
 		['name' => 'registrationTarget#index', 'url' => '/api/registration-targets', 'verb' => 'GET'],
+		// The administrator's dry run of one target: maps a sample hand-over and stops before the first write.
+		['name' => 'registrationTarget#test', 'url' => '/api/registration-targets/{slug}/test', 'verb' => 'POST'],
 		// Where a record was synchronized from, answered after a read check under OpenRegister's rights.
 		['name' => 'recordProvenance#show', 'url' => '/api/provenance', 'verb' => 'GET'],
 

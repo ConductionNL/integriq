@@ -52,6 +52,25 @@ class RegistrationService {
 	public const DEFAULT_ALLOWED_APPS = ['portaliq'];
 
 	/**
+	 * The sample hand-over an administrator's dry run maps when they give none (design D3).
+	 *
+	 * It carries no files, so a dry run never reads one.
+	 *
+	 * @var array<string,mixed>
+	 */
+	public const SAMPLE_HANDOVER = [
+		'reference' => 'OF-TEST-0000',
+		'form' => ['slug' => 'sample-form', 'title' => 'Sample form'],
+		'submittedAt' => '2026-01-01T12:00:00+01:00',
+		'language' => 'nl',
+		'applicant' => ['kind' => 'bsn', 'value' => '999990627', 'filledBy' => null],
+		'answers' => ['subject' => 'Sample answer'],
+		'fields' => ['subject' => ['label' => 'Subject', 'type' => 'string', 'computed' => false]],
+		'attachments' => [],
+		'cosign' => null,
+	];
+
+	/**
 	 * The legs by target kind.
 	 *
 	 * @var array<string,RegistrationLeg>
@@ -195,6 +214,63 @@ class RegistrationService {
 
 		return self::answer(externalReference: $result['externalReference'], externalUrl: $result['externalUrl']);
 	}//end registerOrRefuse()
+
+	/**
+	 * Map a hand-over for a target and stop before the first write (design D6).
+	 *
+	 * The administrator's "Test": the target is looked up whatever its
+	 * enabled flag or allowed apps, the hand-over is checked and mapped, and a
+	 * leg that checks its body before sending (the JSON Schema) does so. No
+	 * record is written, no file is read and no outside system is called. An
+	 * empty hand-over maps the sample of design D3.
+	 *
+	 * @param string              $target   The target slug.
+	 * @param array<string,mixed> $handover The hand-over to map, or nothing for the sample.
+	 *
+	 * @return array<string,mixed> `ok`, `dry`, `kind` and the `mapped` body, or a refusal answer.
+	 *
+	 * @spec openspec/changes/form-submission-registration-targets/specs/submission-registration/spec.md#requirement-an-administrator-defines-a-registration-target-of-one-of-four-kinds-req-sreg-001
+	 */
+	public function dryRun(string $target, array $handover = []): array {
+		if ($handover === []) {
+			$handover = self::SAMPLE_HANDOVER;
+		}
+
+		try {
+			$found = null;
+			if ($target !== '') {
+				$found = $this->store->findTarget(slug: $target);
+			}
+
+			if ($found === null) {
+				throw new RegistrationRefusal(
+					reason: RegistrationRefusal::UNKNOWN_TARGET,
+					retryable: false,
+					message: 'There is no registration target ' . $target . '.'
+				);
+			}
+
+			self::checkHandover(handover: $handover);
+			$mapped = $this->mapped(target: $found, handover: $handover);
+			$kind   = (string)($found['kind'] ?? '');
+			$leg    = ($this->legs[$kind] ?? null);
+			if ($leg instanceof RegistrationBodyCheck) {
+				$leg->checkBody(target: $found, mapped: $mapped);
+			}
+		} catch (RegistrationRefusal $refusal) {
+			return ['dry' => true] + $refusal->toAnswer();
+		} catch (Throwable $e) {
+			$this->logger->error('Integriq: a registration dry run failed', ['target' => $target, 'exception' => $e]);
+			$refusal = new RegistrationRefusal(
+				reason: RegistrationRefusal::SOURCE_UNAVAILABLE,
+				retryable: true,
+				message: 'The dry run could not be completed: ' . $e->getMessage()
+			);
+			return ['dry' => true] + $refusal->toAnswer();
+		}//end try
+
+		return ['ok' => true, 'dry' => true, 'kind' => $kind, 'mapped' => $mapped];
+	}//end dryRun()
 
 	/**
 	 * The target, when it exists, is enabled and allows the app.
