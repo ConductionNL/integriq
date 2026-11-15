@@ -35,7 +35,7 @@ use InvalidArgumentException;
 use OCA\Integriq\Service\Zgw\ZgwNotificationPullListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;

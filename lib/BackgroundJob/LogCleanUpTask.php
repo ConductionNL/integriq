@@ -24,7 +24,7 @@ namespace OCA\Integriq\BackgroundJob;
 use DateTime;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicyInterface;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;

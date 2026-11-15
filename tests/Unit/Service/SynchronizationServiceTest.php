@@ -1744,7 +1744,7 @@ HTML;
 			targetObject: $targetObject,
 			action: 'delete'
 		);
-		$this->orObjectService->deleteObject(new \OCA\OpenRegister\Service\Object\ObjectDeletion(uuid: 'person-uuid-1'));
+		$this->orObjectService->deleteObject(new \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion(uuid: 'person-uuid-1'));
 
 		$this->assertSame([false, true], $stopped, 'the engine delete passes; the same delete from elsewhere is stopped');
 

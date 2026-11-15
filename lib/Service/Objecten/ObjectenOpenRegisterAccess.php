@@ -47,8 +47,8 @@ namespace OCA\Integriq\Service\Objecten;
 
 use OCA\Integriq\Service\BrokeredCallService;
 use OCA\Integriq\Service\EventService;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
