@@ -296,4 +296,51 @@ class AssertionGuardTest extends TestCase {
 		);
 	}//end testTheDormantAdapterNeverLogsTheCallbackPayload()
 
+	/**
+	 * A window bound that is absent, blank or not a string or integer is
+	 * unreadable, so the assertion is refused rather than read as unbounded.
+	 *
+	 * @return void
+	 */
+	public function testAMissingBlankOrNonStringBoundIsUnreadable(): void {
+		foreach ([['notBefore' => null], ['notBefore' => '   '], ['notOnOrAfter' => ['2026-09-22T10:05:00Z']], ['notOnOrAfter' => 1.5]] as $override) {
+			try {
+				$this->guard()->assertAcceptable(
+					assertion: $this->assertion($override),
+					outstandingRequestId: self::REQUEST_ID,
+					expectedAudience: self::AUDIENCE,
+					now: $this->inWindow()
+				);
+				$this->fail('An unreadable bound was accepted: ' . json_encode($override));
+			} catch (IdpAssertionException $exception) {
+				$this->assertSame('The assertion carries no readable validity window, so it is refused.', $exception->getMessage());
+			}
+		}
+	}//end testAMissingBlankOrNonStringBoundIsUnreadable()
+
+	/**
+	 * Integer bounds are read as unix times as they are.
+	 *
+	 * @return void
+	 */
+	public function testIntegerBoundsAreUnixTimes(): void {
+		$now = $this->inWindow();
+
+		$this->guard()->assertAcceptable(
+			assertion: $this->assertion(['id' => '_assertion-int', 'notBefore' => ($now - 1), 'notOnOrAfter' => ($now + 1)]),
+			outstandingRequestId: self::REQUEST_ID,
+			expectedAudience: self::AUDIENCE,
+			now: $now
+		);
+
+		$this->expectException(IdpAssertionException::class);
+		$this->expectExceptionMessage('outside its validity window');
+		$this->guard()->assertAcceptable(
+			assertion: $this->assertion(['id' => '_assertion-int-2', 'notBefore' => ($now - 10), 'notOnOrAfter' => $now]),
+			outstandingRequestId: self::REQUEST_ID,
+			expectedAudience: self::AUDIENCE,
+			now: $now
+		);
+	}//end testIntegerBoundsAreUnixTimes()
+
 }//end class

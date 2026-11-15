@@ -439,6 +439,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		['name' => 'runSummary#show', 'url' => '/api/sources/{id}/run-summary', 'verb' => 'GET'],
+		// connectors-endpoint-workspace-adapters: the sessions or devices the workspace
+		// manager behind a source reports, each with the Nextcloud user it maps to. Admin only.
+		['name' => 'endpointWorkspace#index', 'url' => '/api/sources/{id}/workspace-entries', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
@@ -572,6 +575,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'executionTraces#index', 'url' => '/api/execution-traces', 'verb' => 'GET'],
 		['name' => 'executionTraces#show', 'url' => '/api/execution-traces/{id}', 'verb' => 'GET'],
 		['name' => 'executionTraces#replay', 'url' => '/api/execution-traces/{id}/replay', 'verb' => 'POST'],
+		// Save one step of a trace as a regression test case (automation-integration-regression-tests).
+		['name' => 'regressionSuite#record', 'url' => '/api/execution-traces/{id}/test-case', 'verb' => 'POST'],
 
 		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
@@ -620,6 +625,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
 		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
 		['name' => 'productChannels#asyncapi', 'url' => '/api/products/{productSlug}/asyncapi.json', 'verb' => 'GET'],
+		['name' => 'productChannels#pull', 'url' => '/api/products/{productSlug}/channels/{channel}/events', 'verb' => 'GET'],
+		['name' => 'productChannels#subscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions', 'verb' => 'POST'],
+		['name' => 'productChannels#unsubscribe', 'url' => '/api/products/{productSlug}/channels/{channel}/subscriptions/{id}', 'verb' => 'DELETE'],
 
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/integriq/catalog_item (ADR-022);
@@ -631,6 +639,8 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// connectors-sharepoint-publication-intake REQ-SPPI-001: the Graph lookups behind
 		// the SharePoint to publication setup dialog (sites, libraries, folders).
 		['name' => 'sharePointSetup#lookup', 'url' => '/api/sharepoint/lookup', 'verb' => 'GET'],
+		// The setup's save: one source, mapping, rule and synchronization from the sharepoint-publications set.
+		['name' => 'sharePointSetup#intake', 'url' => '/api/sharepoint/publication-intake', 'verb' => 'POST'],
 
 		// registry-backed-field-source: openregister resolves a property that
 		// declares `x-openregister-property-source` through these routes, and the

@@ -1,0 +1,12 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#drives('b!woo-dossiers')/items('01WOO2026015')/children",
+  "value": [
+    {
+      "id": "01BESLUIT015",
+      "name": "Besluit Woo-2026-015.pdf",
+      "file": {"mimeType": "application/pdf"},
+      "parentReference": {"driveId": "b!woo-dossiers", "id": "01WOO2026015"},
+      "@microsoft.graph.downloadUrl": "https://example.sharepoint.com/_layouts/15/download.aspx?UniqueId=besluit015&tempauth=signed"
+    }
+  ]
+}
