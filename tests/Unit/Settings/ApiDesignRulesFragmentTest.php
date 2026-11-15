@@ -53,6 +53,24 @@ class ApiDesignRulesFragmentTest extends TestCase {
 	}//end merged()
 
 	/**
+	 * The rows of one schema among the objects OpenRegister imports, by slug.
+	 *
+	 * @param string $schema The schema slug.
+	 *
+	 * @return array<string,array<string,mixed>> The rows, keyed by their slug.
+	 */
+	private static function seeded(string $schema): array {
+		$rows = [];
+		foreach (self::merged()['components']['objects'] as $row) {
+			if (($row['@self']['schema'] ?? null) === $schema) {
+				$rows[$row['@self']['slug']] = $row;
+			}
+		}
+
+		return $rows;
+	}//end seeded()
+
+	/**
 	 * Both schemas are in the register, and a finding is open or waived with a reason.
 	 *
 	 * @return void
@@ -78,15 +96,71 @@ class ApiDesignRulesFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSeededCustomRuleSetWorks(): void {
-		$seed = self::merged()['components']['schemas']['api_design_ruleset']['x-openregister-seed'];
+		$seed = self::seeded(schema: 'api_design_ruleset');
 		$this->assertSame(['gemeente-voorbeeld'], array_column($seed, 'name'));
+		$this->assertArrayNotHasKey(key: 'x-openregister-seed', array: self::merged()['components']['schemas']['api_design_ruleset']);
 
 		$rules = new ApiDesignRuleService(selector: new JsonPathSelector());
-		$this->assertSame([], $rules->problemsOf(ruleSet: $seed[0]));
+		$this->assertSame([], $rules->problemsOf(ruleSet: $seed['gemeente-voorbeeld']));
 
 		$document = ['openapi' => '3.0.3', 'paths' => ['/besluiten' => ['get' => ['summary' => 'Besluiten'], 'post' => []]]];
-		$findings = $rules->check(document: $document, ruleSets: $seed)['findings'];
+		$findings = $rules->check(document: $document, ruleSets: array_values($seed))['findings'];
 		$this->assertSame(['/paths/~1besluiten/post'], array_column($findings, 'path'));
 		$this->assertSame('warning', $findings[0]['severity']);
 	}//end testTheSeededCustomRuleSetWorks()
+
+	/**
+	 * The seeded besluiten-api is not active, and carries one open error and one waived warning.
+	 *
+	 * An open error holds back publication, so the product starts deprecated:
+	 * seeding it active would show a published product the guard should have refused.
+	 *
+	 * @return void
+	 */
+	public function testTheSeededProductCarriesOneErrorAndOneWaivedWarning(): void {
+		$product = self::seeded(schema: 'api_product')['api-product-besluiten-api-v1'];
+		$this->assertSame(expected: 'besluiten-api', actual: $product['productSlug']);
+		$this->assertSame(expected: 'deprecated', actual: $product['status']);
+		$this->assertSame(expected: '2027-01-01T00:00:00+00:00', actual: $product['sunsetDate']);
+
+		$findings = self::seeded(schema: 'api_design_finding');
+		$this->assertCount(expectedCount: 2, haystack: $findings);
+		foreach ($findings as $finding) {
+			$this->assertSame(expected: '@ref:api_product:api-product-besluiten-api-v1', actual: $finding['product']);
+			$this->assertSame(expected: $product['version'], actual: $finding['productVersion']);
+		}
+
+		$rules = new ApiDesignRuleService(selector: new JsonPathSelector());
+		$blocking = $rules->blockingFindings(findings: array_values($findings));
+		$this->assertSame(expected: ['/core/no-trailing-slash'], actual: array_column($blocking, 'ruleId'));
+
+		$waived = $findings['besluiten-api-v1-operation-summary'];
+		$this->assertSame(expected: ['warning', 'waived'], actual: [$waived['severity'], $waived['status']]);
+		$this->assertSame(expected: 'partner requires this path until 2027', actual: $waived['waiveReason']);
+		$this->assertNotSame(expected: '', actual: $waived['waivedBy']);
+		$this->assertNotFalse(condition: \DateTimeImmutable::createFromFormat(format: \DATE_ATOM, datetime: $waived['waivedAt']));
+	}//end testTheSeededProductCarriesOneErrorAndOneWaivedWarning()
+
+	/**
+	 * Each seeded finding is what a check of a besluiten description with a trailing slash produces.
+	 *
+	 * @return void
+	 */
+	public function testTheSeededFindingsAreWhatACheckProduces(): void {
+		$rules = new ApiDesignRuleService(selector: new JsonPathSelector());
+		$ruleSets = array_merge($rules->builtInRuleSets(), array_values(self::seeded(schema: 'api_design_ruleset')));
+		$document = ['openapi' => '3.0.3', 'paths' => ['/besluiten/' => ['get' => ['summary' => 'Besluiten'], 'post' => []]]];
+
+		$produced = [];
+		foreach ($rules->check(document: $document, ruleSets: $ruleSets)['findings'] as $finding) {
+			$produced[$finding['ruleId'] . ' ' . $finding['path']] = $finding;
+		}
+
+		foreach (self::seeded(schema: 'api_design_finding') as $slug => $seeded) {
+			$key = $seeded['ruleId'] . ' ' . $seeded['path'];
+			$this->assertArrayHasKey(key: $key, array: $produced, message: $slug);
+			$this->assertSame(expected: $produced[$key]['severity'], actual: $seeded['severity'], message: $slug);
+			$this->assertSame(expected: $produced[$key]['url'], actual: $seeded['url'], message: $slug);
+		}
+	}//end testTheSeededFindingsAreWhatACheckProduces()
 }//end class

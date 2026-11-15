@@ -50,8 +50,9 @@ Kind: code. Size M. Rows `integriq:acc-governance`, `integriq:nl-api-design-rule
 - **files**: `lib/Settings/register.d/api-design-rules.json` (`x-openregister-seed`), `docs/`
 - **acceptance_criteria**:
   - GIVEN a fresh install WHEN the seeded product page opens THEN one error and one waived warning are shown
-- [ ] Implement
-  - The custom rule set `gemeente-voorbeeld` is seeded. Docs written (2026-11-14): `docs/administrators/api-design-rules.md`, linked from `docs/SUMMARY.md` (check, publish refusal, waiver, rule sets). Left: the `besluiten-api` product and its two findings. `api_product.status` only knows `active` and `deprecated`, so a seeded product carrying an open error would either sit published against REQ-ADRC-003 or read as deprecated. The seed needs an unpublished product state, or a decision that the seeded product may start active, before it can be written.
+- [x] Implement
+  - Seed (2026-11-15): `lib/Settings/register.d/api-design-rules.json` now seeds through `components.objects`, the rows OpenRegister's import reads (with `@ref:` tokens); a schema-level `x-openregister-seed` is stored as schema configuration and never imported, so the rule set moved out of it. It holds `gemeente-voorbeeld`, the product `besluiten-api` 1.0.0 and its two findings: the open error `/core/no-trailing-slash` and the waived `gemeente-voorbeeld/operation-summary` warning. The product starts `deprecated` (as the developer portal change seeds it, sunset 2027-01-01), so it is not published while it carries an open error. `ApiDesignRulesFragmentTest` checks the rows and that each seeded finding is what a check of a `/besluiten/` description produces.
+  - The custom rule set `gemeente-voorbeeld` is seeded. Docs written (2026-11-14): `docs/administrators/api-design-rules.md`, linked from `docs/SUMMARY.md` (check, publish refusal, waiver, rule sets). The `besluiten-api` question (no unpublished product state) is settled by seeding it deprecated, see above.
 - [ ] Test (docs walked once)
 
 ## Verification

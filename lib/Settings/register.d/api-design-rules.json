@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (gateway-api-design-rules-check, decisions D3 and D4). Adds `api_design_ruleset` (an organisation's own rule set in the built-in format; the Dutch API design rules ship as a file, lib/Settings/api-design-rules/) and `api_design_finding` (one failed rule of one product version, open or waived with a reason). A check replaces the open findings of a product version and keeps the waived ones whose rule and path still match. Seeds the custom rule set `gemeente-voorbeeld`.",
+  "$comment": "ADR-037 register fragment (gateway-api-design-rules-check, decisions D3 and D4). Adds `api_design_ruleset` (an organisation's own rule set in the built-in format; the Dutch API design rules ship as a file, lib/Settings/api-design-rules/) and `api_design_finding` (one failed rule of one product version, open or waived with a reason). A check replaces the open findings of a product version and keeps the waived ones whose rule and path still match. Seeds, through `components.objects` (the rows OpenRegister imports, with `@ref:` tokens), the custom rule set `gemeente-voorbeeld` and the deprecated product `besluiten-api` with two findings: an open error and a waived warning.",
   "components": {
     "registers": {
       "integriq": {
@@ -58,27 +58,6 @@
             "description": "Only enabled rule sets are checked."
           }
         },
-        "x-openregister-seed": [
-          {
-            "name": "gemeente-voorbeeld",
-            "version": "1.0.0",
-            "source": "custom",
-            "enabled": true,
-            "rules": [
-              {
-                "id": "gemeente-voorbeeld/operation-summary",
-                "title": "Every operation has a summary",
-                "severity": "warning",
-                "given": "$.paths.*[?(@property.match(/^(get|put|post|delete|patch)$/))]",
-                "then": {
-                  "field": "summary",
-                  "function": "truthy"
-                },
-                "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/"
-              }
-            ]
-          }
-        ],
         "authorization": {
           "create": [
             "admin"
@@ -203,6 +182,84 @@
           ]
         }
       }
-    }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_ruleset",
+          "slug": "gemeente-voorbeeld"
+        },
+        "name": "gemeente-voorbeeld",
+        "version": "1.0.0",
+        "source": "custom",
+        "enabled": true,
+        "rules": [
+          {
+            "id": "gemeente-voorbeeld/operation-summary",
+            "title": "Every operation has a summary",
+            "severity": "warning",
+            "given": "$.paths.*[?(@property.match(/^(get|put|post|delete|patch)$/))]",
+            "then": {
+              "field": "summary",
+              "function": "truthy"
+            },
+            "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_product",
+          "slug": "api-product-besluiten-api-v1"
+        },
+        "name": "Besluiten API",
+        "description": "Query decisions (besluiten): deprecated, its description still fails one design rule",
+        "productSlug": "besluiten-api",
+        "version": "1.0.0",
+        "visibility": "public",
+        "status": "deprecated",
+        "sunsetDate": "2027-01-01T00:00:00+00:00",
+        "endpoints": []
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "besluiten-api-v1-no-trailing-slash"
+        },
+        "product": "@ref:api_product:api-product-besluiten-api-v1",
+        "productVersion": "1.0.0",
+        "ruleset": "nl-api-design-rules",
+        "ruleId": "/core/no-trailing-slash",
+        "severity": "error",
+        "path": "/paths/~1besluiten~1",
+        "message": "Leave off trailing slashes from URIs: /besluiten/",
+        "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/no-trailing-slash",
+        "status": "open",
+        "checkedAt": "2026-11-01T09:00:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "api_design_finding",
+          "slug": "besluiten-api-v1-operation-summary"
+        },
+        "product": "@ref:api_product:api-product-besluiten-api-v1",
+        "productVersion": "1.0.0",
+        "ruleset": "gemeente-voorbeeld",
+        "ruleId": "gemeente-voorbeeld/operation-summary",
+        "severity": "warning",
+        "path": "/paths/~1besluiten~1/post",
+        "message": "Every operation has a summary",
+        "url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/",
+        "status": "waived",
+        "waivedBy": "admin",
+        "waiveReason": "partner requires this path until 2027",
+        "waivedAt": "2026-11-01T09:05:00+00:00",
+        "checkedAt": "2026-11-01T09:00:00+00:00"
+      }
+    ]
   }
 }

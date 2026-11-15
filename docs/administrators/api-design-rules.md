@@ -50,4 +50,11 @@ against:
   `manual: true` for a rule a person checks. `gemeente-voorbeeld` is an
   example: it asks every operation for a summary.
 
+A fresh install also carries an example product, **Besluiten API** 1.0.0. Its
+description ends a path in a slash, so it has one open error
+(`/core/no-trailing-slash`) and one warning from `gemeente-voorbeeld`, waived
+with the reason "partner requires this path until 2027". The product starts
+deprecated, not active: with an open error it cannot be published until the
+error is fixed or waived.
+
 Switch a rule set off with **enabled** to stop checking against it.
