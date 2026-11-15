@@ -75,6 +75,11 @@
 			:app="linkSource.app"
 			@linked="onSourceLinked"
 			@close="closeLinkSource" />
+		<SourceResidencyDialog
+			:open="sourceResidency.open"
+			:source="sourceResidency.source"
+			@saved="onSourceResidencySaved"
+			@close="closeSourceResidency" />
 	</div>
 </template>
 
@@ -85,6 +90,7 @@ import GatewayCatalogueDialog from '../../dialogs/GatewayCatalogueDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
 import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
+import SourceResidencyDialog from '../../dialogs/SourceResidencyDialog.vue'
 import DirectoryRunModal from '../Directory/DirectoryRunModal.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
 import RegistrationTargetTestModal from '../Registration/RegistrationTargetTestModal.vue'
@@ -105,9 +111,11 @@ import {
 	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
+	EVENT_OPEN_SOURCE_RESIDENCY,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_TEST_SOURCE,
+	EVENT_SOURCE_RESIDENCY_SAVED,
 	modalBus,
 } from '../../handlers/modalBus.js'
 
@@ -129,6 +137,7 @@ export default {
 		RegistryLookupDialog,
 		GatewayCatalogueDialog,
 		RegistrationTargetTestModal,
+		SourceResidencyDialog,
 	},
 
 	data() {
@@ -145,6 +154,7 @@ export default {
 			promotion: { open: false },
 			registryLookup: { open: false },
 			gatewayCatalogue: { open: false },
+			sourceResidency: { open: false, source: null },
 			linkSource: { open: false, app: '' },
 			registrationTest: { open: false, target: null },
 		}
@@ -197,6 +207,7 @@ export default {
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.on(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.on(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
+		modalBus.on(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
 	},
 
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
@@ -215,6 +226,7 @@ export default {
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.off(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
 		modalBus.off(EVENT_OPEN_LINK_SOURCE, this.openLinkSource)
+		modalBus.off(EVENT_OPEN_SOURCE_RESIDENCY, this.openSourceResidency)
 	},
 
 	methods: {
@@ -400,6 +412,29 @@ export default {
 		/** @spec openspec/specs/connection-registry/spec.md#requirement-add-integration-links-a-source-and-probes-it-at-once-req-conn-007 */
 		closeLinkSource() {
 			this.linkSource = { open: false, app: '' }
+		},
+
+		/**
+		 * @param {object} payload `{ source }`, the source to set residency on.
+		 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+		 */
+		openSourceResidency(payload) {
+			this.sourceResidency = { open: true, source: payload?.source ?? null }
+		},
+
+		/** @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001 */
+		closeSourceResidency() {
+			this.sourceResidency = { open: false, source: null }
+		},
+
+		/**
+		 * Tell the page that showed the source that its residency changed.
+		 *
+		 * @param {object} payload `{ source, residency }`.
+		 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+		 */
+		onSourceResidencySaved(payload) {
+			modalBus.emit(EVENT_SOURCE_RESIDENCY_SAVED, payload)
 		},
 
 		/**

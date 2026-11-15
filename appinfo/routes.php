@@ -76,6 +76,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// saved message and polling a mailbox both write `message` objects that
 		// other apps act on, so both sit behind the ADR-023 action matrix
 		// (`mail.import`, `mail.poll`), admin-only until an operator broadens it.
+		['name' => 'mailIntake#importOptions', 'url' => '/api/mail-intake/import/options', 'verb' => 'GET'],
 		['name' => 'mailIntake#import', 'url' => '/api/mail-intake/import', 'verb' => 'POST'],
 		['name' => 'mailIntake#poll', 'url' => '/api/mail-intake/sources/{id}/poll', 'verb' => 'POST'],
 
@@ -677,6 +678,13 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// generic /api/objects/integriq/app_connection (ADR-022).
 		['name' => 'connections#link', 'url' => '/api/connections/{id}/link', 'verb' => 'POST'],
 
+		// Data residency (connections-declare-data-residency): every outbound
+		// destination with where it sits, EU-only mode, and an administrator's
+		// residency on a source. Admin only, checked in each method.
+		['name' => 'egressDestination#index', 'url' => '/api/egress/destinations', 'verb' => 'GET'],
+		['name' => 'egressDestination#setEuOnly', 'url' => '/api/egress/eu-only', 'verb' => 'PUT'],
+		['name' => 'egressDestination#setSourceResidency', 'url' => '/api/sources/{id}/residency', 'verb' => 'PUT'],
+
 		// Configuration import/export UI endpoints (connector-catalog-ui) — a
 		// thin, routed wrapper over the existing, already-tested
 		// ConfigurationService::exportConfiguration()/importConfiguration().
@@ -709,11 +717,14 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
 		// Settings endpoints
-		// Settings routes shrunk in chain-C OR-cutover:
 		// - GET /api/settings/stats — replaced by manifest dashboard widgets resolving against OR's aggregate endpoint
-		// - GET /api/settings + PUT /api/settings — replaced by OR's /api/settings/* surface
-		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
-		// rebase is admin-only (AuthorizedAdminSetting).
+		// - GET /api/settings + PUT /api/settings — integriq's log retention (platform-admin-defaults).
+		//   OpenRegister's /api/settings/retention reads and writes OpenRegister's own retention,
+		//   not the `integriq` / `retention` key, so it cannot stand in for these.
+		// - POST /api/settings/rebase — queues RetentionRebaseJob over the log objects.
+		// All three are admin-only (AuthorizedAdminSetting).
+		['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+		['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])

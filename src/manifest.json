@@ -284,6 +284,14 @@
           "icon": "BellRingOutline",
           "route": "NotificatiesAbonnementen",
           "order": 30
+        },
+        {
+          "id": "EgressDestinations",
+          "label": "Outbound destinations",
+          "icon": "EarthArrowRight",
+          "route": "EgressDestinations",
+          "order": 40,
+          "permission": "admin"
         }
       ]
     },
@@ -981,6 +989,12 @@
             "label": "Test connection",
             "icon": "CheckCircleOutline",
             "handler": "testSourceHandler"
+          },
+          {
+            "id": "set-residency",
+            "label": "Set residency",
+            "icon": "MapMarkerRadiusOutline",
+            "handler": "setSourceResidencyHandler"
           },
           {
             "id": "preview-directory-run",
@@ -4586,6 +4600,18 @@
       "component": "DeadLettersPage",
       "title": "Dead letters",
       "_note": "Merges the former EventDeliveries (event_message, /api/events/dead-letter) and SyncDeadLetters (sync_item_dead_letter, /api/sync-dead-letter) pages into ONE navigation entry under Operations. They were the same operations view with identical Replay/Discard verbs over two tables — SyncDeadLetters' own note said 'Mirrors EventDeliveries' — and both rendered EmailAlertOutline, so the menu showed one glyph twice. This is a navigation merge, NOT a rewrite: the queues stay separate underneath (different schemas, different admin-only endpoints, different replay semantics) and DeadLettersPage delegates to the two existing components. ?queue=sync deep-links the sync queue, which is where the old /synchronizations/dead-letters route redirects.",
+      "config": {
+        "register": "integriq",
+        "documentationUrl": "https://integriq.conduction.nl"
+      }
+    },
+    {
+      "id": "EgressDestinations",
+      "route": "/egress-destinations",
+      "type": "custom",
+      "component": "EgressDestinationsPage",
+      "title": "Outbound destinations",
+      "_note": "Custom page (connections-declare-data-residency REQ-RES-002/003): lists GET /api/egress/destinations (every enabled source plus call log hosts of the last 30 days that no source covers) with its verdict, the count per zone and the EU-only switch (PUT /api/egress/eu-only). Admin only, as the endpoints are. Not an index page: the rows are not OpenRegister objects but a computed list, and the switch is refused while a destination is not shown to be in the EU.",
       "config": {
         "register": "integriq",
         "documentationUrl": "https://integriq.conduction.nl"
