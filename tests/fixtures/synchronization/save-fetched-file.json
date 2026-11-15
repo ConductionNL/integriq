@@ -592,7 +592,7 @@
                 "f.txt",
                 "i",
                 false,
-                null
+                []
             ]
         ]
     },
@@ -944,8 +944,6 @@
                 [
                     "x"
                 ],
-                "s1",
-                "r1",
                 7
             ]
         ]
@@ -975,8 +973,6 @@
                 "a b",
                 false,
                 [],
-                null,
-                null,
                 null
             ]
         ]
@@ -1008,8 +1004,6 @@
                 [
                     "default-tag"
                 ],
-                null,
-                null,
                 "r-9"
             ],
             [
@@ -1054,8 +1048,6 @@
                 [
                     "default-tag"
                 ],
-                null,
-                null,
                 null
             ],
             [
@@ -1099,8 +1091,6 @@
                 [
                     "default-tag"
                 ],
-                null,
-                null,
                 null
             ]
         ]
@@ -1142,8 +1132,6 @@
                 [
                     "default-tag"
                 ],
-                null,
-                null,
                 null
             ],
             [
@@ -1189,8 +1177,6 @@
                 [
                     "default-tag"
                 ],
-                null,
-                null,
                 null
             ]
         ]
@@ -1258,8 +1244,6 @@
                 [
                     "default-tag"
                 ],
-                null,
-                null,
                 null
             ]
         ]

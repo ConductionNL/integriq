@@ -241,6 +241,7 @@ class EndpointMessageGate {
 				schema: 'call_log',
 				uuid: (string)$callLog->getUuid(),
 				_rbac: false,
+				// Unscoped: system write of validation findings on an inbound call log.
 				_multitenancy: false,
 				silent: true,
 				_validation: false
@@ -271,6 +272,7 @@ class EndpointMessageGate {
 				register: 'integriq',
 				schema: 'call_log',
 				_rbac: false,
+				// Unscoped: re-reads the inbound call log this gate is recording on.
 				_multitenancy: false
 			);
 		} catch (Throwable $failure) {
@@ -300,6 +302,7 @@ class EndpointMessageGate {
 				register: 'integriq',
 				schema: 'message_schema',
 				_rbac: false,
+				// Unscoped: resolves the message schema of an endpoint already reached for an inbound caller.
 				_multitenancy: false
 			);
 		} catch (Throwable $failure) {

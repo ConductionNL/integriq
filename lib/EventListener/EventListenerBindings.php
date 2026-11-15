@@ -15,6 +15,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -33,18 +36,23 @@ use OCA\Integriq\Event\DigitalPostSendRequestedEvent;
 use OCA\Integriq\Event\DocumentFetchRequestedEvent;
 use OCA\Integriq\Event\DocumentRenderRequestedEvent;
 use OCA\Integriq\Event\DocumentSearchRequestedEvent;
+use OCA\Integriq\Event\ExchangeRateRequestedEvent;
 use OCA\Integriq\Event\ExchangeJobRequestedEvent;
 use OCA\Integriq\Event\ExchangeMappingRequestedEvent;
 use OCA\Integriq\Event\GatewayDeliveryRequestedEvent;
+use OCA\Integriq\Event\LearningMaterialRequestedEvent;
 use OCA\Integriq\Event\LtiLaunchRequestedEvent;
 use OCA\Integriq\Event\MappingExecutionRequestedEvent;
 use OCA\Integriq\Event\OptOutChangeRequestedEvent;
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
+use OCA\Integriq\Event\PaymentRequestedEvent;
 use OCA\Integriq\Event\RosterImportRequestedEvent;
+use OCA\Integriq\Event\ServiceFetchRequestedEvent;
 use OCA\Integriq\Event\SourceRequestedEvent;
 use OCA\Integriq\Event\StufProviderRequestReceivedEvent;
 use OCA\Integriq\Event\StufZdsCaseRequestedEvent;
 use OCA\Integriq\Event\StufZdsConfirmationReceivedEvent;
+use OCA\Integriq\Event\SubmissionRegistrationRequestedEvent;
 use OCA\Integriq\Service\PeppolOutboundConsumer;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -182,6 +190,13 @@ final class EventListenerBindings {
 			GatewayDeliveryRequestedEvent::class,
 			GatewayDeliveryRequestedListener::class
 		);
+		// A sibling creates a payment without a session (messaging-payment-
+		// command-settlements-and-point-of-sale REQ-LPP-007): shillinq's
+		// payment links from a portal forward, a job or an intake.
+		$context->registerEventListener(
+			PaymentRequestedEvent::class,
+			PaymentRequestedListener::class
+		);
 	}//end registerConnectionAndDocumentListeners()
 
 	/**
@@ -242,6 +257,13 @@ final class EventListenerBindings {
 			LtiLaunchRequestedEvent::class,
 			LtiLaunchRequestedListener::class
 		);
+		// Open learning material (edurep-source): learniq searches Edurep,
+		// finds one record or reads the connection status, and reads the
+		// answer or the named refusal off the same instance.
+		$context->registerEventListener(
+			LearningMaterialRequestedEvent::class,
+			LearningMaterialRequestedListener::class
+		);
 	}//end registerRosterAndLaunchListeners()
 
 	/**
@@ -269,6 +291,9 @@ final class EventListenerBindings {
 		// OpenRegister's stoppable ObjectDeletingEvent, so the refusal of a
 		// source-owned record holds whichever page or app deletes it.
 		$dispatcher->addServiceListener(eventName: ObjectDeletingEvent::class, className: SourceOwnedDeleteGuardListener::class);
+		// A move out of a register or schema is asked like a delete. The event is
+		// named as a string, so an OpenRegister without moves never dispatches it.
+		$dispatcher->addServiceListener(eventName: 'OCA\\OpenRegister\\Event\\ObjectLeavingEvent', className: SourceOwnedDeleteGuardListener::class);
 	}//end registerObjectWriteListeners()
 
 	/**
@@ -284,6 +309,8 @@ final class EventListenerBindings {
 		// imowId; refused on OpenRegister's own save path.
 		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: DsoActivityMappingGuardListener::class);
 		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: DsoActivityMappingGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectCreatingEvent::class, className: ProductChannelSlugGuardListener::class);
+		$dispatcher->addServiceListener(eventName: ObjectUpdatingEvent::class, className: ProductChannelSlugGuardListener::class);
 		// REQ-SOW-001 (signed-outbound-webhooks): the Webhooks page saves a
 		// subscription through OpenRegister's object API, so the signing
 		// default and the unsigned-needs-a-reason refusal run on its stoppable
@@ -352,9 +379,16 @@ final class EventListenerBindings {
 		// webhook steps) asks for the Source for that base URL here, so the call
 		// can run through `openconnector.source-call` like every other one.
 		$dispatcher->addServiceListener(eventName: SourceRequestedEvent::class, className: SourceRequestedListener::class);
+		// Forms-service-fetch-for-apps (REQ-SF-002): a sibling app runs a service
+		// fetch an administrator defined, and gets its declared outputs or a refusal.
+		$dispatcher->addServiceListener(eventName: ServiceFetchRequestedEvent::class, className: ServiceFetchRequestedListener::class);
 		// Connectors-graph-document-search D3: a sibling app (dossiq's Gather documents) searches and fetches Microsoft 365.
 		$dispatcher->addServiceListener(eventName: DocumentSearchRequestedEvent::class, className: DocumentSearchRequestedListener::class);
 		$dispatcher->addServiceListener(eventName: DocumentFetchRequestedEvent::class, className: DocumentFetchRequestedListener::class);
+		// Sources-ecb-exchange-rates D2: a sibling app (shillinq) asks for the rate of a currency pair on a date.
+		$dispatcher->addServiceListener(eventName: ExchangeRateRequestedEvent::class, className: ExchangeRateRequestedListener::class);
+		// Form-submission-registration-targets D2: portaliq registers a form submission at an outside system.
+		$dispatcher->addServiceListener(eventName: SubmissionRegistrationRequestedEvent::class, className: SubmissionRegistrationListener::class);
 	}//end registerSiblingRequestListeners()
 
 	/**

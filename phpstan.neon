@@ -87,6 +87,13 @@ parameters:
         # unreachable: at runtime all of them `use` it — FetchFileNode included,
         # which is why that entry sits directly above this one.
         - lib/Flow/SynchronizationLogActions.php
+        # FlowNodePaletteDefaults is the palette-metadata trait those same
+        # flow nodes share (getId / getScope / getIcon). Every user is one of
+        # the excluded node classes above, so PHPStan again sees a trait
+        # "used zero times" that neither a baseline nor ignoreErrors can
+        # absorb — the same reason, the same remedy, as
+        # SynchronizationLogActions directly above.
+        - lib/Flow/FlowNodePaletteDefaults.php
         # IntegriqMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
         # and AbstractCategoryAdapterProvider extends
         # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
@@ -102,7 +109,7 @@ parameters:
         # same limitation, same remedy, as SynchronizationContractProvider above.
         - lib/BackgroundJob/DeferredViewCascadeJob.php
         # ConnectionAlertRecipientResolver implements
-        # OCA\OpenRegister\Service\Notification\RecipientResolverInterface, the
+        # OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface, the
         # contract OpenRegister's notification engine resolves `expression`
         # recipients through, which exists only at runtime. "implements unknown
         # interface" is a general error no baseline absorbs; same remedy as

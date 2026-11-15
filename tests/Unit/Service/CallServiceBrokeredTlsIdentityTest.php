@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service;
 
 use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\Call\CallPreparation;
+use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\CallService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
@@ -61,15 +63,19 @@ class CallServiceBrokeredTlsIdentityTest extends TestCase {
 		$property->setAccessible(true);
 		$property->setValue($service, $broker);
 
-		$method = new ReflectionMethod(CallService::class, 'resolveCallCredentials');
+		$method = new ReflectionMethod(CallService::class, 'resolveCredentials');
 		$method->setAccessible(true);
 
 		$source = new ObjectEntity();
 		$source->setObject(['configuration' => ['cert' => $placeholder]]);
 
-		$result = $method->invoke($service, $source, $config, $source->getObject(), false, null);
+		$run = new CallPreparation(source: $source, request: new CallRequest());
+		$run->config = $config;
+		$run->sourceData = $source->getObject();
 
-		$this->assertNull($result['shortCircuit']);
-		$this->assertSame('PEM-CERT', $result['config']['cert']);
+		$shortCircuited = $method->invoke($service, $run);
+
+		$this->assertFalse($shortCircuited);
+		$this->assertSame('PEM-CERT', $run->config['cert']);
 	}//end testTheCallConfigurationCarriesTheResolvedCertificate()
 }//end class

@@ -298,52 +298,12 @@ class SenderIdentityController extends Controller {
 			return $refusal;
 		}
 
-		$source = 'unsubscribe-link';
-		if ($claim['format'] === 'v1') {
-			$source = 'unsubscribe-link-v1';
-		}
-
-		if ((string)$this->request->getParam('List-Unsubscribe', '') === 'One-Click') {
-			$source = 'one-click';
-		}
-
+		$source = $this->unsubscribeSource(claim: $claim);
 		if ($choice === 'all') {
-			$this->optOuts->record(
-				[
-					'address' => $claim['address'],
-					'state' => 'opted-out',
-					'scope' => OptOutRegistryInterface::SCOPE_INSTANCE,
-					'purpose' => OptOutCategoriesInterface::PURPOSE_ALL,
-					'source' => $source,
-					'sourceApp' => 'integriq',
-				]
-			);
-
-			return $this->unsubscribePage(
-				state: 'stopped',
-				message: $this->l->t('Done. You will no longer receive messages from us, except statutory notices such as a besluit.'),
-				status: Http::STATUS_OK
-			);
+			return $this->stopEverything(claim: $claim, source: $source);
 		}
 
-		if ($claim['format'] !== UnsubscribeTokenServiceInterface::PREFIX_V3) {
-			$this->optOuts->add($claim['address'], OptOutRegistryInterface::SCOPE_CASE, $claim['caseRef'], $source);
-		}
-
-		if ($claim['format'] === UnsubscribeTokenServiceInterface::PREFIX_V3) {
-			$this->optOuts->record(
-				[
-					'address' => $claim['address'],
-					'state' => 'opted-out',
-					'scope' => $claim['scope'],
-					'channel' => $claim['channel'],
-					'ref' => $claim['ref'],
-					'purpose' => $claim['purpose'],
-					'source' => $source,
-					'sourceApp' => 'integriq',
-				]
-			);
-		}
+		$this->stopWhatTheLinkNames(claim: $claim, source: $source);
 
 		return $this->unsubscribePage(
 			state: 'stopped',
@@ -352,6 +312,90 @@ class SenderIdentityController extends Controller {
 		);
 
 	}//end unsubscribeConfirm()
+
+	/**
+	 * Where an unsubscribe came from: a one-click POST, an old-format link, or a link.
+	 *
+	 * @param array<string,mixed> $claim The verified token claim.
+	 *
+	 * @return string The opt-out's source.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function unsubscribeSource(array $claim): string {
+		if ((string)$this->request->getParam('List-Unsubscribe', '') === 'One-Click') {
+			return 'one-click';
+		}
+
+		if ($claim['format'] === 'v1') {
+			return 'unsubscribe-link-v1';
+		}
+
+		return 'unsubscribe-link';
+
+	}//end unsubscribeSource()
+
+	/**
+	 * Stop everything that is not statutory for the link's address.
+	 *
+	 * @param array<string,mixed> $claim  The verified token claim.
+	 * @param string              $source Where the unsubscribe came from.
+	 *
+	 * @return TemplateResponse The confirmation page.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function stopEverything(array $claim, string $source): TemplateResponse {
+		$this->optOuts->record(
+			[
+				'address' => $claim['address'],
+				'state' => 'opted-out',
+				'scope' => OptOutRegistryInterface::SCOPE_INSTANCE,
+				'purpose' => OptOutCategoriesInterface::PURPOSE_ALL,
+				'source' => $source,
+				'sourceApp' => 'integriq',
+			]
+		);
+
+		return $this->unsubscribePage(
+			state: 'stopped',
+			message: $this->l->t('Done. You will no longer receive messages from us, except statutory notices such as a besluit.'),
+			status: Http::STATUS_OK
+		);
+
+	}//end stopEverything()
+
+	/**
+	 * Stop what the link names: its case for an older link, its scope, channel,
+	 * reference and purpose for a v3 link.
+	 *
+	 * @param array<string,mixed> $claim  The verified token claim.
+	 * @param string              $source Where the unsubscribe came from.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/outbound-opt-out-authority/spec.md#requirement-the-unsubscribe-link-fits-the-channel-and-changes-nothing-on-get-req-ooa-006
+	 */
+	private function stopWhatTheLinkNames(array $claim, string $source): void {
+		if ($claim['format'] !== UnsubscribeTokenServiceInterface::PREFIX_V3) {
+			$this->optOuts->add($claim['address'], OptOutRegistryInterface::SCOPE_CASE, $claim['caseRef'], $source);
+			return;
+		}
+
+		$this->optOuts->record(
+			[
+				'address' => $claim['address'],
+				'state' => 'opted-out',
+				'scope' => $claim['scope'],
+				'channel' => $claim['channel'],
+				'ref' => $claim['ref'],
+				'purpose' => $claim['purpose'],
+				'source' => $source,
+				'sourceApp' => 'integriq',
+			]
+		);
+
+	}//end stopWhatTheLinkNames()
 
 	/**
 	 * The decision log: suppressions, overrides, changes and allowed counts.

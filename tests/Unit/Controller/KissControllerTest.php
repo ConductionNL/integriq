@@ -263,4 +263,38 @@ class KissControllerTest extends TestCase {
 		$this->assertSame('unknown_call', $response->getData()['error']);
 
 	}//end testCreateKlantcontactForAnUnknownCallIs404()
+
+	/**
+	 * A user the action matrix refuses gets the refusal, and nothing is read or pushed.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactIsRefusedWithoutTheAction(): void {
+		$this->actionAuth->expects($this->once())
+			->method('requireAction')
+			->with($this->anything(), 'kiss.push')
+			->willThrowException(new \OCP\AppFramework\OCS\OCSForbiddenException("Action 'kiss.push' requires admin rights"));
+		$this->request->expects($this->never())->method('getParams');
+		$this->syncService->expects($this->never())->method('pushCustomerContact');
+
+		$this->expectException(\OCP\AppFramework\OCS\OCSForbiddenException::class);
+		$this->controller->createCustomerContact();
+
+	}//end testCreateKlantcontactIsRefusedWithoutTheAction()
+
+	/**
+	 * A provider failure without a configured source is a 503; the warning is logged with the message.
+	 *
+	 * @return void
+	 */
+	public function testCreateKlantcontactFailureEnvelopesAreExact(): void {
+		$this->request->method('getParams')->willReturn(['onderwerp' => 'Vraag', 'channel' => 'mail']);
+		$this->syncService->method('pushCustomerContact')->willThrowException(new \OCA\Integriq\Exception\KissProviderException('No active KISS source configured'));
+
+		$response = $this->controller->createCustomerContact();
+
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+		$this->assertSame(['error' => 'not_configured', 'message' => 'No active KISS source configured'], $response->getData());
+
+	}//end testCreateKlantcontactFailureEnvelopesAreExact()
 }//end class

@@ -65,6 +65,13 @@ class InMemoryObjects extends ObjectService {
 
 	private int $next = 0;
 
+	/**
+	 * Ids owned by another organisation: found only with the organisation filter off.
+	 *
+	 * @var array<string,true>
+	 */
+	public array $foreign = [];
+
 	public function __construct() {
 	}
 
@@ -75,6 +82,10 @@ class InMemoryObjects extends ObjectService {
 	public function find($id, ?string $register=null, ?string $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_render=true, bool $_audit=true, ?array $_extend=[]): ?ObjectEntity {
 		if (isset($this->objects[$schema][$id]) === false) {
 			throw new DoesNotExistException('missing');
+		}
+
+		if ($_multitenancy === true && isset($this->foreign[$id]) === true) {
+			throw new DoesNotExistException('Object not found in the active organisation');
 		}
 
 		return $this->entity(uuid: (string)$id, data: $this->objects[$schema][$id]);
@@ -337,6 +348,26 @@ class IntegriqAgentToolsTest extends TestCase {
 		$answer = $this->tools()->testSource(sourceId: self::SOURCE, agentId: self::AGENT);
 		$this->assertSame(['source', 'outcome', 'statusCode', 'statusMessage', 'error'], array_keys($answer));
 		$this->assertStringNotContainsString('secret upstream', json_encode($answer));
+	}
+
+	// ---- REQ-TEN-001: an agent acts for the session user, inside their organisation.
+
+	public function testAnotherOrganisationsSourceIsNotFoundAndNotCalled(): void {
+		$this->objects->foreign[self::SOURCE] = true;
+		$this->sourceTest->expects($this->never())->method('run');
+
+		// The same refusal an unknown id gets: the store's not-found, nothing called.
+		$this->expectException(DoesNotExistException::class);
+		$this->tools()->testSource(sourceId: self::SOURCE, agentId: self::AGENT);
+	}
+
+	public function testAnotherOrganisationsSynchronizationIsNotFoundAndNotRun(): void {
+		$this->objects->foreign[self::SYNC] = true;
+		$this->synchronization->expects($this->never())->method('synchronize');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Not found: ' . self::SYNC);
+		$this->tools()->testSynchronization(synchronizationId: self::SYNC, agentId: self::AGENT);
 	}
 
 	// ---- REQ-MCP-107: two phases, a verdict bound to the batch.

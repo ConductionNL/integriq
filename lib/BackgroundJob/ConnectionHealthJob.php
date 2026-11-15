@@ -34,6 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
+use DateTimeImmutable;
+use OCA\Integriq\Service\CertificateExpiryAlertService;
 use OCA\Integriq\Service\ConnectionProbeServiceInterface;
 use OCA\Integriq\Service\ConnectionRegistryServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -96,6 +98,11 @@ class ConnectionHealthJob extends TimedJob {
 		$this->phase(
 			name: 'status refresh',
 			operation: fn () => $this->container->get(ConnectionRegistryServiceInterface::class)->refresh()
+		);
+		// Certificate expiry alerts at 30, 14 and 7 days (REQ-CRUN-008).
+		$this->phase(
+			name: 'certificate expiry alerts',
+			operation: fn () => $this->container->get(CertificateExpiryAlertService::class)->evaluate(now: new DateTimeImmutable())
 		);
 	}//end run()
 

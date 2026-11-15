@@ -1,3 +1,3 @@
 # Screens
 
-- No screen: An API (Objecten and Objecttypen) that outside suppliers call; integriq has no page for it.
+- No screen: a backend service that turns caller arrays into MongoDB Data API requests and resolves OpenRegister mappers; no page reads or edits it.

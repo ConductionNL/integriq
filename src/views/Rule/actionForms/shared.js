@@ -17,6 +17,54 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 /**
+ * The rows of an OpenRegister list response, `{ results: [] }` or a bare
+ * array; anything else gives no rows.
+ *
+ * @param {unknown} data The response body.
+ * @return {Array<object>} The rows.
+ */
+function rowsOf(data) {
+	if (Array.isArray(data?.results)) {
+		return data.results
+	}
+	return Array.isArray(data) ? data : []
+}
+
+/**
+ * The NcSelect option for one OpenRegister object.
+ *
+ * @param {object} row The object.
+ * @return {{ id: string, label: string, raw: object }} The option.
+ */
+function optionOf(row) {
+	return {
+		id: String(row.id || row.uuid),
+		label: row.name || row.title || row.id || '(unnamed)',
+		raw: row,
+	}
+}
+
+/**
+ * Request one page of an OpenRegister collection.
+ *
+ * @param {string} path The `register/schema` path.
+ * @param {number} limit Max rows to load.
+ * @return {Promise<object>} The axios response.
+ */
+function requestCollection(path, limit) {
+	return axios.get(
+		generateUrl(`/apps/openregister/api/objects/${path}`),
+		// `_limit`, not `limit`. OpenRegister's object API treats every
+		// UNPREFIXED query parameter as a PROPERTY FILTER, so `limit=500`
+		// asked for objects whose `limit` property equals 500 and got
+		// `total: 0` back under HTTP 200: an empty picker that looks
+		// exactly like an empty register. Control params take the
+		// underscore. See FlowDetailPage.fetchPickerOptions().
+		{ params: { _limit: limit } },
+	)
+}
+
+/**
  * Fetch a paginated list of OpenRegister objects for picker
  * components. Tolerates both `{ results: [] }` and bare arrays.
  *
@@ -32,27 +80,8 @@ export async function fetchOpenRegisterCollection(
 	limit = 500,
 ) {
 	try {
-		const response = await axios.get(
-			generateUrl(`/apps/openregister/api/objects/${register}/${schema}`),
-			// `_limit`, not `limit`. OpenRegister's object API treats every
-			// UNPREFIXED query parameter as a PROPERTY FILTER, so `limit=500`
-			// asked for objects whose `limit` property equals 500 and got
-			// `total: 0` back under HTTP 200 — an empty picker that looks
-			// exactly like an empty register. Control params take the
-			// underscore. See FlowDetailPage.fetchPickerOptions().
-			{ params: { _limit: limit } },
-		)
-		const data = response.data
-		const list = Array.isArray(data?.results)
-			? data.results
-			: Array.isArray(data)
-				? data
-				: []
-		return list.map((row) => ({
-			id: String(row.id || row.uuid),
-			label: row.name || row.title || row.id || '(unnamed)',
-			raw: row,
-		}))
+		const response = await requestCollection(`${register}/${schema}`, limit)
+		return rowsOf(response.data).map(optionOf)
 	} catch (err) {
 		// eslint-disable-next-line no-console
 		console.warn(`[actionForms] fetch ${register}/${schema} failed`, err)
