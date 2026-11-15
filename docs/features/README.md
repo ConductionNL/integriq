@@ -20,6 +20,7 @@ Integriq is an API gateway and integration hub for Nextcloud. It brings enterpri
 | [Events & Webhooks](events.md) | CloudEvents emission, subscription, and consumer processing | Implemented |
 | [Peppol e-invoicing](peppol.md) | Send and receive UBL documents over Peppol for sibling apps, through a configured Access Point | Implemented |
 | [Nextcloud event triggers](nextcloud-event-triggers.md) | Files, Calendar, Tables and Forms events start a webhook, synchronization, job or flow, with retries and per-family self-service | Implemented |
+| [Data residency](data-residency.md) | Where each source sits, every outbound destination with its location, and an EU-only mode | Implemented |
 | [Logging & Monitoring](logging.md) | Call logs, sync logs, and Prometheus metrics | Implemented |
 | [Payments for other apps](payments.md) | Another app asks for a payment, online or on a terminal, and hears its status and the payout that settled it | Implemented |
 | [Outbound call log: the investigation window](outbound-call-log.md) | Store a source's call bodies for a bounded time, with a reason, and see why a call has none | Implemented |
