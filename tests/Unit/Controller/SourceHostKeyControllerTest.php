@@ -25,8 +25,10 @@ use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\HostKeyPin;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileClient;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Settings\IntegriqAdmin;
+use OCA\Integriq\Tests\Helpers\MainApiObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -53,9 +55,9 @@ final class SourceHostKeyControllerTest extends TestCase {
 	private const PRESENTED = 'SHA256:presentedKey';
 
 	/**
-	 * @var OrObjectService&MockObject
+	 * @var MainApiObjectService&MockObject
 	 */
-	private OrObjectService $objects;
+	private MainApiObjectService $objects;
 
 	/**
 	 * @var RemoteFileClient&MockObject
@@ -80,7 +82,7 @@ final class SourceHostKeyControllerTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objects = $this->createMock(OrObjectService::class);
+		$this->objects = $this->createMock(MainApiObjectService::class);
 		$this->client  = $this->createMock(RemoteFileClient::class);
 		$this->request = $this->createMock(IRequest::class);
 	}//end setUp()
@@ -99,12 +101,21 @@ final class SourceHostKeyControllerTest extends TestCase {
 			$entity = new ObjectEntity();
 			$entity->setUuid('source-1');
 			$entity->setObject($object);
-			$this->objects->method('find')->with('source-1', 'integriq', 'source', false)->willReturn($entity);
+			$this->objects->method('find')->willReturnCallback(
+				function (string $id, ...$rest) use ($entity): ?ObjectEntity {
+					$options = end($rest);
+					$this->assertSame('source-1', $id);
+					$this->assertInstanceOf(ObjectFindOptions::class, $options);
+					$this->assertSame(['integriq', 'source'], [$options->register, $options->schema], 'the source schema of the integriq register');
+					$this->assertFalse($rest[2], 'read without RBAC: the endpoint is admin-only');
+					return $entity;
+				}
+			);
 		}
 
 		$this->objects->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest): ObjectEntity {
-				$this->saved[] = ['object' => $object] + $rest;
+				$this->saved[] = ['object' => $object, 'options' => end($rest)];
 				return new ObjectEntity();
 			}
 		);
@@ -188,7 +199,9 @@ final class SourceHostKeyControllerTest extends TestCase {
 			['rootPath' => '/outgoing', 'username' => 'partner', 'hostKeyFingerprint' => self::PRESENTED],
 			$this->saved[0]['object']['configuration']
 		);
-		$this->assertSame(['integriq', 'source', 'source-1'], array_slice(array_values(array_diff_key($this->saved[0], ['object' => true])), 0, 3), 'register, schema and the same uuid');
+		$options = $this->saved[0]['options'];
+		$this->assertInstanceOf(ObjectSaveOptions::class, $options);
+		$this->assertSame(['integriq', 'source', 'source-1'], [$options->target->register, $options->target->schema, $options->uuid], 'register, schema and the same uuid');
 	}//end testPinSavesTheConfirmedPresentedKey()
 
 	/**

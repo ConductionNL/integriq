@@ -237,6 +237,11 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
+		// openregister main's object option values (ObjectFindOptions and friends).
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectFindOptions') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectOptions.php';
+		}
+
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
 			require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
 		}

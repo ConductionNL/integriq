@@ -30,6 +30,9 @@ use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileClient;
 use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileException;
 use OCA\Integriq\Settings\IntegriqAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -160,7 +163,11 @@ class SourceHostKeyController extends Controller {
 	 */
 	private function sftpSource(string $id): ObjectEntity|JSONResponse {
 		try {
-			$source = $this->orObjectService->find(id: $id, register: self::REGISTER, schema: 'source', _rbac: false);
+			$source = $this->orObjectService->find(
+				id: $id,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: 'source'),
+				_rbac: false
+			);
 		} catch (DoesNotExistException $e) {
 			return $this->error(message: $this->l->t('Not Found'), status: Http::STATUS_NOT_FOUND);
 		}
@@ -218,7 +225,13 @@ class SourceHostKeyController extends Controller {
 		$data['configuration'] = $configuration;
 
 		try {
-			$this->orObjectService->saveObject(object: $data, register: self::REGISTER, schema: 'source', uuid: (string)$source->getUuid());
+			$this->orObjectService->saveObject(
+				object: $data,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER, schema: 'source'),
+					uuid: (string)$source->getUuid()
+				)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error('[SourceHostKeyController] the host key was not pinned', ['exception' => $e->getMessage()]);
 			return $this->error(message: $this->l->t('The host key was not saved: %s', [$e->getMessage()]), status: Http::STATUS_INTERNAL_SERVER_ERROR);
