@@ -22,14 +22,14 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Service\StufZkn\StufZdsOutbound;
+use OCA\Integriq\Service\StufZkn\StufZdsOutboundInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -40,7 +40,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+ * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
  */
 class StufZdsRetryJob extends QueuedJob {
 
@@ -48,12 +48,12 @@ class StufZdsRetryJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory      $time   The time factory.
-	 * @param StufZdsOutbound $outbound The ZDS case client.
+	 * @param StufZdsOutboundInterface $outbound The ZDS case client.
 	 * @param LoggerInterface   $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly StufZdsOutbound $outbound,
+		private readonly StufZdsOutboundInterface $outbound,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -66,7 +66,7 @@ class StufZdsRetryJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/stuf-zds-case-client/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-circuit-breaker-and-retry
 	 */
 	protected function run(mixed $argument): void {
 		$messageId = '';

@@ -23,6 +23,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -31,10 +34,10 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Exception\EudiIssuanceException;
-use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridge;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use OCA\Integriq\Service\EudiCredentialOfferServiceInterface;
-use OCA\Integriq\Service\EudiIssuerKeyService;
-use OCA\Integriq\Service\EudiStatusListService;
+use OCA\Integriq\Service\EudiIssuerKeyServiceInterface;
+use OCA\Integriq\Service\EudiStatusListServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -84,9 +87,9 @@ class EudiWalletController extends Controller {
 	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
 	 * @param EudiCredentialOfferServiceInterface $offerService Offer/token/credential/revocation lifecycle.
-	 * @param EudiIssuerKeyService $keyService Issuer signing-key service (metadata JWKS).
-	 * @param EudiStatusListService $statusListService Status-list token publish.
-	 * @param OpenRegisterCredentialBridge $authorizationService Reused consumer JWT bearer verification (REQ-001).
+	 * @param EudiIssuerKeyServiceInterface $keyService Issuer signing-key service (metadata JWKS).
+	 * @param EudiStatusListServiceInterface $statusListService Status-list token publish.
+	 * @param OpenRegisterCredentialBridgeInterface $authorizationService Reused consumer JWT bearer verification (REQ-001).
 	 * @param IThrottler $throttler Brute-force throttler for rejected credential presentations.
 	 * @param LoggerInterface $logger Logger for protocol-level rejections.
 	 */
@@ -94,9 +97,9 @@ class EudiWalletController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly EudiCredentialOfferServiceInterface $offerService,
-		private readonly EudiIssuerKeyService $keyService,
-		private readonly EudiStatusListService $statusListService,
-		private readonly OpenRegisterCredentialBridge $authorizationService,
+		private readonly EudiIssuerKeyServiceInterface $keyService,
+		private readonly EudiStatusListServiceInterface $statusListService,
+		private readonly OpenRegisterCredentialBridgeInterface $authorizationService,
 		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -123,18 +126,7 @@ class EudiWalletController extends Controller {
 		// the #[BruteForceProtection] attribute on the endpoints, without which
 		// BruteForceMiddleware never calls sleepDelayOrThrowOnMax() and this
 		// counter is written but never read. Both are required. See ADR-082.
-		try {
-			$this->throttler->registerAttempt(
-				action: self::THROTTLE_ACTION,
-				ip: $this->request->getRemoteAddress()
-			);
-		} catch (\Throwable $throttlerFailure) {
-			// Throttler bookkeeping must never change the protocol response --
-			// a wallet gets its RFC-shaped error, not a 500.
-			$this->logger->warning(
-				'EudiWalletController: registerAttempt failed: ' . $throttlerFailure->getMessage()
-			);
-		}
+		$this->registerFailedAttempt();
 
 		$this->logger->info(
 			'EudiWalletController: request rejected',
@@ -156,6 +148,31 @@ class EudiWalletController extends Controller {
 	}//end renderRejection()
 
 	/**
+	 * Count one failed attempt against this controller's brute-force action.
+	 *
+	 * Used by renderRejection() and by every failure path that answers without
+	 * an exception (the unknown-offer 404), so the #[BruteForceProtection]
+	 * attribute on those endpoints has attempts to enforce.
+	 *
+	 * @return void
+	 */
+	private function registerFailedAttempt(): void {
+		try {
+			$this->throttler->registerAttempt(
+				action: self::THROTTLE_ACTION,
+				ip: $this->request->getRemoteAddress()
+			);
+		} catch (\Throwable $throttlerFailure) {
+			// Throttler bookkeeping must never change the protocol response --
+			// a wallet gets its RFC-shaped error, not a 500.
+			$this->logger->warning(
+				'EudiWalletController: registerAttempt failed: ' . $throttlerFailure->getMessage()
+			);
+		}
+
+	}//end registerFailedAttempt()
+
+	/**
 	 * Build this instance's base URL (protocol + host, no path).
 	 *
 	 * @return string
@@ -170,17 +187,7 @@ class EudiWalletController extends Controller {
 	 * @return string|null The token value, or null when absent/malformed.
 	 */
 	private function extractBearerToken(): ?string {
-		$header = $this->request->getHeader('Authorization');
-		if (str_starts_with($header, 'Bearer ') === false) {
-			return null;
-		}
-
-		$token = trim(substr($header, strlen('Bearer ')));
-		if ($token === '') {
-			return null;
-		}
-
-		return $token;
+		return BearerToken::fromRequest(request: $this->request);
 	}//end extractBearerToken()
 
 	/**
@@ -359,6 +366,10 @@ class EudiWalletController extends Controller {
 	 *                      generic 404 when not found/expired/consumed.
 	 *
 	 * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-resolution-is-public-single-fetch-short-ttl-req-eudi-005
+	 * @no-admin-idor-exempt OpenID4VCI credential_offer_uri, fetched by a wallet with no Nextcloud session. The
+	 *                       offer uuid is the bearer capability: EudiCredentialOfferService::resolveOfferForWallet()
+	 *                       answers it once (offerFetchedAt), only before expiresAt and while the pre-authorized
+	 *                       code is still cached, and never for a revoked offer; brute force is throttled.
 	 */
 	#[NoCSRFRequired]
 	#[PublicPage]
@@ -367,6 +378,8 @@ class EudiWalletController extends Controller {
 	public function resolveOffer(string $id): JSONResponse {
 		$offer = $this->offerService->resolveOfferForWallet($id);
 		if ($offer === null) {
+			// An unknown, expired or consumed offer uuid is a failed guess at the bearer capability.
+			$this->registerFailedAttempt();
 			return new JSONResponse(
 				data: ['error' => 'not_found', 'message' => 'Credential offer not found or expired'],
 				statusCode: Http::STATUS_NOT_FOUND

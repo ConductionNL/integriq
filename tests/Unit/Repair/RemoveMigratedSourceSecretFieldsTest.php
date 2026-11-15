@@ -25,6 +25,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/source-credential-custody/spec.md#requirement-phase-d-remove-migrated-fields
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -32,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\RemoveMigratedSourceSecretFields;
+use OCA\Integriq\Service\Security\InlineSecretMigrationFactory;
 use OCA\Integriq\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
@@ -368,7 +372,7 @@ class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 			}
 		);
 
-		$step = new RemoveMigratedSourceSecretFields($container, $appConfig, ($logger ?? new NullLogger()));
+		$step = new RemoveMigratedSourceSecretFields($container, $appConfig, ($logger ?? new NullLogger()), new InlineSecretMigrationFactory(($logger ?? new NullLogger()), $container));
 		return ['step' => $step, 'mapper' => $mapper];
 	}//end makeStep()
 
@@ -535,7 +539,7 @@ class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 			}
 		);
 
-		$mutant = new GateBypassingRemoveStep($container, $appConfig, new NullLogger());
+		$mutant = new GateBypassingRemoveStep($container, $appConfig, new NullLogger(), new InlineSecretMigrationFactory(new NullLogger(), $container));
 		$mutant->run($this->createMock(IOutput::class));
 
 		// The mutant removed fields DESPITE the dirty source — exactly the disaster
@@ -618,4 +622,23 @@ class RemoveMigratedSourceSecretFieldsTest extends TestCase {
 			);
 		}
 	}//end testRegisterJsonStillDeclaresAllFiveFields()
+
+	/**
+	 * A schema without a usable version starts from 1.0.0, and a short
+	 * version is padded before its patch component moves.
+	 *
+	 * @return void
+	 */
+	public function testAMissingOrShortVersionIsBumpedFromItsPaddedForm(): void {
+		$stored = ['src-1' => ['name' => 'Migrated', 'apikey' => ['credentialRef' => ['credentialId' => 'abc']]]];
+
+		foreach (['' => '1.0.1', '  ' => '1.0.1', '2' => '2.0.1', '3.4' => '3.4.1'] as $before => $after) {
+			$schema = new FakeSourceSchema(self::FIVE_FIELD_PROPS, (string)$before);
+			$built = $this->makeStep($stored, $schema, new RemoveStepAppConfig());
+			$built['step']->run($this->createMock(IOutput::class));
+
+			$this->assertSame($after, $schema->getVersion(), 'version "' . $before . '"');
+			$this->assertTrue($built['mapper']->updated);
+		}
+	}//end testAMissingOrShortVersionIsBumpedFromItsPaddedForm()
 }//end class

@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\EventListener;
 
-use OCA\Integriq\Service\Dso\DsoActivityTable;
+use OCA\Integriq\Service\Portal\ActivityMappingTableInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -57,14 +57,14 @@ class DsoActivityMappingGuardListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param DsoActivityTable $table          Lists the existing rows.
+	 * @param ActivityMappingTableInterface $table          Lists the existing rows.
 	 * @param RegisterMapper   $registerMapper Resolves the object's register slug.
 	 * @param SchemaMapper     $schemaMapper   Resolves the object's schema slug.
 	 * @param IL10N            $l10n           Translates the refusal.
 	 * @param LoggerInterface  $logger         Diagnostics.
 	 */
 	public function __construct(
-		private readonly DsoActivityTable $table,
+		private readonly ActivityMappingTableInterface $table,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IL10N $l10n,
@@ -216,7 +216,7 @@ class DsoActivityMappingGuardListener implements IEventListener {
 			return false;
 		}
 
-		return $registerSlug === DsoActivityTable::REGISTER && $schemaSlug === DsoActivityTable::SCHEMA;
+		return $registerSlug === ActivityMappingTableInterface::REGISTER && $schemaSlug === ActivityMappingTableInterface::SCHEMA;
 
 	}//end isMappingRow()
 }//end class

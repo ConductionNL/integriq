@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -67,6 +70,11 @@ class EudiWalletControllerTest extends TestCase {
 	private $authorizationService;
 
 	/**
+	 * @var \PHPUnit\Framework\MockObject\MockObject|IThrottler
+	 */
+	private $throttler;
+
+	/**
 	 * @var EudiWalletController
 	 */
 	private EudiWalletController $controller;
@@ -84,6 +92,7 @@ class EudiWalletControllerTest extends TestCase {
 		$this->keyService = $this->createMock(EudiIssuerKeyService::class);
 		$this->statusListService = $this->createMock(EudiStatusListService::class);
 		$this->authorizationService = $this->createMock(OpenRegisterCredentialBridge::class);
+		$this->throttler = $this->createMock(IThrottler::class);
 
 		$this->request->method('getServerProtocol')->willReturn('https');
 		$this->request->method('getServerHost')->willReturn('example.test');
@@ -95,7 +104,7 @@ class EudiWalletControllerTest extends TestCase {
 			$this->keyService,
 			$this->statusListService,
 			$this->authorizationService,
-			$this->createMock(IThrottler::class),
+			$this->throttler,
 			$this->createMock(LoggerInterface::class)
 		);
 
@@ -190,12 +199,17 @@ class EudiWalletControllerTest extends TestCase {
 	}//end testCreateOfferMapsServiceRejectionToDeclaredStatus()
 
 	/**
-	 * REQ-EUDI-005: an unresolvable offer id returns a generic 404.
+	 * REQ-EUDI-005: an unresolvable offer id returns a generic 404 and counts
+	 * as one brute-force attempt.
 	 *
 	 * @return void
 	 */
 	public function testResolveOfferNotFoundReturns404(): void {
 		$this->offerService->method('resolveOfferForWallet')->willReturn(null);
+		$this->request->method('getRemoteAddress')->willReturn('203.0.113.7');
+		$this->throttler->expects($this->once())
+			->method('registerAttempt')
+			->with('openconnector_eudi_wallet_credential', '203.0.113.7');
 
 		$response = $this->controller->resolveOffer('unknown-id');
 

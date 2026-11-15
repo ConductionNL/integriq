@@ -35,77 +35,7 @@ namespace OCA\Integriq\Service\Intake;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) a catalogue: one named factory per webhook, plus the lookups.
  */
-final class WebhookProfiles {
-
-	/**
-	 * The consumer type prefix of an intake channel; the channel id follows.
-	 *
-	 * @var string
-	 */
-	public const INTAKE_CHANNEL_PREFIX = 'intake-channel-';
-
-	/**
-	 * The consumer types the controllers name. A string, so a controller needs no static call.
-	 *
-	 * @var string
-	 */
-	public const PEPPOL = 'peppol-webhook';
-
-	/**
-	 * NotifyNL status callbacks.
-	 *
-	 * @var string
-	 */
-	public const NOTIFYNL = 'notifynl-webhook';
-
-	/**
-	 * ROD retours.
-	 *
-	 * @var string
-	 */
-	public const ROD = 'rod-webhook';
-
-	/**
-	 * OSO imports and retours.
-	 *
-	 * @var string
-	 */
-	public const OSO = 'oso-webhook';
-
-	/**
-	 * UWLR and Edu-V retours.
-	 *
-	 * @var string
-	 */
-	public const UWLR_EDUV = 'uwlr-eduv-webhook';
-
-	/**
-	 * Verzuimloket retours.
-	 *
-	 * @var string
-	 */
-	public const VERZUIMLOKET = 'verzuimloket-webhook';
-
-	/**
-	 * iWMO and iJW retours.
-	 *
-	 * @var string
-	 */
-	public const IWMO_IJW = 'iwmo-ijw-webhook';
-
-	/**
-	 * StUF-ZKN kennisgevingen.
-	 *
-	 * @var string
-	 */
-	public const STUF_ZKN = 'stuf-zkn-webhook';
-
-	/**
-	 * The intake channels the controller accepts, plus the verdicts channel.
-	 *
-	 * @var list<string>
-	 */
-	public const INTAKE_CHANNELS = ['form-submission', 'teams', 'public-space-report', 'messaging', 'verdicts'];
+final class WebhookProfiles implements WebhookProfilesInterface {
 
 	/**
 	 * Every fixed profile, keyed by authorization type.
@@ -153,6 +83,10 @@ final class WebhookProfiles {
 			return self::intakeChannel(channelId: substr($type, strlen(self::INTAKE_CHANNEL_PREFIX)));
 		}
 
+		if (str_starts_with($type, self::CLOUDEVENTS_SOURCE_PREFIX) === true && strlen($type) > strlen(self::CLOUDEVENTS_SOURCE_PREFIX)) {
+			return self::cloudEventsSource(sourceId: substr($type, strlen(self::CLOUDEVENTS_SOURCE_PREFIX)));
+		}
+
 		return (self::all()[$type] ?? null);
 
 	}//end byAuthorizationType()
@@ -176,6 +110,46 @@ final class WebhookProfiles {
 		return null;
 
 	}//end byChannel()
+
+	/**
+	 * Every fixed profile, keyed by authorization type, for injected callers.
+	 *
+	 * @return array<string, WebhookProfile>
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
+	 */
+	public function profiles(): array {
+		return self::all();
+
+	}//end profiles()
+
+	/**
+	 * The profile of an authorization type, for injected callers.
+	 *
+	 * @param string $authorizationType The consumer `authorizationType`, any case.
+	 *
+	 * @return WebhookProfile|null
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
+	 */
+	public function forAuthorizationType(string $authorizationType): ?WebhookProfile {
+		return self::byAuthorizationType(authorizationType: $authorizationType);
+
+	}//end forAuthorizationType()
+
+	/**
+	 * The profile of an alert channel, for injected callers.
+	 *
+	 * @param string $channel The channel.
+	 *
+	 * @return WebhookProfile|null
+	 *
+	 * @spec openspec/changes/public-webhooks-on-the-consumer-model/design.md
+	 */
+	public function forChannel(string $channel): ?WebhookProfile {
+		return self::byChannel(channel: $channel);
+
+	}//end forChannel()
 
 	/**
 	 * Peppol access point callbacks.
@@ -361,4 +335,25 @@ final class WebhookProfiles {
 		);
 
 	}//end intakeChannel()
+
+	/**
+	 * The CloudEvents receiver of one source. Each source has its own
+	 * connection, so a credential for one source never admits another.
+	 *
+	 * @param string $sourceId The source id from the receiver URL.
+	 *
+	 * @return WebhookProfile
+	 *
+	 * @spec openspec/changes/cloudevents-receiver/specs/events-cloudevents/spec.md#requirement-outside-systems-shall-send-cloudevents-to-a-receiver-that-checks-and-routes-them-req-017
+	 */
+	public static function cloudEventsSource(string $sourceId): WebhookProfile {
+		return new WebhookProfile(
+			authorizationType: self::CLOUDEVENTS_SOURCE_PREFIX . $sourceId,
+			channel: 'cloudevents',
+			label: 'CloudEvents source ' . $sourceId,
+			schema: 'event',
+			requiredActions: ['create']
+		);
+
+	}//end cloudEventsSource()
 }//end class

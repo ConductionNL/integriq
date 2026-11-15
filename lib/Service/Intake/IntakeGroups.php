@@ -3,6 +3,9 @@
 /**
  * Integriq Intake Groups.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The Nextcloud groups the authorization blocks of `dso_verzoek`,
  * `openformulieren_submission`, `intake_message` and `verdict` name. All four
  * hold what a citizen or a partner sent in (`intake_message` can hold a BSN),
@@ -31,9 +34,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://conduction.nl
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#requirement-submissions-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-008
@@ -54,87 +54,7 @@ use Throwable;
  *
  * @spec openspec/changes/bsn-intake-records-access-rules/specs/open-formulieren-intake/spec.md#requirement-submissions-are-open-to-the-intake-account-the-handlers-and-administrators-only-req-008
  */
-class IntakeGroups {
-
-	/**
-	 * The group of the DSO STAM intake account: create and update on `dso_verzoek`.
-	 *
-	 * @var string
-	 */
-	public const DSO_INTAKE = 'dso-intake';
-
-	/**
-	 * The group of the DSO handlers: read and update on `dso_verzoek`.
-	 *
-	 * @var string
-	 */
-	public const DSO_HANDLERS = 'dso-behandelaars';
-
-	/**
-	 * The group of the Open Formulieren intake account: create and update on `openformulieren_submission`.
-	 *
-	 * @var string
-	 */
-	public const OPEN_FORMULIEREN_INTAKE = 'openformulieren-intake';
-
-	/**
-	 * The group of the Open Formulieren handlers: read and update on `openformulieren_submission`.
-	 *
-	 * @var string
-	 */
-	public const OPEN_FORMULIEREN_HANDLERS = 'openformulieren-behandelaars';
-
-	/**
-	 * The group of the intake channel accounts: create and update on `intake_message`.
-	 *
-	 * @var string
-	 */
-	public const INTAKE_CHANNELS_INTAKE = 'intakekanalen-intake';
-
-	/**
-	 * The group of the intake message handlers: read and update on `intake_message`.
-	 *
-	 * @var string
-	 */
-	public const INTAKE_CHANNELS_HANDLERS = 'intakekanalen-behandelaars';
-
-	/**
-	 * The group of the verdicts webhook account: create and update on `verdict`.
-	 *
-	 * @var string
-	 */
-	public const VERDICTS_INTAKE = 'verdicts-intake';
-
-	/**
-	 * The group of the verdict handlers: read and update on `verdict`.
-	 *
-	 * @var string
-	 */
-	public const VERDICTS_HANDLERS = 'verdicts-behandelaars';
-
-	/**
-	 * The group of the digital post service account: create, read and update on `digitalPostMessage`.
-	 *
-	 * @var string
-	 */
-	public const DIGITAL_POST_SENDERS = 'digitale-post-verzenders';
-
-	/**
-	 * Every group the authorization blocks name.
-	 *
-	 * @var list<string>
-	 */
-	public const ALL = [
-		self::DSO_INTAKE,
-		self::DSO_HANDLERS,
-		self::OPEN_FORMULIEREN_INTAKE,
-		self::OPEN_FORMULIEREN_HANDLERS,
-		self::INTAKE_CHANNELS_INTAKE,
-		self::INTAKE_CHANNELS_HANDLERS,
-		self::VERDICTS_INTAKE,
-		self::VERDICTS_HANDLERS,
-		self::DIGITAL_POST_SENDERS,
-	];
+class IntakeGroups implements IntakeGroupsInterface {
 
 	/**
 	 * Constructor.

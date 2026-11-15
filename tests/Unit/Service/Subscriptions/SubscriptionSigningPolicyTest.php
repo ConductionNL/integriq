@@ -279,4 +279,13 @@ class SubscriptionSigningPolicyTest extends TestCase {
 		$this->assertStringContainsString('your own timestamp tolerance', $recipe['toleranceNote']);
 		$this->assertStringContainsString('two v1 pairs', $recipe['rotationNote']);
 	}//end testTheVerificationRecipeIsAlwaysAvailableAndComplete()
+
+	/**
+	 * A fresh secret comes from the signature service.
+	 *
+	 * @return void
+	 */
+	public function testGenerateSecretAsksTheSignatureService(): void {
+		$this->assertSame('whsec_testsecret', $this->policy->generateSecret());
+	}//end testGenerateSecretAsksTheSignatureService()
 }//end class

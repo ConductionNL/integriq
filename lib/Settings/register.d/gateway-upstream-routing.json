@@ -1,0 +1,72 @@
+{
+	"_comment": "gateway-upstream-routing (REQ-UPRT-001..003): an api endpoint may carry several targets, chosen by a rule on the request, by weight, or by a stable hash of the consumer when sticky, and skipped while their source's circuit breaker is open. Without targets an endpoint uses its one targetId as before. The call log records which target served a call and why; callsPerTarget counts calls per target for the endpoint page.",
+	"components": {
+		"schemas": {
+			"endpoint": {
+				"properties": {
+					"targets": {
+						"type": "array",
+						"title": "Targets",
+						"description": "Sources this api endpoint routes to. When set and non-empty it replaces targetId. A target with a `when` rule (JsonLogic over parameters, headers and the JSON body) is used when the rule matches, together with the other targets of its group; targets without a rule form the default group. Within a group the target is picked by weight.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"source": {
+									"type": "string",
+									"format": "uuid",
+									"title": "Source",
+									"description": "The source this target calls."
+								},
+								"weight": {
+									"type": "integer",
+									"minimum": 0,
+									"default": 1,
+									"title": "Weight",
+									"description": "Share of the group's calls, relative to the other targets; 95 and 5 send about one call in twenty to the second."
+								},
+								"when": {
+									"type": "object",
+									"title": "Rule",
+									"description": "JsonLogic rule over parameters, headers and body; empty for the default group."
+								},
+								"group": {
+									"type": "string",
+									"title": "Group",
+									"description": "Name shared by targets with a rule that split the same traffic; a target with a rule and no group is a group of its own."
+								}
+							},
+							"required": ["source"]
+						}
+					},
+					"sticky": {
+						"type": "boolean",
+						"default": false,
+						"title": "Sticky",
+						"description": "Keep each consumer on the same target while the weights and the healthy targets stay the same. With few consumers this unbalances the weights."
+					}
+				}
+			},
+			"call_log": {
+				"properties": {
+					"routedTarget": {
+						"type": "string",
+						"format": "uuid",
+						"title": "Routed target",
+						"description": "The source that served this call, for an endpoint with several targets."
+					},
+					"routedReason": {
+						"type": "string",
+						"title": "Routed reason",
+						"description": "Why that target was chosen: rule:<index>, weight, sticky or retry."
+					}
+				},
+				"x-openregister-aggregations": {
+					"callsPerTarget": {
+						"metric": "count",
+						"groupBy": ["routedTarget"]
+					}
+				}
+			}
+		}
+	}
+}

@@ -3,6 +3,9 @@
 /**
  * Integriq — the MijnOverheid Berichtenbox client (abstract base).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The contract follows the interface Logius publishes, in the Technische
  * Aansluithandleiding MijnOverheid Berichtenbox 1.6.4:
  *
@@ -29,9 +32,6 @@
  *
  * @link https://www.integriq.nl
  * @link https://www.logius.nl/domeinen/interactie/mijnoverheid/documentatie/technische-aansluithandleiding-mijnoverheid-berichtenbox
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);
@@ -44,6 +44,13 @@ namespace OCA\Integriq\Adapters\Berichtenbox;
  * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-one-berichtenbox-code-path-built-on-the-client-that-ships-req-dpa-006
  */
 abstract class BerichtenboxClient {
+	/**
+	 * What the ebMS MessageId of a letter appends to its BerichtID.
+	 *
+	 * @var string
+	 */
+	public const TRANSPORT_MESSAGE_ID_SUFFIX = '@integriq.berichtenbox';
+
 	/**
 	 * Which binding this is, for the structured log: `mock` or `https`.
 	 *
@@ -122,4 +129,17 @@ abstract class BerichtenboxClient {
 	 * @return void
 	 */
 	abstract public function eventProcessed(string $transportMessageId, array $config): void;
+
+	/**
+	 * The ebMS MessageId a letter travels under at the adapter.
+	 *
+	 * @param string $berichtId The BerichtID.
+	 *
+	 * @return string The ebMS MessageId.
+	 *
+	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-logius-results-decide-the-status-and-a-berichtenbox-letter-is-never-read-req-dpa-011
+	 */
+	public function transportMessageIdFor(string $berichtId): string {
+		return $berichtId . self::TRANSPORT_MESSAGE_ID_SUFFIX;
+	}//end transportMessageIdFor()
 }//end class

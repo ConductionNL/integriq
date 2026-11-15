@@ -1,0 +1,502 @@
+{
+    "ok-200": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": true,
+            "sent": true,
+            "statusCode": 200,
+            "mappingVersion": "",
+            "detail": "OK"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 200,
+                "outcome": "succeeded",
+                "detail": "OK",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "ok-299": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": true,
+            "sent": true,
+            "statusCode": 299,
+            "mappingVersion": "",
+            "detail": "OK"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 299,
+                "outcome": "succeeded",
+                "detail": "OK",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "redirect-300": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": true,
+            "statusCode": 300,
+            "mappingVersion": "",
+            "detail": "Service Unavailable"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 300,
+                "outcome": "failed",
+                "detail": "Service Unavailable",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "informational-199": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": true,
+            "statusCode": 199,
+            "mappingVersion": "",
+            "detail": "OK"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 199,
+                "outcome": "failed",
+                "detail": "OK",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "unavailable-exhausted": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": true,
+            "statusCode": 503,
+            "mappingVersion": "",
+            "detail": "Service Unavailable"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 503,
+                "outcome": "failed",
+                "detail": "Service Unavailable",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": true,
+        "deadLetterRecords": 1,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "unavailable-attempts-left": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": true,
+            "statusCode": 503,
+            "mappingVersion": "",
+            "detail": "Service Unavailable"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 503,
+                "outcome": "failed",
+                "detail": "Service Unavailable",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "dispatch-fails-exhausted": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": false,
+            "mappingVersion": "",
+            "detail": "no route to host"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 0,
+                "outcome": "failed",
+                "detail": "no route to host",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": true,
+        "deadLetterRecords": 1,
+        "sent": []
+    },
+    "dispatch-fails-attempts-left": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": false,
+            "mappingVersion": "",
+            "detail": "no route to host"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 0,
+                "outcome": "failed",
+                "detail": "no route to host",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": []
+    },
+    "dry-run": {
+        "result": {
+            "call": "(set)",
+            "kind": "dry-run",
+            "succeeded": true,
+            "sent": false,
+            "mappingVersion": "",
+            "request": {
+                "method": "POST",
+                "endpoint": "/stuf",
+                "body": "<Lk01/>"
+            },
+            "detail": "Dry run: this is the request that would be sent. Nothing was sent."
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": []
+    },
+    "dry-run-truthy-not-true": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": true,
+            "sent": true,
+            "statusCode": 200,
+            "mappingVersion": "",
+            "detail": "OK"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 200,
+                "outcome": "succeeded",
+                "detail": "OK",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "wanted-version-int": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": true,
+            "sent": true,
+            "statusCode": 200,
+            "mappingVersion": "3",
+            "detail": "OK"
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            },
+            {
+                "at": "(set)",
+                "by": "beheerder",
+                "kind": "replayed",
+                "statusCode": 200,
+                "outcome": "succeeded",
+                "detail": "OK",
+                "mappingVersion": "3"
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": [
+            {
+                "target": "stuf-partner",
+                "request": {
+                    "method": "POST",
+                    "endpoint": "/stuf",
+                    "body": "<Lk01/>"
+                }
+            }
+        ]
+    },
+    "stripped-bodies": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": false,
+            "mappingVersion": "",
+            "detail": "The request is no longer kept, so this call cannot be replayed."
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": []
+    },
+    "stripped-bodies-dry-run": {
+        "result": {
+            "call": "(set)",
+            "kind": "replayed",
+            "succeeded": false,
+            "sent": false,
+            "mappingVersion": "",
+            "detail": "The request is no longer kept, so this call cannot be replayed."
+        },
+        "callIsUuid": true,
+        "attempts": [
+            {
+                "at": "(set)",
+                "by": "",
+                "kind": "triggered",
+                "statusCode": 500,
+                "outcome": "failed",
+                "detail": "Fout van de partner",
+                "mappingVersion": ""
+            }
+        ],
+        "deadLettered": false,
+        "deadLetterRecords": 0,
+        "sent": []
+    }
+}

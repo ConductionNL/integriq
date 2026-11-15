@@ -21,11 +21,14 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\EventListener;
 
 use OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener;
+use OCA\Integriq\Service\ListenerSchemaResolver;
 use OCA\Integriq\Service\Ownership\LocalDeleteGuard;
+use OCA\Integriq\Service\Ownership\OwnershipReadFailed;
 use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -38,22 +41,26 @@ class SourceOwnedDeleteGuardListenerTest extends TestCase {
 	/**
 	 * The listener over an ownership answer.
 	 *
-	 * @param OwnershipState|RuntimeException $answer What forObject() answers, or throws.
+	 * @param OwnershipState|RuntimeException $answer  What forObjectOrFail() answers, or throws.
+	 * @param bool                            $ownRegister Whether the record sits in integriq's register.
 	 *
 	 * @return SourceOwnedDeleteGuardListener The listener.
 	 */
-	private function listener(OwnershipState|RuntimeException $answer): SourceOwnedDeleteGuardListener {
+	private function listener(OwnershipState|RuntimeException $answer, bool $ownRegister = false): SourceOwnedDeleteGuardListener {
 		$ownership = $this->getMockBuilder(RecordOwnershipService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['forObject'])
+			->onlyMethods(['forObjectOrFail'])
 			->getMock();
 		if ($answer instanceof RuntimeException) {
-			$ownership->method('forObject')->willThrowException($answer);
+			$ownership->method('forObjectOrFail')->willThrowException($answer);
 		} else {
-			$ownership->method('forObject')->willReturn($answer);
+			$ownership->method('forObjectOrFail')->willReturn($answer);
 		}
 
-		return new SourceOwnedDeleteGuardListener($ownership, new LocalDeleteGuard(), new NullLogger());
+		$schemas = $this->createMock(ListenerSchemaResolver::class);
+		$schemas->method('isOwnRegister')->willReturn($ownRegister);
+
+		return new SourceOwnedDeleteGuardListener($ownership, new LocalDeleteGuard(), new NullLogger(), $schemas);
 
 	}//end listener()
 
@@ -98,6 +105,24 @@ class SourceOwnedDeleteGuardListenerTest extends TestCase {
 		$this->assertStringContainsString('BRP personen', $event->getErrors()['message']);
 
 	}//end testAnOrdinaryDeleteOfASourceOwnedRecordIsStopped()
+
+	/**
+	 * A source-owned record cannot be moved out of its register or schema either.
+	 *
+	 * @return void
+	 */
+	public function testAMoveOfASourceOwnedRecordIsStopped(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-2222-4333-8444-555555555555');
+		$entity->setObject(['naam' => 'Jansen']);
+		$event = new ObjectLeavingEvent($entity);
+
+		$this->listener($this->owned())->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('source_owned', $event->getErrors()['code']);
+
+	}//end testAMoveOfASourceOwnedRecordIsStopped()
 
 	/**
 	 * A local record is deleted as before.
@@ -147,17 +172,48 @@ class SourceOwnedDeleteGuardListenerTest extends TestCase {
 	}//end testTheEnginesOwnDeleteGoesAhead()
 
 	/**
-	 * A guard that cannot read the contracts does not block every delete.
+	 * A guard that fails on a record outside integriq does not block that delete.
 	 *
 	 * @return void
 	 */
-	public function testAGuardThatFailsDoesNotBlockDeletes(): void {
+	public function testAGuardThatFailsOutsideIntegriqDoesNotBlockDeletes(): void {
 		$event = $this->deleting();
 
 		$this->listener(new RuntimeException('no contracts table'))->handle($event);
 
 		$this->assertFalse($event->isPropagationStopped());
 
-	}//end testAGuardThatFailsDoesNotBlockDeletes()
+	}//end testAGuardThatFailsOutsideIntegriqDoesNotBlockDeletes()
+
+	/**
+	 * A guard that fails on a record in integriq's register refuses the delete.
+	 *
+	 * @return void
+	 */
+	public function testAGuardThatFailsInIntegriqsRegisterRefusesTheDelete(): void {
+		$event = $this->deleting();
+
+		$this->listener(new RuntimeException('no contracts table'), ownRegister: true)->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('source_owned_unverified', $event->getErrors()['code']);
+		$this->assertSame(503, $event->getErrors()['status']);
+
+	}//end testAGuardThatFailsInIntegriqsRegisterRefusesTheDelete()
+
+	/**
+	 * A failed synchronisation read after a contract was found refuses the delete anywhere.
+	 *
+	 * @return void
+	 */
+	public function testAFailedReadAfterAContractWasFoundRefusesTheDelete(): void {
+		$event = $this->deleting();
+
+		$this->listener(new OwnershipReadFailed('the synchronization read failed', contractFound: true))->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('source_owned_unverified', $event->getErrors()['code']);
+
+	}//end testAFailedReadAfterAContractWasFoundRefusesTheDelete()
 
 }//end class

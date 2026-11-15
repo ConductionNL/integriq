@@ -3,6 +3,9 @@
 /**
  * Ensure this app's OpenRegister register is bootstrapped, from cron.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The register/schema configuration is normally installed by the
  * `InitializeRegister` repair step, which Nextcloud runs on `occ upgrade`. That
  * is the correct home for it. But a repair step can legitimately not have run —
@@ -36,16 +39,13 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.Integriq.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\BackgroundJob;
 
-use OCA\Integriq\Repair\InitializeRegister;
+use OCA\Integriq\Repair\InitializeRegisterInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -77,13 +77,13 @@ class RegisterBootstrapJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Clock for the job base class.
 	 * @param IAppConfig $appConfig Reads and persists the bootstrap marker.
-	 * @param InitializeRegister $repair The repair step this job stands in for.
+	 * @param InitializeRegisterInterface $repair The repair step this job stands in for.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
-		private readonly InitializeRegister $repair,
+		private readonly InitializeRegisterInterface $repair,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

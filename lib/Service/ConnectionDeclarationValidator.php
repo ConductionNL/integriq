@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service;
 
+use OCA\Integriq\Service\Residency\ResidencyZones;
+
 /**
  * Validates a connection declaration file.
  *
@@ -68,6 +70,7 @@ class ConnectionDeclarationValidator {
 		'unconfiguredMessage' => [false, 'string'],
 		'sourceTemplate' => [false, 'nonEmptyString'],
 		'reportedOnly' => [false, 'boolean'],
+		'residency' => [false, 'object'],
 	];
 
 	/**
@@ -91,6 +94,18 @@ class ConnectionDeclarationValidator {
 		'configKey' => [true, 'nonEmptyString'],
 		'jsonPath' => [false, 'dotPath'],
 		'offValues' => [false, 'anyStringList'],
+	];
+
+	/**
+	 * Fields of a `residency` object: name => [required, type].
+	 *
+	 * @var array<string,array{0:bool,1:string}>
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001
+	 */
+	private const RESIDENCY_FIELDS = [
+		'country' => [true, 'country'],
+		'evidence' => [false, 'string'],
 	];
 
 	/**
@@ -121,6 +136,7 @@ class ConnectionDeclarationValidator {
 		'anyStringList' => 'must be an array of strings',
 		'dotPath' => 'must match ^[^.]+(\\.[^.]+)*$',
 		'object' => 'must be an object',
+		'country' => 'must be an ISO 3166-1 alpha-2 country code in upper case',
 	];
 
 	/**
@@ -142,23 +158,49 @@ class ConnectionDeclarationValidator {
 			return $errors;
 		}
 
+		return array_merge($errors, $this->validateConnections(connections: $data['connections']));
+	}//end validate()
+
+	/**
+	 * Validate every connection entry, then refuse a key used twice.
+	 *
+	 * @param array<int,mixed> $connections The `connections` list.
+	 *
+	 * @return string[] Messages per failing path, entry by entry.
+	 */
+	private function validateConnections(array $connections): array {
+		$errors = [];
 		$seen = [];
-		foreach ($data['connections'] as $index => $entry) {
+		foreach ($connections as $index => $entry) {
 			$path = '/connections/' . $index;
 			$errors = array_merge($errors, $this->validateEntry(entry: $entry, path: $path));
-
 			$key = $this->entryKey(entry: $entry);
-			if ($key !== null && isset($seen[$key]) === true) {
+			if ($this->isRepeatedKey(key: $key, seen: $seen) === true) {
 				$errors[] = $path . '/key: duplicates key "' . $key . '"';
-			}
-
-			if ($key !== null) {
-				$seen[$key] = true;
 			}
 		}
 
 		return $errors;
-	}//end validate()
+	}//end validateConnections()
+
+	/**
+	 * Whether an entry key was seen before; records it as seen.
+	 *
+	 * @param string|null         $key  The entry key, null when it has none.
+	 * @param array<string,bool> $seen The keys seen so far.
+	 *
+	 * @return bool True for a key seen before.
+	 */
+	private function isRepeatedKey(?string $key, array &$seen): bool {
+		if ($key === null) {
+			return false;
+		}
+
+		$repeated = isset($seen[$key]);
+		$seen[$key] = true;
+
+		return $repeated;
+	}//end isRepeatedKey()
 
 	/**
 	 * Validate one connection entry.
@@ -174,7 +216,7 @@ class ConnectionDeclarationValidator {
 		}
 
 		$errors = $this->checkObject(data: $entry, fields: self::ENTRY_FIELDS, path: $path);
-		foreach (['adapter' => self::ADAPTER_FIELDS, 'switch' => self::SWITCH_FIELDS] as $name => $fields) {
+		foreach (['adapter' => self::ADAPTER_FIELDS, 'switch' => self::SWITCH_FIELDS, 'residency' => self::RESIDENCY_FIELDS] as $name => $fields) {
 			if ($this->isObject(value: $entry[$name] ?? null) === true) {
 				$errors = array_merge($errors, $this->checkObject(data: $entry[$name], fields: $fields, path: $path . '/' . $name));
 			}
@@ -193,26 +235,40 @@ class ConnectionDeclarationValidator {
 	 * @return string[] Messages per failing path.
 	 */
 	private function checkObject(array $data, array $fields, string $path): array {
-		$errors = [];
-		foreach (array_keys($data) as $name) {
-			if (array_key_exists((string)$name, $fields) === false) {
-				$errors[] = $path . '/' . $name . ': is not allowed';
-			}
-		}
+		$errors = array_map(
+			static fn (int|string $name): string => $path . '/' . $name . ': is not allowed',
+			$this->unknownFields(data: $data, fields: $fields)
+		);
 
 		foreach ($fields as $name => [$required, $type]) {
 			if (array_key_exists($name, $data) === false) {
 				$errors = array_merge($errors, $this->requiredError(required: $required, path: $path . '/' . $name));
-				continue;
-			}
-
-			if ($this->matchesType(type: $type, value: $data[$name]) === false) {
+			} elseif ($this->matchesType(type: $type, value: $data[$name]) === false) {
 				$errors[] = $path . '/' . $name . ': ' . self::TYPE_MESSAGES[$type];
 			}
 		}
 
 		return $errors;
 	}//end checkObject()
+
+	/**
+	 * The keys of an object that its field table does not allow.
+	 *
+	 * @param array<string|int,mixed>              $data   The object.
+	 * @param array<string,array{0:bool,1:string}> $fields The field table.
+	 *
+	 * @return array<int,string|int> The unknown keys, in object order.
+	 */
+	private function unknownFields(array $data, array $fields): array {
+		$unknown = [];
+		foreach (array_keys($data) as $name) {
+			if (array_key_exists((string)$name, $fields) === false) {
+				$unknown[] = $name;
+			}
+		}
+
+		return $unknown;
+	}//end unknownFields()
 
 	/**
 	 * The error for an absent field, when it is required.
@@ -259,12 +315,9 @@ class ConnectionDeclarationValidator {
 	 * @return bool
 	 */
 	private function matchesPattern(string $type, mixed $value): bool {
-		if ($type === 'anyStringList') {
-			return $this->isStringList(value: $value);
-		}
-
-		if ($type === 'requiredList') {
-			return $this->isRequiredList(value: $value);
+		$structured = $this->matchesStructuredPattern(type: $type, value: $value);
+		if ($structured !== null) {
+			return $structured;
 		}
 
 		if (is_string($value) === false) {
@@ -279,6 +332,24 @@ class ConnectionDeclarationValidator {
 			default => false,
 		};
 	}//end matchesPattern()
+
+	/**
+	 * Check a value against a type that is not a plain string pattern: a list
+	 * or a country code. Null when the type is a string pattern.
+	 *
+	 * @param string $type  The type name.
+	 * @param mixed  $value The value.
+	 *
+	 * @return bool|null Whether it matches, or null for a string pattern.
+	 */
+	private function matchesStructuredPattern(string $type, mixed $value): ?bool {
+		return match ($type) {
+			'anyStringList' => $this->isStringList(value: $value),
+			'requiredList' => $this->isRequiredList(value: $value),
+			'country' => ResidencyZones::isCountry(country: $value),
+			default => null,
+		};
+	}//end matchesStructuredPattern()
 
 	/**
 	 * Whether a value is a list of strings, empty strings included.
@@ -319,19 +390,30 @@ class ConnectionDeclarationValidator {
 		}
 
 		foreach ($value as $item) {
-			if (is_string($item) === true && $item !== '') {
-				continue;
-			}
-
-			if ($this->isObject(value: $item) === false
-				|| $this->checkObject(data: $item, fields: self::REQUIRED_ENTRY_FIELDS, path: '') !== []
-			) {
+			if ($this->isRequiredItem(item: $item) === false) {
 				return false;
 			}
 		}
 
 		return true;
 	}//end isRequiredList()
+
+	/**
+	 * Whether one `requiredConfig` item is a non-empty app-config key or an
+	 * object with exactly a non-empty `configKey` and a dot-path `jsonPath`.
+	 *
+	 * @param mixed $item The item.
+	 *
+	 * @return bool
+	 */
+	private function isRequiredItem(mixed $item): bool {
+		if (is_string($item) === true && $item !== '') {
+			return true;
+		}
+
+		return $this->isObject(value: $item) === true
+			&& $this->checkObject(data: $item, fields: self::REQUIRED_ENTRY_FIELDS, path: '') === [];
+	}//end isRequiredItem()
 
 	/**
 	 * Whether a decoded JSON value is an object.

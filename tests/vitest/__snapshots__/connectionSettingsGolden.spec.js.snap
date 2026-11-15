@@ -1,0 +1,1408 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DsoPkiSettings > a failed load says so 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: DSO-LV pushes are refused with 503",
+  },
+  "error": "Failed to load the DSO signature configuration.",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": false,
+  "intermediateChain": "",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "",
+  "saving": false,
+  "signingCertificate": "",
+}
+`;
+
+exports[`DsoPkiSettings > a failed load says so 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-dso-pki-section">
+  <h3>DSO STAM webhook signature verification</h3>
+  <p class="integriq-admin__hint">Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).</p>
+  <div class="integriq-admin__action-error" role="alert">Failed to load the DSO signature configuration.</div>
+  <div class="integriq-admin__dso-pki-form">
+    <p class="integriq-admin__hint integriq-admin__action-error" data-testid="admin-dso-account-state">No account set: DSO-LV pushes are refused with 503</p>
+    <!--v-if-->
+    <div class="NcSelectUsers" data-testid="admin-dso-account" data-label="Account the intake acts as"></div>
+    <!--v-if-->
+    <div class="NcSelect" data-testid="admin-dso-pki-mode" data-label="Signing mode"></div><label for="dso-pki-hmac-secret">HMAC shared secret</label>
+    <div class="NcPasswordField" data-testid="admin-dso-pki-hmac-secret" data-placeholder="Not configured"></div>
+  </div>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-dso-pki-save" data-disabled="false">Save DSO signature configuration</button></div>
+</div>"
+`;
+
+exports[`DsoPkiSettings > a failed save with a bare response 1`] = `
+[
+  [
+    "error",
+    "Failed to save the DSO signature configuration.",
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > a failed save with a bare response 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "Failed to save the DSO signature configuration.",
+  "handlerGroup": {
+    "empty": true,
+    "id": "dso-handlers",
+  },
+  "hmacSecret": "s3cret",
+  "hmacSecretConfigured": true,
+  "intermediateChain": "CHAIN",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "R2",
+  "saving": false,
+  "signingCertificate": "CERT",
+}
+`;
+
+exports[`DsoPkiSettings > a failed save with errors that are not a list 1`] = `
+[
+  [
+    "error",
+    "Failed to save the DSO signature configuration.",
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > a failed save with errors that are not a list 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "Failed to save the DSO signature configuration.",
+  "handlerGroup": {
+    "empty": true,
+    "id": "dso-handlers",
+  },
+  "hmacSecret": "s3cret",
+  "hmacSecretConfigured": true,
+  "intermediateChain": "CHAIN",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "R2",
+  "saving": false,
+  "signingCertificate": "CERT",
+}
+`;
+
+exports[`DsoPkiSettings > a failed save with field and list errors 1`] = `
+[
+  [
+    "error",
+    "a b",
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > a failed save with field and list errors 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "no such user",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "a b",
+  "handlerGroup": {
+    "empty": true,
+    "id": "dso-handlers",
+  },
+  "hmacSecret": "s3cret",
+  "hmacSecretConfigured": true,
+  "intermediateChain": "CHAIN",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "R2",
+  "saving": false,
+  "signingCertificate": "CERT",
+}
+`;
+
+exports[`DsoPkiSettings > a failed save with no response 1`] = `
+[
+  [
+    "error",
+    "Failed to save the DSO signature configuration.",
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > a failed save with no response 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "Failed to save the DSO signature configuration.",
+  "handlerGroup": {
+    "empty": true,
+    "id": "dso-handlers",
+  },
+  "hmacSecret": "s3cret",
+  "hmacSecretConfigured": true,
+  "intermediateChain": "CHAIN",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "R2",
+  "saving": false,
+  "signingCertificate": "CERT",
+}
+`;
+
+exports[`DsoPkiSettings > a save without warnings only says saved 1`] = `
+[
+  [
+    "success",
+    "DSO signature configuration saved.",
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > an account without display name shows its id 1`] = `
+{
+  "account": {
+    "displayName": "u1",
+    "id": "u1",
+    "user": "u1",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "disabled",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "Account  is not usable: DSO-LV pushes are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": false,
+  "intermediateChain": "",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "",
+  "saving": false,
+  "signingCertificate": "",
+}
+`;
+
+exports[`DsoPkiSettings > loads a full configuration 1`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": true,
+    "id": "dso-handlers",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": true,
+  "intermediateChain": "CHAIN",
+  "loading": false,
+  "mode": "pkioverheid",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "ROOT",
+  "saving": false,
+  "signingCertificate": "CERT",
+}
+`;
+
+exports[`DsoPkiSettings > loads a full configuration 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-dso-pki-section">
+  <h3>DSO STAM webhook signature verification</h3>
+  <p class="integriq-admin__hint">Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).</p>
+  <!--v-if-->
+  <div class="integriq-admin__dso-pki-form">
+    <p class="integriq-admin__hint" data-testid="admin-dso-account-state">Intake acts as Intake Bot</p>
+    <div class="NcNoteCard" data-testid="admin-dso-handlers-empty">Nobody can read the DSO requests yet. Add handlers to the group dso-handlers under Accounts.</div>
+    <div class="NcSelectUsers" data-testid="admin-dso-account" data-label="Account the intake acts as"></div>
+    <!--v-if-->
+    <div class="NcSelect" data-testid="admin-dso-pki-mode" data-label="Signing mode"></div><label for="dso-pki-signing-cert">Signing certificate (PEM)</label><textarea id="dso-pki-signing-cert" class="integriq-admin__dso-pki-textarea" data-testid="admin-dso-pki-signing-cert"></textarea><label for="dso-pki-intermediate-chain">Intermediate certificate chain (PEM, optional)</label><textarea id="dso-pki-intermediate-chain" class="integriq-admin__dso-pki-textarea" data-testid="admin-dso-pki-intermediate-chain"></textarea><label for="dso-pki-root-ca">Trusted root CA (PKIoverheid Private Root CA, PEM)</label><textarea id="dso-pki-root-ca" class="integriq-admin__dso-pki-textarea" data-testid="admin-dso-pki-root-ca"></textarea>
+  </div>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-dso-pki-save" data-disabled="false">Save DSO signature configuration</button></div>
+</div>"
+`;
+
+exports[`DsoPkiSettings > loads an empty configuration 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: DSO-LV pushes are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": false,
+  "intermediateChain": "",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "",
+  "saving": false,
+  "signingCertificate": "",
+}
+`;
+
+exports[`DsoPkiSettings > loads an empty configuration 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-dso-pki-section">
+  <h3>DSO STAM webhook signature verification</h3>
+  <p class="integriq-admin__hint">Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).</p>
+  <!--v-if-->
+  <div class="integriq-admin__dso-pki-form">
+    <p class="integriq-admin__hint integriq-admin__action-error" data-testid="admin-dso-account-state">No account set: DSO-LV pushes are refused with 503</p>
+    <!--v-if-->
+    <div class="NcSelectUsers" data-testid="admin-dso-account" data-label="Account the intake acts as"></div>
+    <!--v-if-->
+    <div class="NcSelect" data-testid="admin-dso-pki-mode" data-label="Signing mode"></div><label for="dso-pki-hmac-secret">HMAC shared secret</label>
+    <div class="NcPasswordField" data-testid="admin-dso-pki-hmac-secret" data-placeholder="Not configured"></div>
+  </div>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-dso-pki-save" data-disabled="false">Save DSO signature configuration</button></div>
+</div>"
+`;
+
+exports[`DsoPkiSettings > reads unexpected values strictly 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: DSO-LV pushes are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": false,
+  "intermediateChain": "",
+  "loading": false,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "",
+  "saving": false,
+  "signingCertificate": "",
+}
+`;
+
+exports[`DsoPkiSettings > saves with an account, reloads and warns 1`] = `
+[
+  [
+    "/index.php/apps/integriq/api/admin/dso-pki-config",
+    {
+      "hmacSecret": "s3cret",
+      "intermediateChain": "CHAIN",
+      "mode": "hmac",
+      "rootCa": "R2",
+      "signingCertificate": "CERT",
+      "userId": "intake",
+    },
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > saves with an account, reloads and warns 2`] = `
+[
+  [
+    "success",
+    "DSO signature configuration saved.",
+  ],
+  [
+    "warning",
+    "w1",
+  ],
+  [
+    "warning",
+    "w2",
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > saves with an account, reloads and warns 3`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "after",
+    "user": "after",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": true,
+    "id": "dso-handlers",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": true,
+  "intermediateChain": "CHAIN",
+  "loading": false,
+  "mode": "pkioverheid",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "ROOT",
+  "saving": false,
+  "signingCertificate": "CERT",
+}
+`;
+
+exports[`DsoPkiSettings > saves without an account, reloads and warns 1`] = `
+[
+  [
+    "/index.php/apps/integriq/api/admin/dso-pki-config",
+    {
+      "hmacSecret": "s3cret",
+      "intermediateChain": "CHAIN",
+      "mode": "hmac",
+      "rootCa": "R2",
+      "signingCertificate": "CERT",
+      "userId": "",
+    },
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > saves without an account, reloads and warns 2`] = `
+[
+  [
+    "success",
+    "DSO signature configuration saved.",
+  ],
+  [
+    "warning",
+    "w1",
+  ],
+  [
+    "warning",
+    "w2",
+  ],
+]
+`;
+
+exports[`DsoPkiSettings > saves without an account, reloads and warns 3`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "after",
+    "user": "after",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": true,
+    "id": "dso-handlers",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": true,
+  "intermediateChain": "CHAIN",
+  "loading": false,
+  "mode": "pkioverheid",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "ROOT",
+  "saving": false,
+  "signingCertificate": "CERT",
+}
+`;
+
+exports[`DsoPkiSettings > starts loading with the defaults 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: DSO-LV pushes are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "hmacSecret": "",
+  "hmacSecretConfigured": false,
+  "intermediateChain": "",
+  "loading": true,
+  "mode": "hmac",
+  "modeOptions": [
+    {
+      "label": "HMAC shared secret (pre-production)",
+      "value": "hmac",
+    },
+    {
+      "label": "PKIoverheid certificate chain (production)",
+      "value": "pkioverheid",
+    },
+  ],
+  "rootCa": "",
+  "saving": false,
+  "signingCertificate": "",
+}
+`;
+
+exports[`DsoPkiSettings > starts loading with the defaults 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-dso-pki-section">
+  <h3>DSO STAM webhook signature verification</h3>
+  <p class="integriq-admin__hint">Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).</p>
+  <!--v-if-->
+  <p class="integriq-admin__hint">Loading DSO signature configuration…</p>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-dso-pki-save" data-disabled="true">Save DSO signature configuration</button></div>
+</div>"
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed load says so 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: Open Formulieren submissions are refused with 503",
+  },
+  "error": "Failed to load the Open Formulieren connection.",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "header": "X-OpenFormulieren-Signature",
+  "loading": false,
+  "saving": false,
+  "scheme": "openconnector",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": false,
+  "toleranceSeconds": "300",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed load says so 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-openformulieren-section">
+  <h3>Open Formulieren connection</h3>
+  <p class="integriq-admin__hint">Open Formulieren signs every submission with a shared secret. Integriq checks the signature and stores the submission as the account you choose here.</p>
+  <div class="integriq-admin__action-error" role="alert">Failed to load the Open Formulieren connection.</div>
+  <div class="integriq-admin__openformulieren-form">
+    <p class="integriq-admin__hint integriq-admin__action-error" data-testid="admin-openformulieren-account-state">No account set: Open Formulieren submissions are refused with 503</p>
+    <!--v-if-->
+    <div class="NcSelectUsers" data-testid="admin-openformulieren-account" data-label="Account the intake acts as"></div>
+    <!--v-if-->
+    <div class="NcSelect" data-testid="admin-openformulieren-scheme" data-label="Signature scheme"></div><label for="openformulieren-secret">Shared secret</label>
+    <div class="NcPasswordField" data-testid="admin-openformulieren-secret" data-placeholder="Not configured"></div>
+    <div class="NcTextField" data-testid="admin-openformulieren-header" data-label="Signature header"></div>
+    <div class="NcTextField" data-testid="admin-openformulieren-tolerance" data-label="Allowed clock difference in seconds"></div>
+  </div>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-openformulieren-save" data-disabled="false">Save Open Formulieren connection</button></div>
+</div>"
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with a bare response 1`] = `
+[
+  [
+    "error",
+    "Failed to save the Open Formulieren connection.",
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with a bare response 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "Failed to save the Open Formulieren connection.",
+  "handlerGroup": {
+    "empty": true,
+    "id": "of-handlers",
+  },
+  "header": "X-Sig",
+  "loading": false,
+  "saving": false,
+  "scheme": "stripe",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "s3cret",
+  "secretConfigured": true,
+  "toleranceSeconds": "abc",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with errors that are not a list 1`] = `
+[
+  [
+    "error",
+    "Failed to save the Open Formulieren connection.",
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with errors that are not a list 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "Failed to save the Open Formulieren connection.",
+  "handlerGroup": {
+    "empty": true,
+    "id": "of-handlers",
+  },
+  "header": "X-Sig",
+  "loading": false,
+  "saving": false,
+  "scheme": "stripe",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "s3cret",
+  "secretConfigured": true,
+  "toleranceSeconds": "abc",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with field and list errors 1`] = `
+[
+  [
+    "error",
+    "a b",
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with field and list errors 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "no such user",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "a b",
+  "handlerGroup": {
+    "empty": true,
+    "id": "of-handlers",
+  },
+  "header": "X-Sig",
+  "loading": false,
+  "saving": false,
+  "scheme": "stripe",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "s3cret",
+  "secretConfigured": true,
+  "toleranceSeconds": "abc",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with no response 1`] = `
+[
+  [
+    "error",
+    "Failed to save the Open Formulieren connection.",
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > a failed save with no response 2`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "Failed to save the Open Formulieren connection.",
+  "handlerGroup": {
+    "empty": true,
+    "id": "of-handlers",
+  },
+  "header": "X-Sig",
+  "loading": false,
+  "saving": false,
+  "scheme": "stripe",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "s3cret",
+  "secretConfigured": true,
+  "toleranceSeconds": "abc",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > a save without warnings only says saved 1`] = `
+[
+  [
+    "success",
+    "Open Formulieren connection saved.",
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > an account without display name shows its id 1`] = `
+{
+  "account": {
+    "displayName": "u1",
+    "id": "u1",
+    "user": "u1",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "disabled",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "Account  is not usable: Open Formulieren submissions are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "header": "X-OpenFormulieren-Signature",
+  "loading": false,
+  "saving": false,
+  "scheme": "openconnector",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": false,
+  "toleranceSeconds": "300",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > loads a full configuration 1`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "intake",
+    "user": "intake",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": true,
+    "id": "of-handlers",
+  },
+  "header": "X-Sig",
+  "loading": false,
+  "saving": false,
+  "scheme": "github",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": true,
+  "toleranceSeconds": "60",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > loads a full configuration 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-openformulieren-section">
+  <h3>Open Formulieren connection</h3>
+  <p class="integriq-admin__hint">Open Formulieren signs every submission with a shared secret. Integriq checks the signature and stores the submission as the account you choose here.</p>
+  <!--v-if-->
+  <div class="integriq-admin__openformulieren-form">
+    <p class="integriq-admin__hint" data-testid="admin-openformulieren-account-state">Intake acts as Intake Bot</p>
+    <div class="NcNoteCard" data-testid="admin-openformulieren-handlers-empty">Nobody can read the submissions yet. Add handlers to the group of-handlers under Accounts.</div>
+    <div class="NcSelectUsers" data-testid="admin-openformulieren-account" data-label="Account the intake acts as"></div>
+    <!--v-if-->
+    <div class="NcSelect" data-testid="admin-openformulieren-scheme" data-label="Signature scheme"></div><label for="openformulieren-secret">Shared secret</label>
+    <div class="NcPasswordField" data-testid="admin-openformulieren-secret" data-placeholder="Configured (leave blank to keep unchanged)"></div>
+    <div class="NcTextField" data-testid="admin-openformulieren-header" data-label="Signature header"></div>
+    <div class="NcTextField" data-testid="admin-openformulieren-tolerance" data-label="Allowed clock difference in seconds"></div>
+  </div>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-openformulieren-save" data-disabled="false">Save Open Formulieren connection</button></div>
+</div>"
+`;
+
+exports[`OpenFormulierenConnectionSettings > loads an empty configuration 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: Open Formulieren submissions are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "header": "X-OpenFormulieren-Signature",
+  "loading": false,
+  "saving": false,
+  "scheme": "openconnector",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": false,
+  "toleranceSeconds": "300",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > loads an empty configuration 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-openformulieren-section">
+  <h3>Open Formulieren connection</h3>
+  <p class="integriq-admin__hint">Open Formulieren signs every submission with a shared secret. Integriq checks the signature and stores the submission as the account you choose here.</p>
+  <!--v-if-->
+  <div class="integriq-admin__openformulieren-form">
+    <p class="integriq-admin__hint integriq-admin__action-error" data-testid="admin-openformulieren-account-state">No account set: Open Formulieren submissions are refused with 503</p>
+    <!--v-if-->
+    <div class="NcSelectUsers" data-testid="admin-openformulieren-account" data-label="Account the intake acts as"></div>
+    <!--v-if-->
+    <div class="NcSelect" data-testid="admin-openformulieren-scheme" data-label="Signature scheme"></div><label for="openformulieren-secret">Shared secret</label>
+    <div class="NcPasswordField" data-testid="admin-openformulieren-secret" data-placeholder="Not configured"></div>
+    <div class="NcTextField" data-testid="admin-openformulieren-header" data-label="Signature header"></div>
+    <div class="NcTextField" data-testid="admin-openformulieren-tolerance" data-label="Allowed clock difference in seconds"></div>
+  </div>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-openformulieren-save" data-disabled="false">Save Open Formulieren connection</button></div>
+</div>"
+`;
+
+exports[`OpenFormulierenConnectionSettings > reads unexpected values strictly 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: Open Formulieren submissions are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "header": "X-OpenFormulieren-Signature",
+  "loading": false,
+  "saving": false,
+  "scheme": "openconnector",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": false,
+  "toleranceSeconds": "300",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > saves with an account, reloads and warns 1`] = `
+[
+  [
+    "/index.php/apps/integriq/api/admin/open-formulieren-connection",
+    {
+      "header": "X-Sig",
+      "scheme": "stripe",
+      "secret": "s3cret",
+      "toleranceSeconds": 300,
+      "userId": "intake",
+    },
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > saves with an account, reloads and warns 2`] = `
+[
+  [
+    "success",
+    "Open Formulieren connection saved.",
+  ],
+  [
+    "warning",
+    "w1",
+  ],
+  [
+    "warning",
+    "w2",
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > saves with an account, reloads and warns 3`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "after",
+    "user": "after",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": true,
+    "id": "of-handlers",
+  },
+  "header": "X-Sig",
+  "loading": false,
+  "saving": false,
+  "scheme": "github",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": true,
+  "toleranceSeconds": "60",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > saves without an account, reloads and warns 1`] = `
+[
+  [
+    "/index.php/apps/integriq/api/admin/open-formulieren-connection",
+    {
+      "header": "X-Sig",
+      "scheme": "stripe",
+      "secret": "s3cret",
+      "toleranceSeconds": 300,
+      "userId": "",
+    },
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > saves without an account, reloads and warns 2`] = `
+[
+  [
+    "success",
+    "Open Formulieren connection saved.",
+  ],
+  [
+    "warning",
+    "w1",
+  ],
+  [
+    "warning",
+    "w2",
+  ],
+]
+`;
+
+exports[`OpenFormulierenConnectionSettings > saves without an account, reloads and warns 3`] = `
+{
+  "account": {
+    "displayName": "Intake Bot",
+    "id": "after",
+    "user": "after",
+  },
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "Intake Bot",
+    "state": "ok",
+  },
+  "accountState": {
+    "refused": false,
+    "text": "Intake acts as Intake Bot",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": true,
+    "id": "of-handlers",
+  },
+  "header": "X-Sig",
+  "loading": false,
+  "saving": false,
+  "scheme": "github",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": true,
+  "toleranceSeconds": "60",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > starts loading with the defaults 1`] = `
+{
+  "account": null,
+  "accountError": "",
+  "accountInfo": {
+    "displayName": "",
+    "state": "none",
+  },
+  "accountState": {
+    "refused": true,
+    "text": "No account set: Open Formulieren submissions are refused with 503",
+  },
+  "error": "",
+  "handlerGroup": {
+    "empty": false,
+    "id": "",
+  },
+  "header": "X-OpenFormulieren-Signature",
+  "loading": true,
+  "saving": false,
+  "scheme": "openconnector",
+  "schemeOptions": [
+    {
+      "label": "Timestamped HMAC (t=…,v1=…)",
+      "value": "openconnector",
+    },
+    {
+      "label": "Stripe style HMAC",
+      "value": "stripe",
+    },
+    {
+      "label": "GitHub style HMAC (sha256=…)",
+      "value": "github",
+    },
+    {
+      "label": "Microsoft Teams HMAC",
+      "value": "teams",
+    },
+  ],
+  "secret": "",
+  "secretConfigured": false,
+  "toleranceSeconds": "300",
+}
+`;
+
+exports[`OpenFormulierenConnectionSettings > starts loading with the defaults 2`] = `
+"<div class="integriq-admin__section" data-testid="admin-openformulieren-section">
+  <h3>Open Formulieren connection</h3>
+  <p class="integriq-admin__hint">Open Formulieren signs every submission with a shared secret. Integriq checks the signature and stores the submission as the account you choose here.</p>
+  <!--v-if-->
+  <p class="integriq-admin__hint">Loading the Open Formulieren connection…</p>
+  <div class="integriq-admin__matrix-actions"><button class="NcButton" data-testid="admin-openformulieren-save" data-disabled="true">Save Open Formulieren connection</button></div>
+</div>"
+`;

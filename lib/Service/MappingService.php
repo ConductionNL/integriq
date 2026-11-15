@@ -21,6 +21,9 @@
 /**
  * MappingService.
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Twig-driven mapping service that transforms inbound payloads against
  * configured Mapping objects + runtime authentication helpers.
  *
@@ -37,9 +40,6 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
- *
- * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service;
@@ -304,83 +304,26 @@ class MappingService implements MappingServiceInterface {
 	 * @throws LoaderError|SyntaxError Twig Exceptions.
 	 *
 	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MappingShape is a final set of pure steps on arrays; there is nothing to inject.
 	 */
 	public function executeMapping(OrMapping|ObjectEntity|array|string|int $mapping, array $input, bool $list = false): array {
 		$mapping = $this->normaliseMapping(mapping: $mapping);
 
-		// Check for list.
 		if ($list === true) {
 			$list = [];
-			$extraValues = [];
-
-			// Allow extra(input)values to be passed down for mapping while dealing with a list.
-			if (array_key_exists('listInput', $input) === true) {
-				$extraValues = $input;
-				$input = $input['listInput'];
-				unset($extraValues['listInput'], $extraValues['value']);
-			}
-
-			foreach ($input as $key => $value) {
-				// Mapping function expects an array for $input, make sure we always pass an array to this function.
-				if (is_array($value) === false || empty($extraValues) === false) {
-					// Todo: we want to remove ['value' => $value] from this at some point, for now required for DOWR to work.
-					$value = array_merge((array)$value, ['value' => $value], $extraValues);
-				}
-
-				$list[$key] = $this->executeMapping(mapping: $mapping, input: $value);
+			foreach (MappingShape::listItems(input: $input) as $key => $item) {
+				$list[$key] = $this->executeMapping(mapping: $mapping, input: $item);
 			}
 
 			return $list;
-		}//end if
-
-		$originalInput = $input;
-		$input = $this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;');
-
-		// Determine pass through.
-		// Let's get the dot array based on https://github.com/adbario/php-dot-notation.
-		if ($mapping->getPassThrough() === true) {
-			$dotArray = new Dot($input);
-		} else {
-			$dotArray = new Dot();
 		}
 
-		$dotInput = new Dot($input);
+		$dotArray = $this->mapToDot(mapping: $mapping, input: $input);
+		MappingShape::removeUnsets(mapping: $mapping, dotArray: $dotArray);
 
-		// Let's do the actual mapping.
-		foreach ($mapping->getMapping() as $key => $value) {
-			// If the value exists in the input dot take it from there.
-			if ($dotInput->has($value) === true) {
-				$dotArray->set($key, $dotInput->get($value));
-				continue;
-			}
-
-			// Render the value from twig.
-			if (is_array($value) === true) {
-				$dotArray->set($key, $value);
-				continue;
-			}
-
-			try {
-				$dotArray->set($key, $this->renderTemplateString(template: $value, context: $originalInput));
-			} catch (Throwable $e) {
-				throw new Exception("Error for mapping: {$mapping->getName()}, key: $key, value: $value and with message thrown: {$e->getMessage()}");
-			}
-		}
-
-		// Unset unwanted key's.
-		$unsets = ($mapping->getUnset() ?? []);
-		foreach ($unsets as $unset) {
-			if ($dotArray->has($unset) === false) {
-				continue;
-			}
-
-			$dotArray->delete($unset);
-		}
-
-		// Cast values to a specific type.
-		$casts = ($mapping->getCast() ?? []);
-
-		foreach ($casts as $key => $cast) {
+		// Cast values to a specific type: a list or a comma-separated string of casts, applied in order.
+		foreach (($mapping->getCast() ?? []) as $key => $cast) {
 			if ($dotArray->has($key) === false) {
 				continue;
 			}
@@ -395,32 +338,57 @@ class MappingService implements MappingServiceInterface {
 		}
 
 		// Back to array.
-		$output = $dotArray->all();
-		$output = $this->encodeArrayKeys(array: $output, toReplace: '&#46;', replacement: '.');
+		$output = $this->encodeArrayKeys(array: $dotArray->all(), toReplace: '&#46;', replacement: '.');
 
-		// If something has been defined to work on root level (i.e. the object lives on root level), we can use # to define writing the root object.
-		$keys = array_keys($output);
-		if (count($keys) === 1 && $keys[0] === '#') {
-			// Ensure we always return an array, even if the value is null.
-			$rootValue = $output['#'];
-			if ($rootValue === null) {
-				$output = [];
-			} elseif (is_array($rootValue) === true) {
-				$output = $rootValue;
-			} else {
-				$output = [$rootValue];
+		return MappingShape::rootLevelOutput(output: $output);
+	}//end executeMapping()
+
+	/**
+	 * Apply a mapping's key => value pairs to one input.
+	 *
+	 * Input keys containing a dot are encoded first, so Dot does not read them
+	 * as paths. A value that is a path in the input is copied from there, an
+	 * array value is set as is, and any other value is rendered as a Twig
+	 * template against the original input. With `passThrough` the result
+	 * starts from the input instead of empty.
+	 *
+	 * @param OrMapping $mapping The mapping recipe.
+	 * @param array     $input   The input.
+	 *
+	 * @return Dot The mapped values, keys still encoded.
+	 *
+	 * @throws Exception When a template fails to render.
+	 *
+	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
+	 */
+	private function mapToDot(OrMapping $mapping, array $input): Dot {
+		$encodedInput = $this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;');
+		$dotInput = new Dot($encodedInput);
+		$dotArray = new Dot();
+		if ($mapping->getPassThrough() === true) {
+			$dotArray = new Dot($encodedInput);
+		}
+
+		foreach ($mapping->getMapping() as $key => $value) {
+			if ($dotInput->has($value) === true) {
+				$dotArray->set($key, $dotInput->get($value));
+				continue;
+			}
+
+			if (is_array($value) === true) {
+				$dotArray->set($key, $value);
+				continue;
+			}
+
+			try {
+				$dotArray->set($key, $this->renderTemplateString(template: $value, context: $input));
+			} catch (Throwable $e) {
+				throw new Exception("Error for mapping: {$mapping->getName()}, key: $key, value: $value and with message thrown: {$e->getMessage()}");
 			}
 		}
 
-		// Defensive coercion: prior branches set $output from $dotArray->all() (always array)
-		// or from the # root-level extraction (always array). The is_array() guard is dead
-		// per static analysis but kept for safety against future refactors.
-		if (is_array($output) === false) {
-			$output = [];
-		}
-
-		return $output;
-	}//end executeMapping()
+		return $dotArray;
+	}//end mapToDot()
 
 	/**
 	 * Handles a single cast.
@@ -440,7 +408,10 @@ class MappingService implements MappingServiceInterface {
 		[$castName, $argument] = $this->splitCastArgument(cast: $cast);
 
 		if (in_array($castName, self::CONTEXT_CASTS, true) === true) {
-			$value = $this->applyContextCast(dotArray: $dotArray, key: $key, cast: $castName, argument: $argument);
+			$value = $this->applyContextCast(
+				target: new CastTarget(dotArray: $dotArray, key: $key),
+				cast: new MappingCast(name: $castName, argument: $argument)
+			);
 		} else {
 			$value = $this->applyValueCast(value: $dotArray->get($key), cast: $castName);
 		}
@@ -638,39 +609,52 @@ class MappingService implements MappingServiceInterface {
 	/**
 	 * Applies a cast that reads or changes other keys of the data.
 	 *
-	 * @param Dot $dotArray The data being mapped.
-	 * @param string $key The key of the field to cast.
-	 * @param string $cast The cast name, one of CONTEXT_CASTS.
-	 * @param string|null $argument The cast argument, if any.
+	 * @param CastTarget $target The field to cast.
+	 * @param MappingCast $cast The cast, one of CONTEXT_CASTS, with its argument.
 	 *
 	 * @return mixed The value to write back to the key.
 	 *
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
-	private function applyContextCast(Dot $dotArray, string $key, string $cast, ?string $argument): mixed {
-		$value = $dotArray->get($key);
-
-		if ($cast === 'countValue') {
-			return $this->countReferencedValue(dotArray: $dotArray, path: $argument, value: $value);
+	private function applyContextCast(CastTarget $target, MappingCast $cast): mixed {
+		if ($cast->name === 'countValue') {
+			return $this->countReferencedValue(target: $target, path: $cast->argument);
 		}
 
-		$matches = $this->valueMatchesCastArgument(value: $value, argument: $argument);
-		if ($cast === 'keyCantBeValue') {
-			$matches = $key === $value;
-		}
-
-		if ($matches === false) {
+		$value = $target->value();
+		if ($this->contextCastMatches(target: $target, cast: $cast) === false) {
 			return $value;
 		}
 
-		if ($cast === 'setNullIfValue') {
+		if ($cast->name === 'setNullIfValue') {
 			return null;
 		}
 
-		$dotArray->delete($key);
+		$target->dotArray->delete($target->key);
 
 		return $value;
 	}//end applyContextCast()
+
+	/**
+	 * Whether a context cast applies to the field: its value matches the
+	 * argument, or for `keyCantBeValue` it equals its own key.
+	 *
+	 * @param CastTarget $target The field to cast.
+	 * @param MappingCast $cast The cast with its argument.
+	 *
+	 * @return bool True when the cast applies.
+	 *
+	 * @spec openspec/specs/mapping-and-search/spec.md
+	 */
+	private function contextCastMatches(CastTarget $target, MappingCast $cast): bool {
+		$value = $target->value();
+		$matches = $this->valueMatchesCastArgument(value: $value, argument: $cast->argument);
+		if ($cast->name === 'keyCantBeValue') {
+			$matches = $target->key === $value;
+		}
+
+		return $matches;
+	}//end contextCastMatches()
 
 	/**
 	 * Checks whether a value matches a cast argument.
@@ -704,20 +688,20 @@ class MappingService implements MappingServiceInterface {
 	/**
 	 * Counts the countable value at another path, or keeps the value.
 	 *
-	 * @param Dot $dotArray The data being mapped.
+	 * @param CastTarget $target The field to cast.
 	 * @param string|null $path The path of the value to count.
-	 * @param mixed $value The current value.
 	 *
 	 * @return mixed The count, or the current value when the path is unusable.
 	 *
 	 * @spec openspec/specs/mapping-and-search/spec.md
 	 */
-	private function countReferencedValue(Dot $dotArray, ?string $path, mixed $value): mixed {
+	private function countReferencedValue(CastTarget $target, ?string $path): mixed {
+		$dotArray = $target->dotArray;
 		if (empty($path) === true
 			|| $dotArray->has($path) === false
 			|| is_countable($dotArray->get($path)) === false
 		) {
-			return $value;
+			return $target->value();
 		}
 
 		return count($dotArray->get($path));

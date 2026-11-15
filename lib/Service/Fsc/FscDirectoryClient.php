@@ -3,6 +3,9 @@
 /**
  * Integriq FSC Directory Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The ONE class housing every HTTP and credential operation this change
  * performs — both the FSC Directory lookup (`resolveService()`) and the
  * downstream service invocation (`call()`) — per the task brief's explicit
@@ -66,9 +69,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
@@ -83,6 +83,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\FscConnectivityException;
 use OCA\Integriq\Exception\FscDirectoryException;
 use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\ClientAuthenticationSchema;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
@@ -105,7 +106,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 *
 	 * @var string
 	 */
-	private const DEFAULT_AUTH_SCHEME = 'Bearer';
+	private const DEFAULT_AUTH_SCHEME = ClientAuthenticationSchema::DEFAULT_SCHEME;
 
 	/**
 	 * Constructor.
@@ -156,40 +157,13 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 					'description' => 'FSC Directory base URL (no trailing slash) — ASSUMED shape, see design.md '
 						. '"Directory API shape".',
 				],
-				'authentication' => [
-					'type' => 'object',
-					'properties' => [
-						'mode' => [
-							'type' => 'string',
-							'enum' => ['token', 'mtls'],
-							'default' => 'token',
-							'description' => '`token` (default) sends a Bearer Authorization header from '
-								. '`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
-								. '`mtls.*` — closes the real Outway/Inway transport gap.',
-						],
-						'encryptedToken' => [
-							'type' => 'string',
-							'description' => 'Required when `mode=token` (the default). The FSC-fronting API token, '
-								. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.',
-						],
-						'scheme' => [
-							'type' => 'string',
-							'description' => 'Authorization header scheme, used only when `mode=token`.',
-							'default' => self::DEFAULT_AUTH_SCHEME,
-						],
-						'mtls' => [
-							'type' => 'object',
-							'description' => 'Required when `mode=mtls`. Client certificate material, each field '
-								. 'individually encrypted at rest via OCP\\Security\\ICrypto.',
-							'properties' => [
-								'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
-								'encryptedPrivateKey' => ['type' => 'string', 'description' => 'PEM private key.'],
-								'encryptedPassphrase' => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
-								'encryptedCaBundle' => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
-							],
-						],
-					],
-				],
+				'authentication' => ClientAuthenticationSchema::tokenOrMtls(
+					modeDescription: '`token` (default) sends a Bearer Authorization header from '
+						. '`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
+						. '`mtls.*` — closes the real Outway/Inway transport gap.',
+					tokenDescription: 'Required when `mode=token` (the default). The FSC-fronting API token, '
+						. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.'
+				),
 			],
 		];
 
@@ -218,6 +192,30 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 * @spec openspec/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
 	 */
 	public function resolveService(array $directoryConfig, string $organisation, string $service): array {
+		$target = new FscServiceRef(organisation: $organisation, service: $service);
+		$response = $this->lookupService(directoryUrl: $this->requireDirectoryUrl(directoryConfig: $directoryConfig), target: $target);
+		$entry = $this->directoryEntry(response: $response, target: $target);
+
+		return [
+			'organisation' => $organisation,
+			'service' => $service,
+			'endpoint' => $this->entryEndpoint(entry: $entry, target: $target),
+			'grantRequired' => (bool)($entry['grantRequired'] ?? false),
+			'authContext' => ['publicKeyFingerprint' => ($entry['publicKeyFingerprint'] ?? null)],
+		];
+
+	}//end resolveService()
+
+	/**
+	 * The directory's base URL; it is required.
+	 *
+	 * @param array $directoryConfig The FSC source's `configuration.directory` object.
+	 *
+	 * @return string The URL without a trailing slash.
+	 *
+	 * @throws FscConnectivityException When none is configured.
+	 */
+	private function requireDirectoryUrl(array $directoryConfig): string {
 		$directoryUrl = rtrim((string)($directoryConfig['directoryUrl'] ?? ''), '/');
 		if ($directoryUrl === '') {
 			throw new FscConnectivityException(
@@ -225,12 +223,25 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 			);
 		}
 
-		$path = '/organisations/' . rawurlencode($organisation) . '/services/' . rawurlencode($service);
+		return $directoryUrl;
 
+	}//end requireDirectoryUrl()
+
+	/**
+	 * Look the service up in the directory.
+	 *
+	 * @param string        $directoryUrl The directory's base URL.
+	 * @param FscServiceRef $target       The service.
+	 *
+	 * @return ResponseInterface The directory's answer, whatever its status.
+	 *
+	 * @throws FscConnectivityException When the lookup fails in transport.
+	 */
+	private function lookupService(string $directoryUrl, FscServiceRef $target): ResponseInterface {
 		try {
-			$response = $this->httpClient->request(
+			return $this->httpClient->request(
 				'GET',
-				$directoryUrl . $path,
+				$directoryUrl . $target->directoryPath(),
 				['headers' => ['Accept' => 'application/json'], 'http_errors' => false]
 			);
 		} catch (GuzzleException $exception) {
@@ -244,13 +255,24 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 			);
 		}
 
-		$status = $response->getStatusCode();
-		$body = (string)$response->getBody();
+	}//end lookupService()
 
+	/**
+	 * The decoded directory entry; a 404 is an unknown service, any other non-2xx or non-JSON a connectivity failure.
+	 *
+	 * @param ResponseInterface $response The directory's answer.
+	 * @param FscServiceRef     $target   The service.
+	 *
+	 * @return array The entry.
+	 *
+	 * @throws FscDirectoryException    When the directory has no entry for the service.
+	 * @throws FscConnectivityException When the directory errs or answers something other than JSON.
+	 */
+	private function directoryEntry(ResponseInterface $response, FscServiceRef $target): array {
+		$status = $response->getStatusCode();
 		if ($status === 404) {
 			throw new FscDirectoryException(
-				message: 'Unknown organisation or service: no FSC directory entry for organisation "'
-					. $organisation . '" and service "' . $service . '".'
+				message: 'Unknown organisation or service: no FSC directory entry for ' . $target->described() . '.'
 			);
 		}
 
@@ -258,31 +280,36 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 			throw new FscConnectivityException(message: 'FSC directory responded with HTTP ' . $status . '.');
 		}
 
-		$decoded = json_decode($body, true);
+		$decoded = json_decode((string)$response->getBody(), true);
 		if (is_array($decoded) === false) {
-			throw new FscConnectivityException(
-				message: 'The FSC directory returned a non-JSON response for organisation "'
-					. $organisation . '" and service "' . $service . '".'
-			);
+			throw new FscConnectivityException(message: 'The FSC directory returned a non-JSON response for ' . $target->described() . '.');
 		}
 
-		$endpoint = (string)($decoded['endpoint'] ?? '');
+		return $decoded;
+
+	}//end directoryEntry()
+
+	/**
+	 * The entry's endpoint; it is required.
+	 *
+	 * @param array         $entry  The directory entry.
+	 * @param FscServiceRef $target The service.
+	 *
+	 * @return string The endpoint.
+	 *
+	 * @throws FscConnectivityException When the entry carries none.
+	 */
+	private function entryEndpoint(array $entry, FscServiceRef $target): string {
+		$endpoint = (string)($entry['endpoint'] ?? '');
 		if ($endpoint === '') {
 			throw new FscConnectivityException(
-				message: 'The FSC directory response for organisation "' . $organisation . '" and service "'
-					. $service . '" carried no usable endpoint.'
+				message: 'The FSC directory response for ' . $target->described() . ' carried no usable endpoint.'
 			);
 		}
 
-		return [
-			'organisation' => $organisation,
-			'service' => $service,
-			'endpoint' => $endpoint,
-			'grantRequired' => (bool)($decoded['grantRequired'] ?? false),
-			'authContext' => ['publicKeyFingerprint' => ($decoded['publicKeyFingerprint'] ?? null)],
-		];
+		return $endpoint;
 
-	}//end resolveService()
+	}//end entryEndpoint()
 
 	/**
 	 * {@inheritDoc}
@@ -299,6 +326,49 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 * @spec openspec/specs/fsc-connectivity/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header-on-call
 	 */
 	public function call(array $directoryConfig, array $resolution, string $method, array $payload): array {
+		$run = new FscCallRun(method: strtoupper($method), url: $this->requireEndpoint(resolution: $resolution));
+		$run->authConfig = (array)($directoryConfig['authentication'] ?? []);
+		$run->useMtls    = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $run->authConfig);
+		$run->requestOptions = [
+			'headers' => $this->callHeaders(directoryConfig: $directoryConfig, useMtls: $run->useMtls),
+			'json' => $payload,
+			'http_errors' => false,
+		];
+
+		return $this->callResult(response: $this->send(run: $run));
+
+	}//end call()
+
+	/**
+	 * Send the call, wrapping a transport failure in a connectivity exception.
+	 *
+	 * @param FscCallRun $run The call.
+	 *
+	 * @return ResponseInterface The endpoint's answer.
+	 *
+	 * @throws FscConnectivityException When the mTLS or token-mode transport fails.
+	 */
+	private function send(FscCallRun $run): ResponseInterface {
+		try {
+			return $this->dispatch(run: $run);
+		} catch (MtlsTransportException $exception) {
+			throw $this->mtlsCallFailure(exception: $exception);
+		} catch (GuzzleException $exception) {
+			throw $this->unexpectedCallFailure(exception: $exception);
+		}
+
+	}//end send()
+
+	/**
+	 * The resolution's endpoint; it is required.
+	 *
+	 * @param array $resolution The resolution returned by {@see resolveService()}.
+	 *
+	 * @return string The endpoint.
+	 *
+	 * @throws FscConnectivityException When the resolution carries none.
+	 */
+	private function requireEndpoint(array $resolution): string {
 		$endpoint = (string)($resolution['endpoint'] ?? '');
 		if ($endpoint === '') {
 			throw new FscConnectivityException(
@@ -306,9 +376,21 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 			);
 		}
 
-		$authConfig = (array)($directoryConfig['authentication'] ?? []);
-		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+		return $endpoint;
 
+	}//end requireEndpoint()
+
+	/**
+	 * The JSON headers, with the token Authorization header unless mTLS is configured.
+	 *
+	 * @param array $directoryConfig The FSC source's `configuration.directory` object.
+	 * @param bool  $useMtls         Whether the call goes over mTLS.
+	 *
+	 * @return array<string, string> The headers.
+	 *
+	 * @throws FscConnectivityException When token mode has no usable token.
+	 */
+	private function callHeaders(array $directoryConfig, bool $useMtls): array {
 		$headers = [
 			'Content-Type' => 'application/json',
 			'Accept' => 'application/json',
@@ -318,40 +400,60 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 			$headers['Authorization'] = $this->buildAuthorizationHeader(directoryConfig: $directoryConfig);
 		}
 
-		$requestOptions = [
-			'headers' => $headers,
-			'json' => $payload,
-			'http_errors' => false,
-		];
+		return $headers;
 
-		try {
-			$response = $this->dispatch(
-				useMtls: $useMtls,
-				authConfig: $authConfig,
-				method: strtoupper($method),
-				url: $endpoint,
-				requestOptions: $requestOptions
-			);
-		} catch (MtlsTransportException $exception) {
-			$this->logger->warning(
-				'[FscDirectoryClient] mTLS call failed',
-				['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
-			);
-			throw new FscConnectivityException(
-				message: 'The FSC mTLS call failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
-				previous: $exception
-			);
-		} catch (GuzzleException $exception) {
-			$this->logger->warning(
-				'[FscDirectoryClient] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new FscConnectivityException(
-				message: 'The FSC call failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+	}//end callHeaders()
 
+	/**
+	 * Log a failed mTLS call and wrap it.
+	 *
+	 * @param MtlsTransportException $exception The failure.
+	 *
+	 * @return FscConnectivityException The exception to throw.
+	 */
+	private function mtlsCallFailure(MtlsTransportException $exception): FscConnectivityException {
+		$this->logger->warning(
+			'[FscDirectoryClient] mTLS call failed',
+			['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
+		);
+
+		return new FscConnectivityException(
+			message: 'The FSC mTLS call failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
+			previous: $exception
+		);
+
+	}//end mtlsCallFailure()
+
+	/**
+	 * Log an unexpected transport failure of a call and wrap it.
+	 *
+	 * @param GuzzleException $exception The failure.
+	 *
+	 * @return FscConnectivityException The exception to throw.
+	 */
+	private function unexpectedCallFailure(GuzzleException $exception): FscConnectivityException {
+		$this->logger->warning(
+			'[FscDirectoryClient] unexpected transport failure',
+			['exception' => $exception->getMessage()]
+		);
+
+		return new FscConnectivityException(
+			message: 'The FSC call failed unexpectedly: ' . $exception->getMessage(),
+			previous: $exception
+		);
+
+	}//end unexpectedCallFailure()
+
+	/**
+	 * The call's result: its reference, status and decoded body; a non-2xx answer is refused.
+	 *
+	 * @param ResponseInterface $response The endpoint's answer.
+	 *
+	 * @return array{ref: string, statusCode: int, body: mixed}
+	 *
+	 * @throws FscConnectivityException When the endpoint answered non-2xx.
+	 */
+	private function callResult(ResponseInterface $response): array {
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
 		if ($status < 200 || $status >= 300) {
@@ -364,7 +466,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 			'body' => (json_decode($body, true) ?? $body),
 		];
 
-	}//end call()
+	}//end callResult()
 
 	/**
 	 * Dispatch the downstream call over mTLS when configured, else over the
@@ -372,11 +474,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 * two: an mTLS resolve/handshake failure propagates as
 	 * {@see MtlsTransportException}.
 	 *
-	 * @param boolean $useMtls Whether `authentication.mode=mtls` is configured.
-	 * @param array $authConfig The source's `configuration.directory.authentication` object.
-	 * @param string $method The already-uppercased HTTP method.
-	 * @param string $url The absolute request URL.
-	 * @param array $requestOptions The Guzzle request options.
+	 * @param FscCallRun $run The call: method, URL, transport and request options.
 	 *
 	 * @return ResponseInterface The Guzzle response.
 	 *
@@ -385,19 +483,13 @@ class FscDirectoryClient implements FscConnectivityProviderInterface {
 	 *
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-fscdirectoryclient-routes-through-the-mtls-transport-when-configured
 	 */
-	private function dispatch(
-		bool $useMtls,
-		array $authConfig,
-		string $method,
-		string $url,
-		array $requestOptions,
-	): ResponseInterface {
-		if ($useMtls === true) {
-			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
-			return $this->mtlsTransport->request($this->httpClient, $method, $url, $requestOptions, $bundle);
+	private function dispatch(FscCallRun $run): ResponseInterface {
+		if ($run->useMtls === true) {
+			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $run->authConfig);
+			return $this->mtlsTransport->request($this->httpClient, $run->method, $run->url, $run->requestOptions, $bundle);
 		}
 
-		return $this->httpClient->request($method, $url, $requestOptions);
+		return $this->httpClient->request($run->method, $run->url, $run->requestOptions);
 	}//end dispatch()
 
 	/**

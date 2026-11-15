@@ -1,0 +1,175 @@
+{
+    "no-components": {
+        "throws": "InvalidArgumentException",
+        "message": "OAS must contain a components property"
+    },
+    "empty-components": {
+        "return": {
+            "creates": [],
+            "updates": [],
+            "collisions": [],
+            "unresolvedReferences": [],
+            "credentialsNeedingReentry": []
+        }
+    },
+    "every-kind": {
+        "return": {
+            "creates": [
+                {
+                    "type": "source",
+                    "slug": "new-src"
+                },
+                {
+                    "type": "mapping",
+                    "slug": "map-new"
+                },
+                {
+                    "type": "rule",
+                    "slug": "rule-x"
+                },
+                {
+                    "type": "endpoint",
+                    "slug": "ep-b"
+                },
+                {
+                    "type": "endpoint",
+                    "slug": "ep-c"
+                },
+                {
+                    "type": "endpoint",
+                    "slug": "ep-d"
+                }
+            ],
+            "updates": [
+                {
+                    "type": "source",
+                    "slug": "src-a",
+                    "id": "uuid-src-a"
+                },
+                {
+                    "type": "mapping",
+                    "slug": "map-a",
+                    "id": "uuid-map-a"
+                },
+                {
+                    "type": "rule",
+                    "slug": "rule-a",
+                    "id": "uuid-rule-a"
+                },
+                {
+                    "type": "endpoint",
+                    "slug": "ep-a",
+                    "id": "uuid-ep-a"
+                },
+                {
+                    "type": "job",
+                    "slug": "job-a",
+                    "id": "uuid-job-a"
+                }
+            ],
+            "collisions": [
+                {
+                    "type": "source",
+                    "slug": "shared-job",
+                    "reason": "slug matches an existing job object"
+                },
+                {
+                    "type": "job",
+                    "slug": "shared",
+                    "reason": "slug matches an existing source object"
+                }
+            ],
+            "unresolvedReferences": [
+                {
+                    "type": "mapping",
+                    "slug": "map-a",
+                    "field": "target_id",
+                    "value": "missing-src"
+                },
+                {
+                    "type": "rule",
+                    "slug": "rule-x",
+                    "field": "configuration.sourceId",
+                    "value": "nope"
+                },
+                {
+                    "type": "rule",
+                    "slug": "rule-x",
+                    "field": "configuration.nested.jobId",
+                    "value": "job-zz"
+                },
+                {
+                    "type": "rule",
+                    "slug": "rule-x",
+                    "field": "configuration.list.0.mapping",
+                    "value": "map-gone"
+                },
+                {
+                    "type": "rule",
+                    "slug": "rule-x",
+                    "field": "configuration.mySourceId",
+                    "value": "missing"
+                },
+                {
+                    "type": "endpoint",
+                    "slug": "ep-a",
+                    "field": "targetId",
+                    "value": "src-missing"
+                },
+                {
+                    "type": "endpoint",
+                    "slug": "ep-a",
+                    "field": "outputMapping",
+                    "value": "map-missing"
+                },
+                {
+                    "type": "endpoint",
+                    "slug": "ep-a",
+                    "field": "rules[]",
+                    "value": "rule-gone"
+                },
+                {
+                    "type": "job",
+                    "slug": "job-a",
+                    "field": "configuration.synchronization",
+                    "value": "sync-missing"
+                }
+            ],
+            "credentialsNeedingReentry": [
+                {
+                    "type": "source",
+                    "slug": "src-a",
+                    "fields": [
+                        "secret",
+                        "username"
+                    ]
+                },
+                {
+                    "type": "source",
+                    "slug": "new-src",
+                    "fields": [
+                        "apikey",
+                        "secret",
+                        "username",
+                        "password",
+                        "jwt",
+                        "authorizationHeader",
+                        "authenticationConfig"
+                    ]
+                },
+                {
+                    "type": "source",
+                    "slug": "shared-job",
+                    "fields": [
+                        "secret",
+                        "username",
+                        "password",
+                        "jwt",
+                        "authorizationHeader",
+                        "authenticationConfig"
+                    ]
+                }
+            ]
+        }
+    }
+}

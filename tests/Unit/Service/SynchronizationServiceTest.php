@@ -9,15 +9,21 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\MappingService;
 use OCA\Integriq\Service\ObjectService;
+use OCA\Integriq\Service\Synchronization\FileFetchItem;
+use OCA\Integriq\Service\Synchronization\FileFetchRequest;
 use OCA\Integriq\Service\SynchronizationLogService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\Tables\TablesSyncAdapter;
@@ -1710,15 +1716,16 @@ HTML;
 
 		$ownership = $this->getMockBuilder(\OCA\Integriq\Service\Ownership\RecordOwnershipService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['forObject'])
+			->onlyMethods(['forObjectOrFail'])
 			->getMock();
-		$ownership->method('forObject')->willReturn(
+		$ownership->method('forObjectOrFail')->willReturn(
 			new \OCA\Integriq\Service\Ownership\OwnershipState('source', 'source-uuid-brp', '999993653', null, true, false, null, 'sync-uuid-brp', 'BRP personen')
 		);
 		$listener = new \OCA\Integriq\EventListener\SourceOwnedDeleteGuardListener(
 			$ownership,
 			new \OCA\Integriq\Service\Ownership\LocalDeleteGuard(),
-			new \Psr\Log\NullLogger()
+			new \Psr\Log\NullLogger(),
+			$this->createMock(\OCA\Integriq\Service\ListenerSchemaResolver::class)
 		);
 
 		$stopped = [];
@@ -1983,14 +1990,15 @@ HTML;
 			}
 		);
 
-		$filename = null;
 		$args = [
-			['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
-			'/attachment/1',
-			['write' => false, 'sourceConfiguration' => []],
-			'object-1',
-			[],
-			&$filename,
+			new FileFetchRequest(
+				source: ['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
+				config: ['write' => false, 'sourceConfiguration' => []],
+				endpoint: '/attachment/1',
+				objectId: 'object-1',
+				ruleId: 0
+			),
+			new FileFetchItem(endpoint: '/attachment/1', objectId: 'object-1'),
 		];
 
 		$method = new \ReflectionMethod(SynchronizationService::class, 'fetchFile');
@@ -2041,18 +2049,19 @@ HTML;
 			}
 		);
 
-		$filename = null;
 		$args = [
-			['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
-			'/attachment/1',
-			[
-				'write' => false,
-				'contentPath' => 'content',
-				'sourceConfiguration' => [],
-			],
-			'object-1',
-			[],
-			&$filename,
+			new FileFetchRequest(
+				source: ['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
+				config: [
+					'write' => false,
+					'contentPath' => 'content',
+					'sourceConfiguration' => [],
+				],
+				endpoint: '/attachment/1',
+				objectId: 'object-1',
+				ruleId: 0
+			),
+			new FileFetchItem(endpoint: '/attachment/1', objectId: 'object-1'),
 		];
 
 		$method = new \ReflectionMethod(SynchronizationService::class, 'fetchFile');
@@ -2118,14 +2127,8 @@ HTML;
 		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$fileService->method('getFiles')->willReturn([]);
 		$fileService->method('saveFile')->willReturnCallback(
-			function (...$args) use ($onSave) {
-				$fileName = null;
-				foreach ($args as $arg) {
-					if (is_string($arg) === true && $arg !== '') {
-						$fileName = $arg;
-						break;
-					}
-				}
+			function ($objectEntity, FileUpload $upload) use ($onSave) {
+				$fileName = $upload->fileName;
 
 				$this->fetchRun['saved'][] = $fileName;
 				$this->fetchRun['timeline'][] = 'save:' . $fileName;
@@ -2262,10 +2265,13 @@ HTML;
 		$method->setAccessible(true);
 		$method->invoke(
 			$this->service,
-			$source,
-			['sourceConfiguration' => []],
-			$endpoints,
-			'11111111-2222-3333-4444-555555555555'
+			new FileFetchRequest(
+				source: $source,
+				config: ['sourceConfiguration' => []],
+				endpoint: $endpoints,
+				objectId: '11111111-2222-3333-4444-555555555555',
+				ruleId: 0
+			)
 		);
 	}//end runMultiFileFetch()
 

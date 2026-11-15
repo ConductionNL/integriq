@@ -1,0 +1,47 @@
+{
+    "full": {
+        "referenceShape": true,
+        "referenceInXml": 1,
+        "keys": [
+            "referentienummer",
+            "xml"
+        ],
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:zkn=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xmime=\"http://www.w3.org/2005/05/xmlmime\"><soap:Body><zkn:edcLk01><zkn:stuurgegevens><StUF:berichtcode>Lk01</StUF:berichtcode><StUF:zender><StUF:organisatie>0363</StUF:organisatie><StUF:applicatie>integriq</StUF:applicatie></StUF:zender><StUF:ontvanger><StUF:organisatie>0363</StUF:organisatie><StUF:applicatie>ZSH</StUF:applicatie></StUF:ontvanger><StUF:referentienummer>{REFERENCE}</StUF:referentienummer><StUF:tijdstipBericht>{CLOCK}</StUF:tijdstipBericht><StUF:entiteittype>EDC</StUF:entiteittype></zkn:stuurgegevens><zkn:parameters><StUF:mutatiesoort>T</StUF:mutatiesoort><StUF:indicatorOvername>V</StUF:indicatorOvername></zkn:parameters><zkn:object StUF:entiteittype=\"EDC\" StUF:verwerkingssoort=\"T\"><zkn:identificatie>0363-DOC-1</zkn:identificatie><zkn:dct.omschrijving>Besluit</zkn:dct.omschrijving><zkn:creatiedatum>20261005</zkn:creatiedatum><zkn:ontvangstdatum>20261006</zkn:ontvangstdatum><zkn:titel>Besluit op aanvraag</zkn:titel><zkn:beschrijving>Kopie</zkn:beschrijving><zkn:formaat>application/x-pdf</zkn:formaat><zkn:taal>dut</zkn:taal><zkn:versie>2</zkn:versie><zkn:status>definitief</zkn:status><zkn:verzenddatum>20261007</zkn:verzenddatum><zkn:vertrouwelijkAanduiding>ZAAKVERTROUWELIJK</zkn:vertrouwelijkAanduiding><zkn:auteur>Team Vergunningen</zkn:auteur><zkn:link>https://example.org/doc/1</zkn:link><zkn:inhoud StUF:bestandsnaam=\"besluit.pdf\" xmime:contentType=\"application/pdf\">UERGAGJ5dGVz</zkn:inhoud><zkn:isRelevantVoor StUF:entiteittype=\"EDCZAK\" StUF:verwerkingssoort=\"T\"><zkn:gerelateerde StUF:entiteittype=\"ZAK\" StUF:verwerkingssoort=\"I\"><zkn:identificatie>0363-ZAAK-9</zkn:identificatie></zkn:gerelateerde></zkn:isRelevantVoor></zkn:object></zkn:edcLk01></soap:Body></soap:Envelope>\n"
+    },
+    "sparse": {
+        "referenceShape": true,
+        "referenceInXml": 1,
+        "keys": [
+            "referentienummer",
+            "xml"
+        ],
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:zkn=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xmime=\"http://www.w3.org/2005/05/xmlmime\"><soap:Body><zkn:edcLk01><zkn:stuurgegevens><StUF:berichtcode>Lk01</StUF:berichtcode><StUF:zender><StUF:organisatie>0363</StUF:organisatie><StUF:applicatie>integriq</StUF:applicatie></StUF:zender><StUF:ontvanger><StUF:organisatie>0363</StUF:organisatie></StUF:ontvanger><StUF:referentienummer>{REFERENCE}</StUF:referentienummer><StUF:tijdstipBericht>{CLOCK}</StUF:tijdstipBericht><StUF:entiteittype>EDC</StUF:entiteittype></zkn:stuurgegevens><zkn:parameters><StUF:mutatiesoort>T</StUF:mutatiesoort><StUF:indicatorOvername>V</StUF:indicatorOvername></zkn:parameters><zkn:object StUF:entiteittype=\"EDC\" StUF:verwerkingssoort=\"T\"><zkn:identificatie>0363-DOC-1</zkn:identificatie><zkn:dct.omschrijving>Besluit</zkn:dct.omschrijving><zkn:creatiedatum StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:ontvangstdatum StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:titel>Brief</zkn:titel><zkn:beschrijving StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:formaat>application/pdf</zkn:formaat><zkn:taal StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:versie StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:status StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:verzenddatum StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:vertrouwelijkAanduiding StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:auteur StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:link StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:inhoud StUF:bestandsnaam=\"besluit.pdf\" xmime:contentType=\"application/pdf\">UERGAGJ5dGVz</zkn:inhoud><zkn:isRelevantVoor StUF:entiteittype=\"EDCZAK\" StUF:verwerkingssoort=\"T\"><zkn:gerelateerde StUF:entiteittype=\"ZAK\" StUF:verwerkingssoort=\"I\"><zkn:identificatie>0363-ZAAK-9</zkn:identificatie></zkn:gerelateerde></zkn:isRelevantVoor></zkn:object></zkn:edcLk01></soap:Body></soap:Envelope>\n"
+    },
+    "blank-optional": {
+        "referenceShape": true,
+        "referenceInXml": 1,
+        "keys": [
+            "referentienummer",
+            "xml"
+        ],
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:StUF=\"http://www.egem.nl/StUF/StUF0301\" xmlns:zkn=\"http://www.egem.nl/StUF/sector/zkn/0310\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xmime=\"http://www.w3.org/2005/05/xmlmime\"><soap:Body><zkn:edcLk01><zkn:stuurgegevens><StUF:berichtcode>Lk01</StUF:berichtcode><StUF:zender><StUF:organisatie>0363</StUF:organisatie></StUF:zender><StUF:ontvanger><StUF:organisatie>0363</StUF:organisatie><StUF:applicatie>ZSH</StUF:applicatie></StUF:ontvanger><StUF:referentienummer>{REFERENCE}</StUF:referentienummer><StUF:tijdstipBericht>{CLOCK}</StUF:tijdstipBericht><StUF:entiteittype>EDC</StUF:entiteittype></zkn:stuurgegevens><zkn:parameters><StUF:mutatiesoort>T</StUF:mutatiesoort><StUF:indicatorOvername>V</StUF:indicatorOvername></zkn:parameters><zkn:object StUF:entiteittype=\"EDC\" StUF:verwerkingssoort=\"T\"><zkn:identificatie>0363-DOC-1</zkn:identificatie><zkn:dct.omschrijving>Besluit</zkn:dct.omschrijving><zkn:creatiedatum StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:ontvangstdatum StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:titel>Brief</zkn:titel><zkn:beschrijving StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:formaat StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:taal StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:versie StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:status StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:verzenddatum StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:vertrouwelijkAanduiding StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:auteur StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:link StUF:noValue=\"geenWaarde\" xsi:nil=\"true\"/><zkn:inhoud StUF:bestandsnaam=\"besluit.pdf\" xmime:contentType=\"application/pdf\">UERGAGJ5dGVz</zkn:inhoud><zkn:isRelevantVoor StUF:entiteittype=\"EDCZAK\" StUF:verwerkingssoort=\"T\"><zkn:gerelateerde StUF:entiteittype=\"ZAK\" StUF:verwerkingssoort=\"I\"><zkn:identificatie>0363-ZAAK-9</zkn:identificatie></zkn:gerelateerde></zkn:isRelevantVoor></zkn:object></zkn:edcLk01></soap:Body></soap:Envelope>\n"
+    },
+    "marker": {
+        "refused": "Rendered StUF-ZDS message still contains an unresolved template marker; refusing to send."
+    },
+    "no-documentId": {
+        "refused": "A voegZaakdocumentToe message needs a identificatie; refusing to send without one."
+    },
+    "blank-zaak": {
+        "refused": "A voegZaakdocumentToe message needs a zaakIdentificatie; refusing to send without one."
+    },
+    "no-documenttype": {
+        "refused": "A voegZaakdocumentToe message needs a documenttype; refusing to send without one."
+    },
+    "no-titel": {
+        "refused": "A voegZaakdocumentToe message needs a titel; refusing to send without one."
+    },
+    "blank-titel": {
+        "refused": "A voegZaakdocumentToe message needs a titel; refusing to send without one."
+    }
+}

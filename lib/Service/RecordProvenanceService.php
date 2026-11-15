@@ -32,7 +32,7 @@ use OCP\IL10N;
  *
  * @spec openspec/specs/synchronization/spec.md
  */
-class RecordProvenanceService {
+class RecordProvenanceService implements RecordProvenanceServiceInterface {
 
 	/**
 	 * The register integriq keeps its synchronizations in.
@@ -80,7 +80,8 @@ class RecordProvenanceService {
 		$sourceName = (string)($sourceData['name'] ?? $this->l10n->t('Unknown source'));
 		$logs = $this->read(
 			schema: 'synchronization_contract_log',
-			filters: ['synchronization_contract' => (string)$contract->getUuid()],
+			// The engine links a log to its contract by synchronizationContractId, holding the contract's serialised id (its uuid).
+			filters: ['synchronizationContractId' => (string)$contract->getUuid()],
 			limit: 100
 		);
 
@@ -127,7 +128,7 @@ class RecordProvenanceService {
 		}
 
 		try {
-			return $this->objectService->find(id: $id, register: self::REGISTER, schema: $schema, _rbac: false, _multitenancy: false);
+			return $this->objectService->find(id: $id, register: self::REGISTER, schema: $schema, _rbac: false);
 		} catch (\Throwable) {
 			return null;
 		}
@@ -149,8 +150,7 @@ class RecordProvenanceService {
 				'limit' => $limit,
 				'sort' => ['created' => 'DESC'],
 			],
-			_rbac: false,
-			_multitenancy: false
+			_rbac: false
 		);
 
 		return array_values(array_filter(($result['results'] ?? $result), static fn ($item): bool => $item instanceof ObjectEntity));

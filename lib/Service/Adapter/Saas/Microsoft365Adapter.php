@@ -16,6 +16,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -41,7 +44,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/archive/2026-09-29-connector-category-adapter-scaffolding/tasks.md#task-4
  */
-class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements DocumentSearchSource {
+class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements DocumentSearchSource, Microsoft365AdapterInterface {
 
 	/**
 	 * Graph `$select` fields for the mail-metadata-only read.
@@ -274,7 +277,9 @@ class Microsoft365Adapter extends AbstractCategoryAdapterProvider implements Doc
 			method: 'POST',
 			path: '/v1.0/search/query',
 			headers: ['Content-Type' => 'application/json'],
-			body: $this->driveSearch->requestBody(terms: $terms, from: $from, to: $to, limit: $limit, region: $region),
+			body: $this->driveSearch->requestBody(
+				query: new DriveSearchQuery(terms: $terms, from: $from, to: $to, limit: $limit, region: $region)
+			),
 		);
 
 		return $this->driveSearch->answer(response: $response, sourceSlug: $this->getId(), limit: $limit, notices: $plan['notices']);

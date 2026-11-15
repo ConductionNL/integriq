@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Kiss;
 
+use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Service\WebhookSignatureService;
 
 /**
@@ -130,8 +131,9 @@ class WebhookCtiProvider implements CtiProviderInterface {
 			);
 		}
 
+		// A shared secret equal to the export placeholder is a public string, so it is not configured.
 		$sharedSecret = (string) ($sourceConfiguration['sharedSecret'] ?? '');
-		if ($sharedSecret !== '') {
+		if ($sharedSecret !== '' && $sharedSecret !== SensitiveFieldRegistry::PLACEHOLDER) {
 			return hash_equals($sharedSecret, (string) ($headers['x-api-key'] ?? ''));
 		}
 
@@ -158,18 +160,8 @@ class WebhookCtiProvider implements CtiProviderInterface {
 			path: (string) ($sourceConfiguration['eventsPath'] ?? '')
 		);
 
-		$mapping = ($sourceConfiguration['fieldMapping'] ?? []);
-		$kindMap = ($sourceConfiguration['kindMapping'] ?? []);
-
-		$safeMapping = [];
-		if (is_array($mapping) === true) {
-			$safeMapping = $mapping;
-		}
-
-		$safeKindMap = [];
-		if (is_array($kindMap) === true) {
-			$safeKindMap = $kindMap;
-		}
+		$safeMapping = self::arraySetting(sourceConfiguration: $sourceConfiguration, key: 'fieldMapping');
+		$safeKindMap = self::arraySetting(sourceConfiguration: $sourceConfiguration, key: 'kindMapping');
 
 		$events = [];
 		foreach ($items as $item) {
@@ -191,6 +183,24 @@ class WebhookCtiProvider implements CtiProviderInterface {
 		return $events;
 
 	}//end normalize()
+
+	/**
+	 * A setting that must be a map, or an empty one when it is not.
+	 *
+	 * @param array  $sourceConfiguration The source's configuration.
+	 * @param string $key                 The setting.
+	 *
+	 * @return array The map.
+	 */
+	private static function arraySetting(array $sourceConfiguration, string $key): array {
+		$value = ($sourceConfiguration[$key] ?? []);
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+
+	}//end arraySetting()
 
 	/**
 	 * The events in a payload.

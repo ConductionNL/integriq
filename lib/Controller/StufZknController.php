@@ -3,6 +3,9 @@
 /**
  * Integriq StUF-ZKN Controller.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * REST/SOAP controller for the stuf-zkn-bridge: the inbound SOAP endpoint
  * accepts a `zakLk01`/`edcLk01` kennisgeving from a municipality's legacy
  * StUF-ZKN estate and replies with a `Bv03`/`Fo03` StUF reply body (mirrors
@@ -28,9 +31,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/specs/stuf-zkn-bridge/spec.md
@@ -42,11 +42,12 @@ namespace OCA\Integriq\Controller;
 
 use OCA\Integriq\Exception\StufZknProviderException;
 use OCA\Integriq\Exception\StufZknTranslationException;
-use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCA\Integriq\Service\StufZknSyncServiceInterface;
 use OCA\Integriq\Service\StufZkn\StufZknRequestBody;
-use OCA\Integriq\Service\Intake\WebhookGate;
-use OCA\Integriq\Service\Intake\WebhookProfiles;
+use OCA\Integriq\Service\Dso\DsoIdentity;
+use OCA\Integriq\Service\Intake\WebhookGateInterface;
+use OCA\Integriq\Service\Intake\WebhookProfilesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -86,9 +87,9 @@ class StufZknController extends Controller {
 	 * @param string $appName App identifier ("integriq").
 	 * @param IRequest $request Current request.
 	 * @param StufZknSyncServiceInterface $syncService Inbound/outbound orchestration logic.
-	 * @param WebhookGate $gate The consumer model: signature, account and refusals of the inbound webhook.
+	 * @param WebhookGateInterface $gate The consumer model: signature, account and refusals of the inbound webhook.
 	 * @param IUserSession $userSession The user session (push endpoint).
-	 * @param ActionAuthService $actionAuth The action authorization service.
+	 * @param ActionAuthServiceInterface $actionAuth The action authorization service.
 	 * @param IL10N $l The localization service.
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param StufZknRequestBody $requestBody Reads the request body up to the ceiling.
@@ -97,9 +98,9 @@ class StufZknController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly StufZknSyncServiceInterface $syncService,
-		private readonly WebhookGate $gate,
+		private readonly WebhookGateInterface $gate,
 		private readonly IUserSession $userSession,
-		private readonly ActionAuthService $actionAuth,
+		private readonly ActionAuthServiceInterface $actionAuth,
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly StufZknRequestBody $requestBody = new StufZknRequestBody(),
@@ -140,28 +141,42 @@ class StufZknController extends Controller {
 			return new JSONResponse(['error' => 'payload_too_large'], Http::STATUS_REQUEST_ENTITY_TOO_LARGE);
 		}
 
-		$identity = $this->gate->identify(profile: WebhookProfiles::STUF_ZKN, rawBody: $rawBody, request: $this->request);
+		$identity = $this->gate->identify(profile: WebhookProfilesInterface::STUF_ZKN, rawBody: $rawBody, request: $this->request);
 		if ($identity instanceof JSONResponse) {
 			return $identity;
 		}
 
-		// Signature verification runs over the exact raw bytes; the
-		// kennisgeving is XML (not JSON), so the body is passed to the sync
-		// service verbatim — never a second decode pass. receiveInbound()
-		// never throws: any internal failure is already shaped into a Fo03.
-		// It runs as the StUF-ZKN connection's account, so the upsert and the
-		// stuf_message are written under that account's rights.
+		return $this->deliverKennisgeving(identity: $identity, rawBody: $rawBody);
+	}//end inbound()
+
+	/**
+	 * Hand a signed kennisgeving to the sync service as the connection's account.
+	 *
+	 * Signature verification runs over the exact raw bytes; the
+	 * kennisgeving is XML (not JSON), so the body is passed to the sync
+	 * service verbatim — never a second decode pass. receiveInbound()
+	 * never throws: any internal failure is already shaped into a Fo03.
+	 * It runs as the StUF-ZKN connection's account, so the upsert and the
+	 * stuf_message are written under that account's rights.
+	 *
+	 * @param DsoIdentity $identity The consumer the kennisgeving authenticated as.
+	 * @param string      $rawBody  The kennisgeving's raw bytes.
+	 *
+	 * @return DataDisplayResponse|JSONResponse The `Bv03`/`Fo03` reply (200), or 503 when not stored.
+	 */
+	private function deliverKennisgeving(DsoIdentity $identity, string $rawBody): DataDisplayResponse|JSONResponse {
 		try {
 			$replyXml = (string)$this->gate->deliver(
 				identity: $identity,
 				operation: fn (): string => $this->syncService->receiveInbound(soapXml: $rawBody)
 			);
 		} catch (Throwable $exception) {
-			return $this->gate->notStored(profile: WebhookProfiles::STUF_ZKN, reason: $exception->getMessage());
+			return $this->gate->notStored(profile: WebhookProfilesInterface::STUF_ZKN, reason: $exception->getMessage());
 		}
 
 		return new DataDisplayResponse($replyXml, Http::STATUS_OK, ['Content-Type' => self::XML_CONTENT_TYPE]);
-	}//end inbound()
+
+	}//end deliverKennisgeving()
 
 	/**
 	 * Register one outbound `zakLk01` kennisgeving for a zaak create/update/status change.
@@ -187,35 +202,69 @@ class StufZknController extends Controller {
 		$case = (array)($params['zaak'] ?? []);
 		$processingKind = (string)($params['verwerkingssoort'] ?? '');
 		if ($case === [] || $processingKind === '') {
-			return new JSONResponse(
-				[
-					'error' => 'missing_fields',
-					'message' => $this->l->t('The "zaak" and "verwerkingssoort" fields are required'),
-				],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->missingFields();
 		}
 
+		return $this->sendNotification(case: $case, processingKind: $processingKind);
+
+	}//end outbound()
+
+	/**
+	 * Answer an outbound request without a zaak or a verwerkingssoort.
+	 *
+	 * @return JSONResponse The 400 error envelope.
+	 */
+	private function missingFields(): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => 'missing_fields',
+				'message' => $this->l->t('The "zaak" and "verwerkingssoort" fields are required'),
+			],
+			Http::STATUS_BAD_REQUEST
+		);
+
+	}//end missingFields()
+
+	/**
+	 * Register a checked kennisgeving and answer its outcome.
+	 *
+	 * @param array<string,mixed> $case           The zaak.
+	 * @param string              $processingKind The verwerkingssoort.
+	 *
+	 * @return JSONResponse `{referentienummer, ref}`, or the 400/502/503 error envelope.
+	 */
+	private function sendNotification(array $case, string $processingKind): JSONResponse {
 		try {
-			$result = $this->syncService->sendNotification(case: $case, processingKind: $processingKind);
-			return new JSONResponse($result);
+			return new JSONResponse($this->syncService->sendNotification(case: $case, processingKind: $processingKind));
 		} catch (StufZknTranslationException $exception) {
 			return new JSONResponse(
 				['error' => 'invalid_kennisgeving', 'message' => $exception->getMessage()],
 				Http::STATUS_BAD_REQUEST
 			);
 		} catch (StufZknProviderException $exception) {
-			$this->logger->warning('[StufZknController] send failed: ' . $exception->getMessage());
+			return $this->sendFailure(exception: $exception);
+		}
 
-			$status = Http::STATUS_BAD_GATEWAY;
-			$code = 'stuf_zkn_send_failed';
-			if (str_contains($exception->getMessage(), 'No active StUF-ZKN source') === true) {
-				$status = Http::STATUS_SERVICE_UNAVAILABLE;
-				$code = 'not_configured';
-			}
+	}//end sendNotification()
 
-			return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
-		}//end try
+	/**
+	 * Log a failed send and answer it: 503 when no StUF-ZKN source is configured, else 502.
+	 *
+	 * @param StufZknProviderException $exception The provider failure.
+	 *
+	 * @return JSONResponse The error envelope.
+	 */
+	private function sendFailure(StufZknProviderException $exception): JSONResponse {
+		$this->logger->warning('[StufZknController] send failed: ' . $exception->getMessage());
 
-	}//end outbound()
+		$status = Http::STATUS_BAD_GATEWAY;
+		$code = 'stuf_zkn_send_failed';
+		if (str_contains($exception->getMessage(), 'No active StUF-ZKN source') === true) {
+			$status = Http::STATUS_SERVICE_UNAVAILABLE;
+			$code = 'not_configured';
+		}
+
+		return new JSONResponse(['error' => $code, 'message' => $exception->getMessage()], $status);
+
+	}//end sendFailure()
 }//end class

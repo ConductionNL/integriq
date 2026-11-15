@@ -30,9 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Peppol;
 
-use OCA\Integriq\Exception\BrokeredCallConfigurationException;
 use OCA\Integriq\Exception\PeppolProviderException;
+use OCA\Integriq\Service\BrokeredCallConfigurationException;
 use OCA\Integriq\Service\BrokeredCallService;
+use OCA\Integriq\Service\Helper\BrokeredCall;
+use OCA\Integriq\Service\Helper\BrokeredCallRefusals;
+use OCA\Integriq\Service\Helper\BrokeredJsonDispatch;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -42,7 +45,7 @@ use Throwable;
  *
  * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
  */
-class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterface {
+class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterface, BrokeredCallRefusals {
 	/**
 	 * Constructor.
 	 *
@@ -72,7 +75,7 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
 		$url = $baseUrl . '/participants/' . rawurlencode($peppolId);
 
-		$response = $this->dispatch(sourceConfiguration: $sourceConfiguration, method: 'GET', url: $url);
+		$response = $this->dispatch(sourceConfiguration: $sourceConfiguration, call: new BrokeredCall(method: 'GET', url: $url));
 
 		$decoded = json_decode($response, true);
 		if (is_array($decoded) === false) {
@@ -111,15 +114,91 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 
 		$response = $this->dispatch(
 			sourceConfiguration: $sourceConfiguration,
-			method: 'POST',
-			url: $url,
-			json: [
-				'recipientPeppolId' => $recipientPeppolId,
-				'documentType' => $documentType,
-				'payload' => $payload,
-			]
+			call: new BrokeredCall(
+				method: 'POST',
+				url: $url,
+				json: [
+					'recipientPeppolId' => $recipientPeppolId,
+					'documentType' => $documentType,
+					'payload' => $payload,
+				]
+			)
 		);
 
+		return $this->transmissionId(response: $response);
+	}//end submitDocument()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * A reference that is an absolute URL is fetched only when it is on the
+	 * Access Point's own host, so the brokered credential never goes to
+	 * another server; any other reference is a document id under
+	 * `{baseUrl}/documents/`.
+	 *
+	 * @param array $sourceConfiguration The Peppol source's `configuration` object.
+	 * @param string $reference The Access Point's reference to the document.
+	 *
+	 * @return string The UBL document.
+	 *
+	 * @throws PeppolProviderException When the reference is empty or foreign, or the fetch fails.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	public function fetchInboundDocument(array $sourceConfiguration, string $reference): string {
+		$document = $this->dispatch(
+			sourceConfiguration: $sourceConfiguration,
+			call: new BrokeredCall(method: 'GET', url: $this->documentUrl(sourceConfiguration: $sourceConfiguration, reference: $reference))
+		);
+		if (trim($document) === '') {
+			throw new PeppolProviderException(message: 'The Peppol Access Point returned an empty document for ' . $reference . '.');
+		}
+
+		return $document;
+	}//end fetchInboundDocument()
+
+	/**
+	 * The URL of an inbound document on the Access Point.
+	 *
+	 * @param array $sourceConfiguration The Peppol source's `configuration` object.
+	 * @param string $reference The Access Point's reference to the document.
+	 *
+	 * @return string The URL.
+	 *
+	 * @throws PeppolProviderException When the reference is empty or names another host.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	private function documentUrl(array $sourceConfiguration, string $reference): string {
+		$reference = trim($reference);
+		if ($reference === '') {
+			throw new PeppolProviderException(message: 'The inbound notification named no document to fetch.');
+		}
+
+		$baseUrl = rtrim((string)($sourceConfiguration['baseUrl'] ?? ''), '/');
+		if (preg_match('#^https?://#i', $reference) !== 1) {
+			return $baseUrl . '/documents/' . rawurlencode($reference);
+		}
+
+		$referenceHost = strtolower((string)parse_url($reference, PHP_URL_HOST));
+		$baseHost = strtolower((string)parse_url($baseUrl, PHP_URL_HOST));
+		if ($referenceHost === '' || $referenceHost !== $baseHost) {
+			throw new PeppolProviderException(message: 'The inbound document is not on the Access Point\'s host: ' . $reference);
+		}
+
+		return $reference;
+	}//end documentUrl()
+
+	/**
+	 * The transmissionId the Access Point assigned to a submission.
+	 *
+	 * @param string $response The submission answer body.
+	 *
+	 * @return string The transmission id.
+	 *
+	 * @throws PeppolProviderException When the answer carries no usable transmissionId.
+	 */
+	private function transmissionId(string $response): string {
 		$decoded = json_decode($response, true);
 		$transmissionId = null;
 		if (is_array($decoded) === true) {
@@ -133,62 +212,22 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 		}
 
 		return $transmissionId;
-	}//end submitDocument()
+	}//end transmissionId()
 
 	/**
 	 * Dispatch one brokered call and return its raw body, mapping every
 	 * failure mode to a secret-free {@see PeppolProviderException} — never a
 	 * 500 crash, per REQ-001/REQ-006.
 	 *
-	 * @param array $sourceConfiguration The Peppol source's `configuration` object.
-	 * @param string $method The HTTP method.
-	 * @param string $url The composed URL (only its path+query is forwarded, per BrokeredCallService).
-	 * @param array|null $json Optional JSON request body.
+	 * @param array        $sourceConfiguration The Peppol source's `configuration` object.
+	 * @param BrokeredCall $call                The method, URL and optional JSON body.
 	 *
 	 * @return string The response body.
 	 *
 	 * @throws PeppolProviderException On any configuration, brokering, transport, or upstream error.
 	 */
-	private function dispatch(array $sourceConfiguration, string $method, string $url, ?array $json = null): string {
-		$config = ['authentication' => ($sourceConfiguration['authentication'] ?? [])];
-		if ($json !== null) {
-			$config['json'] = $json;
-		}
-
-		if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
-			throw new PeppolProviderException(
-				message: $this->l->t('Access point credential missing') . ': the `rest` Peppol provider requires '
-					. '`configuration.authentication.credentialRef` — none is configured. Configure a credentialRef '
-					. 'through the OpenRegister credential broker; no plaintext-key fallback is permitted (ADR-007).'
-			);
-		}
-
-		try {
-			$dispatch = $this->brokeredCallService->prepare(
-				config: $config,
-				sourceData: ['type' => 'peppol'],
-				asynchronous: false
-			);
-
-			$response = $this->brokeredCallService->dispatch(
-				credentialId: $dispatch['credentialId'],
-				actingUserId: $dispatch['actingUserId'],
-				method: $method,
-				url: $url,
-				config: $config
-			);
-		} catch (BrokeredCallConfigurationException $exception) {
-			throw new PeppolProviderException(message: $exception->getMessage(), previous: $exception);
-		} catch (Throwable $exception) {
-			$this->logger->warning(
-				'[RestPeppolAccessPointProvider] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new PeppolProviderException(
-				message: 'The Peppol Access Point request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+	private function dispatch(array $sourceConfiguration, BrokeredCall $call): string {
+		$response = $this->brokered()->send(sourceConfiguration: $sourceConfiguration, call: $call);
 
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
@@ -200,4 +239,72 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
 
 		return $body;
 	}//end dispatch()
+
+	/**
+	 * The brokered dispatch this provider sends its calls through.
+	 *
+	 * @return BrokeredJsonDispatch The dispatch.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	private function brokered(): BrokeredJsonDispatch {
+		return new BrokeredJsonDispatch(
+			broker: $this->brokeredCallService,
+			refusals: $this,
+			sourceType: 'peppol'
+		);
+
+	}//end brokered()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return PeppolProviderException The refusal.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	public function credentialMissing(): PeppolProviderException {
+		return new PeppolProviderException(
+			message: $this->l->t('Access point credential missing') . ': the `rest` Peppol provider requires '
+				. '`configuration.authentication.credentialRef` — none is configured. Configure a credentialRef '
+				. 'through the OpenRegister credential broker; no plaintext-key fallback is permitted (ADR-007).'
+		);
+
+	}//end credentialMissing()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param BrokeredCallConfigurationException $cause The broker's refusal.
+	 *
+	 * @return PeppolProviderException The refusal.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	public function configurationRefused(BrokeredCallConfigurationException $cause): PeppolProviderException {
+		return new PeppolProviderException(message: $cause->getMessage(), previous: $cause);
+
+	}//end configurationRefused()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param Throwable $cause The failure.
+	 *
+	 * @return PeppolProviderException The refusal.
+	 *
+	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
+	 */
+	public function transportFailed(Throwable $cause): PeppolProviderException {
+		$this->logger->warning(
+			'[RestPeppolAccessPointProvider] unexpected transport failure',
+			['exception' => $cause->getMessage()]
+		);
+
+		return new PeppolProviderException(
+			message: 'The Peppol Access Point request failed unexpectedly: ' . $cause->getMessage(),
+			previous: $cause
+		);
+
+	}//end transportFailed()
 }//end class
