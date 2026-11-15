@@ -154,16 +154,8 @@ class RegressionSuiteController extends Controller {
 			return new JSONResponse(['error' => $this->l10n->t('Choose the step to save as a test case.')], Http::STATUS_BAD_REQUEST);
 		}
 
-		$edits = [];
-		foreach (['name', 'description', 'input', 'expectedOutput', 'ignoredPaths'] as $key) {
-			$value = $this->request->getParam($key);
-			if ($value !== null) {
-				$edits[$key] = $value;
-			}
-		}
-
 		try {
-			$case = $this->recorder->record(traceId: $id, stepOrder: (int)$step, edits: $edits);
+			$case = $this->recorder->record(traceId: $id, stepOrder: (int)$step, edits: $this->recordEdits());
 		} catch (OutOfBoundsException) {
 			return new JSONResponse(['error' => $this->l10n->t('Trace or step not found.')], Http::STATUS_NOT_FOUND);
 		} catch (InvalidArgumentException) {
@@ -175,4 +167,22 @@ class RegressionSuiteController extends Controller {
 
 		return new JSONResponse($case);
 	}//end record()
+
+	/**
+	 * The dialog's edits that the request carries: `name`, `description`,
+	 * `input`, `expectedOutput` and `ignoredPaths`, each only when given.
+	 *
+	 * @return array<string,mixed> The edits.
+	 */
+	private function recordEdits(): array {
+		$edits = [];
+		foreach (['name', 'description', 'input', 'expectedOutput', 'ignoredPaths'] as $key) {
+			$value = $this->request->getParam($key);
+			if ($value !== null) {
+				$edits[$key] = $value;
+			}
+		}
+
+		return $edits;
+	}//end recordEdits()
 }//end class

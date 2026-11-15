@@ -75,7 +75,7 @@ class PromotionRegressionCheck {
 			foreach ($entities as $key => $entity) {
 				foreach (self::identifiers(key: $key, entity: $entity) as $subjectId) {
 					$found   = $this->suites->failures(subjectType: $subjectType, subjectId: $subjectId);
-					$failing = self::merged(failing: $failing, subjectType: $subjectType, subjectId: $subjectId, found: $found);
+					$failing = self::merged(failing: $failing, subject: ['subjectType' => $subjectType, 'subjectId' => $subjectId], found: $found);
 				}
 			}
 		}
@@ -112,18 +112,17 @@ class PromotionRegressionCheck {
 	 * Add a subject's failures, each case once.
 	 *
 	 * @param array<string,array<string,string>> $failing     The failures so far, by case id.
-	 * @param string                             $subjectType The subject type.
-	 * @param string                             $subjectId   The identifier asked.
+	 * @param array{subjectType: string, subjectId: string} $subject The subject type and the identifier asked.
 	 * @param list<array<string,mixed>>          $found       The subject's failures.
 	 *
 	 * @return array<string,array<string,string>>
 	 */
-	private static function merged(array $failing, string $subjectType, string $subjectId, array $found): array {
+	private static function merged(array $failing, array $subject, array $found): array {
 		foreach ($found as $failure) {
 			$caseId = (string)($failure['caseId'] ?? '');
 			$failing[$caseId] ??= [
-				'subjectType' => $subjectType,
-				'subjectId' => $subjectId,
+				'subjectType' => $subject['subjectType'],
+				'subjectId' => $subject['subjectId'],
 				'caseId' => $caseId,
 				'caseName' => (string)($failure['caseName'] ?? ''),
 			];

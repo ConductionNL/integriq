@@ -91,35 +91,9 @@ class TraceCaseRecorder {
 	 * @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-test-case-can-be-recorded-from-a-traced-execution-req-irt-002
 	 */
 	public function record(string $traceId, int $stepOrder, array $edits = []): array {
-		$entity = $this->traces->find(traceId: $traceId);
-		if ($entity === null) {
-			throw new OutOfBoundsException(sprintf('Trace %s does not exist.', $traceId));
-		}
-
-		$trace = $entity->getObject();
-		$step = $this->stepOf(trace: $trace, order: $stepOrder);
-		$type = (string)($step['type'] ?? '');
-		if (in_array($type, self::RECORDABLE_STEP_TYPES, true) === false) {
-			throw new InvalidArgumentException(sprintf('A test case is recorded from a mapping or synchronization step, not from a %s step.', $type));
-		}
-
-		$subjectId = $this->subjectOf(trace: $trace, step: $step);
-		if ($subjectId === '') {
-			throw new InvalidArgumentException(sprintf('Step %d does not name the %s that ran.', $stepOrder, $type));
-		}
-
-		$case = [
-			'name' => $this->nameOf(edits: $edits, step: $step, traceId: $traceId),
-			'subjectType' => $type,
-			'subjectId' => $subjectId,
-			'input' => $this->objectOf(edited: $edits['input'] ?? null, snapshot: $step['input'] ?? []),
-			'expectedOutput' => $this->objectOf(edited: $edits['expectedOutput'] ?? null, snapshot: $step['output'] ?? []),
-			'ignoredPaths' => array_values(array_filter((array)($edits['ignoredPaths'] ?? []), static fn ($path): bool => is_string($path) && $path !== '')),
-		];
-		$description = trim((string)($edits['description'] ?? ''));
-		if ($description !== '') {
-			$case['description'] = $description;
-		}
+		$step = $this->recordableStep(traceId: $traceId, stepOrder: $stepOrder);
+		$case = self::caseOf(step: $step, edits: $edits);
+		$case['name'] = $this->nameOf(edits: $edits, step: $step, traceId: $traceId);
 
 		$saved = $this->objectService->saveObject(
 			object: $case,
@@ -136,6 +110,64 @@ class TraceCaseRecorder {
 
 		return array_merge($case, ['id' => (string)$saved->getUuid(), 'redactedPaths' => $redacted]);
 	}//end record()
+
+	/**
+	 * The trace's step to record, with the `subjectId` of what ran in it.
+	 *
+	 * @param string $traceId   The trace's id.
+	 * @param int    $stepOrder The step's `order` in the trace.
+	 *
+	 * @return array<string,mixed> The step, with `subjectId` added.
+	 *
+	 * @throws OutOfBoundsException     When the trace or the step does not exist.
+	 * @throws InvalidArgumentException When the step is not a mapping or synchronization step, or names no subject.
+	 */
+	private function recordableStep(string $traceId, int $stepOrder): array {
+		$entity = $this->traces->find(traceId: $traceId);
+		if ($entity === null) {
+			throw new OutOfBoundsException(sprintf('Trace %s does not exist.', $traceId));
+		}
+
+		$trace = $entity->getObject();
+		$step = $this->stepOf(trace: $trace, order: $stepOrder);
+		$type = (string)($step['type'] ?? '');
+		if (in_array($type, self::RECORDABLE_STEP_TYPES, true) === false) {
+			throw new InvalidArgumentException(sprintf('A test case is recorded from a mapping or synchronization step, not from a %s step.', $type));
+		}
+
+		$step['subjectId'] = $this->subjectOf(trace: $trace, step: $step);
+		if ($step['subjectId'] === '') {
+			throw new InvalidArgumentException(sprintf('Step %d does not name the %s that ran.', $stepOrder, $type));
+		}
+
+		return $step;
+	}//end recordableStep()
+
+	/**
+	 * The case's subject, input, expected output, ignored paths and
+	 * description: the dialog's edits where given, else the step's snapshot.
+	 *
+	 * @param array<string,mixed> $step  The recordable step, with its `subjectId`.
+	 * @param array<string,mixed> $edits The dialog's edits.
+	 *
+	 * @return array<string,mixed> The case without its name.
+	 */
+	private static function caseOf(array $step, array $edits): array {
+		$case = [
+			'name' => '',
+			'subjectType' => (string)$step['type'],
+			'subjectId' => $step['subjectId'],
+			'input' => self::objectOf(edited: $edits['input'] ?? null, snapshot: $step['input'] ?? []),
+			'expectedOutput' => self::objectOf(edited: $edits['expectedOutput'] ?? null, snapshot: $step['output'] ?? []),
+			'ignoredPaths' => array_values(array_filter((array)($edits['ignoredPaths'] ?? []), static fn ($path): bool => is_string($path) && $path !== '')),
+		];
+		$description = trim((string)($edits['description'] ?? ''));
+		if ($description !== '') {
+			$case['description'] = $description;
+		}
+
+		return $case;
+	}//end caseOf()
 
 	/**
 	 * The dot paths of every value that is the redaction marker.
@@ -242,7 +274,7 @@ class TraceCaseRecorder {
 	 *
 	 * @return array<mixed>
 	 */
-	private function objectOf(mixed $edited, mixed $snapshot): array {
+	private static function objectOf(mixed $edited, mixed $snapshot): array {
 		if (is_array($edited) === true) {
 			return $edited;
 		}
