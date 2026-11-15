@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 namespace OCA\Integriq\Service\ConfigurationHandlers;
@@ -60,12 +63,7 @@ class MappingHandler implements ConfigurationHandlerInterface {
 	 * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
 	 */
 	public function export(Entity $entity, array $mappings, array &$mappingIds = []): array {
-		if ($entity instanceof ObjectEntity) {
-			$mappingArray = $entity->getObject();
-		} else {
-			$mappingArray = $entity->jsonSerialize();
-		}
-
+		$mappingArray = $this->serialiseEntity(entity: $entity);
 		unset($mappingArray['id'], $mappingArray['uuid']);
 
 		// Redact secret-shaped values from the nested configuration array (secret-hygiene).
@@ -77,52 +75,106 @@ class MappingHandler implements ConfigurationHandlerInterface {
 		}
 
 		// Replace IDs with slugs where applicable.
-		if (isset($mappingArray['source_id']) === true
-			&& isset($mappings['source']['idToSlug'][$mappingArray['source_id']]) === true
-		) {
-			$mappingArray['source_id'] = $mappings['source']['idToSlug'][$mappingArray['source_id']];
-		}
-
-		if (isset($mappingArray['target_id']) === true
-			&& isset($mappings['source']['idToSlug'][$mappingArray['target_id']]) === true
-		) {
-			$mappingArray['target_id'] = $mappings['source']['idToSlug'][$mappingArray['target_id']];
-		}
-
+		$mappingArray = $this->slugSourceReferences(mappingArray: $mappingArray, idToSlug: ($mappings['source']['idToSlug'] ?? []));
 		if (isset($mappingArray['mapping']) === false) {
 			return $mappingArray;
 		}
 
-		$matchedMappings = array_map(
-			function (string $field) use ($mappings) {
-
-				$regex = '$executeMapping\(([^)]+)\)$';
-				preg_match_all($regex, $field, $matches);
-				[$fullMatches, $subMatches] = $matches;
-
-				return array_map(
-					callback: function (string $match) use ($mappings) {
-						[$mapping, $data] = explode(separator: ',', string: $match, limit: 2);
-						$mappingIdentifier = trim($mapping, '\' ');
-
-						if (isset($mappings['mapping']['slugToId'][$mappingIdentifier]) === true) {
-							return $mappings['mapping']['slugToId'][$mappingIdentifier];
-						}
-
-						return $mappingIdentifier;
-					},
-					array: $subMatches
-				);
-			},
-			$mappingArray['mapping']
-		);
-
-		$addingMappingIds = array_merge(...array_values($matchedMappings));
-
-		$mappingIds = array_merge($mappingIds, $addingMappingIds);
+		$slugToId = ($mappings['mapping']['slugToId'] ?? []);
+		$mappingIds = array_merge($mappingIds, $this->referencedMappingIds(fields: $mappingArray['mapping'], slugToId: $slugToId));
 
 		return $mappingArray;
 	}//end export()
+
+	/**
+	 * The entity's stored object, or its serialised form for a plain entity.
+	 *
+	 * @param Entity $entity The mapping entity.
+	 *
+	 * @return array The entity as an array.
+	 */
+	private function serialiseEntity(Entity $entity): array {
+		if ($entity instanceof ObjectEntity) {
+			return $entity->getObject();
+		}
+
+		return $entity->jsonSerialize();
+	}//end serialiseEntity()
+
+	/**
+	 * Replace the source_id and target_id with the source's slug when the
+	 * global mappings know it.
+	 *
+	 * @param array                $mappingArray The serialised mapping.
+	 * @param array<string,string> $idToSlug     The source id-to-slug map.
+	 *
+	 * @return array The mapping with slug references.
+	 */
+	private function slugSourceReferences(array $mappingArray, array $idToSlug): array {
+		foreach (['source_id', 'target_id'] as $key) {
+			if (isset($mappingArray[$key]) === true && isset($idToSlug[$mappingArray[$key]]) === true) {
+				$mappingArray[$key] = $idToSlug[$mappingArray[$key]];
+			}
+		}
+
+		return $mappingArray;
+	}//end slugSourceReferences()
+
+	/**
+	 * The mapping ids every executeMapping() call in the field mapping refers to.
+	 *
+	 * @param array                $fields   The field mapping.
+	 * @param array<string,string> $slugToId The mapping slug-to-id map.
+	 *
+	 * @return array<int,int|string> The referenced ids, in field order.
+	 */
+	private function referencedMappingIds(array $fields, array $slugToId): array {
+		$matchedMappings = array_map(
+			fn (string $field) => $this->mappingIdsInField(field: $field, slugToId: $slugToId),
+			$fields
+		);
+
+		return array_merge(...array_values($matchedMappings));
+	}//end referencedMappingIds()
+
+	/**
+	 * The mapping ids the executeMapping() calls in one field refer to.
+	 *
+	 * @param string               $field    The field expression.
+	 * @param array<string,string> $slugToId The mapping slug-to-id map.
+	 *
+	 * @return array<int,int|string> The referenced ids.
+	 */
+	private function mappingIdsInField(string $field, array $slugToId): array {
+		$regex = '$executeMapping\(([^)]+)\)$';
+		preg_match_all($regex, $field, $matches);
+		[$fullMatches, $subMatches] = $matches;
+
+		return array_map(
+			callback: fn (string $match) => $this->resolveMappingReference(match: $match, slugToId: $slugToId),
+			array: $subMatches
+		);
+	}//end mappingIdsInField()
+
+	/**
+	 * The id of the mapping one executeMapping() argument list names: its
+	 * known id, or the identifier as written.
+	 *
+	 * @param string               $match    The call's argument list.
+	 * @param array<string,string> $slugToId The mapping slug-to-id map.
+	 *
+	 * @return mixed The mapping id or identifier.
+	 */
+	private function resolveMappingReference(string $match, array $slugToId): mixed {
+		[$mapping, $data] = explode(separator: ',', string: $match, limit: 2);
+		$mappingIdentifier = trim($mapping, '\' ');
+
+		if (isset($slugToId[$mappingIdentifier]) === true) {
+			return $slugToId[$mappingIdentifier];
+		}
+
+		return $mappingIdentifier;
+	}//end resolveMappingReference()
 
 	/**
 	 * Redact secret-shaped values from an entity array's nested `configuration`

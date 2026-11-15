@@ -38,6 +38,7 @@ use OCA\Integriq\Exception\CardfeedProviderException;
 use OCA\Integriq\Service\Cardfeed\CardfeedProviderInterface;
 use OCA\Integriq\Service\Cardfeed\LogCardfeedProvider;
 use OCA\Integriq\Service\Cardfeed\RestCardfeedProvider;
+use OCA\Integriq\Service\Helper\RandomUuid;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -583,10 +584,6 @@ class CardfeedSyncService implements CardfeedSyncServiceInterface {
 	 * @return string The generated UUID.
 	 */
 	private function generateUuid(): string {
-		$bytes = random_bytes(16);
-		$bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-		$bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+		return RandomUuid::version4();
 	}//end generateUuid()
 }//end class

@@ -10,12 +10,12 @@ Tier V1. Section 2 waits on keepiq `connection-certificate-expiry-for-integriq`.
 
 ## 2. Certificates in keepiq
 
-- [ ] 2.1 `MtlsConfigResolver` accepts `credentialRef` parts and resolves them through the broker.
+- [x] 2.1 `MtlsConfigResolver` accepts `credentialRef` parts and resolves them through the broker.
   - spec_ref: `specs/mtls-client-certificate-transport/spec.md#requirement-mtls-material-may-be-a-keepiq-reference-req-005`
   - test: `vendor/bin/phpunit --no-coverage --filter MtlsConfigResolverTest`
 - [x] 2.2 Expiry from keepiq with days left and a renew link; "expiry unknown" when keepiq does not answer. The monitor dispatches `OCA\Keepiq\Event\CredentialExpiryRequestedEvent` when the class exists; inline encrypted material (`MtlsConfigResolver::certificateNotAfter`) and a plain `configuration.cert` PEM are read directly until they move to keepiq.
   - spec_ref: `specs/connection-run-monitoring/spec.md#requirement-a-source-shows-when-its-certificate-expires-req-crun-007`
-- [ ] 2.3 Expiry alerts at 30, 14 and 7 days in the hourly health job.
+- [x] 2.3 Expiry alerts at 30, 14 and 7 days in the hourly health job.
   - spec_ref: `#requirement-an-expiring-certificate-opens-an-alert-req-crun-008`
 
 ## 3. Handover from pipelinq

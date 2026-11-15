@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @spec openspec/changes/call-log-without-bodies/specs/outbound-call-log/spec.md#requirement-a-caller-can-have-a-call-recorded-without-any-body
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -20,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use DateTimeImmutable;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use OCA\Integriq\Adapters\Slo\SloCurriculumClientHttp;
 use OCA\Integriq\Outbound\Call\BodyCapturePolicy;
 use OCA\Integriq\Service\AuthenticationService;
 use OCA\Integriq\Service\BrokeredCallService;
@@ -262,7 +266,7 @@ class CallServiceWithheldBodiesTest extends TestCase {
 	public function testTheSwitchWinsOverLogBody(): void {
 		$service = $this->service(new Response(200, [], '{"burgerservicenummer":"' . self::ANSWERED . '"}'));
 
-		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST', config: ['logBody' => true], withholdBodies: true);
+		$service->call(source: $this->source(), endpoint: '/personen', method: 'POST', config: ['logBody' => SloCurriculumClientHttp::class], withholdBodies: true);
 
 		$this->assertHoldsNoBody($this->callLogs()[0]);
 	}//end testTheSwitchWinsOverLogBody()

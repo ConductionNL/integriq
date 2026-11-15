@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Connectors;
 
 use OCA\Integriq\Connectors\PdokConnector;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -270,6 +272,9 @@ class PdokConnectorTest extends TestCase {
 			'lookup-no-register' => ['lookup', ['noRegister' => true, 'status' => 200]],
 			'reverse-stored-empty-upstream-200' => ['reverse', ['stored' => [], 'status' => 200]],
 			'reverse-write-fails' => ['reverse', ['stored' => [], 'status' => 200, 'saveFails' => true]],
+			'reverse-stored-fresh' => ['reverse', ['stored' => [['pdokId' => 'adr-2', 'fetchedAt' => $fresh], ['pdokId' => 'adr-3', 'fetchedAt' => $fresh]]]],
+			'lookup-stored-throws' => ['lookup', ['stored' => [], 'storedThrows' => true, 'status' => 200]],
+			'lookup-stored-without-fetchedAt' => ['lookup', ['stored' => [['pdokId' => 'adr-1']], 'status' => 200]],
 		];
 
 		$actual = [];
@@ -327,7 +332,7 @@ class PdokConnectorTest extends TestCase {
 			}
 
 			if (isset($case['stored']) === true || ($case['noRegister'] ?? false) === true) {
-				$register = new class($case, $calls) {
+				$register = new class($case, $calls) extends ObjectService {
 					/**
 					 * @param array $case  The case.
 					 * @param array $calls The call log, by reference.
@@ -343,11 +348,13 @@ class PdokConnectorTest extends TestCase {
 					public function getMapper(...$args): object {
 						$this->calls[] = ['or.getMapper', $args];
 						$stored = ($this->case['stored'] ?? []);
-						return new class($stored) {
+						return new class($stored, $this->calls, ($this->case['storedThrows'] ?? false)) {
 							/**
 							 * @param array $stored The stored rows.
+							 * @param array $calls  The call log, by reference.
+							 * @param bool  $throws Whether the query fails.
 							 */
-							public function __construct(private array $stored) {
+							public function __construct(private array $stored, private array &$calls, private bool $throws) {
 							}
 
 							/**
@@ -356,21 +363,56 @@ class PdokConnectorTest extends TestCase {
 							 * @return array
 							 */
 							public function findAll(array $config): array {
+								$this->calls[] = ['or.mapper.findAll', $config];
+								if ($this->throws === true) {
+									throw new \RuntimeException('register query failed');
+								}
+
 								return $this->stored;
 							}
 						};
 					}
 
 					/**
-					 * @param mixed ...$args The save arguments.
+					 * @param array $config        The query.
+					 * @param bool  $_rbac         Apply RBAC.
+					 * @param bool  $_multitenancy Apply multitenancy.
 					 *
-					 * @return void
+					 * @return array
 					 */
-					public function saveObject(...$args): void {
-						$this->calls[] = ['or.saveObject', $args];
+					public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array {
+						$this->calls[] = ['or.findAll', $config, $_rbac, $_multitenancy];
+						return [];
+					}
+
+					/**
+					 * @param mixed       $object        The object.
+					 * @param string|null $register      The register.
+					 * @param string|null $schema        The schema.
+					 * @param string|null $uuid          The uuid.
+					 * @param bool        $_rbac         Apply RBAC.
+					 * @param bool        $_multitenancy Apply multitenancy.
+					 * @param bool        $silent        Suppress events.
+					 * @param bool        $_validation   Validate.
+					 *
+					 * @return ObjectEntity
+					 */
+					public function saveObject(
+						$object,
+						?string $register = null,
+						?string $schema = null,
+						?string $uuid = null,
+						bool $_rbac = true,
+						bool $_multitenancy = true,
+						bool $silent = false,
+						bool $_validation = true,
+					): ObjectEntity {
+						$this->calls[] = ['or.saveObject', ['register' => $register, 'schema' => $schema, 'object' => $object, 'uuid' => $uuid, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
 						if (($this->case['saveFails'] ?? false) === true) {
 							throw new \RuntimeException('register refused');
 						}
+
+						return new ObjectEntity();
 					}
 				};
 				$this->container = $this->createMock(ContainerInterface::class);

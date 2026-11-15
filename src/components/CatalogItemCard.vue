@@ -66,6 +66,13 @@
 <script>
 import { EVENT_OPEN_CATALOG_ITEM_DETAIL, modalBus } from '../handlers/modalBus.js'
 
+/** The translated label of each known catalog item kind. */
+const KIND_LABELS = {
+	adapter: () => t('integriq', 'Adapter'),
+	'source-template': () => t('integriq', 'Source template'),
+	'configuration-template': () => t('integriq', 'Configuration template'),
+}
+
 export default {
 	name: 'CatalogItemCard',
 
@@ -131,16 +138,8 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-lists-adapters-seeded-source-templates-and-configuration-templates-with-category-filter-and-status-badges-req-001
 		 */
 		kindLabel() {
-			switch (this.catalogItem.kind) {
-				case 'adapter':
-					return t('integriq', 'Adapter')
-				case 'source-template':
-					return t('integriq', 'Source template')
-				case 'configuration-template':
-					return t('integriq', 'Configuration template')
-				default:
-					return this.catalogItem.kind || ''
-			}
+			const label = KIND_LABELS[this.catalogItem.kind]
+			return label ? label() : (this.catalogItem.kind || '')
 		},
 
 		/**

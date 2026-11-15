@@ -3,6 +3,9 @@
 /**
  * Integriq Admin Section — AppHost adapter.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin app-namespace subclass of the OpenRegister AppHost
  * {@see \OCA\OpenRegister\AppHost\Settings\GenericSettingsSection}. It carries
  * no section logic of its own: id (`integriq`), display name, icon file

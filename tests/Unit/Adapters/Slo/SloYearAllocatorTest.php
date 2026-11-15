@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/specs/slo-curriculum-import/spec.md#requirement-years-come-only-from-slos-own-niveaus-req-006
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -88,4 +91,17 @@ class SloYearAllocatorTest extends TestCase {
 
 		$this->assertSame(['groep 3', 'groep 4', 'groep 8', 'leerjaar 1', 'leerjaar 2'], $years);
 	}//end testLabelsAreUniqueAndOrdered()
+	/**
+	 * Seeded labels without a number sort by their word, and before numbered labels of the same word.
+	 *
+	 * @return void
+	 */
+	public function testSeededLabelsWithoutANumberSortByWord(): void {
+		$years = (new SloYearAllocator())->allocate(
+			[['uuid' => 'n-1'], ['uuid' => 'n-2'], ['title' => 'groep 2']],
+			['n-1' => ['kleuterbouw', 'brugklas'], 'n-2' => ['groep 1', 'groep']]
+		);
+
+		$this->assertSame(['brugklas', 'groep', 'groep 1', 'groep 2', 'kleuterbouw'], $years);
+	}//end testSeededLabelsWithoutANumberSortByWord()
 }//end class

@@ -60,6 +60,7 @@ class AgentActionStore implements AgentActionStoreInterface {
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-108--every-invocation-including-refusals-must-be-attributed-to-the-agent-principal-in-the-audit-trail
 	 */
 	public function record(array $record): string {
+		// Unscoped: the audit record of an agent action, written whatever organisation the caller is in.
 		$saved = $this->objectService->saveObject(
 			object: $record,
 			register: 'integriq',
@@ -81,6 +82,7 @@ class AgentActionStore implements AgentActionStoreInterface {
 	 */
 	public function find(string $uuid): ?array {
 		try {
+			// Unscoped: re-reads an agent action record this store wrote, for the approval that follows it.
 			$entity = $this->objectService->find(
 				id: $uuid,
 				register: 'integriq',
@@ -112,6 +114,7 @@ class AgentActionStore implements AgentActionStoreInterface {
 	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
 	 */
 	public function update(string $uuid, array $record): void {
+		// Unscoped: updates an agent action record this store wrote, as its approval resolves.
 		$this->objectService->saveObject(
 			object: $record,
 			register: 'integriq',

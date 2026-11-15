@@ -1,0 +1,18 @@
+{
+  "resource": "payment",
+  "id": "tr_pos0001",
+  "status": "open",
+  "method": "pointofsale",
+  "amount": {
+    "value": "23.50",
+    "currency": "EUR"
+  },
+  "details": {
+    "terminalId": "term_example0001"
+  },
+  "_links": {
+    "self": {
+      "href": "https://api.mollie.example/v2/payments/tr_pos0001"
+    }
+  }
+}

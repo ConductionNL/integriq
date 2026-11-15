@@ -94,11 +94,53 @@ final class GatewayDescriptor implements GatewayDescriptorInterface {
 	 * @throws InvalidArgumentException When a required field is missing or wrong.
 	 */
 	public static function fromArray(array $entry): self {
+		$id = self::idOf(entry: $entry);
+		$standard = self::standardOf(entry: $entry, id: $id);
+		$claimLevel = self::claimLevelOf(entry: $entry, id: $id);
+		$claimEvidence = self::claimEvidenceOf(entry: $entry, claimLevel: $claimLevel);
+
+		return new self(
+			$id,
+			(string)($entry['label'] ?? $id),
+			$standard,
+			$claimLevel,
+			$claimEvidence,
+			self::jurisdictionOf(entry: $entry),
+			array_values((array)($entry['wmebvMet'] ?? [])),
+			array_values((array)($entry['wmebvHandedToConsumer'] ?? [])),
+			(string)($entry['transport'] ?? 'https')
+		);
+	}//end fromArray()
+
+	/**
+	 * The entry's id, which it must have.
+	 *
+	 * @param array<string,mixed> $entry The declared entry.
+	 *
+	 * @return string The id.
+	 *
+	 * @throws InvalidArgumentException When the entry has no id.
+	 */
+	private static function idOf(array $entry): string {
 		$id = (string)($entry['id'] ?? '');
 		if ($id === '') {
 			throw new InvalidArgumentException('A gateway entry without an id cannot be registered.');
 		}
 
+		return $id;
+	}//end idOf()
+
+	/**
+	 * The standard the entry implements, which it must declare.
+	 *
+	 * @param array<string,mixed> $entry The declared entry.
+	 * @param string              $id    The entry's id.
+	 *
+	 * @return string The standard.
+	 *
+	 * @throws InvalidArgumentException When the entry declares no standard.
+	 */
+	private static function standardOf(array $entry, string $id): string {
 		$standard = (string)($entry['standard'] ?? '');
 		if ($standard === '') {
 			throw new InvalidArgumentException(
@@ -106,6 +148,20 @@ final class GatewayDescriptor implements GatewayDescriptorInterface {
 			);
 		}
 
+		return $standard;
+	}//end standardOf()
+
+	/**
+	 * The entry's claim level, which must be one of CLAIM_LEVELS.
+	 *
+	 * @param array<string,mixed> $entry The declared entry.
+	 * @param string              $id    The entry's id.
+	 *
+	 * @return string The claim level.
+	 *
+	 * @throws InvalidArgumentException When the claim level is not a known one.
+	 */
+	private static function claimLevelOf(array $entry, string $id): string {
 		$claimLevel = (string)($entry['claimLevel'] ?? '');
 		if (in_array($claimLevel, self::CLAIM_LEVELS, true) === false) {
 			throw new InvalidArgumentException(
@@ -117,31 +173,45 @@ final class GatewayDescriptor implements GatewayDescriptorInterface {
 			);
 		}
 
+		return $claimLevel;
+	}//end claimLevelOf()
+
+	/**
+	 * The evidence for the entry's claim, which it must name.
+	 *
+	 * @param array<string,mixed> $entry      The declared entry.
+	 * @param string              $claimLevel The entry's claim level.
+	 *
+	 * @return string The evidence.
+	 *
+	 * @throws InvalidArgumentException When the entry names no evidence.
+	 */
+	private static function claimEvidenceOf(array $entry, string $claimLevel): string {
 		$claimEvidence = (string)($entry['claimEvidence'] ?? '');
 		if (trim($claimEvidence) === '') {
 			throw new InvalidArgumentException(
-				sprintf('The gateway entry "%s" claims %s and names no evidence for it.', $id, $claimLevel)
+				sprintf('The gateway entry "%s" claims %s and names no evidence for it.', (string)($entry['id'] ?? ''), $claimLevel)
 			);
 		}
 
+		return $claimEvidence;
+	}//end claimEvidenceOf()
+
+	/**
+	 * The entry's jurisdiction as text, or null when it declares none.
+	 *
+	 * @param array<string,mixed> $entry The declared entry.
+	 *
+	 * @return string|null The jurisdiction.
+	 */
+	private static function jurisdictionOf(array $entry): ?string {
 		$jurisdiction = ($entry['jurisdiction'] ?? null);
-		$jurisdictionText = null;
-		if ($jurisdiction !== null && $jurisdiction !== '') {
-			$jurisdictionText = (string)$jurisdiction;
+		if ($jurisdiction === null || $jurisdiction === '') {
+			return null;
 		}
 
-		return new self(
-			$id,
-			(string)($entry['label'] ?? $id),
-			$standard,
-			$claimLevel,
-			$claimEvidence,
-			$jurisdictionText,
-			array_values((array)($entry['wmebvMet'] ?? [])),
-			array_values((array)($entry['wmebvHandedToConsumer'] ?? [])),
-			(string)($entry['transport'] ?? 'https')
-		);
-	}//end fromArray()
+		return (string)$jurisdiction;
+	}//end jurisdictionOf()
 
 	/**
 	 * The gateway id.

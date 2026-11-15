@@ -62,21 +62,61 @@ class StufProviderRequestReader {
 	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-each-query-reaches-the-owning-app-as-a-typed-event
 	 */
 	public function event(SimpleXMLElement $message, string $sourceId, string $referentienummer): StufProviderQueryEvent {
+		$run  = new ProviderMessageRun(message: $message, sourceId: $sourceId, referentienummer: $referentienummer);
 		$type = $message->getName();
 		if ($type === 'zakLv01') {
-			return new StufCaseQueryEvent(
-				sourceId: $sourceId,
-				referentienummer: $referentienummer,
-				criteria: $this->leaves(element: $this->first(xml: $message, path: './*[local-name()="gelijk"]'))
-			);
+			return $this->caseQuery(run: $run);
 		}
 
 		if ($type === 'npsLv01') {
-			$bsn = $this->text(xml: $message, path: './*[local-name()="gelijk"]/*[local-name()="inp.bsn" or local-name()="bsn"]');
-			return new StufPersonQueryEvent(sourceId: $sourceId, referentienummer: $referentienummer, bsn: $bsn);
+			return $this->personQuery(run: $run);
 		}
 
-		// A W kennisgeving sends the old object and then the new one: the last one holds the current values.
+		$mutation = $this->mutation(message: $message);
+		if ($type === 'edcLk01') {
+			return $this->documentMutation(run: $run, mutation: $mutation);
+		}
+
+		return $this->caseMutation(run: $run, mutation: $mutation);
+	}//end event()
+
+	/**
+	 * The case query a zakLv01 asks: its gelijk criteria.
+	 *
+	 * @param ProviderMessageRun $run The message.
+	 *
+	 * @return StufCaseQueryEvent The event.
+	 */
+	private function caseQuery(ProviderMessageRun $run): StufCaseQueryEvent {
+		return new StufCaseQueryEvent(
+			sourceId: $run->sourceId,
+			referentienummer: $run->referentienummer,
+			criteria: $this->leaves(element: $this->first(xml: $run->message, path: './*[local-name()="gelijk"]'))
+		);
+	}//end caseQuery()
+
+	/**
+	 * The person query an npsLv01 asks: the BSN it names.
+	 *
+	 * @param ProviderMessageRun $run The message.
+	 *
+	 * @return StufPersonQueryEvent The event.
+	 */
+	private function personQuery(ProviderMessageRun $run): StufPersonQueryEvent {
+		$bsn = $this->text(xml: $run->message, path: './*[local-name()="gelijk"]/*[local-name()="inp.bsn" or local-name()="bsn"]');
+		return new StufPersonQueryEvent(sourceId: $run->sourceId, referentienummer: $run->referentienummer, bsn: $bsn);
+	}//end personQuery()
+
+	/**
+	 * What a kennisgeving changes: its current object, its fields and its mutatiesoort.
+	 *
+	 * A W kennisgeving sends the old object and then the new one: the last one holds the current values.
+	 *
+	 * @param SimpleXMLElement $message The kennisgeving.
+	 *
+	 * @return ProviderMutation The mutation.
+	 */
+	private function mutation(SimpleXMLElement $message): ProviderMutation {
 		$object       = $this->mapper->currentObject(message: $message);
 		$fields       = $this->leaves(element: $object);
 		$mutatiesoort = $this->text(xml: $message, path: './*[local-name()="parameters"]/*[local-name()="mutatiesoort"]');
@@ -84,28 +124,50 @@ class StufProviderRequestReader {
 			$mutatiesoort = $this->attribute(element: $object, name: 'verwerkingssoort');
 		}
 
-		if ($type === 'edcLk01') {
-			$fields['zaakidentificatie'] = $this->relatedText(object: $object, relation: 'isRelevantVoor', element: 'identificatie');
-			unset($fields['inhoud']);
-			return new StufDocumentMutationEvent(
-				sourceId: $sourceId,
-				referentienummer: $referentienummer,
-				mutatiesoort: $mutatiesoort,
-				fields: array_filter($fields, static fn(string $value): bool => $value !== ''),
-				operation: $this->mapper->documentOperation(message: $message, mutatiesoort: $mutatiesoort)
-			);
-		}
+		return new ProviderMutation(object: $object, fields: $fields, mutatiesoort: $mutatiesoort);
+	}//end mutation()
 
-		$fields['zaaktypeCode']         = $this->relatedText(object: $object, relation: 'isVan', element: 'code');
-		$fields['zaaktypeOmschrijving'] = $this->relatedText(object: $object, relation: 'isVan', element: 'omschrijving');
-		return new StufCaseMutationEvent(
-			sourceId: $sourceId,
-			referentienummer: $referentienummer,
-			mutatiesoort: $mutatiesoort,
+	/**
+	 * The document mutation an edcLk01 sends, with the case it belongs to and without its content.
+	 *
+	 * @param ProviderMessageRun $run      The message.
+	 * @param ProviderMutation   $mutation What it changes.
+	 *
+	 * @return StufDocumentMutationEvent The event.
+	 */
+	private function documentMutation(ProviderMessageRun $run, ProviderMutation $mutation): StufDocumentMutationEvent {
+		$fields = $mutation->fields;
+		$fields['zaakidentificatie'] = $this->relatedText(object: $mutation->object, relation: 'isRelevantVoor', element: 'identificatie');
+		unset($fields['inhoud']);
+		return new StufDocumentMutationEvent(
+			sourceId: $run->sourceId,
+			referentienummer: $run->referentienummer,
+			mutatiesoort: $mutation->mutatiesoort,
 			fields: array_filter($fields, static fn(string $value): bool => $value !== ''),
-			operation: $this->mapper->caseOperation(message: $message, mutatiesoort: $mutatiesoort)
+			operation: $this->mapper->documentOperation(message: $run->message, mutatiesoort: $mutation->mutatiesoort)
 		);
-	}//end event()
+	}//end documentMutation()
+
+	/**
+	 * The case mutation a zakLk01 sends, with its zaaktype.
+	 *
+	 * @param ProviderMessageRun $run      The message.
+	 * @param ProviderMutation   $mutation What it changes.
+	 *
+	 * @return StufCaseMutationEvent The event.
+	 */
+	private function caseMutation(ProviderMessageRun $run, ProviderMutation $mutation): StufCaseMutationEvent {
+		$fields = $mutation->fields;
+		$fields['zaaktypeCode']         = $this->relatedText(object: $mutation->object, relation: 'isVan', element: 'code');
+		$fields['zaaktypeOmschrijving'] = $this->relatedText(object: $mutation->object, relation: 'isVan', element: 'omschrijving');
+		return new StufCaseMutationEvent(
+			sourceId: $run->sourceId,
+			referentienummer: $run->referentienummer,
+			mutatiesoort: $mutation->mutatiesoort,
+			fields: array_filter($fields, static fn(string $value): bool => $value !== ''),
+			operation: $this->mapper->caseOperation(message: $run->message, mutatiesoort: $mutation->mutatiesoort)
+		);
+	}//end caseMutation()
 
 	/**
 	 * The first element inside the SOAP Body.
