@@ -184,7 +184,9 @@ class ConnectionStoreSourceTest extends TestCase {
 	public function testDeleteRemovesTheRow(): void {
 		$objects = $this->objects(methods: ['deleteObject']);
 		$objects->expects($this->once())->method('deleteObject')
-			->with('r-1', 'integriq', 'app_connection')
+			->with($this->callback(static fn (\OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion $deletion): bool => $deletion->uuid === 'r-1'
+				&& $deletion->target->register === 'integriq'
+				&& $deletion->target->schema === 'app_connection'))
 			->willReturn(true);
 
 		(new ConnectionStore(objectService: $objects))->delete('r-1');

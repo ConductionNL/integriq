@@ -208,8 +208,8 @@ class ObjectenOpenRegisterAccessTest extends TestCase {
 			public function __construct(private mixed $answer) {
 			}
 
-			public function deleteObject(string $uuid, string $register, string $schema): mixed {
-				$this->deleted[] = ['uuid' => $uuid, 'register' => $register, 'schema' => $schema];
+			public function deleteObject(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion $deletion): mixed {
+				$this->deleted[] = ['uuid' => $deletion->uuid, 'register' => $deletion->target->register, 'schema' => $deletion->target->schema];
 				return $this->answer;
 			}
 

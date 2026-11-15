@@ -35,6 +35,8 @@ use OCA\Integriq\Service\Security\EgressGuardInterface;
 use OCA\Integriq\Service\Security\SubscriptionSecretMasker;
 use OCA\Integriq\Service\Subscriptions\SubscriptionSigningPolicyInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -288,7 +290,11 @@ class ProductChannelsController extends Controller {
 		}
 
 		try {
-			$this->objects->deleteObject(uuid: $id, register: 'integriq', schema: 'event_subscription', _rbac: false, _multitenancy: false);
+			$this->objects->deleteObject(
+				deletion: new ObjectDeletion(uuid: $id, target: new ObjectFindTarget(register: 'integriq', schema: 'event_subscription')),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $exception) {
 			$this->logger->warning('integriq: a product channel push subscription could not be deleted: ' . $exception->getMessage());
 			return $this->unavailable();

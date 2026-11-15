@@ -122,7 +122,9 @@ final class EventsControllerSubscriptionActionsTest extends TestCase {
 	public function testUnsubscribeDeletesTheSubscription(): void {
 		$this->actionAuth->expects($this->once())->method('requireAction')->with($this->user, 'event.unsubscribe');
 		$this->objects->method('find')->willReturn(ObjectServiceMockBuilder::objectEntity($this, [], 'sub-1'));
-		$this->objects->expects($this->once())->method('deleteObject')->with('sub-1');
+		$this->objects->expects($this->once())->method('deleteObject')->with(
+			$this->callback(static fn (\OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion $deletion): bool => $deletion->uuid === 'sub-1')
+		);
 
 		$response = $this->controller()->unsubscribe('sub-1');
 

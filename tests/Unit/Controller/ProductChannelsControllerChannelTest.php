@@ -331,8 +331,8 @@ class ProductChannelsControllerChannelTest extends TestCase {
 		);
 		$objects->method('find')->willReturnCallback(fn ($id): ObjectEntity => $entity((string)$id, ($this->eventSubscriptions[$id] ?? [])));
 		$objects->method('deleteObject')->willReturnCallback(
-			function (?string $uuid = null): bool {
-				$this->deleted[] = (string)$uuid;
+			function (\OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion $deletion): bool {
+				$this->deleted[] = $deletion->uuid;
 				return true;
 			}
 		);
