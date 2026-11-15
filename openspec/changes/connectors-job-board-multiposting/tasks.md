@@ -11,8 +11,9 @@ Kind: code. Size M. Half for humaniq `hiring-multiposting` (row humaniq `hir-mul
   - GIVEN items for `werk-nl` and `linkedin` WHEN the step uses `jobboard-{{ json.channel }}` THEN each item is sent through its own source
   - GIVEN an item whose board has no source WHEN the step runs with `onError: continue` THEN that item is an error item naming the source and the others succeed
   - GIVEN a plain reference WHEN an existing flow runs THEN its output is unchanged
-- [ ] Implement
-- [ ] Test (PHPUnit)
+- [x] Implement
+  - `FlowTemplate::renderReference()` renders a reference per item and reads both `{{ channel }}` and `{{ json.channel }}`. `SourceCallNode` resolves a plain reference once before any call, as before; a templated one is resolved per distinct name in the call pass. An unresolved item is an error item ("No source configured") under `continue` and refuses the step before any request otherwise. `ApplyMappingNode` does the same through `findMapping()`, once per distinct name.
+- [x] Test (PHPUnit: `SourceCallNodeTest`, `ApplyMappingNodeTest`, `FlowTemplateTest`)
 
 ### Task 2: Board templates and mappings
 - **spec_ref**: `openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002`
@@ -21,6 +22,7 @@ Kind: code. Size M. Half for humaniq `hiring-multiposting` (row humaniq `hir-mul
   - GIVEN humaniq's seeded vacancy WHEN it is mapped for each board THEN the output matches that board's recorded example
 - [ ] Implement
 - [ ] Test (PHPUnit per mapping)
+  > 2026-11-14, partly built: `jobboard-linkedin-source.json` (the dormant LinkedIn template: simpleJobPostings batch create, OAuth client secret by broker reference, the partner programme named) with the `jobboard-linkedin` mapping, and `jobboard-indeed-source.json` with the `jobboard-indeed` mapping to one Indeed feed job. Recorded examples under `tests/fixtures/jobboards/` (the seeded vacancy as the flow passes it, the LinkedIn request and answer, the Indeed feed job); `JobBoardSetsTest` maps humaniq's seeded vacancy through the real MappingService and compares. Left: werk.nl, because UWV publishes no employer posting API or format to record an example from (the boxes stay unticked until it has one), and the Indeed template's "published in feed" answer, which belongs with the feed of task 3. The catalogue golden digests move with the two new fragments. Note: humaniq's `Vacature plaatsen` flow names the sources `werk-nl`/`linkedin`/`indeed` and the mappings `humaniq-vacancy-<code>`, while this change names both `jobboard-<code>`; one side needs to follow the other.
 
 ### Task 3: Vacancy feed endpoint
 - **spec_ref**: `openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-werknl-linkedin-and-indeed-are-job-board-templates-req-jbc-002`

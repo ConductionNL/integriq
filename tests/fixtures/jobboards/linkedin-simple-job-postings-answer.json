@@ -1,0 +1,9 @@
+{
+  "elements": [
+    {
+      "status": 202,
+      "id": "urn:li:simpleJobPostingTask:a1b2c3d4-0000-4000-8000-000000000001",
+      "location": "/simpleJobPostingTasks/urn:li:simpleJobPostingTask:a1b2c3d4-0000-4000-8000-000000000001"
+    }
+  ]
+}

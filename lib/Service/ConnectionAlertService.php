@@ -384,6 +384,7 @@ class ConnectionAlertService implements ConnectionAlertServiceInterface {
 			$config['sort'] = [$sort => 'DESC'];
 		}
 
+		// Unscoped: the threshold job and setup check count failures across all sources, as the system.
 		$result = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
 
 		return array_values(($result['results'] ?? $result));

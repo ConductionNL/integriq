@@ -143,6 +143,7 @@ class DirectorySource implements DirectorySourceInterface {
 	 * @spec openspec/changes/harden-scim-consumer-authorization/specs/directory-sync/spec.md#requirement-scim-writes-only-the-groups-a-connection-declares-it-manages-req-ds-009
 	 */
 	public function findConnectionsForPolicy(): array {
+		// Unscoped: directory sync and SCIM provisioning resolve connections as the system, with no user session.
 		$matches = $this->orObjectService->findAll(
 			config: self::connectionQuery(),
 			_rbac: false,

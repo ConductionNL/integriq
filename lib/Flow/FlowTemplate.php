@@ -141,6 +141,26 @@ final class FlowTemplate {
 	}//end renderString()
 
 	/**
+	 * Render a per-item source or mapping reference.
+	 *
+	 * A reference is rendered like any string, and also accepts the item-style
+	 * `{{ json.field }}` its callers write (humaniq's flows name a board as
+	 * `jobboard-{{ json.channel }}`), so both `{{ channel }}` and
+	 * `{{ json.channel }}` read the item's own field. A record that has a
+	 * field literally named `json` keeps it: the record's own key wins.
+	 *
+	 * @param string $template The authored reference.
+	 * @param array  $json     The current item's record.
+	 *
+	 * @return string The rendered, trimmed reference.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	public static function renderReference(string $template, array $json): string {
+		return trim(self::renderString(template: $template, json: ($json + ['json' => $json])));
+	}//end renderReference()
+
+	/**
 	 * Render a value, preserving the resolved type for a whole-placeholder.
 	 *
 	 * @param mixed $value The authored value (string, array, or scalar).

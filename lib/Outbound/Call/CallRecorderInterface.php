@@ -82,4 +82,17 @@ interface CallRecorderInterface {
 	 * @spec exclude declaration only, the behaviour and its spec live on CallRecorder::read()
 	 */
 	public function read(string $uuid): array;
+
+	/**
+	 * Read one call record of the caller's organisation, for a user request.
+	 *
+	 * @param string $uuid The record uuid.
+	 *
+	 * @return array<string,mixed> The record.
+	 *
+	 * @throws DoesNotExistException When there is no such call in the caller's organisation.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on CallRecorder::readInOrganisation()
+	 */
+	public function readInOrganisation(string $uuid): array;
 }
