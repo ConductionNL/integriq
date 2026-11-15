@@ -744,18 +744,20 @@
                 "files.addFile",
                 [
                     {
-                        "entity": "stored-1",
-                        "object": {
-                            "title": "stored"
-                        }
+                        "target": {
+                            "entity": "stored-1",
+                            "object": {
+                                "title": "stored"
+                            }
+                        },
+                        "registerId": null
                     },
-                    "h.txt",
-                    "hello",
-                    false,
-                    [],
-                    null,
-                    null,
-                    null
+                    {
+                        "fileName": "h.txt",
+                        "content": "hello",
+                        "share": false,
+                        "tags": []
+                    }
                 ]
             ]
         ]
@@ -792,18 +794,20 @@
                 "files.addFile",
                 [
                     {
-                        "entity": "stored-1",
-                        "object": {
-                            "title": "stored"
-                        }
+                        "target": {
+                            "entity": "stored-1",
+                            "object": {
+                                "title": "stored"
+                            }
+                        },
+                        "registerId": null
                     },
-                    "f.txt",
-                    "hi",
-                    false,
-                    [],
-                    null,
-                    null,
-                    null
+                    {
+                        "fileName": "f.txt",
+                        "content": "hi",
+                        "share": false,
+                        "tags": []
+                    }
                 ]
             ]
         ]
@@ -841,18 +845,20 @@
                 "files.addFile",
                 [
                     {
-                        "entity": "stored-1",
-                        "object": {
-                            "title": "stored"
-                        }
+                        "target": {
+                            "entity": "stored-1",
+                            "object": {
+                                "title": "stored"
+                            }
+                        },
+                        "registerId": null
                     },
-                    "h.txt",
-                    "fail",
-                    false,
-                    [],
-                    null,
-                    null,
-                    null
+                    {
+                        "fileName": "h.txt",
+                        "content": "fail",
+                        "share": false,
+                        "tags": []
+                    }
                 ]
             ]
         ]
@@ -892,18 +898,20 @@
                 "files.addFile",
                 [
                     {
-                        "entity": "stored-1",
-                        "object": {
-                            "title": "stored"
-                        }
+                        "target": {
+                            "entity": "stored-1",
+                            "object": {
+                                "title": "stored"
+                            }
+                        },
+                        "registerId": null
                     },
-                    "one.txt",
-                    "one",
-                    false,
-                    [],
-                    null,
-                    null,
-                    null
+                    {
+                        "fileName": "one.txt",
+                        "content": "one",
+                        "share": false,
+                        "tags": []
+                    }
                 ]
             ],
             [
@@ -931,18 +939,20 @@
                 "files.addFile",
                 [
                     {
-                        "entity": "stored-1",
-                        "object": {
-                            "title": "stored"
-                        }
+                        "target": {
+                            "entity": "stored-1",
+                            "object": {
+                                "title": "stored"
+                            }
+                        },
+                        "registerId": null
                     },
-                    "two.txt",
-                    "two",
-                    false,
-                    [],
-                    null,
-                    null,
-                    null
+                    {
+                        "fileName": "two.txt",
+                        "content": "two",
+                        "share": false,
+                        "tags": []
+                    }
                 ]
             ],
             [
@@ -970,18 +980,20 @@
                 "files.addFile",
                 [
                     {
-                        "entity": "stored-1",
-                        "object": {
-                            "title": "stored"
-                        }
+                        "target": {
+                            "entity": "stored-1",
+                            "object": {
+                                "title": "stored"
+                            }
+                        },
+                        "registerId": null
                     },
-                    "f.txt",
-                    "fail",
-                    false,
-                    [],
-                    null,
-                    null,
-                    null
+                    {
+                        "fileName": "f.txt",
+                        "content": "fail",
+                        "share": false,
+                        "tags": []
+                    }
                 ]
             ]
         ]
@@ -1044,18 +1056,20 @@
                 "files.addFile",
                 [
                     {
-                        "entity": "stored-1",
-                        "object": {
-                            "title": "stored"
-                        }
+                        "target": {
+                            "entity": "stored-1",
+                            "object": {
+                                "title": "stored"
+                            }
+                        },
+                        "registerId": null
                     },
-                    "a.txt",
-                    "one",
-                    false,
-                    [],
-                    null,
-                    null,
-                    null
+                    {
+                        "fileName": "a.txt",
+                        "content": "one",
+                        "share": false,
+                        "tags": []
+                    }
                 ]
             ],
             [

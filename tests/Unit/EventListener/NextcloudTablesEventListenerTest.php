@@ -110,4 +110,48 @@ class NextcloudTablesEventListenerTest extends TestCase {
 		$listener = new NextcloudTablesEventListener($eventService, $this->createMock(LoggerInterface::class));
 		$listener->handle(new Event());
 	}//end testUnrelatedEventIsIgnored()
+
+	/**
+	 * Each row event sends exactly this payload under its type, and a failure
+	 * is logged with the event's class and never thrown.
+	 *
+	 * @return void
+	 */
+	public function testThePayloadsAndTheLoggedFailure(): void {
+		$sent = [];
+		$eventService = $this->createMock(EventService::class);
+		$eventService->method('hasActiveSubscriptions')->willReturn(true);
+		$failure = new \RuntimeException('store down');
+		$eventService->method('handleNextcloudEvent')->willReturnCallback(function (string $type, array $payload) use (&$sent, $failure): array {
+			$sent[] = [$type, $payload];
+			if (count($sent) === 3) {
+				throw $failure;
+			}
+
+			return [];
+		});
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error')
+			->with('Failed to process Nextcloud Tables row event: store down', ['exception' => $failure, 'event' => RowDeletedEvent::class]);
+		$listener = new NextcloudTablesEventListener($eventService, $logger);
+
+		$listener->handle(new RowAddedEvent(new Row(tableId: 1, rowId: 2)));
+		$listener->handle(new RowUpdatedEvent(new Row(tableId: 1, rowId: 3, previousValues: ['a'], values: ['b'], dataByAlias: ['x' => 1])));
+		$listener->handle(new RowDeletedEvent(new Row(tableId: 4, rowId: 5, previousValues: ['c'])));
+
+		$payload = static fn (int $table, int $row, ?array $values, ?array $previous): array => [
+			'source' => '/nextcloud/tables',
+			'subject' => (string)$row,
+			'data' => ['tableId' => $table, 'rowId' => $row, 'values' => $values, 'previousValues' => $previous],
+		];
+		$this->assertSame(
+			[
+				['com.nextcloud.tables.row.created', $payload(1, 2, null, null)],
+				['com.nextcloud.tables.row.updated', $payload(1, 3, ['b'], ['a'])],
+				['com.nextcloud.tables.row.deleted', $payload(4, 5, null, ['c'])],
+			],
+			$sent
+		);
+
+	}//end testThePayloadsAndTheLoggedFailure()
 }//end class

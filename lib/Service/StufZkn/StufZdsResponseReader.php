@@ -49,6 +49,28 @@ class StufZdsResponseReader {
 	private const TRANSIENT_CODES = ['StUF067', 'StUF068', 'StUF019'];
 
 	/**
+	 * Where a Bv03 or Du01 carries the case identification, most specific first.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CASE_ID_PATHS = [
+		'//*[local-name()="antwoord"]/*[local-name()="object"]/*[local-name()="identificatie"]',
+		'//*[local-name()="zaak"]/*[local-name()="identificatie"]',
+		'//*[local-name()="identificatie"]',
+	];
+
+	/**
+	 * Where a Fo02 carries its code, most specific first.
+	 *
+	 * @var array<int, string>
+	 */
+	private const FAULT_CODE_PATHS = [
+		'//*[local-name()="body"]/*[local-name()="code"]',
+		'//*[local-name()="fout"]/*[local-name()="code"]',
+		'//*[local-name()="code"]',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param StufXmlParser $xmlParser The hardened XML parser.
@@ -74,14 +96,7 @@ class StufZdsResponseReader {
 			return ['crossRefnummer' => '', 'caseIdentification' => null];
 		}
 
-		$caseId = $this->first(
-			xml: $root,
-			paths: [
-				'//*[local-name()="antwoord"]/*[local-name()="object"]/*[local-name()="identificatie"]',
-				'//*[local-name()="zaak"]/*[local-name()="identificatie"]',
-				'//*[local-name()="identificatie"]',
-			]
-		);
+		$caseId = $this->first(xml: $root, paths: self::CASE_ID_PATHS);
 		if ($caseId === '') {
 			$caseId = null;
 		}
@@ -107,34 +122,74 @@ class StufZdsResponseReader {
 			return [];
 		}
 
+		return $this->caseFields(root: $root) + [
+			'statussen' => $this->statussen(root: $root),
+			'betrokkenen' => $this->betrokkenen(root: $root),
+		];
+	}//end caseDetails()
+
+	/**
+	 * The case's own fields.
+	 *
+	 * @param SimpleXMLElement $root The answer.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+	 */
+	private function caseFields(SimpleXMLElement $root): array {
 		$object = '//*[local-name()="object"]/*[local-name()="';
-		$case   = [
+		return [
 			'identificatie' => $this->first(xml: $root, paths: [$object . 'identificatie"]', '//*[local-name()="identificatie"]']),
 			'omschrijving' => $this->first(xml: $root, paths: [$object . 'omschrijving"]']),
 			'startdatum' => $this->first(xml: $root, paths: [$object . 'startdatum"]']),
 			'einddatum' => $this->first(xml: $root, paths: [$object . 'einddatum"]']),
 			'zaaktype' => ['omschrijving' => $this->first(xml: $root, paths: [$object . 'zaaktype"]/*[local-name()="omschrijving"]'])],
-			'statussen' => [],
-			'betrokkenen' => [],
 		];
+	}//end caseFields()
 
+	/**
+	 * The case's statuses, in order.
+	 *
+	 * @param SimpleXMLElement $root The answer.
+	 *
+	 * @return list<array<string, string>>
+	 *
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+	 */
+	private function statussen(SimpleXMLElement $root): array {
+		$statussen = [];
 		foreach ((array)$root->xpath('//*[local-name()="heeftStatus"]') as $status) {
-			$case['statussen'][] = [
+			$statussen[] = [
 				'datumStatusGezet' => $this->descendant(node: $status, localName: 'datumStatusGezet'),
 				'statustype' => $this->descendant(node: $status, localName: 'statustype'),
 			];
 		}
 
+		return $statussen;
+	}//end statussen()
+
+	/**
+	 * The initiator, belanghebbenden and gemachtigden, in order, with their BSN.
+	 *
+	 * @param SimpleXMLElement $root The answer.
+	 *
+	 * @return list<array<string, string>>
+	 *
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+	 */
+	private function betrokkenen(SimpleXMLElement $root): array {
 		$roles = '//*[local-name()="heeftAlsInitiator" or local-name()="heeftAlsBelanghebbende" or local-name()="heeftAlsGemachtigde"]';
+		$betrokkenen = [];
 		foreach ((array)$root->xpath($roles) as $party) {
-			$case['betrokkenen'][] = [
+			$betrokkenen[] = [
 				'role' => $party->getName(),
 				'bsn' => $this->descendant(node: $party, localName: 'inp.bsn'),
 			];
 		}
 
-		return $case;
-	}//end caseDetails()
+		return $betrokkenen;
+	}//end betrokkenen()
 
 	/**
 	 * Read a fout answer: code, omschrijving, details, and whether a retry can help.
@@ -151,22 +206,32 @@ class StufZdsResponseReader {
 			return ['code' => 'PARSE_ERROR', 'omschrijving' => 'The answer could not be read', 'details' => '', 'kind' => 'permanent'];
 		}
 
-		$code = $this->first(
-			xml: $root,
-			paths: ['//*[local-name()="body"]/*[local-name()="code"]', '//*[local-name()="fout"]/*[local-name()="code"]', '//*[local-name()="code"]']
-		);
-		$kind = 'permanent';
-		if (in_array($code, self::TRANSIENT_CODES, true) === true) {
-			$kind = 'transient';
-		}
+		$code = $this->first(xml: $root, paths: self::FAULT_CODE_PATHS);
 
 		return [
 			'code' => $code,
 			'omschrijving' => $this->first(xml: $root, paths: ['//*[local-name()="omschrijving"]', '//*[local-name()="faultstring"]']),
 			'details' => $this->first(xml: $root, paths: ['//*[local-name()="details"]']),
-			'kind' => $kind,
+			'kind' => self::kindOf(code: $code),
 		];
 	}//end fault()
+
+	/**
+	 * Whether a fault code is worth a retry.
+	 *
+	 * @param string $code The StUF fault code.
+	 *
+	 * @return string `transient` or `permanent`.
+	 *
+	 * @spec openspec/specs/stuf-zds-case-client/spec.md#requirement-response-reading
+	 */
+	private static function kindOf(string $code): string {
+		if (in_array($code, self::TRANSIENT_CODES, true) === true) {
+			return 'transient';
+		}
+
+		return 'permanent';
+	}//end kindOf()
 
 	/**
 	 * Parse an answer, or null when it is empty, carries a DOCTYPE, or is unreadable.

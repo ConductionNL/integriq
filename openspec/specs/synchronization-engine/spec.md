@@ -19,7 +19,9 @@ This spec retroactively describes 97 existing methods across
 `SynchronizationService`, two controllers, and the integration provider. It is a
 behavioral retrofit — REQ language matches observed code, and the Notes sections
 flag observed-but-suspicious behavior rather than silently correcting it.
+
 ## Requirements
+
 ### Requirement: Synchronization Management UI (REQ-UI-001)
 
 Integriq MUST provide a Synchronizations section in its SPA where administrators
@@ -1401,7 +1403,6 @@ target/write direction).
   `register/schema`/`database` — this requirement does not change that
   fallthrough behaviour for any type outside `nextcloud-form`
 
-
 ### Requirement: Mid-run progress is observable without slowing the run (REQ-022)
 
 A synchronization run SHALL record how far it has got **while it is still
@@ -1622,3 +1623,35 @@ Integriq SHALL support distributing base data from one central store: a synchron
 - **WHEN** the next synchronization run writes a changed value from the source
 - **THEN** both subscriptions receive one CloudEvent for that object's update
 - @e2e exclude event delivery to outside subscribers has no page; covered by the events-cloudevents fan-out tests
+
+### Requirement: Synchronization conditions skip records (REQ-SCB-009)
+
+A synchronization MAY carry conditions, written as JsonLogic in the conditions builder. Integriq MUST test each source record against them. A record that does not meet them MUST be skipped and not written to the target.
+
+#### Scenario: only open cases are copied
+- GIVEN a synchronization with the condition `status == "open"` and a source with three open and two closed cases
+- WHEN the synchronization runs
+- THEN three objects are written and the two closed cases are skipped
+- @e2e exclude synchronization run; covered by PHPUnit on SynchronizationService
+
+### Requirement: A synchronization runs on its job's schedule (REQ-SCB-012)
+
+A job whose `jobClass` is `SynchronizationAction` MUST run the synchronization named by its `synchronizationId` argument each time the job is due. The job's interval decides when it is due. A disabled job MUST NOT run unless the run is forced. A job without a `synchronizationId` MUST fail with a job log that says so, and run nothing.
+
+#### Scenario: a nightly job copies new records
+- GIVEN a synchronization from a source into a register schema
+- AND an enabled job with `jobClass` `SynchronizationAction` and that `synchronizationId`
+- WHEN the cron pass reaches the job's next run
+- THEN the synchronization runs and its new records are written to the register
+- AND the job log records the run
+- @e2e exclude cron-driven; covered by PHPUnit on JobService and SynchronizationAction
+
+#### Scenario: a disabled job leaves the source alone
+- GIVEN the same job with `isEnabled` false
+- WHEN the cron pass runs
+- THEN the synchronization does not run
+
+#### Scenario: a job without a synchronization says so
+- GIVEN a `SynchronizationAction` job without a `synchronizationId` argument
+- WHEN the job runs
+- THEN the job log reads "No synchronization ID provided" and nothing is synchronised

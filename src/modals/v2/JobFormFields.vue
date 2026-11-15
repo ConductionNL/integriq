@@ -235,6 +235,14 @@
 				</div>
 			</div>
 
+			<!-- Schedule section (automation-job-calendar-schedules), anchored
+			     after the interval it can replace. `schedule` is a nested
+			     object, which fieldsFromSchema drops, so it is mounted here. -->
+			<JobScheduleFields
+				v-if="runHasField(run, 'interval')"
+				:schedule="formData.schedule || null"
+				:updateField="updateField" />
+
 			<!-- Synchronization picker, anchored to the run that holds the class
 			     picker rather than appended after the whole list. `arguments` is
 			     a bare `type: object` and fieldsFromSchema drops those before
@@ -286,6 +294,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import JobScheduleFields from './JobScheduleFields.vue'
 import jsonFieldDrafts from '../../mixins/jsonFieldDrafts.js'
 import {
 	coerceNumber,
@@ -338,6 +347,7 @@ export default {
 
 	components: {
 		CnFieldHelper,
+		JobScheduleFields,
 		NcCheckboxRadioSwitch,
 		NcDateTimePickerNative,
 		NcSelect,
@@ -523,7 +533,21 @@ export default {
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		runHasJobClass(run) {
-			return run.fields.some((field) => field.key === 'jobClass')
+			return this.runHasField(run, 'jobClass')
+		},
+
+		/**
+		 * Whether a render run holds a field.
+		 *
+		 * @param {object} run A render run from groupFieldRuns().
+		 * @param {string} key The field key.
+		 *
+		 * @return {boolean} True when the run holds the field.
+		 *
+		 * @spec openspec/changes/automation-job-calendar-schedules/specs/job-scheduling/spec.md#requirement-the-job-form-previews-the-next-five-run-times-req-jcal-003
+		 */
+		runHasField(run, key) {
+			return run.fields.some((field) => field.key === key)
 		},
 
 		/**

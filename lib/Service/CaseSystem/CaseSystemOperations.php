@@ -83,27 +83,39 @@ class CaseSystemOperations {
 			return self::json(status: 400, answer: ['message' => $operation . ' needs a JSON object as its body.']);
 		}
 
-		$sourceData = $source->getObject();
-		$configuration = (array)($sourceData['configuration'] ?? []);
-
 		try {
-			if (filter_var($configuration['mock'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
-				return self::json(status: 200, answer: $this->mock->run(operation: $operation, body: $body));
-			}
-
-			return self::json(
-				status: 200,
-				answer: $this->zgw->run(
-					operation: $operation,
-					body: $body,
-					configuration: $configuration,
-					sourceName: (string)($sourceData['name'] ?? '')
-				)
-			);
+			return self::json(status: 200, answer: $this->run(operation: new CaseOperation(name: $operation, body: $body), source: $source));
 		} catch (CaseSystemRefusal $refusal) {
 			return self::json(status: $refusal->getStatus(), answer: ['message' => $refusal->getMessage()]);
 		}
 	}//end handle()
+
+	/**
+	 * Run the operation on the source's case system: the mock when the source says so, else ZGW.
+	 *
+	 * @param CaseOperation $operation The operation and its body.
+	 * @param ObjectEntity  $source    The case-system source.
+	 *
+	 * @return array<string, mixed> The answer.
+	 *
+	 * @throws CaseSystemRefusal When the case system refuses.
+	 *
+	 * @spec openspec/changes/case-system-operations-for-decidiq/specs/case-system-operations/spec.md#requirement-a-case-system-source-answers-five-operations-in-process-req-cso-001
+	 */
+	private function run(CaseOperation $operation, ObjectEntity $source): array {
+		$sourceData = $source->getObject();
+		$configuration = (array)($sourceData['configuration'] ?? []);
+		if (filter_var($configuration['mock'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+			return $this->mock->run(operation: $operation->name, body: $operation->body);
+		}
+
+		return $this->zgw->run(
+			operation: $operation->name,
+			body: $operation->body,
+			configuration: $configuration,
+			sourceName: (string)($sourceData['name'] ?? '')
+		);
+	}//end run()
 
 	/**
 	 * The message for an operation that does not exist.

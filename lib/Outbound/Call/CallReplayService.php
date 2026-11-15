@@ -112,50 +112,99 @@ class CallReplayService implements CallReplayServiceInterface {
 	 * @spec openspec/specs/outbound-call-log/spec.md#requirement-a-failed-call-is-replayed-from-the-screen-singly-and-in-bulk-req-ocd-002
 	 */
 	public function replay(string $uuid, string $actorUid, array $options = []): array {
-		$record = $this->recorder->read($uuid);
-		$wantedVersion = ($options['mappingVersion'] ?? null);
-		if ($wantedVersion !== null) {
-			$wantedVersion = (string)$wantedVersion;
-		}
+		$request = new CallReplayRequest(uuid: $uuid, actorUid: $actorUid);
+		$request->mappingVersion = $this->wantedVersion(options: $options);
+		$request->dryRun = (($options['dryRun'] ?? false) === true);
 
-		$resolved = $this->mappingVersions->resolve(
-			(string)($record['mapping'] ?? ''),
-			(string)($record['mappingVersion'] ?? ''),
-			$wantedVersion
-		);
-		$call = new ReplayTarget(
-			uuid: $uuid,
-			actorUid: $actorUid,
-			mappingVersion: $resolved['version'],
-			target: (string)($record['target'] ?? '')
-		);
+		return $this->replayRequested(request: $request);
+	}//end replay()
 
-		$request = $this->requestOf(record: $record);
+	/**
+	 * Replay a recorded call as asked: refuse one whose request is gone, show a dry run, or send it.
+	 *
+	 * @param CallReplayRequest $request The replay.
+	 *
+	 * @return array<string,mixed> What happened.
+	 */
+	private function replayRequested(CallReplayRequest $request): array {
+		$record = $this->recorder->read($request->uuid);
+		$call = $this->replayTarget(record: $record, request: $request);
+		$payload = $this->requestOf(record: $record);
 
-		if ($this->requestIsKept(record: $record, request: $request) === false) {
+		if ($this->requestIsKept(record: $record, request: $payload) === false) {
 			// The bodies aged out or were never kept (REQ-OCD-009): sending what is left would be a bare
 			// request the partner takes for a new call, and it would be recorded as a replay.
 			return $this->notSent(call: $call, detail: 'The request is no longer kept, so this call cannot be replayed.');
 		}
 
-		if (($options['dryRun'] ?? false) === true) {
-			// A dry run writes nothing at all: no call, no attempt, no record.
-			// An administrator uses it to look at a payload, and looking must
-			// not change what they are looking at.
-			return [
-				'call' => $uuid,
-				'kind' => CallRecorder::KIND_DRY_RUN,
-				'succeeded' => true,
-				'sent' => false,
-				'mappingVersion' => $call->mappingVersion,
-				'request' => $request,
-				'detail' => 'Dry run: this is the request that would be sent. Nothing was sent.',
-			];
+		if ($request->dryRun === true) {
+			return $this->dryRunReplay(call: $call, request: $payload);
 		}
 
-		return $this->send(call: $call, request: $request);
+		return $this->send(call: $call, request: $payload);
+	}//end replayRequested()
 
-	}//end replay()
+	/**
+	 * The mapping version a replay asks for, as text; null when it asks for none.
+	 *
+	 * @param array<string,mixed> $options `mappingVersion`.
+	 *
+	 * @return string|null The version.
+	 */
+	private function wantedVersion(array $options): ?string {
+		$wantedVersion = ($options['mappingVersion'] ?? null);
+		if ($wantedVersion !== null) {
+			$wantedVersion = (string)$wantedVersion;
+		}
+
+		return $wantedVersion;
+	}//end wantedVersion()
+
+	/**
+	 * Where and under which mapping version a recorded call is replayed.
+	 *
+	 * @param array<string,mixed> $record The call record.
+	 * @param CallReplayRequest $request The replay.
+	 *
+	 * @return ReplayTarget The target.
+	 */
+	private function replayTarget(array $record, CallReplayRequest $request): ReplayTarget {
+		$resolved = $this->mappingVersions->resolve(
+			(string)($record['mapping'] ?? ''),
+			(string)($record['mappingVersion'] ?? ''),
+			$request->mappingVersion
+		);
+
+		return new ReplayTarget(
+			uuid: $request->uuid,
+			actorUid: $request->actorUid,
+			mappingVersion: $resolved['version'],
+			target: (string)($record['target'] ?? '')
+		);
+	}//end replayTarget()
+
+	/**
+	 * The answer to a dry run, which writes nothing at all.
+	 *
+	 * No call, no attempt, no record: an administrator uses it to look at a
+	 * payload, and looking must not change what they are looking at.
+	 *
+	 * @param ReplayTarget $call The replay target.
+	 * @param array<string,mixed> $request The request that would be sent.
+	 *
+	 * @return array<string,mixed> The dry-run answer.
+	 */
+	private function dryRunReplay(ReplayTarget $call, array $request): array {
+		return [
+			'call' => $call->uuid,
+			'kind' => CallRecorder::KIND_DRY_RUN,
+			'succeeded' => true,
+			'sent' => false,
+			'mappingVersion' => $call->mappingVersion,
+			'request' => $request,
+			'detail' => 'Dry run: this is the request that would be sent. Nothing was sent.',
+		];
+	}//end dryRunReplay()
 
 	/**
 	 * Send a replay and record it as an attempt, dead-lettering the call once
@@ -304,62 +353,137 @@ class CallReplayService implements CallReplayServiceInterface {
 	 * @return array<string,mixed> What happened.
 	 */
 	public function fire(string $target, array $request, string $actorUid, bool $dryRun = false): array {
-		if ($dryRun === true) {
-			return [
-				'kind' => CallRecorder::KIND_DRY_RUN,
-				'succeeded' => true,
-				'sent' => false,
-				'request' => $request,
-				'detail' => 'Dry run: this is the request that would be sent. Nothing was sent.',
-			];
+		$call = new HandFiredCall(target: $target, request: $request);
+		$call->actorUid = $actorUid;
+		$call->dryRun = $dryRun;
+
+		return $this->fireCall(call: $call);
+	}//end fire()
+
+	/**
+	 * Fire one call by hand: show it on a dry run, otherwise send and record it.
+	 *
+	 * @param HandFiredCall $call The call.
+	 *
+	 * @return array<string,mixed> What happened.
+	 */
+	private function fireCall(HandFiredCall $call): array {
+		if ($call->dryRun === true) {
+			return $this->dryRunFire(call: $call);
 		}
 
 		try {
-			$response = $this->dispatcher->dispatch($target, $request);
+			$response = $this->dispatcher->dispatch($call->target, $call->request);
 		} catch (CallDispatchException $exception) {
-			$record = $this->recorder->record(
-				[
-					'target' => $target,
-					'request' => $request,
-					'statusCode' => 0,
-					'statusMessage' => $exception->getMessage(),
-					'kind' => CallRecorder::KIND_HAND_FIRED,
-					'firedBy' => $actorUid,
-				]
-			);
-
-			return [
-				'call' => (string)$record->getUuid(),
-				'kind' => CallRecorder::KIND_HAND_FIRED,
-				'succeeded' => false,
-				'sent' => false,
-				'detail' => $exception->getMessage(),
-			];
+			return $this->fireFailed(call: $call, exception: $exception);
 		}
 
+		return $this->fired(call: $call, response: $response);
+	}//end fireCall()
+
+	/**
+	 * The answer to a dry-run hand-fire: the request, unsent and unrecorded.
+	 *
+	 * @param HandFiredCall $call The call.
+	 *
+	 * @return array<string,mixed> The dry-run answer.
+	 */
+	private function dryRunFire(HandFiredCall $call): array {
+		return [
+			'kind' => CallRecorder::KIND_DRY_RUN,
+			'succeeded' => true,
+			'sent' => false,
+			'request' => $call->request,
+			'detail' => 'Dry run: this is the request that would be sent. Nothing was sent.',
+		];
+	}//end dryRunFire()
+
+	/**
+	 * Record a hand-fired call that never reached its target, and say so.
+	 *
+	 * @param HandFiredCall $call The call.
+	 * @param CallDispatchException $exception Why it was not sent.
+	 *
+	 * @return array<string,mixed> What happened.
+	 */
+	private function fireFailed(HandFiredCall $call, CallDispatchException $exception): array {
 		$record = $this->recorder->record(
 			[
-				'target' => $target,
-				'request' => $request,
+				'target' => $call->target,
+				'request' => $call->request,
+				'statusCode' => 0,
+				'statusMessage' => $exception->getMessage(),
+				'kind' => CallRecorder::KIND_HAND_FIRED,
+				'firedBy' => $call->actorUid,
+			]
+		);
+
+		return $this->notFired(uuid: (string)$record->getUuid(), detail: $exception->getMessage());
+	}//end fireFailed()
+
+	/**
+	 * The answer for a recorded hand-fired call that was not sent.
+	 *
+	 * @param string $uuid The new call record's uuid.
+	 * @param string $detail Why it was not sent.
+	 *
+	 * @return array<string,mixed> What happened.
+	 */
+	private function notFired(string $uuid, string $detail): array {
+		return [
+			'call' => $uuid,
+			'kind' => CallRecorder::KIND_HAND_FIRED,
+			'succeeded' => false,
+			'sent' => false,
+			'detail' => $detail,
+		];
+	}//end notFired()
+
+	/**
+	 * Record a hand-fired call and its answer; it succeeded when the answer is 2xx.
+	 *
+	 * @param HandFiredCall $call The call.
+	 * @param array<string,mixed> $response The dispatcher's answer.
+	 *
+	 * @return array<string,mixed> What happened.
+	 */
+	private function fired(HandFiredCall $call, array $response): array {
+		$record = $this->recorder->record(
+			[
+				'target' => $call->target,
+				'request' => $call->request,
 				'response' => $response,
 				'statusCode' => (int)$response['statusCode'],
 				'statusMessage' => (string)$response['detail'],
 				'durationMs' => (int)$response['durationMs'],
 				'kind' => CallRecorder::KIND_HAND_FIRED,
-				'firedBy' => $actorUid,
+				'firedBy' => $call->actorUid,
 			]
 		);
 
+		return $this->firedOutcome(uuid: (string)$record->getUuid(), response: $response);
+	}//end fired()
+
+	/**
+	 * The answer for a recorded hand-fired call.
+	 *
+	 * @param string $uuid The new call record's uuid.
+	 * @param array<string,mixed> $response The dispatcher's answer.
+	 *
+	 * @return array<string,mixed> What happened.
+	 */
+	private function firedOutcome(string $uuid, array $response): array {
+		$statusCode = (int)$response['statusCode'];
+
 		return [
-			'call' => (string)$record->getUuid(),
+			'call' => $uuid,
 			'kind' => CallRecorder::KIND_HAND_FIRED,
-			'succeeded' => ((int)$response['statusCode'] >= 200 && (int)$response['statusCode'] < 300),
+			'succeeded' => ($statusCode >= 200 && $statusCode < 300),
 			'sent' => true,
-			'statusCode' => (int)$response['statusCode'],
+			'statusCode' => $statusCode,
 			'detail' => (string)$response['detail'],
 		];
-
-	}//end fire()
+	}//end firedOutcome()
 
 	/**
 	 * Dead-letter a call that has used up its configured attempts.

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+# SPDX-License-Identifier: EUPL-1.2
+
 """A mock of GitHub code search for integriq's live tests.
 
 Replays the shapes GitHub's REST API really sends for

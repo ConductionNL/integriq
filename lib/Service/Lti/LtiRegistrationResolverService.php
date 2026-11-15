@@ -20,6 +20,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -118,6 +121,7 @@ class LtiRegistrationResolverService {
 		$matches = $this->orObjectService->findAll(
 			config: ['filters' => $filters],
 			_rbac: false,
+			// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -147,6 +151,7 @@ class LtiRegistrationResolverService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -185,6 +190,7 @@ class LtiRegistrationResolverService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -219,6 +225,7 @@ class LtiRegistrationResolverService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: the deployments of a tool already resolved through the approval gate.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -247,6 +254,7 @@ class LtiRegistrationResolverService {
 				register: 'integriq',
 				schema: 'lti_deployment',
 				_rbac: false,
+				// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -283,6 +291,7 @@ class LtiRegistrationResolverService {
 				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
+				// Unscoped: the LTI trust anchor, resolved for a caller authenticated by its signed token; only an approved registration is returned.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -320,6 +329,7 @@ class LtiRegistrationResolverService {
 				register: 'integriq',
 				schema: $registrationType,
 				_rbac: false,
+				// Unscoped: reads only the status of a registration the caller already named, for the approval gate.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {

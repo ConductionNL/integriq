@@ -126,8 +126,7 @@ class ProductSubscriptionsController extends Controller {
 				id: $productId,
 				register: self::REGISTER,
 				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
@@ -313,8 +312,7 @@ class ProductSubscriptionsController extends Controller {
 				id: $productId,
 				register: self::REGISTER,
 				schema: 'api_product',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => $this->l->t('No such API product')], Http::STATUS_NOT_FOUND);
@@ -394,8 +392,7 @@ class ProductSubscriptionsController extends Controller {
 					'sort' => ['created' => 'desc'],
 					'limit' => self::ANALYTICS_ROW_LIMIT,
 				],
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('integriq: failed to fetch product call_log rows for analytics: ' . $e->getMessage());
@@ -453,8 +450,7 @@ class ProductSubscriptionsController extends Controller {
 				id: $subscriptionId,
 				register: self::REGISTER,
 				schema: 'api_product_subscription',
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (DoesNotExistException $e) {
 			return [null, null, new JSONResponse(['error' => $this->l->t('No such subscription')], Http::STATUS_NOT_FOUND)];
