@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Stub for OCA\OpenRegister\Service\Object\LockRequest.
+ * Stub for OCA\OpenRegister\Kernel\Contracts\Value\LockRequest.
  *
  * Same constructor as the OpenRegister value object (with the defaults
  * openregister #9095 gives it), so a test builds and reads it the way
@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * One lock to take: the object, the process holding it and for how long.

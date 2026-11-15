@@ -230,16 +230,16 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\LockRunStep') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/LockRunStep.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRunStep') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/LockRunStep.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\LockRequest') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/LockRequest.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/LockRequest.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\UnlockRequest') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/UnlockRequest.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/UnlockRequest.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
