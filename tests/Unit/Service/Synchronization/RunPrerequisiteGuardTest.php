@@ -160,4 +160,30 @@ class RunPrerequisiteGuardTest extends TestCase {
 		$this->assertNotNull($this->guard()->missing(sourceConfig: ['requiredMappingValues' => 'openconnectorDeploymentId']));
 		$this->assertNotNull($this->guard()->missing(sourceConfig: ['requiredMappingValues' => [['key' => 'openconnectorDeploymentId']]]));
 	}//end testAMalformedDeclarationIsRefused()
+
+	/**
+	 * An entry without a name is named by its key, and a lookup that answers
+	 * nothing counts as a missing mapping.
+	 *
+	 * @return void
+	 */
+	public function testAnUnnamedEntryIsNamedByItsKeyAndAnEmptyLookupIsAMissingMapping(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willReturnCallback(
+			fn ($id) => match ($id) {
+				'placement' => ObjectServiceMockBuilder::objectEntity($this, ['mapping' => ['deploymentId' => '  ']], 'uuid-placement'),
+				default => null,
+			}
+		);
+		$guard = new RunPrerequisiteGuard(objectService: $objects);
+
+		$this->assertSame(
+			'Canceled: deploymentId is not set. Set "deploymentId" in the mapping "placement", then run the synchronization again. Nothing was fetched or written.',
+			$guard->missing(sourceConfig: ['requiredMappingValues' => [['mapping' => ' placement ', 'key' => ' deploymentId ', 'name' => ' ']]])
+		);
+		$this->assertSame(
+			'Canceled: the mapping "elsewhere" that holds deploymentId is not on this instance.',
+			$guard->missing(sourceConfig: ['requiredMappingValues' => [['mapping' => 'elsewhere', 'key' => 'deploymentId']]])
+		);
+	}//end testAnUnnamedEntryIsNamedByItsKeyAndAnEmptyLookupIsAMissingMapping()
 }//end class

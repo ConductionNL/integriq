@@ -17,7 +17,7 @@
                 "key": "mapping",
                 "label": "t(Mapping)",
                 "type": "select",
-                "help": "t(The configured mapping applied to every item in the page.)",
+                "help": "t(The configured mapping applied to every item in the page. A template such as jobboard-{{ json.channel }} picks the mapping per item.)",
                 "required": true,
                 "optionsFrom": "/apps/openregister/api/objects/integriq/mapping"
             },
@@ -378,7 +378,7 @@
                 "key": "source",
                 "label": "t(Source)",
                 "type": "select",
-                "help": "t(The configured source this step calls. The call inherits its base URL, authentication and rate limits.)",
+                "help": "t(The configured source this step calls. The call inherits its base URL, authentication and rate limits. A template such as jobboard-{{ json.channel }} picks the source per item.)",
                 "required": true,
                 "optionsFrom": "/apps/openregister/api/objects/integriq/source"
             },

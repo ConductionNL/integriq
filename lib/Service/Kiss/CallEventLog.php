@@ -130,6 +130,7 @@ class CallEventLog {
 			$filters['sourceId'] = $sourceId;
 		}
 
+		// Unscoped: CTI event intake and the KISS sync read the call log as the system, with no user session.
 		$found   = $this->objectService->findAll(
 			config: ['filters' => $filters, 'limit' => 10],
 			_rbac: false,
