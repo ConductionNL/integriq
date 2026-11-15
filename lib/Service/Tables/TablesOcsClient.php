@@ -33,15 +33,16 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\Tables;
 
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\TablesNotFoundException;
 use OCA\Integriq\Exception\TablesPermissionDeniedException;
 use OCA\Integriq\Exception\TablesUpstreamException;
 use OCA\Integriq\Service\CallService;
+use OCA\Integriq\Service\Helper\OcsApi;
+use OCA\Integriq\Service\Helper\OcsApiDispatcher;
+use OCA\Integriq\Service\Helper\OcsPayload;
+use OCA\Integriq\Service\Helper\OcsRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
-use Twig\Error\LoaderError;
-use Twig\Error\SyntaxError;
 
 /**
  * Speaks the Tables `index.php/apps/tables/api/1/*` REST dialect over `CallService`.
@@ -86,7 +87,7 @@ class TablesOcsClient implements TablesClientInterface {
 		$body = $this->dispatch(source: $source, endpoint: self::BASE_PATH . '/tables', method: 'GET');
 
 		$tables = [];
-		foreach ($this->asArray(value: $body) as $table) {
+		foreach (OcsPayload::asArray(value: $body) as $table) {
 			if (is_array($table) === false) {
 				continue;
 			}
@@ -124,7 +125,7 @@ class TablesOcsClient implements TablesClientInterface {
 		);
 
 		$columns = [];
-		foreach ($this->asArray(value: $body) as $column) {
+		foreach (OcsPayload::asArray(value: $body) as $column) {
 			if (is_array($column) === false) {
 				continue;
 			}
@@ -179,7 +180,7 @@ class TablesOcsClient implements TablesClientInterface {
 		);
 
 		$rows = [];
-		foreach ($this->asArray(value: $body) as $row) {
+		foreach (OcsPayload::asArray(value: $body) as $row) {
 			if (is_array($row) === false) {
 				continue;
 			}
@@ -207,7 +208,7 @@ class TablesOcsClient implements TablesClientInterface {
 	public function getRow(ObjectEntity $source, int $rowId): array {
 		$body = $this->dispatch(source: $source, endpoint: self::BASE_PATH . "/rows/{$rowId}", method: 'GET');
 
-		return $this->normaliseRow(row: $this->asArray(value: $body));
+		return $this->normaliseRow(row: OcsPayload::asArray(value: $body));
 	}//end getRow()
 
 	/**
@@ -233,7 +234,7 @@ class TablesOcsClient implements TablesClientInterface {
 			config: ['json' => ['data' => $data]]
 		);
 
-		return $this->normaliseRow(row: $this->asArray(value: $body));
+		return $this->normaliseRow(row: OcsPayload::asArray(value: $body));
 	}//end createRow()
 
 	/**
@@ -259,7 +260,7 @@ class TablesOcsClient implements TablesClientInterface {
 			config: ['json' => ['data' => $data]]
 		);
 
-		return $this->normaliseRow(row: $this->asArray(value: $body));
+		return $this->normaliseRow(row: OcsPayload::asArray(value: $body));
 	}//end updateRow()
 
 	/**
@@ -296,65 +297,16 @@ class TablesOcsClient implements TablesClientInterface {
 	 * @throws TablesUpstreamException On transport failure or another non-2xx status.
 	 */
 	private function dispatch(ObjectEntity $source, string $endpoint, string $method, array $config = []): ?array {
-		try {
-			$callLog = $this->callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
-		} catch (GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception $exception) {
-			$this->logger->warning(
-				'TablesOcsClient: transport failure calling Tables API',
-				['endpoint' => $endpoint, 'method' => $method, 'error' => $exception->getMessage()]
-			);
-			throw new TablesUpstreamException(
-				message: "Failed to reach the Tables API ({$method} {$endpoint}): " . $exception->getMessage()
-			);
-		}
+		$tablesApi = new OcsApi(
+			label: 'Tables',
+			permissionDenied: TablesPermissionDeniedException::class,
+			notFound: TablesNotFoundException::class,
+			upstream: TablesUpstreamException::class
+		);
+		$request = new OcsRequest(api: $tablesApi, source: $source, endpoint: $endpoint, method: $method, config: $config);
 
-		$callLogBody = $callLog->getObject();
-		$statusCode = (int)($callLogBody['response']['statusCode'] ?? 0);
-		$rawBody = (string)($callLogBody['response']['body'] ?? '');
-
-		if ($statusCode === 401 || $statusCode === 403) {
-			throw new TablesPermissionDeniedException(
-				message: "Tables API denied {$method} {$endpoint} (HTTP {$statusCode})",
-				statusCode: $statusCode
-			);
-		}
-
-		if ($statusCode === 404) {
-			throw new TablesNotFoundException(message: "Tables API resource not found: {$method} {$endpoint}");
-		}
-
-		if ($statusCode < 200 || $statusCode >= 300) {
-			throw new TablesUpstreamException(
-				message: "Tables API returned HTTP {$statusCode} for {$method} {$endpoint} (see CallLog {$callLog->getUuid()})"
-			);
-		}
-
-		if ($rawBody === '') {
-			return null;
-		}
-
-		$decoded = json_decode($rawBody, true);
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return null;
+		return (new OcsApiDispatcher(callService: $this->callService, logger: $this->logger))->dispatch(request: $request);
 	}//end dispatch()
-
-	/**
-	 * Coerce a value to an array, treating any non-array as empty.
-	 *
-	 * @param mixed $value The value to coerce.
-	 *
-	 * @return array
-	 */
-	private function asArray(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return [];
-	}//end asArray()
 
 	/**
 	 * Normalise a raw Tables `Column` payload into the contract.md editor shape.
@@ -420,7 +372,7 @@ class TablesOcsClient implements TablesClientInterface {
 		return [
 			'id' => (int)($row['id'] ?? 0),
 			'tableId' => (int)($row['tableId'] ?? 0),
-			'data' => $this->asArray(value: ($row['data'] ?? null)),
+			'data' => OcsPayload::asArray(value: ($row['data'] ?? null)),
 		];
 
 	}//end normaliseRow()

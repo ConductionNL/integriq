@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -29,6 +32,13 @@ interface WebhookProfilesInterface {
 	 * @var string
 	 */
 	public const INTAKE_CHANNEL_PREFIX = 'intake-channel-';
+
+	/**
+	 * The consumer type prefix of a CloudEvents receiver; the source id follows.
+	 *
+	 * @var string
+	 */
+	public const CLOUDEVENTS_SOURCE_PREFIX = 'cloudevents-source-';
 
 	/**
 	 * The consumer types the controllers name. A string, so a controller needs no static call.

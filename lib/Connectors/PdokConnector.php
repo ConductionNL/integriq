@@ -46,6 +46,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * @SuppressWarnings(PHPMD.TooManyMethods) -- the lookup, cache, circuit and upstream steps are each named
  */
 class PdokConnector implements PdokConnectorInterface {
 	/**
@@ -107,6 +109,11 @@ class PdokConnector implements PdokConnectorInterface {
 	 * OpenRegister schema of the stored addresses.
 	 */
 	private const OR_SCHEMA = 'addresses';
+
+	/**
+	 * Seconds a stored `fetchedAt` may lie in the future before it counts as stale.
+	 */
+	private const CLOCK_SKEW_SECONDS = 300;
 
 	/**
 	 * Cache for APCu-backed responses + breaker state.
@@ -539,53 +546,144 @@ class PdokConnector implements PdokConnectorInterface {
 	 */
 	private function orLookup(string $endpoint, array $params): ?array {
 		$objectService = $this->getOpenRegisterObjectService();
-		if ($objectService === null) {
+		$query = $this->storedQuery(endpoint: $endpoint, params: $params);
+		if ($objectService === null || $query === null) {
 			return null;
 		}
 
 		try {
-			if ($endpoint === 'lookup' && isset($params['id']) === true) {
-				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
-					[
-						'limit' => 1,
-						'filter' => ['pdokId' => $params['id']],
-					]
-				);
-			} elseif ($endpoint === 'reverse' && isset($params['lat'], $params['lon']) === true) {
-				$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll(
-					[
-						'limit' => 1,
-						'geo' => [
-							'near' => [(float)$params['lat'], (float)$params['lon']],
-							'radius' => 10,
-						],
-					]
-				);
-			} else {
-				return null;
-			}
+			$docs = $objectService->getMapper(register: 'integriq', schema: 'addresses')->findAll($query);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'PdokConnector: OR lookup failed',
-				['endpoint' => $endpoint, 'exception' => $e->getMessage()]
-			);
+			$this->storedLookupFailed(endpoint: $endpoint, exception: $e);
 			return null;
-		}//end try
+		}
 
+		return $this->freshStored(docs: $docs);
+	}//end orLookup()
+
+	/**
+	 * The stored-address query for a lookup by id or a reverse lookup by coordinates.
+	 *
+	 * @param string $endpoint The PDOK endpoint.
+	 * @param array  $params   The call parameters.
+	 *
+	 * @return array|null The query, or null when the endpoint has no stored lookup or lacks its parameters.
+	 */
+	private function storedQuery(string $endpoint, array $params): ?array {
+		return match ($endpoint) {
+			'lookup' => $this->idQuery(params: $params),
+			'reverse' => $this->nearQuery(params: $params),
+			default => null,
+		};
+	}//end storedQuery()
+
+	/**
+	 * The stored-address query for a lookup by PDOK id.
+	 *
+	 * @param array $params The call parameters.
+	 *
+	 * @return array|null The query, or null without an id.
+	 */
+	private function idQuery(array $params): ?array {
+		if (isset($params['id']) === false) {
+			return null;
+		}
+
+		return [
+			'limit' => 1,
+			'filter' => ['pdokId' => $params['id']],
+		];
+	}//end idQuery()
+
+	/**
+	 * The stored-address query for a reverse lookup: the nearest address within 10 m.
+	 *
+	 * @param array $params The call parameters.
+	 *
+	 * @return array|null The query, or null without both coordinates.
+	 */
+	private function nearQuery(array $params): ?array {
+		if (isset($params['lat'], $params['lon']) === false) {
+			return null;
+		}
+
+		return [
+			'limit' => 1,
+			'geo' => [
+				'near' => [(float)$params['lat'], (float)$params['lon']],
+				'radius' => 10,
+			],
+		];
+	}//end nearQuery()
+
+	/**
+	 * Log a stored-address query that failed; the call falls through to PDOK.
+	 *
+	 * @param string    $endpoint  The PDOK endpoint.
+	 * @param Throwable $exception Why the query failed.
+	 *
+	 * @return void
+	 */
+	private function storedLookupFailed(string $endpoint, Throwable $exception): void {
+		$this->logger->warning(
+			'PdokConnector: OR lookup failed',
+			['endpoint' => $endpoint, 'exception' => $exception->getMessage()]
+		);
+	}//end storedLookupFailed()
+
+	/**
+	 * The first stored address as an answer, when it is still fresh.
+	 *
+	 * @param array $docs The stored addresses found.
+	 *
+	 * @return array|null `{docs: [first], numFound: 1}`, or null when none was found or it is stale.
+	 */
+	private function freshStored(array $docs): ?array {
 		if (empty($docs) === true) {
 			return null;
 		}
 
-		$age = (time() - strtotime(($docs[0]['fetchedAt'] ?? '1970-01-01T00:00:00Z')));
-		if ($age > self::TTL_RESOLVED) {
+		if ($this->isFresh(fetchedAt: ($docs[0]['fetchedAt'] ?? null)) === false) {
 			return null;
 		}
 
 		return ['docs' => [$docs[0]], 'numFound' => 1];
-	}//end orLookup()
+	}//end freshStored()
+
+	/**
+	 * Whether a stored address was fetched within the resolved TTL.
+	 *
+	 * A `fetchedAt` that cannot be read, or that lies further in the future
+	 * than the allowed clock skew, counts as stale, so a row with a planted
+	 * date is fetched again instead of being served for ever.
+	 *
+	 * @param mixed $fetchedAt The stored `fetchedAt` value.
+	 *
+	 * @return bool True when the row may be served.
+	 *
+	 * @spec openspec/specs/pdok-adapter/spec.md#requirement-write-through-to-or-addresses-register
+	 */
+	private function isFresh(mixed $fetchedAt): bool {
+		if (is_string($fetchedAt) === false) {
+			return false;
+		}
+
+		$fetched = strtotime($fetchedAt);
+		if ($fetched === false) {
+			return false;
+		}
+
+		$age = (time() - $fetched);
+		return $age >= -self::CLOCK_SKEW_SECONDS && $age <= self::TTL_RESOLVED;
+	}//end isFresh()
 
 	/**
 	 * Persist a normalised PDOK document into OR's `addresses` register.
+	 *
+	 * The save runs in the system context: the schema grants create and
+	 * update to admins only, so a signed-in user cannot write an address
+	 * through the object API, while the connector still can. `fetchedAt` is
+	 * set to the connector's own clock.
 	 *
 	 * @param array $doc Normalised PostalAddress.
 	 *
@@ -601,11 +699,11 @@ class PdokConnector implements PdokConnectorInterface {
 
 		try {
 			$objectService->saveObject(
-				object: $doc,
+				object: array_replace($doc, ['fetchedAt' => gmdate('Y-m-d\TH:i:s\Z')]),
 				register: self::OR_REGISTER,
 				schema: self::OR_SCHEMA,
 				uuid: $this->storedUuid(objectService: $objectService, pdokId: (string)$doc['pdokId']),
-				_rbac: true,
+				_rbac: false,
 				_multitenancy: true,
 			);
 		} catch (Throwable $e) {

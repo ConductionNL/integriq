@@ -109,49 +109,78 @@ class PropertySourceResolver implements PropertySourceResolverInterface {
 	 * @throws \OCA\Integriq\PropertySource\Exception\MissingSourceConfigurationException When the binding has no source.
 	 */
 	public function resolve(string $providerId, string $identifier, array $config = [], bool $fresh = false): ResolvedValue {
+		$lookup = new PropertyLookup(providerId: $providerId, identifier: $identifier);
 		$provider = $this->registry->get($providerId);
 		$budget = (int)($provider->describe()['stalenessBudget'] ?? 0);
 		$key = $this->cacheKey(providerId: $providerId, identifier: $identifier);
-		$entry = $this->readEntry(key: $key);
-		$now = time();
+		$lookup->cached = $this->cachedRead(lookup: $lookup, entry: $this->readEntry(key: $key));
+		$lookup->now = time();
 
-		if ($fresh === false && $entry !== null) {
-			$age = ($now - $entry['readAt']);
-			if ($age <= $budget) {
-				return ResolvedValue::fromCache($entry['value'], $providerId, $identifier, $entry['readAt'], $age);
-			}
+		if ($fresh === false && $lookup->cached !== null && $this->cacheAge(lookup: $lookup) <= $budget) {
+			return ResolvedValue::fromCache(read: $lookup->cached, ageSeconds: $this->cacheAge(lookup: $lookup));
 		}
 
 		try {
 			$value = $provider->resolve($identifier, $config);
 		} catch (SourceUnreachableException $e) {
-			$this->logger->warning(
-				'property-source.resolve.unreachable',
-				[
-					'provider' => $providerId,
-					'identifier' => $identifier,
-					'cached' => ($entry !== null),
-				]
-			);
+			return $this->unreachableAnswer(lookup: $lookup);
+		}
 
-			if ($entry !== null) {
-				return ResolvedValue::fromCache(
-					$entry['value'],
-					$providerId,
-					$identifier,
-					$entry['readAt'],
-					($now - $entry['readAt']),
-					true
-				);
-			}
+		$this->cache->set($key, ['value' => $value, 'readAt' => $lookup->now]);
 
-			return ResolvedValue::unreachable($providerId, $identifier);
-		}//end try
-
-		$this->cache->set($key, ['value' => $value, 'readAt' => $now]);
-
-		return ResolvedValue::fromSource($value, $providerId, $identifier, $now);
+		return ResolvedValue::fromSource($value, $providerId, $identifier, $lookup->now);
 	}//end resolve()
+
+	/**
+	 * What a cache entry holds, as the source read it then.
+	 *
+	 * @param PropertyLookup                                   $lookup The read.
+	 * @param array{value:array<string,mixed>,readAt:int}|null $entry  The cache entry, or null.
+	 *
+	 * @return ResolvedValue|null The cached read, or null when nothing is cached.
+	 */
+	private function cachedRead(PropertyLookup $lookup, ?array $entry): ?ResolvedValue {
+		if ($entry === null) {
+			return null;
+		}
+
+		return ResolvedValue::fromSource($entry['value'], $lookup->providerId, $lookup->identifier, $entry['readAt']);
+	}//end cachedRead()
+
+	/**
+	 * How old the cached read is at the start of this read.
+	 *
+	 * @param PropertyLookup $lookup The read, with a cached value.
+	 *
+	 * @return integer The age in seconds.
+	 */
+	private function cacheAge(PropertyLookup $lookup): int {
+		return ($lookup->now - (int)$lookup->cached?->getReadAt());
+	}//end cacheAge()
+
+	/**
+	 * The answer when the source did not answer: the last cached value, labelled, or nothing.
+	 *
+	 * @param PropertyLookup $lookup The read.
+	 *
+	 * @return ResolvedValue The degraded answer.
+	 */
+	private function unreachableAnswer(PropertyLookup $lookup): ResolvedValue {
+		$this->logger->warning(
+			'property-source.resolve.unreachable',
+			[
+				'provider' => $lookup->providerId,
+				'identifier' => $lookup->identifier,
+				'cached' => ($lookup->cached !== null),
+			]
+		);
+
+		if ($lookup->cached !== null) {
+			return ResolvedValue::fromCacheWhileUnreachable(read: $lookup->cached, ageSeconds: $this->cacheAge(lookup: $lookup));
+		}
+
+		return ResolvedValue::unreachable($lookup->providerId, $lookup->identifier);
+	}//end unreachableAnswer()
 
 	/**
 	 * Turn a suggestion into a stored value.

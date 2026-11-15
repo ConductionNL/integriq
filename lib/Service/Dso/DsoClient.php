@@ -3,6 +3,9 @@
 /**
  * Integriq DSO (Digitaal Stelsel Omgevingswet) Client.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Thin REST binding for {@see DsoConnectorProviderInterface} against a
  * DSO-LV-fronted "voortgangsinformatie"/besluit endpoint. Deliberately a
  * hand-rolled HTTP client (Guzzle, already an app dependency) rather than a
@@ -59,9 +62,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @link https://www.Integriq.nl
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md#requirement-dso-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
@@ -76,6 +76,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\Integriq\Exception\DsoProviderException;
 use OCA\Integriq\Exception\MtlsTransportException;
 use OCA\Integriq\Service\PayloadTooLargeException;
+use OCA\Integriq\Service\Mtls\ClientAuthenticationSchema;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
@@ -99,7 +100,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 *
 	 * @var string
 	 */
-	private const DEFAULT_AUTH_SCHEME = 'Bearer';
+	private const DEFAULT_AUTH_SCHEME = ClientAuthenticationSchema::DEFAULT_SCHEME;
 
 	/**
 	 * Outbound message-kind to endpoint-path mapping (relative to `configuration.baseUrl`).
@@ -166,40 +167,13 @@ class DsoClient implements DsoConnectorProviderInterface {
 					'type' => 'string',
 					'description' => 'DSO-LV outbound (voortgangsinformatie/besluit) endpoint base URL (no trailing slash)',
 				],
-				'authentication' => [
-					'type' => 'object',
-					'properties' => [
-						'mode' => [
-							'type' => 'string',
-							'enum' => ['token', 'mtls'],
-							'default' => 'token',
-							'description' => '`token` (default) sends a Bearer Authorization header from '
-								. '`encryptedToken`. `mtls` dispatches over a real PKIoverheid mutual-TLS connection '
-								. 'using `mtls.*` — closes the real DSO-LV outbound transport gap.',
-						],
-						'encryptedToken' => [
-							'type' => 'string',
-							'description' => 'Required when `mode=token` (the default). The DSO-LV API token, '
-								. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.',
-						],
-						'scheme' => [
-							'type' => 'string',
-							'description' => 'Authorization header scheme, used only when `mode=token`.',
-							'default' => self::DEFAULT_AUTH_SCHEME,
-						],
-						'mtls' => [
-							'type' => 'object',
-							'description' => 'Required when `mode=mtls`. Client certificate material, each field '
-								. 'individually encrypted at rest via OCP\\Security\\ICrypto.',
-							'properties' => [
-								'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
-								'encryptedPrivateKey' => ['type' => 'string', 'description' => 'PEM private key.'],
-								'encryptedPassphrase' => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
-								'encryptedCaBundle' => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
-							],
-						],
-					],
-				],
+				'authentication' => ClientAuthenticationSchema::tokenOrMtls(
+					modeDescription: '`token` (default) sends a Bearer Authorization header from '
+						. '`encryptedToken`. `mtls` dispatches over a real PKIoverheid mutual-TLS connection '
+						. 'using `mtls.*` — closes the real DSO-LV outbound transport gap.',
+					tokenDescription: 'Required when `mode=token` (the default). The DSO-LV API token, '
+						. 'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.'
+				),
 				'bronorganisatie' => [
 					'type' => 'string',
 					'description' => 'This bevoegd gezag\'s OIN/bronorganisatie code (outbound stuurgegevens default).',
@@ -228,35 +202,69 @@ class DsoClient implements DsoConnectorProviderInterface {
 	public function send(array $sourceConfiguration, string $requestId, string $type, array $payload): string {
 		$url = $this->messageUrl(sourceConfiguration: $sourceConfiguration, type: $type);
 
-		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
-		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+		$request = $this->authenticatedRequest(
+			sourceConfiguration: $sourceConfiguration,
+			headers: [
+				'Content-Type' => 'application/json',
+				'Accept' => 'application/json',
+			]
+		);
+		$request->url = $url;
+		$request->options = ['json' => $payload, 'http_errors' => false];
 
-		$headers = [
-			'Content-Type' => 'application/json',
-			'Accept' => 'application/json',
-		];
-		if ($useMtls === false) {
-			// Token mode (default) — unchanged from before this change.
+		$body = $this->messageBody(response: $this->postMessage(request: $request));
+
+		return $this->extractRef(body: $body, fallbackPrefix: $requestId . '-' . $type);
+	}//end send()
+
+	/**
+	 * Start a request carrying the source's own authentication: the Bearer
+	 * header in token mode (the default), nothing extra in mTLS mode, where
+	 * the client certificate authenticates.
+	 *
+	 * @param array                 $sourceConfiguration The `dso` source's `configuration` object.
+	 * @param array<string, string> $headers             The request's other headers.
+	 *
+	 * @return DsoTransportRequest The request, without URL or options yet.
+	 *
+	 * @throws DsoProviderException When token mode has no usable credential.
+	 *
+	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-token-mode-is-unchanged-when-mtls-is-not-configured
+	 */
+	private function authenticatedRequest(array $sourceConfiguration, array $headers): DsoTransportRequest {
+		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
+		$request = new DsoTransportRequest(
+			authConfig: $authConfig,
+			useMtls: $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig)
+		);
+
+		if ($request->useMtls === false) {
 			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
 		}
 
-		$response = $this->postMessage(
-			request: [
-				'useMtls' => $useMtls,
-				'authConfig' => $authConfig,
-				'url' => $url,
-				'options' => ['headers' => $headers, 'json' => $payload, 'http_errors' => false],
-			]
-		);
+		$request->headers = $headers;
 
+		return $request;
+	}//end authenticatedRequest()
+
+	/**
+	 * The body of a message answer, refusing an answer outside 2xx.
+	 *
+	 * @param ResponseInterface $response The answer.
+	 *
+	 * @return string The raw body.
+	 *
+	 * @throws DsoProviderException When DSO-LV answered non-2xx.
+	 */
+	private function messageBody(ResponseInterface $response): string {
 		$status = $response->getStatusCode();
 		$body = (string)$response->getBody();
 		if ($status < 200 || $status >= 300) {
 			throw new DsoProviderException(message: 'DSO-LV endpoint responded with HTTP ' . $status . '.');
 		}
 
-		return $this->extractRef(body: $body, requestId: $requestId, type: $type);
-	}//end send()
+		return $body;
+	}//end messageBody()
 
 	/**
 	 * The URL an outbound message of this type is posted to.
@@ -289,40 +297,59 @@ class DsoClient implements DsoConnectorProviderInterface {
 	/**
 	 * Post one outbound message, turning a transport failure into a DsoProviderException.
 	 *
-	 * @param array{useMtls: bool, authConfig: array, url: string, options: array} $request The prepared request.
+	 * @param DsoTransportRequest $request The prepared request.
 	 *
 	 * @return ResponseInterface The response, whatever its status.
 	 *
 	 * @throws DsoProviderException When the mTLS or HTTP transport fails.
 	 */
-	private function postMessage(array $request): ResponseInterface {
+	private function postMessage(DsoTransportRequest $request): ResponseInterface {
 		try {
-			return $this->dispatch(
-				useMtls: $request['useMtls'],
-				authConfig: $request['authConfig'],
-				url: $request['url'],
-				requestOptions: $request['options']
-			);
+			return $this->dispatch(request: $request);
 		} catch (MtlsTransportException $exception) {
-			$this->logger->warning(
-				'[DsoClient] mTLS request failed',
-				['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
-			);
-			throw new DsoProviderException(
-				message: 'The DSO-LV mTLS request failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
-				previous: $exception
-			);
+			throw $this->messageMtlsFailure(exception: $exception);
 		} catch (GuzzleException $exception) {
-			$this->logger->warning(
-				'[DsoClient] unexpected transport failure',
-				['exception' => $exception->getMessage()]
-			);
-			throw new DsoProviderException(
-				message: 'The DSO-LV request failed unexpectedly: ' . $exception->getMessage(),
-				previous: $exception
-			);
-		}//end try
+			throw $this->messageTransportFailure(exception: $exception);
+		}
 	}//end postMessage()
+
+	/**
+	 * Log a failed mTLS message post and describe it as a provider failure.
+	 *
+	 * @param MtlsTransportException $exception The transport failure.
+	 *
+	 * @return DsoProviderException The failure to raise.
+	 */
+	private function messageMtlsFailure(MtlsTransportException $exception): DsoProviderException {
+		$this->logger->warning(
+			'[DsoClient] mTLS request failed',
+			['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
+		);
+
+		return new DsoProviderException(
+			message: 'The DSO-LV mTLS request failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
+			previous: $exception
+		);
+	}//end messageMtlsFailure()
+
+	/**
+	 * Log a failed message post and describe it as a provider failure.
+	 *
+	 * @param GuzzleException $exception The transport failure.
+	 *
+	 * @return DsoProviderException The failure to raise.
+	 */
+	private function messageTransportFailure(GuzzleException $exception): DsoProviderException {
+		$this->logger->warning(
+			'[DsoClient] unexpected transport failure',
+			['exception' => $exception->getMessage()]
+		);
+
+		return new DsoProviderException(
+			message: 'The DSO-LV request failed unexpectedly: ' . $exception->getMessage(),
+			previous: $exception
+		);
+	}//end messageTransportFailure()
 
 	/**
 	 * Download one bijlage from DSO-LV with the source's own authentication:
@@ -344,22 +371,29 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
 	 */
 	public function download(array $sourceConfiguration, string $url, int $maxBytes) {
-		$authConfig = (array)($sourceConfiguration['authentication'] ?? []);
-		$useMtls = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+		$request = $this->authenticatedRequest(sourceConfiguration: $sourceConfiguration, headers: ['Accept' => '*/*']);
+		$request->url = $url;
+		$request->options = ['http_errors' => false, 'stream' => true];
+		$request->method = 'GET';
 
-		$headers = ['Accept' => '*/*'];
-		if ($useMtls === false) {
-			$headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
-		}
+		$response = $this->fetchDownload(request: $request);
+		$this->assertDownloadAccepted(response: $response, maxBytes: $maxBytes);
 
+		return $this->copyCapped(body: $response->getBody(), maxBytes: $maxBytes);
+	}//end download()
+
+	/**
+	 * Send the download request, turning a transport failure into a DsoProviderException.
+	 *
+	 * @param DsoTransportRequest $request The prepared GET.
+	 *
+	 * @return ResponseInterface The response, whatever its status.
+	 *
+	 * @throws DsoProviderException When the mTLS or HTTP transport fails.
+	 */
+	private function fetchDownload(DsoTransportRequest $request): ResponseInterface {
 		try {
-			$response = $this->dispatch(
-				useMtls: $useMtls,
-				authConfig: $authConfig,
-				url: $url,
-				requestOptions: ['headers' => $headers, 'http_errors' => false, 'stream' => true],
-				method: 'GET'
-			);
+			return $this->dispatch(request: $request);
 		} catch (MtlsTransportException $exception) {
 			throw new DsoProviderException(
 				message: 'The DSO-LV mTLS download failed (' . $exception->getErrorCode() . '): ' . $exception->getMessage(),
@@ -371,7 +405,21 @@ class DsoClient implements DsoConnectorProviderInterface {
 				previous: $exception
 			);
 		}
+	}//end fetchDownload()
 
+	/**
+	 * Refuse a download answered outside 2xx or declared larger than the cap,
+	 * closing its body.
+	 *
+	 * @param ResponseInterface $response The answer.
+	 * @param integer           $maxBytes The largest body accepted, in bytes.
+	 *
+	 * @return void
+	 *
+	 * @throws PayloadTooLargeException When the declared length is larger than `$maxBytes`.
+	 * @throws DsoProviderException When DSO-LV answered non-2xx.
+	 */
+	private function assertDownloadAccepted(ResponseInterface $response, int $maxBytes): void {
 		$status = $response->getStatusCode();
 		$body = $response->getBody();
 		if ($status < 200 || $status >= 300) {
@@ -386,9 +434,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 				message: 'The bijlage is ' . $declared . ' bytes, more than the maximum of ' . $maxBytes . ' bytes.'
 			);
 		}
-
-		return $this->copyCapped(body: $body, maxBytes: $maxBytes);
-	}//end download()
+	}//end assertDownloadAccepted()
 
 	/**
 	 * Copy a response body into a temporary stream, chunk by chunk, and stop
@@ -435,11 +481,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * token-mode path (unchanged). Never falls back between the two: an mTLS
 	 * resolve/handshake failure propagates as {@see MtlsTransportException}.
 	 *
-	 * @param boolean $useMtls Whether `authentication.mode=mtls` is configured.
-	 * @param array $authConfig The source's `configuration.authentication` object.
-	 * @param string $url The absolute request URL.
-	 * @param array $requestOptions The Guzzle request options.
-	 * @param string $method The HTTP method: POST for messages, GET for bijlagen.
+	 * @param DsoTransportRequest $request The prepared request.
 	 *
 	 * @return ResponseInterface The Guzzle response.
 	 *
@@ -448,19 +490,19 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 *
 	 * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-dsoclient-routes-through-the-mtls-transport-when-configured
 	 */
-	private function dispatch(
-		bool $useMtls,
-		array $authConfig,
-		string $url,
-		array $requestOptions,
-		string $method = 'POST'
-	): ResponseInterface {
-		if ($useMtls === true) {
-			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
-			return $this->mtlsTransport->request($this->httpClient, $method, $url, $requestOptions, $bundle);
+	private function dispatch(DsoTransportRequest $request): ResponseInterface {
+		if ($request->useMtls === true) {
+			$bundle = $this->mtlsConfigResolver->resolve(authConfig: $request->authConfig);
+			return $this->mtlsTransport->request(
+				$this->httpClient,
+				$request->method,
+				$request->url,
+				$request->guzzleOptions(),
+				$bundle
+			);
 		}
 
-		return $this->httpClient->request($method, $url, $requestOptions);
+		return $this->httpClient->request($request->method, $request->url, $request->guzzleOptions());
 	}//end dispatch()
 
 	/**
@@ -468,13 +510,12 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * "..."}` envelope when present, otherwise a locally-derived reference
 	 * (the endpoint accepted the message but assigned no ref of its own).
 	 *
-	 * @param string $body The raw response body.
-	 * @param string $requestId The DSO `verzoekId` this message concerned.
-	 * @param string $type The message kind (`status`|`besluit`).
+	 * @param string $body           The raw response body.
+	 * @param string $fallbackPrefix The DSO `verzoekId` and message kind (`status`|`besluit`) as `<verzoekId>-<kind>`.
 	 *
 	 * @return string The extracted (or locally-derived) reference.
 	 */
-	private function extractRef(string $body, string $requestId, string $type): string {
+	private function extractRef(string $body, string $fallbackPrefix): string {
 		$trimmed = trim($body);
 		if ($trimmed !== '') {
 			$decoded = json_decode($trimmed, true);
@@ -488,7 +529,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 
 		// No transport-assigned ref — derive a locally-unique one so the
 		// caller still has something to persist/correlate on.
-		return $requestId . '-' . $type . '-' . (string)time();
+		return $fallbackPrefix . '-' . (string)time();
 	}//end extractRef()
 
 	/**

@@ -158,13 +158,7 @@ class ExchangeTargetDispatcher {
 	/**
 	 * Hand records to the target's adapter.
 	 *
-	 * @param string                           $jobId     The job's uuid.
-	 * @param string                           $target    The target id.
-	 * @param string                           $direction The direction.
-	 * @param array<string,mixed>              $scope     The job's scope.
-	 * @param array<int, array<string, mixed>> $records   `{recordId, sourceKind, data}`, data already mapped.
-	 * @param string                           $ownerApp  The owning app, for an import that lands there.
-	 * @param string                           $ownerRef  The owner's reference, for an import that lands there.
+	 * @param ExchangeHandOff $handOff The job's records, target, direction and scope.
 	 *
 	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: string|null, acceptedCount?: int}
 	 *     Accepted record ids, rejections, and a job-wide refusal code when the job cannot run at all.
@@ -173,75 +167,119 @@ class ExchangeTargetDispatcher {
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-005-export-handlers-hand-records-to-the-existing-adapters
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-010-an-import-job-hands-its-records-to-the-owning-app
 	 */
-	public function dispatch(
-		string $jobId,
-		string $target,
-		string $direction,
-		array $scope,
-		array $records,
-		string $ownerApp='',
-		string $ownerRef=''
-	): array {
+	public function dispatch(ExchangeHandOff $handOff): array {
+		if ($this->supports(target: $handOff->target, direction: $handOff->direction) === false) {
+			return $this->refusal(code: 'no-handler');
+		}
+
+		if (in_array($handOff->direction, (self::LANDED[$handOff->target] ?? []), true) === true) {
+			return $this->land(handOff: $handOff);
+		}
+
+		if ($handOff->target === 'swv' && (string)($handOff->scope['receiverId'] ?? '') === '') {
+			return $this->refusal(code: self::CODE_SOURCE_MISSING);
+		}
+
+		return $this->sendRecords(handOff: $handOff);
+
+	}//end dispatch()
+
+	/**
+	 * A job-wide refusal: nothing accepted, nothing rejected.
+	 *
+	 * @param string $code The refusal code.
+	 *
+	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: string}
+	 */
+	private function refusal(string $code): array {
+		return ['accepted' => [], 'rejected' => [], 'refusal' => $code];
+
+	}//end refusal()
+
+	/**
+	 * Send every record to the target's adapter, one at a time; a refused record does not stop the others.
+	 *
+	 * @param ExchangeHandOff $handOff The job.
+	 *
+	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: null}
+	 */
+	private function sendRecords(ExchangeHandOff $handOff): array {
 		$outcome = ['accepted' => [], 'rejected' => [], 'refusal' => null];
-		if ($this->supports(target: $target, direction: $direction) === false) {
-			$outcome['refusal'] = 'no-handler';
-			return $outcome;
-		}
-
-		if (in_array($direction, (self::LANDED[$target] ?? []), true) === true) {
-			return $this->land(
-				context: [
-					'jobId' => $jobId,
-					'ownerApp' => $ownerApp,
-					'target' => $target,
-					'direction' => $direction,
-					'ownerRef' => $ownerRef,
-				],
-				scope: $scope,
-				records: $records
-			);
-		}
-
-		if ($target === 'swv' && (string)($scope['receiverId'] ?? '') === '') {
-			$outcome['refusal'] = self::CODE_SOURCE_MISSING;
-			return $outcome;
-		}
-
-		foreach ($records as $record) {
-			$recordId = (string)($record['recordId'] ?? '');
-			$data = $record['data'] ?? [];
-			if (is_array($data) === false) {
-				$data = [];
-			}
-
-			try {
-				$accepted = $this->sendOne(
-					target: $target,
-					kenmerk: $jobId . ':' . $recordId,
-					data: $data,
-					scope: $scope
-				);
-			} catch (Throwable $exception) {
-				$outcome['rejected'][] = $this->rejection(record: $record, exception: $exception);
+		foreach ($handOff->records as $record) {
+			$rejection = $this->sendRecord(handOff: $handOff, record: $record);
+			if ($rejection === null) {
+				$outcome['accepted'][] = (string)($record['recordId'] ?? '');
 				continue;
 			}
 
-			if ($accepted === true) {
-				$outcome['accepted'][] = $recordId;
-				continue;
-			}
-
-			$outcome['rejected'][] = [
-				'recordId' => $recordId,
-				'sourceKind' => (string)($record['sourceKind'] ?? ''),
-				'errorCode' => self::CODE_SEND,
-				'offendingFields' => [],
-			];
-		}//end foreach
+			$outcome['rejected'][] = $rejection;
+		}
 
 		return $outcome;
 
-	}//end dispatch()
+	}//end sendRecords()
+
+	/**
+	 * Send one record; its rejection when the adapter threw or did not take it.
+	 *
+	 * @param ExchangeHandOff     $handOff The job.
+	 * @param array<string,mixed> $record  The record, `{recordId, sourceKind, data}`.
+	 *
+	 * @return array<string,mixed>|null The rejection, or null when the adapter took the record.
+	 */
+	private function sendRecord(ExchangeHandOff $handOff, array $record): ?array {
+		$outbound = new OutboundRecord(
+			kenmerk: $handOff->jobId . ':' . (string)($record['recordId'] ?? ''),
+			data: $this->recordData(record: $record)
+		);
+
+		try {
+			$accepted = $this->sendOne(handOff: $handOff, record: $outbound);
+		} catch (Throwable $exception) {
+			return $this->rejection(record: $record, exception: $exception);
+		}
+
+		if ($accepted === true) {
+			return null;
+		}
+
+		return $this->sendFailure(record: $record);
+
+	}//end sendRecord()
+
+	/**
+	 * The record's mapped data; anything but an array counts as empty.
+	 *
+	 * @param array<string,mixed> $record The record.
+	 *
+	 * @return array<string,mixed> The data.
+	 */
+	private function recordData(array $record): array {
+		$data = $record['data'] ?? [];
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+
+	}//end recordData()
+
+	/**
+	 * The rejection of a record the adapter did not take.
+	 *
+	 * @param array<string,mixed> $record The record.
+	 *
+	 * @return array<string,mixed> The rejection.
+	 */
+	private function sendFailure(array $record): array {
+		return [
+			'recordId' => (string)($record['recordId'] ?? ''),
+			'sourceKind' => (string)($record['sourceKind'] ?? ''),
+			'errorCode' => self::CODE_SEND,
+			'offendingFields' => [],
+		];
+
+	}//end sendFailure()
 
 	/**
 	 * Hand an import job's received records to the owning app and read its answer.
@@ -249,38 +287,28 @@ class ExchangeTargetDispatcher {
 	 * The owning app answers through {@see ExchangeRecordsReceivedEvent::accept()}.
 	 * No answer, or a listener that throws, is `no-owner-answer`.
 	 *
-	 * @param array{jobId: string, ownerApp: string, target: string, direction: string, ownerRef: string} $context The job.
-	 * @param array<string,mixed>                                                                         $scope   The job's scope.
-	 * @param array<int, array<string, mixed>>                                                            $records The mapped records.
+	 * @param ExchangeHandOff $handOff The job, with its owning app and reference.
 	 *
 	 * @return array{accepted: array<int, string>, rejected: array<int, array<string, mixed>>, refusal: string|null, acceptedCount?: int}
 	 *
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-011-the-owning-apps-answer-ends-the-job
 	 * @spec openspec/specs/exchange-jobs/spec.md#requirement-req-012-an-unanswered-import-ends-with-no-owner-answer
 	 */
-	private function land(array $context, array $scope, array $records): array {
-		$event = new ExchangeRecordsReceivedEvent(
-			jobId: $context['jobId'],
-			ownerApp: $context['ownerApp'],
-			target: $context['target'],
-			direction: $context['direction'],
-			ownerRef: $context['ownerRef'],
-			scope: $scope,
-			records: array_values($records)
-		);
+	private function land(ExchangeHandOff $handOff): array {
+		$event = $this->receivedEvent(handOff: $handOff);
 
 		try {
 			$this->events->dispatchTyped($event);
 		} catch (Throwable $exception) {
 			// The exception class only: a listener's message can quote a record.
 			$this->logger->warning(
-				'[ExchangeTargetDispatcher] the owning app failed on the records of job '.$context['jobId'].': '.get_class($exception)
+				'[ExchangeTargetDispatcher] the owning app failed on the records of job '.$handOff->jobId.': '.get_class($exception)
 			);
-			return ['accepted' => [], 'rejected' => [], 'refusal' => self::CODE_NO_OWNER_ANSWER];
+			return $this->refusal(code: self::CODE_NO_OWNER_ANSWER);
 		}
 
 		if ($event->isAnswered() === false) {
-			return ['accepted' => [], 'rejected' => [], 'refusal' => self::CODE_NO_OWNER_ANSWER];
+			return $this->refusal(code: self::CODE_NO_OWNER_ANSWER);
 		}
 
 		return [
@@ -293,59 +321,149 @@ class ExchangeTargetDispatcher {
 	}//end land()
 
 	/**
+	 * The event that carries an import job's records to the owning app.
+	 *
+	 * @param ExchangeHandOff $handOff The job.
+	 *
+	 * @return ExchangeRecordsReceivedEvent The event.
+	 */
+	private function receivedEvent(ExchangeHandOff $handOff): ExchangeRecordsReceivedEvent {
+		return new ExchangeRecordsReceivedEvent(
+			jobId: $handOff->jobId,
+			ownerApp: $handOff->ownerApp,
+			target: $handOff->target,
+			direction: $handOff->direction,
+			ownerRef: $handOff->ownerRef,
+			scope: $handOff->scope,
+			records: array_values($handOff->records)
+		);
+
+	}//end receivedEvent()
+
+	/**
 	 * Send one record to the target's adapter.
 	 *
-	 * @param string              $target  The target id.
-	 * @param string              $kenmerk The correlation id.
-	 * @param array<string,mixed> $data    The mapped record.
-	 * @param array<string,mixed> $scope   The job's scope.
+	 * @param ExchangeHandOff $handOff The job: its target and scope.
+	 * @param OutboundRecord  $record  The record and its correlation id.
 	 *
 	 * @return bool True when the adapter took the record.
 	 */
-	private function sendOne(string $target, string $kenmerk, array $data, array $scope): bool {
-		switch ($target) {
+	private function sendOne(ExchangeHandOff $handOff, OutboundRecord $record): bool {
+		switch ($handOff->target) {
 			case 'bron-rod':
-				$this->rodService->sendBericht(
-					berichtsoort: $this->parameter(name: 'berichtsoort', data: $data, scope: $scope, default: 'inschrijving'),
-					kenmerk: $kenmerk,
-					payload: $data
-				);
-				return true;
+				return $this->sendToRod(handOff: $handOff, record: $record);
 			case 'leerplicht':
-				$this->verzuimloketService->sendMelding(
-					meldingType: $this->parameter(name: 'meldingType', data: $data, scope: $scope, default: 'eerste-melding'),
-					kenmerk: $kenmerk,
-					payload: $data
-				);
-				return true;
+				return $this->sendToLeerplicht(handOff: $handOff, record: $record);
 			case 'oso':
-				$this->osoService->sendExport(kenmerk: $kenmerk, payload: $data);
-				return true;
-			case 'uwlr':
-				$this->uwlrEduVService->sendUwlrExport(
-					kenmerk: $kenmerk,
-					subtype: $this->parameter(name: 'subtype', data: $data, scope: $scope, default: 'pupil'),
-					payload: $data
-				);
-				return true;
-			case 'edu-v':
-				$this->uwlrEduVService->sendEduVExport(
-					kenmerk: $kenmerk,
-					dataService: $this->parameter(name: 'dataService', data: $data, scope: $scope, default: 'onderwijsdeelnemers'),
-					payload: $data
-				);
-				return true;
-			case 'basispoort':
-				$this->uwlrEduVService->syncBasispoort(kenmerk: $kenmerk, payload: $data);
-				return true;
-			case 'entree-content':
-				$this->uwlrEduVService->syncEntreeContent(kenmerk: $kenmerk, payload: $data);
+				$this->osoService->sendExport(kenmerk: $record->kenmerk, payload: $record->data);
 				return true;
 			default:
-				return $this->handOffSwv(data: $data, scope: $scope);
+				return $this->sendToEducationTargetOrSwv(handOff: $handOff, record: $record);
 		}//end switch
 
 	}//end sendOne()
+
+	/**
+	 * Send one record to the UWLR/Edu-V adapter, or hand it to the SWV receiver.
+	 *
+	 * @param ExchangeHandOff $handOff The job: its target and scope.
+	 * @param OutboundRecord  $record  The record and its correlation id.
+	 *
+	 * @return bool True when the adapter took the record.
+	 */
+	private function sendToEducationTargetOrSwv(ExchangeHandOff $handOff, OutboundRecord $record): bool {
+		switch ($handOff->target) {
+			case 'uwlr':
+				return $this->sendToUwlr(handOff: $handOff, record: $record);
+			case 'edu-v':
+				return $this->sendToEduV(handOff: $handOff, record: $record);
+			case 'basispoort':
+				$this->uwlrEduVService->syncBasispoort(kenmerk: $record->kenmerk, payload: $record->data);
+				return true;
+			case 'entree-content':
+				$this->uwlrEduVService->syncEntreeContent(kenmerk: $record->kenmerk, payload: $record->data);
+				return true;
+			default:
+				return $this->handOffSwv(data: $record->data, scope: $handOff->scope);
+		}//end switch
+
+	}//end sendToEducationTargetOrSwv()
+
+	/**
+	 * Send one bericht to BRON/ROD.
+	 *
+	 * @param ExchangeHandOff $handOff The job: its scope.
+	 * @param OutboundRecord  $record  The record and its correlation id.
+	 *
+	 * @return bool Always true: the adapter throws when it refuses.
+	 */
+	private function sendToRod(ExchangeHandOff $handOff, OutboundRecord $record): bool {
+		$this->rodService->sendBericht(
+			berichtsoort: $this->parameter(name: 'berichtsoort', data: $record->data, scope: $handOff->scope, default: 'inschrijving'),
+			kenmerk: $record->kenmerk,
+			payload: $record->data
+		);
+
+		return true;
+
+	}//end sendToRod()
+
+	/**
+	 * Send one melding to the Verzuimloket.
+	 *
+	 * @param ExchangeHandOff $handOff The job: its scope.
+	 * @param OutboundRecord  $record  The record and its correlation id.
+	 *
+	 * @return bool Always true: the adapter throws when it refuses.
+	 */
+	private function sendToLeerplicht(ExchangeHandOff $handOff, OutboundRecord $record): bool {
+		$this->verzuimloketService->sendMelding(
+			meldingType: $this->parameter(name: 'meldingType', data: $record->data, scope: $handOff->scope, default: 'eerste-melding'),
+			kenmerk: $record->kenmerk,
+			payload: $record->data
+		);
+
+		return true;
+
+	}//end sendToLeerplicht()
+
+	/**
+	 * Send one UWLR export.
+	 *
+	 * @param ExchangeHandOff $handOff The job: its scope.
+	 * @param OutboundRecord  $record  The record and its correlation id.
+	 *
+	 * @return bool Always true: the adapter throws when it refuses.
+	 */
+	private function sendToUwlr(ExchangeHandOff $handOff, OutboundRecord $record): bool {
+		$this->uwlrEduVService->sendUwlrExport(
+			kenmerk: $record->kenmerk,
+			subtype: $this->parameter(name: 'subtype', data: $record->data, scope: $handOff->scope, default: 'pupil'),
+			payload: $record->data
+		);
+
+		return true;
+
+	}//end sendToUwlr()
+
+	/**
+	 * Send one Edu-V export.
+	 *
+	 * @param ExchangeHandOff $handOff The job: its scope.
+	 * @param OutboundRecord  $record  The record and its correlation id.
+	 *
+	 * @return bool Always true: the adapter throws when it refuses.
+	 */
+	private function sendToEduV(ExchangeHandOff $handOff, OutboundRecord $record): bool {
+		$this->uwlrEduVService->sendEduVExport(
+			kenmerk: $record->kenmerk,
+			dataService: $this->parameter(name: 'dataService', data: $record->data, scope: $handOff->scope, default: 'onderwijsdeelnemers'),
+			payload: $record->data
+		);
+
+		return true;
+
+	}//end sendToEduV()
 
 	/**
 	 * Hand one SWV dossier to its receiver.

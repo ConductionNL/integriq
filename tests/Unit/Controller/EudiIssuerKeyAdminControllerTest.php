@@ -11,6 +11,9 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -121,4 +124,98 @@ class EudiIssuerKeyAdminControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
 	}//end testRotateKeyFailureReturns400()
+	/**
+	 * A controller wired to the given logger, sharing the key and offer mocks.
+	 *
+	 * @param LoggerInterface $logger The logger to wire in.
+	 *
+	 * @return EudiIssuerKeyAdminController The controller.
+	 */
+	private function controllerWithLogger(LoggerInterface $logger): EudiIssuerKeyAdminController {
+		return new EudiIssuerKeyAdminController(
+			'integriq',
+			$this->createMock(IRequest::class),
+			$this->keyService,
+			$this->offerService,
+			$logger
+		);
+
+	}//end controllerWithLogger()
+
+	/**
+	 * status() answers 500 with a generic error and logs the cause when the
+	 * active key cannot be resolved; the exception message is not leaked.
+	 *
+	 * @return void
+	 */
+	public function testStatusFailureReturns500AndLogsTheCause(): void {
+		$this->keyService->expects($this->once())
+			->method('resolveActiveKey')
+			->with('org-1')
+			->willThrowException(new RuntimeException('store unreachable'));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('error')
+			->with(
+				'EudiIssuerKeyAdminController: failed to resolve active key',
+				['exception' => 'store unreachable']
+			);
+
+		$response = $this->controllerWithLogger(logger: $logger)->status();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['error' => 'Unable to resolve the current issuer key'], $response->getData());
+
+	}//end testStatusFailureReturns500AndLogsTheCause()
+
+	/**
+	 * generateKey() answers 400 with a generic error and logs the cause when
+	 * the key service throws.
+	 *
+	 * @return void
+	 */
+	public function testGenerateKeyFailureReturns400AndLogsTheCause(): void {
+		$this->keyService->expects($this->once())
+			->method('generateKey')
+			->with('org-1')
+			->willThrowException(new RuntimeException('key already exists'));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('error')
+			->with(
+				'EudiIssuerKeyAdminController: key generation failed',
+				['exception' => 'key already exists']
+			);
+
+		$response = $this->controllerWithLogger(logger: $logger)->generateKey();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['error' => 'Key generation failed'], $response->getData());
+
+	}//end testGenerateKeyFailureReturns400AndLogsTheCause()
+
+	/**
+	 * rotateKey() returns the new key entry for the active organisation and
+	 * logs nothing on success.
+	 *
+	 * @return void
+	 */
+	public function testRotateKeySuccessReturnsTheNewEntry(): void {
+		$entry = ['kid' => 'kid-2', 'publicKeyPem' => 'pem-2', 'algorithm' => 'ES256'];
+		$this->keyService->expects($this->once())
+			->method('rotateKey')
+			->with('org-1')
+			->willReturn($entry);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+
+		$response = $this->controllerWithLogger(logger: $logger)->rotateKey();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame($entry, $response->getData());
+
+	}//end testRotateKeySuccessReturnsTheNewEntry()
 }//end class

@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2025 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -309,51 +312,99 @@ class UserController extends Controller {
 	#[NoCSRFRequired]
 	public function me(): JSONResponse {
 		try {
-			// First try to get user from session.
-			$currentUser = $this->userService->getCurrentUser();
-
-			// If no session user, try basic authentication.
+			// First try to get user from session; without one, try basic authentication.
+			$currentUser = ($this->userService->getCurrentUser() ?? $this->basicAuthUser());
 			if ($currentUser === null) {
-				$authHeader = $this->request->getHeader('Authorization');
-				if ($authHeader !== '' && str_starts_with($authHeader, 'Basic ') === true) {
-					$credentials = base64_decode(substr($authHeader, 6));
-					if ($credentials !== false && str_contains($credentials, ':') === true) {
-						[$username, $password] = explode(':', $credentials, 2);
-						$checked = $this->userManager->checkPassword($username, $password);
-						if ($checked !== false) {
-							$currentUser = $checked;
-						}
-					}
-				}
-			}
-
-			// Check if user is authenticated (either via session or basic auth).
-			if ($currentUser === null) {
-				$response = new JSONResponse(
-					data: ['message' => $this->l->t('Current user is not logged in')],
-					statusCode: Http::STATUS_UNAUTHORIZED
-				);
-				$response = $this->securityService->addSecurityHeaders($response);
-				return $this->addCorsHeaders(response: $response);
+				return $this->corsResponse(data: ['message' => $this->l->t('Current user is not logged in')], statusCode: Http::STATUS_UNAUTHORIZED);
 			}
 
 			// Build user data array with essential information (already sanitized).
-			$userData = $this->userService->buildUserDataArray($currentUser);
-
-			$response = new JSONResponse($userData);
-			$response = $this->securityService->addSecurityHeaders($response);
-			return $this->addCorsHeaders(response: $response);
+			return $this->corsResponse(data: $this->userService->buildUserDataArray($currentUser), statusCode: Http::STATUS_OK);
 		} catch (\Exception $e) {
-			// Log the error and return generic error response.
-			$response = new JSONResponse(
-				data: ['error' => $this->l->t('Failed to retrieve user information')],
-				statusCode: 500
-			);
-			$response = $this->securityService->addSecurityHeaders($response);
-			return $this->addCorsHeaders(response: $response);
+			// Return a generic error response.
+			return $this->corsResponse(data: ['error' => $this->l->t('Failed to retrieve user information')], statusCode: 500);
 		}//end try
 
 	}//end me()
+
+	/**
+	 * The user a Basic Authorization header authenticates, or null.
+	 *
+	 * @return IUser|null The user, or null without valid Basic credentials.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function basicAuthUser(): ?IUser {
+		$credentials = $this->basicCredentials();
+		if ($credentials === null) {
+			return null;
+		}
+
+		[$username, $password] = explode(':', $credentials, 2);
+		$checked = $this->userManager->checkPassword($username, $password);
+		if ($checked === false) {
+			return null;
+		}
+
+		return $checked;
+
+	}//end basicAuthUser()
+
+	/**
+	 * The decoded `user:password` of a Basic Authorization header, or null
+	 * when the header is absent, not Basic, not decodable or has no colon.
+	 *
+	 * @return string|null The credentials.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function basicCredentials(): ?string {
+		$payload = $this->basicAuthPayload();
+		if ($payload === null) {
+			return null;
+		}
+
+		$credentials = base64_decode($payload);
+		if ($credentials === false || str_contains($credentials, ':') === false) {
+			return null;
+		}
+
+		return $credentials;
+
+	}//end basicCredentials()
+
+	/**
+	 * The encoded part of a Basic Authorization header, or null when the
+	 * header is absent or not Basic.
+	 *
+	 * @return string|null The payload after `Basic `.
+	 *
+	 * @spec openspec/specs/user-management-and-login/spec.md
+	 */
+	private function basicAuthPayload(): ?string {
+		$authHeader = $this->request->getHeader('Authorization');
+		if ($authHeader === '' || str_starts_with($authHeader, 'Basic ') === false) {
+			return null;
+		}
+
+		return substr($authHeader, 6);
+
+	}//end basicAuthPayload()
+
+	/**
+	 * A response with the security headers, then the CORS headers.
+	 *
+	 * @param array $data       The response data.
+	 * @param int   $statusCode The HTTP status.
+	 *
+	 * @return JSONResponse
+	 */
+	private function corsResponse(array $data, int $statusCode): JSONResponse {
+		$response = $this->securedResponse(data: $data, statusCode: $statusCode);
+
+		return $this->addCorsHeaders(response: $response);
+
+	}//end corsResponse()
 
 	/**
 	 * Update current user information from JSON object
@@ -381,50 +432,72 @@ class UserController extends Controller {
 		try {
 			// Get the current user from the session.
 			$currentUser = $this->userService->getCurrentUser();
-
-			// Check if user is logged in.
 			if ($currentUser === null) {
-				$response = new JSONResponse(
-					data: ['error' => $this->l->t('User not authenticated')],
-					statusCode: Http::STATUS_UNAUTHORIZED
-				);
-				return $this->securityService->addSecurityHeaders($response);
+				return $this->securedResponse(data: ['error' => $this->l->t('User not authenticated')], statusCode: Http::STATUS_UNAUTHORIZED);
 			}
 
-			// Get and sanitize the request data to prevent XSS.
-			$data = $this->request->getParams();
-			$sanitizedData = $this->securityService->sanitizeInput($data);
-
-			// Remove system parameters that shouldn't be updated.
-			foreach ($sanitizedData as $key => $value) {
-				if (str_starts_with($key, '_') === true) {
-					unset($sanitizedData[$key]);
-				}
-			}
-
-			// Update user properties based on provided data.
+			// Get and sanitize the request data to prevent XSS, without system parameters.
+			$sanitizedData = $this->withoutSystemParameters(data: $this->securityService->sanitizeInput($this->request->getParams()));
 			$updateResult = $this->userService->updateUserProperties($currentUser, $sanitizedData);
 
-			// Build updated user data array.
-			$userData = $this->userService->buildUserDataArray($currentUser);
-
-			// Add update result information to response.
-			$responseData = $userData;
-			if ($updateResult['organisation_updated'] === true) {
-				$responseData['update_message'] = $updateResult['organisation_message'];
-			}
-
-			$response = new JSONResponse($responseData);
-			return $this->securityService->addSecurityHeaders($response);
+			return $this->securedResponse(data: $this->updatedUserData(user: $currentUser, updateResult: $updateResult), statusCode: Http::STATUS_OK);
 		} catch (\Exception $e) {
-			// Log the error and return generic error response.
-			$response = new JSONResponse(
-				data: ['error' => $this->l->t('Failed to update user information')],
-				statusCode: 500
-			);
-			return $this->securityService->addSecurityHeaders($response);
+			// Return a generic error response.
+			return $this->securedResponse(data: ['error' => $this->l->t('Failed to update user information')], statusCode: 500);
 		}//end try
 	}//end updateMe()
+
+	/**
+	 * A response with the security headers.
+	 *
+	 * @param array $data       The response data.
+	 * @param int   $statusCode The HTTP status.
+	 *
+	 * @return JSONResponse
+	 */
+	private function securedResponse(array $data, int $statusCode): JSONResponse {
+		$response = new JSONResponse(data: $data, statusCode: $statusCode);
+
+		return $this->securityService->addSecurityHeaders($response);
+
+	}//end securedResponse()
+
+	/**
+	 * The request data without system parameters (keys starting with `_`).
+	 *
+	 * @param array $data The sanitized request data.
+	 *
+	 * @return array The data that may update the user.
+	 */
+	private function withoutSystemParameters(array $data): array {
+		foreach ($data as $key => $value) {
+			if (str_starts_with($key, '_') === true) {
+				unset($data[$key]);
+			}
+		}
+
+		return $data;
+
+	}//end withoutSystemParameters()
+
+	/**
+	 * The updated user data, with the organisation message when the update
+	 * changed the organisation.
+	 *
+	 * @param IUser $user         The updated user.
+	 * @param array $updateResult What updateUserProperties() answered.
+	 *
+	 * @return array The response data.
+	 */
+	private function updatedUserData(IUser $user, array $updateResult): array {
+		$responseData = $this->userService->buildUserDataArray($user);
+		if ($updateResult['organisation_updated'] === true) {
+			$responseData['update_message'] = $updateResult['organisation_message'];
+		}
+
+		return $responseData;
+
+	}//end updatedUserData()
 
 	/**
 	 * Login a user based on username and password combination

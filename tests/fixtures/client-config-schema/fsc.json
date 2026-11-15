@@ -1,0 +1,58 @@
+{
+    "type": "object",
+    "required": [
+        "directoryUrl",
+        "authentication"
+    ],
+    "properties": {
+        "directoryUrl": {
+            "type": "string",
+            "description": "FSC Directory base URL (no trailing slash) — ASSUMED shape, see design.md \"Directory API shape\"."
+        },
+        "authentication": {
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "type": "string",
+                    "enum": [
+                        "token",
+                        "mtls"
+                    ],
+                    "default": "token",
+                    "description": "`token` (default) sends a Bearer Authorization header from `encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using `mtls.*` — closes the real Outway/Inway transport gap."
+                },
+                "encryptedToken": {
+                    "type": "string",
+                    "description": "Required when `mode=token` (the default). The FSC-fronting API token, encrypted at rest via OCP\\Security\\ICrypto — never store the raw token."
+                },
+                "scheme": {
+                    "type": "string",
+                    "description": "Authorization header scheme, used only when `mode=token`.",
+                    "default": "Bearer"
+                },
+                "mtls": {
+                    "type": "object",
+                    "description": "Required when `mode=mtls`. Client certificate material, each field individually encrypted at rest via OCP\\Security\\ICrypto.",
+                    "properties": {
+                        "encryptedCertificate": {
+                            "type": "string",
+                            "description": "PEM client certificate."
+                        },
+                        "encryptedPrivateKey": {
+                            "type": "string",
+                            "description": "PEM private key."
+                        },
+                        "encryptedPassphrase": {
+                            "type": "string",
+                            "description": "Optional private key passphrase."
+                        },
+                        "encryptedCaBundle": {
+                            "type": "string",
+                            "description": "Optional PEM CA bundle to verify the peer against."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,64 @@
+{
+  "count": 2,
+  "_embedded": {
+    "settlements": [
+      {
+        "resource": "settlement",
+        "id": "stl_open0001",
+        "reference": null,
+        "createdAt": "2026-10-03T06:00:00+00:00",
+        "settledAt": null,
+        "status": "open",
+        "amount": {
+          "value": "10.00",
+          "currency": "EUR"
+        }
+      },
+      {
+        "resource": "settlement",
+        "id": "stl_jDk30akdN",
+        "reference": "st_example0001",
+        "createdAt": "2026-10-01T06:00:00+00:00",
+        "settledAt": "2026-10-02T09:41:44+00:00",
+        "status": "paidout",
+        "amount": {
+          "value": "585.49",
+          "currency": "EUR"
+        },
+        "periods": {
+          "2026": {
+            "10": {
+              "costs": [
+                {
+                  "description": "iDEAL",
+                  "method": "ideal",
+                  "count": 14,
+                  "rate": {
+                    "fixed": {
+                      "value": "0.29",
+                      "currency": "EUR"
+                    }
+                  },
+                  "amountNet": {
+                    "value": "4.06",
+                    "currency": "EUR"
+                  },
+                  "amountVat": null,
+                  "amountGross": {
+                    "value": "4.06",
+                    "currency": "EUR"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "_links": {
+    "next": {
+      "href": "https://api.mollie.example/v2/settlements?from=stl_old0001&limit=250"
+    }
+  }
+}

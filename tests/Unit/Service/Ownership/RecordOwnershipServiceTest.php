@@ -20,12 +20,14 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Ownership;
 
+use OCA\Integriq\Service\Ownership\OwnershipReadFailed;
 use OCA\Integriq\Service\Ownership\OwnershipState;
 use OCA\Integriq\Service\Ownership\RecordOwnershipService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * REQ-SOR-001 and REQ-SOR-006: one read, and it never guesses.
@@ -231,4 +233,51 @@ class RecordOwnershipServiceTest extends TestCase {
 		$this->assertTrue($answer['absentAtSource']);
 		$this->assertSame('2026-09-18T08:00:00+00:00', $answer['endedAt']);
 	}//end testTheAbsenceStateIsPartOfTheSameAnswer()
+
+	/**
+	 * A contract read that fails reads local leniently, and throws in strict mode.
+	 *
+	 * @return void
+	 */
+	public function testAFailedContractReadThrowsOnlyInStrictMode(): void {
+		$objectService = $this->createMock(OrObjectService::class);
+		$objectService->method('findAll')->willThrowException(new RuntimeException('database gone'));
+		$service = new RecordOwnershipService($objectService, $this->createMock(LoggerInterface::class));
+
+		$this->assertSame(OwnershipState::MODE_LOCAL, $service->forObject('obj-1')->toArray()['mode']);
+
+		try {
+			$service->forObjectOrFail('obj-1');
+			$this->fail('a strict read must not answer local after a failed read');
+		} catch (OwnershipReadFailed $failure) {
+			$this->assertFalse($failure->contractFound);
+		}
+	}//end testAFailedContractReadThrowsOnlyInStrictMode()
+
+	/**
+	 * A failed synchronisation read after the contract was found says so.
+	 *
+	 * @return void
+	 */
+	public function testAFailedSynchronisationReadAfterAContractIsMarked(): void {
+		$objectService = $this->createMock(OrObjectService::class);
+		$objectService->method('findAll')->willReturnCallback(
+			function (array $config): array {
+				if (($config['filters']['schema'] ?? '') === 'synchronization') {
+					throw new RuntimeException('database gone');
+				}
+
+				return ['results' => [$this->entity(['targetId' => 'obj-1', 'synchronizationId' => 'sync-1'])]];
+			}
+		);
+		$service = new RecordOwnershipService($objectService, $this->createMock(LoggerInterface::class));
+
+		$this->expectException(OwnershipReadFailed::class);
+		try {
+			$service->forObjectOrFail('obj-1');
+		} catch (OwnershipReadFailed $failure) {
+			$this->assertTrue($failure->contractFound);
+			throw $failure;
+		}
+	}//end testAFailedSynchronisationReadAfterAContractIsMarked()
 }//end class
