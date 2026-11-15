@@ -60,6 +60,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Flow;
 
+use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use OCA\Integriq\Exception\ResponseDecodeException;
 use OCA\Integriq\Kernel\FlowNodeIds;
@@ -284,14 +285,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	public function configForm(): array {
 		return [
-			[
-				'key' => 'source',
-				'label' => $this->l10n->t('Source'),
-				'type' => 'select',
-				'help' => $this->l10n->t('The configured source this step calls. The call inherits its base URL, authentication and rate limits.'),
-				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
-			],
+			$this->sourceField(),
 			[
 				'key' => 'endpoint',
 				'label' => $this->l10n->t('Endpoint'),
@@ -343,6 +337,28 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			],
 		];
 	}//end configForm()
+
+	/**
+	 * The `source` field: a picker fed by the app's own sources listing, or a
+	 * template that picks the source per item.
+	 *
+	 * @return array<string, mixed> The field description.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function sourceField(): array {
+		return [
+			'key' => 'source',
+			'label' => $this->l10n->t('Source'),
+			'type' => 'select',
+			'help' => $this->l10n->t(
+				'The configured source this step calls. The call inherits its base URL, authentication and rate limits. '
+				. 'A template such as jobboard-{{ json.channel }} picks the source per item.'
+			),
+			'required' => true,
+			'optionsFrom' => '/apps/openregister/api/objects/integriq/source',
+		];
+	}//end sourceField()
 
 	/**
 	 * Reject a configuration the author cannot have meant, at flow-save time.
@@ -411,7 +427,15 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		$this->validateConfig(config: $call->config);
 
 		$owner = $this->flowOwner->resolve(context: $call->context, nodeId: self::NODE_ID);
-		$source = $this->resolveSource(reference: trim((string)$call->config['source']));
+
+		// A plain reference resolves once, before any call, exactly as it
+		// always did. A templated one names a source per item and resolves in
+		// the call pass, one lookup per distinct name.
+		$reference = trim((string)$call->config['source']);
+		$source = null;
+		if (FlowTemplate::hasPlaceholder(value: $reference) === false) {
+			$source = $this->resolveSource(reference: $reference);
+		}
 
 		return $this->flowOwner->runAs(
 			user: $owner,
@@ -425,14 +449,14 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Resolve, once per step and in the owner context, what every item's call needs.
 	 *
-	 * @param FlowNodeCall $call   The input items, the step's configuration and the run context.
-	 * @param ObjectEntity $source The resolved Source object.
+	 * @param FlowNodeCall      $call   The input items, the step's configuration and the run context.
+	 * @param ObjectEntity|null $source The resolved Source object, or null for a templated reference.
 	 *
 	 * @return SourceCallRun The step run.
 	 *
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function startRun(FlowNodeCall $call, ObjectEntity $source): SourceCallRun {
+	private function startRun(FlowNodeCall $call, ?ObjectEntity $source): SourceCallRun {
 		$config = $call->config;
 		$run = new SourceCallRun(config: $config, source: $source);
 		$run->reference = trim((string)$config['source']);
@@ -465,6 +489,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		[$endpoints, $records] = $this->renderAndGuardEndpoints(indexed: $run->items, config: $run->config);
 		$run->endpoints = $endpoints;
 		$run->records = $records;
+		$this->resolveItemSources(run: $run);
 
 		// PASS 2 — dispatch the calls CONCURRENTLY, bounded and in input order.
 		$run->settled = $this->dispatchCalls(run: $run);
@@ -496,8 +521,14 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		return $this->concurrency->map(
 			$run->items,
 			function (array $item, int $index) use ($run): PromiseInterface {
+				// An item whose source did not resolve makes no request; its
+				// failure is applied in the policy pass, in input order.
+				if (isset($run->unresolved[$index]) === true) {
+					return Create::promiseFor(null);
+				}
+
 				return $this->callService->callAsync(
-					source: $run->source,
+					source: $run->sources[$index],
 					endpoint: $run->endpoints[$index],
 					method: $run->method,
 					config: SourceCallRequest::build(config: $run->config, json: $run->records[$index])
@@ -519,6 +550,10 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * @spec openspec/changes/integriq-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function outputFor(SourceCallRun $run): array {
+		if (isset($run->unresolved[$run->index]) === true) {
+			return $this->absorbFailure(run: $run, exception: $run->unresolved[$run->index]);
+		}
+
 		try {
 			$result = $this->outcomeOf(settled: $run->settled[$run->index], target: $this->targetOf(run: $run));
 		} catch (FlowNodeException $exception) {
@@ -542,8 +577,8 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 */
 	private function targetOf(SourceCallRun $run): SourceCallTarget {
 		return new SourceCallTarget(
-			reference: $run->reference,
-			source: $run->source,
+			reference: $run->references[$run->index],
+			source: $run->sources[$run->index],
 			endpoint: $run->endpoints[$run->index],
 			method: $run->method,
 			accepted: $run->accepted,
@@ -590,7 +625,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'step' => $run->stepId,
-				'source' => $run->reference,
+				'source' => $run->references[$run->index],
 				'endpoint' => $run->endpoints[$run->index],
 				'method' => $run->method,
 			]
@@ -799,6 +834,104 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	}//end callLogOf()
 
 	/**
+	 * Give every item the source it is sent through.
+	 *
+	 * A plain reference gives every item the step's one source. A templated
+	 * reference (for example `jobboard-{{ json.channel }}`) is rendered per
+	 * item and each distinct name is looked up once per run. An item whose
+	 * name does not resolve fails on its own: under `continue` it becomes an
+	 * error item and the other items are still sent; under any other policy
+	 * the step refuses before a single request is made, as a plain unknown
+	 * source does.
+	 *
+	 * @param SourceCallRun $run The step run, its records rendered.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowNodeException When an item's source does not resolve and the policy does not absorb it.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function resolveItemSources(SourceCallRun $run): void {
+		$resolved = [];
+		foreach (array_keys($run->items) as $index) {
+			$this->assignItemSource(run: $run, index: $index, resolved: $resolved);
+		}
+
+		if ($run->unresolved === [] || $run->onError === 'continue') {
+			return;
+		}
+
+		$run->index = (int)array_key_first($run->unresolved);
+		$this->logFailure(run: $run, exception: $run->unresolved[$run->index]);
+
+		throw $run->unresolved[$run->index];
+	}//end resolveItemSources()
+
+	/**
+	 * Give one item its source: the step's one source for a plain reference,
+	 * else the source its rendered name resolves to, looked up once per name.
+	 * An item whose name does not resolve is recorded as unresolved.
+	 *
+	 * @param SourceCallRun                            $run      The step run, its records rendered.
+	 * @param int                                      $index    The item's index.
+	 * @param array<string, ObjectEntity|FlowNodeException> $resolved Lookups made so far in this run, by name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function assignItemSource(SourceCallRun $run, int $index, array &$resolved): void {
+		if ($run->source !== null) {
+			$run->references[$index] = $run->reference;
+			$run->sources[$index] = $run->source;
+			return;
+		}
+
+		$name = FlowTemplate::renderReference(template: $run->reference, json: $run->records[$index]);
+		$run->references[$index] = $name;
+		if (array_key_exists($name, $resolved) === false) {
+			$resolved[$name] = $this->resolveItemSource(name: $name);
+		}
+
+		if ($resolved[$name] instanceof ObjectEntity) {
+			$run->sources[$index] = $resolved[$name];
+			return;
+		}
+
+		$run->unresolved[$index] = $resolved[$name];
+	}//end assignItemSource()
+
+	/**
+	 * Resolve one item's rendered source name, or say why there is none.
+	 *
+	 * @param string $name The rendered source name.
+	 *
+	 * @return ObjectEntity|FlowNodeException The Source, or the item's failure.
+	 *
+	 * @spec openspec/changes/connectors-job-board-multiposting/specs/job-board-connectors/spec.md#requirement-a-flow-step-can-pick-its-source-and-mapping-per-item-req-jbc-001
+	 */
+	private function resolveItemSource(string $name): ObjectEntity|FlowNodeException {
+		$previous = null;
+		if ($name !== '') {
+			try {
+				return $this->resolveSource(reference: $name);
+			} catch (FlowNodeException $exception) {
+				$previous = $exception;
+			}
+		}
+
+		return new FlowNodeException(
+			message: $this->l10n->t(
+				'No source configured: "%1$s". This item makes no request.',
+				[$name]
+			),
+			details: ['kind' => 'source', 'source' => $name],
+			previous: $previous
+		);
+	}//end resolveItemSource()
+
+	/**
 	 * Resolve the Source named by the step, or refuse.
 	 *
 	 * Reads register `openconnector`, schema `source`, and NEVER creates one:
@@ -998,7 +1131,7 @@ class SourceCallNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			'statusMessage' => ($details['statusMessage'] ?? null),
 			'kind' => ($details['kind'] ?? 'call'),
 			'message' => $exception->getMessage(),
-			'source' => $run->reference,
+			'source' => $run->references[$run->index],
 			'endpoint' => $run->endpoints[$run->index],
 			'method' => $run->method,
 		];
