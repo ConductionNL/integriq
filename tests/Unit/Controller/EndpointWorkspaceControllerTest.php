@@ -16,8 +16,11 @@ namespace OCA\Integriq\Tests\Unit\Controller;
 use OCA\Integriq\Controller\EndpointWorkspaceController;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\CitrixDaasAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListing;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\WorkspaceAdapterSet;
+use OCA\Integriq\Service\Adapter\EndpointWorkspace\WorkspaceSourceReader;
 use OCA\Integriq\Service\Adapter\EndpointWorkspace\WorkspaceUserMatcher;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
@@ -39,6 +42,9 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\Integriq\Controller\EndpointWorkspaceController
  * @covers \OCA\Integriq\Service\Adapter\EndpointWorkspace\WorkspaceUserMatcher
+ * @covers \OCA\Integriq\Service\Adapter\EndpointWorkspace\EndpointWorkspaceListing
+ * @covers \OCA\Integriq\Service\Adapter\EndpointWorkspace\WorkspaceAdapterSet
+ * @covers \OCA\Integriq\Service\Adapter\EndpointWorkspace\WorkspaceSourceReader
  * @uses   \OCA\Integriq\Service\Adapter\EndpointWorkspace\AbstractWorkspaceAdapter
  * @uses   \OCA\Integriq\Service\Adapter\EndpointWorkspace\IntuneAdapter
  * @uses   \OCA\Integriq\Service\Adapter\EndpointWorkspace\JamfProAdapter
@@ -153,6 +159,29 @@ final class EndpointWorkspaceControllerTest extends TestCase {
 		$this->assertSame([], $this->calls);
 	}
 
+	public function testTheAdapterSetKnowsEveryAdapterAndNoOther(): void {
+		$set = $this->adapterSet();
+
+		$this->assertSame('device', $set->kindOf(adapterId: 'intune'));
+		$this->assertSame('device', $set->kindOf(adapterId: 'jamf-pro'));
+		$this->assertSame('session', $set->kindOf(adapterId: 'citrix-daas'));
+		$this->assertSame('session', $set->kindOf(adapterId: 'azure-virtual-desktop'));
+		$this->assertNull($set->kindOf(adapterId: 'api'));
+		$this->assertNull($set->kindOf(adapterId: ''));
+	}
+
+	public function testTheReaderMapsUsersAndToleratesAMappingThatIsNoObject(): void {
+		$reader = new WorkspaceSourceReader($this->createMock(ObjectService::class), $this->adapterSet(), new WorkspaceUserMatcher($this->userManager()));
+
+		$listed = $reader->withUsers(entries: [['remoteUser' => 'jan'], ['remoteUser' => 'nobody']], configuration: ['userMapping' => 'x']);
+
+		$this->assertSame(['uid' => 'jan', 'displayName' => 'Jan de Vries'], $listed[0]['user']);
+		$this->assertTrue($listed[0]['userFound']);
+		$this->assertNull($listed[1]['user']);
+		$this->assertFalse($listed[1]['userFound']);
+		$this->assertSame([], $reader->withUsers(entries: [], configuration: []));
+	}
+
 	public function testTheMatcherNeverGuessesAUser(): void {
 		$matcher = new WorkspaceUserMatcher($this->userManager());
 
@@ -217,15 +246,41 @@ final class EndpointWorkspaceControllerTest extends TestCase {
 		return new EndpointWorkspaceController(
 			'integriq',
 			$this->createMock(IRequest::class),
-			$session,
-			$groups,
-			$objects,
+			new EndpointWorkspaceListing(
+				$session,
+				$groups,
+				new WorkspaceSourceReader(
+					$objects,
+					new WorkspaceAdapterSet(
+						new IntuneAdapter($broker, $appConfig, $logger, $l),
+						new JamfProAdapter($broker, $appConfig, $logger, $l),
+						new CitrixDaasAdapter($broker, $appConfig, $logger, $l),
+						new AzureVirtualDesktopAdapter($broker, $appConfig, $logger, $l)
+					),
+					new WorkspaceUserMatcher($this->userManager())
+				),
+				$l
+			)
+		);
+	}
+
+	/**
+	 * The four adapters over a broker that is never called.
+	 *
+	 * @return WorkspaceAdapterSet
+	 */
+	private function adapterSet(): WorkspaceAdapterSet {
+		$broker = $this->createMock(CredentialBrokerService::class);
+		$broker->expects($this->never())->method('request');
+		$appConfig = $this->createMock(IAppConfig::class);
+		$logger = $this->createMock(LoggerInterface::class);
+		$l = $this->createMock(IL10N::class);
+
+		return new WorkspaceAdapterSet(
 			new IntuneAdapter($broker, $appConfig, $logger, $l),
 			new JamfProAdapter($broker, $appConfig, $logger, $l),
 			new CitrixDaasAdapter($broker, $appConfig, $logger, $l),
-			new AzureVirtualDesktopAdapter($broker, $appConfig, $logger, $l),
-			new WorkspaceUserMatcher($this->userManager()),
-			$l
+			new AzureVirtualDesktopAdapter($broker, $appConfig, $logger, $l)
 		);
 	}
 
