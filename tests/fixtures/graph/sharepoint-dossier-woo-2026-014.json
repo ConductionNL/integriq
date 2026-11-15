@@ -1,0 +1,25 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#drives('b!woo-dossiers')/items('01WOO2026014')/children",
+  "value": [
+    {
+      "id": "01BESLUIT014",
+      "name": "Besluit Woo-2026-014.pdf",
+      "file": {"mimeType": "application/pdf"},
+      "parentReference": {"driveId": "b!woo-dossiers", "id": "01WOO2026014"},
+      "@microsoft.graph.downloadUrl": "https://example.sharepoint.com/_layouts/15/download.aspx?UniqueId=besluit014&tempauth=signed"
+    },
+    {
+      "id": "01INVENTARIS014",
+      "name": "Inventarislijst \"bijlage 1\" & toelichting.xlsx",
+      "file": {"mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+      "parentReference": {"driveId": "b!woo-dossiers", "id": "01WOO2026014"},
+      "@microsoft.graph.downloadUrl": "https://example.sharepoint.com/_layouts/15/download.aspx?UniqueId=inventaris014&tempauth=signed"
+    },
+    {
+      "id": "01CONCEPTEN014",
+      "name": "Concepten",
+      "folder": {"childCount": 4},
+      "parentReference": {"driveId": "b!woo-dossiers", "id": "01WOO2026014"}
+    }
+  ]
+}

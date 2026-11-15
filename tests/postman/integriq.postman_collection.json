@@ -32,7 +32,8 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
     { "key": "ocBase", "value": "{{base_url}}/index.php/apps/integriq/api" },
-    { "key": "orBase", "value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq" }
+    { "key": "orBase", "value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq" },
+    { "key": "nonApproverPassword", "value": "Newman-Non-Approver-2026!" }
   ],
   "item": [
     {
@@ -1451,6 +1452,735 @@
                 "exec": [
                   "pm.test('401', () => pm.response.to.have.status(401));",
                   "pm.test('one undifferentiated error', () => pm.expect(pm.response.json()).to.eql({error: 'unauthorized'}));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "17 — HITL approvals (/api/approvals*)",
+      "description": "approvals-verification-pack task 2: an endpoint whose first rule is an `approval` rule suspends with 202; list, detail, approve and reject, and the 400/403/404/409 refusals. Runs after folder 01 (it proxies to the source fixture) and cleans up its own fixtures. The non-approver user is created over OCS with the `nonApproverPassword` variable.",
+      "item": [
+        {
+          "name": "POST rule — approval fixture",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/rule",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "rule"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-approval-rule\", \"type\": \"approval\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"approval\": {\"approverGroup\": \"admin\", \"ttlSeconds\": 3600, \"onReject\": \"error\", \"onTimeout\": \"error\"}}}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('fxApprovalRuleUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST endpoint — approval fixture",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{orBase}}/endpoint",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-approval-endpoint\", \"endpoint\": \"newman-approval\", \"method\": \"POST\", \"targetType\": \"api\", \"targetId\": \"{{fxSourceUuid}}\", \"rules\": [\"{{fxApprovalRuleUuid}}\"], \"isEnabled\": true}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('fxApprovalEndpointUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /endpoint/newman-approval — suspends (to approve)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-approval",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "newman-approval"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"newman approval A\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('202: the run waits for an approver', () => pm.response.to.have.status(202));",
+                  "const b = pm.response.json();",
+                  "pm.test('pending_approval with a polling URL', () => {",
+                  "    pm.expect(b.status).to.eql('pending_approval');",
+                  "    pm.expect(b.approvalRequestId).to.be.a('string');",
+                  "    pm.expect(b.statusUrl).to.include('/api/approvals/' + b.approvalRequestId);",
+                  "});",
+                  "pm.collectionVariables.set('fxApprovalToApprove', b.approvalRequestId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /endpoint/newman-approval — suspends (to reject)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/endpoint/newman-approval",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "newman-approval"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"newman approval B\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('202: the run waits for an approver', () => pm.response.to.have.status(202));",
+                  "const b = pm.response.json();",
+                  "pm.test('pending_approval with a polling URL', () => {",
+                  "    pm.expect(b.status).to.eql('pending_approval');",
+                  "    pm.expect(b.approvalRequestId).to.be.a('string');",
+                  "    pm.expect(b.statusUrl).to.include('/api/approvals/' + b.approvalRequestId);",
+                  "});",
+                  "pm.collectionVariables.set('fxApprovalToReject', b.approvalRequestId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /approvals — lists both pending requests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/approvals",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().results.map(r => r.id);",
+                  "pm.test('both suspended runs are listed', () => {",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get('fxApprovalToApprove'));",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get('fxApprovalToReject'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /approvals/{id} — detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToApprove}}",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToApprove}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('pending, on the fixture endpoint and rule', () => {",
+                  "    pm.expect(b.id).to.eql(pm.collectionVariables.get('fxApprovalToApprove'));",
+                  "    pm.expect(b.status).to.eql('pending');",
+                  "    pm.expect(b.endpointId).to.eql(pm.collectionVariables.get('fxApprovalEndpointUuid'));",
+                  "    pm.expect(b.ruleId).to.eql(pm.collectionVariables.get('fxApprovalRuleUuid'));",
+                  "    pm.expect(b.approverGroup).to.eql('admin');",
+                  "    pm.expect(b.onReject).to.eql('error');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /approvals/{id} — missing id is 404",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/approvals/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /approvals/{id}/approve — missing id is 404",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/approvals/00000000-0000-0000-0000-000000000000/approve",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "00000000-0000-0000-0000-000000000000",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"comment\": \"newman\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST OCS user — non-approver fixture",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/ocs/v1.php/cloud/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ocs",
+                "v1.php",
+                "cloud",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userid",
+                  "value": "newman-nonapprover"
+                },
+                {
+                  "key": "password",
+                  "value": "{{nonApproverPassword}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('user created (or already there)', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /approvals/{id}/approve — non-member is 403",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToApprove}}/approve",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToApprove}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"comment\": \"not mine to decide\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "newman-nonapprover",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{nonApproverPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /approvals/{id}/approve — approver approves",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToApprove}}/approve",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToApprove}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"comment\": \"newman: approved\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// The answer is the resumed run's own: whatever the upstream source answers.",
+                  "pm.test('decided (not refused)', () => pm.expect([401, 403, 404, 409]).to.not.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /approvals/{id} — approved, with approver and comment",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToApprove}}",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToApprove}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('approved by the approver with the comment', () => {",
+                  "    pm.expect(b.status).to.eql('approved');",
+                  "    pm.expect(b.approverUserId).to.eql(pm.variables.get('admin_user'));",
+                  "    pm.expect(b.comment).to.eql('newman: approved');",
+                  "    pm.expect(['success', 'error']).to.include(b.resumeResult);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /approvals/{id}/approve — second approval is 409",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToApprove}}/approve",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToApprove}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"comment\": \"again\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /approvals/{id}/reject — without a comment is 400",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToReject}}/reject",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToReject}}",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"comment\": \"\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /approvals/{id}/reject — approver rejects",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToReject}}/reject",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToReject}}",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"comment\": \"newman: rejected\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('rejected with the comment', () => {",
+                  "    pm.expect(b.id).to.eql(pm.collectionVariables.get('fxApprovalToReject'));",
+                  "    pm.expect(b.status).to.eql('rejected');",
+                  "    pm.expect(b.comment).to.eql('newman: rejected');",
+                  "    pm.expect(b.rejectedAt).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /approvals/{id}/approve — a rejected request is 409",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{ocBase}}/approvals/{{fxApprovalToReject}}/approve",
+              "host": [
+                "{{ocBase}}"
+              ],
+              "path": [
+                "approvals",
+                "{{fxApprovalToReject}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"comment\": \"too late\"}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE OCS user — non-approver fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/ocs/v1.php/cloud/users/newman-nonapprover",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ocs",
+                "v1.php",
+                "cloud",
+                "users",
+                "newman-nonapprover"
+              ]
+            },
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('removed', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE endpoint — approval fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/endpoint/{{fxApprovalEndpointUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "endpoint",
+                "{{fxApprovalEndpointUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE rule — approval fixture",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{orBase}}/rule/{{fxApprovalRuleUuid}}",
+              "host": [
+                "{{orBase}}"
+              ],
+              "path": [
+                "rule",
+                "{{fxApprovalRuleUuid}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
                 ]
               }
             }

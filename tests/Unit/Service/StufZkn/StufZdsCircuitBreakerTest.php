@@ -108,6 +108,23 @@ class StufZdsCircuitBreakerTest extends TestCase {
 	}//end testResetClosesTheCircuit()
 
 	/**
+	 * A reset without a source id writes nothing, so no other source's count is cleared.
+	 *
+	 * @return void
+	 */
+	public function testResetWithoutASourceIdWritesNothing(): void {
+		for ($i = 0; $i < StufZdsCircuitBreaker::THRESHOLD; $i++) {
+			$this->breaker->recordFailure('src');
+		}
+
+		$before = $this->store;
+		$this->breaker->reset('');
+
+		$this->assertSame($before, $this->store);
+		$this->assertFalse($this->breaker->allows('src'), 'The open circuit of another source stays open');
+	}//end testResetWithoutASourceIdWritesNothing()
+
+	/**
 	 * After the cooldown the circuit closes on its own.
 	 *
 	 * @return void

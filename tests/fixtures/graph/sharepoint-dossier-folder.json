@@ -1,0 +1,37 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#drives('b!woo-dossiers')/items('01GEREED')/children",
+  "value": [
+    {
+      "id": "01WOO2026014",
+      "name": "Woo-2026-014",
+      "webUrl": "https://example.sharepoint.com/sites/woo-verzoeken/Dossiers/Gereed/Woo-2026-014",
+      "folder": {"childCount": 2},
+      "parentReference": {"driveId": "b!woo-dossiers", "id": "01GEREED", "path": "/drives/b!woo-dossiers/root:/Gereed"},
+      "listItem": {
+        "fields": {
+          "Title": "Besluit op het Woo-verzoek over de herinrichting van het Stationsplein",
+          "Summary": "Besluit en inventarislijst bij het verzoek van 3 september 2026.",
+          "Description": "Openbaarmaking van de stukken over de herinrichting.",
+          "publicatiedatum": "2026-10-01T00:00:00Z"
+        }
+      }
+    },
+    {
+      "id": "01WOO2026015",
+      "name": "Woo-2026-015",
+      "webUrl": "https://example.sharepoint.com/sites/woo-verzoeken/Dossiers/Gereed/Woo-2026-015",
+      "folder": {"childCount": 1},
+      "parentReference": {"driveId": "b!woo-dossiers", "id": "01GEREED", "path": "/drives/b!woo-dossiers/root:/Gereed"},
+      "listItem": {
+        "fields": {}
+      }
+    },
+    {
+      "id": "01LOSBESTAND",
+      "name": "Werkinstructie.docx",
+      "webUrl": "https://example.sharepoint.com/sites/woo-verzoeken/Dossiers/Gereed/Werkinstructie.docx",
+      "file": {"mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+      "parentReference": {"driveId": "b!woo-dossiers", "id": "01GEREED"}
+    }
+  ]
+}

@@ -78,10 +78,9 @@ class TranslationService {
 	 * @spec openspec/specs/translation-service/spec.md#requirement-an-unconfigured-instance-says-so-req-trl-002
 	 */
 	public function translate(string $text, string $sourceLocale, string $targetLocale): array {
-		$from = strtolower(trim($sourceLocale));
-		$to   = strtolower(trim($targetLocale));
+		$pair = new LanguagePair(sourceLocale: $sourceLocale, targetLocale: $targetLocale);
 
-		if ($text === '' || $from === $to) {
+		if ($text === '' || $pair->from === $pair->to) {
 			return [
 				'success'  => true,
 				'text'     => $text,
@@ -90,19 +89,44 @@ class TranslationService {
 			];
 		}
 
-		$source   = $this->findEnabledSource();
-		$data     = $source->getObject();
-		$slug     = (string)($data['slug'] ?? '');
-		$provider = (string)($data['configuration']['translationProvider'] ?? $slug);
+		$run = new TranslationRun(source: $this->findEnabledSource(), pair: $pair);
+		$callLog = $this->post(run: $run, body: $this->requestBody(run: $run, text: $text));
 
-		$body = ['q' => $text, 'source' => $from, 'target' => $to, 'format' => 'text'];
-		if ($provider === 'deepl') {
-			$body = ['text' => [$text], 'source_lang' => strtoupper($from), 'target_lang' => strtoupper($to)];
+		return $this->translated(run: $run, callLog: $callLog);
+	}//end translate()
+
+	/**
+	 * The request body in the source's provider protocol: DeepL, else LibreTranslate.
+	 *
+	 * @param TranslationRun $run  The translation.
+	 * @param string         $text The text to translate.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function requestBody(TranslationRun $run, string $text): array {
+		$from = $run->pair->from;
+		$to = $run->pair->to;
+		if ($run->provider() === 'deepl') {
+			return ['text' => [$text], 'source_lang' => strtoupper($from), 'target_lang' => strtoupper($to)];
 		}
 
+		return ['q' => $text, 'source' => $from, 'target' => $to, 'format' => 'text'];
+	}//end requestBody()
+
+	/**
+	 * POST the body to the source's `/translate` endpoint.
+	 *
+	 * @param TranslationRun      $run  The translation.
+	 * @param array<string,mixed> $body The request body.
+	 *
+	 * @return ObjectEntity The call log.
+	 *
+	 * @throws TranslationUnavailableException When the source cannot be reached.
+	 */
+	private function post(TranslationRun $run, array $body): ObjectEntity {
 		try {
-			$callLog = $this->callService->call(
-				source: $source,
+			return $this->callService->call(
+				source: $run->source,
 				endpoint: '/translate',
 				method: 'POST',
 				config: [
@@ -112,30 +136,55 @@ class TranslationService {
 			);
 		} catch (Throwable $e) {
 			throw new TranslationUnavailableException(
-				message: 'The translation source "' . $slug . '" could not be reached: ' . $e->getMessage(),
+				message: 'The translation source "' . $run->slug() . '" could not be reached: ' . $e->getMessage(),
 				previous: $e
 			);
 		}
+	}//end post()
 
-		$translated = $this->readTranslation(callLog: $callLog, provider: $provider);
+	/**
+	 * The answer for the translation the source gave.
+	 *
+	 * @param TranslationRun $run     The translation.
+	 * @param ObjectEntity   $callLog The call log.
+	 *
+	 * @return array{success: bool, text: string, provider: string, message: string}
+	 *
+	 * @throws TranslationUnavailableException When the source answered without a translation.
+	 */
+	private function translated(TranslationRun $run, ObjectEntity $callLog): array {
+		$translated = $this->readTranslation(callLog: $callLog, provider: $run->provider());
 		if ($translated === null) {
-			$status = (int)($callLog->getObject()['statusCode'] ?? 0);
-			$this->logger->warning(
-				'Integriq: translation source answered without a translation',
-				['source' => $slug, 'statusCode' => $status]
-			);
-			throw new TranslationUnavailableException(
-				message: 'The translation source "' . $slug . '" answered without a translation (HTTP ' . $status . ').'
-			);
+			throw $this->noTranslation(run: $run, callLog: $callLog);
 		}
 
 		return [
 			'success'  => true,
 			'text'     => $translated,
-			'provider' => $slug,
-			'message'  => 'Translated through ' . (string)($data['name'] ?? $slug) . '.',
+			'provider' => $run->slug(),
+			'message'  => 'Translated through ' . $run->name() . '.',
 		];
-	}//end translate()
+	}//end translated()
+
+	/**
+	 * Log and build the refusal of an answer without a translation.
+	 *
+	 * @param TranslationRun $run     The translation.
+	 * @param ObjectEntity   $callLog The call log.
+	 *
+	 * @return TranslationUnavailableException
+	 */
+	private function noTranslation(TranslationRun $run, ObjectEntity $callLog): TranslationUnavailableException {
+		$status = (int)($callLog->getObject()['statusCode'] ?? 0);
+		$this->logger->warning(
+			'Integriq: translation source answered without a translation',
+			['source' => $run->slug(), 'statusCode' => $status]
+		);
+
+		return new TranslationUnavailableException(
+			message: 'The translation source "' . $run->slug() . '" answered without a translation (HTTP ' . $status . ').'
+		);
+	}//end noTranslation()
 
 	/**
 	 * Find the first enabled translation source.

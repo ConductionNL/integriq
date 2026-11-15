@@ -1,0 +1,436 @@
+[
+    {
+        "unknown type": {
+            "status": 404,
+            "body": {
+                "type": "about:blank",
+                "title": "Not found",
+                "status": 404,
+                "detail": "No objecttype \"zzz\" is published here."
+            }
+        }
+    },
+    {
+        "no geometry": {
+            "status": 400,
+            "body": {
+                "type": "about:blank",
+                "title": "Bad request",
+                "status": 400,
+                "detail": "A geometry search needs \"geometry.within\" naming a circle or a polygon."
+            }
+        }
+    },
+    {
+        "within not an array": {
+            "status": 400,
+            "body": {
+                "type": "about:blank",
+                "title": "Bad request",
+                "status": 400,
+                "detail": "A geometry search needs \"geometry.within\" naming a circle or a polygon."
+            }
+        }
+    },
+    {
+        "polygon within": {
+            "status": 400,
+            "body": {
+                "type": "about:blank",
+                "title": "Bad request",
+                "status": 400,
+                "detail": "Only a circular \"within\" is evaluated here: give \"type\": \"Point\" with \"coordinates\" and a \"radius\" in metres."
+            }
+        }
+    },
+    {
+        "zero radius": {
+            "status": 400,
+            "body": {
+                "type": "about:blank",
+                "title": "Bad request",
+                "status": 400,
+                "detail": "Only a circular \"within\" is evaluated here: give \"type\": \"Point\" with \"coordinates\" and a \"radius\" in metres."
+            }
+        }
+    },
+    {
+        "text radius": {
+            "status": 400,
+            "body": {
+                "type": "about:blank",
+                "title": "Bad request",
+                "status": 400,
+                "detail": "Only a circular \"within\" is evaluated here: give \"type\": \"Point\" with \"coordinates\" and a \"radius\" in metres."
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "allowed": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/near",
+                        "uuid": "near",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "near",
+                                "geometry": {
+                                    "type": "Point",
+                                    "coordinates": [
+                                        5.1215,
+                                        52.091
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [
+                                    5.1215,
+                                    52.091
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/near2",
+                        "uuid": "near2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "near2",
+                                "geometry": {
+                                    "type": "POINT",
+                                    "coordinates": [
+                                        5.122,
+                                        52.0912,
+                                        3
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "POINT",
+                                "coordinates": [
+                                    5.122,
+                                    52.0912,
+                                    3
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "allowed by url": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/near",
+                        "uuid": "near",
+                        "type": "https://example.test/api/v2/objecttypes/aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "near",
+                                "geometry": {
+                                    "type": "Point",
+                                    "coordinates": [
+                                        5.1215,
+                                        52.091
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [
+                                    5.1215,
+                                    52.091
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/near2",
+                        "uuid": "near2",
+                        "type": "https://example.test/api/v2/objecttypes/aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "near2",
+                                "geometry": {
+                                    "type": "POINT",
+                                    "coordinates": [
+                                        5.122,
+                                        52.0912,
+                                        3
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "POINT",
+                                "coordinates": [
+                                    5.122,
+                                    52.0912,
+                                    3
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "allowed paged": {
+            "status": 200,
+            "body": {
+                "count": 2,
+                "next": null,
+                "previous": 1,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/near2",
+                        "uuid": "near2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "near2",
+                                "geometry": {
+                                    "type": "POINT",
+                                    "coordinates": [
+                                        5.122,
+                                        52.0912,
+                                        3
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "POINT",
+                                "coordinates": [
+                                    5.122,
+                                    52.0912,
+                                    3
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "alice"
+        ]
+    },
+    {
+        "wide circle": {
+            "status": 200,
+            "body": {
+                "count": 3,
+                "next": null,
+                "previous": null,
+                "results": [
+                    {
+                        "url": "https://example.test/objects/near",
+                        "uuid": "near",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "near",
+                                "geometry": {
+                                    "type": "Point",
+                                    "coordinates": [
+                                        5.1215,
+                                        52.091
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [
+                                    5.1215,
+                                    52.091
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/far",
+                        "uuid": "far",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "far",
+                                "geometry": {
+                                    "type": "Point",
+                                    "coordinates": [
+                                        4.8952,
+                                        52.3702
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [
+                                    4.8952,
+                                    52.3702
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    },
+                    {
+                        "url": "https://example.test/objects/near2",
+                        "uuid": "near2",
+                        "type": "aaa",
+                        "record": {
+                            "index": 1,
+                            "typeVersion": 1,
+                            "data": {
+                                "naam": "near2",
+                                "geometry": {
+                                    "type": "POINT",
+                                    "coordinates": [
+                                        5.122,
+                                        52.0912,
+                                        3
+                                    ]
+                                }
+                            },
+                            "geometry": {
+                                "type": "POINT",
+                                "coordinates": [
+                                    5.122,
+                                    52.0912,
+                                    3
+                                ]
+                            },
+                            "startAt": "2026-01-02",
+                            "endAt": null,
+                            "registrationAt": "2026-01-02",
+                            "correctionFor": null,
+                            "correctedBy": null
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "bob"
+        ]
+    },
+    {
+        "nothing readable": {
+            "status": 200,
+            "body": {
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            }
+        }
+    },
+    {
+        "read": [
+            "meldingen",
+            "melding",
+            "boom"
+        ]
+    },
+    {
+        "read throws": {
+            "status": 200,
+            "body": {
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            }
+        }
+    }
+]

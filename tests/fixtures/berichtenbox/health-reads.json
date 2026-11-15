@@ -1,0 +1,139 @@
+{
+    "letters": {
+        "waiting": 3,
+        "calls": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "digitalPostMessage"
+                    },
+                    "limit": 1000
+                },
+                true,
+                true
+            ]
+        ]
+    },
+    "letters plain list": {
+        "waiting": 3,
+        "calls": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "digitalPostMessage"
+                    },
+                    "limit": 1000
+                },
+                true,
+                true
+            ]
+        ]
+    },
+    "letters throw": {
+        "waiting": 0,
+        "calls": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "digitalPostMessage"
+                    },
+                    "limit": 1000
+                },
+                true,
+                true
+            ]
+        ]
+    },
+    "sources": {
+        "sources": {
+            "bb-1": {
+                "raw": true,
+                "providerId": "berichtenbox",
+                "senderOin": "1"
+            },
+            "u-2": {
+                "raw": true,
+                "providerId": "berichtenbox"
+            },
+            "bb-3": {
+                "providerId": "berichtenbox"
+            }
+        },
+        "calls": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "source"
+                    }
+                },
+                false,
+                false
+            ],
+            {
+                "readSourceRaw": "u-1"
+            },
+            {
+                "readSourceRaw": "u-2"
+            },
+            {
+                "readSourceRaw": "u-3"
+            }
+        ]
+    },
+    "sources plain list": {
+        "sources": {
+            "bb-1": {
+                "raw": true,
+                "providerId": "berichtenbox",
+                "senderOin": "1"
+            },
+            "u-2": {
+                "raw": true,
+                "providerId": "berichtenbox"
+            },
+            "bb-3": {
+                "providerId": "berichtenbox"
+            }
+        },
+        "calls": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "source"
+                    }
+                },
+                false,
+                false
+            ],
+            {
+                "readSourceRaw": "u-1"
+            },
+            {
+                "readSourceRaw": "u-2"
+            },
+            {
+                "readSourceRaw": "u-3"
+            }
+        ]
+    },
+    "sources throw": {
+        "sources": [],
+        "calls": [
+            [
+                {
+                    "filters": {
+                        "register": "integriq",
+                        "schema": "source"
+                    }
+                },
+                false,
+                false
+            ]
+        ]
+    }
+}

@@ -118,45 +118,72 @@ class ListResyncService implements ListResyncServiceInterface {
 		try {
 			$fetched = $provider->suggest('', $config);
 		} catch (SourceUnreachableException $e) {
-			$this->logger->warning(
-				'property-source.resync.failed',
-				[
-					'provider' => $providerId,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return $this->storeReport(
-				providerId: $providerId,
-				report: [
-					'lastResyncAt' => $this->lastReport(providerId: $providerId)['lastResyncAt'],
-					'changed' => 0,
-					'succeeded' => false,
-					'message' => $e->getMessage(),
-					'served' => count($previous),
-				]
-			);
-		}//end try
+			return $this->resyncFailed(providerId: $providerId, failure: ['error' => $e->getMessage(), 'served' => count($previous)]);
+		}
 
 		$changed = $this->countChanges(previous: $previous, fetched: $fetched);
+		$this->storeList(providerId: $providerId, fetched: $fetched);
+
+		return $this->storeReport(providerId: $providerId, report: $this->successReport(changed: $changed, fetched: $fetched));
+	}//end resync()
+
+	/**
+	 * Log and report a resync the source did not answer; the previous list stays served.
+	 *
+	 * @param string                           $providerId The provider id.
+	 * @param array{error:string,served:int}   $failure    The source's error and the size of the list still served.
+	 *
+	 * @return array<string,mixed> The stored report, with the previous resync's timestamp.
+	 */
+	private function resyncFailed(string $providerId, array $failure): array {
+		$this->logger->warning('property-source.resync.failed', ['provider' => $providerId, 'error' => $failure['error']]);
+
+		return $this->storeReport(
+			providerId: $providerId,
+			report: [
+				'lastResyncAt' => $this->lastReport(providerId: $providerId)['lastResyncAt'],
+				'changed' => 0,
+				'succeeded' => false,
+				'message' => $failure['error'],
+				'served' => $failure['served'],
+			]
+		);
+	}//end resyncFailed()
+
+	/**
+	 * Serve the fetched list from now on.
+	 *
+	 * @param string                         $providerId The provider id.
+	 * @param array<int,array<string,mixed>> $fetched    The fetched list.
+	 *
+	 * @return void
+	 */
+	private function storeList(string $providerId, array $fetched): void {
 		$encodedList = json_encode($fetched);
 		if ($encodedList === false) {
 			$encodedList = '[]';
 		}
 
 		$this->appConfig->setValueString(self::APP_ID, self::LIST_KEY_PREFIX . $providerId, $encodedList);
+	}//end storeList()
 
-		return $this->storeReport(
-			providerId: $providerId,
-			report: [
-				'lastResyncAt' => time(),
-				'changed' => $changed,
-				'succeeded' => true,
-				'message' => '',
-				'served' => count($fetched),
-			]
-		);
-	}//end resync()
+	/**
+	 * The report of a resync that fetched the list.
+	 *
+	 * @param int                            $changed The entries added, removed or relabelled.
+	 * @param array<int,array<string,mixed>> $fetched The fetched list.
+	 *
+	 * @return array<string,mixed> The report, stamped now.
+	 */
+	private function successReport(int $changed, array $fetched): array {
+		return [
+			'lastResyncAt' => time(),
+			'changed' => $changed,
+			'succeeded' => true,
+			'message' => '',
+			'served' => count($fetched),
+		];
+	}//end successReport()
 
 	/**
 	 * How many entries were added, removed or relabelled.
@@ -167,15 +194,8 @@ class ListResyncService implements ListResyncServiceInterface {
 	 * @return int Number of changed entries.
 	 */
 	private function countChanges(array $previous, array $fetched): int {
-		$before = [];
-		foreach ($previous as $row) {
-			$before[(string)($row['identifier'] ?? '')] = (string)($row['label'] ?? '');
-		}
-
-		$after = [];
-		foreach ($fetched as $row) {
-			$after[(string)($row['identifier'] ?? '')] = (string)($row['label'] ?? '');
-		}
+		$before = $this->labelsById(rows: $previous);
+		$after = $this->labelsById(rows: $fetched);
 
 		$changed = 0;
 		foreach ($after as $id => $label) {
@@ -184,14 +204,25 @@ class ListResyncService implements ListResyncServiceInterface {
 			}
 		}
 
-		foreach ($before as $id => $label) {
-			if (array_key_exists($id, $after) === false) {
-				$changed++;
-			}
+		// And every entry that is no longer there.
+		return $changed + count(array_diff_key($before, $after));
+	}//end countChanges()
+
+	/**
+	 * The label of each entry by its identifier; a later duplicate wins.
+	 *
+	 * @param array<int,array<string,mixed>> $rows The list.
+	 *
+	 * @return array<string,string> Identifier => label.
+	 */
+	private function labelsById(array $rows): array {
+		$labels = [];
+		foreach ($rows as $row) {
+			$labels[(string)($row['identifier'] ?? '')] = (string)($row['label'] ?? '');
 		}
 
-		return $changed;
-	}//end countChanges()
+		return $labels;
+	}//end labelsById()
 
 	/**
 	 * Store and return a resync report.

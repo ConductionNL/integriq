@@ -22,6 +22,7 @@ namespace OCA\Integriq\Service\DigitalPost;
 
 use OCA\Integriq\Exception\MtlsConfigurationException;
 use OCA\Integriq\Exception\MtlsTransportException;
+use OCA\Integriq\Service\Mtls\MtlsCertificateBundle;
 use OCA\Integriq\Service\Mtls\MtlsConfigResolver;
 use OCA\Integriq\Kernel\AppIdentity;
 use OCP\IAppConfig;
@@ -69,18 +70,7 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#requirement-the-transport-certificate-is-held-encrypted-and-named-by-reference-req-dpa-004
 	 */
 	public function apply(array $data, array $params): array {
-		$config = ($data['configuration'] ?? []);
-		if (is_string($config) === true) {
-			$config = (array)json_decode($config, true);
-		}
-
-		$config['providerId'] = BerichtenboxProvider::ID;
-		foreach (self::FIELDS as $field) {
-			if (isset($params[$field]) === true) {
-				$config[$field] = trim((string)$params[$field]);
-			}
-		}
-
+		$config = $this->withFields(config: $this->configurationOf(data: $data), params: $params);
 		$this->assertFields(config: $config);
 
 		if (is_array($params['berichtTypes'] ?? null) === true) {
@@ -89,18 +79,11 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 
 		$authentication = (array)($config['authentication'] ?? []);
 		$warnings = [];
-
-		$certificate = ($params['certificate'] ?? null);
-		if (is_array($certificate) === true && trim((string)($certificate['certificatePem'] ?? '')) !== '') {
-			try {
-				[$authentication, $config['certificateRef'], $warnings] = $this->encryptCertificate(
-					certificate: $certificate,
-					authentication: $authentication,
-					senderOin: (string)($config['senderOin'] ?? '')
-				);
-			} catch (MtlsConfigurationException $e) {
-				throw new BerichtenboxSettingsRefusal(field: 'certificate', message: $e->getMessage());
-			}
+		$upload = $this->uploadedCertificate(config: $config, certificate: ($params['certificate'] ?? null));
+		if ($upload !== null) {
+			$authentication = $upload->authentication;
+			$config['certificateRef'] = $upload->certificateRef;
+			$warnings = $upload->warnings;
 		}
 
 		$config['authentication'] = $this->withToken(authentication: $authentication, token: ($params['adapterToken'] ?? null));
@@ -108,6 +91,63 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 
 		return ['data' => $data, 'warnings' => $warnings];
 	}//end apply()
+
+	/**
+	 * The source's configuration, decoded when it is stored as JSON text.
+	 *
+	 * @param array<string, mixed> $data The source data.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function configurationOf(array $data): array {
+		$config = ($data['configuration'] ?? []);
+		if (is_string($config) === true) {
+			$config = (array)json_decode($config, true);
+		}
+
+		return (array)$config;
+	}//end configurationOf()
+
+	/**
+	 * The configuration with the provider id and every given field, trimmed.
+	 *
+	 * @param array<string, mixed> $config The configuration.
+	 * @param array<string, mixed> $params The form fields.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function withFields(array $config, array $params): array {
+		$config['providerId'] = BerichtenboxProvider::ID;
+		foreach (self::FIELDS as $field) {
+			if (isset($params[$field]) === true) {
+				$config[$field] = trim((string)$params[$field]);
+			}
+		}
+
+		return $config;
+	}//end withFields()
+
+	/**
+	 * The accepted upload, or null when no certificate was given.
+	 *
+	 * @param array<string, mixed> $config      The configuration (its authentication block and sender OIN).
+	 * @param mixed                $certificate The `certificate` form field.
+	 *
+	 * @return CertificateUpload|null
+	 *
+	 * @throws BerichtenboxSettingsRefusal When the certificate cannot be used.
+	 */
+	private function uploadedCertificate(array $config, mixed $certificate): ?CertificateUpload {
+		if (is_array($certificate) === false || trim((string)($certificate['certificatePem'] ?? '')) === '') {
+			return null;
+		}
+
+		try {
+			return $this->encryptCertificate(certificate: $certificate, config: $config);
+		} catch (MtlsConfigurationException $e) {
+			throw new BerichtenboxSettingsRefusal(field: 'certificate', message: $e->getMessage());
+		}
+	}//end uploadedCertificate()
 
 	/**
 	 * Whether the live binding is on.
@@ -148,10 +188,7 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 	 * @spec openspec/changes/berichtenbox-client/specs/digital-post-adapter/spec.md#scenario-a-send-names-a-certificate-reference-not-a-key
 	 */
 	public function describe(array $data): array {
-		$config = ($data['configuration'] ?? []);
-		if (is_string($config) === true) {
-			$config = (array)json_decode($config, true);
-		}
+		$config = $this->configurationOf(data: $data);
 
 		$described = [
 			'slug' => (string)($data['slug'] ?? ''),
@@ -233,14 +270,37 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 	 * Check, encrypt and name the uploaded certificate.
 	 *
 	 * @param array<string,mixed> $certificate `certificatePem`, `privateKeyPem`, optional `passphrase` and `caBundlePem`.
-	 * @param array<string,mixed> $authentication The source's authentication block.
-	 * @param string $senderOin The sender OIN, to compare with the certificate.
+	 * @param array<string,mixed> $config      The configuration: its authentication block and sender OIN.
 	 *
-	 * @return array{0:array<string,mixed>,1:string,2:array<int,string>} The new block, the fingerprint, warnings.
+	 * @return CertificateUpload The new block, the fingerprint reference and the warnings.
 	 *
 	 * @throws MtlsConfigurationException When the material cannot be used.
 	 */
-	private function encryptCertificate(array $certificate, array $authentication, string $senderOin): array {
+	private function encryptCertificate(array $certificate, array $config): CertificateUpload {
+		$block = (array)($config['authentication'] ?? []);
+		$block['mode'] = MtlsConfigResolver::MODE_MTLS;
+		$block['mtls'] = $this->encryptedMaterial(certificate: $certificate);
+
+		// Exactly the check a send makes, so a certificate that would fail at
+		// send time is refused here, at upload.
+		$bundle = $this->mtlsConfigResolver->resolve(authConfig: $block);
+		$this->assertKeyMatches(bundle: $bundle);
+
+		return new CertificateUpload(
+			authentication: $block,
+			certificateRef: 'sha256:' . (string)openssl_x509_fingerprint($bundle->certificatePem, 'sha256'),
+			warnings: $this->serialWarnings(bundle: $bundle, senderOin: (string)($config['senderOin'] ?? ''))
+		);
+	}//end encryptCertificate()
+
+	/**
+	 * The uploaded material, encrypted: the passphrase is kept as given, the PEMs trimmed.
+	 *
+	 * @param array<string,mixed> $certificate The `certificate` form field.
+	 *
+	 * @return array<string,string>
+	 */
+	private function encryptedMaterial(array $certificate): array {
 		$mtls = [
 			'encryptedCertificate' => $this->crypto->encrypt(trim((string)$certificate['certificatePem'])),
 			'encryptedPrivateKey' => $this->crypto->encrypt(trim((string)($certificate['privateKeyPem'] ?? ''))),
@@ -255,13 +315,19 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 			$mtls['encryptedCaBundle'] = $this->crypto->encrypt($caBundle);
 		}
 
-		$block = $authentication;
-		$block['mode'] = MtlsConfigResolver::MODE_MTLS;
-		$block['mtls'] = $mtls;
+		return $mtls;
+	}//end encryptedMaterial()
 
-		// Exactly the check a send makes, so a certificate that would fail at
-		// send time is refused here, at upload.
-		$bundle = $this->mtlsConfigResolver->resolve(authConfig: $block);
+	/**
+	 * Refuse a private key that does not belong to the certificate.
+	 *
+	 * @param MtlsCertificateBundle $bundle The resolved material.
+	 *
+	 * @return void
+	 *
+	 * @throws MtlsConfigurationException When the key does not match.
+	 */
+	private function assertKeyMatches(MtlsCertificateBundle $bundle): void {
 		$key = openssl_pkey_get_private($bundle->privateKeyPem, (string)$bundle->passphrase);
 		if ($key === false || openssl_x509_check_private_key($bundle->certificatePem, $key) === false) {
 			throw new MtlsConfigurationException(
@@ -269,24 +335,34 @@ class BerichtenboxSourceSettings implements BerichtenboxSourceSettingsInterface 
 				errorCode: MtlsTransportException::ERROR_INVALID_PRIVATE_KEY
 			);
 		}
+	}//end assertKeyMatches()
 
-		$warnings = [];
+	/**
+	 * The warning when the certificate's serial number is not the sender OIN.
+	 *
+	 * @param MtlsCertificateBundle $bundle    The resolved material.
+	 * @param string                $senderOin The sender OIN, empty when none is set.
+	 *
+	 * @return list<string>
+	 */
+	private function serialWarnings(MtlsCertificateBundle $bundle, string $senderOin): array {
 		$serial = (string)(openssl_x509_parse($bundle->certificatePem)['subject']['serialNumber'] ?? '');
-		if ($senderOin !== '' && $serial !== $senderOin) {
-			$shown = $serial;
-			if ($shown === '') {
-				$shown = '-';
-			}
-
-			$warnings[] = $this->l->t(
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-				'The certificate carries %1$s as its serial number, not the sender OIN %2$s. Logius refuses a letter whose OIN differs from the certificate.',
-				[$shown, $senderOin]
-			);
+		if ($senderOin === '' || $serial === $senderOin) {
+			return [];
 		}
 
-		return [$block, 'sha256:' . (string)openssl_x509_fingerprint($bundle->certificatePem, 'sha256'), $warnings];
-	}//end encryptCertificate()
+		$shown = $serial;
+		if ($shown === '') {
+			$shown = '-';
+		}
+
+		$warning = $this->l->t(
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+			'The certificate carries %1$s as its serial number, not the sender OIN %2$s. Logius refuses a letter whose OIN differs from the certificate.',
+			[$shown, $senderOin]
+		);
+		return [$warning];
+	}//end serialWarnings()
 
 	/**
 	 * Subject, OIN and expiry of the stored certificate, or why it cannot be read.
