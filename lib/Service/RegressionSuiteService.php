@@ -131,8 +131,7 @@ class RegressionSuiteService {
 			object: $run,
 			register: self::REGISTER,
 			schema: self::RUN_SCHEMA,
-			_rbac: false,
-			_multitenancy: false
+			_rbac: false
 		);
 
 		return array_merge($run, ['id' => (string)$saved->getUuid()]);
@@ -238,8 +237,7 @@ class RegressionSuiteService {
 			id: $subjectId,
 			register: self::REGISTER,
 			schema: 'synchronization',
-			_rbac: false,
-			_multitenancy: false
+			_rbac: false
 		);
 		$mapping = (string)($synchronization->getObject()['sourceTargetMapping'] ?? '');
 		if ($mapping === '') {
@@ -268,8 +266,7 @@ class RegressionSuiteService {
 				],
 				'limit' => self::CASE_LIMIT,
 			],
-			_rbac: false,
-			_multitenancy: false
+			_rbac: false
 		);
 
 		$cases = [];

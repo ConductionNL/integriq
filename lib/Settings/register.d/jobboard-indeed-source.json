@@ -1,0 +1,35 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-job-board-multiposting). The mapping from humaniq's Vacancy to one job of Indeed's XML job feed. Indeed pulls vacancies from a feed instead of taking a push; the feed endpoint that renders these jobs is a later task of this change, as is the Indeed template's answer to a source call.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "jobboard-indeed"
+        },
+        "name": "humaniq Vacancy to an Indeed feed job",
+        "description": "One humaniq Vacancy as one <job> of Indeed's XML job feed (Indeed XML job feed guidelines). Before use, fill `company` with the employer name and `url` with the vacancy page, for example https://werken.example.nl/vacatures/{{ vacancyId }}. The vacancy id is the reference number, so Indeed keeps one job per vacancy across feed reads. No applicant data is ever mapped. The vacancy carries no place, so city stays empty and the country is NL; Indeed's posting of an employer's jobs requires the feed URL to be registered with Indeed.",
+        "mapping": {
+          "title": "{{ title }}",
+          "date": "{{ (publishedDate|default('now'))|date('D, d M Y H:i:s', 'UTC') }} GMT",
+          "referencenumber": "{{ vacancyId }}",
+          "requisitionid": "{{ vacancyId }}",
+          "url": "",
+          "company": "",
+          "sourcename": "",
+          "city": "",
+          "country": "NL",
+          "description": "{{ description|default('') }}",
+          "category": "{{ department|default('') }}",
+          "experience": "{{ minExperienceYears is defined and minExperienceYears is not null ? minExperienceYears ~ '+ years' : '' }}",
+          "expirationdate": "{{ closingDate is defined and closingDate ? closingDate|date('Y-m-d') : '' }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

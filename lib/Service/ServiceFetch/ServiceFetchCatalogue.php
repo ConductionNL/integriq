@@ -152,6 +152,7 @@ class ServiceFetchCatalogue {
 	 */
 	public function source(string $id): ObjectEntity {
 		try {
+			// Unscoped: the catalogue reads a fetch's source in system context (see the class docblock); callers check access first.
 			$source = $this->objectService->find(id: $id, register: self::REGISTER, schema: 'source', _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$source = null;

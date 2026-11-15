@@ -90,6 +90,7 @@ class IdpRegistrationService {
 			return [];
 		}
 
+		// Unscoped: the login path reads the registration before any session exists, filtered on the organisation it names.
 		$objects = $this->objectService->findAll(
 			config: [
 				'filters' => [

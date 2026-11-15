@@ -109,7 +109,7 @@ class CallLogController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: self::ACTION_READ);
 
 		try {
-			$call = $this->recorder->read($id);
+			$call = $this->recorder->readInOrganisation(uuid: $id);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => $this->l->t('No such call.')], Http::STATUS_NOT_FOUND);
 		}
@@ -150,6 +150,7 @@ class CallLogController extends Controller {
 		$this->actionAuth->requireAction(user: $user, action: self::ACTION_READ);
 
 		try {
+			$this->recorder->readInOrganisation(uuid: $id);
 			$preview = $this->replayService->preview($id);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => $this->l->t('No such call.')], Http::STATUS_NOT_FOUND);
@@ -197,6 +198,11 @@ class CallLogController extends Controller {
 		];
 
 		try {
+			// Another organisation's call answers as an unknown one, before anything replays.
+			foreach ($ids as $callId) {
+				$this->recorder->readInOrganisation(uuid: (string)$callId);
+			}
+
 			$result = $this->replayService->replayAll(array_map('strval', $ids), $user->getUID(), $options);
 		} catch (DoesNotExistException) {
 			return new JSONResponse(['error' => $this->l->t('No such call.')], Http::STATUS_NOT_FOUND);
