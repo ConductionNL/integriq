@@ -153,4 +153,28 @@ class SloCurriculumPresetRegistryTest extends TestCase {
 			unlink($path);
 		}
 	}//end testMalformedMembersDegradeToEmpty()
+	/**
+	 * A source whose configuration, sets or year table is not an object reads as empty.
+	 *
+	 * @return void
+	 */
+	public function testNonObjectConfigurationMembersReadAsEmpty(): void {
+		foreach ([['configuration' => 'x'], ['configuration' => ['sets' => 'x', 'yearNiveaus' => 'x', 'attribution' => ['by' => 'SLO']]]] as $index => $source) {
+			$path = tempnam(sys_get_temp_dir(), 'slo');
+			file_put_contents(
+				$path,
+				json_encode(['components' => ['objects' => [['@self' => ['schema' => 'source', 'slug' => 'slo-curriculum']] + $source]]])
+			);
+
+			try {
+				$registry = new SloCurriculumPresetRegistry($path);
+				$this->assertSame([], $registry->setKeys(), 'case ' . $index);
+				$this->assertSame([], $registry->describeSets(), 'case ' . $index);
+				$this->assertSame([], $registry->yearNiveaus(), 'case ' . $index);
+				$this->assertSame($index === 0 ? [] : ['by' => 'SLO'], $registry->attribution(), 'case ' . $index);
+			} finally {
+				unlink($path);
+			}
+		}
+	}//end testNonObjectConfigurationMembersReadAsEmpty()
 }//end class

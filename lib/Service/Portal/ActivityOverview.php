@@ -148,7 +148,7 @@ class ActivityOverview implements ActivityOverviewInterface {
 	}//end lastReceivedByRow()
 
 	/**
-	 * The most recent verzoeken, newest first, read without RBAC or multitenancy.
+	 * The most recent verzoeken of the caller's organisation, newest first, read without RBAC.
 	 *
 	 * Anything in the answer that is not an ObjectEntity is left out.
 	 *
@@ -163,8 +163,7 @@ class ActivityOverview implements ActivityOverviewInterface {
 				'limit' => self::SCAN_LIMIT,
 				'sort' => ['receivedAt' => 'DESC'],
 			],
-			_rbac: false,
-			_multitenancy: false
+			_rbac: false
 		);
 
 		return array_filter(

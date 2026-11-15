@@ -56,6 +56,9 @@
 		<ImportPreviewDialog
 			:open="configurationImport.open"
 			@close="closeConfigurationImport" />
+		<SharePointPublicationSetupDialog
+			:open="sharePointPublicationSetup.open"
+			@close="closeSharePointPublicationSetup" />
 		<ExportConfigurationDialog
 			:open="configurationExport.open"
 			@close="closeConfigurationExport" />
@@ -90,6 +93,7 @@ import GatewayCatalogueDialog from '../../dialogs/GatewayCatalogueDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import LinkSourceDialog from '../../dialogs/LinkSourceDialog.vue'
 import RegistryLookupDialog from '../../dialogs/RegistryLookupDialog.vue'
+import SharePointPublicationSetupDialog from '../../dialogs/SharePointPublicationSetupDialog.vue'
 import SourceResidencyDialog from '../../dialogs/SourceResidencyDialog.vue'
 import DirectoryRunModal from '../Directory/DirectoryRunModal.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
@@ -111,6 +115,7 @@ import {
 	EVENT_OPEN_REGISTRATION_TEST,
 	EVENT_OPEN_REGISTRY_LOOKUP,
 	EVENT_OPEN_RUN_ACTION,
+	EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP,
 	EVENT_OPEN_SOURCE_RESIDENCY,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_TEST_MAPPING,
@@ -133,6 +138,7 @@ export default {
 		ImportPreviewDialog,
 		ExportConfigurationDialog,
 		PromotePreviewModal,
+		SharePointPublicationSetupDialog,
 		LinkSourceDialog,
 		RegistryLookupDialog,
 		GatewayCatalogueDialog,
@@ -152,6 +158,7 @@ export default {
 			configurationImport: { open: false },
 			configurationExport: { open: false },
 			promotion: { open: false },
+			sharePointPublicationSetup: { open: false },
 			registryLookup: { open: false },
 			gatewayCatalogue: { open: false },
 			sourceResidency: { open: false, source: null },
@@ -203,6 +210,7 @@ export default {
 		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.on(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.on(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
@@ -222,6 +230,7 @@ export default {
 		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.off(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.off(EVENT_OPEN_REGISTRATION_TEST, this.openRegistrationTest)
@@ -336,6 +345,16 @@ export default {
 		/** @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002 */
 		closeCatalogItemDetail() {
 			this.catalogItemDetail = { open: false, item: null }
+		},
+
+		/** @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001 */
+		openSharePointPublicationSetup() {
+			this.sharePointPublicationSetup = { open: true }
+		},
+
+		/** @spec openspec/changes/connectors-sharepoint-publication-intake/specs/document-cms-connectors/spec.md#requirement-an-administrator-sets-up-sharepoint-to-publication-intake-from-the-store-req-sppi-001 */
+		closeSharePointPublicationSetup() {
+			this.sharePointPublicationSetup = { open: false }
 		},
 
 		/** @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything */

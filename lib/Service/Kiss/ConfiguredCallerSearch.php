@@ -147,6 +147,7 @@ class ConfiguredCallerSearch implements CallerSearchInterface {
 	 */
 	private function readSource(string $sourceId): ?array {
 		try {
+			// Unscoped: a CTI call event resolves the source its CTI source names, as the system with no user session.
 			$entity = $this->objectService->find(
 				id: $sourceId,
 				register: RawSourceResolver::REGISTER,

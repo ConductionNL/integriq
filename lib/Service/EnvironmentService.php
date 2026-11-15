@@ -152,8 +152,7 @@ class EnvironmentService implements EnvironmentServiceInterface {
 				id: $sourceRef,
 				register: self::REGISTER,
 				schema: self::SOURCE_SCHEMA,
-				_rbac: false,
-				_multitenancy: false
+				_rbac: false
 			);
 		} catch (\Throwable $e) {
 			return null;

@@ -128,7 +128,7 @@ class RecordProvenanceService implements RecordProvenanceServiceInterface {
 		}
 
 		try {
-			return $this->objectService->find(id: $id, register: self::REGISTER, schema: $schema, _rbac: false, _multitenancy: false);
+			return $this->objectService->find(id: $id, register: self::REGISTER, schema: $schema, _rbac: false);
 		} catch (\Throwable) {
 			return null;
 		}
@@ -150,8 +150,7 @@ class RecordProvenanceService implements RecordProvenanceServiceInterface {
 				'limit' => $limit,
 				'sort' => ['created' => 'DESC'],
 			],
-			_rbac: false,
-			_multitenancy: false
+			_rbac: false
 		);
 
 		return array_values(array_filter(($result['results'] ?? $result), static fn ($item): bool => $item instanceof ObjectEntity));
