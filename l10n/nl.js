@@ -2353,7 +2353,14 @@ OC.L10N.register(
         "Units of `currency` per one unit of `baseCurrency`": "Eenheden `currency` per eenheid `baseCurrency`",
         "Who published the rate; `ecb` for the European Central Bank reference rates": "Wie de koers publiceerde; `ecb` voor de referentiekoersen van de Europese Centrale Bank",
         "Registration targets": "Registratiedoelen",
-        "Add registration target": "Registratiedoel toevoegen"
+        "Add registration target": "Registratiedoel toevoegen",
+        "Test registration target": "Registratiedoel testen",
+        "The test maps the hand-over and stops before anything is sent or saved.": "De test zet de overdracht om en stopt voordat er iets wordt verstuurd of opgeslagen.",
+        "Hand-over (JSON, leave empty for the sample)": "Overdracht (JSON, leeg laten voor het voorbeeld)",
+        "Mapped body": "Omgezette inhoud",
+        "Refused ({code}): {message}": "Geweigerd ({code}): {message}",
+        "The hand-over must be a JSON object.": "De overdracht moet een JSON-object zijn.",
+        "The test could not be run.": "De test kon niet worden uitgevoerd."
     },
     "nplurals=2; plural=(n != 1);"
 )

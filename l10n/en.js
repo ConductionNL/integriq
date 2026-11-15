@@ -3613,7 +3613,14 @@ OC.L10N.register(
         "Rate date": "Rate date",
         "The publication date the rate applies to": "The publication date the rate applies to",
         "Units of `currency` per one unit of `baseCurrency`": "Units of `currency` per one unit of `baseCurrency`",
-        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates"
+        "Who published the rate; `ecb` for the European Central Bank reference rates": "Who published the rate; `ecb` for the European Central Bank reference rates",
+        "Test registration target": "Test registration target",
+        "The test maps the hand-over and stops before anything is sent or saved.": "The test maps the hand-over and stops before anything is sent or saved.",
+        "Hand-over (JSON, leave empty for the sample)": "Hand-over (JSON, leave empty for the sample)",
+        "Mapped body": "Mapped body",
+        "Refused ({code}): {message}": "Refused ({code}): {message}",
+        "The hand-over must be a JSON object.": "The hand-over must be a JSON object.",
+        "The test could not be run.": "The test could not be run."
     },
     "nplurals=2; plural=(n != 1);"
 )

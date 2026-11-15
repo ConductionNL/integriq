@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 manifest fragment (form-submission-registration-targets, Task 8, design D6). The administrators' list of registration targets: the outside systems a sibling app registers a form submission in. Admin-only, as the schema is for every verb. The dialog asks the settings of the chosen kind only: each kind's settings object is shown when `kind` holds that kind, so a StUF-ZDS target is never asked for a ZGW zaaktype. The sources and settings never reach a column; apps see a target only through the slug-title-kind projection of GET /api/registration-targets.",
+  "$comment": "ADR-037 manifest fragment (form-submission-registration-targets, Task 8, design D6). The administrators' list of registration targets: the outside systems a sibling app registers a form submission in. Admin-only, as the schema is for every verb. The dialog asks the settings of the chosen kind only: each kind's settings object is shown when `kind` holds that kind, so a StUF-ZDS target is never asked for a ZGW zaaktype. The sources and settings never reach a column; apps see a target only through the slug-title-kind projection of GET /api/registration-targets. The Test row action opens the dry run of design D6, which maps a sample hand-over and stops before the first write.",
   "pages": [
     {
       "id": "RegistrationTargets",
@@ -26,6 +26,9 @@
           "enabled": { "order": 11 }
         },
         "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "test", "label": "Test", "icon": "PlayOutline", "handler": "testRegistrationTargetHandler" }
+        ],
         "documentationUrl": "https://integriq.conduction.nl"
       }
     }

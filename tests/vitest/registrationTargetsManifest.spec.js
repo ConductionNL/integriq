@@ -60,6 +60,16 @@ describe('registration targets manifest fragment', () => {
 		}
 	})
 
+	it('offers the dry run as a Test row action with a registered handler', () => {
+		const handlers = readFileSync(join(root, 'src/handlers/actionHandlers.js'), 'utf8')
+		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
+		const action = page.config.actions.find((candidate) => candidate.id === 'test')
+
+		expect(action.handler).toBe('testRegistrationTargetHandler')
+		expect(handlers).toContain(`export function ${action.handler}(`)
+		expect(registry).toMatch(new RegExp(`^\\t${action.handler},$`, 'm'))
+	})
+
 	it('lands in Connections for administrators only', () => {
 		const group = merged.menu.find((entry) => entry.id === 'ConnectionsGroup')
 		const entry = group.children.find((child) => child.id === 'RegistrationTargets')
