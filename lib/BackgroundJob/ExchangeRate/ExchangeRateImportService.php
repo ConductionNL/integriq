@@ -26,8 +26,8 @@ namespace OCA\Integriq\BackgroundJob\ExchangeRate;
 
 use OCA\Integriq\Service\EventServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;

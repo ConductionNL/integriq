@@ -39,8 +39,8 @@ use OCA\Integriq\Service\ZgwVersion\ResultTranslator;
 use OCA\Integriq\Service\ZgwVersion\RolTranslator;
 use OCA\Integriq\Service\ZgwVersion\StatusTranslator;
 use OCA\Integriq\Service\ZgwVersion\ZgwResourceTranslatorInterface;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**

@@ -45,7 +45,7 @@ use OCA\Integriq\Tests\Helpers\RegisterSchemaValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IAppConfig;

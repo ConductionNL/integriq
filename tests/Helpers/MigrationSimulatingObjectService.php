@@ -38,7 +38,7 @@ namespace OCA\Integriq\Tests\Helpers;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Reproduces the render boundary AND entity columns AND persisting saves.

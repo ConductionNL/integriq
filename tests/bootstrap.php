@@ -230,20 +230,20 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 			require_once $stubsDir . '/OCA/OpenRegister/Event/TaskTerminalEvent.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/ObjectFindTarget.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectFindTarget') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectFindTarget.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\SavePolicy') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/SavePolicy.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SavePolicy') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/SavePolicy.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\SaveActor') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/SaveActor.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\SaveActor') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/SaveActor.php';
 		}
 
-		if (class_exists('OCA\\OpenRegister\\Service\\Object\\ObjectSaveOptions') === false) {
-			require_once $stubsDir . '/OCA/OpenRegister/Service/Object/ObjectSaveOptions.php';
+		if (class_exists('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectSaveOptions') === false) {
+			require_once $stubsDir . '/OCA/OpenRegister/Kernel/Contracts/Value/ObjectSaveOptions.php';
 		}
 
 		if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {

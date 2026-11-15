@@ -41,8 +41,8 @@ namespace OCA\Integriq\Service\StufZkn;
 
 use DateTime;
 use OCA\Integriq\Exception\StufZknProviderException;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
 

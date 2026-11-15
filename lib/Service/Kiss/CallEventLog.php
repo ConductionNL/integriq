@@ -33,8 +33,8 @@ namespace OCA\Integriq\Service\Kiss;
 
 use OCA\Integriq\Event\CallEvent;
 use OCA\Integriq\Exception\CallEventNotFoundException;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 
 /**
