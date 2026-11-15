@@ -5125,6 +5125,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private function findTargetInScope(DeletionRun $run, string|int $targetId): mixed {
 		try {
+			// Unscoped: the engine re-reads the target its own run wrote, during a run that may have no user.
 			return $this->orObjectService->find(
 				id: (string)$targetId,
 				register: $run->registerId,
@@ -10662,6 +10663,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 */
 	private function rawSourceObject(array $synchronization, string $id): array {
 		try {
+			// Unscoped: the engine reads the raw source of a synchronization it runs, during a run that may have no user.
 			$raw = $this->orObjectService->find(
 				id: $id,
 				register: 'integriq',
