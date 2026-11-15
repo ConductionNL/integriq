@@ -6,6 +6,7 @@
       "route": "/messages/mail",
       "type": "logs",
       "title": "Mail intake",
+      "actionsComponent": "MailImportAction",
       "config": {
         "register": "integriq",
         "schema": "mail_message",

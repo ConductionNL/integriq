@@ -64,6 +64,7 @@ use OCA\Integriq\Service\Call\CallRequest;
 use OCA\Integriq\Service\Call\FinishedCall;
 use OCA\Integriq\Service\Helper\ExecutionTraceContext;
 use OCA\Integriq\Service\Helper\OrganisationBoundary;
+use OCA\Integriq\Service\Residency\EgressResidencyPolicy;
 use OCA\Integriq\Service\Security\SensitiveFieldRegistry;
 use OCA\Integriq\Twig\AuthenticationExtension;
 use OCA\Integriq\Twig\AuthenticationRuntimeLoader;
@@ -296,16 +297,11 @@ class CallService implements CallServiceInterface {
 
 		$this->cookieJar = new CookieJar();
 
-		$this->errorRetention = 2592000000;
-		$this->successRetention = 3600000;
-		if ($this->appConfig->hasKey(app: 'integriq', key: 'retention') === true) {
-			$retentionPayload = json_decode(
-				$this->appConfig->getValueString(app: 'integriq', key: 'retention'),
-				true
-			);
-			$this->errorRetention = ($retentionPayload['callLogRetention'] ?? 2592000000);
-			$this->successRetention = ($retentionPayload['successLogRetention'] ?? 3600000);
-		}
+		// One resolver for every log writer: the configured value, else the
+		// default the call_log schema declares (platform-admin-defaults).
+		$retention = new RetentionSettings(appConfig: $this->appConfig);
+		$this->errorRetention = $retention->get(kind: 'callLog');
+		$this->successRetention = $retention->get(kind: 'success');
 
 	}//end __construct()
 
@@ -2140,6 +2136,61 @@ class CallService implements CallServiceInterface {
 	}//end guardCallPreconditions()
 
 	/**
+	 * Phase 6a then 6b: the EU-only egress guard, then the circuit breaker.
+	 *
+	 * @param ObjectEntity   $source       The source ObjectEntity.
+	 * @param array          $sourceData   The mutable source data array (the breaker's probe timestamp mutates it).
+	 * @param \DateTime|null $errorExpires Expiry for the synthetic error log entry.
+	 *
+	 * @return ObjectEntity|null The synthetic 451 or 503 CallLog, or null to proceed.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md
+	 */
+	private function guardEgressAndCircuitBreaker(
+		ObjectEntity $source,
+		array &$sourceData,
+		?\DateTime $errorExpires,
+	): ?ObjectEntity {
+		$refused = $this->guardEgressResidency(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
+		if ($refused !== null) {
+			return $refused;
+		}
+
+		return $this->guardCircuitBreaker(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
+	}//end guardEgressAndCircuitBreaker()
+
+	/**
+	 * EU-only egress (REQ-RES-003): with the mode on, a source whose residency
+	 * is not in the EU is refused before any request is built or sent, and the
+	 * refusal is recorded in the call log.
+	 *
+	 * @param ObjectEntity   $source       The source ObjectEntity.
+	 * @param array          $sourceData   The source data.
+	 * @param \DateTime|null $errorExpires Expiry for the synthetic error log entry.
+	 *
+	 * @return ObjectEntity|null The synthetic 451 CallLog, or null to proceed.
+	 *
+	 * @throws \OCP\DB\Exception On persistence failure.
+	 *
+	 * @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md
+	 */
+	private function guardEgressResidency(ObjectEntity $source, array $sourceData, ?\DateTime $errorExpires): ?ObjectEntity {
+		$refusedCountry = (new EgressResidencyPolicy(appConfig: $this->appConfig))->refusedCountry(sourceData: $sourceData);
+		if ($refusedCountry === null) {
+			return null;
+		}
+
+		return $this->saveEarlyErrorLog(
+			source: $source,
+			statusCode: 451,
+			statusMessage: EgressResidencyPolicy::REFUSED . ': ' . $refusedCountry,
+			expires: $errorExpires,
+		);
+	}//end guardEgressResidency()
+
+	/**
 	 * Circuit breaker precondition guard (REQ-008): evaluated after the
 	 * enabled/location/rate-limit guards, before any dispatch attempt (sync
 	 * or async). When the breaker is fully open (within its cooldown
@@ -2986,8 +3037,9 @@ class CallService implements CallServiceInterface {
 
 	/**
 	 * Phases 3-6b: the source-precondition guards (enabled, location, rate
-	 * limit), then the circuit breaker (REQ-008), before any dispatch attempt
-	 * (sync or async).
+	 * limit), then EU-only egress (REQ-RES-003) and the circuit breaker
+	 * (REQ-008), before any request is built or any dispatch attempt (sync or
+	 * async).
 	 *
 	 * @param CallPreparation $run The call being prepared.
 	 *
@@ -2996,7 +3048,7 @@ class CallService implements CallServiceInterface {
 	private function guardSource(CallPreparation $run): bool {
 		$earlyError = $this->guardCallPreconditions(source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires);
 		if ($earlyError === null) {
-			$earlyError = $this->guardCircuitBreaker(source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires);
+			$earlyError = $this->guardEgressAndCircuitBreaker(source: $run->source, sourceData: $run->sourceData, errorExpires: $run->errorExpires);
 		}
 
 		return $this->shortCircuit(run: $run, callLog: $earlyError);

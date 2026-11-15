@@ -44,8 +44,9 @@ Kind: code. Size M. Halves for shillinq `receivables-payment-links` and `receiva
 - **files**: `lib/Settings/integriq_seed_data.json`, `docs/features/`, `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN the demo data WHEN it is loaded THEN the settlement `st_example0001` is present with 15 lines
-- [ ] Implement
-- [ ] Test (PHPUnit on the seed; the docs page lists the three event types and their fields)
+- [x] Implement
+- [x] Test (PHPUnit on the seed; the docs page lists the three event types and their fields)
+- note: the seed row sits on the demo source `payment-sandbox` (provider `mollie` on the row, as a pull of a Mollie account stores it; the source itself stays on `log`, so no pull runs for it). `PaymentSettlementSeedTest` checks the 15 lines, that they add up to the net, and that the row validates against the register schema. `docs/features/payments.md` lists the three messages and their fields. No new UI strings, so `l10n/` is unchanged.
 
 ## Verification
 - [ ] `openspec validate messaging-payment-command-settlements-and-point-of-sale --strict` passes
