@@ -13,6 +13,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.Integriq.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -101,7 +104,7 @@ interface ApprovalServiceInterface {
 	 * `approval_request` carrying `engineRunUuid`/`signalNodeId` instead of
 	 * `flowRunId`/`resumeStepOrder`, and notify the configured approver
 	 * group. The engine run resumes through
-	 * `FlowRunSignalService::signalAs()` (delivered by
+	 * `FlowRunSignalService::answerByUuid()` (delivered by
 	 * `ApprovalsController`), never through a FlowToken rehydration — the
 	 * engine holds the run's own state, so `snapshot` stays empty and this
 	 * record remains purely the human-decision system of record
@@ -201,15 +204,21 @@ interface ApprovalServiceInterface {
 	/**
 	 * Find an approval_request by id.
 	 *
-	 * @param string $id The approval_request uuid.
+	 * Within the caller's organisation by default: a request of another
+	 * organisation answers 404. `$asSystem` reads across organisations, for a
+	 * path that runs without a user or re-reads a request already found in scope.
+	 *
+	 * @param string $id       The approval_request uuid.
+	 * @param bool   $asSystem Whether to read without the organisation filter.
 	 *
 	 * @return ObjectEntity
 	 *
 	 * @throws ApprovalStateException (404) When no such request exists.
 	 *
 	 * @spec openspec/changes/archive/2026-07-15-hitl-approval-rule-action/design.md#api-design
+	 * @spec openspec/changes/integriq-tenant-scoping/specs/tenant-scoping/spec.md#requirement-a-user-only-reaches-their-own-organisations-integriq-objects-req-ten-001
 	 */
-	public function find(string $id): ObjectEntity;
+	public function find(string $id, bool $asSystem = false): ObjectEntity;
 
 	/**
 	 * Whether the given user may act on this specific approval_request:

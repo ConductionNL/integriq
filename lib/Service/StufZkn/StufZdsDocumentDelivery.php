@@ -96,26 +96,10 @@ class StufZdsDocumentDelivery {
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-filinq-delivery-becomes-a-document-in-the-case-system-req-csd-002
 	 */
 	public function deliver(array $source, array $document, array $file, string $zaakIdentificatie, string $documenttype): array {
-		$configuration = (array)($source['configuration'] ?? []);
-		if (($configuration['provider'] ?? 'log') !== 'rest') {
-			throw new StufZknProviderException(
-				message: 'The StUF-ZKN source is not in rest mode (configuration.provider); the log provider sends nothing, so no document was delivered.'
-			);
-		}
-
-		$zender = [
-			'organisatie' => trim((string)($configuration['organisatie'] ?? '')),
-			'applicatie' => trim((string)($configuration['applicatie'] ?? self::APPLICATION)),
-		];
-		$ontvanger = [
-			'organisatie' => trim((string)($source['ontvangerOrganisatie'] ?? ($configuration['ontvangerOrganisatie'] ?? ''))),
-			'applicatie' => trim((string)($source['ontvangerApplicatie'] ?? ($configuration['ontvangerApplicatie'] ?? ''))),
-		];
-		if ($zender['organisatie'] === '' || $ontvanger['organisatie'] === '') {
-			throw new StufZknProviderException(
-				message: 'The StUF-ZKN source names no organisatie (configuration.organisatie) or no ontvangerOrganisatie; a StUF message needs both.'
-			);
-		}
+		$configuration = $this->restConfiguration(source: $source);
+		$zender        = $this->zender(configuration: $configuration);
+		$ontvanger     = $this->ontvanger(source: $source);
+		$this->assertOrganisaties(zender: $zender, ontvanger: $ontvanger);
 
 		$delivery = new CaseDocumentDelivery(
 			document: $document,
@@ -129,22 +113,9 @@ class StufZdsDocumentDelivery {
 		// Refuse an incomplete document before the case system hands out an identificatie for it.
 		$this->translator->documentMessage(delivery: $delivery, documentId: 'probe');
 
-		$request = $this->translator->identificationRequest(zender: $zender, ontvanger: $ontvanger);
-		$answer  = $this->client->exchange(
-			sourceConfiguration: $configuration,
-			soapAction: self::ACTION_IDENTIFICATION,
-			envelopeXml: $request['xml'],
-			url: (string)($configuration['vrijeBerichtenUrl'] ?? '')
-		);
-		$identificatie = $this->translator->identificationFromAnswer(xml: $answer);
-
-		$message = $this->translator->documentMessage(delivery: $delivery, documentId: $identificatie);
-		$this->client->exchange(
-			sourceConfiguration: $configuration,
-			soapAction: self::ACTION_ADD_DOCUMENT,
-			envelopeXml: $message['xml'],
-			url: (string)($configuration['ontvangAsynchroonUrl'] ?? '')
-		);
+		$identificatie = $this->requestIdentificatie(configuration: $configuration, delivery: $delivery);
+		$message       = $this->translator->documentMessage(delivery: $delivery, documentId: $identificatie);
+		$this->sendDocument(configuration: $configuration, message: $message);
 
 		return [
 			'identificatie' => $identificatie,
@@ -152,4 +123,113 @@ class StufZdsDocumentDelivery {
 			'zaakIdentificatie' => $zaakIdentificatie,
 		];
 	}//end deliver()
+
+	/**
+	 * The source's configuration, refused unless it is in rest mode.
+	 *
+	 * @param array $source The StUF-ZKN source object.
+	 *
+	 * @return array The configuration.
+	 *
+	 * @throws StufZknProviderException When the source is in log mode.
+	 */
+	private function restConfiguration(array $source): array {
+		$configuration = (array)($source['configuration'] ?? []);
+		if (($configuration['provider'] ?? 'log') !== 'rest') {
+			throw new StufZknProviderException(
+				message: 'The StUF-ZKN source is not in rest mode (configuration.provider); the log provider sends nothing, so no document was delivered.'
+			);
+		}
+
+		return $configuration;
+	}//end restConfiguration()
+
+	/**
+	 * The zender: this app, as the configuration names it.
+	 *
+	 * @param array $configuration The source's configuration.
+	 *
+	 * @return array{organisatie: string, applicatie: string} The zender.
+	 */
+	private function zender(array $configuration): array {
+		return [
+			'organisatie' => trim((string)($configuration['organisatie'] ?? '')),
+			'applicatie' => trim((string)($configuration['applicatie'] ?? self::APPLICATION)),
+		];
+	}//end zender()
+
+	/**
+	 * The ontvanger: the source's own fields first, then its configuration's.
+	 *
+	 * @param array $source The StUF-ZKN source object.
+	 *
+	 * @return array{organisatie: string, applicatie: string} The ontvanger.
+	 */
+	private function ontvanger(array $source): array {
+		$configuration = (array)($source['configuration'] ?? []);
+		return [
+			'organisatie' => trim((string)($source['ontvangerOrganisatie'] ?? ($configuration['ontvangerOrganisatie'] ?? ''))),
+			'applicatie' => trim((string)($source['ontvangerApplicatie'] ?? ($configuration['ontvangerApplicatie'] ?? ''))),
+		];
+	}//end ontvanger()
+
+	/**
+	 * Refuse a routing without both organisaties.
+	 *
+	 * @param array $zender    The zender.
+	 * @param array $ontvanger The ontvanger.
+	 *
+	 * @return void
+	 *
+	 * @throws StufZknProviderException When either organisatie is empty.
+	 */
+	private function assertOrganisaties(array $zender, array $ontvanger): void {
+		if ($zender['organisatie'] === '' || $ontvanger['organisatie'] === '') {
+			throw new StufZknProviderException(
+				message: 'The StUF-ZKN source names no organisatie (configuration.organisatie) or no ontvangerOrganisatie; a StUF message needs both.'
+			);
+		}
+	}//end assertOrganisaties()
+
+	/**
+	 * Ask the case system for a document identificatie (Di02 → Du02).
+	 *
+	 * @param array                $configuration The source's configuration.
+	 * @param CaseDocumentDelivery $delivery      The delivery, for its zender and ontvanger.
+	 *
+	 * @return string The identificatie.
+	 *
+	 * @throws StufZknProviderException    When the case system refuses.
+	 * @throws StufZknTranslationException When the Du02 has no identificatie.
+	 */
+	private function requestIdentificatie(array $configuration, CaseDocumentDelivery $delivery): string {
+		$request = $this->translator->identificationRequest(zender: $delivery->zender, ontvanger: $delivery->ontvanger);
+		$answer  = $this->client->exchange(
+			sourceConfiguration: $configuration,
+			soapAction: self::ACTION_IDENTIFICATION,
+			envelopeXml: $request['xml'],
+			url: (string)($configuration['vrijeBerichtenUrl'] ?? '')
+		);
+
+		return $this->translator->identificationFromAnswer(xml: $answer);
+	}//end requestIdentificatie()
+
+	/**
+	 * Send the voegZaakdocumentToe message.
+	 *
+	 * @param array                                    $configuration The source's configuration.
+	 * @param array{xml: string, referentienummer: string} $message   The rendered message.
+	 *
+	 * @return void
+	 *
+	 * @throws StufZknProviderException When the case system refuses.
+	 */
+	private function sendDocument(array $configuration, array $message): void {
+		$this->client->exchange(
+			sourceConfiguration: $configuration,
+			soapAction: self::ACTION_ADD_DOCUMENT,
+			envelopeXml: $message['xml'],
+			url: (string)($configuration['ontvangAsynchroonUrl'] ?? '')
+		);
+	}//end sendDocument()
 }//end class

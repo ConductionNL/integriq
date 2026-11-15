@@ -156,7 +156,7 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	public function receive(string $rawXml, string $sourceId, string $service): array {
-		return $this->process(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_ROUTE);
+		return $this->process(request: new ProviderRequest(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_ROUTE));
 	}//end receive()
 
 	/**
@@ -174,159 +174,287 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-writes-arrive-on-integriqs-own-route-only
 	 */
 	public function receiveForwarded(string $rawXml, string $sourceId, string $service): array {
-		return $this->process(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_FORWARDED);
+		return $this->process(request: new ProviderRequest(rawXml: $rawXml, sourceId: $sourceId, service: $service, origin: self::ORIGIN_FORWARDED));
 	}//end receiveForwarded()
 
 	/**
-	 * Authenticate, read, ask the owning app and render the answer.
+	 * Refuse an oversized or unreadable body, then answer the parsed request.
 	 *
-	 * @param string $rawXml   The raw request body.
-	 * @param string $sourceId The integriq StUF-ZKN source the request is for.
-	 * @param string $service  SERVICE_CASES or SERVICE_PERSONS.
-	 * @param string $origin   ORIGIN_ROUTE or ORIGIN_FORWARDED.
+	 * @param ProviderRequest $request The request.
 	 *
 	 * @return array The answer (ProviderAnswer).
 	 */
-	private function process(string $rawXml, string $sourceId, string $service, string $origin): array {
-		if (strlen($rawXml) > StufZknRequestBody::MAX_BYTES) {
+	private function process(ProviderRequest $request): array {
+		if (strlen($request->rawXml) > StufZknRequestBody::MAX_BYTES) {
 			return $this->fault(statusCode: 413, berichtcode: 'Fo02', code: 'StUF001', omschrijving: 'Bericht te groot', stuurgegevens: []);
 		}
 
-		$root = $this->parse(rawXml: $rawXml);
+		$root = $this->parse(rawXml: $request->rawXml);
 		if ($root === null) {
 			return $this->fault(statusCode: 400, berichtcode: 'Fo02', code: 'StUF001', omschrijving: 'Ongeldig bericht', stuurgegevens: []);
 		}
 
-		$message     = $this->reader->messageElement(root: $root);
-		$berichttype = '';
-		if ($message !== null) {
-			$berichttype = $message->getName();
+		return $this->processParsed(run: $this->openRun(request: $request, root: $root));
+	}//end process()
+
+	/**
+	 * Read the message element, its berichttype, the fault code and the unauthenticated reply stuurgegevens.
+	 *
+	 * @param ProviderRequest  $request The request.
+	 * @param SimpleXMLElement $root    Its parsed envelope.
+	 *
+	 * @return ProviderRequestRun The request in progress.
+	 */
+	private function openRun(ProviderRequest $request, SimpleXMLElement $root): ProviderRequestRun {
+		$run = new ProviderRequestRun(request: $request, root: $root);
+		$run->message = $this->reader->messageElement(root: $root);
+		if ($run->message !== null) {
+			$run->berichttype = $run->message->getName();
 		}
 
-		$faultCode = $this->faultCode(berichttype: $berichttype);
-		$reply     = $this->replyStuurgegevens(root: $root, source: []);
+		$run->faultCode = $this->faultCode(berichttype: $run->berichttype);
+		$run->reply = $this->replyStuurgegevens(root: $root, source: []);
 
-		$source = $this->authenticatedSource(root: $root, sourceId: $sourceId);
-		if ($source === null) {
-			$this->logger->warning('StUF provider request refused for source {id}: not authenticated', ['id' => $sourceId]);
+		return $run;
+
+	}//end openRun()
+
+	/**
+	 * Authenticate, read, ask the owning app, render the answer and write the audit record.
+	 *
+	 * @param ProviderRequestRun $run The request in progress.
+	 *
+	 * @return array The answer (ProviderAnswer).
+	 */
+	private function processParsed(ProviderRequestRun $run): array {
+		$refusal = ($this->authenticationRefusal(run: $run) ?? $this->unsupportedMessageRefusal(run: $run));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$run->event = $this->providerEvent(run: $run);
+		$unfit = ($this->unfitQuery(event: $run->event) ?? $this->unfitWrite(event: $run->event, origin: $run->request->origin));
+		if ($unfit !== null) {
+			return $this->unfitFault(run: $run, unfit: $unfit);
+		}
+
+		$this->askOwningApp(run: $run);
+		$answer = $this->answer(event: $run->event, run: $run);
+		$this->logAccepted(run: $run, statusCode: $answer['statusCode']);
+
+		return $answer;
+
+	}//end processParsed()
+
+	/**
+	 * Authenticate the request against its source; on success the reply carries the source.
+	 *
+	 * @param ProviderRequestRun $run The request in progress.
+	 *
+	 * @return array|null The 401 fault, or null when authenticated.
+	 */
+	private function authenticationRefusal(ProviderRequestRun $run): ?array {
+		$run->source = $this->authenticatedSource(root: $run->root, sourceId: $run->request->sourceId);
+		if ($run->source === null) {
+			$this->logger->warning('StUF provider request refused for source {id}: not authenticated', ['id' => $run->request->sourceId]);
 			return $this->fault(
 				statusCode: 401,
-				berichtcode: $faultCode,
+				berichtcode: $run->faultCode,
 				code: 'StUF063',
 				omschrijving: 'Authenticatie mislukt',
-				stuurgegevens: $reply
+				stuurgegevens: $run->reply
 			);
 		}
 
-		$reply = $this->replyStuurgegevens(root: $root, source: $source);
-		if ($message === null || in_array($berichttype, (self::MESSAGES[$service] ?? []), true) === false) {
-			$this->logger->warning('StUF provider request {type} not taken on route {service}', ['type' => $berichttype, 'service' => $service]);
+		$run->reply = $this->replyStuurgegevens(root: $run->root, source: $run->source);
+
+		return null;
+
+	}//end authenticationRefusal()
+
+	/**
+	 * Refuse a request without a message, or with a message the route does not take.
+	 *
+	 * @param ProviderRequestRun $run The authenticated request.
+	 *
+	 * @return array|null The 400 fault, or null when the route takes the message.
+	 */
+	private function unsupportedMessageRefusal(ProviderRequestRun $run): ?array {
+		$service = $run->request->service;
+		if ($run->message === null || in_array($run->berichttype, (self::MESSAGES[$service] ?? []), true) === false) {
+			$this->logger->warning('StUF provider request {type} not taken on route {service}', ['type' => $run->berichttype, 'service' => $service]);
 			return $this->fault(
 				statusCode: 400,
-				berichtcode: $faultCode,
+				berichtcode: $run->faultCode,
 				code: 'StUF001',
 				omschrijving: 'Berichttype wordt niet ondersteund',
-				stuurgegevens: $reply
+				stuurgegevens: $run->reply
 			);
 		}
 
-		$event = $this->reader->event(message: $message, sourceId: (string)$source['id'], referentienummer: (string)($reply['crossRefnummer'] ?? ''));
-		$event->restrictToApp(appId: (string)($source['configuration']['owningApp'] ?? ''));
-		$unfit = ($this->unfitQuery(event: $event) ?? $this->unfitWrite(event: $event, origin: $origin));
-		if ($unfit !== null) {
-			$this->logger->warning('StUF provider {type} refused before it was asked: {reason}', ['type' => $berichttype, 'reason' => $unfit['reason']]);
-			return $this->fault(
-				statusCode: $unfit['statusCode'],
-				berichtcode: $faultCode,
-				code: 'StUF058',
-				omschrijving: $unfit['reason'],
-				stuurgegevens: $reply
-			);
-		}
+		return null;
 
+	}//end unsupportedMessageRefusal()
+
+	/**
+	 * The event that carries the question, restricted to the source's owning app.
+	 *
+	 * @param ProviderRequestRun $run The authenticated request with a supported message.
+	 *
+	 * @return StufProviderQueryEvent The event.
+	 */
+	private function providerEvent(ProviderRequestRun $run): StufProviderQueryEvent {
+		$event = $this->reader->event(
+			message: $run->message,
+			sourceId: (string)$run->source['id'],
+			referentienummer: (string)($run->reply['crossRefnummer'] ?? '')
+		);
+		$event->restrictToApp(appId: (string)($run->source['configuration']['owningApp'] ?? ''));
+
+		return $event;
+
+	}//end providerEvent()
+
+	/**
+	 * The fault for a question refused before the owning app is asked.
+	 *
+	 * @param ProviderRequestRun                     $run   The request.
+	 * @param array{statusCode: int, reason: string} $unfit Why it is refused.
+	 *
+	 * @return array The fault (ProviderAnswer).
+	 */
+	private function unfitFault(ProviderRequestRun $run, array $unfit): array {
+		$this->logger->warning('StUF provider {type} refused before it was asked: {reason}', ['type' => $run->berichttype, 'reason' => $unfit['reason']]);
+
+		return $this->fault(
+			statusCode: $unfit['statusCode'],
+			berichtcode: $run->faultCode,
+			code: 'StUF058',
+			omschrijving: $unfit['reason'],
+			stuurgegevens: $run->reply
+		);
+
+	}//end unfitFault()
+
+	/**
+	 * Dispatch the event to the owning app; a failing listener is logged and leaves it unanswered.
+	 *
+	 * @param ProviderRequestRun $run The request with its event.
+	 *
+	 * @return void
+	 */
+	private function askOwningApp(ProviderRequestRun $run): void {
 		try {
-			$this->dispatcher->dispatchTyped($event);
+			$this->dispatcher->dispatchTyped($run->event);
 		} catch (Throwable $exception) {
-			$this->logger->error('StUF provider listener failed for {type}: {error}', ['type' => $berichttype, 'error' => $exception->getMessage()]);
+			$this->logger->error('StUF provider listener failed for {type}: {error}', ['type' => $run->berichttype, 'error' => $exception->getMessage()]);
 		}
 
-		$answer = $this->answer(event: $event, faultCode: $faultCode, reply: $reply);
+	}//end askOwningApp()
 
-		// The audit record of an authenticated request: which source, what kind of message, and how it ended.
-		// No criterion, burgerservicenummer or answer is logged. It is logged at warning level on purpose:
-		// Nextcloud drops info lines at its default log level (2), and an audit record must survive it.
-		// The fixed `[StUF audit]` prefix is what an operator filters on.
+	/**
+	 * Write the audit record of an authenticated request.
+	 *
+	 * Which source, what kind of message, and how it ended. No criterion,
+	 * burgerservicenummer or answer is logged. It is logged at warning level on
+	 * purpose: Nextcloud drops info lines at its default log level (2), and an
+	 * audit record must survive it. The fixed `[StUF audit]` prefix is what an
+	 * operator filters on.
+	 *
+	 * @param ProviderRequestRun $run        The answered request.
+	 * @param int                $statusCode The answer's HTTP status.
+	 *
+	 * @return void
+	 */
+	private function logAccepted(ProviderRequestRun $run, int $statusCode): void {
 		$this->logger->warning(
 			'[StUF audit] provider request accepted for source {id}: {type} {ref} via {origin}, answered by {app} with HTTP {status}',
 			[
-				'id' => (string)$source['id'],
-				'type' => $berichttype,
-				'ref' => $event->getReferentienummer(),
-				'origin' => $origin,
-				'app' => (string)$event->getAnsweredBy(),
-				'status' => $answer['statusCode'],
+				'id' => (string)$run->source['id'],
+				'type' => $run->berichttype,
+				'ref' => $run->event->getReferentienummer(),
+				'origin' => $run->request->origin,
+				'app' => (string)$run->event->getAnsweredBy(),
+				'status' => $statusCode,
 			]
 		);
 
-		return $answer;
-	}//end process()
+	}//end logAccepted()
 
 	/**
 	 * Render the owning app's answer, its refusal, or the silence.
 	 *
-	 * @param StufProviderQueryEvent $event     The answered (or not) event.
-	 * @param string                 $faultCode Fo03 for a kennisgeving, Fo02 for a vraag.
-	 * @param array                  $reply     The reply stuurgegevens.
+	 * @param StufProviderQueryEvent $event The answered (or not) event.
+	 * @param ProviderRequestRun     $run   The request: its fault code (Fo03 for a kennisgeving, Fo02 for a vraag) and reply.
 	 *
 	 * @return array The answer (ProviderAnswer).
 	 *
 	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-an-unanswered-query-is-a-fault-never-an-empty-answer
 	 * @spec openspec/changes/stuf-provider-writes/specs/stuf-provider-receiver/spec.md#requirement-a-refused-write-is-a-stuf-fault-with-a-refusing-status
 	 */
-	private function answer(StufProviderQueryEvent $event, string $faultCode, array $reply): array {
+	private function answer(StufProviderQueryEvent $event, ProviderRequestRun $run): array {
 		if ($event->isAnswered() === false) {
 			$this->logger->warning('StUF provider request {ref} was not answered by any app', ['ref' => $event->getReferentienummer()]);
 			return $this->fault(
 				statusCode: 500,
-				berichtcode: $faultCode,
+				berichtcode: $run->faultCode,
 				code: 'StUF055',
 				omschrijving: 'Het bericht is niet beantwoord',
-				stuurgegevens: $reply
+				stuurgegevens: $run->reply
 			);
 		}
 
-		$refusal = $event->getRefusal();
-		if ($refusal !== null) {
-			$status = (self::REFUSAL_STATUS[$event->getRefusalKind()] ?? 400);
-			$this->logger->warning(
-				'StUF provider request {ref} refused by {app} ({kind}): {reason}',
-				[
-					'ref' => $event->getReferentienummer(),
-					'app' => (string)$event->getAnsweredBy(),
-					'kind' => $event->getRefusalKind(),
-					'reason' => self::outwardReason(reason: $refusal),
-				]
-			);
-			return $this->fault(
-				statusCode: $status,
-				berichtcode: $faultCode,
-				code: 'StUF058',
-				omschrijving: self::outwardReason(reason: $refusal),
-				stuurgegevens: $reply
-			);
+		if ($event->getRefusal() !== null) {
+			return $this->refusalFault(event: $event, run: $run);
 		}
 
+		return $this->renderedAnswer(event: $event, reply: $run->reply);
+
+	}//end answer()
+
+	/**
+	 * The fault for a question the owning app refused, with the status its refusal kind maps to.
+	 *
+	 * @param StufProviderQueryEvent $event The refused event.
+	 * @param ProviderRequestRun     $run   The request.
+	 *
+	 * @return array The fault (ProviderAnswer).
+	 */
+	private function refusalFault(StufProviderQueryEvent $event, ProviderRequestRun $run): array {
+		$refusal = (string)$event->getRefusal();
+		$status = (self::REFUSAL_STATUS[$event->getRefusalKind()] ?? 400);
+		$this->logger->warning(
+			'StUF provider request {ref} refused by {app} ({kind}): {reason}',
+			[
+				'ref' => $event->getReferentienummer(),
+				'app' => (string)$event->getAnsweredBy(),
+				'kind' => $event->getRefusalKind(),
+				'reason' => self::outwardReason(reason: $refusal),
+			]
+		);
+
+		return $this->fault(
+			statusCode: $status,
+			berichtcode: $run->faultCode,
+			code: 'StUF058',
+			omschrijving: self::outwardReason(reason: $refusal),
+			stuurgegevens: $run->reply
+		);
+
+	}//end refusalFault()
+
+	/**
+	 * Render an answered question: a zakLa01, an npsLa01, or the Bv03 that answers every kennisgeving.
+	 *
+	 * @param StufProviderQueryEvent $event The answered event.
+	 * @param array                  $reply The reply stuurgegevens.
+	 *
+	 * @return array The answer (ProviderAnswer).
+	 */
+	private function renderedAnswer(StufProviderQueryEvent $event, array $reply): array {
 		$payload = $event->getAnswer();
 		if ($event instanceof StufCaseQueryEvent) {
-			$cases = (array)($payload['cases'] ?? []);
-			if (count($cases) > self::MAX_CASES) {
-				$this->logger->warning(
-					'StUF provider answer {ref} holds {count} cases, rendering the first {max}',
-					['ref' => $event->getReferentienummer(), 'count' => count($cases), 'max' => self::MAX_CASES]
-				);
-				$cases = array_slice($cases, 0, self::MAX_CASES);
-			}
-
+			$cases = $this->cappedCases(event: $event, payload: $payload);
 			return ['statusCode' => 200, 'body' => $this->xml->buildZakLa01(cases: $cases, stuurgegevens: $reply)];
 		}
 
@@ -336,7 +464,30 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 
 		// StUF-ZDS 1.2 answers every kennisgeving with a Bv03 (or a Fo03).
 		return ['statusCode' => 200, 'body' => $this->xml->buildBv03(caseIdentification: '', stuurgegevens: $reply)];
-	}//end answer()
+
+	}//end renderedAnswer()
+
+	/**
+	 * The answered cases, capped at MAX_CASES with a warning when there are more.
+	 *
+	 * @param StufProviderQueryEvent $event   The answered case query.
+	 * @param array                  $payload The answer.
+	 *
+	 * @return array The cases to render.
+	 */
+	private function cappedCases(StufProviderQueryEvent $event, array $payload): array {
+		$cases = (array)($payload['cases'] ?? []);
+		if (count($cases) > self::MAX_CASES) {
+			$this->logger->warning(
+				'StUF provider answer {ref} holds {count} cases, rendering the first {max}',
+				['ref' => $event->getReferentienummer(), 'count' => count($cases), 'max' => self::MAX_CASES]
+			);
+			$cases = array_slice($cases, 0, self::MAX_CASES);
+		}
+
+		return $cases;
+
+	}//end cappedCases()
 
 	/**
 	 * Why a query is not put to the owning app at all, or null when it is.
@@ -387,7 +538,17 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 			return ['statusCode' => 403, 'reason' => 'Schrijven kan alleen op het StUF-adres van integriq'];
 		}
 
-		$operation = $event->getOperation();
+		return $this->unfitOperation(operation: $event->getOperation());
+	}//end unfitWrite()
+
+	/**
+	 * Why a write operation is refused before the owning app is asked, or null.
+	 *
+	 * @param array $operation The generic operation the write maps to.
+	 *
+	 * @return array{statusCode: int, reason: string}|null The refusal.
+	 */
+	private function unfitOperation(array $operation): ?array {
 		if (($operation['action'] ?? StufProviderOperationMapper::ACTION_UNSUPPORTED) === StufProviderOperationMapper::ACTION_UNSUPPORTED) {
 			return ['statusCode' => 400, 'reason' => 'Mutatiesoort wordt niet ondersteund'];
 		}
@@ -403,7 +564,8 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 		}
 
 		return null;
-	}//end unfitWrite()
+
+	}//end unfitOperation()
 
 	/**
 	 * The source, when it accepts provider requests and the envelope's UsernameToken matches it.
@@ -419,18 +581,13 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 	 * @spec openspec/specs/stuf-provider-receiver/spec.md#requirement-provider-requests-are-authenticated-against-the-source
 	 */
 	private function authenticatedSource(SimpleXMLElement $root, string $sourceId): ?array {
-		try {
-			$source = $this->log->source(sourceId: $sourceId);
-			$token  = $this->credentials->usernameToken(sourceConfiguration: (array)($source['configuration'] ?? []));
-		} catch (StufZknProviderException $exception) {
+		$credentials = $this->sourceCredentials(sourceId: $sourceId);
+		if ($credentials === null) {
 			return null;
 		}
 
-		if (($source['configuration']['acceptsProviderRequests'] ?? false) !== true) {
-			return null;
-		}
-
-		if ($token === null || $token['username'] === '' || $token['password'] === '') {
+		[$source, $token] = $credentials;
+		if ($this->acceptsTokenRequests(source: $source, token: $token) === false) {
 			return null;
 		}
 
@@ -441,6 +598,42 @@ class StufProviderReceiver implements StufProviderReceiverInterface {
 
 		return $source;
 	}//end authenticatedSource()
+
+	/**
+	 * The source and its decrypted UsernameToken.
+	 *
+	 * @param string $sourceId The source id.
+	 *
+	 * @return array{0: array, 1: array|null}|null The source and token, or null when either cannot be read.
+	 */
+	private function sourceCredentials(string $sourceId): ?array {
+		try {
+			$source = $this->log->source(sourceId: $sourceId);
+			$token  = $this->credentials->usernameToken(sourceConfiguration: (array)($source['configuration'] ?? []));
+		} catch (StufZknProviderException $exception) {
+			return null;
+		}
+
+		return [$source, $token];
+
+	}//end sourceCredentials()
+
+	/**
+	 * Whether the source takes provider requests and holds a complete UsernameToken.
+	 *
+	 * @param array      $source The source.
+	 * @param array|null $token  Its UsernameToken.
+	 *
+	 * @return bool True when both hold.
+	 */
+	private function acceptsTokenRequests(array $source, ?array $token): bool {
+		if (($source['configuration']['acceptsProviderRequests'] ?? false) !== true) {
+			return false;
+		}
+
+		return ($token !== null && $token['username'] !== '' && $token['password'] !== '');
+
+	}//end acceptsTokenRequests()
 
 	/**
 	 * The reply's stuurgegevens: this side is the zender, the request's zender the ontvanger.

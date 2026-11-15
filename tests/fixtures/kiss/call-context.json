@@ -1,0 +1,162 @@
+{
+    "unusable": {
+        "context": {
+            "caller": null,
+            "openCases": []
+        },
+        "calls": [
+            {
+                "isUsable": "anonymous"
+            }
+        ]
+    },
+    "directory down": {
+        "context": {
+            "caller": null,
+            "openCases": []
+        },
+        "calls": [
+            {
+                "isUsable": "+31600000001"
+            },
+            {
+                "candidatesFor": [
+                    "+31600000001",
+                    {
+                        "kissUrl": "k"
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[CallContextService] caller directory unavailable: directory down",
+                    []
+                ]
+            }
+        ]
+    },
+    "no candidates": {
+        "context": {
+            "caller": null,
+            "openCases": []
+        },
+        "calls": [
+            {
+                "isUsable": "+31600000002"
+            },
+            {
+                "candidatesFor": [
+                    "+31600000002",
+                    {
+                        "kissUrl": "k"
+                    }
+                ]
+            },
+            {
+                "match": [
+                    "+31600000002",
+                    []
+                ]
+            }
+        ]
+    },
+    "cases down": {
+        "context": {
+            "caller": {
+                "name": "Jan",
+                "number": "+31600000003"
+            },
+            "openCases": []
+        },
+        "calls": [
+            {
+                "isUsable": "+31600000003"
+            },
+            {
+                "candidatesFor": [
+                    "+31600000003",
+                    {
+                        "kissUrl": "k"
+                    }
+                ]
+            },
+            {
+                "match": [
+                    "+31600000003",
+                    [
+                        {
+                            "name": "Jan",
+                            "number": "+31600000003"
+                        }
+                    ]
+                ]
+            },
+            {
+                "openCasesFor": [
+                    {
+                        "name": "Jan",
+                        "number": "+31600000003"
+                    },
+                    {
+                        "kissUrl": "k"
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[CallContextService] open cases unavailable: cases down",
+                    []
+                ]
+            }
+        ]
+    },
+    "known": {
+        "context": {
+            "caller": {
+                "name": "Jan",
+                "number": "+31612345678"
+            },
+            "openCases": [
+                "Z-1",
+                "Z-2"
+            ]
+        },
+        "calls": [
+            {
+                "isUsable": "+31612345678"
+            },
+            {
+                "candidatesFor": [
+                    "+31612345678",
+                    {
+                        "kissUrl": "k"
+                    }
+                ]
+            },
+            {
+                "match": [
+                    "+31612345678",
+                    [
+                        {
+                            "name": "Jan",
+                            "number": "+31612345678"
+                        }
+                    ]
+                ]
+            },
+            {
+                "openCasesFor": [
+                    {
+                        "name": "Jan",
+                        "number": "+31612345678"
+                    },
+                    {
+                        "kissUrl": "k"
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -76,36 +76,82 @@ class RosterDeliveryService implements RosterDeliveryServiceInterface {
 			throw new RosterDeliveryException(errorCode: 'unknown-source', message: "'{$systemId}' is not a rostering source.");
 		}
 
+		$sessions = $this->fetchSessions(systemId: $systemId, options: $options);
+		$delivery = new RosterDelivery(
+			systemId: $systemId,
+			correlationId: $correlationId,
+			fetched: count($sessions),
+			planninq: $this->target->deliver(systemId: $systemId, sessions: $sessions, correlationId: $correlationId)
+		);
+		$this->logDelivery(delivery: $delivery);
+
+		return $this->result(delivery: $delivery);
+	}//end deliver()
+
+	/**
+	 * Fetch and map the source's lessons.
+	 *
+	 * @param string              $systemId The rostering Source row id.
+	 * @param array<string,mixed> $options  The delivery's maps.
+	 *
+	 * @return array<int,array<string,mixed>> The sessions.
+	 *
+	 * @throws RosterDeliveryException `fetch-failed` when the source cannot be read.
+	 *
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 */
+	private function fetchSessions(string $systemId, array $options): array {
 		try {
-			$sessions = $this->adapter->importLessons(systemId: $systemId, options: $options);
+			return $this->adapter->importLessons(systemId: $systemId, options: $options);
 		} catch (Throwable $e) {
 			throw new RosterDeliveryException(errorCode: 'fetch-failed', message: 'The rostering system could not be read: ' . $e->getMessage(), previous: $e);
 		}
+	}//end fetchSessions()
 
-		$planninq = $this->target->deliver(systemId: $systemId, sessions: $sessions, correlationId: $correlationId);
-
+	/**
+	 * Log the delivered counts.
+	 *
+	 * @param RosterDelivery $delivery The finished delivery.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 */
+	private function logDelivery(RosterDelivery $delivery): void {
+		$planninq = $delivery->planninq;
 		$this->logger->info(
 			'roster-delivery.delivered',
 			[
-				'source' => $systemId,
-				'correlation' => $correlationId,
-				'fetched' => count($sessions),
+				'source' => $delivery->systemId,
+				'correlation' => $delivery->correlationId,
+				'fetched' => $delivery->fetched,
 				'created' => ($planninq['created'] ?? null),
 				'updated' => ($planninq['updated'] ?? null),
 				'unchanged' => ($planninq['unchanged'] ?? null),
 				'rejected' => count((array)($planninq['rejected'] ?? [])),
 			]
 		);
+	}//end logDelivery()
 
+	/**
+	 * The contract's success result.
+	 *
+	 * @param RosterDelivery $delivery The finished delivery.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/rostering-planninq-target/spec.md#requirement-learniq-asks-for-a-delivery-through-integriqs-typed-event-req-005
+	 */
+	private function result(RosterDelivery $delivery): array {
 		return [
 			'contractVersion' => self::CONTRACT_VERSION,
 			'status' => 'delivered',
-			'systemId' => $systemId,
+			'systemId' => $delivery->systemId,
 			'target' => RosterTargetConfiguration::TARGET,
 			'flavour' => $this->adapter->flavour(),
 			'active' => $this->adapter->isActive(),
-			'fetched' => count($sessions),
-			'planninq' => $planninq,
+			'fetched' => $delivery->fetched,
+			'planninq' => $delivery->planninq,
 		];
-	}//end deliver()
+	}//end result()
 }//end class

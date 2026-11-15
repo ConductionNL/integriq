@@ -141,6 +141,7 @@ class ConfigurationServiceUnitsGoldenTest extends TestCase {
 				'sync-uuid-1' => ['slug' => 'sync-one', 'sourceType' => 'register/schema', 'sourceId' => '7/2', 'targetType' => 'api', 'targetId' => 'src-uuid-1'],
 				'sync-uuid-3' => ['slug' => 'sync-int-source', 'sourceType' => 'register/schema', 'sourceId' => '7/3', 'targetType' => 'api', 'targetId' => 77],
 				'5' => ['slug' => 'sync-five', 'sourceType' => 'api', 'sourceId' => 'src-uuid-9', 'targetType' => 'register/schema', 'targetId' => '7'],
+				'sync-uuid-70' => ['slug' => 'sync-seventy', 'sourceType' => 'register/schema', 'sourceId' => '70/1', 'targetType' => 'register/schema', 'targetId' => '77'],
 			],
 			'mapping' => ['map-uuid-1' => ['slug' => 'map-one']],
 			'rule' => ['rule-uuid-1' => ['slug' => 'rule-one']],
@@ -302,6 +303,7 @@ class ConfigurationServiceUnitsGoldenTest extends TestCase {
 			'nothing' => [false, false, true, true],
 			'sync-targets-only' => [false, true, false, true],
 			'sync-sources-only' => [false, true, true, false],
+			'sync-search-off' => [false, true, false, false],
 		];
 		foreach ($flagSets as $name => $flags) {
 			$actual['export-register:' . $name] = $this->registerExport(flags: $flags);

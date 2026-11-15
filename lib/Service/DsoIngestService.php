@@ -3,6 +3,9 @@
 /**
  * Integriq DSO Ingest Service.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Completes the dso-connector-adapter: persists an already-verified,
  * already-parsed DSO Verzoek ({@see DSOParserService::parseRequest()}) as a
  * `dso_verzoek` OR record (`received` -> `mapped`|`failed`). Integriq makes
@@ -26,9 +29,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @link https://www.Integriq.nl
  *
@@ -562,6 +562,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 	 * @spec openspec/changes/dso-intake-through-an-integriq-connection/design.md#contract-gaps
 	 */
 	public function resolveActiveSourceAsEngine(): ObjectEntity {
+		// Unscoped: the DSO ingest engine resolves its active source as the system.
 		$matches = $this->objectService->findAll(config: $this->activeSourceQuery(), _rbac: false, _multitenancy: false);
 		$results = ($matches['results'] ?? $matches);
 
@@ -579,6 +580,7 @@ class DsoIngestService implements PortalRequestIntakeInterface {
 			register: self::REGISTER,
 			schema: self::SCHEMA_SOURCE,
 			_rbac: false,
+			// Unscoped: the DSO ingest engine resolves its active source as the system.
 			_multitenancy: false,
 			_render: false
 		);

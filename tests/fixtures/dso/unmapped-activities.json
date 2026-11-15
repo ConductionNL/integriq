@@ -1,0 +1,35 @@
+{
+    "activities": [
+        {
+            "imowId": "imow-A",
+            "activityId": "",
+            "activityName": "Bouwen",
+            "count": 2,
+            "lastSeen": "2026-03-01"
+        },
+        {
+            "imowId": "",
+            "activityId": "ACT-B",
+            "activityName": "",
+            "count": 1,
+            "lastSeen": "2026-03-01"
+        },
+        {
+            "imowId": "",
+            "activityId": "ACT-C",
+            "activityName": "",
+            "count": 1,
+            "lastSeen": "2026-02-01"
+        },
+        {
+            "imowId": "",
+            "activityId": "ACT-D",
+            "activityName": "",
+            "count": 1,
+            "lastSeen": "2026-02-01"
+        }
+    ],
+    "withoutIdentifier": 1,
+    "scanned": 3,
+    "limit": 500
+}

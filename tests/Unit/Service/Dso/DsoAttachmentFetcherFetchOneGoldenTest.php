@@ -16,12 +16,17 @@
  * @license   EUPL-1.2
  *
  * @spec openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use Error;
 use OCA\Integriq\Service\Dso\DsoAttachmentFetcher;
 use OCA\Integriq\Service\Dso\DsoClient;
@@ -116,8 +121,8 @@ class DsoAttachmentFetcherFetchOneGoldenTest extends TestCase {
 
 		$fileService = $this->createMock(FileService::class);
 		$fileService->method('addFile')->willReturnCallback(
-			function ($objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []) use (&$log, &$adds) {
-				$log['addFile'][] = [$objectEntity->getUuid(), $fileName, stream_get_contents($content), $share, $tags];
+			function (FileTarget $target, FileUpload $upload) use (&$log, &$adds) {
+				$log['addFile'][] = [$target->object->getUuid(), $upload->fileName, stream_get_contents($upload->content), $upload->share, $upload->tags];
 				if (array_shift($adds) === 'fail') {
 					throw new RuntimeException('disk full');
 				}

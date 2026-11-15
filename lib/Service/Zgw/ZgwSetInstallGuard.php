@@ -83,44 +83,81 @@ class ZgwSetInstallGuard {
 		}
 
 		if (ZgwSetCatalogue::isSubscriptionSet(slug: $slug) === true) {
-			// A subscription set writes no records, so it needs no target; it
-			// needs something to subscribe to. An abonnement with no data set
-			// installed is a live remote subscription whose every notification
-			// pulls nothing.
-			if ($bindings === []) {
-				return $this->l10n->t(
-					// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-					'Install a set that carries data (%1$s) first. "%2$s" subscribes those sets to their store\'s notifications, and with none installed every notification would change nothing here.',
-					[implode(', ', array_values(array_unique(ZgwSetCatalogue::KANAAL_SETS))), $slug]
-				);
-			}
-
-			return null;
+			return $this->subscriptionRefusal(slug: $slug, bindings: $bindings);
 		}
 
-		$register = trim((string)($target['register'] ?? ''));
-		$schema = trim((string)($target['schema'] ?? ''));
-
-		if ($register === '' || $schema === '') {
+		$key = $this->targetKey(target: $target);
+		if ($key === null) {
 			// Installing against nothing would create a synchronization with no
 			// target, which runs, reads the store, and writes its objects
 			// nowhere while reporting a successful run.
 			return $this->l10n->t('This set needs a register and a schema to write into. Choose both before installing it.');
 		}
 
-		$key = $this->bindingKey(register: $register, schema: $schema);
-		$holder = ($bindings[$key] ?? null);
+		return $this->bindingRefusal(slug: $slug, holder: ($bindings[$key] ?? null));
+	}//end refuse()
 
-		if ($holder !== null && $holder !== $slug) {
-			return $this->l10n->t(
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
-				'This schema is already bound to "%1$s". Two sets on one schema overwrite each other every time they run, and both report a healthy synchronization while doing it. Bind "%2$s" to a schema of its own, or remove the "%1$s" binding first.',
-				[$holder, $slug]
-			);
+	/**
+	 * The refusal of a subscription set when no set that carries data is installed.
+	 *
+	 * A subscription set writes no records, so it needs no target; it needs
+	 * something to subscribe to. An abonnement with no data set installed is
+	 * a live remote subscription whose every notification pulls nothing.
+	 *
+	 * @param string $slug     The subscription set.
+	 * @param array  $bindings The current bindings.
+	 *
+	 * @return string|null The refusal, or null.
+	 */
+	private function subscriptionRefusal(string $slug, array $bindings): ?string {
+		if ($bindings !== []) {
+			return null;
 		}
 
-		return null;
-	}//end refuse()
+		return $this->l10n->t(
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+			'Install a set that carries data (%1$s) first. "%2$s" subscribes those sets to their store\'s notifications, and with none installed every notification would change nothing here.',
+			[implode(', ', array_values(array_unique(ZgwSetCatalogue::KANAAL_SETS))), $slug]
+		);
+	}//end subscriptionRefusal()
+
+	/**
+	 * The binding key of the target register and schema, or null when either is missing.
+	 *
+	 * @param array{register?: string, schema?: string} $target The target.
+	 *
+	 * @return string|null The key.
+	 */
+	private function targetKey(array $target): ?string {
+		$register = trim((string)($target['register'] ?? ''));
+		$schema = trim((string)($target['schema'] ?? ''));
+
+		if ($register === '' || $schema === '') {
+			return null;
+		}
+
+		return $this->bindingKey(register: $register, schema: $schema);
+	}//end targetKey()
+
+	/**
+	 * The refusal when another set already holds the target schema.
+	 *
+	 * @param string      $slug   The set being installed.
+	 * @param string|null $holder The set bound to the schema, or null.
+	 *
+	 * @return string|null The refusal, or null.
+	 */
+	private function bindingRefusal(string $slug, ?string $holder): ?string {
+		if ($holder === null || $holder === $slug) {
+			return null;
+		}
+
+		return $this->l10n->t(
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- one translatable sentence; splitting it breaks the l10n catalogue match.
+			'This schema is already bound to "%1$s". Two sets on one schema overwrite each other every time they run, and both report a healthy synchronization while doing it. Bind "%2$s" to a schema of its own, or remove the "%1$s" binding first.',
+			[$holder, $slug]
+		);
+	}//end bindingRefusal()
 
 	/**
 	 * Why this set template is not shippable, if it is not.

@@ -79,15 +79,14 @@ class OutboundDocumentTranslator {
 
 		$request = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:genereerDocumentIdentificatie_Di02');
 		$body->appendChild($request);
-		$this->appendStuurgegevens(
-			document: $document,
-			parent: $request,
+		$header = new Stuurgegevens(
 			berichtcode: 'Di02',
-			referenceNumber: $referenceNumber,
+			referentienummer: $referenceNumber,
 			zender: $zender,
 			ontvanger: $ontvanger,
 			tail: ['functie' => 'genereerDocumentidentificatie']
 		);
+		$this->appendStuurgegevens(parent: $request, header: $header);
 
 		return ['referentienummer' => $referenceNumber, 'xml' => $this->render(document: $document)];
 	}//end identificationRequest()
@@ -140,15 +139,14 @@ class OutboundDocumentTranslator {
 
 		$lk01 = $xml->createElementNS(StufZknNamespaces::ZKN, 'zkn:edcLk01');
 		$body->appendChild($lk01);
-		$this->appendStuurgegevens(
-			document: $xml,
-			parent: $lk01,
+		$header = new Stuurgegevens(
 			berichtcode: 'Lk01',
-			referenceNumber: $referenceNumber,
+			referentienummer: $referenceNumber,
 			zender: $delivery->zender,
 			ontvanger: $delivery->ontvanger,
 			tail: ['entiteittype' => 'EDC']
 		);
+		$this->appendStuurgegevens(parent: $lk01, header: $header);
 
 		$parameters = $xml->createElementNS(StufZknNamespaces::ZKN, 'zkn:parameters');
 		$lk01->appendChild($parameters);
@@ -263,30 +261,36 @@ class OutboundDocumentTranslator {
 	/**
 	 * Append `stuurgegevens` (berichtcode, zender, ontvanger, referentienummer, tijdstipBericht, then the tail).
 	 *
-	 * @param DOMDocument          $document        The owning document.
-	 * @param DOMElement           $parent          The message element.
-	 * @param string               $berichtcode     Di02 or Lk01.
-	 * @param string               $referenceNumber The message's referentienummer.
-	 * @param array                $zender          `organisatie` and `applicatie` of this bridge.
-	 * @param array                $ontvanger       `organisatie` and optional `applicatie` of the case system.
-	 * @param array<string,string> $tail            Elements after tijdstipBericht (functie or entiteittype).
+	 * @param DOMElement    $parent The message element.
+	 * @param Stuurgegevens $header What the block carries.
 	 *
 	 * @return void
 	 */
-	private function appendStuurgegevens(
-		DOMDocument $document,
-		DOMElement $parent,
-		string $berichtcode,
-		string $referenceNumber,
-		array $zender,
-		array $ontvanger,
-		array $tail,
-	): void {
+	private function appendStuurgegevens(DOMElement $parent, Stuurgegevens $header): void {
+		$document      = $parent->ownerDocument;
 		$stuurgegevens = $document->createElementNS(StufZknNamespaces::ZKN, 'zkn:stuurgegevens');
 		$parent->appendChild($stuurgegevens);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:berichtcode', value: $berichtcode);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:berichtcode', value: $header->berichtcode);
+		$this->appendSystems(stuurgegevens: $stuurgegevens, header: $header);
 
-		foreach (['zender' => $zender, 'ontvanger' => $ontvanger] as $role => $system) {
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:referentienummer', value: $header->referentienummer);
+		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:tijdstipBericht', value: (new DateTime())->format('YmdHis'));
+		foreach ($header->tail as $name => $value) {
+			$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:' . $name, value: $value);
+		}
+	}//end appendStuurgegevens()
+
+	/**
+	 * Append zender and ontvanger, each with the organisatie and applicatie it names.
+	 *
+	 * @param DOMElement    $stuurgegevens The stuurgegevens element.
+	 * @param Stuurgegevens $header        What the block carries.
+	 *
+	 * @return void
+	 */
+	private function appendSystems(DOMElement $stuurgegevens, Stuurgegevens $header): void {
+		$document = $stuurgegevens->ownerDocument;
+		foreach (['zender' => $header->zender, 'ontvanger' => $header->ontvanger] as $role => $system) {
 			$element = $document->createElementNS(StufZknNamespaces::STUF, 'StUF:' . $role);
 			$stuurgegevens->appendChild($element);
 			foreach (['organisatie', 'applicatie'] as $part) {
@@ -296,13 +300,7 @@ class OutboundDocumentTranslator {
 				}
 			}
 		}
-
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:referentienummer', value: $referenceNumber);
-		$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:tijdstipBericht', value: (new DateTime())->format('YmdHis'));
-		foreach ($tail as $name => $value) {
-			$this->appendText(document: $document, parent: $stuurgegevens, name: 'StUF:' . $name, value: $value);
-		}
-	}//end appendStuurgegevens()
+	}//end appendSystems()
 
 	/**
 	 * Append a zkn field, or an explicitly empty one (`StUF:noValue` + `xsi:nil`) when there is no value.

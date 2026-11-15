@@ -140,57 +140,75 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-directory-connection-synchronises-users-and-groups-req-ds-001
 	 */
 	public function run(ObjectEntity $connection, bool $dryRun = false, bool $confirmRemovals = false): array {
-		$startedAt = microtime(true);
-		$configuration = (array)($connection->getObject()['configuration'] ?? []);
+		$run = new DirectorySyncRun(connection: $connection, startedAt: microtime(true));
+		$run->dryRun = $dryRun;
+		$run->confirmRemovals = $confirmRemovals;
 
 		try {
 			$snapshot = $this->directorySource->read(connection: $connection);
-			$createdGroups = $this->mappingResolver->ensureTargets(configuration: $configuration, dryRun: $dryRun);
+			$createdGroups = $this->mappingResolver->ensureTargets(configuration: $run->configuration(), dryRun: $dryRun);
 		} catch (DirectorySyncRefusalException $refusal) {
-			return $this->finish(
-				connection: $connection,
-				record: $this->refusalRecord(refusal: $refusal, dryRun: $dryRun),
-				startedAt: $startedAt,
-				dryRun: $dryRun
-			);
+			return $this->finish(run: $run, record: $this->refusalRecord(refusal: $refusal, dryRun: $dryRun));
 		}
 
-		$plan = $this->plan(snapshot: $snapshot, configuration: $configuration);
-		$guard = $this->guard(
-			snapshot: $snapshot,
-			plan: $plan,
-			configuration: $configuration,
-			connection: $connection,
-			confirmRemovals: $confirmRemovals
-		);
+		$run->plan = $this->plan(snapshot: $snapshot, configuration: $run->configuration());
+		$guard = $this->guard(run: $run, snapshot: $snapshot);
 
-		$record = $this->baseRecord(snapshot: $snapshot, plan: $plan, dryRun: $dryRun);
+		$record = $this->baseRecord(run: $run, snapshot: $snapshot);
 		$record['groupsCreated'] = $createdGroups;
 		$record['guard'] = $guard;
 
 		if ($guard !== null) {
-			// Stopped BEFORE writing: the counts below describe what the run
-			// would have done, and nothing was changed.
-			$record['status'] = 'guarded';
-			$record['membershipsAdded'] = 0;
-			$record['membershipsRemoved'] = 0;
-
-			return $this->finish(connection: $connection, record: $record, startedAt: $startedAt, dryRun: $dryRun);
+			return $this->finish(run: $run, record: $this->heldBack(record: $record));
 		}
 
-		if ($dryRun === false) {
-			$applied = $this->apply(plan: $plan);
+		return $this->finish(run: $run, record: $this->applyPlan(run: $run, record: $record));
+
+	}//end run()
+
+	/**
+	 * Mark a guarded run: stopped BEFORE writing, so the counts describe what
+	 * the run would have done, and nothing was changed.
+	 *
+	 * @param array<string,mixed> $record The run record.
+	 *
+	 * @return array<string,mixed> The guarded record.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-run-can-be-previewed-and-a-large-removal-is-guarded-req-ds-005
+	 */
+	private function heldBack(array $record): array {
+		$record['status'] = 'guarded';
+		$record['membershipsAdded'] = 0;
+		$record['membershipsRemoved'] = 0;
+
+		return $record;
+
+	}//end heldBack()
+
+	/**
+	 * Apply the plan unless the run is a preview, then report the open work.
+	 *
+	 * @param DirectorySyncRun    $run    The run.
+	 * @param array<string,mixed> $record The run record.
+	 *
+	 * @return array<string,mixed> The successful record.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-every-run-says-what-it-changed-req-ds-006
+	 */
+	private function applyPlan(DirectorySyncRun $run, array $record): array {
+		if ($run->dryRun === false) {
+			$applied = $this->apply(plan: $run->plan);
 			$record['membershipsAdded'] = $applied['added'];
 			$record['membershipsRemoved'] = $applied['removed'];
 			$record['failures'] = array_merge($record['failures'], $applied['failures']);
 		}
 
-		$record['openWork'] = $this->openWork(plan: $plan, configuration: $configuration);
+		$record['openWork'] = $this->openWork(plan: $run->plan, configuration: $run->configuration());
 		$record['status'] = 'success';
 
-		return $this->finish(connection: $connection, record: $record, startedAt: $startedAt, dryRun: $dryRun);
+		return $record;
 
-	}//end run()
+	}//end applyPlan()
 
 	/**
 	 * Work out what a run would change, without changing anything.
@@ -302,117 +320,121 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 	/**
 	 * Whether this run must stop before writing, and why.
 	 *
+	 * @param DirectorySyncRun  $run      The run, with its plan.
 	 * @param DirectorySnapshot $snapshot What the directory answered.
-	 * @param array<string,mixed> $plan The plan.
-	 * @param array<string,mixed> $configuration The connection configuration.
-	 * @param ObjectEntity $connection The directory connection Source.
-	 * @param boolean $confirmRemovals Whether an administrator confirmed a previously guarded run.
 	 *
 	 * @return array<string,mixed>|null The guard, or null when the run may proceed.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-run-can-be-previewed-and-a-large-removal-is-guarded-req-ds-005
 	 */
-	private function guard(
-		DirectorySnapshot $snapshot,
-		array $plan,
-		array $configuration,
-		ObjectEntity $connection,
-		bool $confirmRemovals,
-	): ?array {
-		if (count($plan['removals']) === 0) {
+	private function guard(DirectorySyncRun $run, DirectorySnapshot $snapshot): ?array {
+		if (count($run->plan['removals']) === 0) {
 			return null;
 		}
 
 		// An explicit confirmation is an administrator taking the decision the
 		// guard exists to hand them. It is recorded on the run.
-		if ($confirmRemovals === true) {
+		if ($run->confirmRemovals === true) {
 			return null;
 		}
 
-		$connectionId = (string)$connection->getUuid();
-
 		if ($snapshot->isComplete() === false) {
-			return $this->guarded(
-				connectionId: $connectionId,
-				reason: self::GUARD_FETCH_INCOMPLETE,
-				message: $this->l10n->t('The directory did not answer completely, so nothing was removed. Run it again, or confirm the removals to continue.'),
-				ratio: null,
-				threshold: null,
-				candidateCount: count($plan['removals']),
-				total: (int)$plan['currentTotal']
-			);
+			return $this->incompleteReadGuard(run: $run);
 		}
 
-		$total = (int)$plan['currentTotal'];
+		return $this->ratioGuard(run: $run);
+
+	}//end guard()
+
+	/**
+	 * Guard a run whose directory read did not complete.
+	 *
+	 * @param DirectorySyncRun $run The run, with its plan.
+	 *
+	 * @return array<string,mixed> The guard record.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-run-can-be-previewed-and-a-large-removal-is-guarded-req-ds-005
+	 */
+	private function incompleteReadGuard(DirectorySyncRun $run): array {
+		$message = $this->l10n->t('The directory did not answer completely, so nothing was removed. Run it again, or confirm the removals to continue.');
+
+		return $this->guarded(
+			event: new SynchronizationDeletionGuardedEvent(
+				synchronizationId: (string)$run->connection->getUuid(),
+				reason: self::GUARD_FETCH_INCOMPLETE,
+				ratio: null,
+				threshold: null,
+				candidateCount: count($run->plan['removals']),
+				totalContracts: (int)$run->plan['currentTotal']
+			),
+			message: $message
+		);
+
+	}//end incompleteReadGuard()
+
+	/**
+	 * Guard a complete run whose removals cross the connection's ratio.
+	 *
+	 * @param DirectorySyncRun $run The run, with its plan.
+	 *
+	 * @return array<string,mixed>|null The guard record, or null when the run may proceed.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-run-can-be-previewed-and-a-large-removal-is-guarded-req-ds-005
+	 */
+	private function ratioGuard(DirectorySyncRun $run): ?array {
+		$total = (int)$run->plan['currentTotal'];
 		if ($total < SynchronizationServiceInterface::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD) {
 			// A percentage computed from a handful of memberships is not a
 			// signal, which is the engine's own reasoning for this floor.
 			return null;
 		}
 
-		$threshold = (float)($configuration['deletionRatioThreshold'] ?? SynchronizationServiceInterface::DEFAULT_DELETION_RATIO_THRESHOLD);
-		$ratio = (count($plan['removals']) / $total);
+		$threshold = (float)($run->configuration()['deletionRatioThreshold'] ?? SynchronizationServiceInterface::DEFAULT_DELETION_RATIO_THRESHOLD);
+		$removals = count($run->plan['removals']);
+		$ratio = ($removals / $total);
 
 		if ($ratio <= $threshold) {
 			return null;
 		}
 
-		return $this->guarded(
-			connectionId: $connectionId,
-			reason: self::GUARD_RATIO_EXCEEDED,
-			message: $this->l10n->t(
-				'This run would remove %1$s of %2$s memberships, over the %3$s limit for this connection. Nothing was removed. Confirm the removals to continue.',
-				[(string)count($plan['removals']), (string)$total, $this->formatRatio(ratio: $threshold)]
-			),
-			ratio: $ratio,
-			threshold: $threshold,
-			candidateCount: count($plan['removals']),
-			total: $total
+		$message = $this->l10n->t(
+			'This run would remove %1$s of %2$s memberships, over the %3$s limit for this connection. Nothing was removed. Confirm the removals to continue.',
+			[(string)$removals, (string)$total, $this->formatRatio(ratio: $threshold)]
 		);
 
-	}//end guard()
+		return $this->guarded(
+			event: new SynchronizationDeletionGuardedEvent(
+				synchronizationId: (string)$run->connection->getUuid(),
+				reason: self::GUARD_RATIO_EXCEEDED,
+				ratio: $ratio,
+				threshold: $threshold,
+				candidateCount: $removals,
+				totalContracts: $total
+			),
+			message: $message
+		);
+
+	}//end ratioGuard()
 
 	/**
-	 * Record a guarded run and dispatch the engine's guard event.
+	 * Dispatch the engine's guard event and record the guarded run.
 	 *
-	 * @param string $connectionId The connection uuid.
-	 * @param string $reason The guard reason.
-	 * @param string $message The sentence an administrator reads.
-	 * @param float|null $ratio The computed removal ratio.
-	 * @param float|null $threshold The configured threshold.
-	 * @param integer $candidateCount How many removals were held back.
-	 * @param integer $total How many memberships the managed groups hold today.
+	 * @param SynchronizationDeletionGuardedEvent $event   The guard event.
+	 * @param string                              $message The sentence an administrator reads.
 	 *
 	 * @return array<string,mixed> The guard record.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-a-run-can-be-previewed-and-a-large-removal-is-guarded-req-ds-005
 	 */
-	private function guarded(
-		string $connectionId,
-		string $reason,
-		string $message,
-		?float $ratio,
-		?float $threshold,
-		int $candidateCount,
-		int $total,
-	): array {
-		$this->eventDispatcher->dispatchTyped(
-			new SynchronizationDeletionGuardedEvent(
-				synchronizationId: $connectionId,
-				reason: $reason,
-				ratio: $ratio,
-				threshold: $threshold,
-				candidateCount: $candidateCount,
-				totalContracts: $total
-			)
-		);
+	private function guarded(SynchronizationDeletionGuardedEvent $event, string $message): array {
+		$this->eventDispatcher->dispatchTyped($event);
 
 		return [
-			'reason' => $reason,
+			'reason' => $event->getReason(),
 			'message' => $message,
-			'ratio' => $ratio,
-			'threshold' => $threshold,
-			'heldBack' => $candidateCount,
+			'ratio' => $event->getRatio(),
+			'threshold' => $event->getThreshold(),
+			'heldBack' => $event->getCandidateCount(),
 			'resumable' => true,
 		];
 
@@ -436,15 +458,23 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 		$failures = [];
 
 		foreach ($plan['additions'] as $item) {
-			if ($this->write(item: $item, add: true, failures: $failures) === true) {
+			$failure = $this->write(item: $item, add: true);
+			if ($failure === null) {
 				$added++;
+				continue;
 			}
+
+			$failures[] = $failure;
 		}
 
 		foreach ($plan['removals'] as $item) {
-			if ($this->write(item: $item, add: false, failures: $failures) === true) {
+			$failure = $this->write(item: $item, add: false);
+			if ($failure === null) {
 				$removed++;
+				continue;
 			}
+
+			$failures[] = $failure;
 		}
 
 		return ['added' => $added, 'removed' => $removed, 'failures' => $failures];
@@ -455,52 +485,66 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 	 * Write one membership, capturing its failure rather than raising it.
 	 *
 	 * @param array<string,mixed> $item The membership to write.
-	 * @param boolean $add Whether to add (true) or remove (false).
-	 * @param array<int,array<string,mixed>> $failures The failure list, appended to in place.
+	 * @param boolean             $add  Whether to add (true) or remove (false).
 	 *
-	 * @return boolean True when the membership was written.
+	 * @return array<string,mixed>|null The failure, or null when the membership was written.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-every-run-says-what-it-changed-req-ds-006
 	 */
-	private function write(array $item, bool $add, array &$failures): bool {
+	private function write(array $item, bool $add): ?array {
 		$userId = (string)$item['userId'];
 		$groupId = (string)$item['group'];
 
 		try {
-			$group = $this->groupManager->get($groupId);
-			$user = $this->userManager->get($userId);
-
-			if ($group === null || $user === null) {
-				$failures[] = [
-					'userId' => $userId,
-					'group' => $groupId,
-					'reason' => $this->l10n->t('The Nextcloud account or group named on this membership does not exist.'),
-				];
-
-				return false;
-			}
-
-			if ($add === true) {
-				$group->addUser($user);
-
-				return true;
-			}
-
-			$group->removeUser($user);
-
-			return true;
+			return $this->writeMembership(item: $item, add: $add);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				'[DirectorySyncService] membership write failed for ' . $userId . ' in ' . $groupId . ': ' . $exception->getMessage(),
 				['exception' => $exception]
 			);
 
-			$failures[] = ['userId' => $userId, 'group' => $groupId, 'reason' => $exception->getMessage()];
-
-			return false;
-		}//end try
+			return ['userId' => $userId, 'group' => $groupId, 'reason' => $exception->getMessage()];
+		}
 
 	}//end write()
+
+	/**
+	 * Add or remove one membership; a missing account or group is a failure.
+	 *
+	 * @param array<string,mixed> $item The membership to write.
+	 * @param boolean             $add  Whether to add (true) or remove (false).
+	 *
+	 * @return array<string,mixed>|null The failure, or null when the membership was written.
+	 *
+	 * @throws Throwable When Nextcloud refuses the write.
+	 *
+	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-every-run-says-what-it-changed-req-ds-006
+	 */
+	private function writeMembership(array $item, bool $add): ?array {
+		$userId = (string)$item['userId'];
+		$groupId = (string)$item['group'];
+		$group = $this->groupManager->get($groupId);
+		$user = $this->userManager->get($userId);
+
+		if ($group === null || $user === null) {
+			return [
+				'userId' => $userId,
+				'group' => $groupId,
+				'reason' => $this->l10n->t('The Nextcloud account or group named on this membership does not exist.'),
+			];
+		}
+
+		if ($add === true) {
+			$group->addUser($user);
+
+			return null;
+		}
+
+		$group->removeUser($user);
+
+		return null;
+
+	}//end writeMembership()
 
 	/**
 	 * What the accounts losing their last managed membership still hold.
@@ -537,17 +581,18 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 	/**
 	 * The counts every run record carries.
 	 *
+	 * @param DirectorySyncRun  $run      The run, with its plan.
 	 * @param DirectorySnapshot $snapshot What the directory answered.
-	 * @param array<string,mixed> $plan The plan.
-	 * @param boolean $dryRun Whether this is a preview.
 	 *
 	 * @return array<string,mixed> The record.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-every-run-says-what-it-changed-req-ds-006
 	 */
-	private function baseRecord(DirectorySnapshot $snapshot, array $plan, bool $dryRun): array {
+	private function baseRecord(DirectorySyncRun $run, DirectorySnapshot $snapshot): array {
+		$plan = $run->plan;
+
 		return [
-			'dryRun' => $dryRun,
+			'dryRun' => $run->dryRun,
 			'usersRead' => count($snapshot->getEntries()),
 			'groupsRead' => count($snapshot->getDirectoryGroups()),
 			'managedGroups' => $plan['managedGroups'],
@@ -597,16 +642,15 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 	/**
 	 * Write the run record and answer it.
 	 *
-	 * @param ObjectEntity $connection The directory connection Source.
+	 * @param DirectorySyncRun    $run    The run.
 	 * @param array<string,mixed> $record The record.
-	 * @param float $startedAt The run start, from microtime().
-	 * @param boolean $dryRun Whether this is a preview.
 	 *
 	 * @return array<string,mixed> The record, with its run id.
 	 *
 	 * @spec openspec/changes/directory-and-group-sync/specs/directory-sync/spec.md#requirement-every-run-says-what-it-changed-req-ds-006
 	 */
-	private function finish(ObjectEntity $connection, array $record, float $startedAt, bool $dryRun): array {
+	private function finish(DirectorySyncRun $run, array $record): array {
+		$connection = $run->connection;
 		$record['connection'] = (string)$connection->getUuid();
 		$record['connectionName'] = (string)($connection->getObject()['name'] ?? '');
 		$record['kind'] = 'directory';
@@ -621,8 +665,8 @@ class DirectorySyncService implements DirectorySyncServiceInterface {
 				'message' => $message,
 				'synchronizationId' => $record['connection'],
 				'result' => $record,
-				'test' => $dryRun,
-				'executionTime' => (int)round(((microtime(true) - $startedAt) * 1000)),
+				'test' => $run->dryRun,
+				'executionTime' => (int)round(((microtime(true) - $run->startedAt) * 1000)),
 			]
 		);
 
