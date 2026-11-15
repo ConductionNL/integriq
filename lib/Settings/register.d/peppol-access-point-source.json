@@ -1,0 +1,30 @@
+{
+  "$comment": "ADR-037 register fragment (platform-bookkeeping-catalogue-items D1). A dormant bookkeeping source template the catalogue lists under its bookkeeping category (CatalogRegistryService::SLUG_CATEGORY_OVERRIDES). No key material: the credential is a broker reference the administrator creates when instantiating it; the live binding fails closed without it. The sandbox record of the same connector in integriq_seed_data.json is for demos only.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "source",
+          "slug": "peppol-access-point"
+        },
+        "name": "Peppol access point",
+        "description": "Send and receive e-invoices over Peppol through your access point provider's REST API: participant lookup and document transmission. Set configuration.baseUrl to your access point's API address and create the credential named below in the credential broker, then enable.",
+        "type": "peppol",
+        "location": "",
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0",
+        "configuration": {
+          "provider": "rest",
+          "baseUrl": "",
+          "authentication": {
+            "credentialRef": {
+              "credentialName": "peppol-access-point-api-key"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

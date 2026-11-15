@@ -18,6 +18,9 @@
  *
  * @spec exclude One-off openconnector->integriq app-id rename plumbing; the
  *       step rewrites a stored class-name string and adds no domain behaviour.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -277,4 +280,38 @@ class MigrateStoredJobClassesTest extends TestCase {
 
 		$this->makeStep($orObjectService)->run($output);
 	}//end testEnumerationFailureIsWarnedNotThrown()
+
+	/**
+	 * A page whose `results` is not a list ends the pass instead of being
+	 * walked: a scalar page holds no objects, and it is not a failure either.
+	 *
+	 * @return void
+	 */
+	public function testAPageWhoseResultsAreNotAListHoldsNoItems(): void {
+		$orObjectService = ObjectServiceMockBuilder::make($this);
+		$orObjectService->method('findAll')->willReturn(['results' => 'not-a-list', 'total' => 1]);
+		$orObjectService->expects($this->never())->method('saveObject');
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->never())->method('warning');
+
+		$this->makeStep($orObjectService)->run($output);
+	}//end testAPageWhoseResultsAreNotAListHoldsNoItems()
+
+	/**
+	 * An entry that is not an ObjectEntity is left alone rather than counted
+	 * or written: findAll() answers whatever the store holds.
+	 *
+	 * @return void
+	 */
+	public function testANonEntityEntryIsLeftAlone(): void {
+		$orObjectService = ObjectServiceMockBuilder::make($this);
+		$orObjectService->method('findAll')->willReturn(['results' => ['a string'], 'total' => 1]);
+		$orObjectService->expects($this->never())->method('saveObject');
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->never())->method('warning');
+
+		$this->makeStep($orObjectService)->run($output);
+	}//end testANonEntityEntryIsLeftAlone()
 }//end class

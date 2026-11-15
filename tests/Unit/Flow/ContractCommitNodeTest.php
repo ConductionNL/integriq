@@ -15,6 +15,9 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,6 +29,7 @@ use OCA\Integriq\Flow\FlowNodeException;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -171,7 +175,7 @@ class ContractCommitNodeTest extends TestCase {
 	public function testEmptyInputCommitsNothing(): void {
 		$this->contractService->expects($this->never())->method('persistBulk');
 
-		$this->assertSame([], $this->node->execute([], ['synchronization' => 'demo-sync'], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall([], ['synchronization' => 'demo-sync'], $this->context())));
 
 	}//end testEmptyInputCommitsNothing()
 
@@ -190,7 +194,7 @@ class ContractCommitNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/bulk contract upsert/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[
 				[
 					'json' => [
@@ -201,7 +205,7 @@ class ContractCommitNodeTest extends TestCase {
 			],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 	}//end testFailedBulkUpsertRaises()
 
@@ -225,7 +229,7 @@ class ContractCommitNodeTest extends TestCase {
 				}
 			);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				[
 					'json' => [
@@ -245,7 +249,7 @@ class ContractCommitNodeTest extends TestCase {
 				'targetIdPosition' => 'written.id',
 			],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $batches);
 		$this->assertSame('obj-9', $batches[0][0]['targetId']);
@@ -277,7 +281,7 @@ class ContractCommitNodeTest extends TestCase {
 				}
 			);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				[
 					'json' => [
@@ -307,7 +311,7 @@ class ContractCommitNodeTest extends TestCase {
 			],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $batches);
 		$this->assertCount(2, $batches[0]);
@@ -348,14 +352,14 @@ class ContractCommitNodeTest extends TestCase {
 
 		$this->contractService->expects($this->never())->method('persistBulk');
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				['json' => ['uuid' => 'obj-1', 'contract' => ['outcome' => 'skip']]],
 				['json' => ['uuid' => 'obj-2', 'contract' => ['outcome' => 'invalid']]],
 			],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertArrayNotHasKey('committed', $out[0]['json']['contract']);
@@ -376,11 +380,11 @@ class ContractCommitNodeTest extends TestCase {
 		$this->expectException(FlowNodeException::class);
 		$this->expectExceptionMessageMatches('/duplicate/');
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[['json' => ['uuid' => 'obj-1', 'contract' => ['outcome' => 'update', 'originId' => 'o-1']]]],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 	}//end testUpdateWithoutContractUuidRaisesUnderStop()
 
@@ -403,7 +407,7 @@ class ContractCommitNodeTest extends TestCase {
 				}
 			);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			[
 				['json' => ['uuid' => 'obj-1', 'contract' => ['outcome' => 'update', 'originId' => 'o-1']]],
 				[
@@ -415,7 +419,7 @@ class ContractCommitNodeTest extends TestCase {
 			],
 			['synchronization' => 'demo-sync', 'onError' => 'continue'],
 			$this->context()
-		);
+		));
 
 		$this->assertCount(1, $batches);
 		$this->assertCount(1, $batches[0]);
@@ -472,7 +476,7 @@ class ContractCommitNodeTest extends TestCase {
 				}
 			);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[
 				[
 					'json' => [
@@ -487,7 +491,7 @@ class ContractCommitNodeTest extends TestCase {
 				'targetHashPosition' => 'target',
 			],
 			$this->context()
-		);
+		));
 
 		$this->assertSame(md5(serialize($mapped)), $batches[0][0]['targetHash']);
 		$this->assertNotSame(md5(serialize($sorted)), $batches[0][0]['targetHash']);
@@ -522,7 +526,7 @@ class ContractCommitNodeTest extends TestCase {
 				}
 			);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[
 				[
 					'json' => [
@@ -538,7 +542,7 @@ class ContractCommitNodeTest extends TestCase {
 				'targetHashPosition' => 'payload.mapped',
 			],
 			$this->context()
-		);
+		));
 
 		$this->assertSame(md5(serialize($mapped)), $batches[0][0]['targetHash']);
 		$this->assertNotSame(md5(serialize($written)), $batches[0][0]['targetHash']);
@@ -565,7 +569,7 @@ class ContractCommitNodeTest extends TestCase {
 				}
 			);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[
 				[
 					'json' => [
@@ -577,7 +581,7 @@ class ContractCommitNodeTest extends TestCase {
 			],
 			['synchronization' => 'demo-sync'],
 			$this->context()
-		);
+		));
 
 		$this->assertArrayNotHasKey('targetHash', $batches[0][0]);
 
@@ -606,7 +610,7 @@ class ContractCommitNodeTest extends TestCase {
 				}
 			);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			[
 				[
 					'json' => [
@@ -624,7 +628,7 @@ class ContractCommitNodeTest extends TestCase {
 			],
 			['synchronization' => 'demo-sync', 'targetHashPosition' => 'target'],
 			$this->context()
-		);
+		));
 
 		$this->assertArrayNotHasKey('targetHash', $batches[0][0]);
 		$this->assertArrayNotHasKey('targetHash', $batches[0][1]);

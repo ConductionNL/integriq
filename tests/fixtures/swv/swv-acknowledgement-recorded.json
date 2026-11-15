@@ -1,0 +1,6 @@
+{
+  "$comment": "A receiver's acknowledgement of a hand-off, in the shape SwvHandoffClient returns. Not captured from Kindkans or LDOS: no live credentials exist.",
+  "referenceId": "KK-2026-000731",
+  "acceptedStatus": "received",
+  "receivedAt": "2026-11-13T10:15:00+01:00"
+}

@@ -9,6 +9,9 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-an-administrator-can-give-a-tool-the-platform-details-it-needs-req-ltil-004
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -255,7 +258,7 @@ class LtiPlatformDetailsServiceTest extends TestCase {
 			static function (string $routeName, array $arguments = []): string {
 				$routes = require __DIR__ . '/../../../../appinfo/routes.php';
 				foreach ($routes['routes'] as $route) {
-					if ('integriq.' . str_replace('#', '.', $route['name']) === $routeName) {
+					if ('integriq.' . str_replace('#', '.', $route['name']) . ($route['postfix'] ?? '') === $routeName) {
 						$url = $route['url'];
 						foreach ($arguments as $key => $value) {
 							$url = str_replace('{' . $key . '}', (string)$value, $url);

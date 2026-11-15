@@ -18,6 +18,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,7 +29,6 @@ namespace OCA\Integriq\Service;
 
 use DateTime;
 use Jose\Component\Core\AlgorithmManager;
-use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
@@ -366,25 +368,9 @@ class EudiIssuerKeyService implements EudiIssuerKeyServiceInterface {
 	 * @throws RuntimeException When a secure temp file cannot be allocated.
 	 */
 	private function derivePublicJwk(string $publicKeyPem, string $kid): array {
-		$filename = tempnam(sys_get_temp_dir(), 'oc-eudi-key-');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(request: new PemKeyFileRequest(prefix: 'oc-eudi-key-', pem: $publicKeyPem, kid: $kid, algorithm: self::ALGORITHM));
+		if ($jwk === null) {
 			throw new RuntimeException('Could not allocate temp file for EUDI issuer key');
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, $publicKeyPem);
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['kid' => $kid, 'alg' => self::ALGORITHM, 'use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		return $jwk->toPublic()->jsonSerialize();
@@ -453,25 +439,11 @@ class EudiIssuerKeyService implements EudiIssuerKeyServiceInterface {
 	public function signJwt(?string $organisationId, array $payload, array $extraHeaderClaims = []): string {
 		$active = $this->resolveActiveKey(organisationId: $organisationId);
 
-		$filename = tempnam(sys_get_temp_dir(), 'oc-eudi-sign-');
-		if ($filename === false) {
+		$jwk = PemKeyFile::jwk(
+			request: new PemKeyFileRequest(prefix: 'oc-eudi-sign-', pem: $active['privateKeyPem'], kid: $active['kid'], algorithm: self::ALGORITHM)
+		);
+		if ($jwk === null) {
 			throw new RuntimeException('Could not allocate temp file for EUDI issuer signing key');
-		}
-
-		@chmod($filename, 0600);
-		file_put_contents($filename, $active['privateKeyPem']);
-		@chmod($filename, 0600);
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile(
-				$filename,
-				null,
-				['kid' => $active['kid'], 'alg' => self::ALGORITHM, 'use' => 'sig']
-			);
-		} finally {
-			if (file_exists($filename) === true) {
-				@unlink($filename);
-			}
 		}
 
 		$algorithmManager = new AlgorithmManager([new ES256()]);

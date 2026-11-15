@@ -20,7 +20,7 @@ spec captures the observed behavior of 31 code units retroactively; the code alr
 
 ## Requirements
 
-### REQ-001: Read and update the authenticated user's own profile
+### Requirement: Read and update the authenticated user's own profile (REQ-001)
 
 The system MUST expose `@NoAdminRequired @NoCSRFRequired` endpoints for a user to read and
 update their own profile. `me()` resolves the session user (`UserService::getCurrentUser()`),
@@ -63,7 +63,7 @@ with default scopes from `getDefaultPropertyScope()`).
 - WHEN `updateMe()` runs
 - THEN every `_`-prefixed key is removed before properties are applied
 
-### REQ-002: Authenticate via the custom login endpoint with brute-force protection
+### Requirement: Authenticate via the custom login endpoint with brute-force protection (REQ-002)
 
 The system MUST provide a `@PublicPage` `POST /api/user/login` that authenticates a
 username/password against `IUserManager::checkPassword()` and establishes a Nextcloud
@@ -104,7 +104,7 @@ sanitised user payload plus session cookie hints. All responses carry security h
 - WHEN `POST /api/user/login` is called
 - THEN HTTP 503 is returned before authentication is attempted
 
-### REQ-003: Terminate the active session on logout
+### Requirement: Terminate the active session on logout (REQ-003)
 
 The system MUST provide a `@PublicPage` `logout()` endpoint that terminates the active user
 session via `IUserSession::logout()` and returns `{ "logout": true }`.
@@ -115,7 +115,7 @@ session via `IUserSession::logout()` and returns `{ "logout": true }`.
 - WHEN `logout()` is called
 - THEN the session is terminated and HTTP 200 returns `{ "logout": true }`
 
-### REQ-004: Support credentialed cross-origin browser clients via CORS
+### Requirement: Support credentialed cross-origin browser clients via CORS (REQ-004)
 
 The system MUST answer CORS preflights for `/api/user/me` and `/api/user/login`
 (`preflightedCorsMe()` / `preflightedCorsLogin()` → `buildCorsPreflightResponse()`) and
@@ -131,7 +131,7 @@ max-age. When no `Origin` header is present (server-side tooling) the origin def
 - WHEN `preflightedCorsLogin()` runs
 - THEN the response reflects that origin, sets `Access-Control-Allow-Credentials: true`, and advertises the allowed methods and headers
 
-### REQ-005: Sanitise input and harden responses
+### Requirement: Sanitise input and harden responses (REQ-005)
 
 The system MUST sanitise user input and harden API responses. `sanitizeInput()` recursively
 trims, length-caps (default 255), strips null bytes, HTML-encodes (`htmlspecialchars` with

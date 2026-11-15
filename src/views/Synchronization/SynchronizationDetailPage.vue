@@ -418,6 +418,8 @@
 				</section>
 			</div>
 
+			<RegressionSuitePanel subjectType="synchronization" :subjectId="suiteSubjectId" />
+
 			<NcNoteCard v-if="saveError" type="error">
 				<p>{{ saveError }}</p>
 			</NcNoteCard>
@@ -450,10 +452,12 @@ import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 import AutomationDeprecationNotice from '../../components/AutomationDeprecationNotice.vue'
+import RegressionSuitePanel from '../../components/regression/RegressionSuitePanel.vue'
 import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
+import { subjectIdOf } from '../../components/regression/regressionCases.js'
 import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import syncKindOptions from '../../mixins/syncKindOptions.js'
 import { useObjectStore } from '../../store/objectStore.js'
@@ -579,6 +583,7 @@ export default {
 		DatabaseArrowRightOutline,
 		FilterVariant,
 		PlayCircleOutline,
+		RegressionSuitePanel,
 		RestoreIcon,
 		SwapHorizontal,
 		UndoIcon,
@@ -652,6 +657,11 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		objectIdString() {
 			return this.id != null ? String(this.id) : ''
+		},
+
+		/** @spec openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md#requirement-a-suite-run-replays-every-case-without-calling-the-source-or-writing-req-irt-003 */
+		suiteSubjectId() {
+			return subjectIdOf(this.original, this.objectIdString)
 		},
 
 		/** @spec openspec/specs/sync-editor-ui/spec.md */

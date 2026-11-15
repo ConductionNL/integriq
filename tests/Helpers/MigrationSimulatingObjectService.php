@@ -3,6 +3,9 @@
 /**
  * An OpenRegister ObjectService double for the inline-secret EXECUTOR tests.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * It extends {@see RenderBoundarySimulatingObjectService}'s intent but carries
  * the two things the executor needs beyond a rendered read:
  *

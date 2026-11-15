@@ -26,6 +26,7 @@ namespace OCA\Integriq\Tests\Unit\Repair;
 
 use OCA\Integriq\Repair\BroadenExchangeReadDefault;
 use OCA\Integriq\Service\ActionAuthService;
+use OCA\Integriq\Service\ActionAuthServiceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\Migration\IOutput;
@@ -201,4 +202,33 @@ final class BroadenExchangeReadDefaultTest extends TestCase {
 		$this->assertSame(['admin'], $seed['actions']['exchange.resubmit']);
 		$this->assertSame(['admin'], $seed['actions']['exchange.waive']);
 	}//end testSeedCarriesTheNewDefault()
+
+	/**
+	 * A matrix that cannot be written is warned and logged, and the step is
+	 * NOT marked done, so the next upgrade tries again.
+	 *
+	 * @return void
+	 */
+	public function testAnUnwritableMatrixIsWarnedAndRetriedNextTime(): void {
+		$actionAuth = $this->createMock(ActionAuthServiceInterface::class);
+		$actionAuth->method('getMatrix')->willReturn(['exchange.read' => ['admin'], 'source.read' => ['admin']]);
+		$actionAuth->expects($this->once())->method('setMatrix')
+			->with(['exchange.read' => BroadenExchangeReadDefault::NEW_DEFAULT, 'source.read' => ['admin']])
+			->willThrowException(new \JsonException('Malformed UTF-8 characters'));
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueBool')->willReturn(false);
+		$appConfig->expects($this->never())->method('setValueBool');
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error')
+			->with('[integriq] exchange.read default not written: Malformed UTF-8 characters');
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('warning')
+			->with('Could not write exchange.read default: Malformed UTF-8 characters');
+		$output->expects($this->never())->method('info');
+
+		(new BroadenExchangeReadDefault($actionAuth, $appConfig, $logger))->run($output);
+	}//end testAnUnwritableMatrixIsWarnedAndRetriedNextTime()
 }//end class

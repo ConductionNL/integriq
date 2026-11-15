@@ -3,6 +3,9 @@
 /**
  * Integriq roster-import client (abstract base).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Low-level abstract base for pulling timetable data from the four
  * VO/MBO/HE rostering systems market-intelligence round 1 found:
  * Zermelo (REST/JSON, token auth), Untis (WebUntis OneRoster API),
@@ -27,9 +30,6 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.integriq.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

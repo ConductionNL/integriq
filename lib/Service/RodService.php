@@ -41,6 +41,7 @@ use OCA\Integriq\Service\Rod\RodAcknowledgementTranslator;
 use OCA\Integriq\Service\Rod\RodEnvelopeTranslator;
 use OCA\Integriq\Service\Rod\RodPersonalNumberRedactor;
 use OCA\Integriq\Service\Rod\RodProviderRegistry;
+use OCA\Integriq\Service\Security\ActiveSourceLookup;
 use OCA\Integriq\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -361,27 +362,16 @@ class RodService implements RodServiceInterface {
 	 * @spec openspec/specs/rod-adapter/spec.md#requirement-req-004-push-endpoint-and-signed-retour-receiver
 	 */
 	public function resolveActiveSource(): ObjectEntity {
-		$matches = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER,
-					'schema' => self::SCHEMA_SOURCE,
-					'type' => self::SOURCE_TYPE,
-					'isEnabled' => true,
-				],
-				'limit' => 1,
-			]
-		);
-		$results = ($matches['results'] ?? $matches);
-
-		if (empty($results) === true) {
+		$lookup = new ActiveSourceLookup(objectService: $this->objectService, rawSourceResolver: $this->rawSourceResolver);
+		$source = $lookup->first(sourceType: self::SOURCE_TYPE);
+		if ($source === null) {
 			throw new RodProviderException(
 				message: 'No active ROD source is configured (register "integriq", schema "source", type "rod", '
 					. 'isEnabled=true). Configure one before using the ROD bridge.'
 			);
 		}
 
-		return $this->rawSourceResolver->resolveRaw(source: $results[0]);
+		return $source;
 	}//end resolveActiveSource()
 
 	/**

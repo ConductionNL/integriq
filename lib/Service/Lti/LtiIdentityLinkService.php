@@ -19,6 +19,9 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/lti-platform/spec.md
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -163,6 +166,7 @@ class LtiIdentityLinkService {
 				],
 			],
 			_rbac: false,
+			// Unscoped: runs after a cryptographically validated launch, before any Nextcloud user is known.
 			_multitenancy: false
 		);
 		$results = ($matches['results'] ?? $matches);
@@ -191,6 +195,7 @@ class LtiIdentityLinkService {
 				register: 'integriq',
 				schema: 'lti_platform',
 				_rbac: false,
+				// Unscoped: runs after a cryptographically validated launch, before any Nextcloud user is known.
 				_multitenancy: false
 			);
 		} catch (DoesNotExistException $exception) {
@@ -288,6 +293,7 @@ class LtiIdentityLinkService {
 				register: 'integriq',
 				schema: 'lti_identity_link',
 				_rbac: false,
+				// Unscoped: system write of the identity link for a validated launch, before any Nextcloud user is known.
 				_multitenancy: false
 			);
 		} catch (\Throwable $exception) {

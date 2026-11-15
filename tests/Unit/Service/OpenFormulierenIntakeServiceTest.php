@@ -29,6 +29,7 @@ use OCA\Integriq\Service\OpenFormulieren\FormFieldMapper;
 use OCA\Integriq\Service\OpenFormulierenIntakeService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
+use OCA\OpenRegister\Service\File\FileTransfer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -338,6 +339,61 @@ class OpenFormulierenIntakeServiceTest extends TestCase {
 		$this->assertSame('case-uuid-1', $stored['targetCase']['uuid']);
 
 	}//end testHandoffSucceedsAndUpdatesSubmission()
+
+	/**
+	 * A handed-off submission copies each fetched attachment onto the case
+	 * through copyAttachedFile(), and records the copy.
+	 *
+	 * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#scenario-authenticated-handoff-succeeds
+	 */
+	public function testHandoffCopiesFetchedAttachmentsOntoTheCase(): void {
+		$this->addMappingFixture(
+			'vergunning-aanvraag',
+			[
+				'title' => ['type' => 'const', 'value' => 'x'],
+				'summary' => ['type' => 'const', 'value' => 'y'],
+				'channel' => ['type' => 'const', 'value' => 'web'],
+			]
+		);
+		$httpClient = new Client(['handler' => HandlerStack::create(new MockHandler([new Response(200, [], 'file-bytes')]))]);
+		$service = $this->buildService(httpClient: $httpClient);
+
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(42);
+		$this->fileService->method('addFile')->willReturn($file);
+
+		$submission = $service->ingest(
+			formSlug: 'vergunning-aanvraag',
+			formUuid: null,
+			submissionMeta: [],
+			values: [],
+			attachmentRefs: [['key' => 'bijlage', 'url' => 'https://example.test/f.pdf', 'filename' => 'f.pdf']]
+		);
+
+		$this->handoffService->method('execute')->willReturn(
+			[
+				'status' => 'executed',
+				'target' => ['register' => 'procest', 'schema' => 'case', 'uuid' => 'case-uuid-1'],
+				'correlationId' => 'corr-1',
+			]
+		);
+		$this->fileService->expects($this->once())
+			->method('copyAttachedFile')
+			->with(
+				$this->callback(
+					fn (FileTransfer $transfer): bool => $transfer->fileId === 42
+						&& $transfer->source->getUuid() === $submission->getUuid()
+						&& $transfer->target->getUuid() === 'case-uuid-1'
+				)
+			)
+			->willReturn($file);
+
+		$service->handoff(submissionUuid: $submission->getUuid());
+
+		$attachments = $this->submissionStore[$submission->getUuid()]->getObject()['attachments'];
+		$this->assertTrue($attachments[0]['copiedToCase']);
+
+	}//end testHandoffCopiesFetchedAttachmentsOntoTheCase()
 
 	/**
 	 * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-004

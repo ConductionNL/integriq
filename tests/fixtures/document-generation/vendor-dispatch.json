@@ -1,0 +1,460 @@
+{
+    "list": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "GET",
+                "https://vendor.example/api/templates",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": [
+            {
+                "id": "t1",
+                "name": "Brief"
+            },
+            {
+                "id": "t2",
+                "name": "t2"
+            }
+        ]
+    },
+    "render": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "POST",
+                "https://vendor.example/api/documents",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": {
+            "status": "queued",
+            "providerJobId": "J-1",
+            "fileReference": "",
+            "detail": "The vendor is working on it"
+        }
+    },
+    "status": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "GET",
+                "https://vendor.example/api/documents/job%201/status",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": {
+            "status": "rendered",
+            "providerJobId": "job 1",
+            "fileReference": "D-1",
+            "detail": ""
+        }
+    },
+    "fetch": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "GET",
+                "https://vendor.example/api/documents/doc%2F1",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": "%PDF"
+    },
+    "fetch-404": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "GET",
+                "https://vendor.example/api/documents/doc%2F1",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": {
+            "exception": "The smartdocuments vendor answered HTTP 404 for document doc/1.",
+            "unreachable": false,
+            "previous": false
+        }
+    },
+    "render-500": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "POST",
+                "https://vendor.example/api/documents",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": {
+            "status": "unreachable",
+            "providerJobId": "",
+            "fileReference": "",
+            "detail": "The smartdocuments vendor answered HTTP 503. Nobody can say yet whether the document was produced."
+        }
+    },
+    "render-400": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "POST",
+                "https://vendor.example/api/documents",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": {
+            "status": "failed",
+            "providerJobId": "",
+            "fileReference": "",
+            "detail": "The smartdocuments vendor refused the request with HTTP 400."
+        }
+    },
+    "render-299-not-json": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "POST",
+                "https://vendor.example/api/documents",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": {
+            "status": "failed",
+            "providerJobId": "",
+            "fileReference": "",
+            "detail": "The smartdocuments vendor answered something that is not JSON."
+        }
+    },
+    "render-configuration": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "POST",
+                "https://vendor.example/api/documents",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    },
+                    "body": "{\"selection\":{\"templateId\":\"tpl-1\"},\"fields\":{\"naam\":\"Jan\"},\"format\":\"pdf\"}",
+                    "headers": {
+                        "Content-Type": [
+                            "application/json"
+                        ]
+                    }
+                }
+            ]
+        ],
+        "warnings": [],
+        "outcome": {
+            "status": "failed",
+            "providerJobId": "",
+            "fileReference": "",
+            "detail": "credential not found"
+        }
+    },
+    "status-transport": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "GET",
+                "https://vendor.example/api/documents/job%201/status",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                }
+            ]
+        ],
+        "warnings": [
+            [
+                "[OCA\\Integriq\\Service\\DocumentGeneration\\SmartDocumentsProvider] the vendor could not be reached",
+                {
+                    "providerId": "smartdocuments",
+                    "exception": "timeout"
+                }
+            ]
+        ],
+        "outcome": {
+            "status": "unreachable",
+            "providerJobId": "job 1",
+            "fileReference": "",
+            "detail": "The smartdocuments vendor at https://vendor.example/api/documents/job%201/status could not be reached: timeout. Nobody can say yet whether the document was produced."
+        }
+    },
+    "list-transport": {
+        "calls": [
+            [
+                "prepare",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                },
+                {
+                    "type": "documentGeneration"
+                },
+                false
+            ],
+            [
+                "dispatch",
+                "cred",
+                null,
+                "GET",
+                "https://vendor.example/api/templates",
+                {
+                    "authentication": {
+                        "credentialRef": "ref"
+                    }
+                }
+            ]
+        ],
+        "warnings": [
+            [
+                "[OCA\\Integriq\\Service\\DocumentGeneration\\SmartDocumentsProvider] the vendor could not be reached",
+                {
+                    "providerId": "smartdocuments",
+                    "exception": "timeout"
+                }
+            ]
+        ],
+        "outcome": {
+            "exception": "The smartdocuments vendor at https://vendor.example/api/templates could not be reached: timeout. Nobody can say yet whether the document was produced.",
+            "unreachable": true,
+            "previous": true
+        }
+    }
+}

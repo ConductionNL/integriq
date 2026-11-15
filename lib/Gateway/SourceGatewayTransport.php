@@ -84,35 +84,70 @@ class SourceGatewayTransport implements GatewayTransport {
 			return GatewayDelivery::refused($gatewayId, $e->getMessage(), $transport);
 		}
 
+		return $this->deliveryFor(sent: new GatewaySend(gatewayId: $gatewayId, transport: $transport), callLog: $callLog);
+	}//end send()
+
+	/**
+	 * What the gateway's answer means: refused outside 2xx (with its detail or
+	 * error), else delivered with the identifier it gave.
+	 *
+	 * @param GatewaySend  $sent    The gateway and transport the payload went over.
+	 * @param ObjectEntity $callLog The call log of the send.
+	 *
+	 * @return GatewayDelivery What happened.
+	 */
+	private function deliveryFor(GatewaySend $sent, ObjectEntity $callLog): GatewayDelivery {
 		$data = $callLog->getObject();
 		$status = (int)($data['statusCode'] ?? 0);
-		$body = ($data['response']['body'] ?? null);
+		$body = $this->answerBody(body: ($data['response']['body'] ?? null));
+
+		if ($status < 200 || $status > 299) {
+			return GatewayDelivery::refused(
+				$sent->gatewayId,
+				(string)($body['detail'] ?? $body['error'] ?? sprintf('The gateway answered HTTP %d.', $status)),
+				$sent->transport
+			);
+		}
+
+		return GatewayDelivery::delivered(
+			$sent->gatewayId,
+			$this->identifierIn(body: $body),
+			$sent->transport
+		);
+	}//end deliveryFor()
+
+	/**
+	 * The answer's body as a map: JSON text decoded, anything else empty.
+	 *
+	 * @param mixed $body The response body.
+	 *
+	 * @return array<string,mixed> The body.
+	 */
+	private function answerBody(mixed $body): array {
 		if (is_string($body) === true) {
 			$body = json_decode($body, true);
 		}
 
 		if (is_array($body) === false) {
-			$body = [];
+			return [];
 		}
 
-		if ($status < 200 || $status > 299) {
-			return GatewayDelivery::refused(
-				$gatewayId,
-				(string)($body['detail'] ?? $body['error'] ?? sprintf('The gateway answered HTTP %d.', $status)),
-				$transport
-			);
-		}
+		return $body;
+	}//end answerBody()
 
+	/**
+	 * The identifier the gateway gave: `identificatie`, else `identifier`, else `id`.
+	 *
+	 * @param array<string,mixed> $body The answer's body.
+	 *
+	 * @return string|null The identifier, or null when it gave none.
+	 */
+	private function identifierIn(array $body): ?string {
 		$identifier = ($body['identificatie'] ?? $body['identifier'] ?? $body['id'] ?? null);
-
-		if ($identifier !== null) {
-			$identifier = (string)$identifier;
+		if ($identifier === null) {
+			return null;
 		}
 
-		return GatewayDelivery::delivered(
-			$gatewayId,
-			$identifier,
-			$transport
-		);
-	}//end send()
+		return (string)$identifier;
+	}//end identifierIn()
 }//end class

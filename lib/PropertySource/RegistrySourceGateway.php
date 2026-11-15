@@ -72,8 +72,7 @@ class RegistrySourceGateway {
 		$question = $this->question(query: $query, json: $json);
 
 		return $this->answer(
-			providerId: $providerId,
-			sourceSlug: $sourceSlug,
+			read: new RegistryRead(providerId: $providerId, sourceSlug: $sourceSlug),
 			call: fn (): ObjectEntity => $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -111,8 +110,7 @@ class RegistrySourceGateway {
 		$question = $this->question(query: $query, json: $json);
 
 		return $this->answer(
-			providerId: $providerId,
-			sourceSlug: $sourceSlug,
+			read: new RegistryRead(providerId: $providerId, sourceSlug: $sourceSlug),
 			call: fn (): ObjectEntity => $this->callService->call(
 				source: $source,
 				endpoint: $endpoint,
@@ -161,38 +159,95 @@ class RegistrySourceGateway {
 	/**
 	 * Make the call and read the decoded body out of what the call engine hands back.
 	 *
-	 * @param string $providerId Provider id asking, for the failure message.
-	 * @param string $sourceSlug Slug of the configured source.
+	 * @param RegistryRead $read The asking provider and the source.
 	 * @param callable():ObjectEntity $call The call to make.
 	 *
 	 * @return array<string,mixed> Decoded response body.
 	 *
 	 * @throws SourceUnreachableException When the source did not answer with a usable body.
 	 */
-	private function answer(string $providerId, string $sourceSlug, callable $call): array {
+	private function answer(RegistryRead $read, callable $call): array {
+		$data = $this->callLogData(read: $read, call: $call);
+		$this->assertAnswered(read: $read, data: $data);
+
+		return $this->decodedBody(read: $read, data: $data);
+	}//end answer()
+
+	/**
+	 * Make the call; a transport failure is logged and becomes an unreachable source.
+	 *
+	 * @param RegistryRead $read The asking provider and the source.
+	 * @param callable():ObjectEntity $call The call to make.
+	 *
+	 * @return array<string,mixed> The call log's data.
+	 *
+	 * @throws SourceUnreachableException When the call itself failed.
+	 */
+	private function callLogData(RegistryRead $read, callable $call): array {
 		try {
 			$callLog = $call();
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'property-source.gateway.transport',
-				[
-					'provider' => $providerId,
-					'source' => $sourceSlug,
-					'error' => $e->getMessage(),
-				]
-			);
-			throw new SourceUnreachableException(providerId: $providerId, message: sprintf('Source "%s" did not answer: %s', $sourceSlug, $e->getMessage()));
+			throw $this->transportFailure(read: $read, exception: $e);
 		}
 
-		$data = $callLog->getObject();
+		return $callLog->getObject();
+	}//end callLogData()
+
+	/**
+	 * Log a transport failure and turn it into an unreachable source.
+	 *
+	 * @param RegistryRead $read The asking provider and the source.
+	 * @param Throwable $exception What the call threw.
+	 *
+	 * @return SourceUnreachableException The exception to throw.
+	 */
+	private function transportFailure(RegistryRead $read, Throwable $exception): SourceUnreachableException {
+		$this->logger->warning(
+			'property-source.gateway.transport',
+			[
+				'provider' => $read->providerId,
+				'source' => $read->sourceSlug,
+				'error' => $exception->getMessage(),
+			]
+		);
+
+		return new SourceUnreachableException(
+			providerId: $read->providerId,
+			message: sprintf('Source "%s" did not answer: %s', $read->sourceSlug, $exception->getMessage())
+		);
+	}//end transportFailure()
+
+	/**
+	 * Refuse an answer whose HTTP status is not 2xx.
+	 *
+	 * @param RegistryRead $read The asking provider and the source.
+	 * @param array<string,mixed> $data The call log's data.
+	 *
+	 * @return void
+	 *
+	 * @throws SourceUnreachableException When the status is outside 200-299.
+	 */
+	private function assertAnswered(RegistryRead $read, array $data): void {
 		$status = (int)($data['statusCode'] ?? 0);
 		if ($status < 200 || $status > 299) {
 			throw new SourceUnreachableException(
-				providerId: $providerId,
-				message: sprintf('Source "%s" answered HTTP %d.', $sourceSlug, $status)
+				providerId: $read->providerId,
+				message: sprintf('Source "%s" answered HTTP %d.', $read->sourceSlug, $status)
 			);
 		}
+	}//end assertAnswered()
 
+	/**
+	 * The response body, decoded from JSON when it is text.
+	 *
+	 * @param RegistryRead $read The asking provider and the source.
+	 * @param array<string,mixed> $data The call log's data.
+	 *
+	 * @return array<string,mixed> Decoded response body.
+	 *
+	 * @throws SourceUnreachableException When the body is not a JSON object or list.
+	 */
+	private function decodedBody(RegistryRead $read, array $data): array {
 		$body = ($data['response']['body'] ?? null);
 		if (is_string($body) === true) {
 			$body = json_decode($body, true);
@@ -200,13 +255,13 @@ class RegistrySourceGateway {
 
 		if (is_array($body) === false) {
 			throw new SourceUnreachableException(
-				providerId: $providerId,
-				message: sprintf('Source "%s" answered a body this binding cannot read.', $sourceSlug)
+				providerId: $read->providerId,
+				message: sprintf('Source "%s" answered a body this binding cannot read.', $read->sourceSlug)
 			);
 		}
 
 		return $body;
-	}//end answer()
+	}//end decodedBody()
 
 	/**
 	 * The `configuration` of a configured source, for a binding that reads a

@@ -1,0 +1,113 @@
+{
+  "$comment": "pdok-adapter (ADR-037 register fragment). Adds the addresses schema that PdokConnector::writeThrough() saves lookup and reverse results into (register integriq, schema addresses). Its properties are exactly the keys PdokConnector::normalize() writes; PdokAddressSchemaTest pins that. pdokId identifies a record: the connector looks a pdokId up before it saves and updates the stored object under its uuid, so each PDOK record is stored once. Writes are limited to the connector: create and update are granted to admins only, and the connector saves in the system context. A row whose fetchedAt is older than an hour, or in the future, is fetched again. The schema declares no configuration.unique, because openregister's unique check also counts the object being updated and would refuse that refresh. Spec: openspec/specs/pdok-adapter/spec.md, requirement Write-Through to OR Addresses Register.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "addresses"
+        ]
+      }
+    },
+    "schemas": {
+      "addresses": {
+        "slug": "addresses",
+        "title": "Address",
+        "icon": "MapMarkerOutline",
+        "version": "1.0.0",
+        "summary": "A Dutch address fetched from PDOK, kept so the next lookup needs no call",
+        "description": "One row per PDOK Locatieserver record that a lookup or reverse geocode returned, in the PostalAddress shape. The row is refreshed when it is older than an hour and asked for again. A field PDOK does not give for a record is stored as null.",
+        "required": [
+          "pdokId",
+          "source",
+          "fetchedAt"
+        ],
+        "type": "object",
+        "appendOnly": false,
+        "immutable": false,
+        "authorization": {
+          "create": ["admin"],
+          "read": ["authenticated"],
+          "update": ["admin"],
+          "delete": ["admin"]
+        },
+        "properties": {
+          "pdokId": {
+            "type": "string",
+            "title": "PDOK id",
+            "description": "The Locatieserver id of the record, such as adr-0363200000218908. One stored address per id."
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Address",
+            "description": "The address as PDOK writes it on one line."
+          },
+          "streetAddress": {
+            "type": "string",
+            "title": "Street",
+            "description": "The street name."
+          },
+          "houseNumber": {
+            "type": "string",
+            "title": "House number",
+            "description": "The house number with its letter, such as 12a."
+          },
+          "houseNumberAddition": {
+            "type": "string",
+            "title": "Addition",
+            "description": "The house number addition."
+          },
+          "postalCode": {
+            "type": "string",
+            "title": "Postcode",
+            "description": "The postcode, such as 1016RH."
+          },
+          "addressLocality": {
+            "type": "string",
+            "title": "Place",
+            "description": "The place (woonplaats)."
+          },
+          "addressRegion": {
+            "type": "string",
+            "title": "Province",
+            "description": "The province."
+          },
+          "addressCountry": {
+            "type": "string",
+            "title": "Country",
+            "description": "The country code, always NL."
+          },
+          "bagAddressId": {
+            "type": "string",
+            "title": "BAG address id",
+            "description": "The BAG nummeraanduiding id."
+          },
+          "bagBuildingId": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "BAG building ids",
+            "description": "The BAG pand ids of the buildings the address lies in."
+          },
+          "location": {
+            "type": "object",
+            "format": "geo:point",
+            "title": "Location",
+            "description": "The centre point as a GeoJSON Point, longitude first."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Where the address came from, always pdok."
+          },
+          "fetchedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched at",
+            "description": "When the address was last fetched from PDOK."
+          }
+        }
+      }
+    }
+  }
+}

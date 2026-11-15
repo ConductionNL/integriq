@@ -35,6 +35,9 @@ use OCA\Integriq\Service\Peppol\LogPeppolAccessPointProvider;
 use OCA\Integriq\Service\Peppol\PeppolAccessPointProviderInterface;
 use OCA\Integriq\Service\Peppol\RestPeppolAccessPointProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\FileService as ORFileService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -75,6 +78,27 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 	 * @var string
 	 */
 	public const SCHEMA_TRANSMISSION = 'peppol_transmission';
+
+	/**
+	 * OR schema slug for an inbound document fetched from the Access Point.
+	 *
+	 * @var string
+	 */
+	public const SCHEMA_INBOUND_DOCUMENT = 'peppol_inbound_document';
+
+	/**
+	 * Inbound document status: the UBL is stored and announced.
+	 *
+	 * @var string
+	 */
+	public const INBOUND_STORED = 'stored';
+
+	/**
+	 * Inbound document status: the fetch or the store failed; a redelivered notification retries it.
+	 *
+	 * @var string
+	 */
+	public const INBOUND_FETCH_FAILED = 'fetch-failed';
 
 	/**
 	 * `source.type` value identifying a Peppol Access Point source.
@@ -145,6 +169,7 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 	 * @param IL10N $l The localization service (default status detail text).
 	 * @param LoggerInterface $logger Logger for non-fatal diagnostics.
 	 * @param IRootFolder $rootFolder Reads the UBL document `payloadFileUri` names in Nextcloud Files.
+	 * @param ORFileService $fileService Stores an inbound UBL as a file on its inbound document object.
 	 */
 	public function __construct(
 		private readonly ORObjectService $objectService,
@@ -154,6 +179,7 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 		private readonly IL10N $l,
 		private readonly LoggerInterface $logger,
 		private readonly IRootFolder $rootFolder,
+		private readonly ORFileService $fileService,
 	) {
 
 	}//end __construct()
@@ -469,17 +495,69 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 	}//end handleDeliveryCallback()
 
 	/**
-	 * Republish a verified inbound-document AP notification as a CloudEvent.
+	 * Fetch, store and announce a verified inbound-document AP notification.
+	 *
+	 * The Access Point's reference is reachable only with the Access Point's
+	 * credential, which only integriq holds. So the document is fetched,
+	 * stored as a file on a `peppol_inbound_document` object, and the
+	 * CloudEvent names that object and its file, which the receiving app can
+	 * read (REQ-009). A fetch or store that fails leaves the object
+	 * `fetch-failed` and emits nothing; the webhook's answer does not change,
+	 * and a redelivered notification for the same reference retries it. A
+	 * redelivery of a document already stored is a no-op.
 	 *
 	 * @param string $senderPeppolId The sender participant identifier.
 	 * @param string $documentType The UBL document type slug.
-	 * @param string $payloadReference A reference (URI) to the inbound payload.
+	 * @param string $payloadReference The Access Point's reference to the inbound document.
 	 *
-	 * @return array<ObjectEntity> The created CloudEvent messages.
+	 * @return array<ObjectEntity> The created CloudEvent messages; empty when nothing was announced.
 	 *
 	 * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-an-inbound-document-is-republished-as-a-cloudevent
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
 	 */
 	public function handleInboundDocument(string $senderPeppolId, string $documentType, string $payloadReference): array {
+		$record = $this->findInboundDocument(accessPointReference: $payloadReference);
+		if ($record !== null && (string)($record->getObject()['status'] ?? '') === self::INBOUND_STORED) {
+			return [];
+		}
+
+		$data = [
+			'senderPeppolId' => $senderPeppolId,
+			'documentType' => $documentType,
+			'accessPointReference' => $payloadReference,
+			'receivedAt' => (new DateTime())->format('c'),
+			'status' => self::INBOUND_FETCH_FAILED,
+			'detail' => null,
+			'fileId' => null,
+			'fileName' => null,
+		];
+		if ($record !== null) {
+			$data = array_merge($record->getObject(), ['senderPeppolId' => $senderPeppolId, 'documentType' => $documentType]);
+		}
+
+		$record = $this->saveInboundDocument(data: $data, uuid: $record?->getUuid());
+
+		try {
+			$file = $this->storeInboundFile(record: $record, reference: $payloadReference);
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				'[PeppolTransmissionService] inbound document could not be fetched or stored; left fetch-failed for a retry',
+				['accessPointReference' => $payloadReference, 'exception' => $exception->getMessage()]
+			);
+			$data = $record->getObject();
+			$data['status'] = self::INBOUND_FETCH_FAILED;
+			$data['detail'] = $exception->getMessage();
+			$this->saveInboundDocument(data: $data, uuid: $record->getUuid());
+			return [];
+		}
+
+		$data = $record->getObject();
+		$data['status'] = self::INBOUND_STORED;
+		$data['detail'] = null;
+		$data['fileId'] = $file->getId();
+		$data['fileName'] = $file->getName();
+		$record = $this->saveInboundDocument(data: $data, uuid: $record->getUuid());
+
 		return $this->eventService->emitCloudEvent(
 			type: self::EVENT_TYPE_INBOUND_RECEIVED,
 			source: '/peppol/inbound',
@@ -487,11 +565,139 @@ class PeppolTransmissionService implements PeppolTransmissionServiceInterface {
 			data: [
 				'senderPeppolId' => $senderPeppolId,
 				'documentType' => $documentType,
-				'payloadReference' => $payloadReference,
+				'payloadReference' => self::REGISTER . '/' . self::SCHEMA_INBOUND_DOCUMENT . '/' . $record->getUuid(),
+				'payloadFileId' => $file->getId(),
+				'payloadFileName' => $file->getName(),
 			]
 		);
 
 	}//end handleInboundDocument()
+
+	/**
+	 * Fetch the inbound UBL from the Access Point and store it as a file on the record.
+	 *
+	 * @param ObjectEntity $record The inbound document record.
+	 * @param string $reference The Access Point's reference.
+	 *
+	 * @return File The stored file.
+	 *
+	 * @throws PeppolProviderException When no Peppol source is configured or the Access Point fails.
+	 * @throws Throwable When the file cannot be stored.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	private function storeInboundFile(ObjectEntity $record, string $reference): File {
+		$configuration = $this->inboundSourceConfiguration();
+
+		$document = $this->resolveProvider(configuration: $configuration)->fetchInboundDocument(
+			sourceConfiguration: $configuration,
+			reference: $reference
+		);
+
+		return $this->fileService->addFile(
+			target: new FileTarget(object: $record),
+			upload: new FileUpload(fileName: 'peppol-inbound-' . $record->getUuid() . '.xml', content: $document, share: false)
+		);
+	}//end storeInboundFile()
+
+	/**
+	 * The active Peppol source's configuration, read as the engine.
+	 *
+	 * The webhook runs as the Peppol connection's account, which cannot read
+	 * the admin-only `source` schema. The configuration is integriq's own and
+	 * is only used to reach the Access Point; nothing of it is answered to
+	 * the caller.
+	 *
+	 * @return array The source's `configuration` object.
+	 *
+	 * @throws PeppolProviderException When no active Peppol source is configured.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	private function inboundSourceConfiguration(): array {
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_SOURCE,
+					'type' => self::SOURCE_TYPE,
+					'isEnabled' => true,
+				],
+				'limit' => 1,
+			],
+			_rbac: false
+		);
+		$results = ($matches['results'] ?? $matches);
+		if (empty($results) === true) {
+			throw new PeppolProviderException(message: 'No active Peppol source is configured; the inbound document cannot be fetched.');
+		}
+
+		$configuration = ($results[0]->getObject()['configuration'] ?? []);
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return $configuration;
+	}//end inboundSourceConfiguration()
+
+	/**
+	 * The inbound document record for an Access Point reference, when one exists.
+	 *
+	 * Read in system context, like the write, so a redelivery always finds it.
+	 *
+	 * @param string $accessPointReference The Access Point's reference.
+	 *
+	 * @return ObjectEntity|null The record, or null when this reference is new.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	private function findInboundDocument(string $accessPointReference): ?ObjectEntity {
+		if ($accessPointReference === '') {
+			return null;
+		}
+
+		$matches = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER,
+					'schema' => self::SCHEMA_INBOUND_DOCUMENT,
+					'accessPointReference' => $accessPointReference,
+				],
+				'limit' => 1,
+			],
+			_rbac: false
+		);
+		$results = ($matches['results'] ?? $matches);
+
+		if (empty($results) === true) {
+			return null;
+		}
+
+		return $results[0];
+	}//end findInboundDocument()
+
+	/**
+	 * Create or update an inbound document record.
+	 *
+	 * Written in system context, as integriq's own CloudEvents are: the
+	 * schema grants no account create or update, so only integriq writes it.
+	 *
+	 * @param array<string, mixed> $data The record.
+	 * @param string|null $uuid The record to update, or null to create one.
+	 *
+	 * @return ObjectEntity The saved record.
+	 *
+	 * @spec openspec/changes/peppol-readable-payloads-and-scoped-consumer/specs/peppol-access-point-connector/spec.md#requirement-an-inbound-document-is-stored-where-the-receiving-app-can-read-it-req-009
+	 */
+	private function saveInboundDocument(array $data, ?string $uuid): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: $data,
+			register: self::REGISTER,
+			schema: self::SCHEMA_INBOUND_DOCUMENT,
+			uuid: $uuid,
+			_rbac: false
+		);
+	}//end saveInboundDocument()
 
 	/**
 	 * Resolve the single active Peppol source (`type=peppol`, `isEnabled=true`).

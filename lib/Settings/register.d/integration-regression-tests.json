@@ -1,0 +1,219 @@
+{
+  "$comment": "ADR-037 register fragment (automation-integration-regression-tests). Declares integration_test_case (a known input with its expected output for a mapping or a synchronization) and integration_test_run (one suite run: counts and, per failed case, the paths that differ). See openspec/changes/automation-integration-regression-tests/design.md D1 and D3. Seeds two cases for the seeded lowercase-keys mapping; a run seeds nothing, it is history.",
+  "components": {
+    "registers": {
+      "integriq": {
+        "schemas": [
+          "integration_test_case",
+          "integration_test_run"
+        ]
+      }
+    },
+    "schemas": {
+      "integration_test_case": {
+        "slug": "integration_test_case",
+        "title": "Integration test case",
+        "icon": "FormatListCheckbox",
+        "version": "1.0.0",
+        "summary": "A known input and the output a mapping or synchronization must produce for it",
+        "description": "A regression test case. A suite run feeds the input through its subject and compares the result with the expected output, ignoring the listed paths. See openspec/changes/automation-integration-regression-tests/specs/integration-regression-tests/spec.md REQ-IRT-001.",
+        "required": [
+          "name",
+          "subjectType",
+          "subjectId"
+        ],
+        "type": "object",
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "What the case checks, in a few words."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Why the case exists."
+          },
+          "subjectType": {
+            "type": "string",
+            "enum": [
+              "mapping",
+              "synchronization"
+            ],
+            "title": "Subject type",
+            "description": "Whether the case tests a mapping or a synchronization."
+          },
+          "subjectId": {
+            "type": "string",
+            "title": "Subject",
+            "description": "The uuid or slug of the mapping or synchronization under test."
+          },
+          "input": {
+            "type": "object",
+            "title": "Input",
+            "description": "The object fed to the subject."
+          },
+          "expectedOutput": {
+            "type": "object",
+            "title": "Expected output",
+            "description": "The output the subject must produce for the input."
+          },
+          "ignoredPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ignored paths",
+            "description": "Dot paths left out of the comparison, such as a generated timestamp."
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "integration_test_case",
+              "slug": "lowercase-keys-empty-output"
+            },
+            "name": "Lowercase keys gives no output without rules",
+            "description": "The seeded mapping has no rules yet, so it maps any input to an empty object. Update the expected output when you add rules.",
+            "subjectType": "mapping",
+            "subjectId": "lowercase-keys",
+            "input": {
+              "Name": "Zaak 1",
+              "Status": "open"
+            },
+            "expectedOutput": {},
+            "ignoredPaths": []
+          },
+          {
+            "@self": {
+              "register": "integriq",
+              "schema": "integration_test_case",
+              "slug": "lowercase-keys-ignores-date-modified"
+            },
+            "name": "Lowercase keys ignores dateModified",
+            "description": "Shows an ignored path: a generated timestamp in the expected output does not fail the case.",
+            "subjectType": "mapping",
+            "subjectId": "lowercase-keys",
+            "input": {
+              "Name": "Zaak 2",
+              "dateModified": "2026-01-01T00:00:00+00:00"
+            },
+            "expectedOutput": {
+              "dateModified": "2026-01-01T00:00:00+00:00"
+            },
+            "ignoredPaths": [
+              "dateModified"
+            ]
+          }
+        ]
+      },
+      "integration_test_run": {
+        "slug": "integration_test_run",
+        "title": "Integration test run",
+        "icon": "CheckboxMarkedCircleOutline",
+        "version": "1.0.0",
+        "summary": "One run of the test cases of a mapping or synchronization",
+        "description": "A suite run record: the counts and, per failed case, the paths whose values differ. Written once per run; nothing else is written by a run. See REQ-IRT-003.",
+        "required": [
+          "subjectType",
+          "subjectId",
+          "total",
+          "passed",
+          "failed"
+        ],
+        "type": "object",
+        "authorization": {
+          "create": [
+            "admin"
+          ],
+          "read": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "appendOnly": true,
+        "properties": {
+          "subjectType": {
+            "type": "string",
+            "enum": [
+              "mapping",
+              "synchronization"
+            ],
+            "title": "Subject type",
+            "description": "Whether the run tested a mapping or a synchronization."
+          },
+          "subjectId": {
+            "type": "string",
+            "title": "Subject",
+            "description": "The uuid or slug of the mapping or synchronization that ran."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total",
+            "description": "Number of cases run."
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Passed",
+            "description": "Number of cases whose output matched."
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Failed",
+            "description": "Number of cases whose output differed or that could not run."
+          },
+          "failures": {
+            "type": "array",
+            "title": "Failures",
+            "description": "Per failed case: its id, its name, the differing paths with the expected and actual value, or the error that stopped it.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "runBy": {
+            "type": "string",
+            "title": "Run by",
+            "description": "The user who started the run."
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started",
+            "description": "When the run started."
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Finished",
+            "description": "When the run finished."
+          }
+        },
+        "x-openregister-seed": []
+      }
+    }
+  }
+}
