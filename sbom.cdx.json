@@ -216,10 +216,10 @@
       ]
     },
     {
-      "bom-ref": "brick/math-0.20.0.0",
+      "bom-ref": "brick/math-1.0.0.0",
       "type": "library",
       "name": "math",
-      "version": "0.20.0",
+      "version": "1.0.0",
       "group": "brick",
       "description": "Arbitrary-precision arithmetic library",
       "licenses": [
@@ -229,17 +229,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/brick/math@0.20.0",
+      "purl": "pkg:composer/brick/math@1.0.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/brick/math/zipball/44d7e16e2e940d9c7dde7076598e25855026dba2",
-          "comment": "dist reference: 44d7e16e2e940d9c7dde7076598e25855026dba2"
+          "url": "https://api.github.com/repos/brick/math/zipball/2effe05d2177c451b86c6a073196a4034c02f211",
+          "comment": "dist reference: 2effe05d2177c451b86c6a073196a4034c02f211"
         },
         {
           "type": "vcs",
           "url": "https://github.com/brick/math.git",
-          "comment": "source reference: 44d7e16e2e940d9c7dde7076598e25855026dba2"
+          "comment": "source reference: 2effe05d2177c451b86c6a073196a4034c02f211"
         },
         {
           "type": "issue-tracker",
@@ -248,18 +248,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/brick/math/tree/0.20.0",
+          "url": "https://github.com/brick/math/tree/1.0.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "44d7e16e2e940d9c7dde7076598e25855026dba2"
+          "value": "2effe05d2177c451b86c6a073196a4034c02f211"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "44d7e16e2e940d9c7dde7076598e25855026dba2"
+          "value": "2effe05d2177c451b86c6a073196a4034c02f211"
         },
         {
           "name": "cdx:composer:package:type",
@@ -2274,10 +2274,10 @@
       ]
     },
     {
-      "bom-ref": "spomky-labs/pki-framework-1.6.2.0",
+      "bom-ref": "spomky-labs/pki-framework-1.6.3.0",
       "type": "library",
       "name": "pki-framework",
-      "version": "1.6.2",
+      "version": "1.6.3",
       "group": "spomky-labs",
       "description": "A PHP framework for managing Public Key Infrastructures. It comprises X.509 public key certificates, attribute certificates, certification requests and certification path validation.",
       "author": "Joni Eskelinen, Florent Morselli",
@@ -2288,17 +2288,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/spomky-labs/pki-framework@1.6.2",
+      "purl": "pkg:composer/spomky-labs/pki-framework@1.6.3",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/Spomky-Labs/pki-framework/zipball/8f333bebe104ea24f1a160a6fb69e2dead4f1882",
-          "comment": "dist reference: 8f333bebe104ea24f1a160a6fb69e2dead4f1882"
+          "url": "https://api.github.com/repos/Spomky-Labs/pki-framework/zipball/792e909d4e387adffe3c4f404451c7d57a3d2022",
+          "comment": "dist reference: 792e909d4e387adffe3c4f404451c7d57a3d2022"
         },
         {
           "type": "vcs",
           "url": "https://github.com/Spomky-Labs/pki-framework.git",
-          "comment": "source reference: 8f333bebe104ea24f1a160a6fb69e2dead4f1882"
+          "comment": "source reference: 792e909d4e387adffe3c4f404451c7d57a3d2022"
         },
         {
           "type": "website",
@@ -2312,18 +2312,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/Spomky-Labs/pki-framework/tree/1.6.2",
+          "url": "https://github.com/Spomky-Labs/pki-framework/tree/1.6.3",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "8f333bebe104ea24f1a160a6fb69e2dead4f1882"
+          "value": "792e909d4e387adffe3c4f404451c7d57a3d2022"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "8f333bebe104ea24f1a160a6fb69e2dead4f1882"
+          "value": "792e909d4e387adffe3c4f404451c7d57a3d2022"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3874,10 +3874,10 @@
       ]
     },
     {
-      "bom-ref": "web-token/jwt-library-4.2.2.0",
+      "bom-ref": "web-token/jwt-library-4.2.7.0",
       "type": "library",
       "name": "jwt-library",
-      "version": "4.2.2",
+      "version": "4.2.7",
       "group": "web-token",
       "description": "JWT library",
       "author": "Florent Morselli, All contributors",
@@ -3888,17 +3888,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/web-token/jwt-library@4.2.2",
+      "purl": "pkg:composer/web-token/jwt-library@4.2.7",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/web-token/jwt-library/zipball/ae642340ee2ca91ca0c37edd72a9d06302651ca9",
-          "comment": "dist reference: ae642340ee2ca91ca0c37edd72a9d06302651ca9"
+          "url": "https://api.github.com/repos/web-token/jwt-library/zipball/62643a2f31274c546a7d158ceab6dd5c052db911",
+          "comment": "dist reference: 62643a2f31274c546a7d158ceab6dd5c052db911"
         },
         {
           "type": "vcs",
           "url": "https://github.com/web-token/jwt-library.git",
-          "comment": "source reference: ae642340ee2ca91ca0c37edd72a9d06302651ca9"
+          "comment": "source reference: 62643a2f31274c546a7d158ceab6dd5c052db911"
         },
         {
           "type": "website",
@@ -3906,24 +3906,19 @@
           "comment": "as detected from Composer manifest 'homepage'"
         },
         {
-          "type": "issue-tracker",
-          "url": "https://github.com/web-token/jwt-library/issues",
-          "comment": "as detected from Composer manifest 'support.issues'"
-        },
-        {
           "type": "vcs",
-          "url": "https://github.com/web-token/jwt-library/tree/4.2.2",
+          "url": "https://github.com/web-token/jwt-library/tree/4.2.7",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "ae642340ee2ca91ca0c37edd72a9d06302651ca9"
+          "value": "62643a2f31274c546a7d158ceab6dd5c052db911"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "ae642340ee2ca91ca0c37edd72a9d06302651ca9"
+          "value": "62643a2f31274c546a7d158ceab6dd5c052db911"
         },
         {
           "name": "cdx:composer:package:type",
@@ -5706,6 +5701,40 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@humanwhocodes/retry"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "nonrecursive-glob-match",
+      "group": "@isaacs",
+      "version": "1.1.0",
+      "bom-ref": "integriq@1.0.0|@isaacs/nonrecursive-glob-match@1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BlueOak-1.0.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40isaacs/nonrecursive-glob-match@1.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@isaacs/nonrecursive-glob-match/-/nonrecursive-glob-match-1.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "18f9bf0dbbe4e512e68519f15c86bb9d3a4ad31b65e04d308f432c96cb8d889d45211394fb6fbd960502fdd805ec4cb84025a17c4b20c6294c44c09d1cf7c37f"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@isaacs/nonrecursive-glob-match"
         }
       ]
     },
@@ -12074,10 +12103,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/balanced-match"
         }
@@ -12283,10 +12308,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/brace-expansion"
@@ -27498,24 +27519,24 @@
         {
           "type": "library",
           "name": "minimatch",
-          "version": "9.0.9",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|minimatch@9.0.9",
+          "version": "11.0.8",
+          "bom-ref": "integriq@1.0.0|webdav@5.10.0|minimatch@11.0.8",
           "licenses": [
             {
               "license": {
-                "id": "ISC"
+                "id": "BlueOak-1.0.0"
               }
             }
           ],
-          "purl": "pkg:npm/minimatch@9.0.9",
+          "purl": "pkg:npm/minimatch@11.0.8",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/minimatch/-/minimatch-9.0.9.tgz",
+              "url": "https://registry.npmjs.org/minimatch/-/minimatch-11.0.8.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "381c0137d00be1daa61139694b6cdab31faf4de59c956ce46e57d993b2930398f78de38e373fed4429d9a26532bcd83cdf02f966ff52b3a1cc2570202fc47662"
+                  "content": "9c542e6124d5ac6bf2b15069b39221fb405d9d814dfc28f70bcd7aafafa9ef22be147ad52c61383b837d005c3292b94d96f3361d8b7e45a775522ae8ea1f3c22"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27525,72 +27546,6 @@
             {
               "name": "cdx:npm:package:path",
               "value": "node_modules/webdav/node_modules/minimatch"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "brace-expansion",
-          "version": "2.1.7",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|brace-expansion@2.1.7",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/brace-expansion@2.1.7",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-2.1.7.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "b996dec3536a7663c34cc27c6a1d72f9bfbd40426b7e45c593745c4d0c375f48d6ff1454bc52ac83509f41d49819d4db5d9584c6d53727771cc6d9dfc35162d2"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/webdav/node_modules/brace-expansion"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "balanced-match",
-          "version": "1.0.2",
-          "bom-ref": "integriq@1.0.0|webdav@5.10.0|balanced-match@1.0.2",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/balanced-match@1.0.2",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "de849e50ed13315ebb84dd4099b5ec2b8c9aa94eed8e21e56f144364ea47d0a5bdf82797e1b440697d009f1b74b71d8cae94695b041a3f02252121098585393f"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/webdav/node_modules/balanced-match"
             }
           ]
         }
@@ -28001,7 +27956,7 @@
       ]
     },
     {
-      "ref": "brick/math-0.20.0.0"
+      "ref": "brick/math-1.0.0.0"
     },
     {
       "ref": "clue/stream-filter-1.7.0.0"
@@ -28223,9 +28178,9 @@
       "ref": "revolt/event-loop-1.0.8.0"
     },
     {
-      "ref": "spomky-labs/pki-framework-1.6.2.0",
+      "ref": "spomky-labs/pki-framework-1.6.3.0",
       "dependsOn": [
-        "brick/math-0.20.0.0"
+        "brick/math-1.0.0.0"
       ]
     },
     {
@@ -28404,11 +28359,11 @@
       ]
     },
     {
-      "ref": "web-token/jwt-library-4.2.2.0",
+      "ref": "web-token/jwt-library-4.2.7.0",
       "dependsOn": [
-        "brick/math-0.20.0.0",
+        "brick/math-1.0.0.0",
         "psr/clock-1.0.0.0",
-        "spomky-labs/pki-framework-1.6.2.0",
+        "spomky-labs/pki-framework-1.6.3.0",
         "symfony/deprecation-contracts-3.8.1.0"
       ]
     },
@@ -28438,7 +28393,7 @@
         "symfony/var-exporter-7.4.18.0",
         "symfony/yaml-6.4.50.0",
         "twig/twig-3.28.0.0",
-        "web-token/jwt-library-4.2.2.0"
+        "web-token/jwt-library-4.2.7.0"
       ]
     }
   ]
